@@ -44,16 +44,25 @@ Updated AUD-002, RTL-001, L10N-002 through L10N-008, the baseline runbook, test 
 
 Evidence: `../evidence/AUD-002-attempt-4.md`.
 
+## DEC-006 — AUD-005 baseline and optional scope approved by owner
+
+Date: 2026-10-02 (Asia/Tehran). Owner: project owner (actual user in this conversation). Status: accepted after the owner requested and received a Persian explanation and approved the recommendation. Actual review: `../evidence/AUD-005-owner-review-1.md`.
+
+The [owner review packet](AUD-005-OWNER-REVIEW.md) is accepted as the planning baseline, with both accounting findings open. Defer branches (PAR-006), bank-feed adapter/connector (DATA-005 and DATA-006), SaaS/miscellaneous parity (DATA-007), toman UX, new statutory compliance/accounting-calendar work and hosting/provider selection. The four optional tasks are explicitly skipped through the controller. Reasons and continuing mandatory work are detailed in the packet. Existing capabilities are preserved. Exact money/FX, migration, accounting, Persian/RTL and manual/CSV banking remain in scope.
+
+Preparation evidence: `../evidence/AUD-005-attempt-1.md`; closure evidence: `../evidence/AUD-005-attempt-2.md`. Schedule ranges remain estimates, with no committed start or due dates. This owner review does not qualify financial outputs, provider availability or production readiness. Future inclusion requires an explicit scope change; deferred optional tasks must be reopened. Both baseline defects retain their remediation and QA tasks.
+
 ## Remaining open scope decisions
 
 | Decision | Owner | Task | Initial state |
 |---|---|---|---|
-| Branch dimension required? | Product/accounting owner | PAR-006 | undecided |
-| Optional bank adapter and connector? | Product/operations owner | DATA-005, DATA-006 | undecided |
-| SaaS and miscellaneous endpoint value? | Product owner | DATA-007 | undecided |
-| Toman convenience | Product/accounting owner | MON-009 / future task | unspecified; disabled |
-| Iranian statutory tax/payroll/e-invoicing scope | Product/domain expert | AUD-005 | unspecified; no compliance claim |
-| Hosting/provider jurisdiction and availability | Deployment owner | AUD-005, QA-002 | unspecified |
+| Branch dimension required? | Product/accounting owner | PAR-006 | deferred under DEC-006 |
+| Optional bank adapter and connector? | Product/operations owner | DATA-005, DATA-006 | both deferred under DEC-006 |
+| SaaS and miscellaneous endpoint value? | Product owner | DATA-007 | new parity deferred under DEC-006 |
+| Toman convenience | Product/accounting owner | MON-009 / future task | deferred under DEC-006; disabled |
+| Iranian statutory tax/payroll/e-invoicing scope | Product/domain expert | AUD-005 | new implementation deferred under DEC-006; no compliance claim |
+| Statutory accounting calendar | Product/domain expert | LOC-004 / future task | deferred under DEC-006; Persian presentation remains in scope |
+| Hosting/provider jurisdiction and availability | Deployment owner | QA-002, REL-001/002 | selection deferred under DEC-006; required before relevant deployment/provider use |
 | Exact rounding and FX precision | Accounting/DB owner | MON-002, MON-004 | pending |
 | Performance budgets / recovery targets | Operations/product owner | QA-004, QA-005 | pending |
 | API compatibility window | API/release owner | MON-006, REL-004 | pending |

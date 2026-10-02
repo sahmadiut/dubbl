@@ -8,15 +8,22 @@
     "DATA-003"
   ],
   "source_pages": [],
-  "status": "todo",
+  "status": "skipped",
   "priority": 1,
   "optional": true,
   "human_review": false,
   "owner": null,
   "block_reason": null,
-  "evidence": [],
+  "evidence": [
+    "evidence/AUD-005-owner-review-1.md"
+  ],
   "review": null,
-  "waiver": null,
+  "waiver": {
+    "reason": "DEC-006: no demonstrated private-fork SaaS or miscellaneous parity need",
+    "reviewer": "project-owner",
+    "evidence": "evidence/AUD-005-owner-review-1.md",
+    "at": "2026-10-02T02:31:08+00:00"
+  },
   "source_sections": [
     "bigcapital-to-dubbl-feature-map",
     "security-and-privacy",
@@ -49,8 +56,9 @@ Run the repository's discovered commands for the affected behavior. Add meaningf
 
 ## Handoff
 
-Not started. First inspect the actual fork; replace this with changed files, completed steps, remaining work, blockers and the exact next action before ending a session.
+New SaaS/miscellaneous parity deferred under accepted DEC-006 because the private fork has no demonstrated subscription/catalog requirement; preserve existing billing behavior. Actual owner approval: evidence/AUD-005-owner-review-1.md. No implementation or acceptance test is claimed. Future inclusion requires explicit new owner scope and controller reopening before work.
 
 ## History
 
 - Initial backlog generated from the supplied plan. Implementation status is unverified; no task is marked complete.
+- 2026-10-02T02:31:08+00:00 | Optional scope deferred by project-owner: DEC-006: no demonstrated private-fork SaaS or miscellaneous parity need

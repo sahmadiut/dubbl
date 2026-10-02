@@ -8,15 +8,22 @@
     "DATA-005"
   ],
   "source_pages": [],
-  "status": "todo",
+  "status": "skipped",
   "priority": 1,
   "optional": true,
   "human_review": true,
   "owner": null,
   "block_reason": null,
-  "evidence": [],
+  "evidence": [
+    "evidence/AUD-005-owner-review-1.md"
+  ],
   "review": null,
-  "waiver": null,
+  "waiver": {
+    "reason": "DEC-006: connector deferred with its provider boundary; no provider selected",
+    "reviewer": "project-owner",
+    "evidence": "evidence/AUD-005-owner-review-1.md",
+    "at": "2026-10-02T02:31:07+00:00"
+  },
   "source_sections": [
     "bigcapital-to-dubbl-feature-map",
     "security-and-privacy",
@@ -49,8 +56,9 @@ Run the repository's discovered commands for the affected behavior. Add meaningf
 
 ## Handoff
 
-Not started. First inspect the actual fork; replace this with changed files, completed steps, remaining work, blockers and the exact next action before ending a session.
+Connector deferred together with DATA-005 under accepted DEC-006; no provider or jurisdiction eligibility is assumed. Actual owner approval: evidence/AUD-005-owner-review-1.md. No implementation or acceptance test is claimed. Future inclusion requires explicit new owner scope and controller reopening before work.
 
 ## History
 
 - Initial backlog generated from the supplied plan. Implementation status is unverified; no task is marked complete.
+- 2026-10-02T02:31:07+00:00 | Optional scope deferred by project-owner: DEC-006: connector deferred with its provider boundary; no provider selected

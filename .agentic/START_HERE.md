@@ -8,6 +8,8 @@ Current implementation truth is the actual repository plus task evidence. `pytho
 
 ## One-task execution loop
 
+Current owner scope, DEC-006: the parity planning baseline is accepted with both AUD-002 accounting defects still open. Branches (PAR-006), bank-feed adapter/connector (DATA-005/006), new SaaS/miscellaneous parity (DATA-007), toman UX and new statutory compliance/accounting-calendar work are deferred. Hosting/provider selection waits for a concrete deployment/provider review. Continue core accounting, exact money/FX, safe migration, Persian/RTL and manual/CSV banking. Preserve existing capabilities and all mandatory qualification gates. See docs/DECISIONS.md and evidence/AUD-005-owner-review-1.md; do not ask for these same scope decisions again.
+
 Current owner scope, DEC-005: screenshot capture, screenshot tests and screenshot golden comparisons are not required for continuation or completion. Use financial/data assertions, behavioral checks and accessibility/layout review where relevant. Do not block tasks on browser/screenshot tooling. Historical evidence remains unchanged; this scope decision supersedes its pending screenshot requirements.
 
 Current owner scope, DEC-004: this is a private fork for use in Iran, not an upstream contribution or planned open-source release. The owner accepted the AUD-003 notes and deferred further licensing/provenance work. Retain those notes as reference; the new licensing review/release gates from that audit do not block current tasks. No copying, relicensing or publication authorization is implied.

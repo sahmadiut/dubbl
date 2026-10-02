@@ -8,15 +8,22 @@
     "DATA-004"
   ],
   "source_pages": [],
-  "status": "todo",
+  "status": "skipped",
   "priority": 1,
   "optional": true,
   "human_review": false,
   "owner": null,
   "block_reason": null,
-  "evidence": [],
+  "evidence": [
+    "evidence/AUD-005-owner-review-1.md"
+  ],
   "review": null,
-  "waiver": null,
+  "waiver": {
+    "reason": "DEC-006: provider boundary deferred; manual/CSV banking retained",
+    "reviewer": "project-owner",
+    "evidence": "evidence/AUD-005-owner-review-1.md",
+    "at": "2026-10-02T02:31:07+00:00"
+  },
   "source_sections": [
     "bigcapital-to-dubbl-feature-map",
     "security-and-privacy",
@@ -49,8 +56,9 @@ Run the repository's discovered commands for the affected behavior. Add meaningf
 
 ## Handoff
 
-Not started. First inspect the actual fork; replace this with changed files, completed steps, remaining work, blockers and the exact next action before ending a session.
+Bank-feed provider boundary deferred under accepted DEC-006 until a provider and demonstrated need are selected; manual/CSV banking remains in scope. Actual owner approval: evidence/AUD-005-owner-review-1.md. No implementation or acceptance test is claimed. Future inclusion requires explicit new owner scope and controller reopening before work.
 
 ## History
 
 - Initial backlog generated from the supplied plan. Implementation status is unverified; no task is marked complete.
+- 2026-10-02T02:31:07+00:00 | Optional scope deferred by project-owner: DEC-006: provider boundary deferred; manual/CSV banking retained

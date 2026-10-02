@@ -7,7 +7,9 @@ from collections import Counter
 from contextlib import contextmanager
 from datetime import datetime, timezone
 import hashlib
+import itertools
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -141,11 +143,37 @@ class Project:
         require(len(target.read_text(encoding='utf-8').strip()) >= 80, f'Evidence is too short: {value}')
         return target
 
-    def digest(self,t):
+    def digest(self,t,evidence_newlines='lf',evidence_hashes=None):
         content = {k:v for k,v in t.meta.items() if k not in {'status','owner','block_reason','review','waiver'}}
         content['body'] = t.body.split('## History\n',1)[0]
-        content['evidence_hashes'] = {x: hashlib.sha256(self.evidence_path(x).read_bytes()).hexdigest() for x in t.meta['evidence']}
+        hashes={}
+        for x in ([] if evidence_hashes is not None else t.meta['evidence']):
+            path=self.evidence_path(x)
+            if evidence_newlines=='raw':
+                data=path.read_bytes()
+            else:
+                # Git checkout changes LF/CRLF bytes without changing Markdown.
+                # Normalize only newlines; retain all other content/whitespace.
+                text=path.read_text(encoding='utf-8')
+                if evidence_newlines=='crlf':text=text.replace('\n','\r\n')
+                data=text.encode('utf-8')
+            hashes[x]=hashlib.sha256(data).hexdigest()
+        content['evidence_hashes'] = hashes if evidence_hashes is None else evidence_hashes
         return hashlib.sha256(json.dumps(content,sort_keys=True,ensure_ascii=False).encode()).hexdigest()
+
+    def legacy_digest_matches(self,t,expected):
+        # Historical reviews may have mixed LF/CRLF across evidence files.
+        # Test only newline-equivalent hashes, never rewrite the approval.
+        variants={}
+        for x in t.meta['evidence']:
+            path=self.evidence_path(x)
+            text=path.read_text(encoding='utf-8')
+            data=(path.read_bytes(),text.encode('utf-8'),text.replace('\n','\r\n').encode('utf-8'))
+            variants[x]=sorted({hashlib.sha256(value).hexdigest() for value in data})
+        require(math.prod(len(v) for v in variants.values())<=4096,
+                f'{t.id}: too many legacy newline variants; submit/review using text-lf-v1')
+        return any(expected==self.digest(t,evidence_hashes=dict(zip(variants,values)))
+                   for values in itertools.product(*variants.values()))
 
     def prerequisites(self,t):
         return [x for x in t.meta['depends_on'] if self.tasks[x].meta['status'] not in CLOSED]
@@ -162,7 +190,14 @@ class Project:
         require(r.get('kind') in {'self','peer','human'},f'{t.id}: invalid reviewer kind')
         require(not t.meta['human_review'] or r.get('kind')=='human', f'{t.id}: actual human review required')
         self.evidence_path(r.get('evidence',''))
-        require(r.get('digest')==self.digest(t), f'{t.id}: content/evidence changed since review; submit/review again')
+        version=r.get('digest_version')
+        require(version in {None,'text-lf-v1'},f'{t.id}: unknown review digest version')
+        matches=r.get('digest')==self.digest(t)
+        if not matches and version is None:
+            # Preserve old byte-based reviews without rewriting approvals or
+            # evidence. Only exact raw/LF/CRLF representations are accepted.
+            matches=self.legacy_digest_matches(t,r.get('digest'))
+        require(matches, f'{t.id}: content/evidence changed since review; submit/review again')
 
     def validate(self):
         for t in self.tasks.values():
@@ -278,7 +313,7 @@ class Project:
             require(bool(a.reviewer.strip()),'Reviewer is required')
             require(a.result!='approve' or not m['human_review'] or a.kind=='human','This task requires actual human approval')
             m['evidence']=list(dict.fromkeys(m['evidence']+[a.evidence]))
-            m['review']={'result':a.result,'reviewer':a.reviewer,'kind':a.kind,'evidence':a.evidence,'at':now(),'digest':self.digest(t)}
+            m['review']={'result':a.result,'reviewer':a.reviewer,'kind':a.kind,'evidence':a.evidence,'at':now(),'digest':self.digest(t),'digest_version':'text-lf-v1'}
             if a.result=='reject':m['status']='in_progress'
             t.event(f'Review {a.result} by {a.reviewer} ({a.kind}); {a.evidence}')
         elif cmd=='done':

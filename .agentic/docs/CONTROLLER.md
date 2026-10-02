@@ -44,6 +44,8 @@ python3 .agentic/agent.py done AUD-001
 
 `review --result reject` returns work for repair. Editing acceptance/content/evidence after approval invalidates its fingerprint. Re-submit and review again. Completed task evidence is immutable; use new attempts instead of rewriting old shared evidence. Do not mutate done task content before reopening.
 
+New review fingerprints use `digest_version: text-lf-v1`: evidence is decoded as UTF-8 and line endings normalized to LF before hashing. Git's LF/CRLF checkout conversion does not invalidate approval; other whitespace and content edits still do. Historical unversioned byte fingerprints remain accepted only when matching combinations of exact current bytes or LF/CRLF representations of the same evidence content, including mixed line endings across files. Legacy candidate combinations are bounded at 4096; larger cases require a new review. No old review identity, evidence or task status is rewritten. Unknown fingerprint versions are rejected.
+
 ## Pause and recover
 
 ```bash

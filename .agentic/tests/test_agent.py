@@ -138,6 +138,74 @@ class ControllerTests(unittest.TestCase):
         t=agent.Task(self.root/'tasks/AUD-001.md');t.body=t.body.replace('## Handoff','Changed scope.\n\n## Handoff');t.save()
         self.runcli('done','AUD-001',ok=False)
 
+    def test_new_review_survives_evidence_checkout_line_endings(self):
+        e=self.submit()
+        self.runcli('review','AUD-001','--result','approve','--reviewer','test','--kind','self','--evidence',e)
+        t=agent.Task(self.root/'tasks/AUD-001.md')
+        self.assertEqual(t.meta['review']['digest_version'],'text-lf-v1')
+        path=self.root/e
+        text=path.read_text(encoding='utf-8')
+        path.write_bytes(text.replace('\n','\r\n').encode('utf-8'))
+        self.runcli('done','AUD-001')
+        path.write_bytes(text.encode('utf-8'))
+        self.runcli('validate')
+        path.write_bytes((text+'Actual content edit.\n').encode('utf-8'))
+        self.runcli('validate',ok=False)
+
+    def test_legacy_review_survives_windows_to_linux_checkout(self):
+        e=self.submit()
+        path=self.root/e
+        text=path.read_text(encoding='utf-8')
+        path.write_bytes(text.replace('\n','\r\n').encode('utf-8'))
+        self.runcli('review','AUD-001','--result','approve','--reviewer','test','--kind','self','--evidence',e)
+        t=agent.Task(self.root/'tasks/AUD-001.md')
+        t.meta['review'].pop('digest_version')
+        t.meta['review']['digest']=agent.Project(self.root).digest(t,'raw')
+        t.save()
+        self.runcli('done','AUD-001')
+        path.write_bytes(text.encode('utf-8'))
+        self.runcli('validate')
+        path.write_bytes(text.replace('artificial','modified').encode('utf-8'))
+        self.runcli('validate',ok=False)
+
+    def test_legacy_review_survives_linux_to_windows_checkout(self):
+        e=self.submit()
+        self.runcli('review','AUD-001','--result','approve','--reviewer','test','--kind','self','--evidence',e)
+        t=agent.Task(self.root/'tasks/AUD-001.md')
+        t.meta['review'].pop('digest_version')
+        t.save()
+        path=self.root/e
+        text=path.read_text(encoding='utf-8')
+        path.write_bytes(text.replace('\n','\r\n').encode('utf-8'))
+        self.runcli('done','AUD-001')
+        self.runcli('validate')
+
+    def test_unknown_digest_version_is_rejected(self):
+        e=self.submit()
+        self.runcli('review','AUD-001','--result','approve','--reviewer','test','--kind','self','--evidence',e)
+        t=agent.Task(self.root/'tasks/AUD-001.md')
+        t.meta['review']['digest_version']='unknown'
+        t.save()
+        self.runcli('done','AUD-001',ok=False)
+
+    def test_legacy_mixed_evidence_line_endings_survive_checkout(self):
+        e=self.submit()
+        other=self.evidence('second.md')
+        path=self.root/other
+        text=path.read_text(encoding='utf-8')
+        path.write_bytes(text.replace('\n','\r\n').encode('utf-8'))
+        self.runcli('submit','AUD-001','--evidence',e,'--evidence',other)
+        self.runcli('review','AUD-001','--result','approve','--reviewer','test','--kind','self','--evidence',e)
+        t=agent.Task(self.root/'tasks/AUD-001.md')
+        t.meta['review'].pop('digest_version')
+        t.meta['review']['digest']=agent.Project(self.root).digest(t,'raw')
+        t.save()
+        path.write_bytes(text.encode('utf-8'))
+        self.runcli('done','AUD-001')
+        self.runcli('validate')
+        path.write_bytes((text+'Changed evidence.\n').encode('utf-8'))
+        self.runcli('validate',ok=False)
+
     def test_review_rejection_returns_to_implementation(self):
         e=self.submit()
         self.runcli('review','AUD-001','--result','reject','--reviewer','test','--kind','self','--evidence',e)

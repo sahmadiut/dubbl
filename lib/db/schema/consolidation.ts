@@ -1,3 +1,4 @@
+import { exactFxNumeric, fxRateCheck } from "../fx-column";
 import { moneyInteger } from "../money-column";
 import {
   pgTable, text, uuid, timestamp, integer, date, pgEnum,
@@ -55,11 +56,16 @@ export const consolidationRate = pgTable("consolidation_rate", {
   rateType: consolidationRateTypeEnum("rate_type").notNull(),
   // Integer, 6dp. 1_000_000 = 1.0 unit of presentation per 1 unit of currencyCode.
   rate: integer("rate").notNull(),
+  rateExact: exactFxNumeric("rate_exact"),
+  rateFormatVersion: integer("rate_format_version").notNull().default(1),
+  rateDirection: text("rate_direction").notNull().default("quote_per_base"),
+  rateProvenance: text("rate_provenance"),
+  rateMigrationStatus: text("rate_migration_status").notNull().default("pending"),
   periodEndDate: date("period_end_date").notNull(),
   source: consolidationRateSourceEnum("source").notNull().default("manual"),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
-});
+}, (table) => [fxRateCheck("consolidation_rate_rate_exact_check", table.rateExact)]);
 
 // Kind of intercompany elimination a rule performs.
 //   ar_ap            — eliminate intercompany receivables against payables

@@ -8,12 +8,13 @@ import { handleError } from "@/lib/api/response";
 import { logAudit } from "@/lib/api/audit";
 import { parsePagination, paginatedResponse } from "@/lib/api/pagination";
 import { currencyCodeSchema } from "@/lib/currency/zod";
+import { legacyScaledRateSchema } from "@/lib/currency/rate-input";
 import { z } from "zod";
 
 const rateSchema = z.object({
   baseCurrency: currencyCodeSchema,
   targetCurrency: currencyCodeSchema,
-  rate: z.number().int().positive(),
+  rate: legacyScaledRateSchema,
   date: z.string().min(1),
   // Rates entered through the API are user overrides; force `manual` so they're
   // protected from (and win over) the automatic daily sync. The sync is the

@@ -43,6 +43,13 @@
       "when": 1790945282015,
       "tag": "0005_clear_senator_kelly",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790946362184,
+      "tag": "0006_new_susan_delgado",
+      "breakpoints": true
     }
   ]
 }

@@ -8,6 +8,8 @@ import { wrapTool } from "@/lib/mcp/errors";
 import { ensureCurrencies } from "@/lib/currency/ensure-currencies";
 import { currencyCodeSchema } from "@/lib/currency/zod";
 import { getExchangeRate, convertAmount } from "@/lib/currency/converter";
+import { legacyDecimalRateSchema } from "@/lib/currency/rate-input";
+import { toLegacyRate } from "@/lib/currency/exact-rate";
 import type { AuthContext } from "@/lib/api/auth-context";
 
 const RATE_SCALE = 1_000_000; // exchangeRate.rate is an integer with 6 decimals
@@ -41,7 +43,7 @@ export function registerCurrencyTools(server: McpServer, ctx: AuthContext) {
 
   server.tool(
     "list_exchange_rates",
-    "List stored exchange rates for the organization. Rates are quoted as target units per 1 base unit. `rateDecimal` is the human-readable value; `rate` is the stored integer (6 decimal places, 1000000 = 1.0).",
+    "List stored exchange rates for the organization. Rates are target units per 1 base unit. `rateDecimal` is the legacy numeric decimal; `rate` is integer millionths (1000000 = 1.0). `rateExact` is an exact decimal string only when rateMigrationStatus is exact; invalid legacy rows have null. Storage format version and provenance are included.",
     {
       baseCurrency: currencyCodeSchema.optional().describe("Filter by base currency code"),
       targetCurrency: currencyCodeSchema.optional().describe("Filter by target currency code"),
@@ -133,20 +135,17 @@ export function registerCurrencyTools(server: McpServer, ctx: AuthContext) {
 
   server.tool(
     "set_exchange_rate",
-    "Create or update a manual exchange rate for the organization (requires the manage:tax-config role). Provide the rate as a decimal (target units per 1 base unit). Manual rates take precedence over auto-fetched ones for the same day.",
+    "Create or update a manual exchange rate for the organization (requires manage:tax-config). Provide numeric target units per 1 base unit, at most 6 decimals and maximum 2147.483647. Unsafe coexistence rates are rejected without rounding. Returns the saved legacy rate plus exact decimal string, format and provenance. Manual rates take precedence over auto-fetched ones for the same day.",
     {
       baseCurrency: currencyCodeSchema.describe("Base currency code (the 'from' currency)"),
       targetCurrency: currencyCodeSchema.describe("Target currency code (the 'to' currency)"),
-      rateDecimal: z
-        .number()
-        .positive()
-        .describe("Rate as a decimal, e.g. 1.08 means 1.08 target per 1 base"),
+      rateDecimal: legacyDecimalRateSchema,
       date: z.string().describe("Effective date (YYYY-MM-DD)"),
     },
     (params) =>
       wrapTool(ctx, async () => {
         requireRole(ctx, "manage:tax-config");
-        const rate = Math.round(params.rateDecimal * RATE_SCALE);
+        const rate = toLegacyRate(String(legacyDecimalRateSchema.parse(params.rateDecimal)));
         const [saved] = await db
           .insert(exchangeRate)
           .values({

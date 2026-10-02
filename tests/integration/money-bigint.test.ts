@@ -91,7 +91,8 @@ async function checksums(pool: pg.Pool) {
   // Hash every complete row, including non-money columns, dates and org IDs.
   for (const table of tables) {
     result[table] = (await pool.query(`SELECT count(*)::text AS count,
-      md5(string_agg(to_jsonb(t)::text, ',' ORDER BY to_jsonb(t)::text)) AS checksum
+      md5(string_agg((to_jsonb(t) - ARRAY['rate_exact','rate_format_version','rate_direction','rate_provenance','rate_migration_status'])::text,
+        ',' ORDER BY to_jsonb(t)::text)) AS checksum
       FROM ${quote(table)} t`)).rows[0];
     for (const column of money.filter(c => c.table === table)) {
       result[`${table}.${column.column}`] = (await pool.query(`SELECT
@@ -127,7 +128,8 @@ test("MON-003 widens all 195 columns, preserving every table checksum, nullabili
     const elapsedMs = Math.round(performance.now() - started);
     await assertTypes(pool, true);
     assert.deepEqual(await checksums(pool), before);
-    assert.deepEqual((await metadata(pool)).map(c => [c.table_name, c.column_name, c.is_nullable, c.column_default]),
+    assert.deepEqual((await metadata(pool)).filter(c => beforeMeta.some(b => b.table_name === c.table_name && b.column_name === c.column_name))
+      .map(c => [c.table_name, c.column_name, c.is_nullable, c.column_default]),
       beforeMeta.map(c => [c.table_name, c.column_name, c.is_nullable, c.column_default]));
     applyCurrent(url);
     assert.deepEqual(await checksums(pool), before);

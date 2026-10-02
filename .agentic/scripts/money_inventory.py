@@ -108,7 +108,7 @@ MONEY = {
     "payslip": "grossAmount netAmount taxAmount ytdGross ytdNet ytdTax",
 }
 MONEY = {t: set(fields.split()) for t, fields in MONEY.items()}
-FX = {"journalLine.exchangeRate", "exchangeRate.rate", "consolidationRate.rate", "payrollItem.fxRate"}
+FX = {"journalLine.exchangeRate", "exchangeRate.rate", "consolidationRate.rate", "payrollItem.fxRate", "journalLine.rateExact", "exchangeRate.rateExact", "consolidationRate.rateExact", "payrollItem.rateExact"}
 PARENTS = {
     "invoiceLine": "invoice", "quoteLine": "quote", "creditNoteLine": "creditNote",
     "salesReceiptLine": "salesReceipt", "billLine": "bill", "purchaseOrderLine": "purchaseOrder",
@@ -188,8 +188,10 @@ def currency_source(table, block):
 
 def classify(table, field, typ, source):
     key = f"{table}.{field}"
+    if field == "rateFormatVersion":
+        return "metadata", "FX storage format version; not an amount", "MON-004"
     if key in FX:
-        unit = "unscaled local->base decimal multiplier" if typ == "real" else "FX multiplier x 1,000,000"
+        unit = "exact quote units per one base unit; positive 20 whole/18 fractional digits, nullable quarantine; format v1" if field == "rateExact" else "unscaled local->base decimal multiplier" if typ == "real" else "FX multiplier x 1,000,000"
         return "fx", unit, "MON-004; MON-005; MON-007/008"
     if field in MONEY.get(table, set()):
         unit = "legacy minor-unit integer (cents contract; not proof of currency-correct input)"
@@ -247,10 +249,12 @@ def generate():
             block = text[m.end():starts[i + 1].start() if i + 1 < len(starts) else len(text)]
             table, sql_table = m[1], m[2]
             tables[table] = currency_source(table, block)
-            for f in re.finditer(r'^\s+(\w+): (integer|numeric|decimal|real|bigint|moneyInteger|doublePrecision|jsonb)\("([^"]+)"\)([^\n]*)', block, re.M):
+            for f in re.finditer(r'^\s+(\w+): (integer|numeric|decimal|real|bigint|moneyInteger|exactFxNumeric|doublePrecision|jsonb)\("([^"]+)"\)([^\n]*)', block, re.M):
                 field, typ, sql_col = f[1], f[2], f[3]
                 if typ == "moneyInteger":
                     typ = "bigint"
+                if typ == "exactFxNumeric":
+                    typ = "numeric"
                 line = text.count("\n", 0, m.end() + f.start()) + 1
                 # Leading whitespace can include the previous newline.
                 line += f[0][:f[0].index(field)].count("\n")
@@ -261,7 +265,7 @@ def generate():
                 schema.append(dict(key=f"{table}.{field}", table=sql_table, column=sql_col,
                                    path=path.relative_to(ROOT).as_posix(), line=line, type=typ,
                                    declaration=f[0].strip(), classification=classification, units=unit,
-                                   storage_range=limits.get(typ, "inspect declared precision"), currency_source=("payrollItem.currency -> payrollSettings.defaultCurrency / organization posting base" if table == "payrollItem" and field == "fxRate" else tables[table]) if classification in {"money", "fx", "allocation_basis"} else "not currency" if classification != "money_envelope" else unit,
+                                   storage_range="positive <10^20; at most 18 nonzero fractional places; SQL CHECK and string adapter; nullable quarantine" if field == "rateExact" else limits.get(typ, "inspect declared precision"), currency_source=("payrollItem.currency -> payrollSettings.defaultCurrency / organization posting base" if table == "payrollItem" and field in {"fxRate", "rateExact"} else tables[table]) if classification in {"money", "fx", "allocation_basis"} else "not currency" if classification != "money_envelope" else unit,
                                    migration_owner=owner))
     found = {s["key"] for s in schema}
     required = {f"{t}.{f}" for t, fields in MONEY.items() for f in fields} | FX | set(JSON_MONEY)

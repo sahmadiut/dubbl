@@ -33,7 +33,9 @@ These are primitives, not jurisdictional tax or posting policies. Callers must
 select the appropriate operation policy explicitly. `taxMoney(net, "12.5", mode)`
 uses plain percent, not basis points. Quantity, discount and FX calculations use
 `multiplyRatio`; the caller owns units, FX direction and target currency policy.
-The exact-decimal FX service and persisted rate model are MON-004 work.
+MON-004 adds exact FX string storage, backfill and guarded legacy coexistence;
+see `../db/FX_MIGRATION.md`. Provider/inverse arithmetic and consumer cutover
+remain MON-005/006/007/008 work.
 
 `allocateMoney` requires nonnegative bigint weights with a positive total. It
 allocates absolute amounts using largest remainders, breaks ties by input order,

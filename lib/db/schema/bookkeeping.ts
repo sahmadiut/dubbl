@@ -1,3 +1,4 @@
+import { exactFxNumeric, fxRateCheck } from "../fx-column";
 import { moneyInteger } from "../money-column";
 import {
   pgTable,
@@ -196,12 +197,17 @@ export const journalLine = pgTable("journal_line", {
   creditAmount: moneyInteger("credit_amount").notNull().default(0),
   currencyCode: text("currency_code").notNull().default("USD"),
   exchangeRate: integer("exchange_rate").notNull().default(1000000), // 6 decimal places as int (1.000000 = 1000000)
+  rateExact: exactFxNumeric("rate_exact"),
+  rateFormatVersion: integer("rate_format_version").notNull().default(1),
+  rateDirection: text("rate_direction").notNull().default("quote_per_base"),
+  rateProvenance: text("rate_provenance"),
+  rateMigrationStatus: text("rate_migration_status").notNull().default("pending"),
   costCenterId: uuid("cost_center_id").references(() => costCenter.id),
   // Project/job dimension (alongside cost center) for job-costing & tracking
   // reports. Plain uuid (project lives in ./projects) to avoid a schema import
   // cycle; joined by id in queries.
   projectId: uuid("project_id"),
-});
+}, (table) => [fxRateCheck("journal_line_rate_exact_check", table.rateExact)]);
 
 // Tax Rate
 export const taxRate = pgTable("tax_rate", {
@@ -294,11 +300,17 @@ export const exchangeRate = pgTable(
     baseCurrency: text("base_currency").notNull(),
     targetCurrency: text("target_currency").notNull(),
     rate: integer("rate").notNull(), // 6 decimal places as int (1.000000 = 1000000)
+    rateExact: exactFxNumeric("rate_exact"),
+    rateFormatVersion: integer("rate_format_version").notNull().default(1),
+    rateDirection: text("rate_direction").notNull().default("quote_per_base"),
+    rateProvenance: text("rate_provenance"),
+    rateMigrationStatus: text("rate_migration_status").notNull().default("pending"),
     date: date("date").notNull(),
     source: exchangeRateSourceEnum("source").notNull().default("manual"),
     createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   },
   (table) => [
+    fxRateCheck("exchange_rate_rate_exact_check", table.rateExact),
     uniqueIndex("exchange_rate_org_currencies_date_idx").on(
       table.organizationId,
       table.baseCurrency,

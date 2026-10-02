@@ -1,3 +1,4 @@
+import { exactFxNumeric, fxRateCheck } from "../fx-column";
 import { moneyInteger } from "../money-column";
 import {
   pgTable,
@@ -290,9 +291,14 @@ export const payrollItem = pgTable("payroll_item", {
   timesheetId: uuid("timesheet_id"),
   currency: text("currency").default("USD"),
   fxRate: real("fx_rate").default(1),
+  rateExact: exactFxNumeric("rate_exact"),
+  rateFormatVersion: integer("rate_format_version").notNull().default(1),
+  rateDirection: text("rate_direction").notNull().default("quote_per_base"),
+  rateProvenance: text("rate_provenance"),
+  rateMigrationStatus: text("rate_migration_status").notNull().default("pending"),
   projectId: uuid("project_id").references(() => project.id, { onDelete: "set null" }),
   milestoneId: uuid("milestone_id").references(() => projectMilestone.id, { onDelete: "set null" }),
-});
+}, (table) => [fxRateCheck("payroll_item_rate_exact_check", table.rateExact)]);
 
 // ─── Deduction Types ────────────────────────────────────────────────
 export const deductionType = pgTable("deduction_type", {

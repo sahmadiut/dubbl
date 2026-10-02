@@ -1,0 +1,3 @@
+# First run prompt
+
+Read `.agentic/START_HERE.md` and obey the repository's existing instructions. Run the controller validation, status and context commands. Inspect the actual Dubbl fork and complete only AUD-001: record the verified repository map, actual upstream/fork SHAs, existing changes, commands and previously implemented features with evidence. Do not assume the PDF reflects this fork. Do not rewrite existing capabilities, install a new architecture, expose secrets, or claim tests passed without running them. Update the task, evidence and registries through the documented workflow and stop with a handoff.

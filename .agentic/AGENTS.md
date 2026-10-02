@@ -1,0 +1,3 @@
+# Instructions within .agentic
+
+Read START_HERE.md and docs/CONTROLLER.md before changing this folder. Task Markdown is authoritative. Metadata is strict JSON between `---` delimiter lines, not general YAML. Use the controller for status mutations, then validate. Keep acceptance criteria under `## Acceptance criteria`; keep `## History` last. Evidence used by completed tasks is immutable: append a new evidence file for a new attempt. Do not store secrets or invent completion evidence. This nested file does not automatically govern the rest of the repository; see templates/ROOT_AGENT_INSTRUCTIONS.md.

@@ -121,6 +121,25 @@ Without Trigger.dev, scheduled backups, bookkeeping maintenance, invoicing maint
 - **UI** - [Tailwind CSS](https://tailwindcss.com) + [shadcn/ui](https://ui.shadcn.com)
 - **Docs** - [Fumadocs](https://fumadocs.vercel.app)
 
+## Development Checks
+
+Use the pnpm version declared in `package.json` and the committed `pnpm-lock.yaml`:
+
+```bash
+pnpm install --frozen-lockfile
+pnpm typecheck
+pnpm lint
+pnpm test
+```
+
+PostgreSQL migration integration tests run separately with an explicit local test-server connection and a role with `CREATEDB` permission:
+
+```bash
+TEST_DATABASE_URL=postgresql://test_user:test_password@localhost:5432/test_database pnpm test:integration
+```
+
+The suite creates and removes randomly named test databases; it does not migrate or reset the connection's existing database. See the [CI runbook](.agentic/docs/CI_RUNBOOK.md) for Windows commands, fixture coverage and known qualification gaps.
+
 ## Self-Hosting
 
 See the [Self-Hosting Guide](https://dubbl.dev/docs/self-hosting) for instructions on deploying dubbl with Docker.

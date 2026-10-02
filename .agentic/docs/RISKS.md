@@ -25,5 +25,5 @@ All risks originate in the [Markdown implementation plan](../sources/SOURCE.md) 
 
 Evidence: `../evidence/AUD-002-attempt-3.md` and its corrected synthetic capture. Accounting/API owner review remains pending; these are open, not fixed.
 
-- High: trial balance splits natural-signed balances by sign, placing positive payable/equity/revenue balances in its debit column. Verify debit/credit presentation and totals before relying on this report; tracked in AUD-002 baseline handoff and later accounting QA.
-- Medium: bank account API balance 0 differs from GL balance 102000 cents after opening journal/payment workflows. Resolve statement versus book balance semantics and selected-bank journal routing before reconciliation qualification; tracked in AUD-002 baseline handoff and later banking QA.
+- High: trial balance splits natural-signed balances by sign, placing positive payable/equity/revenue balances in its debit column. Verify debit/credit presentation and totals before relying on this report; remediation/qualification tasks: PAR-008 and QA-001.
+- Medium: bank account API balance 0 differs from GL balance 102000 cents after opening journal/payment workflows. Resolve statement versus book balance semantics and selected-bank journal routing before reconciliation qualification; remediation/qualification tasks: DATA-004, MON-007 and QA-001.

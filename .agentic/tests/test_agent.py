@@ -5,6 +5,7 @@ import contextlib
 import importlib.util
 import io
 import json
+import re
 from pathlib import Path
 import shutil
 import tempfile
@@ -21,6 +22,14 @@ class ControllerTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root=Path(self.temp.name)/'.agentic'
         shutil.copytree(ROOT,self.root,ignore=shutil.ignore_patterns('__pycache__','.controller.lock'))
+        # Progress in the real backlog must not change the synthetic test graph.
+        # Reset only temporary tasks; preserve dependencies and review gates.
+        for task_path in (self.root/'tasks').glob('*.md'):
+            task=agent.Task(task_path)
+            task.meta.update(status='todo', owner=None, block_reason=None,
+                             evidence=[], review=None, waiver=None)
+            task.body=re.sub(r'^- \[[xX]\] ', '- [ ] ', task.body, flags=re.M)
+            task.save()
 
     def runcli(self,*args,ok=True):
         output=io.StringIO()
@@ -98,7 +107,12 @@ class ControllerTests(unittest.TestCase):
 
     def test_symlink_evidence_escape_rejected(self):
         outside=self.root.parent/'outside.md';outside.write_text('x'*100)
-        (self.root/'evidence/escape.md').symlink_to(outside)
+        try:
+            (self.root/'evidence/escape.md').symlink_to(outside)
+        except OSError as exc:
+            if getattr(exc,'winerror',None)==1314:
+                self.skipTest('Windows account lacks symlink privilege; Linux CI must execute this test')
+            raise
         self.runcli('start','--owner','test')
         self.runcli('submit','AUD-001','--evidence','evidence/escape.md',ok=False)
 
@@ -182,7 +196,7 @@ class ControllerTests(unittest.TestCase):
         context=self.runcli('context')
         self.assertIn('AUD-001',context)
         self.assertIn('Technical lead',context)
-        self.assertIn('NOT YET INSPECTED',context)
+        self.assertIn('docs/REPOSITORY_MAP.md',context)
 
     def test_full_graph_can_resolve_without_deadlock(self):
         # Synthetic simulation verifies the shipped dependency graph, not actual delivery.

@@ -91,7 +91,8 @@ async function checksums(pool: pg.Pool) {
   // Hash every complete row, including non-money columns, dates and org IDs.
   for (const table of tables) {
     result[table] = (await pool.query(`SELECT count(*)::text AS count,
-      md5(string_agg((to_jsonb(t) - ARRAY['rate_exact','rate_format_version','rate_direction','rate_provenance','rate_migration_status'])::text,
+      md5(string_agg((to_jsonb(t) - ARRAY['rate_exact','rate_format_version','rate_direction','rate_provenance','rate_migration_status',
+        'provider','provider_base','provider_quote','provider_observed_at','imported_at','provider_rounding'])::text,
         ',' ORDER BY to_jsonb(t)::text)) AS checksum
       FROM ${quote(table)} t`)).rows[0];
     for (const column of money.filter(c => c.table === table)) {

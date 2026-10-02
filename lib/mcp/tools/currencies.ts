@@ -8,8 +8,11 @@ import { wrapTool } from "@/lib/mcp/errors";
 import { ensureCurrencies } from "@/lib/currency/ensure-currencies";
 import { currencyCodeSchema } from "@/lib/currency/zod";
 import { getExchangeRate, convertAmount } from "@/lib/currency/converter";
-import { legacyDecimalRateSchema } from "@/lib/currency/rate-input";
+import { legacyDecimalRateSchema, manualRateSchema, manualProviderMetadata } from "@/lib/currency/rate-input";
 import { toLegacyRate } from "@/lib/currency/exact-rate";
+import { createHistoricalRateResolver } from "@/lib/currency/historical-rate";
+import { rateDateSchema } from "@/lib/currency/rate-policy";
+import { logAudit } from "@/lib/api/audit";
 import type { AuthContext } from "@/lib/api/auth-context";
 
 const RATE_SCALE = 1_000_000; // exchangeRate.rate is an integer with 6 decimals
@@ -43,7 +46,7 @@ export function registerCurrencyTools(server: McpServer, ctx: AuthContext) {
 
   server.tool(
     "list_exchange_rates",
-    "List stored exchange rates for the organization. Rates are target units per 1 base unit. `rateDecimal` is the legacy numeric decimal; `rate` is integer millionths (1000000 = 1.0). `rateExact` is an exact decimal string only when rateMigrationStatus is exact; invalid legacy rows have null. Storage format version and provenance are included.",
+    "List stored organization rates, in quote units per base unit. `rate` is integer millionths and `rateDecimal` is numeric. `rateExact` is the stored exact decimal when rateMigrationStatus is exact. Provider identity, pre-6dp providerQuote, source observation/import UTC timestamps and explicit rounding are included; old/manual rows have null provider metadata.",
     {
       baseCurrency: currencyCodeSchema.optional().describe("Filter by base currency code"),
       targetCurrency: currencyCodeSchema.optional().describe("Filter by target currency code"),
@@ -72,21 +75,22 @@ export function registerCurrencyTools(server: McpServer, ctx: AuthContext) {
 
   server.tool(
     "get_exchange_rate",
-    "Get the effective exchange rate for a currency pair on or before a date, using the organization's stored rates (with inverse-pair fallback). Returns null if no rate is available. `rate` is the integer (6 decimals); `rateDecimal` is human-readable.",
+    "Get the organization's historical quote on or before a Gregorian date, with inverse fallback. Returns null for missing/quarantined/unrepresentable rates. `rate` is legacy integer millionths; `rateExact` is a decimal string (inverses half-up at 18 places). Includes effective date, source and provider UTC timestamps. Existing posted transactions retain their saved rates.",
     {
       baseCurrency: currencyCodeSchema.describe("Base currency code (the 'from' currency)"),
       targetCurrency: currencyCodeSchema.describe("Target currency code (the 'to' currency)"),
-      date: z.string().describe("As-of date (YYYY-MM-DD); the latest rate on or before this date is used"),
+      date: rateDateSchema.describe("As-of Gregorian YYYY-MM-DD; latest stored rate on or before this date"),
     },
     (params) =>
       wrapTool(ctx, async () => {
-        const rate = await getExchangeRate(
-          ctx.organizationId,
+        const resolved = await createHistoricalRateResolver(ctx.organizationId)(
           params.baseCurrency,
           params.targetCurrency,
           params.date
         );
+        const rate = resolved?.rate ?? null;
         return {
+          ...resolved,
           baseCurrency: params.baseCurrency,
           targetCurrency: params.targetCurrency,
           date: params.date,
@@ -106,7 +110,7 @@ export function registerCurrencyTools(server: McpServer, ctx: AuthContext) {
         .describe("Amount to convert, in integer minor units (e.g. $12.50 = 1250)"),
       fromCurrency: currencyCodeSchema.describe("Source currency code"),
       toCurrency: currencyCodeSchema.describe("Destination currency code"),
-      date: z.string().describe("As-of date (YYYY-MM-DD) for the rate"),
+      date: rateDateSchema.describe("As-of Gregorian YYYY-MM-DD for the rate"),
     },
     (params) =>
       wrapTool(ctx, async () => {
@@ -140,21 +144,23 @@ export function registerCurrencyTools(server: McpServer, ctx: AuthContext) {
       baseCurrency: currencyCodeSchema.describe("Base currency code (the 'from' currency)"),
       targetCurrency: currencyCodeSchema.describe("Target currency code (the 'to' currency)"),
       rateDecimal: legacyDecimalRateSchema,
-      date: z.string().describe("Effective date (YYYY-MM-DD)"),
+      date: rateDateSchema.describe("Effective Gregorian YYYY-MM-DD date"),
     },
     (params) =>
       wrapTool(ctx, async () => {
         requireRole(ctx, "manage:tax-config");
         const rate = toLegacyRate(String(legacyDecimalRateSchema.parse(params.rateDecimal)));
+        const input = manualRateSchema.parse({ ...params, rate });
         const [saved] = await db
           .insert(exchangeRate)
           .values({
             organizationId: ctx.organizationId,
-            baseCurrency: params.baseCurrency,
-            targetCurrency: params.targetCurrency,
+            baseCurrency: input.baseCurrency,
+            targetCurrency: input.targetCurrency,
             rate,
-            date: params.date,
+            date: input.date,
             source: "manual",
+            ...manualProviderMetadata,
           })
           .onConflictDoUpdate({
             target: [
@@ -163,9 +169,10 @@ export function registerCurrencyTools(server: McpServer, ctx: AuthContext) {
               exchangeRate.targetCurrency,
               exchangeRate.date,
             ],
-            set: { rate: sql`excluded.rate`, source: sql`excluded.source` },
+            set: { rate: sql`excluded.rate`, source: sql`excluded.source`, ...manualProviderMetadata },
           })
           .returning();
+        await logAudit({ ctx, action: "create", entityType: "exchange_rate", entityId: saved.id });
         return { exchangeRate: { ...saved, rateDecimal: saved.rate / RATE_SCALE } };
       })
   );

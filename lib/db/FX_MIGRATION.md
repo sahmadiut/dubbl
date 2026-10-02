@@ -1,5 +1,22 @@
 # Exact FX expansion (MON-004)
 
+## MON-005 provider and historical lookup extension
+
+Migration `0007_steady_scarlet_witch` adds six nullable source metadata fields to
+`exchange_rate`: provider identity/base, provider quote, observation/import UTC
+timestamps and explicit rounding. Original rows retain all existing values with
+null new fields. New provider quotes pass exact lexical validation, bigint cross
+arithmetic, stale/future/source checks and a per-tenant 20% movement guard.
+Legacy writes remain int32/six-place, with explicit half-up rounding and a one
+basis point approximation ceiling; incompatible quotes are counted and rejected.
+`rateExact` remains the actual stored six-place quote. Manual overrides clear
+provider metadata and survive refresh. No posted transaction snapshot is updated.
+Historical resolvers are tenant/request scoped and reject quarantined rows.
+See [ADR-005](../../.agentic/docs/ADR-005-HISTORICAL-FX-PROVIDER-POLICY.md) for the
+implemented policy, source contracts, cache scope and cutover limitations. Earlier
+MON-004 sections below describe the expansion checkpoint; MON-005 supersedes
+their pending provider/inverse policy statements, not their storage guards.
+
 Migration `0006_new_susan_delgado` adds `rate_exact`, format version 1,
 `quote_per_base` direction, provenance and migration status to all four FX tables.
 The existing integer millionths and payroll `real` columns, defaults, nullability,

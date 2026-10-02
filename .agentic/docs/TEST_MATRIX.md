@@ -33,6 +33,14 @@ These are required product checks, not results. Every result is initially NOT RU
 
 ## Coverage axes
 
+MON-005 evidence qualifies FX-02 exact direction/inverse/cross arithmetic and
+FX-03 saved invoice-journal preservation using synthetic database fixtures.
+FX-01 high rates are parsed/derived exactly but intentionally rejected by legacy
+sync when int32/six-place coexistence cannot represent them safely. Full live
+high-range posting remains MON-006/007/010, not a pass inferred from storage or
+helper tests. See `../evidence/MON-005-attempt-1.md` and ADR-005. The initial
+matrix above remains the original requirements list, not a current dashboard.
+
 Use en-US/fa-IR; LTR/RTL; Latin/Persian/Arabic-Indic input; Gregorian/Persian display; IRR/USD/EUR and a three-decimal currency; zero, negative, large and boundary amounts; desktop/mobile; old/new API clients; clean/upgrade databases. A translated UI alone does not satisfy accounting tests.
 
 ## Pull request pipeline

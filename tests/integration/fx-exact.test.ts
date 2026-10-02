@@ -9,7 +9,8 @@ import { withDatabase, historicalSchema, applyCurrent, runMigration } from "./fi
 
 const checkpoint = "0005_clear_senator_kelly";
 const tables = ["exchange_rate", "journal_line", "consolidation_rate", "payroll_item"] as const;
-const newFields = ["rate_exact", "rate_format_version", "rate_direction", "rate_provenance", "rate_migration_status"];
+const newFields = ["rate_exact", "rate_format_version", "rate_direction", "rate_provenance", "rate_migration_status",
+  "provider", "provider_base", "provider_quote", "provider_observed_at", "imported_at", "provider_rounding"];
 
 async function seed(pool: pg.Pool, historical = true) {
   const orgIds: string[] = [];

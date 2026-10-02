@@ -7,23 +7,11 @@ import { requireRole } from "@/lib/api/require-role";
 import { handleError } from "@/lib/api/response";
 import { logAudit } from "@/lib/api/audit";
 import { parsePagination, paginatedResponse } from "@/lib/api/pagination";
-import { currencyCodeSchema } from "@/lib/currency/zod";
-import { legacyScaledRateSchema } from "@/lib/currency/rate-input";
+import { manualRateSchema, manualProviderMetadata } from "@/lib/currency/rate-input";
 import { z } from "zod";
 
-const rateSchema = z.object({
-  baseCurrency: currencyCodeSchema,
-  targetCurrency: currencyCodeSchema,
-  rate: legacyScaledRateSchema,
-  date: z.string().min(1),
-  // Rates entered through the API are user overrides; force `manual` so they're
-  // protected from (and win over) the automatic daily sync. The sync is the
-  // only writer allowed to set `api`.
-  source: z.literal("manual").default("manual"),
-});
-
 const createSchema = z.object({
-  rates: z.array(rateSchema).min(1),
+  rates: z.array(manualRateSchema).min(1).max(500),
 });
 
 export async function GET(request: Request) {
@@ -87,6 +75,7 @@ export async function POST(request: Request) {
       rate: r.rate,
       date: r.date,
       source: "manual" as const,
+      ...manualProviderMetadata,
     }));
 
     const created = await db
@@ -102,6 +91,7 @@ export async function POST(request: Request) {
         set: {
           rate: sql`excluded.rate`,
           source: sql`excluded.source`,
+          ...manualProviderMetadata,
         },
       })
       .returning();

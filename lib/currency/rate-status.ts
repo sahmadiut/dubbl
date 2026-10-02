@@ -1,6 +1,4 @@
-import { db } from "@/lib/db";
-import { exchangeRate } from "@/lib/db/schema";
-import { eq, and, lte, desc } from "drizzle-orm";
+import { createHistoricalRateResolver } from "./historical-rate";
 
 const RATE_SCALE = 1_000_000;
 
@@ -65,7 +63,8 @@ export async function getRateStatus(
   targetCurrency: string,
   asOf: string
 ): Promise<RateStatus> {
-  if (baseCurrency === targetCurrency) {
+  const resolved = await createHistoricalRateResolver(orgId)(baseCurrency, targetCurrency, asOf);
+  if (resolved?.source === "same") {
     return {
       rate: RATE_SCALE,
       origin: "same",
@@ -76,36 +75,8 @@ export async function getRateStatus(
     };
   }
 
-  const direct = await db.query.exchangeRate.findFirst({
-    where: and(
-      eq(exchangeRate.organizationId, orgId),
-      eq(exchangeRate.baseCurrency, baseCurrency),
-      eq(exchangeRate.targetCurrency, targetCurrency),
-      lte(exchangeRate.date, asOf)
-    ),
-    orderBy: desc(exchangeRate.date),
-  });
-
-  if (direct) {
-    return classifyRate(direct.rate, direct.source as "manual" | "api", direct.date, asOf, false);
-  }
-
-  const inverse = await db.query.exchangeRate.findFirst({
-    where: and(
-      eq(exchangeRate.organizationId, orgId),
-      eq(exchangeRate.baseCurrency, targetCurrency),
-      eq(exchangeRate.targetCurrency, baseCurrency),
-      lte(exchangeRate.date, asOf)
-    ),
-    orderBy: desc(exchangeRate.date),
-  });
-
-  if (inverse && inverse.rate !== 0) {
-    const rate = Math.round((RATE_SCALE * RATE_SCALE) / inverse.rate);
-    return classifyRate(rate, inverse.source as "manual" | "api", inverse.date, asOf, true);
-  }
-
-  return { ...MISSING };
+  if (!resolved) return { ...MISSING };
+  return classifyRate(resolved.rate, resolved.source, resolved.effectiveDate, asOf, resolved.inverse);
 }
 
 /** Pure: build a RateStatus from a resolved row's fields. Exported for tests. */

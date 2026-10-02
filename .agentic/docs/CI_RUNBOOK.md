@@ -45,6 +45,16 @@ Synthetic organizations cover unchanged USD 1250 minor units, IRR 123456789 mino
 
 ## Workflow gates and remaining qualification
 
+MON-005 adds five workflows in `tests/integration/fx-history.test.ts`: metadata
+upgrade preservation and tenant-specific extremes, provider outage/poisoning with
+quarantined history, public-feed reuse/concurrent refresh/manual precedence,
+tenant/pair/date lookup caches, and real invoice journal creation before/after
+refresh plus a direct-DB MCP manual override/audit. The worker subprocess uses
+only its disposable database. Legacy checksum tests exclude the six nullable
+new provider metadata fields while still comparing every original field.
+`tests/rate-provider.test.ts` covers exact source parsing/cross math, negative
+inputs and bounded/redacted HTTP failures. No live provider traffic is required.
+
 Deployment migration control (updated 2026-10-02 by owner request): `Apply Migrations` is skipped unless the repository variable `AUTO_MIGRATE` is exactly `true`, the event is a push to master and all five checks succeed. Unset/false disables it. Authorized deployment setup additionally requires the `DATABASE_URL` repository secret pointing to the chosen deployment target; no local .env or credentials are copied to GitHub. This changes only deployment migration opt-in; PostgreSQL fixtures and PR migration drift checks remain enabled. Setting the variable requires the relevant deployment authorization and is not part of a generic task continuation.
 
 Lint, typecheck, unit tests, PostgreSQL migration fixtures and controller tests run on pushes and pull requests. Existing build, Docker and master migration jobs now depend on all five checks. PR migration drift support is preserved. Global workflow permissions are contents:read. No workflow was dispatched, deployment performed or production migration executed during this task. Existing Docker support remains configured and unexecuted under DEC-002; no full build was run under root AGENTS.md.

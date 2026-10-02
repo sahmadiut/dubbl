@@ -307,6 +307,12 @@ export const exchangeRate = pgTable(
     rateMigrationStatus: text("rate_migration_status").notNull().default("pending"),
     date: date("date").notNull(),
     source: exchangeRateSourceEnum("source").notNull().default("manual"),
+    provider: text("provider"),
+    providerBase: text("provider_base"),
+    providerQuote: text("provider_quote"), // exact derived quote before legacy 6dp rounding
+    providerObservedAt: timestamp("provider_observed_at", { withTimezone: true, mode: "date" }),
+    importedAt: timestamp("imported_at", { withTimezone: true, mode: "date" }),
+    providerRounding: text("provider_rounding"),
     createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   },
   (table) => [

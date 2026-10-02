@@ -189,6 +189,7 @@ full-range reporting or production IRR readiness.
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/api/v1/invoices` | List invoices |
+| GET | `/api/v1/invoices/summary` | Invoice totals and aging with exact minor-unit aliases |
 | POST | `/api/v1/invoices` | Create invoice |
 | GET | `/api/v1/invoices/:id` | Get invoice |
 | PATCH | `/api/v1/invoices/:id` | Update invoice |
@@ -196,6 +197,23 @@ full-range reporting or production IRR readiness.
 | POST | `/api/v1/invoices/:id/send` | Send invoice |
 | POST | `/api/v1/invoices/:id/pay` | Record payment |
 | POST | `/api/v1/invoices/:id/void` | Void invoice |
+
+Invoice list/detail reads retain numeric `subtotal`, `taxTotal`, `total`,
+`amountPaid` and `amountDue` in stored minor units (USD cents), alongside exact
+`*Minor` integer strings. Detail lines add `unitPriceMinor`, `amountMinor` and
+`taxAmountMinor`; nested contacts add nullable `creditLimitMinor`. Quantities and
+discount basis points retain their existing units. REST allocated payments add
+`amountMinor`; MCP `get_invoice` retains its `{invoice}` envelope.
+
+REST detail base amounts add nullable `*Minor` strings and an explicitly
+lookup-derived `rateExact`/`rateDirection`/`rateBasis`. Base display supports matching
+currency scales and safe FX products. It does not report saved invoice posting FX.
+Summary returns numeric/string outstanding, overdue and aging amounts with one
+`currencyCode` (null when empty). Mixed-currency outstanding invoices and unsafe
+amounts/totals return 422 `LEGACY_NUMERIC_RANGE`. All numeric money remains limited
+to the safe integer range. MCP `list_invoices`, `get_invoice` and
+`get_invoice_summary` expose the same scoped read contracts. Invoice write,
+lifecycle and bulk contracts retain their existing separate behavior.
 
 ### Quotes
 | Method | Path | Description |

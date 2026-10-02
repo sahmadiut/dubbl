@@ -1,8 +1,11 @@
+import { listInvoices, getInvoice, getInvoiceSummary } from "@/lib/api/invoice-reads";
+import { invoiceListFields } from "@/lib/api/invoice-read-wire";
+import { AuthError } from "@/lib/api/auth-context";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { invoice, invoiceLine, invoiceSignature, emailConfig, organization, contact, approvalRequest, member } from "@/lib/db/schema";
-import { eq, and, desc, sql, gte, lte } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { notDeleted } from "@/lib/db/soft-delete";
 import { requireRole } from "@/lib/api/require-role";
 import { getNextNumber } from "@/lib/api/numbering";
@@ -20,109 +23,27 @@ import { checkApprovalRequired, createApprovalRequest, processApprovalAction } f
 export function registerInvoiceTools(server: McpServer, ctx: AuthContext) {
   server.tool(
     "list_invoices",
-    "List invoices with optional filters. Amounts (subtotal, total, amountPaid, amountDue) are in integer cents.",
-    {
-      status: z
-        .enum(["draft", "sent", "partial", "paid", "overdue", "void"])
-        .optional()
-        .describe("Filter by invoice status"),
-      contactId: z
-        .string()
-        .optional()
-        .describe("Filter by contact UUID"),
-      startDate: z
-        .string()
-        .optional()
-        .describe("Filter by issue date from (YYYY-MM-DD)"),
-      endDate: z
-        .string()
-        .optional()
-        .describe("Filter by issue date to (YYYY-MM-DD)"),
-      limit: z
-        .number()
-        .int()
-        .min(1)
-        .max(100)
-        .optional()
-        .default(50)
-        .describe("Number of invoices to return (max 100)"),
-      page: z
-        .number()
-        .int()
-        .min(1)
-        .optional()
-        .default(1)
-        .describe("Page number"),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        const conditions = [
-          eq(invoice.organizationId, ctx.organizationId),
-          notDeleted(invoice.deletedAt),
-        ];
-
-        if (params.status) {
-          conditions.push(eq(invoice.status, params.status));
-        }
-        if (params.contactId) {
-          conditions.push(eq(invoice.contactId, params.contactId));
-        }
-        if (params.startDate) {
-          conditions.push(gte(invoice.issueDate, params.startDate));
-        }
-        if (params.endDate) {
-          conditions.push(lte(invoice.issueDate, params.endDate));
-        }
-
-        const offset = (params.page - 1) * params.limit;
-
-        const invoices = await db.query.invoice.findMany({
-          where: and(...conditions),
-          orderBy: desc(invoice.createdAt),
-          limit: params.limit,
-          offset,
-          with: { contact: true },
-        });
-
-        const [countResult] = await db
-          .select({ count: sql<number>`count(*)`.mapWith(Number) })
-          .from(invoice)
-          .where(and(...conditions));
-
-        return {
-          invoices,
-          total: Number(countResult?.count ?? 0),
-          page: params.page,
-          limit: params.limit,
-        };
-      })
+    "List organization-scoped invoices. Numeric amounts retain integer minor units (USD cents); additive subtotalMinor/taxTotalMinor/totalMinor/amountPaidMinor/amountDueMinor strings and contact creditLimitMinor preserve stored units. Safe integer range only; mixed-currency pages keep per-invoice currencies.",
+    invoiceListFields,
+    params => wrapTool(ctx, () => listInvoices(ctx, params))
   );
 
   server.tool(
     "get_invoice",
-    "Get a single invoice by ID with line items, contact, and payment history. All amounts are in integer cents.",
-    {
-      invoiceId: z.string().describe("The UUID of the invoice"),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        const found = await db.query.invoice.findFirst({
-          where: and(
-            eq(invoice.id, params.invoiceId),
-            eq(invoice.organizationId, ctx.organizationId),
-            notDeleted(invoice.deletedAt)
-          ),
-          with: {
-            contact: true,
-            lines: {
-              with: { account: true, taxRate: true },
-            },
-          },
-        });
+    "Get an organization-scoped invoice with contact and line items. Numeric money stays in stored minor units (USD cents), with *Minor strings on headers, unitPrice/amount/taxAmount and contact creditLimit. Quantities stay hundredths, discounts stay basis points. Returns {invoice}; payment history/base display remain REST-only. Unsafe history fails with 422.",
+    { invoiceId: z.string().uuid().describe("Organization-owned invoice UUID") },
+    params => wrapTool(ctx, async () => {
+      const result = await getInvoice(ctx, params.invoiceId);
+      if (!result) throw new AuthError("Invoice not found", 404);
+      return result;
+    })
+  );
 
-        if (!found) throw new Error("Invoice not found");
-        return { invoice: found };
-      })
+  server.tool(
+    "get_invoice_summary",
+    "Get invoice counts, outstanding/overdue totals and four aging buckets for this organization. Returns safe numeric minor units (USD cents) plus outstandingMinor/overdueMinor and aging amountMinor strings; currencyCode is null for no outstanding invoices. Rejects mixed-currency outstanding invoices and unsafe totals with 422. No FX conversion or writes.",
+    {},
+    () => wrapTool(ctx, () => getInvoiceSummary(ctx))
   );
 
   server.tool(

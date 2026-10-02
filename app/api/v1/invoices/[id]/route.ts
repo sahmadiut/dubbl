@@ -1,13 +1,14 @@
+import { getInvoice } from "@/lib/api/invoice-reads";
+import { jsonResponse } from "@/lib/api/json-response";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { invoice, invoiceLine, paymentAllocation } from "@/lib/db/schema";
+import { invoice, invoiceLine } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { getAuthContext } from "@/lib/api/auth-context";
 import { requireRole } from "@/lib/api/require-role";
 import { handleError, notFound } from "@/lib/api/response";
 import { logAudit, diffChanges } from "@/lib/api/audit";
 import { notDeleted, softDelete } from "@/lib/db/soft-delete";
-import { toBaseAmounts } from "@/lib/currency/base-amount";
 import { decimalToMinorUnits } from "@/lib/money";
 import { preloadTaxRates, calcTax } from "@/lib/api/tax-calculator";
 import { z } from "zod";
@@ -35,64 +36,13 @@ const updateSchema = z.object({
   lines: z.array(lineSchema).min(1).optional(),
 });
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const ctx = await getAuthContext(request);
-
-    const found = await db.query.invoice.findFirst({
-      where: and(
-        eq(invoice.id, id),
-        eq(invoice.organizationId, ctx.organizationId),
-        notDeleted(invoice.deletedAt)
-      ),
-      with: {
-        contact: true,
-        lines: {
-          with: { account: true, taxRate: true },
-        },
-      },
-    });
-
-    if (!found) return notFound("Invoice");
-
-    // Fetch payments allocated to this invoice
-    const allocations = await db.query.paymentAllocation.findMany({
-      where: and(
-        eq(paymentAllocation.documentType, "invoice"),
-        eq(paymentAllocation.documentId, id)
-      ),
-      with: { payment: true },
-    });
-
-    const payments = allocations
-      .filter((a) => a.payment)
-      .map((a) => ({
-        id: a.payment.id,
-        paymentNumber: a.payment.paymentNumber,
-        date: a.payment.date,
-        amount: a.amount,
-        method: a.payment.method,
-      }));
-
-    // Base-currency equivalents (for dual-currency display) at the issue rate.
-    const base = await toBaseAmounts(
-      ctx.organizationId,
-      found.currencyCode,
-      found.issueDate,
-      {
-        total: found.total,
-        amountDue: found.amountDue,
-        amountPaid: found.amountPaid,
-        subtotal: found.subtotal,
-        taxTotal: found.taxTotal,
-      }
-    );
-
-    return NextResponse.json({ invoice: found, payments, base });
+    const result = await getInvoice(ctx, id, true);
+    if (!result) return notFound("Invoice");
+    return jsonResponse(result);
   } catch (err) {
     return handleError(err);
   }

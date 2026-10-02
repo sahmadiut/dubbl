@@ -1,7 +1,9 @@
+import { listInvoices } from "@/lib/api/invoice-reads";
+import { jsonResponse } from "@/lib/api/json-response";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { invoice, invoiceLine, contact, organization, customerCredit, inventoryItem, member } from "@/lib/db/schema";
-import { eq, and, desc, asc, gte, lte, ne, inArray, sql } from "drizzle-orm";
+import { eq, and, ne, inArray, sql } from "drizzle-orm";
 import { getAuthContext } from "@/lib/api/auth-context";
 import { requireRole } from "@/lib/api/require-role";
 import { handleError } from "@/lib/api/response";
@@ -64,65 +66,20 @@ const createSchema = z.object({
   submitForApproval: z.boolean().optional().default(false),
 });
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const SORT_COLUMNS: Record<string, any> = {
-  date: invoice.issueDate,
-  due: invoice.dueDate,
-  total: invoice.total,
-  amountDue: invoice.amountDue,
-  number: invoice.invoiceNumber,
-  created: invoice.createdAt,
-};
-
 export async function GET(request: Request) {
   try {
     const ctx = await getAuthContext(request);
     const url = new URL(request.url);
-    const { page, limit, offset } = parsePagination(url);
-    const status = url.searchParams.get("status");
-    const contactId = url.searchParams.get("contactId");
-    const from = url.searchParams.get("from");
-    const to = url.searchParams.get("to");
-    const sortBy = url.searchParams.get("sortBy") || "created";
-    const sortOrder = url.searchParams.get("sortOrder") || "desc";
-
-    const conditions = [
-      eq(invoice.organizationId, ctx.organizationId),
-      notDeleted(invoice.deletedAt),
-    ];
-
-    if (status) {
-      conditions.push(eq(invoice.status, status as typeof invoice.status.enumValues[number]));
-    }
-    if (contactId) {
-      conditions.push(eq(invoice.contactId, contactId));
-    }
-    if (from) {
-      conditions.push(gte(invoice.issueDate, from));
-    }
-    if (to) {
-      conditions.push(lte(invoice.issueDate, to));
-    }
-
-    const sortCol = SORT_COLUMNS[sortBy] || invoice.createdAt;
-    const orderFn = sortOrder === "asc" ? asc : desc;
-
-    const invoices = await db.query.invoice.findMany({
-      where: and(...conditions),
-      orderBy: orderFn(sortCol),
-      limit,
-      offset,
-      with: { contact: true },
+    const { page, limit } = parsePagination(url);
+    const result = await listInvoices(ctx, {
+      page, limit, status: url.searchParams.get("status") || undefined,
+      contactId: url.searchParams.get("contactId") || undefined,
+      startDate: url.searchParams.get("from") || undefined,
+      endDate: url.searchParams.get("to") || undefined,
+      sortBy: url.searchParams.get("sortBy") || undefined,
+      sortOrder: url.searchParams.get("sortOrder") || undefined,
     });
-
-    const [countResult] = await db
-      .select({ count: sql<number>`count(*)`.mapWith(Number) })
-      .from(invoice)
-      .where(and(...conditions));
-
-    return NextResponse.json(
-      paginatedResponse(invoices, Number(countResult?.count || 0), page, limit)
-    );
+    return jsonResponse(paginatedResponse(result.invoices, result.total, result.page, result.limit));
   } catch (err) {
     return handleError(err);
   }

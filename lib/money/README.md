@@ -138,3 +138,14 @@ atomically per template. Concurrent runs of the same template do not duplicate
 occurrences; locked dates retain the existing skip/consume policy.
 See [recurring contracts](../../.agentic/registries/RECURRING_JOURNAL_WIRE_CONTRACTS.md)
 for all operations, supported ranges, partial-run semantics and remaining domain gates.
+
+## Invoice read contracts (MON-038)
+
+Invoice list/detail REST and MCP preserve numeric stored minor units with additive
+header/line/contact `*Minor` strings. REST payment allocations and guarded base
+display add aliases too; display FX is explicitly issue-date lookup, not saved
+posting FX. Invoice summary and the matching `get_invoice_summary` MCP tool use
+SQL text and bigint sums in a read-only snapshot, rejecting mixed currencies and
+unsafe totals/aging buckets. Nested foreign-tenant references fail before disclosure.
+See [invoice read contracts](../../.agentic/registries/INVOICE_READ_WIRE_CONTRACTS.md)
+for units, safe ranges, filters/errors and remaining write/lifecycle/full-domain gates.

@@ -101,3 +101,16 @@ Generated initial scope index; current status always comes from task metadata vi
 | [MON-035](../tasks/MON-035.md) | Adopt exact journal CRUD contracts | backend | no |
 | [MON-036](../tasks/MON-036.md) | Adopt exact journal lifecycle and bulk import contracts | backend | no |
 | [MON-037](../tasks/MON-037.md) | Adopt exact recurring journal contracts | backend | no |
+
+## MON-019 implementation children
+
+| ID | Task | Role | Optional |
+|---|---|---|---|
+| [MON-038](../tasks/MON-038.md) | Adopt exact invoice read contracts | backend | no |
+| [MON-039](../tasks/MON-039.md) | Adopt exact invoice CRUD write contracts | backend | no |
+| [MON-040](../tasks/MON-040.md) | Adopt exact invoice lifecycle contracts | backend | no |
+| [MON-041](../tasks/MON-041.md) | Adopt exact quote contracts | backend | no |
+| [MON-042](../tasks/MON-042.md) | Adopt exact receivable credit contracts | backend | no |
+| [MON-043](../tasks/MON-043.md) | Adopt exact sales receipt contracts | backend | no |
+| [MON-044](../tasks/MON-044.md) | Adopt exact recurring invoice contracts | backend | no |
+| [MON-045](../tasks/MON-045.md) | Adopt exact invoice bulk contracts | backend | no |

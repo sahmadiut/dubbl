@@ -145,3 +145,19 @@ entries before final schedule update, malformed/unsafe retained history and cros
 maintenance. SQL snapshots assert amounts, schedules, journal rows and audit counts.
 HTTP/session/OAuth/browser, full currency-aware domain math and cross-template
 number-allocation/reference/lock races retain their separate qualification gates.
+
+## MON-038 invoice read contracts
+
+Four pure invoice-read-wire groups cover numeric/string units across four currency
+scales, nested money versus quantities/percentages, safe extremes, historical scope,
+exact signed base rounding/products/scales/null rates, summary totals/aging and
+invalid filters. The migrated disposable invoice-reads worker invokes three real
+REST and three registered MCP read operations via SDK/InMemoryTransport. Covers
+int32-plus/safe-max headers/lines/summary, API keys/custom read-only roles, both
+tenants, soft deletion, foreign contact/account/tax/payment references, allocated
+document units, raw unsafe header/line/contact/allocation/history, filter/sort/page,
+issue-date/missing/future/foreign rates, display-product/currency-scale limits,
+mixed-currency and unsafe summaries. Exact text snapshots verify no invoice/line/
+payment/allocation/rate/journal/audit changes from successful or rejected reads.
+Auth-key last-used metadata is excluded. HTTP/session/OAuth/browser and write/
+lifecycle/full-domain qualification remain assigned tasks; schema and flags stay unchanged.

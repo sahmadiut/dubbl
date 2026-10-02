@@ -1,6 +1,18 @@
 # Money and FX boundary manifest
 
-Inventory owner: MON-001. Refreshed 2026-10-03 (Asia/Tehran) for MON-037 against entry HEAD `6c49155`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+Inventory owner: MON-001. Refreshed 2026-10-03 (Asia/Tehran) for MON-038 against entry HEAD `42f2563`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+
+## MON-038 invoice read adoption (MON-019 child)
+
+MON-038 adopts [invoice read contracts](INVOICE_READ_WIRE_CONTRACTS.md): three
+REST and three MCP operations retain numeric envelopes with header/line/contact/
+allocation/base/summary exact aliases. Historical references are tenant checked.
+Summary uses a read-only snapshot, SQL text and bigint sums, rejects mixed
+currencies/unsafe buckets and removes int32 casts. Base display declares historical
+lookup millionths, guards products/scales and never claims saved invoice FX.
+MON-019 retains integration after MON-038 reads, MON-039 writes, MON-040 lifecycle,
+MON-041 quotes, MON-042 credits, MON-043 receipts, MON-044 recurring and MON-045 bulk.
+No schema, migration, invoice write or rollout change is implied.
 
 ## MON-037 recurring journal adoption (MON-018 child)
 

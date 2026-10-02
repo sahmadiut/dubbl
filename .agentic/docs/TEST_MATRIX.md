@@ -71,3 +71,21 @@ Verified lockfile install, typecheck, lint, unit tests, translation-key checks, 
 ## Nightly / release pipeline
 
 All supported browsers, layout/behavior review and PDF correctness checks, larger migration fixtures, report reconciliation, import stress and SBOM/image checks. Apply owner scope decisions above. Include manual native-accounting, accessibility and operational reviews where automation is insufficient. Document real omissions as blockers or approved limitations, never as passes.
+
+MON-017 adds `tests/contact-wire.test.ts` and actual PostgreSQL contact REST/API-key
+and registered MCP fixtures in `tests/integration/contact-wire.test.ts`/worker.
+These cover nullable/omitted/zero/safe-max aliases, pre-write rejection and audit
+snapshots, int32-plus and safe-max SQL aggregates, combined-overdue overflow,
+mixed-currency rejection, foreign-ID/custom-permission denial, parent-scoped merge/soft-delete
+preservation and unsafe historical ORM reads. Scope: contact CRUD/list and the
+six contact tools; statements/bulk/export and full-range business consumers remain
+assigned rollout/qualification tasks. No HTTP OAuth/session/browser qualification.
+
+MON-023 adds five pure `budget-wire.test.ts` groups and the actual migrated
+PostgreSQL REST/API-key/member/registered-MCP `budget-wire.test.ts` worker. Covers
+signed exact/numeric aliases, safe-max conservation, pre-write rejection of later
+lines/sums/dates/org refs, foreign-ID/role denial, nested-ref read isolation,
+transaction rollback via injected storage failure, replacement/soft-delete/audits
+and unsafe historical preservation. Calendar fixtures compare UTC/Tehran/New York
+including DST/early years. Budget reports remain MON-029 and full UI/consumer
+cutover MON-008; no transport/browser/production qualification is inferred.

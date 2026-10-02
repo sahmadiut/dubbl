@@ -79,6 +79,76 @@ tool remains a legacy numeric preview for currencies with matching minor-unit
 scales and safe intermediate products; full-range amount strings and mixed-scale
 conversion are not available in that operation yet.
 
+## Contact credit limits and balances
+
+`POST /api/v1/contacts` and `PATCH /api/v1/contacts/{id}` accept an optional
+`creditLimitMinor` canonical integer string alongside the numeric `creditLimit`:
+
+```json
+{"creditLimitMinor": "1250"}
+```
+
+This means the existing stored integer 1250 (USD cents for a USD contact).
+Neither alias rescales history for another currency. Both fields must agree if
+supplied together; `null` clears the limit, zero sets a zero limit, and omission
+keeps the current limit on updates. Responses include numeric `creditLimit` and
+nullable string `creditLimitMinor`. The MCP `create_contact` and `update_contact`
+tools accept the same aliases; `list_contacts` and `get_contact` return them.
+
+Current supported write range is 0 through 9007199254740991. Valid int64 strings
+above this range return HTTP 422 with `code: "LEGACY_NUMERIC_RANGE"` before writes.
+Malformed, negative or conflicting aliases return 400. Writes require
+`manage:contacts`; existing organization and resource/currency-plan checks apply.
+
+REST contact listings additionally return `owesYouMinor`, `youOweMinor` and
+`overdueMinor` alongside their numeric fields. Sums are calculated exactly and
+must fit the safe numeric range; numeric fields keep their existing cents units.
+Nonzero outstanding documents must use the contact's currency. A page containing
+incompatible currencies or unsafe totals returns 422 rather than combining
+unlike currencies or rounding amounts. MCP contact listings retain their existing
+shape without these balance aggregates. Full int64 business operations and
+currency-grouped contact balance reporting are pending further rollout.
+
+## Budget amount inputs
+
+Budget POST/PATCH requests accept string aliases for signed integer cents:
+
+```json
+{
+  "lines": [{
+    "accountId": "your-account-uuid",
+    "totalMinor": "1250",
+    "periods": [{
+      "label": "January",
+      "startDate": "2026-01-01",
+      "endDate": "2026-01-31",
+      "amountMinor": "1250"
+    }]
+  }]
+}
+```
+
+Supply the usual budget header fields on creation. Numeric `total`/`amount`
+remain supported and must agree with their string aliases when both are present.
+Amounts retain the existing cents units; no currency rescaling occurs. Missing
+period amounts default to zero. An explicit line total keeps precedence over
+period sums; otherwise the sum becomes the total. Omitted/empty periods generate
+from the effective header dates/type and distribute the total exactly, including
+negative amounts. Dates are valid Gregorian date-only values with UTC boundaries.
+
+Supported amounts and per-line period sums are -9007199254740991 through
+9007199254740991, with at most 500 lines and 10000 periods per budget. Valid int64
+strings outside the supported amount range return 422 (`LEGACY_NUMERIC_RANGE`)
+before writes; malformed/conflicting aliases return 400. Account/fiscal-year refs
+must belong to the authenticated organization. Create and replacement writes are
+transactional and require `manage:budgets`.
+
+GET by ID returns numeric fields alongside `totalMinor`/`amountMinor`. Lists and
+create/update responses keep their header-only envelopes. MCP budget CRUD tools
+accept/return the same aliases. Budget-versus-actual reports and frontend amount
+arithmetic are still awaiting exact-money rollout; CRUD support does not establish
+full-range reporting or production IRR readiness.
+
 ## Response Format
 
 <Tabs items={["Success", "Error"]}>

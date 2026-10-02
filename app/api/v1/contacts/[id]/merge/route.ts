@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { jsonResponse } from "@/lib/api/json-response";
 import { db } from "@/lib/db";
 import {
   contact,
@@ -19,6 +19,7 @@ import {
   payment,
   // Banking
   bankTransaction,
+  bankAccount,
   bankRule,
   // CRM / projects / recurring
   deal,
@@ -27,6 +28,7 @@ import {
   // Scheduled payments
   scheduledPayment,
   paymentBatchItem,
+  paymentBatch,
   // Inventory
   inventoryItemSupplier,
   // Portal
@@ -35,8 +37,9 @@ import {
   document,
   attachment,
   entityTag,
+  tag,
 } from "@/lib/db/schema";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, sql, inArray } from "drizzle-orm";
 import { getAuthContext } from "@/lib/api/auth-context";
 import { requireRole } from "@/lib/api/require-role";
 import { handleError, notFound, error } from "@/lib/api/response";
@@ -76,16 +79,6 @@ const CONTACT_FK_TABLES_ORG_SCOPED = [
   scheduledPayment,
   // Portal
   portalAccessToken,
-] as const;
-
-// Tables with a contact_id but NO organization_id column (they scope through a
-// parent: bank_transaction -> bank_account, payment_batch_item -> batch,
-// contact_person -> contact). The source contact is already verified to belong
-// to the org, so matching on contact_id alone only touches this org's rows.
-const CONTACT_FK_TABLES_UNSCOPED = [
-  bankTransaction,
-  paymentBatchItem,
-  contactPerson,
 ] as const;
 
 /**
@@ -144,13 +137,17 @@ export async function POST(
           );
       }
 
-      // 1b. Repoint contact_id FKs on tables without an organization_id column.
-      for (const table of CONTACT_FK_TABLES_UNSCOPED) {
-        await tx
-          .update(table)
-          .set({ contactId: targetContactId })
-          .where(eq(table.contactId, sourceId));
-      }
+      // Child rows are scoped through their parent, even for inconsistent cross-org FKs.
+      await tx.update(bankTransaction).set({ contactId: targetContactId }).where(and(
+        eq(bankTransaction.contactId, sourceId),
+        inArray(bankTransaction.bankAccountId, tx.select({ id: bankAccount.id }).from(bankAccount).where(eq(bankAccount.organizationId, ctx.organizationId))),
+      ));
+      await tx.update(paymentBatchItem).set({ contactId: targetContactId }).where(and(
+        eq(paymentBatchItem.contactId, sourceId),
+        inArray(paymentBatchItem.batchId, tx.select({ id: paymentBatch.id }).from(paymentBatch).where(eq(paymentBatch.organizationId, ctx.organizationId))),
+      ));
+      await tx.update(contactPerson).set({ contactId: targetContactId }).where(eq(contactPerson.contactId, sourceId));
+      const orgTagIds = tx.select({ id: tag.id }).from(tag).where(eq(tag.organizationId, ctx.organizationId));
 
       // 2. inventory_item_supplier has a unique (inventory_item_id, contact_id)
       //    constraint, so repointing could collide with an existing target row.
@@ -210,6 +207,7 @@ export async function POST(
           and(
             eq(entityTag.entityType, "contact"),
             eq(entityTag.entityId, sourceId),
+            inArray(entityTag.tagId, orgTagIds),
             sql`NOT EXISTS (
               SELECT 1 FROM ${entityTag} AS existing
               WHERE existing.tag_id = ${entityTag.tagId}
@@ -223,7 +221,8 @@ export async function POST(
         .where(
           and(
             eq(entityTag.entityType, "contact"),
-            eq(entityTag.entityId, sourceId)
+            eq(entityTag.entityId, sourceId),
+            inArray(entityTag.tagId, orgTagIds)
           )
         );
 
@@ -231,11 +230,11 @@ export async function POST(
       await tx
         .update(contact)
         .set({ deletedAt: new Date(), updatedAt: new Date() })
-        .where(eq(contact.id, sourceId));
+        .where(and(eq(contact.id, sourceId), eq(contact.organizationId, ctx.organizationId), notDeleted(contact.deletedAt)));
     });
 
     // Audit both contacts so the merge is traceable from either side.
-    logAudit({
+    await logAudit({
       ctx,
       action: "merge",
       entityType: "contact",
@@ -243,7 +242,7 @@ export async function POST(
       changes: { mergedInto: targetContactId },
       request,
     });
-    logAudit({
+    await logAudit({
       ctx,
       action: "merge",
       entityType: "contact",
@@ -252,7 +251,7 @@ export async function POST(
       request,
     });
 
-    return NextResponse.json({
+    return jsonResponse({
       success: true,
       sourceContactId: sourceId,
       targetContactId,

@@ -31,3 +31,7 @@ The plan's broad milestones are decomposed into 60 initial tasks with dependenci
 Auxiliary money consumers, public/signing/PDF boundaries, credit allocations/refunds, reports, imports/exports/views, providers, backup/restore and delayed compatibility cleanup remain covered. Statutory obligations and future monetary rules require explicit scope and official evidence. Owner decisions in docs/DECISIONS.md continue to govern execution.
 
 MON-012 retains rollout integration acceptance after its children MON-013 (currency FX), MON-014 (core accounting), MON-015 (auxiliary/report) and MON-016 (public/opaque). All inherit the migration/API source sections and MON-011 prerequisites.
+
+MON-014 retains core integration acceptance after MON-017 (contact credit limits/balances), MON-018 (journals), MON-019 (receivables), MON-020 (payables/procurement), MON-021 (payments/expenses/banking) and MON-022 (organization/tax configuration). Children inherit MON-011 and the migration/API source sections. No accounting scope or parent criterion is removed.
+
+MON-015 retains auxiliary/report integration acceptance after MON-023 budgets CRUD, MON-024 inventory/costing, MON-025 payroll, MON-026 assets/loans, MON-027 projects/CRM/pricing, MON-028 consolidation/configuration and MON-029 reports/dashboards. Children inherit MON-011 and migration/API source sections; original parent criteria remain unchanged.

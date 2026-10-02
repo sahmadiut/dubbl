@@ -1,6 +1,41 @@
 # Money and FX boundary manifest
 
-Inventory owner: MON-001. Refreshed 2026-10-02 (Asia/Tehran) for MON-013 against entry HEAD `53a1da8`. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+Inventory owner: MON-001. Refreshed 2026-10-02 (Asia/Tehran) for MON-023 against entry HEAD `c238309` with MON-017 changes still uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+
+## MON-023 budget CRUD adoption (MON-015 child)
+
+The [budget operation inventory](BUDGET_WIRE_CONTRACTS.md) covers five REST and
+five MCP CRUD operations, signed cents aliases, exact sums/distribution, actual
+safe-number ranges/date/period bounds and explicit report exclusions. REST/MCP
+share direct-DB preflight/transaction/audit services and scoped nested reads.
+All line/reference validation precedes writes; storage failures roll back headers,
+lines and periods. Calendar generation now uses stable UTC Gregorian days.
+
+MON-015 retains integration after MON-023 budgets, MON-024 inventory, MON-025
+payroll, MON-026 assets/loans, MON-027 projects/CRM/pricing, MON-028 consolidation/
+configuration and MON-029 reports/dashboards. No parent criterion is removed.
+Budget-vs-actual and frontend amount arithmetic remain assigned work; CRUD alias
+support is not full-range reporting/IRR enablement. Schema, migrations and flags
+remain unchanged. Real disposable PostgreSQL operation fixtures qualify the slice.
+
+## MON-017 contact adoption (MON-014 child)
+
+The [contact operation inventory](CONTACT_WIRE_CONTRACTS.md) records all six
+REST and six MCP operations, exact nullable `creditLimitMinor` aliases, supported
+safe-number ranges, pre-write rejection and unchanged stored units. REST list
+balance aliases derive from PostgreSQL text sums and bigint addition, replacing
+int32 casts/Number sums; unsafe totals and incompatible document currencies fail
+with 422. Numeric fields and existing response envelopes remain. Both transports
+scope merge child references through bank accounts, payment batches and tags;
+MCP also transfers contact people. No ledger/history value is rescaled.
+
+MON-014 was split into MON-017 contacts, MON-018 journals, MON-019 receivables,
+MON-020 payables/procurement, MON-021 payments/expenses/banking and MON-022
+organization/tax configuration. Original parent acceptance remains unchanged.
+Real REST/API-key/custom-permission/registered-MCP PostgreSQL fixtures qualify
+this slice; statements/bulk/export/nested enclosing-domain boundaries and full
+business/ORM cutover remain assigned work. No production IRR, client sunset,
+schema/migration or deployment change is made.
 
 ## MON-013 currency FX adoption (MON-012 child)
 
@@ -71,7 +106,7 @@ The adapter retains exact number values for existing callers within the safe int
 
 Deprecated `lib/money.ts` functions preserve their behavior for existing consumers. ESLint enforces imported-binding reference ceilings from `scripts/legacy-money-baseline.json`, blocking new imports/uses; static analysis limits are documented in the core contract. Safe-number bridges explicitly reject precision loss. This is not application-wide adoption: the remaining Number-based ledger/FX/public/UI paths retain their assigned MON-004/006/007/008 work, and IRR production readiness remains disabled.
 
-The [column appendix](MONEY_COLUMNS.md) has one row per actual numeric/JSON column: SQL table/column, Drizzle property, source line, type/range, units, currency source and migration owner. Refreshed for MON-013, the [machine-readable consumer index](MONEY_BOUNDARIES.json) contains 410 columns and 1,095 consumer files with line numbers, search tags, source hashes, currency context, range and owner. It scans 1,311 tracked and new nonignored source/config/documentation files and retains 21,261 lexical occurrences. All exported Drizzle numeric/JSON columns independently match the appendix, with no missing, extra or duplicate rows. The MON-003 disposition retains its historical 402-column scope.
+The [column appendix](MONEY_COLUMNS.md) has one row per actual numeric/JSON column: SQL table/column, Drizzle property, source line, type/range, units, currency source and migration owner. Refreshed for MON-023, the [machine-readable consumer index](MONEY_BOUNDARIES.json) contains 410 columns and 1,104 consumer files with line numbers, search tags, source hashes, currency context, range and owner. It scans 1,320 tracked and new nonignored source/config/documentation files and retains 21,454 lexical occurrences. All exported Drizzle numeric/JSON columns independently match the appendix, with no missing, extra or duplicate rows. The MON-003 disposition retains its historical 402-column scope.
 
 `python .agentic/scripts/money_inventory.py` checks source reproducibility; `--write` refreshes after reviewed changes. `node --import tsx .agentic/scripts/verify_money_inventory.mjs` checks actual Drizzle exports, column lines, consumer hashes and occurrence lines. Neither reads environment credentials or connects to DB. These are mutable registries; completed task evidence remains immutable.
 

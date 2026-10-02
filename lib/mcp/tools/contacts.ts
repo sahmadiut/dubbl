@@ -1,9 +1,11 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { contactCreditFields, contactCreditInput, contactDto } from "@/lib/api/contact-wire";
 import { currencyCodeSchema } from "@/lib/currency/zod";
 import { db } from "@/lib/db";
 import {
   contact,
+  contactPerson,
   invoice,
   quote,
   creditNote,
@@ -16,24 +18,27 @@ import {
   goodsReceipt,
   payment,
   bankTransaction,
+  bankAccount,
   bankRule,
   deal,
   project,
   recurringTemplate,
   scheduledPayment,
   paymentBatchItem,
+  paymentBatch,
   inventoryItemSupplier,
   portalAccessToken,
   document,
   attachment,
   entityTag,
+  tag,
 } from "@/lib/db/schema";
-import { eq, and, or, ilike, sql } from "drizzle-orm";
+import { eq, and, or, ilike, sql, inArray } from "drizzle-orm";
 import { notDeleted, softDelete } from "@/lib/db/soft-delete";
 import { requireRole } from "@/lib/api/require-role";
 import { wrapTool } from "@/lib/mcp/errors";
 import { checkResourceLimit, checkMultiCurrency } from "@/lib/api/check-limit";
-import { logAudit } from "@/lib/api/audit";
+import { logAudit, diffChanges } from "@/lib/api/audit";
 import type { AuthContext } from "@/lib/api/auth-context";
 
 // Tables with both organization_id and contact_id, repointed on merge.
@@ -57,16 +62,10 @@ const CONTACT_FK_TABLES_ORG_SCOPED = [
   portalAccessToken,
 ] as const;
 
-// Tables with contact_id but no organization_id column (scoped via a parent).
-const CONTACT_FK_TABLES_UNSCOPED = [
-  bankTransaction,
-  paymentBatchItem,
-] as const;
-
 export function registerContactTools(server: McpServer, ctx: AuthContext) {
   server.tool(
     "list_contacts",
-    "List contacts (customers, suppliers, or both). Supports search by name/email and filtering by type. Returns paginated results.",
+    "List contacts (customers, suppliers, or both). Supports search by name/email and filtering by type. Returns paginated results with numeric creditLimit and nullable creditLimitMinor string in the contact currency; no balance aggregates.",
     {
       search: z
         .string()
@@ -126,7 +125,7 @@ export function registerContactTools(server: McpServer, ctx: AuthContext) {
           .where(and(...conditions));
 
         return {
-          contacts,
+          contacts: contacts.map(contactDto),
           total: Number(countResult?.count ?? 0),
           page: params.page,
           limit: params.limit,
@@ -136,7 +135,7 @@ export function registerContactTools(server: McpServer, ctx: AuthContext) {
 
   server.tool(
     "get_contact",
-    "Get a single contact by ID with their details, default accounts, and contact people.",
+    "Get a single contact by ID with their details, default accounts, and contact people. Includes numeric creditLimit and nullable creditLimitMinor string in the contact currency.",
     {
       contactId: z.string().describe("The UUID of the contact"),
     },
@@ -157,14 +156,15 @@ export function registerContactTools(server: McpServer, ctx: AuthContext) {
         });
 
         if (!found) throw new Error("Contact not found");
-        return { contact: found };
+        return { contact: contactDto(found) };
       })
   );
 
   server.tool(
     "create_contact",
-    "Create a new contact (customer, supplier, or both). Payment terms are in days (default 30).",
+    "Create a new contact (customer, supplier, or both). Payment terms are in days (default 30). Optional creditLimit/creditLimitMinor are existing minor units (USD cents), must agree, and support 0 through 9007199254740991; null means no limit. Returns the contact with both aliases.",
     {
+      ...contactCreditFields,
       name: z.string().describe("Contact name"),
       email: z.string().optional().describe("Email address"),
       phone: z.string().optional().describe("Phone number"),
@@ -185,11 +185,9 @@ export function registerContactTools(server: McpServer, ctx: AuthContext) {
         .default(30)
         .describe("Payment terms in days"),
       notes: z.string().optional().describe("Notes"),
-      currencyCode: z
-        .string()
-        .optional()
+      currencyCode: currencyCodeSchema
         .default("USD")
-        .describe("Default currency code"),
+        .describe("Default ISO currency code (normalized to uppercase; default USD)"),
       is1099Vendor: z
         .boolean()
         .optional()
@@ -213,6 +211,8 @@ export function registerContactTools(server: McpServer, ctx: AuthContext) {
       wrapTool(ctx, async () => {
         requireRole(ctx, "manage:contacts");
 
+        const credit = contactCreditInput(params);
+
         await checkResourceLimit(ctx.organizationId, contact, contact.organizationId, "contacts", contact.deletedAt);
         await checkMultiCurrency(ctx.organizationId, params.currencyCode ?? "USD");
 
@@ -220,6 +220,7 @@ export function registerContactTools(server: McpServer, ctx: AuthContext) {
           .insert(contact)
           .values({
             organizationId: ctx.organizationId,
+            ...credit,
             name: params.name,
             email: params.email ?? null,
             phone: params.phone ?? null,
@@ -235,15 +236,17 @@ export function registerContactTools(server: McpServer, ctx: AuthContext) {
           })
           .returning();
 
-        return { contact: created };
+        await logAudit({ ctx, action: "create", entityType: "contact", entityId: created.id });
+        return { contact: contactDto(created) };
       })
   );
 
   server.tool(
     "update_contact",
-    "Update an existing contact's details. Only provided fields are updated.",
+    "Update an existing contact's details. Only provided fields are updated. creditLimit/creditLimitMinor use existing currency minor units (USD cents), must agree, and support 0 through 9007199254740991; null clears the limit. Returns the contact with both aliases.",
     {
       contactId: z.string().describe("The UUID of the contact to update"),
+      ...contactCreditFields,
       name: z.string().optional().describe("New name"),
       email: z.string().optional().describe("New email"),
       phone: z.string().optional().describe("New phone"),
@@ -295,7 +298,9 @@ export function registerContactTools(server: McpServer, ctx: AuthContext) {
 
         if (!existing) throw new Error("Contact not found");
 
-        const { contactId, ...updates } = params;
+        const credit = contactCreditInput(params);
+        const { contactId, creditLimitMinor, ...updates } = { ...params, ...credit };
+        void creditLimitMinor;
         const cleanUpdates = Object.fromEntries(
           Object.entries(updates).filter(([, v]) => v !== undefined)
         );
@@ -303,10 +308,11 @@ export function registerContactTools(server: McpServer, ctx: AuthContext) {
         const [updated] = await db
           .update(contact)
           .set({ ...cleanUpdates, updatedAt: new Date() })
-          .where(eq(contact.id, contactId))
+          .where(and(eq(contact.id, contactId), eq(contact.organizationId, ctx.organizationId), notDeleted(contact.deletedAt)))
           .returning();
 
-        return { contact: updated };
+        await logAudit({ ctx, action: "update", entityType: "contact", entityId: contactId, changes: diffChanges(existing, updated) });
+        return { contact: contactDto(updated) };
       })
   );
 
@@ -363,13 +369,17 @@ export function registerContactTools(server: McpServer, ctx: AuthContext) {
               );
           }
 
-          // 1b. contact_id FKs on tables without an organization_id column.
-          for (const table of CONTACT_FK_TABLES_UNSCOPED) {
-            await tx
-              .update(table)
-              .set({ contactId: params.targetContactId })
-              .where(eq(table.contactId, params.sourceContactId));
-          }
+          // Child rows are scoped through their parent, even for inconsistent cross-org FKs.
+          await tx.update(bankTransaction).set({ contactId: params.targetContactId }).where(and(
+            eq(bankTransaction.contactId, params.sourceContactId),
+            inArray(bankTransaction.bankAccountId, tx.select({ id: bankAccount.id }).from(bankAccount).where(eq(bankAccount.organizationId, ctx.organizationId))),
+          ));
+          await tx.update(paymentBatchItem).set({ contactId: params.targetContactId }).where(and(
+            eq(paymentBatchItem.contactId, params.sourceContactId),
+            inArray(paymentBatchItem.batchId, tx.select({ id: paymentBatch.id }).from(paymentBatch).where(eq(paymentBatch.organizationId, ctx.organizationId))),
+          ));
+          await tx.update(contactPerson).set({ contactId: params.targetContactId }).where(eq(contactPerson.contactId, params.sourceContactId));
+          const orgTagIds = tx.select({ id: tag.id }).from(tag).where(eq(tag.organizationId, ctx.organizationId));
 
           // 2. inventory_item_supplier — unique (item, contact); avoid dup rows.
           await tx
@@ -425,6 +435,7 @@ export function registerContactTools(server: McpServer, ctx: AuthContext) {
               and(
                 eq(entityTag.entityType, "contact"),
                 eq(entityTag.entityId, params.sourceContactId),
+                inArray(entityTag.tagId, orgTagIds),
                 sql`NOT EXISTS (
                   SELECT 1 FROM ${entityTag} AS existing
                   WHERE existing.tag_id = ${entityTag.tagId}
@@ -438,7 +449,8 @@ export function registerContactTools(server: McpServer, ctx: AuthContext) {
             .where(
               and(
                 eq(entityTag.entityType, "contact"),
-                eq(entityTag.entityId, params.sourceContactId)
+                eq(entityTag.entityId, params.sourceContactId),
+                inArray(entityTag.tagId, orgTagIds)
               )
             );
 
@@ -446,7 +458,7 @@ export function registerContactTools(server: McpServer, ctx: AuthContext) {
           await tx
             .update(contact)
             .set({ deletedAt: new Date(), updatedAt: new Date() })
-            .where(eq(contact.id, params.sourceContactId));
+            .where(and(eq(contact.id, params.sourceContactId), eq(contact.organizationId, ctx.organizationId), notDeleted(contact.deletedAt)));
         });
 
         await logAudit({
@@ -497,7 +509,7 @@ export function registerContactTools(server: McpServer, ctx: AuthContext) {
         await db
           .update(contact)
           .set(softDelete())
-          .where(eq(contact.id, params.contactId));
+          .where(and(eq(contact.id, params.contactId), eq(contact.organizationId, ctx.organizationId), notDeleted(contact.deletedAt)));
 
         await logAudit({
           ctx,

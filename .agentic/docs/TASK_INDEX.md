@@ -23,6 +23,19 @@ Generated initial scope index; current status always comes from task metadata vi
 | [MON-014](../tasks/MON-014.md) | 02 | Adopt exact contracts at core accounting boundaries | backend | no |
 | [MON-015](../tasks/MON-015.md) | 02 | Adopt exact contracts at auxiliary and report boundaries | backend | no |
 | [MON-016](../tasks/MON-016.md) | 02 | Adopt exact contracts at public and opaque boundaries | backend | no |
+| [MON-017](../tasks/MON-017.md) | 02 | Adopt exact contact credit-limit and balance contracts | backend | no |
+| [MON-018](../tasks/MON-018.md) | 02 | Adopt exact journal and recurring journal contracts | backend | no |
+| [MON-019](../tasks/MON-019.md) | 02 | Adopt exact receivable document contracts | backend | no |
+| [MON-020](../tasks/MON-020.md) | 02 | Adopt exact payable and procurement contracts | backend | no |
+| [MON-021](../tasks/MON-021.md) | 02 | Adopt exact payment expense and banking contracts | backend | no |
+| [MON-022](../tasks/MON-022.md) | 02 | Adopt exact organization and tax configuration contracts | backend | no |
+| [MON-023](../tasks/MON-023.md) | 02 | Adopt exact budget CRUD contracts | backend | no |
+| [MON-024](../tasks/MON-024.md) | 02 | Adopt exact inventory and costing contracts | backend | no |
+| [MON-025](../tasks/MON-025.md) | 02 | Adopt exact payroll contracts | backend | no |
+| [MON-026](../tasks/MON-026.md) | 02 | Adopt exact asset and loan contracts | backend | no |
+| [MON-027](../tasks/MON-027.md) | 02 | Adopt exact project CRM and pricing contracts | backend | no |
+| [MON-028](../tasks/MON-028.md) | 02 | Adopt exact consolidation and auxiliary configuration contracts | backend | no |
+| [MON-029](../tasks/MON-029.md) | 02 | Adopt exact report and dashboard contracts | backend | no |
 | [MON-007](../tasks/MON-007.md) | 02 | Cut over core accounting consumers | backend | no |
 | [MON-008](../tasks/MON-008.md) | 02 | Cut over auxiliary and public money consumers | backend | no |
 | [MON-009](../tasks/MON-009.md) | 02 | Implement currency regimes and explicit IRR metadata | backend | no |

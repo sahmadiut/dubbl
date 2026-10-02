@@ -7,13 +7,20 @@ export interface GeneratedPeriod {
   sortOrder: number;
 }
 
+function utcDate(year: number, month: number, day: number): Date {
+  const value = new Date(0);
+  value.setUTCFullYear(year, month, day);
+  value.setUTCHours(0, 0, 0, 0);
+  return value;
+}
+
 function formatDate(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
 function addDays(d: Date, n: number): Date {
   const r = new Date(d);
-  r.setDate(r.getDate() + n);
+  r.setUTCDate(r.getUTCDate() + n);
   return r;
 }
 
@@ -24,8 +31,8 @@ export function generatePeriods(
   startDate: string,
   endDate: string
 ): GeneratedPeriod[] {
-  const start = new Date(startDate + "T00:00:00");
-  const end = new Date(endDate + "T00:00:00");
+  const start = new Date(startDate + "T00:00:00Z");
+  const end = new Date(endDate + "T00:00:00Z");
 
   if (start > end) return [];
 
@@ -56,7 +63,7 @@ function generateDaily(start: Date, end: Date): GeneratedPeriod[] {
   let order = 0;
   while (current <= end) {
     periods.push({
-      label: `${SHORT_MONTHS[current.getMonth()]} ${current.getDate()}, ${current.getFullYear()}`,
+      label: `${SHORT_MONTHS[current.getUTCMonth()]} ${current.getUTCDate()}, ${current.getUTCFullYear()}`,
       startDate: formatDate(current),
       endDate: formatDate(current),
       sortOrder: order++,
@@ -86,32 +93,32 @@ function generateWeekly(start: Date, end: Date): GeneratedPeriod[] {
 
 function generateMonthly(start: Date, end: Date): GeneratedPeriod[] {
   const periods: GeneratedPeriod[] = [];
-  let current = new Date(start.getFullYear(), start.getMonth(), 1);
+  let current = utcDate(start.getUTCFullYear(), start.getUTCMonth(), 1);
   let order = 0;
   while (current <= end) {
     const monthStart = new Date(Math.max(current.getTime(), start.getTime()));
-    const monthEnd = new Date(current.getFullYear(), current.getMonth() + 1, 0);
+    const monthEnd = utcDate(current.getUTCFullYear(), current.getUTCMonth() + 1, 0);
     const clampedEnd = new Date(Math.min(monthEnd.getTime(), end.getTime()));
     periods.push({
-      label: `${SHORT_MONTHS[current.getMonth()]} ${current.getFullYear()}`,
+      label: `${SHORT_MONTHS[current.getUTCMonth()]} ${current.getUTCFullYear()}`,
       startDate: formatDate(monthStart),
       endDate: formatDate(clampedEnd),
       sortOrder: order++,
     });
-    current = new Date(current.getFullYear(), current.getMonth() + 1, 1);
+    current = utcDate(current.getUTCFullYear(), current.getUTCMonth() + 1, 1);
   }
   return periods;
 }
 
 function generateQuarterly(start: Date, end: Date): GeneratedPeriod[] {
   const periods: GeneratedPeriod[] = [];
-  const startQuarter = Math.floor(start.getMonth() / 3);
-  let year = start.getFullYear();
+  const startQuarter = Math.floor(start.getUTCMonth() / 3);
+  let year = start.getUTCFullYear();
   let quarter = startQuarter;
   let order = 0;
   while (true) {
-    const qStart = new Date(year, quarter * 3, 1);
-    const qEnd = new Date(year, quarter * 3 + 3, 0);
+    const qStart = utcDate(year, quarter * 3, 1);
+    const qEnd = utcDate(year, quarter * 3 + 3, 0);
     if (qStart > end) break;
     const clampedStart = new Date(Math.max(qStart.getTime(), start.getTime()));
     const clampedEnd = new Date(Math.min(qEnd.getTime(), end.getTime()));
@@ -132,11 +139,11 @@ function generateQuarterly(start: Date, end: Date): GeneratedPeriod[] {
 
 function generateYearly(start: Date, end: Date): GeneratedPeriod[] {
   const periods: GeneratedPeriod[] = [];
-  let year = start.getFullYear();
+  let year = start.getUTCFullYear();
   let order = 0;
   while (true) {
-    const yearStart = new Date(year, 0, 1);
-    const yearEnd = new Date(year, 11, 31);
+    const yearStart = utcDate(year, 0, 1);
+    const yearEnd = utcDate(year, 11, 31);
     if (yearStart > end) break;
     const clampedStart = new Date(Math.max(yearStart.getTime(), start.getTime()));
     const clampedEnd = new Date(Math.min(yearEnd.getTime(), end.getTime()));

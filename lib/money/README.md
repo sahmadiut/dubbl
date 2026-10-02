@@ -85,3 +85,16 @@ validate requests and supported business range before mutations. See
 [ADR-006](../../.agentic/docs/ADR-006-EXACT-WIRE-COMPATIBILITY.md) for adoption and
 the proposed deprecation policy; no actual sunset date is agreed. Production
 flags, schema and stored units remain unchanged.
+
+Contact CRUD/list REST and MCP now accept/return nullable `creditLimitMinor`
+strings alongside numeric cents/limits. Guarded support remains 0 through
+9007199254740991 before writes. REST list balances add `*Minor` aliases with
+exact SQL-text/bigint totals and fail unsupported/mixed-currency pages with 422.
+See [contact contracts](../../.agentic/registries/CONTACT_WIRE_CONTRACTS.md);
+full-range consumers and other contact/report/bulk envelopes remain future work.
+
+Budget CRUD accepts signed `totalMinor`/`amountMinor` aliases alongside cents,
+validates all amounts/dates/org references before transactional writes, and uses
+bigint sums/distribution within the signed safe-number range. GET detail returns
+both aliases; header envelopes are unchanged. Budget reports remain pending. See
+[budget contracts](../../.agentic/registries/BUDGET_WIRE_CONTRACTS.md).

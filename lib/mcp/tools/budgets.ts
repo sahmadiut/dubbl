@@ -1,12 +1,11 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { budget, budgetLine, budgetPeriod, journalEntry, journalLine } from "@/lib/db/schema";
+import { budget, journalEntry, journalLine } from "@/lib/db/schema";
 import { eq, and, desc, sql, isNull, gte, lte } from "drizzle-orm";
-import { notDeleted, softDelete } from "@/lib/db/soft-delete";
-import { requireRole } from "@/lib/api/require-role";
-import { generatePeriods, distributeAmount } from "@/lib/budget-periods";
-import type { PeriodType } from "@/lib/budget-periods";
+import { notDeleted } from "@/lib/db/soft-delete";
+import { budgetCreateSchema, budgetUpdateSchema } from "@/lib/api/budget-wire";
+import { createBudget, updateBudget, deleteBudget, getBudget, assertBudgetReadScope } from "@/lib/api/budget-write";
 import { wrapTool } from "@/lib/mcp/errors";
 import type { AuthContext } from "@/lib/api/auth-context";
 
@@ -20,12 +19,11 @@ import type { AuthContext } from "@/lib/api/auth-context";
  * $12.50 = 1250). Direct DB access via Drizzle (no HTTP self-calls); every
  * query is scoped to the AuthContext's organization.
  */
-const PERIOD_TYPES = ["monthly", "weekly", "daily", "quarterly", "yearly", "custom"] as const;
 
 export function registerBudgetTools(server: McpServer, ctx: AuthContext) {
   server.tool(
     "list_budgets",
-    "List budgets for the organization with pagination, newest first. Each budget includes its fiscal year (when set). Returns the budgets and the total count. The period amounts and line totals on budgets are in integer cents.",
+    "List budgets for the organization with pagination, newest first. Each budget includes its fiscal year (when set). Returns the budgets and the total count. Returns headers only, without line totals or period amounts; get_budget returns those with exact cents aliases.",
     {
       limit: z
         .number()
@@ -58,315 +56,42 @@ export function registerBudgetTools(server: McpServer, ctx: AuthContext) {
           .from(budget)
           .where(and(...conditions));
 
+        budgets.forEach(item => assertBudgetReadScope(ctx, item));
         return { budgets, total: Number(countResult?.count || 0) };
       })
   );
 
   server.tool(
     "get_budget",
-    "Get a single budget by ID with its fiscal year and each budget line (with its chart account and the per-period breakdown). Line totals and period amounts are in integer cents.",
+    "Get a single budget by ID with its fiscal year and each budget line (with its chart account and the per-period breakdown). Line totals and period amounts retain numeric integer cents and add canonical totalMinor/amountMinor strings. Unsafe stored amounts fail with 422.",
     {
       budgetId: z.string().describe("The UUID of the budget"),
     },
     (params) =>
       wrapTool(ctx, async () => {
-        const found = await db.query.budget.findFirst({
-          where: and(
-            eq(budget.id, params.budgetId),
-            eq(budget.organizationId, ctx.organizationId),
-            notDeleted(budget.deletedAt)
-          ),
-          with: {
-            fiscalYear: true,
-            lines: {
-              with: {
-                account: true,
-                periods: true,
-              },
-            },
-          },
-        });
-        if (!found) throw new Error("Budget not found");
-        return { budget: found };
+        return { budget: await getBudget(ctx, params.budgetId) };
       })
   );
 
   server.tool(
     "create_budget",
-    "Create a budget with one line per chart account. Each line is broken into time periods spanning the budget's date range. For a line, either pass explicit `periods` (each with an amount in integer cents) or pass a `total` in integer cents and omit periods — the total is then auto-distributed evenly across the periods generated for the chosen periodType. When neither periods nor total is given the line total is 0. A line's stored total is its provided `total`, otherwise the sum of its period amounts. Returns the created budget (header only).",
-    {
-      name: z.string().min(1).describe("Budget name"),
-      fiscalYearId: z
-        .string()
-        .nullable()
-        .optional()
-        .describe("Optional fiscal year UUID this budget belongs to"),
-      startDate: z.string().describe("Budget start date (YYYY-MM-DD)"),
-      endDate: z.string().describe("Budget end date (YYYY-MM-DD)"),
-      periodType: z
-        .enum(PERIOD_TYPES)
-        .optional()
-        .default("monthly")
-        .describe(
-          "How the date range is split into periods when periods are auto-generated: 'monthly' (default), 'weekly', 'daily', 'quarterly', 'yearly', or 'custom' (one period covering the whole range)."
-        ),
-      isActive: z
-        .boolean()
-        .optional()
-        .default(true)
-        .describe("Whether the budget is active (default true)"),
-      lines: z
-        .array(
-          z.object({
-            accountId: z.string().min(1).describe("Chart-of-accounts account UUID for this line"),
-            total: z
-              .number()
-              .int()
-              .optional()
-              .describe(
-                "Line total in integer cents. When set and periods are omitted, this is auto-distributed evenly across the generated periods."
-              ),
-            periods: z
-              .array(
-                z.object({
-                  label: z.string().min(1).describe("Period label (e.g. 'Jan 2026')"),
-                  startDate: z.string().min(1).describe("Period start date (YYYY-MM-DD)"),
-                  endDate: z.string().min(1).describe("Period end date (YYYY-MM-DD)"),
-                  amount: z
-                    .number()
-                    .int()
-                    .optional()
-                    .default(0)
-                    .describe("Budgeted amount for this period in integer cents"),
-                  sortOrder: z
-                    .number()
-                    .int()
-                    .optional()
-                    .default(0)
-                    .describe("Display order of this period (0-based)"),
-                })
-              )
-              .optional()
-              .describe(
-                "Explicit per-period amounts (integer cents). Omit to auto-generate periods from periodType and distribute `total` evenly."
-              ),
-          })
-        )
-        .min(1)
-        .describe("Budget lines (at least one)"),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        requireRole(ctx, "manage:budgets");
-
-        const [created] = await db
-          .insert(budget)
-          .values({
-            organizationId: ctx.organizationId,
-            name: params.name,
-            fiscalYearId: params.fiscalYearId || null,
-            startDate: params.startDate,
-            endDate: params.endDate,
-            periodType: params.periodType,
-            isActive: params.isActive,
-          })
-          .returning();
-
-        for (const line of params.lines) {
-          let periods = line.periods;
-          if (!periods || periods.length === 0) {
-            const generated = generatePeriods(
-              params.periodType as PeriodType,
-              params.startDate,
-              params.endDate
-            );
-            const total = line.total || 0;
-            const amounts = distributeAmount(total, generated.length);
-            periods = generated.map((p, i) => ({ ...p, amount: amounts[i] }));
-          }
-
-          const total = line.total ?? periods.reduce((s, p) => s + p.amount, 0);
-
-          const [createdLine] = await db
-            .insert(budgetLine)
-            .values({
-              budgetId: created.id,
-              accountId: line.accountId,
-              total,
-            })
-            .returning();
-
-          if (periods.length > 0) {
-            await db.insert(budgetPeriod).values(
-              periods.map((p) => ({
-                budgetLineId: createdLine.id,
-                label: p.label,
-                startDate: p.startDate,
-                endDate: p.endDate,
-                amount: p.amount,
-                sortOrder: p.sortOrder,
-              }))
-            );
-          }
-        }
-
-        return { budget: created };
-      })
+    "Create a budget, returning its header. Lines accept total (signed safe integer cents) or totalMinor (canonical integer string); periods accept amount or amountMinor with exact agreement. Supported amounts/sums are +/-9007199254740991, at most 500 lines/10000 periods. Omitted amounts default to zero. Omit periods to distribute a total exactly. Explicit total retains precedence over period sum. All lines are validated before a transactional write.",
+    budgetCreateSchema.shape,
+    params => wrapTool(ctx, async () => ({ budget: await createBudget(ctx, params) })),
   );
 
   server.tool(
     "update_budget",
-    "Update a budget. Header fields (name, fiscalYearId, startDate, endDate, periodType, isActive) are updated in place. If `lines` is provided it REPLACES all existing lines and their periods: the old lines are deleted (periods cascade) and the supplied lines are recreated using the same rules as create_budget (explicit periods, or `total` distributed across auto-generated periods from the effective periodType/date range). Omit `lines` to leave lines untouched. Amounts are in integer cents. Returns the updated budget (header only).",
-    {
-      budgetId: z.string().describe("The UUID of the budget to update"),
-      name: z.string().min(1).optional().describe("New budget name"),
-      fiscalYearId: z
-        .string()
-        .nullable()
-        .optional()
-        .describe("Fiscal year UUID, or null to clear it"),
-      startDate: z.string().optional().describe("New start date (YYYY-MM-DD)"),
-      endDate: z.string().optional().describe("New end date (YYYY-MM-DD)"),
-      periodType: z
-        .enum(PERIOD_TYPES)
-        .optional()
-        .describe(
-          "New period type used for auto-generating periods when lines are replaced: 'monthly', 'weekly', 'daily', 'quarterly', 'yearly', or 'custom'."
-        ),
-      isActive: z.boolean().optional().describe("Whether the budget is active"),
-      lines: z
-        .array(
-          z.object({
-            accountId: z.string().min(1).describe("Chart-of-accounts account UUID for this line"),
-            total: z
-              .number()
-              .int()
-              .optional()
-              .describe(
-                "Line total in integer cents. When set and periods are omitted, this is auto-distributed evenly across the generated periods."
-              ),
-            periods: z
-              .array(
-                z.object({
-                  label: z.string().min(1).describe("Period label (e.g. 'Jan 2026')"),
-                  startDate: z.string().min(1).describe("Period start date (YYYY-MM-DD)"),
-                  endDate: z.string().min(1).describe("Period end date (YYYY-MM-DD)"),
-                  amount: z
-                    .number()
-                    .int()
-                    .optional()
-                    .default(0)
-                    .describe("Budgeted amount for this period in integer cents"),
-                  sortOrder: z
-                    .number()
-                    .int()
-                    .optional()
-                    .default(0)
-                    .describe("Display order of this period (0-based)"),
-                })
-              )
-              .optional()
-              .describe(
-                "Explicit per-period amounts (integer cents). Omit to auto-generate periods from periodType and distribute `total` evenly."
-              ),
-          })
-        )
-        .optional()
-        .describe(
-          "When provided, REPLACES all existing lines and periods. Omit to leave the budget's lines unchanged."
-        ),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        requireRole(ctx, "manage:budgets");
-
-        const existing = await db.query.budget.findFirst({
-          where: and(
-            eq(budget.id, params.budgetId),
-            eq(budget.organizationId, ctx.organizationId),
-            notDeleted(budget.deletedAt)
-          ),
-        });
-        if (!existing) throw new Error("Budget not found");
-
-        const { budgetId, lines, ...budgetFields } = params;
-
-        const [updated] = await db
-          .update(budget)
-          .set({ ...budgetFields, updatedAt: new Date() })
-          .where(eq(budget.id, budgetId))
-          .returning();
-
-        if (lines) {
-          // Delete old lines (periods cascade)
-          await db.delete(budgetLine).where(eq(budgetLine.budgetId, budgetId));
-
-          const periodType = (params.periodType || existing.periodType) as PeriodType;
-          const startDate = params.startDate || existing.startDate;
-          const endDate = params.endDate || existing.endDate;
-
-          for (const line of lines) {
-            let periods = line.periods;
-            if (!periods || periods.length === 0) {
-              const generated = generatePeriods(periodType, startDate, endDate);
-              const total = line.total || 0;
-              const amounts = distributeAmount(total, generated.length);
-              periods = generated.map((p, i) => ({ ...p, amount: amounts[i] }));
-            }
-
-            const total = line.total ?? periods.reduce((s, p) => s + p.amount, 0);
-
-            const [createdLine] = await db
-              .insert(budgetLine)
-              .values({
-                budgetId,
-                accountId: line.accountId,
-                total,
-              })
-              .returning();
-
-            if (periods.length > 0) {
-              await db.insert(budgetPeriod).values(
-                periods.map((p) => ({
-                  budgetLineId: createdLine.id,
-                  label: p.label,
-                  startDate: p.startDate,
-                  endDate: p.endDate,
-                  amount: p.amount,
-                  sortOrder: p.sortOrder,
-                }))
-              );
-            }
-          }
-        }
-
-        return { budget: updated };
-      })
+    "Update a budget, returning its header. Omitted lines stay unchanged; supplied lines replace all old lines/periods transactionally. total/totalMinor and amount/amountMinor are agreeing signed cents aliases, supported within +/-9007199254740991; max 500 lines/10000 periods. Omitted amounts default to zero. Explicit total retains precedence over period sum. Invalid aliases, sums or organization references fail before writes.",
+    { budgetId: z.string().uuid().describe("UUID of this organization's budget"), ...budgetUpdateSchema.shape },
+    params => wrapTool(ctx, async () => ({ budget: await updateBudget(ctx, params.budgetId, params) })),
   );
 
   server.tool(
     "delete_budget",
-    "Soft-delete a budget by ID (it stops appearing in lists/reports but is retained). Returns { success: true } on success.",
-    {
-      budgetId: z.string().describe("The UUID of the budget to delete"),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        requireRole(ctx, "manage:budgets");
-
-        const existing = await db.query.budget.findFirst({
-          where: and(
-            eq(budget.id, params.budgetId),
-            eq(budget.organizationId, ctx.organizationId),
-            notDeleted(budget.deletedAt)
-          ),
-        });
-        if (!existing) throw new Error("Budget not found");
-
-        await db.update(budget).set(softDelete()).where(eq(budget.id, params.budgetId));
-
-        return { success: true };
-      })
+    "Soft-delete an organization-scoped budget. Retains its amounts and periods; returns {success:true}. Requires manage:budgets.",
+    { budgetId: z.string().uuid().describe("UUID of this organization's budget to soft-delete") },
+    params => wrapTool(ctx, async () => { await deleteBudget(ctx, params.budgetId); return { success: true }; }),
   );
 
   server.tool(

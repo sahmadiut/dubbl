@@ -21,3 +21,5 @@ This is a policy map; current state is computed from task dependencies. No relea
 | Delayed contract cleanup | REL-004 only after the real deprecation window |
 
 A generic continue prompt authorizes bounded project work, not unspecified production deployment. Prepare a concrete candidate/runbook before requesting a required production approval. The tracker itself never deploys or enables IRR. Human-review labels record actual required reviews and cannot be satisfied by a model role-playing a person.
+
+CI-002 implements the functional-currency selection gate in `lib/currency/rollout.ts`: code readiness is false and a premature `IRR_PRODUCTION_ENABLED=true` fails server configuration validation. [ADR-003](ADR-003-LOCALE-AND-CURRENCY-ROLLOUT.md) records scope and later reviewed enablement. This does not qualify existing/foreign-IRR postings or change financial gate status.

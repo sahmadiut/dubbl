@@ -4,6 +4,7 @@ import { AuthError } from "./auth-context";
 import { PeriodLockedError } from "./period-lock";
 import { LimitExceededError } from "./check-limit";
 import { MissingExchangeRateError } from "@/lib/currency/converter";
+import { CurrencyRolloutError } from "@/lib/currency/rollout";
 
 /** 200 OK response */
 export function ok<T>(data: T) {
@@ -32,6 +33,9 @@ export function notFound(entity = "Resource") {
 
 /** Standard error handler for catch blocks */
 export function handleError(err: unknown) {
+  if (err instanceof CurrencyRolloutError) {
+    return NextResponse.json({ error: err.message }, { status: 403 });
+  }
   if (err instanceof AuthError) {
     return NextResponse.json({ error: err.message }, { status: err.status });
   }

@@ -3,6 +3,8 @@ import { db } from "@/lib/db";
 import { organization, member, users, subscription, journalEntry } from "@/lib/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { isValidCurrencyCode } from "@/lib/currency/iso4217";
+import { functionalCurrencySchema } from "@/lib/currency/functional-currency";
+import { CurrencyRolloutError } from "@/lib/currency/rollout";
 import { auth } from "@/lib/auth";
 import { getAuthContext, AuthError } from "@/lib/api/auth-context";
 import { requireRole } from "@/lib/api/require-role";
@@ -26,7 +28,7 @@ const updateSchema = z
     slug: z.string().min(1).optional(),
     country: z.string().min(1).optional().nullable(),
     businessType: z.string().min(1).optional().nullable(),
-    defaultCurrency: z.string().min(1).optional(),
+    defaultCurrency: functionalCurrencySchema.optional(),
     fiscalYearStartMonth: z.number().min(1).max(12).optional(),
     countryCode: z.string().max(2).nullable().optional(),
     taxId: z.string().nullable().optional(),
@@ -293,6 +295,9 @@ export async function PATCH(request: Request) {
 
     return NextResponse.json({ organization: updated });
   } catch (err) {
+    if (err instanceof CurrencyRolloutError) {
+      return NextResponse.json({ error: err.message }, { status: 403 });
+    }
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }

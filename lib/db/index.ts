@@ -1,6 +1,10 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import * as schema from "./schema";
+import { readCurrencyRollout } from "../currency/rollout";
+
+// Validate server configuration before connecting, including jobs and MCP.
+readCurrencyRollout(process.env);
 
 const pool = new pg.Pool({
   connectionString: process.env.DATABASE_URL,

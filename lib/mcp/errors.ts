@@ -2,6 +2,7 @@ import { z } from "zod";
 import { AuthError } from "@/lib/api/auth-context";
 import type { AuthContext } from "@/lib/api/auth-context";
 import { LimitExceededError } from "@/lib/api/check-limit";
+import { CurrencyRolloutError } from "@/lib/currency/rollout";
 
 type ToolResult = {
   content: { type: "text"; text: string }[];
@@ -17,6 +18,12 @@ export function wrapTool<T>(
       content: [{ type: "text" as const, text: JSON.stringify(result) }],
     }))
     .catch((err) => {
+      if (err instanceof CurrencyRolloutError) {
+        return {
+          content: [{ type: "text" as const, text: JSON.stringify({ error: err.message, status: 403 }) }],
+          isError: true,
+        };
+      }
       if (err instanceof AuthError) {
         return {
           content: [

@@ -83,3 +83,13 @@ Generated initial scope index; current status always comes from task metadata vi
 | [REL-003](../tasks/REL-003.md) | 09 | Execute authorized canary and production acceptance | devops | no |
 | [REL-004](../tasks/REL-004.md) | 09 | Close migration compatibility window safely | database | no |
 | [OPS-001](../tasks/OPS-001.md) | 10 | Perform the first scheduled maintenance review | lead | no |
+
+## MON-016 implementation children
+
+| ID | Task | Role | Optional |
+|---|---|---|---|
+| [MON-030](../tasks/MON-030.md) | Adopt exact public payment-link and portal JSON contracts | backend | no |
+| [MON-031](../tasks/MON-031.md) | Adopt exact payment provider and webhook contracts | backend | no |
+| [MON-032](../tasks/MON-032.md) | Adopt exact backup snapshot and restore contracts | backend | no |
+| [MON-033](../tasks/MON-033.md) | Adopt exact generic import and export contracts | backend | no |
+| [MON-034](../tasks/MON-034.md) | Qualify remaining opaque and public rendering boundaries | backend | no |

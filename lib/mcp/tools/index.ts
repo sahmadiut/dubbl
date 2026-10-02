@@ -54,6 +54,7 @@ import { registerTaxPeriodTools } from "./tax-periods";
 import { registerReminderTools } from "./reminders";
 import { registerCrmTools } from "./crm";
 import { registerWarehouseTools } from "./warehouses";
+import { registerPublicPortalTools } from "./public-portal";
 
 export function registerAllTools(server: McpServer, ctx: AuthContext) {
   registerOrganizationTools(server, ctx);
@@ -110,4 +111,5 @@ export function registerAllTools(server: McpServer, ctx: AuthContext) {
   registerReminderTools(server, ctx);
   registerCrmTools(server, ctx);
   registerWarehouseTools(server, ctx);
+  registerPublicPortalTools(server, ctx);
 }

@@ -35,3 +35,5 @@ MON-012 retains rollout integration acceptance after its children MON-013 (curre
 MON-014 retains core integration acceptance after MON-017 (contact credit limits/balances), MON-018 (journals), MON-019 (receivables), MON-020 (payables/procurement), MON-021 (payments/expenses/banking) and MON-022 (organization/tax configuration). Children inherit MON-011 and the migration/API source sections. No accounting scope or parent criterion is removed.
 
 MON-015 retains auxiliary/report integration acceptance after MON-023 budgets CRUD, MON-024 inventory/costing, MON-025 payroll, MON-026 assets/loans, MON-027 projects/CRM/pricing, MON-028 consolidation/configuration and MON-029 reports/dashboards. Children inherit MON-011 and migration/API source sections; original parent criteria remain unchanged.
+
+MON-016 retains public/opaque integration acceptance after MON-030 token JSON, MON-031 providers/webhooks, MON-032 backups/restore, MON-033 generic import/export and MON-034 opaque/rendering boundaries. Children inherit MON-011 and migration/API source sections. No original acceptance requirement is removed.

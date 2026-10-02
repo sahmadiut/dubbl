@@ -1,6 +1,6 @@
 # Primary references to verify during execution
 
-These pointers come from the supplied plan and were not newly browsed for this package. Record retrieved date, exact version/snapshot and relevant claim before using them. Inspect actual repository manifests first for compatible API/library versions. Do not rely on moving `current` or `latest` pages without recording the version.
+These pointers come from the [Markdown implementation plan](SOURCE.md) and were not newly browsed for this package. Record retrieved date, exact version/snapshot and relevant claim before using them. Inspect actual repository manifests first for compatible API/library versions. Do not rely on moving `current` or `latest` pages without recording the version.
 
 | Topic | Primary pointer | Task |
 |---|---|---|

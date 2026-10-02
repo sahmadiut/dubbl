@@ -1,6 +1,6 @@
 # Dubbl agentic project workspace
 
-An English, repository-local execution system for the supplied Dubbl / Bigcapital parity / Persian-IRR-RTL plan. It contains 60 initial tasks, explicit dependencies, eight responsibility profiles, evidence-based completion, and an offline Python controller. It is a project operating system, not an implementation of Dubbl itself.
+An English, repository-local execution system for the [Markdown implementation plan](sources/SOURCE.md). It contains 60 initial tasks, explicit dependencies, eight responsibility profiles, evidence-based completion, and an offline Python controller. It is a project operating system, not an implementation of Dubbl itself.
 
 ## Install once
 
@@ -40,7 +40,8 @@ The controller selects work and tracks state. The coding assistant reads the con
 - `docs/CONTROLLER.md`: CLI and state machine.
 - `docs/REPOSITORY_MAP.md`: verified local paths/commands; initially unknown.
 - `docs/TEST_MATRIX.md`: financial, locale, security and release checks.
-- `sources/PLAN_COVERAGE.md`: traceability to all 37 pages of the source plan.
+- `sources/SOURCE.md`: authoritative Markdown requirements source.
+- `sources/PLAN_COVERAGE.md`: traceability from Markdown sections to task families.
 - `registries/`: parity, money, upstream, provenance, terminology and currency facts.
 - `tasks/`: the single source of truth for task state.
 

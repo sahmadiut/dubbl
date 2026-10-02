@@ -1,0 +1,476 @@
+{
+  "retrieved_at_utc": "2026-10-02T01:51:03.617172+00:00",
+  "source_url": "https://docs.bigcapital.app/llms.txt",
+  "sha256": "368443f9b78261f745f4d45b829d6cf9b615b64f215e64e86302f098738bdd12",
+  "scope": "Public documentation URL catalog only. No Bigcapital implementation code fetched. Moving documentation; digest pins fetched index bytes, not a product release.",
+  "groups": {
+    "_root": [
+      "https://docs.bigcapital.app/api-reference/introduction.md",
+      "https://docs.bigcapital.app/api-reference/get-apisystem_db.md",
+      "https://docs.bigcapital.app/api-reference/openapi.json"
+    ],
+    "accounts": [
+      "https://docs.bigcapital.app/api-reference/accounts/validates-which-accounts-can-be-deleted-and-returns-counts-of-deletable-and-non-deletable-accounts.md",
+      "https://docs.bigcapital.app/api-reference/accounts/deletes-multiple-accounts-in-bulk.md",
+      "https://docs.bigcapital.app/api-reference/accounts/retrieves-the-accounts.md",
+      "https://docs.bigcapital.app/api-reference/accounts/create-an-account.md",
+      "https://docs.bigcapital.app/api-reference/accounts/retrieves-the-account-details.md",
+      "https://docs.bigcapital.app/api-reference/accounts/edit-the-given-account.md",
+      "https://docs.bigcapital.app/api-reference/accounts/delete-the-given-account.md",
+      "https://docs.bigcapital.app/api-reference/accounts/activate-the-given-account.md",
+      "https://docs.bigcapital.app/api-reference/accounts/inactivate-the-given-account.md",
+      "https://docs.bigcapital.app/api-reference/accounts/retrieves-the-account-types.md",
+      "https://docs.bigcapital.app/api-reference/accounts/retrieves-the-account-transactions.md"
+    ],
+    "api-keys": [
+      "https://docs.bigcapital.app/api-reference/api-keys/generate-a-new-api-key.md",
+      "https://docs.bigcapital.app/api-reference/api-keys/revoke-an-api-key.md",
+      "https://docs.bigcapital.app/api-reference/api-keys/get-all-api-keys-for-the-current-tenant.md"
+    ],
+    "attachments": [
+      "https://docs.bigcapital.app/api-reference/attachments/upload-attachment-to-s3.md",
+      "https://docs.bigcapital.app/api-reference/attachments/get-attachment-by-id.md",
+      "https://docs.bigcapital.app/api-reference/attachments/delete-attachment-by-id.md",
+      "https://docs.bigcapital.app/api-reference/attachments/link-attachment-to-a-model.md",
+      "https://docs.bigcapital.app/api-reference/attachments/unlink-attachment-from-a-model.md",
+      "https://docs.bigcapital.app/api-reference/attachments/get-presigned-url-for-attachment.md"
+    ],
+    "auth": [
+      "https://docs.bigcapital.app/api-reference/auth/sign-in-a-user.md",
+      "https://docs.bigcapital.app/api-reference/auth/sign-up-a-new-user.md",
+      "https://docs.bigcapital.app/api-reference/auth/confirm-user-signup.md",
+      "https://docs.bigcapital.app/api-reference/auth/send-reset-password-email.md",
+      "https://docs.bigcapital.app/api-reference/auth/reset-password-using-token.md",
+      "https://docs.bigcapital.app/api-reference/auth/get-auth-metadata-eg-signup-disabled.md",
+      "https://docs.bigcapital.app/api-reference/auth/resend-the-signup-confirmation-message.md",
+      "https://docs.bigcapital.app/api-reference/auth/retrieve-the-authenticated-account.md"
+    ],
+    "bank-accounts": [
+      "https://docs.bigcapital.app/api-reference/bank-accounts/retrieve-the-bank-accounts.md",
+      "https://docs.bigcapital.app/api-reference/bank-accounts/retrieve-the-bank-account-summary.md",
+      "https://docs.bigcapital.app/api-reference/bank-accounts/disconnect-the-bank-connection-of-the-given-bank-account.md",
+      "https://docs.bigcapital.app/api-reference/bank-accounts/refresh-the-bank-account-transactions.md",
+      "https://docs.bigcapital.app/api-reference/bank-accounts/pause-transactions-syncing-of-the-given-bank-account.md",
+      "https://docs.bigcapital.app/api-reference/bank-accounts/resume-transactions-syncing-of-the-given-bank-account.md"
+    ],
+    "bank-rules": [
+      "https://docs.bigcapital.app/api-reference/bank-rules/retrieves-the-bank-rules.md",
+      "https://docs.bigcapital.app/api-reference/bank-rules/create-a-new-bank-rule.md",
+      "https://docs.bigcapital.app/api-reference/bank-rules/retrieves-the-bank-rule-details.md",
+      "https://docs.bigcapital.app/api-reference/bank-rules/edit-the-given-bank-rule.md",
+      "https://docs.bigcapital.app/api-reference/bank-rules/delete-the-given-bank-rule.md"
+    ],
+    "banking-categorization": [
+      "https://docs.bigcapital.app/api-reference/banking-categorization/categorize-bank-transactions.md",
+      "https://docs.bigcapital.app/api-reference/banking-categorization/uncategorize-bank-transactions-in-bulk.md",
+      "https://docs.bigcapital.app/api-reference/banking-categorization/uncategorize-a-bank-transaction.md"
+    ],
+    "banking-pending-transactions": [
+      "https://docs.bigcapital.app/api-reference/banking-pending-transactions/get-pending-bank-account-transactions.md"
+    ],
+    "banking-plaid": [
+      "https://docs.bigcapital.app/api-reference/banking-plaid/get-plaid-link-token.md",
+      "https://docs.bigcapital.app/api-reference/banking-plaid/exchange-plaid-access-token.md",
+      "https://docs.bigcapital.app/api-reference/banking-plaid/listen-to-plaid-webhooks.md"
+    ],
+    "banking-recognized-transactions": [
+      "https://docs.bigcapital.app/api-reference/banking-recognized-transactions/get-recognized-transaction.md",
+      "https://docs.bigcapital.app/api-reference/banking-recognized-transactions/get-a-list-of-recognized-transactions.md"
+    ],
+    "banking-transactions": [
+      "https://docs.bigcapital.app/api-reference/banking-transactions/get-bank-account-transactions.md",
+      "https://docs.bigcapital.app/api-reference/banking-transactions/create-a-new-bank-transaction.md",
+      "https://docs.bigcapital.app/api-reference/banking-transactions/get-a-specific-bank-transaction-by-id.md",
+      "https://docs.bigcapital.app/api-reference/banking-transactions/delete-a-bank-transaction.md",
+      "https://docs.bigcapital.app/api-reference/banking-transactions/exclude-the-given-bank-transactions.md",
+      "https://docs.bigcapital.app/api-reference/banking-transactions/unexclude-the-given-bank-transactions.md",
+      "https://docs.bigcapital.app/api-reference/banking-transactions/retrieves-the-excluded-bank-transactions.md",
+      "https://docs.bigcapital.app/api-reference/banking-transactions/exclude-the-given-bank-transaction.md",
+      "https://docs.bigcapital.app/api-reference/banking-transactions/unexclude-the-given-bank-transaction.md"
+    ],
+    "banking-transactions-matching": [
+      "https://docs.bigcapital.app/api-reference/banking-transactions-matching/retrieves-the-matched-transactions.md",
+      "https://docs.bigcapital.app/api-reference/banking-transactions-matching/match-the-given-uncategorized-transaction.md",
+      "https://docs.bigcapital.app/api-reference/banking-transactions-matching/unmatch-the-given-uncategorized-transaction.md"
+    ],
+    "banking-uncategorized-transactions": [
+      "https://docs.bigcapital.app/api-reference/banking-uncategorized-transactions/get-autofill-values-for-categorize-transactions.md",
+      "https://docs.bigcapital.app/api-reference/banking-uncategorized-transactions/get-uncategorized-transactions-for-a-specific-bank-account.md",
+      "https://docs.bigcapital.app/api-reference/banking-uncategorized-transactions/get-a-specific-uncategorized-transaction-by-id.md"
+    ],
+    "bill-payments": [
+      "https://docs.bigcapital.app/api-reference/bill-payments/retrieves-the-bill-payments-list.md",
+      "https://docs.bigcapital.app/api-reference/bill-payments/create-a-new-bill-payment.md",
+      "https://docs.bigcapital.app/api-reference/bill-payments/retrieves-the-bill-payment-details.md",
+      "https://docs.bigcapital.app/api-reference/bill-payments/edit-the-given-bill-payment.md",
+      "https://docs.bigcapital.app/api-reference/bill-payments/delete-the-given-bill-payment.md",
+      "https://docs.bigcapital.app/api-reference/bill-payments/retrieves-the-payable-entries-of-the-new-page-once-vendor-be-selected.md",
+      "https://docs.bigcapital.app/api-reference/bill-payments/retrieves-the-bills-of-the-given-bill-payment.md",
+      "https://docs.bigcapital.app/api-reference/bill-payments/retrieves-the-edit-page-of-the-given-bill-payment.md"
+    ],
+    "bills": [
+      "https://docs.bigcapital.app/api-reference/bills/validate-which-bills-can-be-deleted-and-return-the-results.md",
+      "https://docs.bigcapital.app/api-reference/bills/deletes-multiple-bills.md",
+      "https://docs.bigcapital.app/api-reference/bills/retrieves-the-bills.md",
+      "https://docs.bigcapital.app/api-reference/bills/create-a-new-bill.md",
+      "https://docs.bigcapital.app/api-reference/bills/retrieves-the-bill-details.md",
+      "https://docs.bigcapital.app/api-reference/bills/edit-the-given-bill.md",
+      "https://docs.bigcapital.app/api-reference/bills/delete-the-given-bill.md",
+      "https://docs.bigcapital.app/api-reference/bills/retrieve-the-specific-bill-associated-payment-transactions.md",
+      "https://docs.bigcapital.app/api-reference/bills/open-the-given-bill.md",
+      "https://docs.bigcapital.app/api-reference/bills/retrieves-the-due-bills.md"
+    ],
+    "branches": [
+      "https://docs.bigcapital.app/api-reference/branches/retrieves-the-branches.md",
+      "https://docs.bigcapital.app/api-reference/branches/create-a-new-branch.md",
+      "https://docs.bigcapital.app/api-reference/branches/retrieves-the-branch-details.md",
+      "https://docs.bigcapital.app/api-reference/branches/edit-the-given-branch.md",
+      "https://docs.bigcapital.app/api-reference/branches/delete-the-given-branch.md",
+      "https://docs.bigcapital.app/api-reference/branches/activate-the-branches-feature.md",
+      "https://docs.bigcapital.app/api-reference/branches/mark-the-given-branch-as-primary.md"
+    ],
+    "contacts": [
+      "https://docs.bigcapital.app/api-reference/contacts/get-the-auto-complete-contacts.md",
+      "https://docs.bigcapital.app/api-reference/contacts/get-contact-by-id-customer-or-vendor.md",
+      "https://docs.bigcapital.app/api-reference/contacts/activate-a-contact.md",
+      "https://docs.bigcapital.app/api-reference/contacts/inactivate-a-contact.md"
+    ],
+    "credit-note-refunds": [
+      "https://docs.bigcapital.app/api-reference/credit-note-refunds/retrieve-the-credit-note-graph.md",
+      "https://docs.bigcapital.app/api-reference/credit-note-refunds/create-a-refund-for-the-given-credit-note.md",
+      "https://docs.bigcapital.app/api-reference/credit-note-refunds/delete-a-refund-for-the-given-credit-note.md"
+    ],
+    "credit-notes": [
+      "https://docs.bigcapital.app/api-reference/credit-notes/get-all-credit-notes.md",
+      "https://docs.bigcapital.app/api-reference/credit-notes/create-a-new-credit-note.md",
+      "https://docs.bigcapital.app/api-reference/credit-notes/get-credit-note-state.md",
+      "https://docs.bigcapital.app/api-reference/credit-notes/get-a-specific-credit-note-by-id.md",
+      "https://docs.bigcapital.app/api-reference/credit-notes/update-a-credit-note.md",
+      "https://docs.bigcapital.app/api-reference/credit-notes/delete-a-credit-note.md",
+      "https://docs.bigcapital.app/api-reference/credit-notes/open-a-credit-note.md",
+      "https://docs.bigcapital.app/api-reference/credit-notes/validates-which-credit-notes-can-be-deleted-and-returns-the-results.md",
+      "https://docs.bigcapital.app/api-reference/credit-notes/deletes-multiple-credit-notes.md"
+    ],
+    "credit-notes-apply-invoice": [
+      "https://docs.bigcapital.app/api-reference/credit-notes-apply-invoice/applied-credit-note-to-invoices.md",
+      "https://docs.bigcapital.app/api-reference/credit-notes-apply-invoice/get-credit-note-associated-invoices-to-apply.md",
+      "https://docs.bigcapital.app/api-reference/credit-notes-apply-invoice/apply-credit-note-to-invoices.md",
+      "https://docs.bigcapital.app/api-reference/credit-notes-apply-invoice/delete-applied-credit-note-to-invoice.md"
+    ],
+    "currencies": [
+      "https://docs.bigcapital.app/api-reference/currencies/get-all-currencies.md",
+      "https://docs.bigcapital.app/api-reference/currencies/create-a-new-currency.md",
+      "https://docs.bigcapital.app/api-reference/currencies/edit-an-existing-currency.md",
+      "https://docs.bigcapital.app/api-reference/currencies/delete-a-currency-by-code.md",
+      "https://docs.bigcapital.app/api-reference/currencies/get-a-currency-by-code.md"
+    ],
+    "customers": [
+      "https://docs.bigcapital.app/api-reference/customers/retrieves-the-customer-details.md",
+      "https://docs.bigcapital.app/api-reference/customers/edit-the-given-customer.md",
+      "https://docs.bigcapital.app/api-reference/customers/delete-the-given-customer.md",
+      "https://docs.bigcapital.app/api-reference/customers/retrieves-the-customers-paginated-list.md",
+      "https://docs.bigcapital.app/api-reference/customers/create-a-new-customer.md",
+      "https://docs.bigcapital.app/api-reference/customers/edit-the-opening-balance-of-the-given-customer.md",
+      "https://docs.bigcapital.app/api-reference/customers/validates-which-customers-can-be-deleted-and-returns-counts-of-deletable-and-non-deletable-customers.md",
+      "https://docs.bigcapital.app/api-reference/customers/deletes-multiple-customers-in-bulk.md"
+    ],
+    "dashboard": [
+      "https://docs.bigcapital.app/api-reference/dashboard/get-dashboard-boot-metadata.md"
+    ],
+    "expenses": [
+      "https://docs.bigcapital.app/api-reference/expenses/validate-which-expenses-can-be-deleted-and-return-the-results.md",
+      "https://docs.bigcapital.app/api-reference/expenses/deletes-multiple-expenses.md",
+      "https://docs.bigcapital.app/api-reference/expenses/get-the-expense-transactions.md",
+      "https://docs.bigcapital.app/api-reference/expenses/create-a-new-expense-transaction.md",
+      "https://docs.bigcapital.app/api-reference/expenses/get-the-expense-transaction-details.md",
+      "https://docs.bigcapital.app/api-reference/expenses/edit-the-given-expense-transaction.md",
+      "https://docs.bigcapital.app/api-reference/expenses/delete-the-given-expense-transaction.md",
+      "https://docs.bigcapital.app/api-reference/expenses/publish-the-given-expense-transaction.md"
+    ],
+    "export": [
+      "https://docs.bigcapital.app/api-reference/export/retrieves-exported-the-given-resource.md"
+    ],
+    "import": [
+      "https://docs.bigcapital.app/api-reference/import/upload-import-file.md",
+      "https://docs.bigcapital.app/api-reference/import/map-import-columns.md",
+      "https://docs.bigcapital.app/api-reference/import/preview-import-data.md",
+      "https://docs.bigcapital.app/api-reference/import/process-import.md",
+      "https://docs.bigcapital.app/api-reference/import/get-import-sample.md",
+      "https://docs.bigcapital.app/api-reference/import/get-import-metadata.md"
+    ],
+    "inventory-adjustments": [
+      "https://docs.bigcapital.app/api-reference/inventory-adjustments/create-a-quick-inventory-adjustment.md",
+      "https://docs.bigcapital.app/api-reference/inventory-adjustments/retrieves-the-inventory-adjustment-details.md",
+      "https://docs.bigcapital.app/api-reference/inventory-adjustments/delete-the-given-inventory-adjustment.md",
+      "https://docs.bigcapital.app/api-reference/inventory-adjustments/retrieves-the-inventory-adjustments.md",
+      "https://docs.bigcapital.app/api-reference/inventory-adjustments/publish-the-given-inventory-adjustment.md"
+    ],
+    "inventory-cost": [
+      "https://docs.bigcapital.app/api-reference/inventory-cost/get-items-inventory-valuation-list.md"
+    ],
+    "item-categories": [
+      "https://docs.bigcapital.app/api-reference/item-categories/retrieves-the-item-categories.md",
+      "https://docs.bigcapital.app/api-reference/item-categories/create-a-new-item-category.md",
+      "https://docs.bigcapital.app/api-reference/item-categories/retrieves-the-item-category-details.md",
+      "https://docs.bigcapital.app/api-reference/item-categories/edit-the-given-item-category.md",
+      "https://docs.bigcapital.app/api-reference/item-categories/delete-the-given-item-category.md"
+    ],
+    "items": [
+      "https://docs.bigcapital.app/api-reference/items/retrieves-the-item-list.md",
+      "https://docs.bigcapital.app/api-reference/items/create-a-new-item-product-or-service.md",
+      "https://docs.bigcapital.app/api-reference/items/get-the-given-item-product-or-service.md",
+      "https://docs.bigcapital.app/api-reference/items/edit-the-given-item-product-or-service.md",
+      "https://docs.bigcapital.app/api-reference/items/delete-the-given-item-product-or-service.md",
+      "https://docs.bigcapital.app/api-reference/items/validates-which-items-can-be-deleted-and-returns-counts-of-deletable-and-non-deletable-items.md",
+      "https://docs.bigcapital.app/api-reference/items/deletes-multiple-items-in-bulk.md",
+      "https://docs.bigcapital.app/api-reference/items/inactivate-the-given-item-product-or-service.md",
+      "https://docs.bigcapital.app/api-reference/items/activate-the-given-item-product-or-service.md",
+      "https://docs.bigcapital.app/api-reference/items/retrieves-the-item-associated-invoices-transactions.md",
+      "https://docs.bigcapital.app/api-reference/items/retrieves-the-item-associated-bills-transactions.md",
+      "https://docs.bigcapital.app/api-reference/items/retrieves-the-item-associated-estimates-transactions.md",
+      "https://docs.bigcapital.app/api-reference/items/retrieves-the-item-associated-receipts-transactions.md"
+    ],
+    "landed-cost": [
+      "https://docs.bigcapital.app/api-reference/landed-cost/get-landed-cost-transactions.md",
+      "https://docs.bigcapital.app/api-reference/landed-cost/allocate-landed-cost-to-bill-items.md",
+      "https://docs.bigcapital.app/api-reference/landed-cost/delete-allocated-landed-cost.md",
+      "https://docs.bigcapital.app/api-reference/landed-cost/get-bill-landed-cost-transactions.md"
+    ],
+    "manual-journals": [
+      "https://docs.bigcapital.app/api-reference/manual-journals/validate-which-manual-journals-can-be-deleted-and-return-the-results.md",
+      "https://docs.bigcapital.app/api-reference/manual-journals/deletes-multiple-manual-journals.md",
+      "https://docs.bigcapital.app/api-reference/manual-journals/retrieves-the-manual-journals-paginated-list.md",
+      "https://docs.bigcapital.app/api-reference/manual-journals/create-a-new-manual-journal.md",
+      "https://docs.bigcapital.app/api-reference/manual-journals/retrieves-the-manual-journal-details.md",
+      "https://docs.bigcapital.app/api-reference/manual-journals/edit-the-given-manual-journal.md",
+      "https://docs.bigcapital.app/api-reference/manual-journals/delete-the-given-manual-journal.md",
+      "https://docs.bigcapital.app/api-reference/manual-journals/publish-the-given-manual-journal.md"
+    ],
+    "misc": [
+      "https://docs.bigcapital.app/api-reference/misc/get-apidate-formats.md"
+    ],
+    "organization": [
+      "https://docs.bigcapital.app/api-reference/organization/build-organization-database.md",
+      "https://docs.bigcapital.app/api-reference/organization/gets-the-organization-build-job-details.md",
+      "https://docs.bigcapital.app/api-reference/organization/get-current-organization.md",
+      "https://docs.bigcapital.app/api-reference/organization/get-apiorganizationbase-currency-mutate.md",
+      "https://docs.bigcapital.app/api-reference/organization/update-organization-information.md"
+    ],
+    "payment-links": [
+      "https://docs.bigcapital.app/api-reference/payment-links/get-payment-link-public-metadata.md",
+      "https://docs.bigcapital.app/api-reference/payment-links/create-stripe-checkout-session.md",
+      "https://docs.bigcapital.app/api-reference/payment-links/get-payment-link-invoice-pdf.md"
+    ],
+    "payment-services": [
+      "https://docs.bigcapital.app/api-reference/payment-services/get-apipayment-services.md",
+      "https://docs.bigcapital.app/api-reference/payment-services/get-apipayment-servicesstate.md",
+      "https://docs.bigcapital.app/api-reference/payment-services/get-apipayment-services-1.md",
+      "https://docs.bigcapital.app/api-reference/payment-services/post-apipayment-services.md",
+      "https://docs.bigcapital.app/api-reference/payment-services/delete-apipayment-services.md"
+    ],
+    "payments-received": [
+      "https://docs.bigcapital.app/api-reference/payments-received/get-apipayments-received-mail.md",
+      "https://docs.bigcapital.app/api-reference/payments-received/post-apipayments-received-mail.md",
+      "https://docs.bigcapital.app/api-reference/payments-received/get-apipayments-received-edit-page.md",
+      "https://docs.bigcapital.app/api-reference/payments-received/retrieves-the-payment-received-list.md",
+      "https://docs.bigcapital.app/api-reference/payments-received/create-a-new-payment-received.md",
+      "https://docs.bigcapital.app/api-reference/payments-received/retrieves-the-payment-received-details.md",
+      "https://docs.bigcapital.app/api-reference/payments-received/edit-the-given-payment-received.md",
+      "https://docs.bigcapital.app/api-reference/payments-received/delete-the-given-payment-received.md",
+      "https://docs.bigcapital.app/api-reference/payments-received/validates-which-payments-received-can-be-deleted-and-returns-the-results.md",
+      "https://docs.bigcapital.app/api-reference/payments-received/deletes-multiple-payments-received.md",
+      "https://docs.bigcapital.app/api-reference/payments-received/retrieves-the-payment-received-state.md",
+      "https://docs.bigcapital.app/api-reference/payments-received/retrieves-the-payment-received-invoices.md"
+    ],
+    "pdf-templates": [
+      "https://docs.bigcapital.app/api-reference/pdf-templates/retrieves-the-pdf-templates.md",
+      "https://docs.bigcapital.app/api-reference/pdf-templates/create-a-new-pdf-template.md",
+      "https://docs.bigcapital.app/api-reference/pdf-templates/retrieves-the-pdf-template-details.md",
+      "https://docs.bigcapital.app/api-reference/pdf-templates/edit-the-given-pdf-template.md",
+      "https://docs.bigcapital.app/api-reference/pdf-templates/delete-the-given-pdf-template.md",
+      "https://docs.bigcapital.app/api-reference/pdf-templates/retrieves-the-pdf-template-branding-state.md",
+      "https://docs.bigcapital.app/api-reference/pdf-templates/assign-the-given-pdf-template-as-default.md"
+    ],
+    "reports": [
+      "https://docs.bigcapital.app/api-reference/reports/get-balance-sheet-statement.md",
+      "https://docs.bigcapital.app/api-reference/reports/get-purchases-by-items-report.md",
+      "https://docs.bigcapital.app/api-reference/reports/get-customer-balance-summary-report.md",
+      "https://docs.bigcapital.app/api-reference/reports/get-vendor-balance-summary.md",
+      "https://docs.bigcapital.app/api-reference/reports/sales-by-items-report.md",
+      "https://docs.bigcapital.app/api-reference/reports/get-general-ledger-report.md",
+      "https://docs.bigcapital.app/api-reference/reports/get-trial-balance-sheet.md",
+      "https://docs.bigcapital.app/api-reference/reports/get-transactions-by-vendor.md",
+      "https://docs.bigcapital.app/api-reference/reports/get-transactions-by-customer.md",
+      "https://docs.bigcapital.app/api-reference/reports/get-transactions-by-reference.md",
+      "https://docs.bigcapital.app/api-reference/reports/get-receivable-aging-summary.md",
+      "https://docs.bigcapital.app/api-reference/reports/get-payable-aging-summary.md",
+      "https://docs.bigcapital.app/api-reference/reports/get-inventory-item-details.md",
+      "https://docs.bigcapital.app/api-reference/reports/retrieves-the-inventory-valuation-sheet.md",
+      "https://docs.bigcapital.app/api-reference/reports/get-sales-tax-liability-summary-report.md",
+      "https://docs.bigcapital.app/api-reference/reports/journal-report.md",
+      "https://docs.bigcapital.app/api-reference/reports/get-profitloss-statement-report.md",
+      "https://docs.bigcapital.app/api-reference/reports/get-cashflow-statement-report.md"
+    ],
+    "resources": [
+      "https://docs.bigcapital.app/api-reference/resources/retrieves-the-resource-meta.md"
+    ],
+    "roles": [
+      "https://docs.bigcapital.app/api-reference/roles/get-all-roles.md",
+      "https://docs.bigcapital.app/api-reference/roles/create-a-new-role.md",
+      "https://docs.bigcapital.app/api-reference/roles/get-a-specific-role-by-id.md",
+      "https://docs.bigcapital.app/api-reference/roles/edit-an-existing-role.md",
+      "https://docs.bigcapital.app/api-reference/roles/delete-a-role.md",
+      "https://docs.bigcapital.app/api-reference/roles/get-role-permissions-schema.md"
+    ],
+    "sale-estimates": [
+      "https://docs.bigcapital.app/api-reference/sale-estimates/validates-which-sale-estimates-can-be-deleted-and-returns-the-results.md",
+      "https://docs.bigcapital.app/api-reference/sale-estimates/deletes-multiple-sale-estimates.md",
+      "https://docs.bigcapital.app/api-reference/sale-estimates/retrieves-the-sale-estimates.md",
+      "https://docs.bigcapital.app/api-reference/sale-estimates/create-a-new-sale-estimate.md",
+      "https://docs.bigcapital.app/api-reference/sale-estimates/retrieves-the-sale-estimate-details.md",
+      "https://docs.bigcapital.app/api-reference/sale-estimates/edit-the-given-sale-estimate.md",
+      "https://docs.bigcapital.app/api-reference/sale-estimates/delete-the-given-sale-estimate.md",
+      "https://docs.bigcapital.app/api-reference/sale-estimates/retrieves-the-sale-estimate-state.md",
+      "https://docs.bigcapital.app/api-reference/sale-estimates/deliver-the-given-sale-estimate.md",
+      "https://docs.bigcapital.app/api-reference/sale-estimates/approve-the-given-sale-estimate.md",
+      "https://docs.bigcapital.app/api-reference/sale-estimates/reject-the-given-sale-estimate.md",
+      "https://docs.bigcapital.app/api-reference/sale-estimates/notify-the-given-sale-estimate-by-sms.md",
+      "https://docs.bigcapital.app/api-reference/sale-estimates/retrieves-the-sale-estimate-sms-details.md",
+      "https://docs.bigcapital.app/api-reference/sale-estimates/retrieves-the-sale-estimate-mail-state.md",
+      "https://docs.bigcapital.app/api-reference/sale-estimates/send-the-given-sale-estimate-by-mail.md"
+    ],
+    "sale-invoices": [
+      "https://docs.bigcapital.app/api-reference/sale-invoices/validates-which-sale-invoices-can-be-deleted-and-returns-the-results.md",
+      "https://docs.bigcapital.app/api-reference/sale-invoices/deletes-multiple-sale-invoices.md",
+      "https://docs.bigcapital.app/api-reference/sale-invoices/retrieves-the-sale-invoices.md",
+      "https://docs.bigcapital.app/api-reference/sale-invoices/create-a-new-sale-invoice.md",
+      "https://docs.bigcapital.app/api-reference/sale-invoices/retrieves-the-sale-invoice-mail-state.md",
+      "https://docs.bigcapital.app/api-reference/sale-invoices/send-the-sale-invoice-mail.md",
+      "https://docs.bigcapital.app/api-reference/sale-invoices/retrieves-the-sale-invoice-details.md",
+      "https://docs.bigcapital.app/api-reference/sale-invoices/edit-the-given-sale-invoice.md",
+      "https://docs.bigcapital.app/api-reference/sale-invoices/delete-the-given-sale-invoice.md",
+      "https://docs.bigcapital.app/api-reference/sale-invoices/retrieves-the-receivable-sale-invoices.md",
+      "https://docs.bigcapital.app/api-reference/sale-invoices/retrieves-the-sale-invoice-state.md",
+      "https://docs.bigcapital.app/api-reference/sale-invoices/deliver-the-given-sale-invoice.md",
+      "https://docs.bigcapital.app/api-reference/sale-invoices/write-off-the-given-sale-invoice.md",
+      "https://docs.bigcapital.app/api-reference/sale-invoices/cancel-the-written-off-sale-invoice.md",
+      "https://docs.bigcapital.app/api-reference/sale-invoices/retrieves-the-sale-invoice-payments.md",
+      "https://docs.bigcapital.app/api-reference/sale-invoices/retrieves-the-sale-invoice-html.md",
+      "https://docs.bigcapital.app/api-reference/sale-invoices/generate-sharable-sale-invoice-link-private-or-public.md"
+    ],
+    "sale-receipts": [
+      "https://docs.bigcapital.app/api-reference/sale-receipts/validates-which-sale-receipts-can-be-deleted-and-returns-the-results.md",
+      "https://docs.bigcapital.app/api-reference/sale-receipts/deletes-multiple-sale-receipts.md",
+      "https://docs.bigcapital.app/api-reference/sale-receipts/retrieves-the-sale-receipts-paginated-list.md",
+      "https://docs.bigcapital.app/api-reference/sale-receipts/create-a-new-sale-receipt.md",
+      "https://docs.bigcapital.app/api-reference/sale-receipts/retrieves-the-sale-receipt-mail.md",
+      "https://docs.bigcapital.app/api-reference/sale-receipts/send-the-sale-receipt-mail.md",
+      "https://docs.bigcapital.app/api-reference/sale-receipts/retrieves-the-sale-receipt-state.md",
+      "https://docs.bigcapital.app/api-reference/sale-receipts/retrieves-the-sale-receipt-details.md",
+      "https://docs.bigcapital.app/api-reference/sale-receipts/edit-the-given-sale-receipt.md",
+      "https://docs.bigcapital.app/api-reference/sale-receipts/delete-the-given-sale-receipt.md",
+      "https://docs.bigcapital.app/api-reference/sale-receipts/close-the-given-sale-receipt.md"
+    ],
+    "settings": [
+      "https://docs.bigcapital.app/api-reference/settings/retrieves-the-settings.md",
+      "https://docs.bigcapital.app/api-reference/settings/save-the-given-settings.md"
+    ],
+    "stripe": [
+      "https://docs.bigcapital.app/api-reference/stripe/get-apistripelink.md",
+      "https://docs.bigcapital.app/api-reference/stripe/post-apistripecallback.md",
+      "https://docs.bigcapital.app/api-reference/stripe/post-apistripeaccount_link.md",
+      "https://docs.bigcapital.app/api-reference/stripe/listen-to-stripe-webhooks.md"
+    ],
+    "subscriptions": [
+      "https://docs.bigcapital.app/api-reference/subscriptions/get-all-subscriptions-for-the-current-tenant.md",
+      "https://docs.bigcapital.app/api-reference/subscriptions/get-lemonsqueezy-checkout-url.md",
+      "https://docs.bigcapital.app/api-reference/subscriptions/cancel-the-current-organization-subscription.md",
+      "https://docs.bigcapital.app/api-reference/subscriptions/resume-the-current-organization-subscription.md",
+      "https://docs.bigcapital.app/api-reference/subscriptions/change-the-subscription-plan-of-the-current-organization.md",
+      "https://docs.bigcapital.app/api-reference/subscriptions/post-apiwebhookslemon.md"
+    ],
+    "tax-rates": [
+      "https://docs.bigcapital.app/api-reference/tax-rates/retrieves-the-tax-rates.md",
+      "https://docs.bigcapital.app/api-reference/tax-rates/create-a-new-tax-rate.md",
+      "https://docs.bigcapital.app/api-reference/tax-rates/retrieves-the-tax-rate-details.md",
+      "https://docs.bigcapital.app/api-reference/tax-rates/edit-the-given-tax-rate.md",
+      "https://docs.bigcapital.app/api-reference/tax-rates/delete-the-given-tax-rate.md",
+      "https://docs.bigcapital.app/api-reference/tax-rates/activate-the-given-tax-rate.md",
+      "https://docs.bigcapital.app/api-reference/tax-rates/inactivate-the-given-tax-rate.md"
+    ],
+    "transactions-locking": [
+      "https://docs.bigcapital.app/api-reference/transactions-locking/lock-all-transactions-for-a-module-or-all-modules.md",
+      "https://docs.bigcapital.app/api-reference/transactions-locking/cancel-all-transactions-locking-for-a-module-or-all-modules.md",
+      "https://docs.bigcapital.app/api-reference/transactions-locking/partial-unlock-all-transactions-locking-for-a-module-or-all-modules.md",
+      "https://docs.bigcapital.app/api-reference/transactions-locking/cancel-partial-unlocking-all-transactions-locking-for-a-module-or-all-modules.md",
+      "https://docs.bigcapital.app/api-reference/transactions-locking/get-all-transactions-locking-meta.md",
+      "https://docs.bigcapital.app/api-reference/transactions-locking/get-transactions-locking-meta-for-a-module.md"
+    ],
+    "users": [
+      "https://docs.bigcapital.app/api-reference/users/retrieve-user-details-of-the-given-user-id.md",
+      "https://docs.bigcapital.app/api-reference/users/edit-details-of-the-given-user.md",
+      "https://docs.bigcapital.app/api-reference/users/soft-deleting-the-given-user.md",
+      "https://docs.bigcapital.app/api-reference/users/retrieve-the-list-of-users.md",
+      "https://docs.bigcapital.app/api-reference/users/activate-the-given-user.md",
+      "https://docs.bigcapital.app/api-reference/users/inactivate-the-given-user.md",
+      "https://docs.bigcapital.app/api-reference/users/send-an-invitation-to-a-new-user.md",
+      "https://docs.bigcapital.app/api-reference/users/resend-an-invitation-to-an-existing-user.md",
+      "https://docs.bigcapital.app/api-reference/users/accept-a-user-invitation.md",
+      "https://docs.bigcapital.app/api-reference/users/check-if-an-invitation-token-is-valid.md"
+    ],
+    "vendor-credits": [
+      "https://docs.bigcapital.app/api-reference/vendor-credits/validates-which-vendor-credits-can-be-deleted-and-returns-the-results.md",
+      "https://docs.bigcapital.app/api-reference/vendor-credits/deletes-multiple-vendor-credits.md",
+      "https://docs.bigcapital.app/api-reference/vendor-credits/retrieves-the-vendor-credits.md",
+      "https://docs.bigcapital.app/api-reference/vendor-credits/create-a-new-vendor-credit.md",
+      "https://docs.bigcapital.app/api-reference/vendor-credits/open-the-given-vendor-credit.md",
+      "https://docs.bigcapital.app/api-reference/vendor-credits/retrieves-the-vendor-credit-details.md",
+      "https://docs.bigcapital.app/api-reference/vendor-credits/edit-the-given-vendor-credit.md",
+      "https://docs.bigcapital.app/api-reference/vendor-credits/delete-the-given-vendor-credit.md"
+    ],
+    "vendor-credits-apply-bills": [
+      "https://docs.bigcapital.app/api-reference/vendor-credits-apply-bills/get-bills-that-can-be-applied-with-this-vendor-credit.md",
+      "https://docs.bigcapital.app/api-reference/vendor-credits-apply-bills/apply-vendor-credit-to-the-given-bills.md",
+      "https://docs.bigcapital.app/api-reference/vendor-credits-apply-bills/remove-an-applied-bill-from-the-vendor-credit.md",
+      "https://docs.bigcapital.app/api-reference/vendor-credits-apply-bills/get-bills-already-applied-to-this-vendor-credit.md"
+    ],
+    "vendor-credits-refunds": [
+      "https://docs.bigcapital.app/api-reference/vendor-credits-refunds/retrieve-a-refund-vendor-credit-transaction-by-id.md",
+      "https://docs.bigcapital.app/api-reference/vendor-credits-refunds/delete-a-refund-for-the-given-vendor-credit.md",
+      "https://docs.bigcapital.app/api-reference/vendor-credits-refunds/retrieve-the-vendor-credit-refunds-graph.md",
+      "https://docs.bigcapital.app/api-reference/vendor-credits-refunds/create-a-refund-for-the-given-vendor-credit.md"
+    ],
+    "vendors": [
+      "https://docs.bigcapital.app/api-reference/vendors/retrieves-the-vendors.md",
+      "https://docs.bigcapital.app/api-reference/vendors/create-a-new-vendor.md",
+      "https://docs.bigcapital.app/api-reference/vendors/retrieves-the-vendor-details.md",
+      "https://docs.bigcapital.app/api-reference/vendors/edit-the-given-vendor.md",
+      "https://docs.bigcapital.app/api-reference/vendors/delete-the-given-vendor.md",
+      "https://docs.bigcapital.app/api-reference/vendors/edit-the-given-vendor-opening-balance.md",
+      "https://docs.bigcapital.app/api-reference/vendors/validates-which-vendors-can-be-deleted-and-returns-counts-of-deletable-and-non-deletable-vendors.md",
+      "https://docs.bigcapital.app/api-reference/vendors/deletes-multiple-vendors-in-bulk.md"
+    ],
+    "views": [
+      "https://docs.bigcapital.app/api-reference/views/get-the-given-resource-views.md"
+    ],
+    "warehouse-transfers": [
+      "https://docs.bigcapital.app/api-reference/warehouse-transfers/retrieve-warehouse-transfer-transactions-with-pagination.md",
+      "https://docs.bigcapital.app/api-reference/warehouse-transfers/create-a-new-warehouse-transfer-transaction.md",
+      "https://docs.bigcapital.app/api-reference/warehouse-transfers/retrieve-warehouse-transfer-transaction-details.md",
+      "https://docs.bigcapital.app/api-reference/warehouse-transfers/edit-the-given-warehouse-transfer-transaction.md",
+      "https://docs.bigcapital.app/api-reference/warehouse-transfers/delete-the-given-warehouse-transfer-transaction.md",
+      "https://docs.bigcapital.app/api-reference/warehouse-transfers/initiate-the-given-warehouse-transfer.md",
+      "https://docs.bigcapital.app/api-reference/warehouse-transfers/mark-the-given-warehouse-transfer-as-transferred.md"
+    ],
+    "warehouses": [
+      "https://docs.bigcapital.app/api-reference/warehouses/get-all-warehouses.md",
+      "https://docs.bigcapital.app/api-reference/warehouses/create-a-warehouse.md",
+      "https://docs.bigcapital.app/api-reference/warehouses/get-a-warehouse.md",
+      "https://docs.bigcapital.app/api-reference/warehouses/put-apiwarehouses.md",
+      "https://docs.bigcapital.app/api-reference/warehouses/delete-a-warehouse.md",
+      "https://docs.bigcapital.app/api-reference/warehouses/activate-a-warehouse.md",
+      "https://docs.bigcapital.app/api-reference/warehouses/mark-a-warehouse-as-primary.md",
+      "https://docs.bigcapital.app/api-reference/warehouses/retrieves-the-item-associated-warehouses.md"
+    ]
+  }
+}

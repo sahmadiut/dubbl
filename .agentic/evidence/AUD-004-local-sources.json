@@ -1,0 +1,4130 @@
+{
+  "entry_commit": "2c67948f566aa70ba3e54dac641dbd8fb29268d9",
+  "scope": "Hashes and exported symbols/tool names of linked local evidence paths. Directory expansions are an inventory, not a claim every line was manually reviewed. No secret/env files included.",
+  "files": [
+    {
+      "path": "app/(dashboard)/accounting/accounts/[id]/layout.tsx",
+      "sha256": "c1724a6a3084df3e2cf5cb97728ba96e8b1aff825262f2a96505be161ba1eef1",
+      "exports": [
+        "useAccountContext"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/accounting/accounts/[id]/page.tsx",
+      "sha256": "61960befc4defb91cb6934a4714bde55d6fb800794c2fe8da347d1f75c3b7011",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/accounting/accounts/[id]/settings/page.tsx",
+      "sha256": "27ed46a59eb180a4ffb3068742e70f3470794ca87239152afaf5d9c031316c5e",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/accounting/accounts/page.tsx",
+      "sha256": "cc87752aed152e9193dbd509b363db3bfbee59287ccb2c08fb1f945ff00593bf",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/accounting/banking/[id]/(detail)/imports/page.tsx",
+      "sha256": "9774dda682cc0b75f48ed9edf2b4714360bec34283d6bbd04eee21368d5020bc",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/accounting/banking/[id]/(detail)/layout.tsx",
+      "sha256": "8fb03dc03d4b659c88a0391efec02b76ebb4319047b7bb1a704b01e5915078f7",
+      "exports": [
+        "useBankAccountContext"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/accounting/banking/[id]/(detail)/page.tsx",
+      "sha256": "fa31954bfa45cb49b4f95b498651145910d2348a7d7a4e554210bcb0a75ef453",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/accounting/banking/[id]/(detail)/settings/page.tsx",
+      "sha256": "1ddc8958c9883d20b62e544bb6cdea8a5ac86e12d29ccd6ca96eaf145e7df148",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/accounting/banking/[id]/(detail)/transactions/page.tsx",
+      "sha256": "0b57043b30648003656948aa3922d194826c16a18078330ebdb1941318b50f3d",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/accounting/banking/[id]/_components.tsx",
+      "sha256": "de508135d4c377d57b3f9fbeaed42ce64eb65f2cfb418e7873b35682b3ae0d00",
+      "exports": [
+        "ACCOUNT_TYPE_LABELS",
+        "STATUS_STYLES",
+        "deriveTxState",
+        "DERIVED_STATE_META",
+        "FORMAT_LABELS",
+        "ACCOUNT_COLORS",
+        "TransactionRow",
+        "ImportRow",
+        "ImportSheet",
+        "MatchToBillSheet",
+        "CreateExpenseSheet",
+        "CategorizeSheet",
+        "MatchToInvoiceSheet",
+        "MatchSheet",
+        "TransferSheet",
+        "SplitAccountSheet",
+        "CashCodingGrid",
+        "ReconciliationReport"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/accounting/banking/[id]/reconcile/page.tsx",
+      "sha256": "4e07f5f14f1b94e782c97dac365b79d126fb93d9c6ce5fbf12748764d1390914",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/accounting/banking/batches/[id]/page.tsx",
+      "sha256": "fc33607d614e8e279671c1805f0cf780795925fbfe946f52bd470553be5ada97",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/accounting/banking/batches/page.tsx",
+      "sha256": "57585597245e938f5ea777e42146c7cec59c1b6212573a14c84a3ac350b36ef1",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/accounting/banking/page.tsx",
+      "sha256": "88d0df257e6a613c35b518e742a690b43100eabe8521f554e6315fe6e4352877",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/accounting/banking/scheduled/page.tsx",
+      "sha256": "46a0921762891eae98b205cafdc3c22e6379787075337caafcb3a19151d269ff",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/accounting/page.tsx",
+      "sha256": "7b6c76588febf7853c62b0af40915dafbd3c182d0b9505e9d96b89cc18674bbf",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/contacts/[id]/activity/page.tsx",
+      "sha256": "80bede773cdfcee007d491ec3efcd99ed9240b0d766e30e2d1d77a2ed780c1b4",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/contacts/[id]/bookkeeping/page.tsx",
+      "sha256": "90b8d135ab5ed18eb4461f7c694de0b0d87c32ff39190577fdc758d335d26be9",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/contacts/[id]/files/page.tsx",
+      "sha256": "0ccc83696f178cb2246eca515472235dc5d5997d8beb5fef9defce11a652e9ed",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/contacts/[id]/layout.tsx",
+      "sha256": "5410c1f15536305a7d4e76742152d584167e9dfb3034d73745b7c90bc8ad251d",
+      "exports": [
+        "activityTypeConfig",
+        "getOrgId",
+        "useContactContext"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/contacts/[id]/page.tsx",
+      "sha256": "07ae48d1a453398be28dfd68199a17b500c150a5b607fb0c8056b0ab72d7e9ed",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/contacts/[id]/people/page.tsx",
+      "sha256": "a0fad5b9edbe662d190df0c400cef0149dd7121c59b5ef34d942a352cbdfc13a",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/contacts/[id]/statement/page.tsx",
+      "sha256": "93e7803e2b57d5683f1a2086cbb67b8c509a6ede5dce55e59d05f329f5bc475c",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/contacts/loading.tsx",
+      "sha256": "54ae983f77d10c63a858a0bac249186c62155a3d4c947fadde488cb5125766a0",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/contacts/page.tsx",
+      "sha256": "60f5eb946d543f896ba19c6a848acaabe168ace832eb155f49bbc2899fe3a915",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/dashboard/page.tsx",
+      "sha256": "0c37307a83f9cc12ea38677ebdd6347df8ce9d8d412df0532b63c956c236280c",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/documents/loading.tsx",
+      "sha256": "eb4c701cc2b728d2808a7e0c3bef58c68261d1153970debdbd585da64287a929",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/documents/page.tsx",
+      "sha256": "0f89182a5c588be075752d16432d0566630f2c642d4931a04374240e9f02b808",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/inventory/[id]/history/page.tsx",
+      "sha256": "e986409ed80c76d0bb0a0c48017e44db086d43722ca88ea2d000cf206b5c4f51",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/inventory/[id]/layout.tsx",
+      "sha256": "262db8e470b87d1bfe767726c14ee7ad468c38851aea74c1cbb9cd53ba17b7ce",
+      "exports": [
+        "useInventoryItem"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/inventory/[id]/page.tsx",
+      "sha256": "3a4ebeb8e9ddc52871443352d5d6f71d066da9419f158ee6ba3e2f4eb9c738bc",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/inventory/[id]/suppliers/page.tsx",
+      "sha256": "bc531e376b557bc2afed59e846b37f5ac11e7de85a98252f682d51f1994fc335",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/inventory/[id]/variants/page.tsx",
+      "sha256": "4251cb38ca9220df8e3e7589898ea3c75e912bde470165ef91f696ae22f08883",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/inventory/alerts/page.tsx",
+      "sha256": "f16c1cecfd40a43726115d2127320b4f649d806301bd4528a0db010673e9161f",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/inventory/assembly/page.tsx",
+      "sha256": "246dcd1e4f533642c1bc39471b1a0aa0ba644d14e7fe8140f367f4bb604728d8",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/inventory/bom/[id]/page.tsx",
+      "sha256": "88d021c3867392f03f87bd0615faceb11a1f2f427c7b66546eac23a295411d30",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/inventory/bom/page.tsx",
+      "sha256": "a0356db78788f07364183bb5a86ce1b46178e812673d700efe8be84db04e2822",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/inventory/categories/page.tsx",
+      "sha256": "20978b71bde35b359482cbbb39459b21ded8703e84b86d4883a9ce282a3c5d08",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/inventory/layout.tsx",
+      "sha256": "bf3458f4b2ce539613d0b6f67354065fb725adf6792df28ea8c4ff955afeed94",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/inventory/loading.tsx",
+      "sha256": "54ae983f77d10c63a858a0bac249186c62155a3d4c947fadde488cb5125766a0",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/inventory/page.tsx",
+      "sha256": "4bdb15354c7c56e4f248fa1ccff45567ed1a83d54abd316f4f7b50c56d5a4f5d",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/inventory/stock-takes/[id]/page.tsx",
+      "sha256": "b007ab34cf8f4a0df1e4126a832454db7a1bd12ff270510478294c4e3e4a989a",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/inventory/stock-takes/page.tsx",
+      "sha256": "13ad0d649e59036168f2f01ac9243775434900d3b0fb9627b67ec9e560bdf192",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/inventory/transfers/page.tsx",
+      "sha256": "8a406603f6870aee3b20d06153129dc351d963e260e70214b1b01f1fc58c4f2e",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/inventory/valuation/page.tsx",
+      "sha256": "b14b560817d7730f77a2e9e211818c713e74c96a270c02dbbf14dc601244109c",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/inventory/warehouses/page.tsx",
+      "sha256": "f2bceb23c3613a8e50d6dba5e83a650420613e67ccbd43a5e00a627e7720b868",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/purchases/debit-notes/[id]/page.tsx",
+      "sha256": "793e32a0eb3478e4e04a34be2aa5166e8d5c5c94c6b37978bd3873c95af9ddd0",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/purchases/debit-notes/page.tsx",
+      "sha256": "3799105ecc70ede07f192234fc4a494134fffe2f8dde3b2244115b03da8bc3be",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/purchases/expenses/[id]/page.tsx",
+      "sha256": "afb01b52c257bcae812462ea80ee0f2524f3a0667b0b6756c072b6551ecfcb3b",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/purchases/expenses/page.tsx",
+      "sha256": "6e51bae07cee94e26c5dcd27ea1a4691000b4529d0afdaa192bc747f0e41b12e",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/purchases/expenses/recurring/page.tsx",
+      "sha256": "bdbda5943c342ef304aea564fa0fd1cc53231b469502a0228227a467cf110367",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/purchases/landed-costs/[id]/page.tsx",
+      "sha256": "3dc3ef4c6b52685fae2d89bb467ee73403a97be92e34368dd1a77387f74d808d",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/purchases/landed-costs/page.tsx",
+      "sha256": "146c2635f143bad4b501820ecbf30827fb6137719e186f75e5ffc0969d26eb22",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/purchases/page.tsx",
+      "sha256": "774c7f9545a0ccfc1a5a10523b83fc066476f6ca5bbdb3c5add8d09d4631dbd1",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/reports/1099/page.tsx",
+      "sha256": "e26a025fa4db7cb1bed040dddef4266a3d8d67a33ceda42fda54861561cb9120",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/reports/_components.tsx",
+      "sha256": "4c288a50979c48f30595b48af35b13231a23e8818a479cb58ca3fd7c726b0cc9",
+      "exports": [
+        "BackToReports",
+        "ReportHelp",
+        "BasisToggle"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/reports/aged-payables/page.tsx",
+      "sha256": "1ade570e623378adaefbd507be824c6e6b89d5d9a367066dfd21cf1afb70b811",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/reports/aged-receivables/page.tsx",
+      "sha256": "b10279aa00188b7c65890388f6cdcdc1c295accc0b8e924cd5c07d318f27f0e9",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/reports/balance-sheet/page.tsx",
+      "sha256": "07f6134acf0f8260f2dd3879c083361b9cc2e7aea5de27f0dbf44fb205c36bce",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/reports/bank-cash-flow/page.tsx",
+      "sha256": "2106874bad78cb83acb32e5b5a65000161b4f25c78a18116881f18e94e83f3fb",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/reports/bank-reconciliation-status/page.tsx",
+      "sha256": "bfe54919d4ca7e2ce6332ab61a8d4463241c5446c6b196c64cc4885150e406ec",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/reports/budget-vs-actual/page.tsx",
+      "sha256": "75440dce664d74a54c2419553f9c50762cf1f7eaf0f35f9b70aa8020c0439603",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/reports/cash-flow-forecast/page.tsx",
+      "sha256": "4e9161d3804d905481f9355717985d7e8b7d9d57be4dc491733a4270bc545851",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/reports/cash-flow/page.tsx",
+      "sha256": "531a25f6fee96a94fe0f9d6852e82013740394cfe1d6a154f239151c2c85fdc7",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/reports/comparative-balance-sheet/page.tsx",
+      "sha256": "0ead01f445243f53581c339530c841e8e5132543101e40f4a4119f39908d35c7",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/reports/consolidation/page.tsx",
+      "sha256": "cad5838e0d7ef65d469371849d63bca06be1e3bd60b2280fd3fea7596d14e0cb",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/reports/custom/page.tsx",
+      "sha256": "b11b9d67ca4d7600cc2c51566418df6cf0f2db33ea5b7ba8a7ba7c96aed081eb",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/reports/duplicate-detection/page.tsx",
+      "sha256": "be97fcd84244dc373e77224bfdfb2724387adc5008a0169b4fdac20ce6d02f28",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/reports/executive-summary/page.tsx",
+      "sha256": "062f7623f6aca718d2377dcc37bec966edd2a6aa0403502a1aaaae4626013da2",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/reports/expense-analytics/page.tsx",
+      "sha256": "ec9ed1b10e00d134264170fab91058f9192d24cddfce589a230fb4a0c9955fd6",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/reports/financial-calendar/page.tsx",
+      "sha256": "be740849ea4854dd3e8f7b5f9f0e9ab373d24e45ec2942a4ec7b617840c1835d",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/reports/financial-ratios/page.tsx",
+      "sha256": "19e0b1d1a9351ecb6561be8096f938f0f3d024d387f9a654f9c353762e3d3e8c",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/reports/general-ledger/page.tsx",
+      "sha256": "dc0493ba18f18e034f6b331ec54d0970f69a7138d61aad31777fa324aa154e6f",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/reports/income-statement/page.tsx",
+      "sha256": "5ee6e348d54c09b5072b33b635abdf696bed5497d11ff7f20a23f3689b6d8524",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/reports/loading.tsx",
+      "sha256": "54ae983f77d10c63a858a0bac249186c62155a3d4c947fadde488cb5125766a0",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/reports/pack/page.tsx",
+      "sha256": "234ff28461c50e7be2c8bcc0b9ce941930b4bac7cff96b6c6383964b5a52c9f1",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/reports/page.tsx",
+      "sha256": "7d6175a4ac24c984339ab4237a03ac1790adf56c6912c7e6fafaeccdf693d0b2",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/reports/payment-performance/page.tsx",
+      "sha256": "66b1e8112ac53ef84e92367c97ee9c6d38cec7f28ed1208160dc0284671ef79d",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/reports/pnl-comparison/page.tsx",
+      "sha256": "cba76b67a15fd4512352d8a6cd67f46caebf3ebc0f1f6ffb0b50856b95de6a48",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/reports/profit-and-loss/page.tsx",
+      "sha256": "8e0b61ad5f85646d8cd7110448b0d82f47a3d43df858576e2a6fba4274f799c6",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/reports/profitability/page.tsx",
+      "sha256": "f464259571d756ca9a4afaa9ec5d6271f640e4f15cbf660d385682a9957e905e",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/reports/saved/page.tsx",
+      "sha256": "8caf826c10ed7af8109e6a1ff5206e6c2aace4a86f30f330fc0a0df5d8d2aa30",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/reports/schedules/page.tsx",
+      "sha256": "236e1600920d574d755059042fa3ce528f0afcc19a532b202d2a9c142873cfb7",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/reports/tax-summary/page.tsx",
+      "sha256": "5543e649780cb7bf73b64689ed4d4fc5d0d5833410ddb98d01409a8851a758e2",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/reports/tracking/page.tsx",
+      "sha256": "9c4aff653b7a96d82e20d7afaa76f92b60959edbf3de10117be7a10c2a50a4a1",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/reports/trial-balance/page.tsx",
+      "sha256": "5b9a2f448962b7c1b78c8e5f1814ebdf5436e2bc3a22f7bd56f066bc65dbf35b",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/reports/vat-return/page.tsx",
+      "sha256": "ed750fa0dd6bbcf233af36c7315c9cd2d744afa1daa6eb468a2d1839237dd1c0",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/reports/vendor-spend/page.tsx",
+      "sha256": "c0c47c3bc3ed171db50e36dc331d38a48d660a2367222778707d4963edc29225",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/sales/credit-notes/[id]/page.tsx",
+      "sha256": "e0eb0ee4fb03e593e56c70506f64bb5a74572f8244137199fc2d027663ada0a2",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/sales/credit-notes/page.tsx",
+      "sha256": "5137523f925341a05e164785794730af65a40e4facf5c34b8053ed77a1338a0e",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/sales/customer-prepayments/page.tsx",
+      "sha256": "5dd00e9d3a06a731ad1c07114f3ccdbac530fe58b89f18578eac6fa7ce3c7de4",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/sales/page.tsx",
+      "sha256": "c9038630c429ca1f2b63fdb85079adcd8745b856c2228efb756ccbb7a5efe793",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/sales/payments/[id]/page.tsx",
+      "sha256": "1bee6c3d1719ac456f09b6cf6fe813e0552921ce3876008de151c51a664a0fff",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/sales/payments/page.tsx",
+      "sha256": "372dbd587357fb2a7ba38f6ecdadc4ed0db651365e670dc80f85883e10d0ac67",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/sales/quotes/[id]/page.tsx",
+      "sha256": "60d5a32acac328a111be649f5008eb54c0ec0f3cada82056ce96dc05b2625431",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/sales/quotes/page.tsx",
+      "sha256": "2683029a345568fad3853d23ac0dcb5044362010eded5bf17073bfd4c6c80b7a",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/sales/receipts/[id]/page.tsx",
+      "sha256": "6827dcd6b81d92fbb0fbb8f68aa5b9cef2adf51de12c177244caa1a43e69d31c",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/sales/receipts/page.tsx",
+      "sha256": "ee005801819ef5622e27f6f7c32ac752c032cd41049b9bf882cad693296bed38",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/settings/advisors/page.tsx",
+      "sha256": "50cc531c20a77a435d94958aa7c632bba46232ac02263cb12232790ff6256265",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/settings/api-keys/page.tsx",
+      "sha256": "faa49b2c116e8ebac429bdcbb3bf182d3211bf8f9ca8a2965cd04f6d1899e492",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/settings/approval-workflows/page.tsx",
+      "sha256": "2a92711e68558561ead8273af94221b13dea5d93b7eac17e716d2ce43e59ee07",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/settings/audit-log/page.tsx",
+      "sha256": "f0fb11386daa19a45edb590132c5d7f9ada2de21c24863f577d376ec51d4364c",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/settings/backups/page.tsx",
+      "sha256": "36d25cf5b27c35702af9342e95167091f07fc65f0d1db557b09d518573e0de35",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/settings/bank-rules/page.tsx",
+      "sha256": "0014ce40dee54ac1bd6566c7ab6799185261da24b55cc93d694180ceadd1991b",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/settings/billing/page.tsx",
+      "sha256": "3a7d4806988ae14976479bce88d15c6b43b20b9b7fc3903aae015a1d01d237a7",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/settings/cost-centers/page.tsx",
+      "sha256": "c7a0589d85219dfaf0c0d0a74c4a55219d6859cf9ec0ea628475de153e0bbe7c",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/settings/document-templates/page.tsx",
+      "sha256": "51dc2b545a32f19c2bad1274c379066c3613766aba193a268381b0ba68a08a91",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/settings/import-export/page.tsx",
+      "sha256": "008b069cb533b6ba996cebe7020ac591edd09e800f74989fe1d35642ab7ac260",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/settings/integrations/stripe/page.tsx",
+      "sha256": "02a08fc38990348ddc8dc07b690f585cc24964d35024ab74d95afe90e1d39274",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/settings/layout.tsx",
+      "sha256": "989e05723bb499110502974de36b3c380c1cb2207a4bca86b8c04402cceed2e0",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/settings/loading.tsx",
+      "sha256": "54ae983f77d10c63a858a0bac249186c62155a3d4c947fadde488cb5125766a0",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/settings/members/page.tsx",
+      "sha256": "26a598fa4867fa2ce6baf0bc75ae5ea6c4d4bd6a56165b586a1efc5cb63e4bae",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/settings/notifications/page.tsx",
+      "sha256": "7cf6137205934097ece47068df0cd46a61bc8c2cc1a3f283d57ec9f05e48a540",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/settings/page.tsx",
+      "sha256": "7d812336c59b1a293d11dc8627e68b5e7ac306409a049f408d322ce26aabd9b1",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/settings/pipelines/page.tsx",
+      "sha256": "a5321ff6694a782ca01090a8cc28910a2ba146860da3bdaa9f0570b99a0a70aa",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/settings/procurement/page.tsx",
+      "sha256": "1c2f4e17579919542c9c0b0d49285c88badb67d21b07ad1684fb14fee4eadd94",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/settings/reminders/page.tsx",
+      "sha256": "164f06ebd0761acd62b04073e455e98188b4f485484b8b33336b076154be50a1",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/settings/roles/page.tsx",
+      "sha256": "6217c81f8853bac97ee9e0fe227344f5bb4204433c153d0937a91d896c3b208f",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/settings/tags/page.tsx",
+      "sha256": "70e270bb72064bdbf6cd9bf4f0505f29f24c68b3c5fd36f184d6f5d9be75a2c4",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/settings/trash/page.tsx",
+      "sha256": "d4cc181320723d3155c59f8313d3e7a6bbc3496d0ddd255701a4d332458eaa63",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/settings/webhooks/page.tsx",
+      "sha256": "677acbe203f58d2f4276f2a890acfb93592c5cafca193da22468a2f058e91a1f",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/tax/currencies/page.tsx",
+      "sha256": "7488ecfd9378ba6836c2a7cec278413e00ebaac7a0bc201c06b63347fab041df",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/(dashboard)/tax/page.tsx",
+      "sha256": "e575ad35618e3a8afb892a685b29522c401bffa1237c9c579a9eb9fae24bc42a",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/pay/[token]/checkout/route.ts",
+      "sha256": "21f8cfcb39c7e29bdec6d0623e2cad723a24ff30b37a1080bd466969838aa013",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/pay/[token]/pdf/route.ts",
+      "sha256": "8e4c9d60d157087ca8ad4b835fd481e0c3d179f52dcbb1202fbc3f1fc3b55931",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/pay/[token]/route.ts",
+      "sha256": "6bf7477575b47a50638317bac3bb258d8b07b747fa0bb7dc8d89ce644579cb38",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/accounts/[id]/merge/route.ts",
+      "sha256": "4e5e81fd1fa6a01fc8603ad9178af5b6826b8ac7e5401e23069abfe1e36c68d5",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/accounts/[id]/route.ts",
+      "sha256": "6cb2036a2005ee86850f727d73c7b3cc5964bc895b99097a387f716c88c09945",
+      "exports": [
+        "GET",
+        "PATCH",
+        "DELETE"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/accounts/route.ts",
+      "sha256": "9635d84c5acee38484ce7b42b347c88481293c82dc0983b0b6be9f8590c01edd",
+      "exports": [
+        "GET",
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/api-keys/route.ts",
+      "sha256": "8bd72207011600aad6174488b2fd4505389e1f48cab4aeb9344d1bf005537a09",
+      "exports": [
+        "GET",
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/attachments/[id]/route.ts",
+      "sha256": "a00c97c62bc4918c2a56e95bbc877f9daa5cb7821ec801e6de586032c7a4e175",
+      "exports": [
+        "GET",
+        "DELETE"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/attachments/presign/route.ts",
+      "sha256": "546f709306d6663d8fde8de79f5c67d121c420cc4dc24abc92c857b0f7ca1959",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bank-accounts/[id]/apply-rules/route.ts",
+      "sha256": "3da75c50614328d589fcd6699742458657633d3837aaf6cc887ffdf7a03fa368",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bank-accounts/route.ts",
+      "sha256": "40a0828c6b706d59efdd9068bca66dc54fbb4fc3816f4ad9a44b46f34025baec",
+      "exports": [
+        "GET",
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bank-rules/[id]/route.ts",
+      "sha256": "1f49051543b6bed9f67628581b9c2c1ed273f40ff13c530c85e9f5ed8c8f1f48",
+      "exports": [
+        "GET",
+        "PATCH",
+        "DELETE"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bank-rules/route.ts",
+      "sha256": "0da6042737d19d2035bce4e2e2af563d463e17ef094ecd51350b64c500414af4",
+      "exports": [
+        "GET",
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bank-rules/suggestions/route.ts",
+      "sha256": "9073fc55d5cc0e027768a60bdfbf65e22fa9a005e6f8e032324d94cfc4ff53e4",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bank-transactions/[id]/activity/route.ts",
+      "sha256": "1c88a7ff11b960c6301ff26288df49da12254b755938767d6d48dd0c27869b02",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bank-transactions/[id]/categorize/route.ts",
+      "sha256": "0a78ec8be95b1cc3e0ed855682626bc2087af0312a4c549b4434e5082f0d123e",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bank-transactions/[id]/create-expense/route.ts",
+      "sha256": "4d5169645a7d449261cbd3b67b608eb37ba62206d356b4df242d21bc86da831f",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bank-transactions/[id]/exclude/route.ts",
+      "sha256": "ce67d1e1e5b6343397e5ad711d0c494f19e7eabf80804932208a4ccd2ab76883",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bank-transactions/[id]/match-invoice/route.ts",
+      "sha256": "91820c65cbf7356339fae47ec8e1417c08788e0834d05b53dc67d3c04a01da21",
+      "exports": [
+        "GET",
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bank-transactions/[id]/match-transfer/route.ts",
+      "sha256": "3c6f8ddc802eac249d54835454c7913c4399324a7068392e7c3105ff199766c8",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bank-transactions/[id]/match/route.ts",
+      "sha256": "5f0a232b4669dd718e9c1475581d20b9f8f23643ede79dba29f3c58949c02355",
+      "exports": [
+        "GET",
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bank-transactions/[id]/reconcile/route.ts",
+      "sha256": "4e0fe965cc4336f9ef0aeeb543a9c20c73e300aa10bda5147f252b91d94005ac",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bank-transactions/[id]/split-account/route.ts",
+      "sha256": "ee5b1bef7ae9d735afeb3d0b9dc67d80e02230cda252af00e182100f344f4c9f",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bank-transactions/[id]/split/route.ts",
+      "sha256": "a6a480797dc00ff8839f471e92f378f03a885e8c1a81442b35499cd5fcdec53d",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bank-transactions/[id]/suggestions/route.ts",
+      "sha256": "d17e47098a7fc6da02b22fbb92bfb3fa1b93f426d4b1de478edb942c46e48f9b",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bank-transactions/[id]/unreconcile/route.ts",
+      "sha256": "10aaeb798d1a12b288a9eae164b6e4762a859bb51de7cb56596cd0bfce800389",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/billing/checkout/route.ts",
+      "sha256": "f5aaf8e809cd6ce6448b7e352d8c9c27c451204bfe367a17e98f009533bdfa14",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/billing/portal/route.ts",
+      "sha256": "7a050cfe4c2f3d3246ffe9131aa1adba2c55b3dfbbc4187329a8143a6a411506",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/billing/route.ts",
+      "sha256": "1cfa2e70c0d1c03271208e99b03079b3bac875b78f238d2a8b9d554d81fa4b3a",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bills/[id]/approve/route.ts",
+      "sha256": "9451c997d2adacc4bd9753c2ecd68703dafe08f4a0a3a3b33889a6def593ca1b",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bills/[id]/pay/route.ts",
+      "sha256": "1d1023eba94074611aa15dd6138eb1503b1987db3ff264aed6f8bc18d42ec942",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bills/[id]/receive/route.ts",
+      "sha256": "a8567d35b70ff2097b19c497b7d693780ed6f769003977713ccab1269b32f2c0",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bills/[id]/reject/route.ts",
+      "sha256": "cc19551fe7f550c530adf43c151df2f2d23099e199ce18a1826c18f83d47a930",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bills/[id]/route.ts",
+      "sha256": "483f863172fc6bbff26f77f8bc6169a8787c6264d04052e4d45ad269941220a7",
+      "exports": [
+        "GET",
+        "PATCH",
+        "DELETE"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bills/[id]/void/route.ts",
+      "sha256": "fac4c7af0668319b7a26452ab60686557f22973a585efec9c2ed5fc35da21285",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bills/_procurement.ts",
+      "sha256": "a3c21e9e90539d44a1c2b8eea823236813dfb4b3d87d31b33ee1a87391b627b0",
+      "exports": [
+        "ProcurementBlockedError",
+        "resolveProcurementLines",
+        "checkProcurementTolerances",
+        "postGrniClearingEntry",
+        "applyProcurementSideEffects",
+        "postBillReceipt",
+        "linkBillToPurchaseOrders"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bills/counts/route.ts",
+      "sha256": "901ac76ee231ec6b6686dc7941036edc5cd03e083efe6062007516d49cee7547",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bills/route.ts",
+      "sha256": "43a79a3c63435b6118170c4abc0da698df1106960ab853345cce60347870468b",
+      "exports": [
+        "GET",
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bulk/accounts/import/route.ts",
+      "sha256": "744a54a52d7dd0af65cc92e3b62987d09fc259029bc33ce52ec03fb17427369d",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bulk/accounts/preview/route.ts",
+      "sha256": "c2c5b7315dabaa8d51d114ca5c107d590db4877a770e92cd5d5d9d6ec51a84af",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bulk/bank-transactions/categorize/route.ts",
+      "sha256": "4a14e24ee300055a86e989557c75c0e1e648ae75c48cd2b0914733f1f1a0c270",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bulk/bank-transactions/import/route.ts",
+      "sha256": "62a5f50a6e260452d391940eb3e44ffc0d99e1f4d761c724762a9f5ccef5dd3c",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bulk/bank-transactions/preview/route.ts",
+      "sha256": "a0c5f02a35938f8085266b6c874d8f7bd4936d861c14e13cb3260cd87de50695",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bulk/bills/import/route.ts",
+      "sha256": "6e616337e859cff53f7cb5863289940772c20c380bfd58ba8dfd1881a25bfa6f",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bulk/bills/preview/route.ts",
+      "sha256": "2555bee5518803003af3604f2ce421b4b40263d70d5f92c48fc72cce4a6e3eea",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bulk/contacts/delete/route.ts",
+      "sha256": "08c08e8ef0bb72c7ee37132d41a38ce91940b74b28c4ee187191ae83613b7126",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bulk/contacts/import/route.ts",
+      "sha256": "5c0efde987cf7abff2850aab35a71d1bc7af201d84d9ad3df3e45209dea8f019",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bulk/contacts/preview/route.ts",
+      "sha256": "1b5844b15752ba698f5642f23507e6f526bb212207a826333ad3fd2d0711dcee",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bulk/contacts/tag/route.ts",
+      "sha256": "7e713f111b3d0eb15b3fa9c5894b10514e9c0445d59e1b1c1201a4fbcce17a07",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bulk/entries/import/route.ts",
+      "sha256": "615c52334e10ffed8da81819755ca85494dc7f53a605c010ceacdacc568751dd",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bulk/entries/preview/route.ts",
+      "sha256": "73154473b5a873da69df8c197cb083472bbcfb07ae936ac9efc810592c31891a",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bulk/import-jobs/route.ts",
+      "sha256": "8631348bd6ff55648459f19fb8502a70cbe272c6c5d727a454f80d28458fcb83",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bulk/inventory/adjust/route.ts",
+      "sha256": "f93cde818923a95dc17a4bcee3377a15a4bac966945728fce9544c53a4ed6f21",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bulk/invoices/import/route.ts",
+      "sha256": "50cf76febadba0238b2b6275566f6d3d7aca02c8186418540ee5b32cafa85f1b",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bulk/invoices/mark-paid/route.ts",
+      "sha256": "c5f7812c0cfff409aecbc805ed921b4c8a1defd375313b24170a2eb0d892fa00",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bulk/invoices/preview/route.ts",
+      "sha256": "e7757f71dbcaf95785cdb9e1056e06bba8a29ad9dcb727154bd4b97711d3c1f9",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bulk/invoices/send/route.ts",
+      "sha256": "20354f70d837ded2524f288847f303d574b555648f6a6cc12c443f650fd3da2a",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bulk/products/import/route.ts",
+      "sha256": "6ba8689d0f7e9098b6f10869e6373f5284cacc98286afbd45c87a633945a73d3",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bulk/products/preview/route.ts",
+      "sha256": "cc12bdce0c9fbe539941f2a8e0153af4ca6e8453d40779a11812be9a1e20e290",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/bulk/transactions/categorize/route.ts",
+      "sha256": "1b54da6ed6683423e47106c0b73c1401787942c240e075f2a800530566ce3fc3",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/contacts/[id]/activity/route.ts",
+      "sha256": "e598516fb5d7b62c9348295c66b08b82f5496fb7aa9005c6eeab07b1acb06dae",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/contacts/[id]/files/route.ts",
+      "sha256": "b9ba1a627c41e4e3306dc61fddd454422ba391d3830312df60cf2d4b041f9b75",
+      "exports": [
+        "GET",
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/contacts/[id]/merge/route.ts",
+      "sha256": "0ce2906aadac243be63b4559b92ea0e9166f81da207ca15fc00ee90062a6b97e",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/contacts/[id]/people/route.ts",
+      "sha256": "196aae2e9007e365061d5924d7d5ab3571a0897fc9e98fa647cf192219cc6436",
+      "exports": [
+        "GET",
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/contacts/[id]/route.ts",
+      "sha256": "42cbad8eed0c0196ad1cc4f6e89c6c63c808166378adcb469a8bda5425bec97f",
+      "exports": [
+        "GET",
+        "PATCH",
+        "DELETE"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/contacts/[id]/statement/email/route.ts",
+      "sha256": "115452138ad88122c7efd7cb44244d4c2564b91f2c06c7981a81c29057907365",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/contacts/[id]/statement/pdf/route.ts",
+      "sha256": "4791a870a6c3cd7cc0d3f26c49c3c0abdae0e72346aba9c427cc3d700d81d413",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/contacts/[id]/statement/route.ts",
+      "sha256": "068b436414c7284cb3b4c4c7a67aecf6be89256a7b6ab82e63d73c222bba4929",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/contacts/[id]/supplier-statement/route.ts",
+      "sha256": "f35377517290b78269f5fc0410a4041f7ae817db296e81a119df306579ae89c3",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/contacts/route.ts",
+      "sha256": "46698c6d28909afbd96f12082d0bbcf1948190c010832b4ea68bd778889e0e5c",
+      "exports": [
+        "GET",
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/cost-centers/[id]/route.ts",
+      "sha256": "ec32b4c2ecbbc1fc7f437fee2f2f3379191e38be061bfa0471d0f9a84c2c0714",
+      "exports": [
+        "GET",
+        "PATCH",
+        "DELETE"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/cost-centers/route.ts",
+      "sha256": "2e6da654b810f37782f5d0f7e8a64fcf6811ca34df9c5d7148e8c4edb0b5aba4",
+      "exports": [
+        "GET",
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/credit-notes/[id]/apply/route.ts",
+      "sha256": "b43b4f3104b0a1add028b11f5d55a1b2fc28648c97024717ef32b37995302f6d",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/credit-notes/[id]/pdf/route.ts",
+      "sha256": "8ee98e558a41d81e963a2954a46861d07f852804c54a134b79ffbb46e6897c48",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/credit-notes/[id]/route.ts",
+      "sha256": "4120a003447bab3e3160905914b2238f5f6aff8e237e28ca78c47e59b6efeeeb",
+      "exports": [
+        "GET",
+        "PATCH",
+        "DELETE"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/credit-notes/[id]/send/route.ts",
+      "sha256": "b4ed6e8ab8630e93d57bc5d72f68bd892a4936947deeba3a6ac95f61f84dd00e",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/credit-notes/[id]/void/route.ts",
+      "sha256": "d8cc4ec1cfb16a73658201cb5db0d4fea78567bc79f5d1fdca55a0e77d07c2dc",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/credit-notes/route.ts",
+      "sha256": "29ff455a68932fa44c4a462ef00b168d5ec716dc6c1e28b5783b95c0546147ff",
+      "exports": [
+        "GET",
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/credit-notes/summary/route.ts",
+      "sha256": "2a62b3ca40e044ea62092d69ccce90ebe29518fc75b7cb4a545adbdc8bfa0bed",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/customer-credits/[id]/apply/route.ts",
+      "sha256": "6714a47b5204022f547fc3c4188819d71bba614d53c27a9271111a33427706c4",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/customer-credits/route.ts",
+      "sha256": "b98b8f6f441041b34b319e7c6e4fcec842b5fd9f887f50b95a824ed030610fb4",
+      "exports": [
+        "GET",
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/dashboard/alerts/route.ts",
+      "sha256": "c9abcef52a3a731022938007c5a5ad7d5100195192f57bf66e5c644d9d50af4c",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/dashboard/layouts/[id]/route.ts",
+      "sha256": "fefccbe9b673da1c8a739aae226ccd1844894639e826ed72614b497361464632",
+      "exports": [
+        "GET",
+        "PATCH",
+        "DELETE"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/dashboard/layouts/route.ts",
+      "sha256": "67381347152b73d331d317dc85638c3fb4697747f2fa0e18f2d3c229dd39dd44",
+      "exports": [
+        "GET",
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/dashboard/widgets/[type]/data/route.ts",
+      "sha256": "153bb01abfd5b7e33055a58da9abe90362be5fe80e929d7e88d8c8e4b4e0256b",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/debit-notes/[id]/apply/route.ts",
+      "sha256": "e2e6bed5d068f0bda4f4dbf9401d6e26482b8d3fec36ba27e164049259762617",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/debit-notes/[id]/pdf/route.ts",
+      "sha256": "5e630e6ce20d505e1d7367cee327ada265037183926cd357bd3dbda834e1e17c",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/debit-notes/[id]/route.ts",
+      "sha256": "899d2f83ed1fd0f2da8ef2ebf04516391d7cf61c3ab21dd09db78b2f3e2bc201",
+      "exports": [
+        "GET",
+        "PATCH",
+        "DELETE"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/debit-notes/[id]/send/route.ts",
+      "sha256": "e13445ef60934be6351513d59da6be4e0d817b17cd7ce2b4f21c92e9446bc373",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/debit-notes/[id]/void/route.ts",
+      "sha256": "292935f9bcb061800ca0f4d38d8771af97b2d6aac10d54a381412cf4a3896c39",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/debit-notes/route.ts",
+      "sha256": "d77223ea3006276854b8308b84d8124951045a8b44224c4a05f2506d6ada6811",
+      "exports": [
+        "GET",
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/document-templates/route.ts",
+      "sha256": "2720773b54166bdb1ab7311f5d1376b733021d56e57a0119300e455f3b636041",
+      "exports": [
+        "GET",
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/documents/[id]/download/route.ts",
+      "sha256": "d49612873b704d4b9f68f242db71348957217f23da3c637e82451f47801fd5a0",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/documents/[id]/route.ts",
+      "sha256": "cf5b7d8a900c09778dfb32582099c473287fad3b87b0e2276a2f58bcf2da03e7",
+      "exports": [
+        "GET",
+        "DELETE",
+        "PATCH"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/documents/folders/[id]/route.ts",
+      "sha256": "a843d893160c1b76f45e996503b5915ac0d34fac1d73d39b26a5a53f4cb7b9d7",
+      "exports": [
+        "PATCH",
+        "DELETE"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/documents/folders/route.ts",
+      "sha256": "aed4b3b37533d5da122080b2db562a7fa3381d8a4537f54ef778a05a192a3d37",
+      "exports": [
+        "GET",
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/documents/route.ts",
+      "sha256": "5156d3541addf01ce29310672ae4a6bde3806fac0d6cbf1c1cf0df5aee06b9c5",
+      "exports": [
+        "GET",
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/entries/[id]/post/route.ts",
+      "sha256": "2c365a16c470096bda72cb49337673052e96d3496de4ec41c50d4e9a882a429a",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/entries/[id]/route.ts",
+      "sha256": "6d949ce70676c0cc0c8fda4f8f683125b0bc53ad53ae3cb552bf1883806d2597",
+      "exports": [
+        "GET",
+        "PUT",
+        "PATCH",
+        "DELETE"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/entries/[id]/void/route.ts",
+      "sha256": "a775d8f757a620b67e4eaa9fecf077540f7c33127e2c650f2d98304fb8d0787e",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/entries/recode/route.ts",
+      "sha256": "fdd30b017ebc612704c564b868ba91b1af13df80620fc20e0f0afcefb1738fb4",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/entries/route.ts",
+      "sha256": "de5108acb23804182e16ac3fb422a4c1e290f9bf0961f20f6f606bf0f1db788e",
+      "exports": [
+        "GET",
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/exchange-rates/[id]/route.ts",
+      "sha256": "7c0d9f137746d93684533f26c5bfc023f32eee9f774dd70fb26b997a61a0717c",
+      "exports": [
+        "PUT",
+        "DELETE"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/exchange-rates/route.ts",
+      "sha256": "70c49554313117fad1ff3711d4311764bb05b59daf8b296bf216c35b82e90c43",
+      "exports": [
+        "GET",
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/expenses/[id]/approve/route.ts",
+      "sha256": "c8751e6d397faa4fc39596476f14a2789833beff49b81ff9f2bc29b1f3b0aff2",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/expenses/[id]/pay/route.ts",
+      "sha256": "c7bd35ee27af2653f0a613f2e007ee8d2ee36e61f9a676ea26c3df071d08c61c",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/expenses/[id]/recall/route.ts",
+      "sha256": "357985cf961787eb5ec829ebe4bbd9cd1bd79cd594604ddb44e40c7dbbda1fc0",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/expenses/[id]/reject/route.ts",
+      "sha256": "c62f1b0e7167c4bb0750eab94248406c48bbf650e1070f5c8bc479fd7a558220",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/expenses/[id]/reverse/route.ts",
+      "sha256": "a38367dd024a9235722290db1dd97709866a7744691587e5319e1896d8d4b842",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/expenses/[id]/route.ts",
+      "sha256": "ff0f290be9c2bf20b90982abf82d552cf3269008287c00898a712999d92a3dde",
+      "exports": [
+        "GET",
+        "PATCH",
+        "DELETE"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/expenses/[id]/submit/route.ts",
+      "sha256": "c92eaaba7f2d503775230a57491e5f3dfec9ca96363695f113c627b62ad2798c",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/expenses/counts/route.ts",
+      "sha256": "1f80f172bf8d56d22ba4c6a9aca0d6cde95830440e61e0a0934e38da58f36a2d",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/expenses/receipt-url/route.ts",
+      "sha256": "de8122809f5776f4ee58378d88dd45775d371f814e7f4d8b7ea38b1e5f3baaca",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/expenses/route.ts",
+      "sha256": "3f4a129c132d4cda1391310e6a5b199638e9598717dfba6a9c6441aff652bdb2",
+      "exports": [
+        "GET",
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/export/accounts/route.ts",
+      "sha256": "e5bd8dc5cd6db69a328367e5647f3d59b8fda9f384f806d4ece4a383dba8cd38",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/export/all/route.ts",
+      "sha256": "2b7d4dd3f930c3130f19e1ff57362dc4b15c7161f489178292db6c8bc437d1b1",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/export/bank-transactions/route.ts",
+      "sha256": "93c9b016be7b4a04fa05018b02538fa8e157d80b6a301d6da0e0cdac960dadc6",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/export/bills/route.ts",
+      "sha256": "006e08728c3d948665ee137c01146c74cdbf2ae5b25b29b5406ca708cb276b10",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/export/contacts/route.ts",
+      "sha256": "c17686e3ddbcd2f43a8afdc8dc03e0d8c4cc67e426645eecd56295b5557da462",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/export/entries/route.ts",
+      "sha256": "e60ee6770a80f70d9c9079a3241a8641a5554914a995b412142cc1b4e7b734f3",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/export/invoices/route.ts",
+      "sha256": "27ba24e56cd3500930c8432e4ff7bcb934cfd5ed65b0e6c472c83417f9fc7019",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/export/products/route.ts",
+      "sha256": "d9a3f8c1ce27ff01beea0bf21afba55a0de5c2b5ede6bc69b4a82748321961e7",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/fiscal-years/[id]/close/route.ts",
+      "sha256": "2652982d742c131f10c7da35b18873b958c826736f42b6a0e85f3a2ff193be86",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/fiscal-years/[id]/reopen/route.ts",
+      "sha256": "fa6c976c0c8e1c576b605716e7eecfbe01e44b529e37b35103ac6e170785b422",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/fiscal-years/route.ts",
+      "sha256": "819318e5c90aef8abc77c1c0cd4ae819f5f51d3c152657a7c16bac19611c4387",
+      "exports": [
+        "GET",
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/integrations/stripe/callback/route.ts",
+      "sha256": "56b5baaf106182ad23cc515088912073cc5f48dd9ceed285eea87a3322130960",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/integrations/stripe/connect/route.ts",
+      "sha256": "9d0ca80ba39a1ef59802aaa4ca217f895db17bf7ab475e79ef83509d1238c85c",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/integrations/stripe/disconnect/route.ts",
+      "sha256": "303312fc783b4ef6edf6d9debf998d26e701b7c9d8ba13f849288ac996f5604d",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/integrations/stripe/import/route.ts",
+      "sha256": "b11e17b4d7229aba0c404d733196ef35650634e5e745c67f4ea2f1e687ea3ab9",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/integrations/stripe/reconcile/route.ts",
+      "sha256": "06715314df2aa07373d9c3285e36e171b85bb4c64ade8806db0f3b5a6ef864c5",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/integrations/stripe/settings/route.ts",
+      "sha256": "cf110ffb266bb02c37ec56134ab60c8369e18dfda751fa90703ae7b2a2edc0ef",
+      "exports": [
+        "PATCH"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/integrations/stripe/status/route.ts",
+      "sha256": "fed1633e3454b7e42341a9cc7d5d0ed8519f138af01d26d4a155a6dbf05f1626",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/integrations/stripe/sync/route.ts",
+      "sha256": "329d16ef654024186bcaae8dbbbdb285e16b9e37cfd6444d7ef5d308e765bfb5",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/inventory/[id]/adjust/route.ts",
+      "sha256": "d2696c8e10f29b2882fcbfa837cfdae19360cb8dc42e926f400a6dad0b8b5499",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/inventory/[id]/lots/route.ts",
+      "sha256": "bdbf23dabf4e2511d88727d94fa9188abfc5e787400959d9a3c5af4eeda2bbf8",
+      "exports": [
+        "GET",
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/inventory/[id]/movements/route.ts",
+      "sha256": "b3c3e486bec6bfd6de1148c43f22056ee302992b7bee513a0328b0c67770a6eb",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/inventory/[id]/route.ts",
+      "sha256": "42586e40adf8399a5f86d2a3abf2f33eddf3d604dc08fbf58f7f9d30454b0c2b",
+      "exports": [
+        "GET",
+        "PATCH",
+        "DELETE"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/inventory/[id]/serials/route.ts",
+      "sha256": "3dd58699ed09956167e65692d5dad688cd29fe2670a49db001fa01bd98bdbcef",
+      "exports": [
+        "GET",
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/inventory/[id]/suppliers/[supplierId]/route.ts",
+      "sha256": "07a9842f58526ff5a73e284e8a625fa4379c7522aafcfbd6ff2f489031912693",
+      "exports": [
+        "PATCH",
+        "DELETE"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/inventory/[id]/suppliers/route.ts",
+      "sha256": "d8323e1de6feac134255a38fc8fb491b6ea54b601a04dcb465eea99424725aa4",
+      "exports": [
+        "GET",
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/inventory/[id]/variants/[variantId]/route.ts",
+      "sha256": "d29566fea39165192e3705b37447f65350fc4ee20539b5c3abb34d7e44986031",
+      "exports": [
+        "PATCH",
+        "DELETE"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/inventory/[id]/variants/route.ts",
+      "sha256": "30e4ef3617c7f1bc800ac3dea13daff385af58c04c9fdecc90becc14501b4f42",
+      "exports": [
+        "GET",
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/inventory/[id]/warehouse-stock/route.ts",
+      "sha256": "0c22a49b94d01e5804d4e74c3f9d27510f3778d55970383d78368fa2f688b708",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/inventory/assembly-orders/[id]/complete/route.ts",
+      "sha256": "663b627ed94692578a6b0a90995f321948b7dba8779821b35f4ba5f7a9bfbb95",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/inventory/assembly-orders/[id]/route.ts",
+      "sha256": "7a4ad9f2fd5ca08b8753ed1d2cb12cec3d06a7472b7588b17c4b1fdc076b2289",
+      "exports": [
+        "PATCH"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/inventory/assembly-orders/route.ts",
+      "sha256": "fae399714f931f756616679f11061e629b5cf3c05633bb7ae9a8a315894ca029",
+      "exports": [
+        "GET",
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/inventory/bom/[id]/components/route.ts",
+      "sha256": "c9ae751ce5e7b830ddaa6e48ca5fa538b9e6b7f1c4ce95710e17d1aa487556a8",
+      "exports": [
+        "GET",
+        "POST",
+        "DELETE"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/inventory/bom/[id]/route.ts",
+      "sha256": "3c1d9c8bdf703ba15879b38df627ccd7195d4d2e4f782940b96a0f5a3e2f2a9d",
+      "exports": [
+        "GET",
+        "PATCH",
+        "DELETE"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/inventory/bom/route.ts",
+      "sha256": "d7a63297052ab5c4c5c97da8fd1e22ff21355e39c74cb6d9dbd77401abe18617",
+      "exports": [
+        "GET",
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/inventory/bulk/route.ts",
+      "sha256": "53c05f6d660aeac949a3e0550a37ef69891d50a675a036f06576662e2e6c23a2",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/inventory/categories/[id]/route.ts",
+      "sha256": "ab1f58e5dcadd0cd256624c3d5e1eb0703ffd0a3e4f6c610ab566146de52e13b",
+      "exports": [
+        "PATCH",
+        "DELETE"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/inventory/categories/route.ts",
+      "sha256": "cb4e28d0b8c5a4eb3676779d66dfff2e2d872f5058af71905e64f2cb67eff28f",
+      "exports": [
+        "GET",
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/inventory/import/route.ts",
+      "sha256": "3d1572b39eea3ff8984ad51286f7a759ab5dd33d43db8ea8de9612136a48718f",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/inventory/movements/chart/route.ts",
+      "sha256": "4df19d6d73ad0201fb5ffff4846e6e547e92afd641523f5dc5725ebf8bde77c4",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/inventory/reorder-suggestions/route.ts",
+      "sha256": "3a7a22a8090b5100ccf0d63439c53c8a2874c7576f9203156143724e05a2dfd0",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/inventory/route.ts",
+      "sha256": "23dfba7097ede9f2f055837523656d60086c1d6e253db64f6fc730b8e683085d",
+      "exports": [
+        "GET",
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/inventory/transfers/[id]/complete/route.ts",
+      "sha256": "b4d12da59b7e8ceeb1f02a3e66cad642de47146a05459ad583434b179072ef0a",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/inventory/transfers/[id]/route.ts",
+      "sha256": "69a82f18e5e36e0076fd982a992b6d5791bf6800a2b35841c68546c0f5f04983",
+      "exports": [
+        "GET",
+        "PATCH"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/inventory/transfers/route.ts",
+      "sha256": "21f145c87355fde7aa525ab40a9f56200d90c7d6bc7f93d2d134951c0d1e28ed",
+      "exports": [
+        "GET",
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/invoices/[id]/approve/route.ts",
+      "sha256": "fa31b95e5b5185bfb331339a96c257bbc46cbb1b1c7aa16bbd41a9def073c531",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/invoices/[id]/available-credits/route.ts",
+      "sha256": "4c6e660d12f07b6d18d5137976351b5f46d7ee1ab9882725b597784f7fa6ac2c",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/invoices/[id]/charge-interest/route.ts",
+      "sha256": "b630e99bf9e140c02ce7e5ee67e15471d9b19401042946a81f4606f787a914e6",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/invoices/[id]/compliance/route.ts",
+      "sha256": "d7c330df7c06f4c26fbb45365fa0172db8ae6edd6a1d6feded0a4d156c76eb49",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/invoices/[id]/pay/route.ts",
+      "sha256": "2c9ef36aa3bbef10cd912ff22f5da86f2c624a7dacccba7c33d4fef315727075",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/invoices/[id]/payment-link/route.ts",
+      "sha256": "159e61553143c1e34e3a82988230c890fdbca86f66dd7aa492039af0f56e5c65",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/invoices/[id]/pdf/route.ts",
+      "sha256": "f8f49eadff9451dc1f2c04959154a1d9231f80fc12874c696267bd8ab095bb27",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/invoices/[id]/reject/route.ts",
+      "sha256": "4a15c145a747733fb1072a54d0771ea4fcae950f86b319a793cafb4247534409",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/invoices/[id]/route.ts",
+      "sha256": "4c667fb630eda2b3a1662851ffae80b609e882c6f28abfde030509d2e0d4ba05",
+      "exports": [
+        "GET",
+        "PATCH",
+        "DELETE"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/invoices/[id]/send/route.ts",
+      "sha256": "9f67a1c9c723318e47711cc4afa03d841554ba87b26d73becd1ade6bf877d1fb",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/invoices/[id]/signature/resend/route.ts",
+      "sha256": "452878b82054e162b3ab6dbad6c815c6f8d1d48514e1b154aab920e27fd6366a",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/invoices/[id]/signature/route.ts",
+      "sha256": "4a8fc064e3c33ed3551b5f1a30987425c16c426e61b3c4ef7e1fefaa4d8c92c0",
+      "exports": [
+        "POST",
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/invoices/[id]/snapshot/route.ts",
+      "sha256": "aa9439d1f3966b032f8864c465b21220cd77b421aff54087aad04eee482f6e6c",
+      "exports": [
+        "GET",
+        "PATCH"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/invoices/[id]/submit-for-approval/route.ts",
+      "sha256": "986d375635269b0f9ec57d21a7b6bdc4d0efc295807009260d281cc552510486",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/invoices/[id]/ubl/route.ts",
+      "sha256": "11c14a7c94c165c54dcf117d5dfe94b5060cc5e7df0c147fef5c782d3a4ccaa0",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/invoices/[id]/void/route.ts",
+      "sha256": "d609b2742addaf8818a4978235a29f96c50560921c3b09986f1b335d7fa56c0b",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/invoices/[id]/write-off/route.ts",
+      "sha256": "183c8457af56059d95651b3f69cdceb1ea483f05d560ec83f1872060054bfa05",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/invoices/bulk/route.ts",
+      "sha256": "5cbbf5ffb4281cecd229f99db983336420fe514414ff515202dcfbe1bd094b82",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/invoices/calculate-interest/route.ts",
+      "sha256": "2827bb4ef336504ceae83187a317a8eaac22e053c169c10ad82566fa6636fef3",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/invoices/route.ts",
+      "sha256": "a993b52646bb8555d32e7bf55cc2a6c8244007fdfee8b3c5cb4724338ec3eb98",
+      "exports": [
+        "GET",
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/invoices/summary/route.ts",
+      "sha256": "81abddd8b8283df6ea3117e07632b955088e636241e2e7f5b9cc17fdc480fa32",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/landed-costs/[id]/allocate/route.ts",
+      "sha256": "376cefa94e717871702cccc2fe8921dd303e5bbc6bedc84fc9d15cf24b72bf04",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/landed-costs/[id]/route.ts",
+      "sha256": "e94451a1bdcfba8c92683c3be0a66a544c5dfce0a9d9a6fa02eeb6ca005a0268",
+      "exports": [
+        "GET",
+        "PUT",
+        "DELETE"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/landed-costs/route.ts",
+      "sha256": "fcb40d8a9a735eabb005883f45e68386b05d11fc3089c6408cde8ba16ec41d52",
+      "exports": [
+        "GET",
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/members/[id]/route.ts",
+      "sha256": "a0c7ae1ad70f3d27cdb38fb7482f78edc88d58353c98b0f9ae56a6b5174b50f0",
+      "exports": [
+        "PATCH",
+        "DELETE"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/members/capacity/route.ts",
+      "sha256": "9bc1a32dcc6623b0334c53d4fe2979feee298624b237a224186c0307b439d233",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/members/route.ts",
+      "sha256": "0319ac046229ea8afbcad1bbacb4b8e74ed7f634ac9816cb05b76b30729af4f1",
+      "exports": [
+        "GET",
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/opening-balances/route.ts",
+      "sha256": "cce9757b06f05f2cde65e1245cfb2f5e57cbb692813fa7b38e4add0c2c5e8c63",
+      "exports": [
+        "GET",
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/organization/mileage-rate/route.ts",
+      "sha256": "5afbd19290551156225b08f7cd7c46ac9cdaa63d2234c796c15f38a43bcd3872",
+      "exports": [
+        "GET",
+        "PUT"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/organization/route.ts",
+      "sha256": "a2bda24b8d3f6ce63ed04edf204d68cc62f2a526b7a28c6eaf3d02031b9ea290",
+      "exports": [
+        "GET",
+        "POST",
+        "PATCH"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/payments/[id]/route.ts",
+      "sha256": "31b9644028405334d81a96abbefa15878d098b60ea0d0191dff24ada73bcbec8",
+      "exports": [
+        "GET",
+        "DELETE"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/payments/batch/route.ts",
+      "sha256": "fb7d959a4d0341924949eaa4b675cdb95506f22c73cc0b54f1934bd55d535f00",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/payments/route.ts",
+      "sha256": "6c320b56353c1cd76331eb557507f9c7313e0fe32e64ed68d44a4b7fd7cd522a",
+      "exports": [
+        "GET",
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/period-lock/route.ts",
+      "sha256": "bb0f3d9ced256f5675487ef4c3663c30ae580e58864dcbc2b82d2bf410b99feb",
+      "exports": [
+        "GET",
+        "PUT"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/quotes/[id]/accept/route.ts",
+      "sha256": "61b70d9cc19e040806235f0218e7ef7e8b50e7b1299ae75ba7f66c7cd8a8be53",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/quotes/[id]/convert/route.ts",
+      "sha256": "221e2d00f86801f26948e069d7875d3922fe301e169ad75f7a1fe607bbada76a",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/quotes/[id]/decline/route.ts",
+      "sha256": "d84211915dab168dc24ee64a96e118d5101a48134a2834ccbd8c2e645ed8599f",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/quotes/[id]/pdf/route.ts",
+      "sha256": "f9a92b037183e951090522dbe5b23a7132252d068db139f4678993a66e83484d",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/quotes/[id]/route.ts",
+      "sha256": "45c04d18e3db842f8882ce7b50e869bf8f9b54b132a3502fc7792728cdc5e032",
+      "exports": [
+        "GET",
+        "PATCH",
+        "DELETE"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/quotes/[id]/send/route.ts",
+      "sha256": "dc6434fc328c47216d1787b6e8032dd00f03962a8cff360bdb4939187c5ddc97",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/quotes/route.ts",
+      "sha256": "f927640f25c9e2122ae79c9473e1c46d5e8b2efe5491420671828f2386c476a9",
+      "exports": [
+        "GET",
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/reports/1099/route.ts",
+      "sha256": "32678d2be3fa31d7a19c128f9c9411c06c517fe39f9cd2e9fda9d3840450b78a",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/reports/account-transactions/route.ts",
+      "sha256": "da1eb8d4538cbf14a26b134a928fecb9e69a3d7e87defc646c0d6d4761fe398e",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/reports/aged-payables/route.ts",
+      "sha256": "09fb6d29a46c4980f878c23e1d66c4c8dd750ac9efe773f0b86cf78eb245a9d8",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/reports/aged-receivables/route.ts",
+      "sha256": "da23dcdce485ab8e229a5db231ac8fc94a67e7ab9ae016d0c7352f7fb8c45471",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/reports/balance-sheet/route.ts",
+      "sha256": "d7e7c51bdf310f56edc0bffc24a2aaf78324b9dd411108c160d8ec104f36c702",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/reports/bank-cash-flow/route.ts",
+      "sha256": "02d82dfceac73133927936451320982db6f48c32f0eb0fc959e302076f23c296",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/reports/bank-reconciliation-status/route.ts",
+      "sha256": "7b2d30a0298bf65e01e817af13b9d3ed04563532432d92780dce538aefecd98e",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/reports/bas/route.ts",
+      "sha256": "3fbed25e37ce670d65c796ab76cb191f81beae8b027fcaa3de568b3649b261c3",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/reports/budget-vs-actual/route.ts",
+      "sha256": "deb7fc1110f175b958b45e03a74766469a02dc4cf61b65ed076605dd21220a6e",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/reports/cash-flow-forecast/route.ts",
+      "sha256": "563d70f8493d43b2ee22f24a5a59607c075d148c7441bef0934748c4330c131f",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/reports/cash-flow/route.ts",
+      "sha256": "b4b9fe36d396751ccde3505ad55206e69ee316ef7490c886a86989a398ba4c39",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/reports/duplicate-detection/route.ts",
+      "sha256": "ae88a741c8f41a1a28b43a2cc873ca27e403523c0a931788da083736669494e1",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/reports/executive-summary/route.ts",
+      "sha256": "9982d049721bc6641a550cd04d0bf4fb8c2c42f8a109e04ef522e14b2b5d2411",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/reports/expense-analytics/route.ts",
+      "sha256": "a4e657c5c1daf68f040d6011e670dd8f42ef5842e191ee4ee5b6839d27727764",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/reports/financial-calendar/route.ts",
+      "sha256": "198b72a3ffec742e7437e7c393c076ff1cf3e831e66785c4c57d1be9ea1a9dc0",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/reports/financial-ratios/route.ts",
+      "sha256": "cf81d459e018c77c29870fe7302c0d15aad5668025446263f2b44bd13e1ae312",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/reports/general-ledger/route.ts",
+      "sha256": "47043086e18f512cd7743db192daba42e140b06f149825fd8cec0bb920509f61",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/reports/income-statement/route.ts",
+      "sha256": "11d8e163593bf0539b3331ec2be0d97bcc7ca6a6907f582bd8397305830a38bd",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/reports/inventory-valuation/route.ts",
+      "sha256": "61114b0625033328089d7361266cd703e3f0dc7ddb64c72b28eece82227004b2",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/reports/monthly-trends/route.ts",
+      "sha256": "fbdb727c0ddb9663b365298ac7188cc373a15b139c1b74c8a15dc04d1b476727",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/reports/pack/route.ts",
+      "sha256": "ae649af74e685ddb2553934e157375778a495fd9a4a866ae4a42391d3d368a66",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/reports/payment-performance/route.ts",
+      "sha256": "832e776399ebdf414152d78c5f93664f49672d3fe5be153727c8c6222c3f09e4",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/reports/pnl-comparison/route.ts",
+      "sha256": "f2dc738d58594c2113b2ff42cfc14e130875164ee09a9601b292da8063bb2680",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/reports/profit-and-loss/route.ts",
+      "sha256": "91383d5efcc98501a7e3985a9a89936d947258a66612ba3adf8f0d8756c2da22",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/reports/profitability/route.ts",
+      "sha256": "2bba172156914cf43f00c011774a95f10c3961249736123f9e4223855bd5989e",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/reports/recurring-transactions/route.ts",
+      "sha256": "4ae819ed707a43849358933af831cb0590841d2bc723a1d9ccc0a41ab270631b",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/reports/run/route.ts",
+      "sha256": "fe6fad33e8c09000e4337ec5fe070542aacbc28a53859c18620561451f2f8a50",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/reports/sales-by-customer/route.ts",
+      "sha256": "cdffcc4ec89874f03346932a0cb8c072275f9fae63a1a3911ecec39010480427",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/reports/sales-by-item/route.ts",
+      "sha256": "eb1e5937b111a4faa185f5a87801fb9378b30e8e463105c2f2d61deac50d2c33",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/reports/sales-tax/route.ts",
+      "sha256": "ffd32cf435c9de7df5346fc04dbcb726c30cacfee0700c415cbaaed56f12c1cc",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/reports/saved/[id]/export/route.ts",
+      "sha256": "dead779b24bc44184368e9656d8a81382fe5de33580e99a2385f1ec427a63b57",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/reports/saved/[id]/route.ts",
+      "sha256": "17ba5bbd93897a5e58b99a3bcee0bd7babaff698b8b88176c505e6119fbf527d",
+      "exports": [
+        "GET",
+        "PATCH",
+        "DELETE"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/reports/saved/route.ts",
+      "sha256": "a5854fc5958148203f9b9bb6c44028ef780e175ac3bda0b85b2bfb996cb79b25",
+      "exports": [
+        "GET",
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/reports/schedule-c/route.ts",
+      "sha256": "2ff56b37d0c4e4843441f2fa20f5babc607bd2209d1e2196f9e0ae14b6878216",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/reports/tax-summary/route.ts",
+      "sha256": "6d1c79d71b3b7f9d8989061729bd8f1ea845b9fff2009163852823ce1f97d180",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/reports/tracking-category/route.ts",
+      "sha256": "2c8bf1b195a2415ef68e374cec659765706757debe67e40420c010a8f41ebc8c",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/reports/trial-balance/route.ts",
+      "sha256": "bad774a50b2b22ae92c4e21bf378cfc000fbf17902184c403a243e383c030c31",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/reports/unrealized-gains-losses/route.ts",
+      "sha256": "62435ea9952732c46906042611992c56bad92f45e91a08f44ea63ced4cfa3578",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/reports/vat-return/route.ts",
+      "sha256": "e8418f66c185f8b0fe5d219c1242aa7c341c7e566960ac10f320f3d802b17e4d",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/reports/vat-return/transactions/route.ts",
+      "sha256": "d8907ec29ccebe65e8142dd9d6db8e4e738b82f34478b92b7fd7088b0eb22548",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/reports/vendor-spend/route.ts",
+      "sha256": "c3c14907f4fd46e8ef14afab0b107e2e2b79cfae609ce953d37c21cd9e19146e",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/roles/[id]/route.ts",
+      "sha256": "387e7e1c49676c64e567e023fa7e0021328f663663062f8280e653b347952fb6",
+      "exports": [
+        "GET",
+        "PUT",
+        "DELETE"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/roles/route.ts",
+      "sha256": "2bf4a04b1e98dcf9d103fdc8615f720c77f313635618525eaaa875820b5bf17a",
+      "exports": [
+        "GET",
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/sales-receipts/[id]/post/route.ts",
+      "sha256": "d18c8967f409f4963eaf289258c239361e295ca72d4f17f49a175c6624e0df4b",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/sales-receipts/[id]/route.ts",
+      "sha256": "b03abf9bad3714dcf6a7586e71b6e14d3264b8b2934d0bfeefb18d56b0af7a50",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/sales-receipts/[id]/void/route.ts",
+      "sha256": "4d868e0c8caa3cde90235df85e1e7a56d34cf65f4be49577a26a00198839f9a1",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/sales-receipts/route.ts",
+      "sha256": "a5dbb046116c302539a7f0326dd045cea1f250e2cf0c87f331f630998ae3783f",
+      "exports": [
+        "GET",
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/stock-takes/[id]/apply/route.ts",
+      "sha256": "66610e654efaf8d25dd783c9adfe5b12bdbd4175e25be3705fe2e4d21cb1f305",
+      "exports": [
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/stock-takes/[id]/lines/[lineId]/route.ts",
+      "sha256": "9e98639facdf4d40576fb4e963c434f636a9ee10cd1a5e3e12f879797abfa30f",
+      "exports": [
+        "PATCH"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/stock-takes/[id]/route.ts",
+      "sha256": "d9e91793d3a07b7c2c51db926766fb41085f1789009b2d53a5ae15bc0808e2c8",
+      "exports": [
+        "GET",
+        "PATCH",
+        "DELETE"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/stock-takes/route.ts",
+      "sha256": "9d7bb2d8c79f4901c8a360cc7ef15849358031b8607833e4292b5f50fa687077",
+      "exports": [
+        "GET",
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/tax-rates/route.ts",
+      "sha256": "9dfd99308931bc3a0b030d2cb9abaecb76fb20ca41830b4f5b0e7be8d92c5cfe",
+      "exports": [
+        "GET",
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/user/accounts/[id]/route.ts",
+      "sha256": "827a8f6e47b48d23f1cd2040642572c58f5ac8dafb62acb0a375c57db4499fcb",
+      "exports": [
+        "DELETE"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/user/accounts/route.ts",
+      "sha256": "789cb3c063d59624a6826b09c8cf2c071c2770b4246f4f269c13785b7626107a",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/user/profile/route.ts",
+      "sha256": "c5e47435f5c12edeb5ea852bf9ea2f61230b5485dd38e37deafb21e7fb05f2ba",
+      "exports": [
+        "GET",
+        "PATCH"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/warehouses/[id]/route.ts",
+      "sha256": "11a017dce97c0553df19c3bcd73976eb7c4d52e73a4e3ab41b029457e4a4d3f0",
+      "exports": [
+        "GET",
+        "PATCH",
+        "DELETE"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/warehouses/[id]/stock/route.ts",
+      "sha256": "be898e2b9cdaaebd0e3598c5aaea1fc75e1beb32ed7f538ec4b51ec1e5a84811",
+      "exports": [
+        "GET"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/api/v1/warehouses/route.ts",
+      "sha256": "ecfaa2a0a4d48afff06836a7b872edbcb4fad91089bd08f988dca0e93e178952",
+      "exports": [
+        "GET",
+        "POST"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "app/pay/[token]/page.tsx",
+      "sha256": "90b9ae9b5d208238bc8320cd2aae39ac41546ed5432bed21c2663f5db3abce07",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/api/auth-context.ts",
+      "sha256": "cc1ce23b8218d50b7eb19a6e0583ac0c1a82829a9c688f297c5079d674712963",
+      "exports": [
+        "getAuthContext",
+        "AuthError"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/api/bank-auto-reconcile.ts",
+      "sha256": "cc28a7b809d418fc49fffb089a1e57e705116978bf5be7dcd1616ad6a904c172",
+      "exports": [
+        "autoReconcileBankTransactions"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/api/bank-ledger.ts",
+      "sha256": "dc10fa1aef0b612db44bd91f05159889d324a06ce077c1ec9a93905ea6d0697c",
+      "exports": [
+        "ensureBankLedgerAccount"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/api/bank-rules.ts",
+      "sha256": "e1aafb828d449154d67dd41a6228082dd2f2f8e50b7d8c1d1e64b05fcb79cbbf",
+      "exports": [
+        "loadActiveBankRules",
+        "applyBankRulesToTransaction",
+        "resolveSplitAmounts",
+        "applyBankRulesToAccount",
+        "matchBankRules"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/api/consolidation-report.ts",
+      "sha256": "987f8427904361272add62742e1ad5cdde96ef02f29f969bb22a8b8697024331",
+      "exports": [
+        "computeConsolidatedReport"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/api/inventory-valuation.ts",
+      "sha256": "76f8d905651813f62ad2be7eff4b32c7b1b073172616fe72b800b7803fa864a1",
+      "exports": [
+        "blendAverageCost",
+        "recordInventoryReceipt",
+        "recordInventoryIssue",
+        "consumeFifoLayers"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/api/journal-automation.ts",
+      "sha256": "5df49fd02794da8dd7da5c0dfd55270ac4f8ef5ef0b0791f8e15c6b8a446280e",
+      "exports": [
+        "resolveBaseRate",
+        "assertBaseRateAvailable",
+        "toBaseLines",
+        "findAccountByCode",
+        "ensureControlAccount",
+        "ensureAccountByCode",
+        "splitGrossTax",
+        "getNextEntryNumber",
+        "reverseJournalEntry",
+        "createInvoiceJournalEntry",
+        "createBillJournalEntry",
+        "createCreditNoteJournalEntry",
+        "createDebitNoteJournalEntry",
+        "createPaymentJournalEntry",
+        "createCategorizationJournalEntry",
+        "createCogsJournalEntry",
+        "mapBillLinesForPosting",
+        "recordBillStockReceipts",
+        "createInventoryAdjustmentJournalEntry",
+        "createFxGainLossEntry",
+        "createVatReturnClearingJournalEntry",
+        "recordTaxSettlementJournalEntry"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/api/period-close.ts",
+      "sha256": "206edfc120046ace4ef0814cc7a4778b4b31e1777d8133a76d870f8174a7f9d7",
+      "exports": [
+        "getRetainedEarningsAccount",
+        "closeFiscalYear",
+        "reopenFiscalYear"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/api/period-lock.ts",
+      "sha256": "0db5e3c7b55e1e117ae0dbe3f643fb08d11a664cad38e7b3032d48f6ec05cb40",
+      "exports": [
+        "PeriodLockedError",
+        "assertNotLocked"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/api/procurement.ts",
+      "sha256": "d47a46144c12579635190708c9d85bfd384d251bd8c07ea52e4c5ac7eb747831",
+      "exports": [
+        "DEFAULT_PROCUREMENT_SETTINGS",
+        "getProcurementSettings",
+        "threeWayMatch",
+        "derivePurchaseOrderStatusAfterBilling",
+        "derivePurchaseOrderStatusAfterReceipt",
+        "resolveConvertLineAllocations"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/api/require-role.ts",
+      "sha256": "41810ad93cb1250e901b60229ea4d7c59ecc570070b36d902095744f133d723f",
+      "exports": [
+        "requireRole"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/api/tax-calculator.ts",
+      "sha256": "32100f17c135586ed8d75b268874a7d88e1e999fd5c78f49ba394e1470ca478c",
+      "exports": [
+        "preloadTaxRates",
+        "calcTax"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/auth.ts",
+      "sha256": "50f5e0ae8dbb4c5eb3549d43485216976362d913b276a6c1f0d83917f796420f",
+      "exports": [
+        "TwoFactorRequiredError"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/banking/importer.ts",
+      "sha256": "d4e4c557f23c56aad839b038e20c8f31265d763d124458211cd523626663a4d5",
+      "exports": [
+        "previewBankStatementImport",
+        "commitBankStatementImport",
+        "makeTransactionDedupeHash",
+        "parseBankStatement",
+        "detectStatementFormat",
+        "listBankStatementImports"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/banking/reconciliation-matcher.ts",
+      "sha256": "cee0584a8ca60e73e422ad42d91691925d1e563286d09b783a7af73074544a97",
+      "exports": [
+        "findMatches"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/currency/convert-entry.ts",
+      "sha256": "5e8586386ee92e8242bd237308207172b2aba66edd19d1ec86b329a3bd976313",
+      "exports": [
+        "convertLinesToBase",
+        "isUnitRate",
+        "realizedSettlementLegs",
+        "revaluationLegs",
+        "reverseLegs"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/currency/converter.ts",
+      "sha256": "4586c634883de2ce58585fec1415df22c1dc344a4c3decfd6284ec50d1b1271f",
+      "exports": [
+        "MissingExchangeRateError",
+        "getExchangeRate",
+        "convertAmount",
+        "calculateFxGainLoss"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/currency/iso4217.ts",
+      "sha256": "e4b7294492da9b69dae903126077a9a64737be3f26f6bd8c593a8fb5ada3b6e6",
+      "exports": [
+        "getIsoCurrencies",
+        "isValidCurrencyCode",
+        "getCurrencyMinorUnits"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/db/schema/auth.ts",
+      "sha256": "fd802f1b6c78c13c8dbcda4d35f09a52c799bc7c8fe92f889668b6811bdf24c9",
+      "exports": [
+        "memberRoleEnum",
+        "users",
+        "userTotp",
+        "accounts",
+        "sessions",
+        "verificationTokens",
+        "customRole",
+        "organization",
+        "member",
+        "team",
+        "teamMember",
+        "usersRelations",
+        "userTotpRelations",
+        "accountsRelations",
+        "sessionsRelations",
+        "organizationRelations",
+        "memberRelations",
+        "teamRelations",
+        "teamMemberRelations",
+        "customRoleRelations"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/db/schema/banking.ts",
+      "sha256": "16627034b0aa33e6c51993ba53b081b70c2a4f62b34911db250903a8d51394ff",
+      "exports": [
+        "bankTransactionStatusEnum",
+        "bankReconciliationStatusEnum",
+        "bankRuleMatchEnum",
+        "bankAccountTypeEnum",
+        "bankImportStatusEnum",
+        "bankImportFormatEnum",
+        "bankAccount",
+        "bankImportProfile",
+        "bankStatementImport",
+        "bankTransaction",
+        "bankReconciliation",
+        "bankRule",
+        "bankAccountRelations",
+        "bankTransactionRelations",
+        "bankReconciliationRelations",
+        "bankImportProfileRelations",
+        "bankStatementImportRelations",
+        "bankRuleRelations"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/db/schema/billing.ts",
+      "sha256": "918b6944e2f3543b380dbe592f1fa5955cb563e0eb753ec10c4c8cab30db7354",
+      "exports": [
+        "planEnum",
+        "subscriptionStatusEnum",
+        "storagePlanEnum",
+        "subscription",
+        "apiKey",
+        "subscriptionRelations",
+        "apiKeyRelations"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/db/schema/bills.ts",
+      "sha256": "1a182c5c2d51744cd8c479e56acdee807bf3e746cb83206f2e576bef818e2eaf",
+      "exports": [
+        "billStatusEnum",
+        "purchaseOrderStatusEnum",
+        "debitNoteStatusEnum",
+        "requisitionStatusEnum",
+        "landedCostAllocationMethodEnum",
+        "landedCostStatusEnum",
+        "goodsReceiptStatusEnum",
+        "bill",
+        "billLine",
+        "purchaseOrder",
+        "purchaseOrderLine",
+        "debitNote",
+        "debitNoteLine",
+        "purchaseRequisition",
+        "purchaseRequisitionLine",
+        "landedCostAllocation",
+        "landedCostComponent",
+        "landedCostLineAllocation",
+        "goodsReceipt",
+        "goodsReceiptLine",
+        "billPurchaseOrder",
+        "procurementSettings",
+        "billRelations",
+        "billLineRelations",
+        "purchaseOrderRelations",
+        "purchaseOrderLineRelations",
+        "debitNoteRelations",
+        "debitNoteLineRelations",
+        "purchaseRequisitionRelations",
+        "purchaseRequisitionLineRelations",
+        "landedCostAllocationRelations",
+        "landedCostComponentRelations",
+        "landedCostLineAllocationRelations",
+        "goodsReceiptRelations",
+        "goodsReceiptLineRelations",
+        "billPurchaseOrderRelations",
+        "procurementSettingsRelations"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/db/schema/bookkeeping.ts",
+      "sha256": "15f5e64aaa13e5f6990602ac30384f67b30081a18548970bd3ddf0d3de0969fe",
+      "exports": [
+        "accountTypeEnum",
+        "entryStatusEnum",
+        "taxTypeEnum",
+        "taxRateKindEnum",
+        "currency",
+        "fiscalYear",
+        "chartAccount",
+        "journalEntry",
+        "costCenter",
+        "journalLine",
+        "taxRate",
+        "taxComponent",
+        "periodLock",
+        "attachment",
+        "exchangeRateSourceEnum",
+        "exchangeRate",
+        "currencyRelations",
+        "fiscalYearRelations",
+        "chartAccountRelations",
+        "journalEntryRelations",
+        "journalLineRelations",
+        "costCenterRelations",
+        "periodLockRelations",
+        "taxRateRelations",
+        "taxComponentRelations",
+        "attachmentRelations",
+        "exchangeRateRelations",
+        "taxPeriodTypeEnum",
+        "taxPeriodStatusEnum",
+        "taxPeriod",
+        "taxReturnLine",
+        "taxPeriodRelations",
+        "taxReturnLineRelations",
+        "taxJurisdictionSourceEnum",
+        "taxJurisdiction",
+        "taxJurisdictionRelations",
+        "tag",
+        "entityTag",
+        "tagRelations",
+        "entityTagRelations"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/db/schema/bulk.ts",
+      "sha256": "0f415886af2ce5666e531fe0aa34f4fc7d2cc0f905cec9556ae2a14f9e1ea8c4",
+      "exports": [
+        "bulkImportStatusEnum",
+        "bulkImportJob",
+        "bulkImportJobRelations"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/db/schema/consolidation.ts",
+      "sha256": "8ae64027bcf66c11b2317aebb084f73b90a70c6fce25c3cde8de13616895f35a",
+      "exports": [
+        "consolidationGroup",
+        "consolidationGroupMember",
+        "consolidationRateTypeEnum",
+        "consolidationRateSourceEnum",
+        "consolidationRate",
+        "consolidationEliminationKindEnum",
+        "consolidationEliminationRule",
+        "consolidationEliminationEntry",
+        "consolidationGroupRelations",
+        "consolidationGroupMemberRelations",
+        "consolidationRateRelations",
+        "consolidationEliminationRuleRelations",
+        "consolidationEliminationEntryRelations"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/db/schema/contacts.ts",
+      "sha256": "674843aaf9ceeb13fe23594d10fd219b4337a158bf4cfcaa5fecbffe9e086b6c",
+      "exports": [
+        "contactTypeEnum",
+        "contact",
+        "contactPerson",
+        "contactRelations",
+        "contactPersonRelations"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/db/schema/dashboard.ts",
+      "sha256": "de9084bb87eb34787d12cb7c42e7f74c0b0d3c3e820c791cfaf8461c729008df",
+      "exports": [
+        "dashboardLayout",
+        "dashboardLayoutRelations"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/db/schema/document-templates.ts",
+      "sha256": "6ef470fc4b9dee4afe7c193e9a15f8a2f2e373dab5e689c9c7055fd94b64a880",
+      "exports": [
+        "documentTemplateTypeEnum",
+        "documentTemplate",
+        "documentTemplateRelations"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/db/schema/documents.ts",
+      "sha256": "15b69b9c0b76381be169da45ec3859911859ac58833438fe31610ebe9b3a9636",
+      "exports": [
+        "documentFolder",
+        "document",
+        "documentFolderRelations",
+        "documentRelations"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/db/schema/expenses.ts",
+      "sha256": "aae313d2907a2d78348d3047d5960520c1866fa73236bbcb0f84aec7593db065",
+      "exports": [
+        "expenseStatusEnum",
+        "expenseClaim",
+        "expenseItem",
+        "expenseClaimRelations",
+        "expenseItemRelations"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/db/schema/integrations.ts",
+      "sha256": "d6c63ffbda4e434a48e4ad3a4bd90b2616cba2b4158a554765d9ec20c8c28ce1",
+      "exports": [
+        "stripeIntegration",
+        "stripeEntityMap",
+        "stripeSyncLog",
+        "stripeIntegrationRelations",
+        "stripeEntityMapRelations",
+        "stripeSyncLogRelations"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/db/schema/inventory.ts",
+      "sha256": "6f3a7b15f002884ef8195cc74fc94340414fe6845fc593d88937aaf9e611a5b7",
+      "exports": [
+        "trackingMethodEnum",
+        "serialStatusEnum",
+        "costMethodEnum",
+        "inventoryCategory",
+        "inventoryItem",
+        "warehouse",
+        "inventoryMovementTypeEnum",
+        "inventoryMovement",
+        "inventoryItemSupplier",
+        "stockTakeStatusEnum",
+        "stockTake",
+        "stockTakeLine",
+        "inventoryVariant",
+        "warehouseStock",
+        "inventoryTransferStatusEnum",
+        "inventoryTransfer",
+        "inventoryTransferLine",
+        "serialNumber",
+        "lotBatch",
+        "movementSerialAssignment",
+        "movementLotAssignment",
+        "inventoryCostLayer",
+        "inventoryLayerConsumption",
+        "inventoryCostLayerRelations",
+        "inventoryLayerConsumptionRelations",
+        "inventoryCategoryRelations",
+        "inventoryItemRelations",
+        "warehouseRelations",
+        "inventoryMovementRelations",
+        "inventoryItemSupplierRelations",
+        "stockTakeRelations",
+        "stockTakeLineRelations",
+        "inventoryVariantRelations",
+        "warehouseStockRelations",
+        "inventoryTransferRelations",
+        "inventoryTransferLineRelations",
+        "serialNumberRelations",
+        "lotBatchRelations",
+        "movementSerialAssignmentRelations",
+        "movementLotAssignmentRelations"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/db/schema/invitations.ts",
+      "sha256": "0450c64c8c436041213fd1b7cf3e0ee14e012eae236b0de53f4c09f4299fe562",
+      "exports": [
+        "invitationStatusEnum",
+        "invitation",
+        "orgInviteLink",
+        "invitationRelations",
+        "orgInviteLinkRelations"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/db/schema/invoicing.ts",
+      "sha256": "a3e637f57dc831267e85d511e0f29a3eaff9f171419f95df4c14e34f28738e8f",
+      "exports": [
+        "invoiceStatusEnum",
+        "invoiceTypeEnum",
+        "quoteStatusEnum",
+        "creditNoteStatusEnum",
+        "salesReceiptStatusEnum",
+        "customerCreditSourceEnum",
+        "customerCreditStatusEnum",
+        "invoice",
+        "invoiceLine",
+        "quote",
+        "quoteLine",
+        "creditNote",
+        "creditNoteLine",
+        "salesReceipt",
+        "salesReceiptLine",
+        "customerCredit",
+        "signatureStatusEnum",
+        "invoiceSignature",
+        "invoiceSignatureRelations",
+        "invoiceRelations",
+        "invoiceLineRelations",
+        "quoteRelations",
+        "quoteLineRelations",
+        "creditNoteRelations",
+        "creditNoteLineRelations",
+        "salesReceiptRelations",
+        "salesReceiptLineRelations",
+        "customerCreditRelations"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/db/schema/payments.ts",
+      "sha256": "0f065492955eebc470d705fe956c968845e1cd71a7f308627e614931ee1fd4b0",
+      "exports": [
+        "paymentTypeEnum",
+        "paymentMethodEnum",
+        "payment",
+        "paymentAllocation",
+        "paymentRelations",
+        "paymentAllocationRelations"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/db/schema/portal.ts",
+      "sha256": "63626c24e3f4d25082073be0f8b2ec323da848ac7b3a445530066b660aa16670",
+      "exports": [
+        "portalAccessToken",
+        "portalActivityLog",
+        "portalAccessTokenRelations",
+        "portalActivityLogRelations"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/db/schema/reports.ts",
+      "sha256": "751728ee1d969cf5d42a41888fa97649e2135e90c50e7c74475be3640e8ef439",
+      "exports": [
+        "savedReport",
+        "reportScheduleFrequencyEnum",
+        "reportScheduleFormatEnum",
+        "reportSchedule",
+        "savedReportRelations",
+        "reportScheduleRelations"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/documents/pdf-generator.ts",
+      "sha256": "c51e766c2953df04178fec2bc637c3af86ad51739eb777cdeb1c8c94207adbdd",
+      "exports": [
+        "generateDocumentHtml",
+        "generateQuoteHtml",
+        "generateCreditNoteHtml",
+        "generatePurchaseOrderHtml",
+        "generateDebitNoteHtml",
+        "generateInvoiceHtml"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/documents/pdf-renderer.tsx",
+      "sha256": "29ced02235d30253bdc4b308b4148738c97d5457a51d0bb2c2bdb82532f744d0",
+      "exports": [
+        "renderInvoicePdf"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/import-export/csv-utils.ts",
+      "sha256": "7499349498dc210f8966543cdbfbc132a49254a27b250b7d5b3bc9c4f25a1601",
+      "exports": [
+        "centsToDecimal",
+        "generateCSV"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/import-export/pre-process.ts",
+      "sha256": "7a3b88a3faffbec68fba8ee5d781e6217a82d9b99d96f8cf54e681d476e32488",
+      "exports": [
+        "preProcessAccounts",
+        "preProcessContacts",
+        "preProcessInvoices",
+        "preProcessBills",
+        "preProcessEntries",
+        "preProcessProducts",
+        "preProcessBankTransactions"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/import-export/reference-resolver.ts",
+      "sha256": "1b08f8822282f9ce078da5263f776cabf52a4baece3bc3e66c74df05fecbac5e",
+      "exports": [
+        "resolveContactByName",
+        "resolveAccountByCode"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/mcp/tools/accounts.ts",
+      "sha256": "62af4950edf2cdaa183bfad1470386ae83bde691074304854c470505dbdd0887",
+      "exports": [
+        "registerAccountTools"
+      ],
+      "mcp_tool_names": [
+        "list_accounts",
+        "get_account",
+        "create_account",
+        "update_account",
+        "delete_account",
+        "merge_accounts",
+        "get_special_category_account"
+      ]
+    },
+    {
+      "path": "lib/mcp/tools/bank-rules.ts",
+      "sha256": "91bc98f0975757b91d71efb76b5f7aba5648bba36fe0830ac69c8bc0e53d3511",
+      "exports": [
+        "registerBankRuleTools"
+      ],
+      "mcp_tool_names": [
+        "list_bank_rules",
+        "create_bank_rule",
+        "update_bank_rule",
+        "delete_bank_rule",
+        "get_bank_rule_suggestions",
+        "apply_bank_rules",
+        "auto_reconcile_bank_transactions",
+        "set_bank_balance_alert"
+      ]
+    },
+    {
+      "path": "lib/mcp/tools/bank-transactions.ts",
+      "sha256": "77b2c5105836ac55cac3887d345f0bcdbdf6a8da6a74b1b6f3240104d1e5e3b9",
+      "exports": [
+        "registerBankTransactionTools"
+      ],
+      "mcp_tool_names": [
+        "list_bank_transactions",
+        "categorize_bank_transaction",
+        "get_match_suggestions",
+        "match_to_invoice",
+        "match_to_bill",
+        "match_to_existing_payment",
+        "match_transfer",
+        "split_bank_transaction",
+        "bulk_cash_code",
+        "reconcile_bank_transaction",
+        "unreconcile_bank_transaction",
+        "exclude_bank_transaction",
+        "reconciliation_report",
+        "record_bank_transfer"
+      ]
+    },
+    {
+      "path": "lib/mcp/tools/bills.ts",
+      "sha256": "3c363e07e6b4b70b6c16e3619935d54c8989e259b1b6cd67ba5d9e8fdecad30b",
+      "exports": [
+        "registerBillTools"
+      ],
+      "mcp_tool_names": [
+        "list_bills",
+        "create_bill",
+        "approve_bill",
+        "pay_bill",
+        "void_bill"
+      ]
+    },
+    {
+      "path": "lib/mcp/tools/bulk.ts",
+      "sha256": "350eea98946d40d4e953e431aa7830570079f6c16ec55e1769660ecbbefc8938",
+      "exports": [
+        "registerBulkTools"
+      ],
+      "mcp_tool_names": [
+        "bulk_categorize_bank_transactions",
+        "bulk_mark_invoices_paid",
+        "bulk_mark_invoices_sent",
+        "bulk_send_invoice_reminders",
+        "bulk_set_contacts_type",
+        "bulk_delete_contacts"
+      ]
+    },
+    {
+      "path": "lib/mcp/tools/contacts.ts",
+      "sha256": "6c6f4732eb9ff9a9dbd10290b0d0c48c286dfc3b86de103d13574e71abd61285",
+      "exports": [
+        "registerContactTools"
+      ],
+      "mcp_tool_names": [
+        "list_contacts",
+        "get_contact",
+        "create_contact",
+        "update_contact",
+        "merge_contacts",
+        "delete_contact"
+      ]
+    },
+    {
+      "path": "lib/mcp/tools/cost-centers.ts",
+      "sha256": "ef0a052b1fb172c0a0b61995d65729a237bc592fb5d62cf290c3447be1747c5b",
+      "exports": [
+        "registerCostCenterTools"
+      ],
+      "mcp_tool_names": [
+        "list_cost_centers",
+        "get_cost_center",
+        "create_cost_center",
+        "update_cost_center",
+        "delete_cost_center"
+      ]
+    },
+    {
+      "path": "lib/mcp/tools/credit-notes.ts",
+      "sha256": "72cdd9c103eaca37ab8860862be53bac43e3da68ea0abfd32c5f3301daa417d6",
+      "exports": [
+        "registerCreditNoteTools"
+      ],
+      "mcp_tool_names": [
+        "list_credit_notes",
+        "get_credit_note",
+        "create_credit_note",
+        "apply_credit_note",
+        "void_credit_note"
+      ]
+    },
+    {
+      "path": "lib/mcp/tools/currencies.ts",
+      "sha256": "69d9a85a61d1cbcadc00993018cf0ad2baf8c7e45ab29672ecd5671f015b4717",
+      "exports": [
+        "registerCurrencyTools"
+      ],
+      "mcp_tool_names": [
+        "list_currencies",
+        "list_exchange_rates",
+        "get_exchange_rate",
+        "convert_amount",
+        "set_exchange_rate",
+        "delete_exchange_rate"
+      ]
+    },
+    {
+      "path": "lib/mcp/tools/debit-notes.ts",
+      "sha256": "f399be7daaf50a38e9cd37923ba657a0bede7d9ae13f20c40e4cee099ab6b47a",
+      "exports": [
+        "registerDebitNoteTools"
+      ],
+      "mcp_tool_names": [
+        "list_debit_notes",
+        "get_debit_note",
+        "create_debit_note",
+        "apply_debit_note",
+        "void_debit_note"
+      ]
+    },
+    {
+      "path": "lib/mcp/tools/documents.ts",
+      "sha256": "adf9f0d72a92d284b1c935a4a891539fcc7658de9cdc407fc0821f1793b58b22",
+      "exports": [
+        "registerDocumentTools"
+      ],
+      "mcp_tool_names": [
+        "list_contact_files",
+        "upload_contact_file",
+        "list_entity_files",
+        "attach_file_to_entity"
+      ]
+    },
+    {
+      "path": "lib/mcp/tools/entries.ts",
+      "sha256": "5b8ccd23be297be3ec39eafe39275adec2d7908afc715c319721e446080a095e",
+      "exports": [
+        "registerEntryTools"
+      ],
+      "mcp_tool_names": [
+        "list_entries",
+        "get_entry",
+        "create_entry",
+        "post_entry",
+        "void_entry",
+        "update_entry",
+        "set_auto_reverse_date",
+        "recode_entries"
+      ]
+    },
+    {
+      "path": "lib/mcp/tools/expenses.ts",
+      "sha256": "7f3adc787e10a130fcf8b27d1de36a08066a0c72a79cea0264f341b511c4a2f5",
+      "exports": [
+        "registerExpenseTools"
+      ],
+      "mcp_tool_names": [
+        "list_expense_claims",
+        "get_expense_claim",
+        "create_expense_claim",
+        "submit_expense_claim",
+        "recall_expense_claim",
+        "approve_expense_claim",
+        "pay_expense_claim"
+      ]
+    },
+    {
+      "path": "lib/mcp/tools/import-export.ts",
+      "sha256": "256e5581519139b3e1a02b53b243b724ae5c9aa6eeedf78143fede05209334b0",
+      "exports": [
+        "registerImportExportTools"
+      ],
+      "mcp_tool_names": [
+        "get_import_template",
+        "import_csv_data",
+        "import_journal_entries",
+        "export_csv_data",
+        "list_import_jobs"
+      ]
+    },
+    {
+      "path": "lib/mcp/tools/index.ts",
+      "sha256": "cf7de2dce5162321e404a68786d1d07932f8e8782b925c105ad5e1fd03afb401",
+      "exports": [
+        "registerAllTools"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/mcp/tools/integrations.ts",
+      "sha256": "a3193988555a9f772495565b70fd8c8021425dc6027e9e817eed59e5649c6b72",
+      "exports": [
+        "registerIntegrationTools"
+      ],
+      "mcp_tool_names": [
+        "list_stripe_integrations",
+        "get_stripe_integration_status",
+        "connect_stripe",
+        "disconnect_stripe",
+        "trigger_stripe_sync",
+        "list_stripe_sync_log",
+        "import_stripe_csv",
+        "reconcile_stripe_balance",
+        "list_stripe_entity_mappings",
+        "get_stripe_webhook_health"
+      ]
+    },
+    {
+      "path": "lib/mcp/tools/inventory.ts",
+      "sha256": "2a2dfa6fb3d01528957c595bdac76fa8504259d0f457f2d7fd6c7fc44149c919",
+      "exports": [
+        "registerInventoryTools"
+      ],
+      "mcp_tool_names": [
+        "list_inventory_items",
+        "adjust_inventory_stock",
+        "transfer_inventory_stock",
+        "apply_stock_take",
+        "build_assembly",
+        "list_inventory_movements",
+        "create_inventory_item",
+        "get_inventory_item",
+        "update_inventory_item",
+        "delete_inventory_item"
+      ]
+    },
+    {
+      "path": "lib/mcp/tools/invoices.ts",
+      "sha256": "c4c02c79d24131cc5515b6f1d0fb8007492eeb99be1ec336b55173790fdc1409",
+      "exports": [
+        "registerInvoiceTools"
+      ],
+      "mcp_tool_names": [
+        "list_invoices",
+        "get_invoice",
+        "create_invoice",
+        "void_invoice",
+        "pay_invoice",
+        "request_invoice_signature",
+        "get_invoice_signature",
+        "resend_signature_request",
+        "check_invoice_compliance",
+        "get_invoice_pdf",
+        "get_invoice_snapshot",
+        "update_invoice_snapshot",
+        "submit_invoice_for_approval",
+        "approve_invoice",
+        "reject_invoice"
+      ]
+    },
+    {
+      "path": "lib/mcp/tools/landed-costs.ts",
+      "sha256": "c624fdd07dbe44003871d7426ce3cc8f0f9fdb92ea2a01f547b5a0d89c99f137",
+      "exports": [
+        "registerLandedCostTools"
+      ],
+      "mcp_tool_names": [
+        "list_landed_costs",
+        "get_landed_cost",
+        "create_landed_cost",
+        "allocate_landed_cost"
+      ]
+    },
+    {
+      "path": "lib/mcp/tools/opening-balances.ts",
+      "sha256": "7b34ae99cdf1784017fc85d58a373c6636a8f3f72895325fa39c8bda664d307c",
+      "exports": [
+        "registerOpeningBalanceTools"
+      ],
+      "mcp_tool_names": [
+        "get_opening_balances",
+        "set_opening_balances"
+      ]
+    },
+    {
+      "path": "lib/mcp/tools/organization.ts",
+      "sha256": "2a9af58075601b7c0639ccb36b24fe636490c8ab34d0891f8c1b695d007eeb0d",
+      "exports": [
+        "registerOrganizationTools"
+      ],
+      "mcp_tool_names": [
+        "get_organization"
+      ]
+    },
+    {
+      "path": "lib/mcp/tools/payments.ts",
+      "sha256": "27f4a9a06ab773c71f0ee193d00fab45cf2d14ca0d35b80c0a690f800ce2509b",
+      "exports": [
+        "registerPaymentTools"
+      ],
+      "mcp_tool_names": [
+        "list_payments",
+        "get_payment",
+        "create_payment",
+        "record_payment_batch",
+        "delete_payment"
+      ]
+    },
+    {
+      "path": "lib/mcp/tools/period-close.ts",
+      "sha256": "0bc9c91c000165145b3e3b48ec0bafb62de77e59747f5502b9fd3b03471f2a80",
+      "exports": [
+        "registerPeriodCloseTools"
+      ],
+      "mcp_tool_names": [
+        "close_fiscal_year",
+        "reopen_fiscal_year",
+        "list_fiscal_years"
+      ]
+    },
+    {
+      "path": "lib/mcp/tools/quotes.ts",
+      "sha256": "c7b2604e2585dcd5f95e5a398b9902d34dbf014ee8221b1fe996364632f29e9f",
+      "exports": [
+        "registerQuoteTools"
+      ],
+      "mcp_tool_names": [
+        "convert_quote_to_invoice",
+        "list_quotes",
+        "get_quote",
+        "create_quote",
+        "update_quote",
+        "send_quote",
+        "accept_quote",
+        "decline_quote"
+      ]
+    },
+    {
+      "path": "lib/mcp/tools/reports.ts",
+      "sha256": "7f0351b684fa9ee909c277e87b03f7301797e5db7be5ea73896b65b41f8d5cb5",
+      "exports": [
+        "registerReportTools"
+      ],
+      "mcp_tool_names": [
+        "trial_balance",
+        "balance_sheet",
+        "profit_and_loss",
+        "aged_receivables",
+        "aged_payables",
+        "stripe_fee_report",
+        "cash_flow_statement",
+        "export_financial_statement",
+        "tracking_category_report",
+        "report_pack",
+        "executive_summary",
+        "sales_by_customer",
+        "sales_by_item"
+      ]
+    },
+    {
+      "path": "lib/mcp/tools/roles.ts",
+      "sha256": "d032f688edf44bc83e1e56253fad69555aaecfd22e5a31be16c7296f1cf6ef6d",
+      "exports": [
+        "registerRoleTools"
+      ],
+      "mcp_tool_names": [
+        "list_roles",
+        "get_role",
+        "create_role",
+        "update_role",
+        "assign_role"
+      ]
+    },
+    {
+      "path": "lib/mcp/tools/sales-receipts.ts",
+      "sha256": "75c97ad81c515bee1245cd7d7e262820d84ae7340a45ec10bb8e5aabb26cb439",
+      "exports": [
+        "registerSalesReceiptTools"
+      ],
+      "mcp_tool_names": [
+        "list_sales_receipts",
+        "get_sales_receipt",
+        "create_sales_receipt",
+        "post_sales_receipt",
+        "void_sales_receipt",
+        "list_customer_credits",
+        "get_customer_credit",
+        "create_customer_credit",
+        "apply_customer_credit",
+        "write_off_invoice",
+        "recover_written_off_invoice"
+      ]
+    },
+    {
+      "path": "lib/mcp/tools/tax.ts",
+      "sha256": "355cd0bb231363844deca082a5e808e04af30367c2cfb428157dbe54acf346d4",
+      "exports": [
+        "registerTaxTools"
+      ],
+      "mcp_tool_names": [
+        "list_tax_rates",
+        "create_tax_rate",
+        "update_tax_rate",
+        "file_vat_return",
+        "record_vat_settlement",
+        "send_credit_note"
+      ]
+    },
+    {
+      "path": "lib/mcp/tools/warehouses.ts",
+      "sha256": "b2edbdd4d86f535ac20d2f03b1876cfff9663f82600100772cc8f81b5d53d325",
+      "exports": [
+        "registerWarehouseTools"
+      ],
+      "mcp_tool_names": [
+        "list_warehouses",
+        "get_warehouse",
+        "create_warehouse",
+        "update_warehouse",
+        "delete_warehouse",
+        "get_warehouse_stock"
+      ]
+    },
+    {
+      "path": "lib/money.ts",
+      "sha256": "1645d28b67831e7437c6d087580b6b5400ce042ff7f8076dbe6a96b992c5b793",
+      "exports": [
+        "centsToDecimal",
+        "decimalToCents",
+        "decimalToMinorUnits",
+        "minorUnitsToDecimal",
+        "formatMoney",
+        "parseMoney",
+        "calculateTax",
+        "addTax",
+        "sumCents"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/reports/statement-export.ts",
+      "sha256": "03bbb63d654d053f6a69d13295777442eb81ff7da4ce6995446e63c1fdaaf7e3",
+      "exports": [
+        "toXlsx",
+        "toPdf"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/s3.ts",
+      "sha256": "8b22f49e425120df34aa906526d1f423ce87bbe8ab393dfc764825f9b76680ee",
+      "exports": [
+        "getUploadUrl",
+        "getDownloadUrl",
+        "deleteObject"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "lib/stripe.ts",
+      "sha256": "07ea0286f4ad2415f3ee19826866ede1b7bb62ac6a676443e8421400b591d576",
+      "exports": [
+        "stripe"
+      ],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "tests/bank-ledger-codes.test.ts",
+      "sha256": "feca02468824bad597e392c921d34a085f635a409f0c3f8c136e3354f53d6b0a",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "tests/convert-entry.test.ts",
+      "sha256": "660a32579a82f2e15db84a9548cd2b55a42b250b89054dd5624fc16fd0a697d2",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "tests/iso4217.test.ts",
+      "sha256": "84c1710a41d4db23543a0105478c9df188535dfe554dc7b320df737f8425dd0c",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "tests/money.test.ts",
+      "sha256": "15f5a27ccc990fb77bbeda54d610ff9f76eb7a3cb6e8bfd1de1f75e44a848897",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "tests/rate-status.test.ts",
+      "sha256": "4a1f8b73de035f1e1997e66a78f4ae089cf8dd5e97a3b6994e2a02fca7b8f323",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "tests/revaluation.test.ts",
+      "sha256": "9f8d3ab75d1c4645b62c8308d9291a13e0539999424d29b3f7e28fb2badaac6a",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "tests/settlement.test.ts",
+      "sha256": "5dcaaeddb3cc932c9cd6dba2a316316f10daf98d8ebec1010b0811fa97fc9e9b",
+      "exports": [],
+      "mcp_tool_names": []
+    },
+    {
+      "path": "tests/triangulate.test.ts",
+      "sha256": "f1ceaaa76f2dc0a6c757b3584092b7319902556eb6900c55889945966b528c5a",
+      "exports": [],
+      "mcp_tool_names": []
+    }
+  ]
+}

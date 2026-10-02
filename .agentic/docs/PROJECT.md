@@ -6,7 +6,7 @@ A maintainable Dubbl fork with selectively implemented Bigcapital behavioral par
 
 ## Known versus unverified
 
-Known: the user has an initial Dubbl fork and supplied a 37-page implementation plan. No fork source, commit or URL was supplied to this packaging task. The plan describes Next.js/React/TypeScript, PostgreSQL/Drizzle, Tailwind/shadcn/Radix, background jobs, object storage and Docker. These are baseline hypotheses until AUD-001 verifies them. Never treat the plan's spot audit as proof of this fork's exact schema or feature status.
+Known: the user has an initial Dubbl fork and supplied an implementation plan, now maintained as [sources/SOURCE.md](../sources/SOURCE.md). No fork source, commit or URL was supplied to this packaging task. The plan describes Next.js/React/TypeScript, PostgreSQL/Drizzle, Tailwind/shadcn/Radix, background jobs, object storage and Docker. These are baseline hypotheses until AUD-001 verifies them. Never treat the plan's spot audit as proof of this fork's exact schema or feature status.
 
 ## Architectural direction
 

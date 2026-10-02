@@ -2,7 +2,7 @@
 
 ## Project in one glance
 
-Build on the user's existing Dubbl fork. Preserve its architecture and existing capabilities. Audit Bigcapital's public behavior/API and independently implement valuable gaps. Deliver complete Persian localization, RTL and production-safe IRR using exact money/FX storage. Do not copy Bigcapital implementation code. The attached plan is a requirements source, not proof about this fork's current state.
+Build on the user's existing Dubbl fork. Preserve its architecture and existing capabilities. Audit Bigcapital's public behavior/API and independently implement valuable gaps. Deliver complete Persian localization, RTL and production-safe IRR using exact money/FX storage. Do not copy Bigcapital implementation code. The [Markdown implementation plan](sources/SOURCE.md) is the requirements source, not proof about this fork's current state. Read it by section heading; use sources/PLAN_COVERAGE.md for task traceability.
 
 Current implementation truth is the actual repository plus task evidence. `python3 .agentic/agent.py status` computes current phase, active work, blockers and next task directly from Markdown. Never maintain a competing handwritten progress counter.
 

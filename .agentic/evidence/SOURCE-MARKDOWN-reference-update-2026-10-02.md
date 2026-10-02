@@ -1,0 +1,9 @@
+# Markdown requirements source reference update
+
+2026-10-02, coding-assistant (Codex), self-review. The owner replaced the poorly extracted requirements document with `.agentic/sources/SOURCE.md` and explicitly requested that references use this Markdown source.
+
+Updated all 60 task inputs to direct SOURCE.md links and relevant heading anchors. Added source_sections metadata; source_pages is empty and retained only for controller schema compatibility. Replaced the page-based coverage map with Markdown section links. Updated entry-point, project, bootstrap, workspace, controller, template, provenance, currency and source-verification notes. Product PDF output requirements remain relevant and unchanged. The owner-provided SOURCE.md content was not edited.
+
+AUD-004, AUD-003 and AUD-001 were reopened in reverse dependency order solely to change source references, then resubmitted and honestly self-reviewed in dependency order. Original completion evidence and acceptance criteria remain intact; this file supplements their evidence rather than rewriting historical audits. This review approves only the reference migration and retains the original audit results/limitations. No new financial, runtime, human or native-language approval is claimed.
+
+Verification: the Python reference check confirmed all 60 tasks use sources/SOURCE.md, all section anchors resolve against real headings outside code fences, all former task page-reference input sentences are removed, and the coverage links resolve. Controller validation passed before resubmission. No application code, dependencies, task requirements or deployment settings changed. Final controller validation/status and scoped diff checks are performed after the source-reference reviews; builds and dev server are unnecessary for this documentation-only update.

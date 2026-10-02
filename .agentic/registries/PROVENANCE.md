@@ -23,7 +23,7 @@ License snapshots are pinned to repository commits and fetched bytes, with hashe
 
 | Capability / change | Requirements source | Author / commit | Tests / review |
 |---|---|---|---|
-| Initial requirements | User-supplied plan; sources/SOURCE.md | Existing planning package | Not a product license approval |
+| Initial requirements | [User-supplied Markdown plan](../sources/SOURCE.md) | Existing planning package | Not a product license approval |
 | AUD-003 policy and inventory | Actual fork LICENSE/manifests, installed notices, primary license/documentation sources above | coding-assistant; uncommitted working tree | AUD-003-attempt-1.md and AUD-003-review-1.md; self-review |
 
 ## Blocking decisions
@@ -33,3 +33,9 @@ DEC-004 supersedes the newly proposed licensing review/release gates below: the 
 No exception permitting Bigcapital implementation reuse has been granted. Block copied/adapted implementation, unlicensed external material and unclear reuse until the exact artifact/use receives appropriate review. Inherited buffers rights, native/copyleft obligations, fonts and branding remain named release gates in ADR-001 and docs/RELEASE_GATES.md. Unknown is not permissive. Task completion is inventory/policy completion, not clearance of those gates.
 
 For each later parity change append source URL/version/digest, original behavioral specification, source exposure, actual implementation author/commit, synthetic tests and attributable review. Preserve original notices. Added dependencies/fonts/assets require their own version-specific provenance.
+
+## AUD-004 public-contract observation
+
+2026-10-02, coding-assistant, entry commit `2c67948f566aa70ba3e54dac641dbd8fb29268d9`; uncommitted audit artifacts. Retrieved the official [documentation index](https://docs.bigcapital.app/llms.txt), [API introduction](https://docs.bigcapital.app/api-reference/introduction), [public OpenAPI](https://docs.bigcapital.app/api-reference/openapi.json) and public warehouse-transfer operation documentation only. No external implementation code or application assets fetched/copied.
+
+[Catalog URLs/digest](../evidence/AUD-004-public-catalog.json) and [operation metadata/digest](../evidence/AUD-004-openapi-operations.json) record UTC retrieval times and fetched-byte SHA-256 fingerprints. Moving documentation is not a product-release pin; extracted contracts omit component definitions and should not be used as a runnable API specification. [Original capability observations](../evidence/AUD-004-capability-map.json) derive local implementation findings independently; [source hashes](../evidence/AUD-004-local-sources.json) identify exact local evidence. [Audit](../evidence/AUD-004-attempt-1.md) and [self-review](../evidence/AUD-004-review-1.md) explicitly exclude runtime, owner/accounting and native-language approval. No deferred license work is resumed by this public-contract observation.

@@ -7,12 +7,7 @@
   "depends_on": [
     "PAR-008"
   ],
-  "source_pages": [
-    6,
-    15,
-    20,
-    32
-  ],
+  "source_pages": [],
   "status": "todo",
   "priority": 1,
   "optional": false,
@@ -21,7 +16,12 @@
   "block_reason": null,
   "evidence": [],
   "review": null,
-  "waiver": null
+  "waiver": null,
+  "source_sections": [
+    "bigcapital-to-dubbl-feature-map",
+    "security-and-privacy",
+    "performance"
+  ]
 }
 ---
 
@@ -33,7 +33,7 @@ Audit existing imports; add scoped object imports with mapping, strict validatio
 
 ## Inputs
 
-- Supplied implementation plan, pages 6, 15, 20, 32; see sources/PLAN_COVERAGE.md.
+- Requirements: [Markdown implementation plan](../sources/SOURCE.md), sections [`bigcapital-to-dubbl-feature-map`](../sources/SOURCE.md#bigcapital-to-dubbl-feature-map), [`security-and-privacy`](../sources/SOURCE.md#security-and-privacy), [`performance`](../sources/SOURCE.md#performance). See [coverage map](../sources/PLAN_COVERAGE.md).
 - Actual fork source and tests, docs/REPOSITORY_MAP.md, and relevant registries.
 - Dependency task evidence; plan assertions alone do not prove implementation.
 

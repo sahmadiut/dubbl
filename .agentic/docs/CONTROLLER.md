@@ -40,7 +40,7 @@ python3 .agentic/agent.py review AUD-001 --result approve --reviewer coding-assi
 python3 .agentic/agent.py done AUD-001
 ```
 
-`--kind peer` means a real separate reviewer; `--kind human` records an actual human's review, not a model role-play. Human-review tasks reject self/peer approval. The CLI cannot authenticate a human or prove that prose/tests are true; it enforces workflow structure. The operator is responsible for honest evidence. The required human reviews come from the supplied plan's parity, accounting, linguistic, security, migration and release gates.
+`--kind peer` means a real separate reviewer; `--kind human` records an actual human's review, not a model role-play. Human-review tasks reject self/peer approval. The CLI cannot authenticate a human or prove that prose/tests are true; it enforces workflow structure. The operator is responsible for honest evidence. The required human reviews come from the [Markdown implementation plan](../sources/SOURCE.md)'s parity, accounting, linguistic, security, migration and release gates.
 
 `review --result reject` returns work for repair. Editing acceptance/content/evidence after approval invalidates its fingerprint. Re-submit and review again. Completed task evidence is immutable; use new attempts instead of rewriting old shared evidence. Do not mutate done task content before reopening.
 
@@ -75,3 +75,7 @@ The controller validates IDs, schema, roles, dependencies, cycles, single active
 On a crash, inspect `.controller.lock` for PID/time, establish that no writer is still running, then remove only that stale lock and re-run validate. Do not auto-delete a live lock. If a manually edited done task no longer validates, restore its last valid version from Git, then use reopen before editing. The tool has no bypass-validation mutation command.
 
 Use `python3 -m unittest discover -s .agentic/tests -v` to test the controller on temporary copies. These tests validate orchestration only; they do not qualify Dubbl's financial implementation.
+
+## Requirements source references
+
+The authoritative requirements are in [sources/SOURCE.md](../sources/SOURCE.md). Task inputs link directly to its Markdown section anchors; direct document links and `source_sections` record those locations. The required `source_pages` field stays empty for controller schema compatibility and is not a source locator. New tasks should use Markdown sections, not page numbers. [PLAN_COVERAGE](../sources/PLAN_COVERAGE.md) maps sections to task families. Historical evidence remains an immutable record of its audit date; current source references are governed by SOURCE.md.

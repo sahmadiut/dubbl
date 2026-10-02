@@ -6,6 +6,7 @@
   "role": "lead",
   "depends_on": [],
   "source_pages": [],
+  "source_sections": [],
   "status": "todo",
   "priority": 1,
   "optional": false,
@@ -26,7 +27,7 @@ State the concrete result, boundaries and relevant repository paths after verifi
 
 ## Inputs
 
-Requirements, dependencies, source pages and decisions.
+Link requirements to [sources/SOURCE.md](../sources/SOURCE.md) and its relevant Markdown section anchors; list dependencies and decisions.
 
 ## Acceptance criteria
 

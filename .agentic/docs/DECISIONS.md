@@ -4,7 +4,7 @@ Record durable decisions with ID, date, owner, status, context, options, chosen 
 
 ## DEC-001 — Architecture direction
 
-Status: requirement from supplied plan, pending validation against actual fork. Keep Dubbl runtime; use Bigcapital public contracts as clean-room requirements. AUD-003 records source/license evidence.
+Status: requirement from the [Markdown implementation plan](../sources/SOURCE.md), pending validation against actual fork. Keep Dubbl runtime; use Bigcapital public contracts as clean-room requirements. AUD-003 records source/license evidence.
 
 ## DEC-002 — Docker execution deferred by owner
 

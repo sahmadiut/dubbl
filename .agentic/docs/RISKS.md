@@ -1,6 +1,6 @@
 # Risks and controls
 
-All risks originate in the supplied plan unless labeled implementation-system risk. Track each actual finding with severity, owner, evidence, mitigation task and disposition.
+All risks originate in the [Markdown implementation plan](../sources/SOURCE.md) unless labeled implementation-system risk. Track each actual finding with severity, owner, evidence, mitigation task and disposition.
 
 | Risk | Primary control / task |
 |---|---|

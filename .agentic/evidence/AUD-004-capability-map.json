@@ -1,0 +1,1584 @@
+{
+  "scope": "Source capability audit, not endpoint/runtime qualification. Partial includes observed implementation with named differences or verification gaps. Missing-feature layers are adjacent evidence. Unspecified means owner value/scope unresolved. No implementation code copied.",
+  "rows": [
+    {
+      "capability": "Auth, users, roles, organization, settings",
+      "catalog_groups": [
+        "auth",
+        "users",
+        "roles",
+        "organization",
+        "settings"
+      ],
+      "level": "partial",
+      "owner_tasks": [
+        "PAR-007",
+        "AUD-005"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/auth.ts",
+          "lib/db/schema/invitations.ts"
+        ],
+        "domain": [
+          "lib/api/auth-context.ts",
+          "lib/api/require-role.ts",
+          "lib/auth.ts"
+        ],
+        "api": [
+          "app/api/v1/organization",
+          "app/api/v1/roles",
+          "app/api/v1/members",
+          "app/api/v1/user"
+        ],
+        "ui": [
+          "app/(dashboard)/settings",
+          "app/(dashboard)/settings/roles",
+          "app/(dashboard)/settings/members/page.tsx"
+        ],
+        "mcp": [
+          "lib/mcp/tools/organization.ts",
+          "lib/mcp/tools/roles.ts"
+        ]
+      },
+      "differences_and_follow_up": "NextAuth/shared organization-scoped DB differs from separate tenant database provisioning. Signup/invitation metadata and MCP administration coverage need review.",
+      "tests": [],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "API keys",
+      "catalog_groups": [
+        "api-keys"
+      ],
+      "level": "partial",
+      "owner_tasks": [
+        "PAR-007"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/auth.ts"
+        ],
+        "domain": [
+          "lib/api/auth-context.ts"
+        ],
+        "api": [
+          "app/api/v1/organization",
+          "app/api/v1/api-keys/route.ts"
+        ],
+        "ui": [
+          "app/(dashboard)/settings",
+          "app/(dashboard)/settings/api-keys/page.tsx"
+        ],
+        "mcp": [
+          "lib/mcp/tools/organization.ts"
+        ]
+      },
+      "differences_and_follow_up": "REST/UI key lifecycle exists; organization MCP only gets current organization. Preserve Dubbl tokens; MCP key lifecycle absent.",
+      "tests": [],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "Items and item categories",
+      "catalog_groups": [
+        "items",
+        "item-categories"
+      ],
+      "level": "partial",
+      "owner_tasks": [
+        "PAR-005"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/inventory.ts"
+        ],
+        "domain": [
+          "lib/api/inventory-valuation.ts"
+        ],
+        "api": [
+          "app/api/v1/inventory",
+          "app/api/v1/inventory/categories/route.ts"
+        ],
+        "ui": [
+          "app/(dashboard)/inventory",
+          "app/(dashboard)/inventory/categories/page.tsx"
+        ],
+        "mcp": [
+          "lib/mcp/tools/inventory.ts"
+        ]
+      },
+      "differences_and_follow_up": "CRUD and parent category hierarchy exist. Whole-unit stock differs from numeric public quantity contracts; test hierarchy cycles and unit semantics.",
+      "tests": [],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "Inventory adjustments",
+      "catalog_groups": [
+        "inventory-adjustments"
+      ],
+      "level": "partial",
+      "owner_tasks": [
+        "PAR-005"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/inventory.ts"
+        ],
+        "domain": [
+          "lib/api/inventory-valuation.ts"
+        ],
+        "api": [
+          "app/api/v1/inventory",
+          "app/api/v1/inventory/[id]/adjust/route.ts",
+          "app/api/v1/stock-takes"
+        ],
+        "ui": [
+          "app/(dashboard)/inventory"
+        ],
+        "mcp": [
+          "lib/mcp/tools/inventory.ts"
+        ]
+      },
+      "differences_and_follow_up": "Direct adjustments and stock takes exist. Separate public adjustment-document confirm/edit lifecycle needs comparison and GL/concurrency tests.",
+      "tests": [],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "Warehouses",
+      "catalog_groups": [
+        "warehouses"
+      ],
+      "level": "partial",
+      "owner_tasks": [
+        "PAR-005"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/inventory.ts"
+        ],
+        "domain": [
+          "lib/api/inventory-valuation.ts"
+        ],
+        "api": [
+          "app/api/v1/warehouses"
+        ],
+        "ui": [
+          "app/(dashboard)/inventory/warehouses"
+        ],
+        "mcp": [
+          "lib/mcp/tools/warehouses.ts"
+        ]
+      },
+      "differences_and_follow_up": "Default/active warehouse and per-item stock surfaces exist. Verify primary designation and all org/stock permissions rather than replacing warehouse model.",
+      "tests": [],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "Warehouse transfers",
+      "catalog_groups": [
+        "warehouse-transfers"
+      ],
+      "level": "partial",
+      "owner_tasks": [
+        "PAR-005"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/inventory.ts"
+        ],
+        "domain": [
+          "lib/api/inventory-valuation.ts"
+        ],
+        "api": [
+          "app/api/v1/inventory",
+          "app/api/v1/warehouses",
+          "app/api/v1/inventory/transfers/route.ts",
+          "app/api/v1/inventory/transfers/[id]/route.ts",
+          "app/api/v1/inventory/transfers/[id]/complete/route.ts"
+        ],
+        "ui": [
+          "app/(dashboard)/inventory",
+          "app/(dashboard)/inventory/warehouses",
+          "app/(dashboard)/inventory/transfers/page.tsx"
+        ],
+        "mcp": [
+          "lib/mcp/tools/inventory.ts",
+          "lib/mcp/tools/warehouses.ts"
+        ]
+      },
+      "differences_and_follow_up": "REST draft/in_transit/cancelled/full-completion exists. Completion writes are not one DB transaction and accept no partial receipt quantities; create does not verify warehouse/item ownership. Immediate MCP stock transfer is a different lifecycle.",
+      "tests": [],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "Inventory costing and valuation",
+      "catalog_groups": [
+        "inventory-cost"
+      ],
+      "level": "partial",
+      "owner_tasks": [
+        "PAR-005",
+        "MON-007"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/inventory.ts",
+          "lib/db/schema/reports.ts"
+        ],
+        "domain": [
+          "lib/api/inventory-valuation.ts",
+          "lib/api/consolidation-report.ts",
+          "lib/api/journal-automation.ts"
+        ],
+        "api": [
+          "app/api/v1/inventory",
+          "app/api/v1/reports",
+          "app/api/v1/reports/inventory-valuation/route.ts"
+        ],
+        "ui": [
+          "app/(dashboard)/inventory",
+          "app/(dashboard)/reports",
+          "app/(dashboard)/inventory/valuation/page.tsx"
+        ],
+        "mcp": [
+          "lib/mcp/tools/inventory.ts",
+          "lib/mcp/tools/reports.ts"
+        ]
+      },
+      "differences_and_follow_up": "Average/FIFO cost engine and valuation exist; callers separately post GL. Number rounding and whole units require exact value and inventory-to-GL reconciliation.",
+      "tests": [],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "Branches",
+      "catalog_groups": [
+        "branches"
+      ],
+      "level": "missing",
+      "owner_tasks": [
+        "PAR-006",
+        "AUD-005"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/bookkeeping.ts",
+          "lib/db/schema/consolidation.ts"
+        ],
+        "domain": [
+          "lib/api/journal-automation.ts",
+          "lib/api/consolidation-report.ts"
+        ],
+        "api": [
+          "app/api/v1/accounts",
+          "app/api/v1/cost-centers"
+        ],
+        "ui": [
+          "app/(dashboard)/accounting/accounts"
+        ],
+        "mcp": [
+          "lib/mcp/tools/accounts.ts",
+          "lib/mcp/tools/cost-centers.ts"
+        ]
+      },
+      "differences_and_follow_up": "No branch schema/routes/UI/MCP found. Cost centers and consolidation are adjacent concepts, not intra-org branches. Optional owner scope pending.",
+      "tests": [],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "Accounts / chart of accounts",
+      "catalog_groups": [
+        "accounts"
+      ],
+      "level": "partial",
+      "owner_tasks": [
+        "MON-007",
+        "DATA-003"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/bookkeeping.ts"
+        ],
+        "domain": [
+          "lib/api/journal-automation.ts"
+        ],
+        "api": [
+          "app/api/v1/accounts"
+        ],
+        "ui": [
+          "app/(dashboard)/accounting/accounts"
+        ],
+        "mcp": [
+          "lib/mcp/tools/accounts.ts"
+        ]
+      },
+      "differences_and_follow_up": "Chart hierarchy and transaction surfaces exist. Exact money and public bulk-delete preflight comparison pending; retain UUID/v1 compatibility.",
+      "tests": [],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "Manual journals",
+      "catalog_groups": [
+        "manual-journals"
+      ],
+      "level": "partial",
+      "owner_tasks": [
+        "MON-007",
+        "DATA-003"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/bookkeeping.ts"
+        ],
+        "domain": [
+          "lib/api/journal-automation.ts"
+        ],
+        "api": [
+          "app/api/v1/entries"
+        ],
+        "ui": [
+          "app/(dashboard)/accounting/page.tsx"
+        ],
+        "mcp": [
+          "lib/mcp/tools/entries.ts"
+        ]
+      },
+      "differences_and_follow_up": "Journal create/post/reversal exists; legacy integer/Number money and public bulk-delete/preflight differences require follow-up.",
+      "tests": [],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "Tax rates and rounding",
+      "catalog_groups": [
+        "tax-rates"
+      ],
+      "level": "partial",
+      "owner_tasks": [
+        "PAR-005",
+        "MON-007"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/bookkeeping.ts"
+        ],
+        "domain": [
+          "lib/api/journal-automation.ts",
+          "lib/api/tax-calculator.ts"
+        ],
+        "api": [
+          "app/api/v1/accounts",
+          "app/api/v1/tax-rates/route.ts"
+        ],
+        "ui": [
+          "app/(dashboard)/tax/page.tsx"
+        ],
+        "mcp": [
+          "lib/mcp/tools/accounts.ts",
+          "lib/mcp/tools/tax.ts"
+        ]
+      },
+      "differences_and_follow_up": "Tax rates and calculator exist; exact rounding and cross-document tax reconciliation remain unqualified. No Iranian statutory compliance claimed.",
+      "tests": [],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "Sales invoices",
+      "catalog_groups": [
+        "sale-invoices"
+      ],
+      "level": "partial",
+      "owner_tasks": [
+        "MON-007",
+        "PAR-004",
+        "L10N-003"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/invoicing.ts"
+        ],
+        "domain": [
+          "lib/api/journal-automation.ts"
+        ],
+        "api": [
+          "app/api/v1/invoices"
+        ],
+        "ui": [
+          "app/(dashboard)/sales/page.tsx"
+        ],
+        "mcp": [
+          "lib/mcp/tools/invoices.ts"
+        ]
+      },
+      "differences_and_follow_up": "Lifecycle/mail/PDF/payment links exist. Catalog write-off cancellation/state helpers need comparison; no financial workflow approval or exact-money safety inferred.",
+      "tests": [],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "Sales estimates / quotes",
+      "catalog_groups": [
+        "sale-estimates"
+      ],
+      "level": "partial",
+      "owner_tasks": [
+        "PAR-004",
+        "L10N-003",
+        "DATA-007"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/invoicing.ts"
+        ],
+        "domain": [
+          "app/api/v1/quotes/route.ts"
+        ],
+        "api": [
+          "app/api/v1/quotes"
+        ],
+        "ui": [
+          "app/(dashboard)/sales/quotes"
+        ],
+        "mcp": [
+          "lib/mcp/tools/quotes.ts"
+        ]
+      },
+      "differences_and_follow_up": "Quotes/conversion/signature surfaces exist. Public SMS/mail-state/bulk convenience value and equivalence remain to decide; no assumed SMS implementation.",
+      "tests": [],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "Sales receipts",
+      "catalog_groups": [
+        "sale-receipts"
+      ],
+      "level": "partial",
+      "owner_tasks": [
+        "PAR-004"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/invoicing.ts"
+        ],
+        "domain": [
+          "lib/api/journal-automation.ts"
+        ],
+        "api": [
+          "app/api/v1/sales-receipts"
+        ],
+        "ui": [
+          "app/(dashboard)/sales/receipts"
+        ],
+        "mcp": [
+          "lib/mcp/tools/sales-receipts.ts"
+        ]
+      },
+      "differences_and_follow_up": "Cash sale schema, REST post/void, UI and MCP exist. Catalog close/mail semantics differ; posting/reversal workflow tests absent.",
+      "tests": [],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "Payments received / overpayments",
+      "catalog_groups": [
+        "payments-received"
+      ],
+      "level": "partial",
+      "owner_tasks": [
+        "PAR-004",
+        "MON-007"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/payments.ts",
+          "lib/db/schema/invoicing.ts"
+        ],
+        "domain": [
+          "lib/api/journal-automation.ts"
+        ],
+        "api": [
+          "app/api/v1/payments",
+          "app/api/v1/sales-receipts",
+          "app/api/v1/customer-credits/route.ts",
+          "app/api/v1/customer-credits/[id]/apply/route.ts"
+        ],
+        "ui": [
+          "app/(dashboard)/sales/payments",
+          "app/(dashboard)/sales/receipts",
+          "app/(dashboard)/sales/customer-prepayments/page.tsx"
+        ],
+        "mcp": [
+          "lib/mcp/tools/payments.ts",
+          "lib/mcp/tools/sales-receipts.ts"
+        ]
+      },
+      "differences_and_follow_up": "Shared received/made payments and customer on-account credit liability exist. Allocation overrun/retry/reversal and catalog mail/edit/state need qualification.",
+      "tests": [],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "Credit notes",
+      "catalog_groups": [
+        "credit-notes"
+      ],
+      "level": "partial",
+      "owner_tasks": [
+        "PAR-004"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/invoicing.ts"
+        ],
+        "domain": [
+          "lib/api/journal-automation.ts"
+        ],
+        "api": [
+          "app/api/v1/credit-notes",
+          "app/api/v1/credit-notes/[id]/send/route.ts",
+          "app/api/v1/credit-notes/[id]/void/route.ts"
+        ],
+        "ui": [
+          "app/(dashboard)/sales/credit-notes"
+        ],
+        "mcp": [
+          "lib/mcp/tools/credit-notes.ts"
+        ]
+      },
+      "differences_and_follow_up": "Issue reduces AR; void restores applications and reverses journal/inventory. Preserve existing behavior; concurrency/period workflow tests absent.",
+      "tests": [],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "Credit-note refunds",
+      "catalog_groups": [
+        "credit-note-refunds"
+      ],
+      "level": "missing",
+      "owner_tasks": [
+        "PAR-004"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/invoicing.ts",
+          "lib/db/schema/payments.ts"
+        ],
+        "domain": [
+          "lib/api/journal-automation.ts"
+        ],
+        "api": [
+          "app/api/v1/credit-notes",
+          "app/api/v1/payments"
+        ],
+        "ui": [
+          "app/(dashboard)/sales/credit-notes",
+          "app/(dashboard)/sales/payments"
+        ],
+        "mcp": [
+          "lib/mcp/tools/credit-notes.ts",
+          "lib/mcp/tools/payments.ts"
+        ]
+      },
+      "differences_and_follow_up": "No dedicated credit-note refund create/list/delete model/API/tool found. Customer-credit refunded enum is not an executable linked refund workflow. Evidence paths are adjacent, not refund implementation.",
+      "tests": [],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "Apply credit note to invoice",
+      "catalog_groups": [
+        "credit-notes-apply-invoice"
+      ],
+      "level": "partial",
+      "owner_tasks": [
+        "PAR-004"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/invoicing.ts",
+          "lib/db/schema/payments.ts"
+        ],
+        "domain": [
+          "lib/api/journal-automation.ts"
+        ],
+        "api": [
+          "app/api/v1/credit-notes",
+          "app/api/v1/payments",
+          "app/api/v1/credit-notes/[id]/apply/route.ts"
+        ],
+        "ui": [
+          "app/(dashboard)/sales/credit-notes",
+          "app/(dashboard)/sales/payments"
+        ],
+        "mcp": [
+          "lib/mcp/tools/credit-notes.ts",
+          "lib/mcp/tools/payments.ts"
+        ]
+      },
+      "differences_and_follow_up": "Existing application checks org/customer/currency/balances; transaction writes carrier payment and allocations without a second AR journal. Reads precede transaction; removal/retry/locks need tests.",
+      "tests": [],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "Bills",
+      "catalog_groups": [
+        "bills"
+      ],
+      "level": "partial",
+      "owner_tasks": [
+        "MON-007",
+        "L10N-004",
+        "DATA-003"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/bills.ts"
+        ],
+        "domain": [
+          "lib/api/journal-automation.ts"
+        ],
+        "api": [
+          "app/api/v1/bills"
+        ],
+        "ui": [
+          "app/(dashboard)/purchases/page.tsx"
+        ],
+        "mcp": [
+          "lib/mcp/tools/bills.ts"
+        ]
+      },
+      "differences_and_follow_up": "Bill/receipt/payment surfaces exist. Bulk deletion validation and exact monetary posting remain to qualify.",
+      "tests": [],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "Bill payments / partial payments",
+      "catalog_groups": [
+        "bill-payments"
+      ],
+      "level": "partial",
+      "owner_tasks": [
+        "PAR-004"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/bills.ts",
+          "lib/db/schema/payments.ts"
+        ],
+        "domain": [
+          "lib/api/journal-automation.ts"
+        ],
+        "api": [
+          "app/api/v1/bills",
+          "app/api/v1/payments"
+        ],
+        "ui": [
+          "app/(dashboard)/sales/payments/page.tsx",
+          "app/(dashboard)/purchases/page.tsx"
+        ],
+        "mcp": [
+          "lib/mcp/tools/bills.ts",
+          "lib/mcp/tools/payments.ts"
+        ]
+      },
+      "differences_and_follow_up": "Made payments update amountPaid/amountDue and partial/paid statuses within transaction. Test allocation overrun, retry and reversal rather than recreating partial payments. No separate purchases/payments page found; shared sales payment UI requires outgoing-payment UX review.",
+      "tests": [],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "Vendor credits",
+      "catalog_groups": [
+        "vendor-credits"
+      ],
+      "level": "partial",
+      "owner_tasks": [
+        "PAR-001"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/bills.ts"
+        ],
+        "domain": [
+          "lib/api/journal-automation.ts"
+        ],
+        "api": [
+          "app/api/v1/debit-notes"
+        ],
+        "ui": [
+          "app/(dashboard)/purchases/debit-notes"
+        ],
+        "mcp": [
+          "lib/mcp/tools/debit-notes.ts"
+        ]
+      },
+      "differences_and_follow_up": "Supplier debit-note model already reduces AP. Public vendor-credit open/edit/void lifecycle differs in naming/status; prove economics and preserve compatibility before considering a new model.",
+      "tests": [],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "Apply vendor credits to bills",
+      "catalog_groups": [
+        "vendor-credits-apply-bills"
+      ],
+      "level": "partial",
+      "owner_tasks": [
+        "PAR-002"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/bills.ts"
+        ],
+        "domain": [
+          "lib/api/journal-automation.ts"
+        ],
+        "api": [
+          "app/api/v1/debit-notes",
+          "app/api/v1/bills",
+          "app/api/v1/debit-notes/[id]/apply/route.ts"
+        ],
+        "ui": [
+          "app/(dashboard)/purchases/debit-notes",
+          "app/(dashboard)/purchases/page.tsx"
+        ],
+        "mcp": [
+          "lib/mcp/tools/debit-notes.ts",
+          "lib/mcp/tools/bills.ts"
+        ]
+      },
+      "differences_and_follow_up": "Supplier debit-note application already checks supplier/currency/outstanding amount and updates both rows in transaction. Dedicated allocation listing/removal history, retry and concurrency need qualification.",
+      "tests": [],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "Vendor-credit refunds",
+      "catalog_groups": [
+        "vendor-credits-refunds"
+      ],
+      "level": "missing",
+      "owner_tasks": [
+        "PAR-003"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/bills.ts",
+          "lib/db/schema/payments.ts"
+        ],
+        "domain": [
+          "lib/api/journal-automation.ts"
+        ],
+        "api": [
+          "app/api/v1/debit-notes",
+          "app/api/v1/payments"
+        ],
+        "ui": [
+          "app/(dashboard)/purchases/debit-notes",
+          "app/(dashboard)/sales/payments"
+        ],
+        "mcp": [
+          "lib/mcp/tools/debit-notes.ts",
+          "lib/mcp/tools/payments.ts"
+        ]
+      },
+      "differences_and_follow_up": "No supplier-credit-linked refund entity/list/create/reverse API/tool found. Generic received payment is adjacent evidence and does not establish refund lifecycle.",
+      "tests": [],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "Landed cost",
+      "catalog_groups": [
+        "landed-cost"
+      ],
+      "level": "partial",
+      "owner_tasks": [
+        "PAR-005"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/bills.ts",
+          "lib/db/schema/inventory.ts"
+        ],
+        "domain": [
+          "lib/api/procurement.ts",
+          "lib/api/inventory-valuation.ts"
+        ],
+        "api": [
+          "app/api/v1/landed-costs",
+          "app/api/v1/inventory"
+        ],
+        "ui": [
+          "app/(dashboard)/purchases/landed-costs",
+          "app/(dashboard)/inventory"
+        ],
+        "mcp": [
+          "lib/mcp/tools/landed-costs.ts",
+          "lib/mcp/tools/inventory.ts"
+        ]
+      },
+      "differences_and_follow_up": "Components and line-allocation schema plus REST/MCP exist. Validate capitalization/cost layers/GL and catalog unlink/removal behavior.",
+      "tests": [],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "Expenses",
+      "catalog_groups": [
+        "expenses"
+      ],
+      "level": "partial",
+      "owner_tasks": [
+        "MON-007",
+        "L10N-004",
+        "DATA-003"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/expenses.ts"
+        ],
+        "domain": [
+          "lib/api/journal-automation.ts"
+        ],
+        "api": [
+          "app/api/v1/expenses"
+        ],
+        "ui": [
+          "app/(dashboard)/purchases/expenses"
+        ],
+        "mcp": [
+          "lib/mcp/tools/expenses.ts"
+        ]
+      },
+      "differences_and_follow_up": "Expense posting exists. Publish/bulk lifecycle differences and exact-money/period workflow qualification remain.",
+      "tests": [],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "PDF templates",
+      "catalog_groups": [
+        "pdf-templates"
+      ],
+      "level": "partial",
+      "owner_tasks": [
+        "L10N-011",
+        "PAR-007"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/documents.ts",
+          "lib/db/schema/document-templates.ts"
+        ],
+        "domain": [
+          "lib/s3.ts",
+          "lib/documents/pdf-generator.ts",
+          "lib/documents/pdf-renderer.tsx"
+        ],
+        "api": [
+          "app/api/v1/documents",
+          "app/api/v1/document-templates/route.ts"
+        ],
+        "ui": [
+          "app/(dashboard)/settings/document-templates/page.tsx"
+        ],
+        "mcp": [
+          "lib/mcp/tools/documents.ts"
+        ]
+      },
+      "differences_and_follow_up": "Template customization/default schema/REST/UI exists. Check renderer uses config, branding, Persian font/RTL; document MCP is not assumed full template CRUD parity.",
+      "tests": [],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "Attachments and document storage",
+      "catalog_groups": [
+        "attachments"
+      ],
+      "level": "partial",
+      "owner_tasks": [
+        "QA-002",
+        "L10N-007",
+        "PAR-007"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/documents.ts"
+        ],
+        "domain": [
+          "lib/s3.ts"
+        ],
+        "api": [
+          "app/api/v1/documents",
+          "app/api/v1/attachments"
+        ],
+        "ui": [
+          "app/(dashboard)/documents"
+        ],
+        "mcp": [
+          "lib/mcp/tools/documents.ts"
+        ]
+      },
+      "differences_and_follow_up": "S3/folders/document and attachment routes exist. Model link/unlink parity, presigned expiration and scope need specific tests.",
+      "tests": [],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "Customers and vendors / contacts",
+      "catalog_groups": [
+        "customers",
+        "vendors",
+        "contacts"
+      ],
+      "level": "partial",
+      "owner_tasks": [
+        "MON-007",
+        "L10N-007",
+        "DATA-003"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/contacts.ts"
+        ],
+        "domain": [
+          "app/api/v1/contacts/route.ts"
+        ],
+        "api": [
+          "app/api/v1/contacts",
+          "app/api/v1/opening-balances"
+        ],
+        "ui": [
+          "app/(dashboard)/contacts"
+        ],
+        "mcp": [
+          "lib/mcp/tools/contacts.ts",
+          "lib/mcp/tools/opening-balances.ts"
+        ]
+      },
+      "differences_and_follow_up": "Unified customer/supplier/both contacts differ from separate resources. Preserve opening balances/statements; public bulk preflight and metadata need comparison.",
+      "tests": [],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "Payment links",
+      "catalog_groups": [
+        "payment-links"
+      ],
+      "level": "partial",
+      "owner_tasks": [
+        "PAR-007",
+        "L10N-009",
+        "QA-002"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/invoicing.ts",
+          "lib/db/schema/portal.ts"
+        ],
+        "domain": [
+          "lib/api/journal-automation.ts",
+          "lib/stripe.ts"
+        ],
+        "api": [
+          "app/api/v1/invoices",
+          "app/api/v1/invoices/[id]/payment-link/route.ts",
+          "app/api/pay/[token]/route.ts",
+          "app/api/pay/[token]/checkout/route.ts",
+          "app/api/pay/[token]/pdf/route.ts"
+        ],
+        "ui": [
+          "app/pay/[token]/page.tsx",
+          "app/(dashboard)/sales/page.tsx"
+        ],
+        "mcp": [
+          "lib/mcp/tools/invoices.ts"
+        ]
+      },
+      "differences_and_follow_up": "Invoice payment-link route plus public pay token, checkout and PDF exist. Provider/expiry/security/idempotency and public-language tests pending. No payment-link lifecycle tool found in invoices MCP; generation route lacks explicit requireRole. Review with PAR-007/QA-002.",
+      "tests": [],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "Stripe and payment services",
+      "catalog_groups": [
+        "stripe",
+        "payment-services"
+      ],
+      "level": "partial",
+      "owner_tasks": [
+        "PAR-007",
+        "AUD-005",
+        "QA-002"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/integrations.ts"
+        ],
+        "domain": [
+          "lib/stripe.ts"
+        ],
+        "api": [
+          "app/api/v1/integrations"
+        ],
+        "ui": [
+          "app/(dashboard)/settings/integrations/stripe"
+        ],
+        "mcp": [
+          "lib/mcp/tools/integrations.ts"
+        ]
+      },
+      "differences_and_follow_up": "Stripe connector and checkout exist; catalog connect/default/branding services differ. Iranian availability/value unspecified; provider runtime untested.",
+      "tests": [],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "Bank accounts",
+      "catalog_groups": [
+        "bank-accounts"
+      ],
+      "level": "partial",
+      "owner_tasks": [
+        "DATA-004",
+        "MON-007"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/banking.ts"
+        ],
+        "domain": [
+          "lib/api/bank-ledger.ts"
+        ],
+        "api": [
+          "app/api/v1/bank-transactions",
+          "app/api/v1/bank-accounts/route.ts"
+        ],
+        "ui": [
+          "app/(dashboard)/accounting/banking"
+        ],
+        "mcp": [
+          "lib/mcp/tools/bank-transactions.ts"
+        ]
+      },
+      "differences_and_follow_up": "Org-scoped bank account/ledger mapping exists. MCP bank lifecycle coverage and exact balance/authorization tests require operation review.",
+      "tests": [
+        "tests/bank-ledger-codes.test.ts"
+      ],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "Bank transactions",
+      "catalog_groups": [
+        "banking-transactions"
+      ],
+      "level": "partial",
+      "owner_tasks": [
+        "DATA-004"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/banking.ts"
+        ],
+        "domain": [
+          "lib/api/bank-ledger.ts",
+          "lib/banking/importer.ts",
+          "lib/api/bank-auto-reconcile.ts"
+        ],
+        "api": [
+          "app/api/v1/bank-transactions"
+        ],
+        "ui": [
+          "app/(dashboard)/accounting/banking"
+        ],
+        "mcp": [
+          "lib/mcp/tools/bank-transactions.ts"
+        ]
+      },
+      "differences_and_follow_up": "Import/exclude/reconcile exists. Public account feeds/duplicate operations differ; qualify signed amounts/ingestion idempotency/period guards.",
+      "tests": [],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "Categorization",
+      "catalog_groups": [
+        "banking-categorization"
+      ],
+      "level": "partial",
+      "owner_tasks": [
+        "DATA-004",
+        "MON-007"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/banking.ts"
+        ],
+        "domain": [
+          "lib/api/bank-ledger.ts",
+          "lib/api/bank-rules.ts"
+        ],
+        "api": [
+          "app/api/v1/bank-transactions",
+          "app/api/v1/bank-rules",
+          "app/api/v1/bank-transactions/[id]/categorize/route.ts"
+        ],
+        "ui": [
+          "app/(dashboard)/accounting/banking",
+          "app/(dashboard)/settings/bank-rules"
+        ],
+        "mcp": [
+          "lib/mcp/tools/bank-transactions.ts",
+          "lib/mcp/tools/bank-rules.ts"
+        ]
+      },
+      "differences_and_follow_up": "Existing category posting/splits/reversals. Verify all REST/MCP period and concurrent transitions; public grouped-resource endpoints differ.",
+      "tests": [],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "Bank rules",
+      "catalog_groups": [
+        "bank-rules"
+      ],
+      "level": "partial",
+      "owner_tasks": [
+        "DATA-004"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/banking.ts"
+        ],
+        "domain": [
+          "lib/api/bank-rules.ts"
+        ],
+        "api": [
+          "app/api/v1/bank-rules",
+          "app/api/v1/bank-accounts/[id]/apply-rules/route.ts"
+        ],
+        "ui": [
+          "app/(dashboard)/settings/bank-rules"
+        ],
+        "mcp": [
+          "lib/mcp/tools/bank-rules.ts"
+        ]
+      },
+      "differences_and_follow_up": "Multi-condition priority rules, fixed/percent splits, auto-reconcile posting exist. No dedicated rule regression/workflow suite; do not label missing. REST apply-rules is on bank-accounts/[id], not bank-rules/apply.",
+      "tests": [],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "Uncategorized / pending / recognized states",
+      "catalog_groups": [
+        "banking-uncategorized-transactions",
+        "banking-pending-transactions",
+        "banking-recognized-transactions"
+      ],
+      "level": "partial",
+      "owner_tasks": [
+        "DATA-004"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/banking.ts"
+        ],
+        "domain": [
+          "lib/api/bank-ledger.ts",
+          "lib/api/bank-rules.ts"
+        ],
+        "api": [
+          "app/api/v1/bank-transactions",
+          "app/api/v1/bank-rules"
+        ],
+        "ui": [
+          "app/(dashboard)/accounting/banking",
+          "app/(dashboard)/settings/bank-rules"
+        ],
+        "mcp": [
+          "lib/mcp/tools/bank-transactions.ts",
+          "lib/mcp/tools/bank-rules.ts"
+        ]
+      },
+      "differences_and_follow_up": "Unreconciled/reconciled/excluded plus pending boolean/categoryId differ from dedicated public state resources. Define equivalent predicates and transitions; recognition not assumed exact.",
+      "tests": [],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "Transaction matching",
+      "catalog_groups": [
+        "banking-transactions-matching"
+      ],
+      "level": "partial",
+      "owner_tasks": [
+        "DATA-004",
+        "MON-007"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/banking.ts",
+          "lib/db/schema/payments.ts"
+        ],
+        "domain": [
+          "lib/api/bank-ledger.ts",
+          "lib/api/journal-automation.ts",
+          "lib/banking/reconciliation-matcher.ts"
+        ],
+        "api": [
+          "app/api/v1/bank-transactions",
+          "app/api/v1/payments",
+          "app/api/v1/bank-transactions/[id]/match/route.ts"
+        ],
+        "ui": [
+          "app/(dashboard)/accounting/banking",
+          "app/(dashboard)/sales/payments"
+        ],
+        "mcp": [
+          "lib/mcp/tools/bank-transactions.ts",
+          "lib/mcp/tools/payments.ts"
+        ]
+      },
+      "differences_and_follow_up": "GET scores open documents/existing payments/journals/transfers. POST checks bank ownership and links existing journal instead of reposting. No direct lock assertion in match route; audit helpers and concurrent claims. createPaymentJournalEntry also has no lock assertion; new-payment match path must gain an explicit period check under MON-007/DATA-004.",
+      "tests": [],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "Plaid / optional feed providers",
+      "catalog_groups": [
+        "banking-plaid"
+      ],
+      "level": "missing",
+      "owner_tasks": [
+        "DATA-005",
+        "DATA-006",
+        "AUD-005"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/integrations.ts",
+          "lib/db/schema/banking.ts"
+        ],
+        "domain": [
+          "lib/stripe.ts",
+          "lib/api/bank-ledger.ts"
+        ],
+        "api": [
+          "app/api/v1/integrations",
+          "app/api/v1/bank-transactions"
+        ],
+        "ui": [
+          "app/(dashboard)/settings/integrations/stripe",
+          "app/(dashboard)/accounting/banking"
+        ],
+        "mcp": [
+          "lib/mcp/tools/integrations.ts",
+          "lib/mcp/tools/bank-transactions.ts"
+        ]
+      },
+      "differences_and_follow_up": "No Plaid link/exchange/webhook connector found. Manual bank imports are adjacent capabilities. Optional provider availability/value needs owner decision.",
+      "tests": [],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "Transaction locking",
+      "catalog_groups": [
+        "transactions-locking"
+      ],
+      "level": "partial",
+      "owner_tasks": [
+        "MON-007",
+        "DATA-004",
+        "PAR-007"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/bookkeeping.ts"
+        ],
+        "domain": [
+          "lib/api/period-lock.ts",
+          "lib/api/period-close.ts"
+        ],
+        "api": [
+          "app/api/v1/period-lock",
+          "app/api/v1/fiscal-years"
+        ],
+        "ui": [
+          "app/(dashboard)/settings"
+        ],
+        "mcp": [
+          "lib/mcp/tools/period-close.ts"
+        ]
+      },
+      "differences_and_follow_up": "Two-tier staff/advisor lock and closed fiscal-year guard exist. Public module-specific/partial-unlock differs; verify every posting path rather than replacing model.",
+      "tests": [],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "General object imports",
+      "catalog_groups": [
+        "import"
+      ],
+      "level": "partial",
+      "owner_tasks": [
+        "DATA-001"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/bulk.ts"
+        ],
+        "domain": [
+          "lib/import-export/pre-process.ts",
+          "lib/import-export/reference-resolver.ts"
+        ],
+        "api": [
+          "app/api/v1/bulk",
+          "app/api/v1/bulk/contacts/preview/route.ts",
+          "app/api/v1/bulk/contacts/import/route.ts"
+        ],
+        "ui": [
+          "app/(dashboard)/settings/import-export"
+        ],
+        "mcp": [
+          "lib/mcp/tools/bulk.ts"
+        ]
+      },
+      "differences_and_follow_up": "Per-entity preview/import jobs exist versus generic upload/map/preview/process public pipeline. Qualify references/retries/error reporting/entity coverage.",
+      "tests": [],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "CSV / XLSX exports",
+      "catalog_groups": [
+        "export"
+      ],
+      "level": "partial",
+      "owner_tasks": [
+        "DATA-002"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/reports.ts"
+        ],
+        "domain": [
+          "lib/import-export/csv-utils.ts",
+          "lib/reports/statement-export.ts"
+        ],
+        "api": [
+          "app/api/v1/export",
+          "app/api/v1/export/contacts/route.ts",
+          "app/api/v1/reports/saved/[id]/export/route.ts"
+        ],
+        "ui": [
+          "app/(dashboard)/settings/import-export"
+        ],
+        "mcp": [
+          "lib/mcp/tools/import-export.ts"
+        ]
+      },
+      "differences_and_follow_up": "CSV entity and report export exists. XLSX/general entity coverage, formula injection and large exact values require audit.",
+      "tests": [],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "Saved views and bulk operations",
+      "catalog_groups": [
+        "views"
+      ],
+      "level": "partial",
+      "owner_tasks": [
+        "DATA-003"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/reports.ts",
+          "lib/db/schema/bulk.ts"
+        ],
+        "domain": [
+          "lib/api/consolidation-report.ts",
+          "lib/import-export/pre-process.ts"
+        ],
+        "api": [
+          "app/api/v1/reports",
+          "app/api/v1/bulk",
+          "app/api/v1/reports/saved/route.ts",
+          "app/api/v1/bulk/contacts/delete/route.ts",
+          "app/api/v1/invoices/bulk/route.ts"
+        ],
+        "ui": [
+          "app/(dashboard)/reports",
+          "app/(dashboard)/settings/import-export",
+          "app/(dashboard)/reports/saved/page.tsx"
+        ],
+        "mcp": [
+          "lib/mcp/tools/reports.ts",
+          "lib/mcp/tools/bulk.ts"
+        ]
+      },
+      "differences_and_follow_up": "Saved reports are not saved resource table views. Selected entity bulk routes exist; generic resource views schema/CRUD absent. Public catalog specifies read-only views; do not infer mandatory CRUD.",
+      "tests": [],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "Reports / dashboard",
+      "catalog_groups": [
+        "reports",
+        "dashboard"
+      ],
+      "level": "partial",
+      "owner_tasks": [
+        "PAR-008"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/reports.ts",
+          "lib/db/schema/dashboard.ts"
+        ],
+        "domain": [
+          "lib/api/consolidation-report.ts"
+        ],
+        "api": [
+          "app/api/v1/reports",
+          "app/api/v1/dashboard"
+        ],
+        "ui": [
+          "app/(dashboard)/reports",
+          "app/(dashboard)/dashboard/page.tsx"
+        ],
+        "mcp": [
+          "lib/mcp/tools/reports.ts"
+        ]
+      },
+      "differences_and_follow_up": "Numerous financial reports and dashboard surfaces exist. Public formulas/fields/statements require fixture comparison; report counts are not parity or accounting approval.",
+      "tests": [],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "Currencies and FX",
+      "catalog_groups": [
+        "currencies"
+      ],
+      "level": "partial",
+      "owner_tasks": [
+        "MON-001",
+        "MON-002",
+        "MON-003",
+        "MON-004",
+        "MON-005",
+        "MON-006",
+        "MON-007",
+        "MON-008",
+        "MON-009",
+        "MON-010"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/bookkeeping.ts"
+        ],
+        "domain": [
+          "lib/currency/converter.ts",
+          "lib/money.ts",
+          "lib/currency/convert-entry.ts",
+          "lib/currency/iso4217.ts"
+        ],
+        "api": [
+          "app/api/v1/exchange-rates"
+        ],
+        "ui": [
+          "app/(dashboard)/tax/currencies"
+        ],
+        "mcp": [
+          "lib/mcp/tools/currencies.ts"
+        ]
+      },
+      "differences_and_follow_up": "Metadata, inverse/triangulated rates, settlement/revaluation exist. Int32/Number ledger and millionths rates remain unsafe for target exact money/IRR; preserve historical/v1 values.",
+      "tests": [
+        "tests/convert-entry.test.ts",
+        "tests/iso4217.test.ts",
+        "tests/money.test.ts",
+        "tests/rate-status.test.ts",
+        "tests/revaluation.test.ts",
+        "tests/settlement.test.ts",
+        "tests/triangulate.test.ts"
+      ],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "Subscriptions / SaaS billing",
+      "catalog_groups": [
+        "subscriptions"
+      ],
+      "level": "unspecified",
+      "owner_tasks": [
+        "DATA-007",
+        "AUD-005"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/billing.ts"
+        ],
+        "domain": [
+          "lib/stripe.ts"
+        ],
+        "api": [
+          "app/api/v1/billing"
+        ],
+        "ui": [
+          "app/(dashboard)/settings/billing"
+        ],
+        "mcp": [
+          "lib/mcp/tools/organization.ts"
+        ]
+      },
+      "differences_and_follow_up": "Plans/subscription UI/API exists. Private-fork value/scope needs owner decision; optional task not silently deferred. No cloud billing parity mandate.",
+      "tests": [],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "Miscellaneous API convenience endpoints",
+      "catalog_groups": [
+        "misc",
+        "_root"
+      ],
+      "level": "unspecified",
+      "owner_tasks": [
+        "DATA-007",
+        "AUD-005"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/auth.ts"
+        ],
+        "domain": [
+          "lib/api/auth-context.ts"
+        ],
+        "api": [
+          "app/api/v1/organization"
+        ],
+        "ui": [
+          "app/(dashboard)/settings"
+        ],
+        "mcp": [
+          "lib/mcp/tools/organization.ts"
+        ]
+      },
+      "differences_and_follow_up": "Date format/server-time/system-database catalog conveniences lack demonstrated private-fork value. Do not expose internal DB information to satisfy nominal parity.",
+      "tests": [],
+      "last_validated": "2026-10-02"
+    },
+    {
+      "capability": "Resource metadata (added catalog group)",
+      "catalog_groups": [
+        "resources"
+      ],
+      "level": "missing",
+      "owner_tasks": [
+        "DATA-001",
+        "DATA-003"
+      ],
+      "layers": {
+        "schema": [
+          "lib/db/schema/bulk.ts"
+        ],
+        "domain": [
+          "lib/import-export/pre-process.ts"
+        ],
+        "api": [
+          "app/api/v1/bulk"
+        ],
+        "ui": [
+          "app/(dashboard)/settings/import-export"
+        ],
+        "mcp": [
+          "lib/mcp/tools/bulk.ts"
+        ]
+      },
+      "differences_and_follow_up": "No generic resourceModel metadata counterpart found; entity schemas exist. Evaluate shared import/view metadata in assigned tasks; no arbitrary endpoint clone.",
+      "tests": [],
+      "last_validated": "2026-10-02"
+    }
+  ]
+}

@@ -6,6 +6,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
   try {
     const { token, id } = await params;
     const access = await getPortalAccess(token, undefined, 404);
+    z.string().uuid().parse(id);
     // No monetary input is supported by this status transition.
     const text = await request.text();
     z.object({}).strict().parse(text.trim() ? JSON.parse(text) : {});

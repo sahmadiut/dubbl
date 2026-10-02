@@ -98,3 +98,11 @@ validates all amounts/dates/org references before transactional writes, and uses
 bigint sums/distribution within the signed safe-number range. GET detail returns
 both aliases; header envelopes are unchanged. Budget reports remain pending. See
 [budget contracts](../../.agentic/registries/BUDGET_WIRE_CONTRACTS.md).
+
+Public payment-link/portal JSON now returns additive monetary `*Minor` strings
+while retaining safe numeric envelopes. Statements use bigint sums and reject
+mixed currencies/unsafe totals; quote status/activity writes share a scoped
+transaction with monetary preflight. Seven strict, org-scoped MCP tools expose
+the same operations. See [public contracts](../../.agentic/registries/PUBLIC_PORTAL_WIRE_CONTRACTS.md).
+Checkout, providers, backups, opaque payloads, public frontend/PDF display and
+full-range business consumers retain their assigned tasks. IRR remains disabled.

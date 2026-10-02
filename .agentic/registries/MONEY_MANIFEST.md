@@ -1,6 +1,22 @@
 # Money and FX boundary manifest
 
-Inventory owner: MON-001. Refreshed 2026-10-02 (Asia/Tehran) for MON-023 against entry HEAD `c238309` with MON-017 changes still uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+Inventory owner: MON-001. Refreshed 2026-10-02 (Asia/Tehran) for MON-030 against entry HEAD `9d79334`; the implementation was committed externally as `81be3e1` during this turn, with final validation refinements and evidence still uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+
+## MON-030 public payment-link and portal JSON adoption (MON-016 child)
+
+The [public operation inventory](PUBLIC_PORTAL_WIRE_CONTRACTS.md) records eight
+REST handlers and seven strict, org-scoped MCP tools. Outputs retain safe numeric
+fields and add *Minor strings. Statement prefixes/totals use bigint and reject
+unsafe ranges/mixed currencies. View activity follows preflight; sent/expiry/
+deletion-scoped quote acceptance and activity share a locked transaction. Real
+public REST and MCP SDK fixtures qualify aliases, token/contact/tenant/permission
+isolation and rollback.
+
+MON-016 was split into MON-030 token JSON, MON-031 provider/webhooks, MON-032
+backup/restore, MON-033 generic import/export and MON-034 opaque/rendering work,
+retaining integration criteria. Public frontend/PDF arithmetic remains MON-008;
+token administration/security remains PAR-007. Schema, migration, immutable history
+and flags are unchanged; aliases do not imply full int64 or production IRR support.
 
 ## MON-023 budget CRUD adoption (MON-015 child)
 
@@ -106,7 +122,7 @@ The adapter retains exact number values for existing callers within the safe int
 
 Deprecated `lib/money.ts` functions preserve their behavior for existing consumers. ESLint enforces imported-binding reference ceilings from `scripts/legacy-money-baseline.json`, blocking new imports/uses; static analysis limits are documented in the core contract. Safe-number bridges explicitly reject precision loss. This is not application-wide adoption: the remaining Number-based ledger/FX/public/UI paths retain their assigned MON-004/006/007/008 work, and IRR production readiness remains disabled.
 
-The [column appendix](MONEY_COLUMNS.md) has one row per actual numeric/JSON column: SQL table/column, Drizzle property, source line, type/range, units, currency source and migration owner. Refreshed for MON-023, the [machine-readable consumer index](MONEY_BOUNDARIES.json) contains 410 columns and 1,104 consumer files with line numbers, search tags, source hashes, currency context, range and owner. It scans 1,320 tracked and new nonignored source/config/documentation files and retains 21,454 lexical occurrences. All exported Drizzle numeric/JSON columns independently match the appendix, with no missing, extra or duplicate rows. The MON-003 disposition retains its historical 402-column scope.
+The [column appendix](MONEY_COLUMNS.md) has one row per actual numeric/JSON column: SQL table/column, Drizzle property, source line, type/range, units, currency source and migration owner. Refreshed for MON-030, the [machine-readable consumer index](MONEY_BOUNDARIES.json) contains 410 columns and 1,104 consumer files with line numbers, search tags, source hashes, currency context, range and owner. It scans 1,326 tracked and new nonignored source/config/documentation files and retains 21,510 lexical occurrences. All exported Drizzle numeric/JSON columns independently match the appendix, with no missing, extra or duplicate rows. The MON-003 disposition retains its historical 402-column scope.
 
 `python .agentic/scripts/money_inventory.py` checks source reproducibility; `--write` refreshes after reviewed changes. `node --import tsx .agentic/scripts/verify_money_inventory.mjs` checks actual Drizzle exports, column lines, consumer hashes and occurrence lines. Neither reads environment credentials or connects to DB. These are mutable registries; completed task evidence remains immutable.
 

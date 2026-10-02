@@ -279,6 +279,38 @@ full-range reporting or production IRR readiness.
 | GET | `/api/v1/reports/cash-flow` | Cash Flow |
 | GET | `/api/v1/reports/budget-vs-actual` | Budget vs Actual |
 
+### Public Payment Links and Customer Portal
+
+These JSON routes use an existing bearer link token. Portal access is limited to
+its contact and organization; revoked, expired or deleted-contact grants fail.
+Existing numeric money fields retain their units and gain matching canonical
+`*Minor` strings. For example, `total: 1250` also returns `totalMinor: "1250"`.
+Amounts must fit the signed JavaScript safe-integer range; unsupported stored
+amounts or sums return 422 with `LEGACY_NUMERIC_RANGE`.
+
+| Method | Path | Money strings added |
+|--------|------|--------------------|
+| GET | `/api/pay/:token` | Pending invoice totalMinor, amountDueMinor; lines unitPriceMinor, amountMinor, taxAmountMinor |
+| GET | `/api/portal/:token` | Contact and organization identity; no amounts |
+| GET | `/api/portal/:token/invoices` | totalMinor, amountDueMinor |
+| GET | `/api/v1/portal/:token/payments` | amountPaidMinor, totalMinor |
+| GET | `/api/v1/portal/:token/quotes` | subtotalMinor, taxTotalMinor, totalMinor, billedTotalMinor; line money strings |
+| GET | `/api/v1/portal/:token/statements` | amountMinor, paidMinor, balanceMinor, runningBalanceMinor; totalOutstandingMinor and currencyCode |
+| POST | `/api/v1/portal/:token/quotes/:id/accept` | Updated quote with header money strings |
+| POST | `/api/portal/:token/invoices/:id/approve` | Existing quote ID/status envelope; this historical route accepts a quote |
+
+Acceptance requires a sent, unexpired, undeleted quote belonging to the token's
+contact. Send no body or `{}`; amount/FX overrides and other fields are rejected.
+Statement sums use exact integer arithmetic and reject mixed currencies. Existing
+invoice selection and descending date order remain. Quantity is still hundredths
+and discount percentages are basis points; monetary strings never rescale values.
+
+MCP counterparts are `get_payment_link`, `get_portal_identity`,
+`list_portal_invoices`, `list_portal_payments`, `list_portal_quotes`,
+`get_portal_statement` and `accept_portal_quote`. All require the token to belong
+to the authenticated organization. Reads require `view:data`; acceptance requires
+`manage:invoices` and a `quoteId` UUID. Inputs are strict and accept no amounts.
+
 ### Other Modules
 | Method | Path | Description |
 |--------|------|-------------|

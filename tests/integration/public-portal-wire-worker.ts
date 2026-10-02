@@ -140,6 +140,15 @@ async function run() {
 
   // Unsupported input, token/contact/org/state and expiry failures leave status/activity unchanged.
   for (const operation of [accept, approve]) {
+    for (const token of ["missing", revoked.token, expired.token, inconsistent.token]) {
+      const before = await counts();
+      assert.ok([401, 404, 410].includes((await operation(req("POST"), params(token))).status));
+      assert.deepEqual(await counts(), before);
+    }
+    const beforeMalformed = await counts();
+    assert.equal((await operation(new Request("http://fixture.test", { method: "POST", body: "{" }), params(ta.token))).status, 400);
+    assert.equal((await operation(req("POST"), params(ta.token, "invalid-uuid"))).status, 400);
+    assert.deepEqual(await counts(), beforeMalformed);
     for (const fields of [{ totalMinor: "1250" }, { amount: 1250 }, { rateExact: "1" }, { total: 1, totalMinor: "2" }]) {
       const before = await counts();
       assert.equal((await operation(req("POST", fields), params(ta.token))).status, 400);
@@ -157,6 +166,15 @@ async function run() {
   assert.equal((await reader.call("accept_portal_quote", { token: ta.token, quoteId: q3.id })).body.status, 403);
   assert.equal((await callA.call("accept_portal_quote", { token: ta.token, quoteId: q3.id, totalMinor: "1250" })).isError, true);
   assert.deepEqual(await counts(), before);
+  // A downstream activity failure must roll back the preceding status update.
+  await db.execute(sql`create function fail_portal_activity() returns trigger language plpgsql as $$
+    begin if NEW.action = 'approve_quote' then raise exception 'Synthetic portal activity failure'; end if; return NEW; end $$`);
+  await db.execute(sql`create trigger portal_activity_failure before insert on portal_activity_log for each row execute function fail_portal_activity()`);
+  assert.equal((await accept(req("POST"), params(ta.token, q1.id))).status, 500);
+  assert.deepEqual(await counts(), before);
+  assert.equal((await db.query.quote.findFirst({ where: eq(quote.id, q1.id) }))?.status, "sent");
+  await db.execute(sql`drop trigger portal_activity_failure on portal_activity_log`);
+  await db.execute(sql`drop function fail_portal_activity()`);
   response = await accept(req("POST", {}), params(ta.token, q1.id));
   assert.equal(response.status, 200); body = await response.json(); assert.equal(body.status, "accepted"); assert.equal(body.totalMinor, "1250");
   response = await approve(req("POST"), params(ta.token, q2.id));
@@ -166,6 +184,17 @@ async function run() {
   assert.equal((await accept(req("POST"), params(ta.token, q1.id))).status, 404);
   assert.equal((await callA.call("accept_portal_quote", { token: ta.token, quoteId: q3.id })).isError, true);
   assert.deepEqual(await counts(), before);
+
+  // Deleted contacts invalidate the bearer grant before any monetary read or activity mutation.
+  await db.update(contact).set({ deletedAt: new Date() }).where(eq(contact.id, ca.id));
+  before = await counts();
+  assert.equal((await getPay(req(), params("pay-a"))).status, 404);
+  for (const get of [getIdentity, getInvoices, getPayments, getQuotes, getStatement]) {
+    assert.ok([401, 404].includes((await get(req(), params(ta.token))).status));
+  }
+  assert.equal((await callA.call("list_portal_invoices", { token: ta.token })).body.status, 401);
+  assert.deepEqual(await counts(), before);
+  await db.update(contact).set({ deletedAt: null }).where(eq(contact.id, ca.id));
 
   // Signed/large values and multi-currency statements retain units, with no precision recovery guesses.
   for (const currencyCode of ["IRR", "JPY", "KWD"]) {

@@ -89,3 +89,16 @@ transaction rollback via injected storage failure, replacement/soft-delete/audit
 and unsafe historical preservation. Calendar fixtures compare UTC/Tehran/New York
 including DST/early years. Budget reports remain MON-029 and full UI/consumer
 cutover MON-008; no transport/browser/production qualification is inferred.
+
+## MON-030 public payment-link and portal contracts
+
+`tests/public-money-wire.test.ts` covers signed safe-range aliases, USD/IRR/JPY/KWD
+unit preservation, quantities/percentages, exact statement sums, unsafe prefixes
+and currency disagreement. `tests/integration/public-portal-wire.test.ts` migrates
+a randomly named disposable database and runs real public handlers plus MCP SDK/
+client calls over InMemoryTransport. Fixtures cover eight REST/seven MCP operations,
+numeric/string envelopes, strict inputs, token expiry/revocation, tenant/contact/
+custom permissions, deleted/inconsistent references, quote states/replay, unsafe
+raw history and preflight before activity/status writes. An activity-trigger failure
+verifies transaction rollback. Browser/HTTP OAuth, providers/PDF/full ledger and
+frontend display remain assigned work.

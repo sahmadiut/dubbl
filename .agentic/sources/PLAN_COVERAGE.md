@@ -22,6 +22,8 @@ The authoritative requirements source is [SOURCE.md](SOURCE.md), the owner's Mar
 | [Code-review rejection criteria](SOURCE.md#code-review-rejection-criteria), [Maintenance model](SOURCE.md#maintenance-model) | Review gates, durable registries and recurring revalidation | START_HERE; REVIEW prompt; TEST_MATRIX; UPSTREAM_DUBBL; BIGCAPITAL_PARITY; I18N_TERMINOLOGY; CURRENCY_REGIMES; OPS-001 |
 | [Recommended tools and libraries](SOURCE.md#recommended-tools-and-libraries), [Prioritized source hierarchy](SOURCE.md#prioritized-source-hierarchy) | Tools and primary-source verification | SOURCE; SOURCES_TO_VERIFY; relevant implementation tasks |
 
+MON-006 retains final API compatibility integration acceptance. Its implementation children are [MON-011](../tasks/MON-011.md) (wire primitives/shared transport guards) and [MON-012](../tasks/MON-012.md) (real REST/MCP endpoint rollout), both traced to database migration and API backward compatibility above.
+
 ## Deliberate refinements
 
 The plan's broad milestones are decomposed into 60 initial tasks with dependencies, role ownership, criteria and evidence. Split oversized tasks through the controller guide and preserve parent acceptance gates. Optional scope remains visible. Source inspection and evidence determine implementation truth; neither the plan nor tracker counts prove working features.

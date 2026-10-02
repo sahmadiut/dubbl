@@ -33,6 +33,13 @@ These are required product checks, not results. Every result is initially NOT RU
 
 ## Coverage axes
 
+MON-011 supplies API-01 foundation fixtures in `tests/money-wire.test.ts`: signed
+int64 edges, conflicting aliases/malformed inputs, unchanged USD/IRR units,
+exact tiny/high rates, legacy range rejection, nested bigint JSON, real shared
+REST/MCP adapters and classified ORM errors. These are transport/contract
+fixtures without DB access, not real endpoint-wide client or authorization
+qualification. MON-012 and parent MON-006 retain those integration requirements.
+
 MON-005 evidence qualifies FX-02 exact direction/inverse/cross arithmetic and
 FX-03 saved invoice-journal preservation using synthetic database fixtures.
 FX-01 high rates are parsed/derived exactly but intentionally rejected by legacy

@@ -16,7 +16,9 @@ Generated initial scope index; current status always comes from task metadata vi
 | [MON-003](../tasks/MON-003.md) | 02 | Expand all monetary columns to bigint | database | no |
 | [MON-004](../tasks/MON-004.md) | 02 | Migrate FX storage with exact backfill | database | no |
 | [MON-005](../tasks/MON-005.md) | 02 | Implement historical FX and provider validation | backend | no |
-| [MON-006](../tasks/MON-006.md) | 02 | Evolve API and serialization compatibility | backend | no |
+| [MON-006](../tasks/MON-006.md) | 02 | Evolve API and serialization compatibility (integration parent) | backend | no |
+| [MON-011](../tasks/MON-011.md) | 02 | Implement exact wire primitives and shared transport guards | backend | no |
+| [MON-012](../tasks/MON-012.md) | 02 | Roll out exact API and MCP boundary contracts | backend | no |
 | [MON-007](../tasks/MON-007.md) | 02 | Cut over core accounting consumers | backend | no |
 | [MON-008](../tasks/MON-008.md) | 02 | Cut over auxiliary and public money consumers | backend | no |
 | [MON-009](../tasks/MON-009.md) | 02 | Implement currency regimes and explicit IRR metadata | backend | no |

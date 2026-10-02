@@ -1,4 +1,5 @@
 import { customType } from "drizzle-orm/pg-core";
+import { WireCompatibilityError } from "../money/wire";
 
 /** Temporary legacy bridge: bigint storage, exact safe-number application values.
  * MON-006/007/008 replace number consumers; never silently round an int64 read.
@@ -12,14 +13,14 @@ export function decodeMoneyInteger(value: string | number): number {
   }
   const result = Number(value);
   if (!Number.isSafeInteger(result)) {
-    throw new RangeError("Money exceeds the safe-number compatibility range");
+    throw new WireCompatibilityError();
   }
   return result;
 }
 
 export function encodeMoneyInteger(value: number): string {
   if (typeof value !== "number" || !Number.isSafeInteger(value)) {
-    throw new RangeError("Money writes require safe integer minor units");
+    throw new WireCompatibilityError();
   }
   return String(value);
 }

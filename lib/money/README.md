@@ -56,5 +56,28 @@ rejects literal dynamic imports, require calls and re-exports. It is a static
 guard, not whole-program dataflow analysis; computed module paths and unchanged
 reference counts still require code review.
 
-This task adds an internal arithmetic service, without new user-facing features,
-REST/MCP contracts, schema changes, migrated records or production flags.
+## Wire foundation (MON-011)
+
+`wire.ts` supplies explicit money/rate DTOs and Zod inputs. `moneyDto` returns
+`amountMinor` as a signed int64 string plus currency; legacy mode additionally
+returns a safe numeric `amount` without changing units. `moneyInputSchema`
+requires at least one alias and exact agreement when both are present.
+`legacyMoneyInput` explicitly rejects values outside safe-number compatibility.
+Use these aliases only for minor-unit contracts, never decimal-major prices.
+Rate DTOs retain int32-millionths `rate` in legacy mode and an exact `rateExact`
+decimal with `quote_per_base` direction; exact mode omits the numeric alias.
+
+`stringifyWire`, the shared REST helpers and `wrapTool` default to legacy numeric
+JSON, safely serializing nested bigint within the safe-number range. Unsafe or
+nonfinite values produce `WireCompatibilityError` / `LEGACY_NUMERIC_RANGE` (422).
+Explicit exact mode serializes bigint as integer strings and rejects already
+unsafe Numbers. No global BigInt prototype changes or magnitude-based fallback.
+
+Endpoint/tool adoption and advertised exact capabilities remain MON-012 work.
+Direct NextResponse calls, domain input schemas and raw SQL aggregates require
+their own migration. The ORM still exposes safe numbers; full-range business
+paths remain MON-007/008. Serializing a handler result cannot undo earlier writes;
+validate requests and supported business range before mutations. See
+[ADR-006](../../.agentic/docs/ADR-006-EXACT-WIRE-COMPATIBILITY.md) for adoption and
+the proposed deprecation policy; no actual sunset date is agreed. Production
+flags, schema and stored units remain unchanged.

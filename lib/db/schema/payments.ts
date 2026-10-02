@@ -1,9 +1,9 @@
+import { moneyInteger } from "../money-column";
 import {
   pgTable,
   text,
   uuid,
   timestamp,
-  integer,
   date,
   pgEnum,
 } from "drizzle-orm/pg-core";
@@ -40,7 +40,7 @@ export const payment = pgTable("payment", {
   paymentNumber: text("payment_number").notNull(),
   type: paymentTypeEnum("type").notNull(),
   date: date("date").notNull(),
-  amount: integer("amount").notNull().default(0), // total payment in cents
+  amount: moneyInteger("amount").notNull().default(0), // total payment in cents
   method: paymentMethodEnum("method").notNull().default("bank_transfer"),
   reference: text("reference"), // check number, transfer ref, etc.
   notes: text("notes"),
@@ -65,7 +65,7 @@ export const paymentAllocation = pgTable("payment_allocation", {
     .references(() => payment.id, { onDelete: "cascade" }),
   documentType: text("document_type").notNull(), // "invoice", "bill", "credit_note", "debit_note"
   documentId: uuid("document_id").notNull(),
-  amount: integer("amount").notNull().default(0), // cents allocated to this document
+  amount: moneyInteger("amount").notNull().default(0), // cents allocated to this document
 });
 
 // Relations

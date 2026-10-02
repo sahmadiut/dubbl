@@ -1,3 +1,4 @@
+import { moneyInteger } from "../money-column";
 import {
   pgTable,
   text,
@@ -33,7 +34,7 @@ export const scheduledPayment = pgTable("scheduled_payment", {
     .references(() => organization.id, { onDelete: "cascade" }),
   billId: uuid("bill_id").references(() => bill.id),
   contactId: uuid("contact_id").references(() => contact.id),
-  amount: integer("amount").notNull(),
+  amount: moneyInteger("amount").notNull(),
   currencyCode: text("currency_code").notNull().default("USD"),
   scheduledDate: date("scheduled_date").notNull(),
   status: scheduledPaymentStatusEnum("status").notNull().default("pending"),
@@ -51,7 +52,7 @@ export const paymentBatch = pgTable("payment_batch", {
     .references(() => organization.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   status: paymentBatchStatusEnum("status").notNull().default("draft"),
-  totalAmount: integer("total_amount").notNull().default(0),
+  totalAmount: moneyInteger("total_amount").notNull().default(0),
   currencyCode: text("currency_code").notNull().default("USD"),
   paymentCount: integer("payment_count").notNull().default(0),
   submittedAt: timestamp("submitted_at", { mode: "date" }),
@@ -67,7 +68,7 @@ export const paymentBatchItem = pgTable("payment_batch_item", {
     .references(() => paymentBatch.id, { onDelete: "cascade" }),
   billId: uuid("bill_id").references(() => bill.id),
   contactId: uuid("contact_id").references(() => contact.id),
-  amount: integer("amount").notNull(),
+  amount: moneyInteger("amount").notNull(),
   currencyCode: text("currency_code").notNull().default("USD"),
   status: scheduledPaymentStatusEnum("status").notNull().default("pending"),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),

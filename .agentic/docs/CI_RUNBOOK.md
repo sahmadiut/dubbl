@@ -19,7 +19,7 @@ python -m unittest discover -s .agentic/tests -v
 
 ## PostgreSQL fixtures
 
-CI provisions PostgreSQL 16 with synthetic service credentials. `pnpm test:integration` requires explicit `TEST_DATABASE_URL`, a local PostgreSQL server and a test role with `CREATEDB`. It never falls back to DATABASE_URL or runs migrations on the connection target. No real customer data or provider credentials are needed.
+CI provisions PostgreSQL 16 with synthetic service credentials. `pnpm test:integration` requires explicit `TEST_DATABASE_URL`, a local PostgreSQL server and a test role with `CREATEDB`. The MON-003 backup/restore fixture also requires matching `pg_dump` and `pg_restore` clients on PATH; optionally set `PG_BIN` to their directory (useful on Windows). It never falls back to DATABASE_URL or runs migrations on the connection target. No real customer data or provider credentials are needed. See `../../lib/db/MONEY_MIGRATION.md` for monetary expansion, lock and recovery checks.
 
 PowerShell example using a separately provisioned local test instance:
 

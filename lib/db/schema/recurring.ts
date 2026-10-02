@@ -1,3 +1,4 @@
+import { moneyInteger } from "../money-column";
 import {
   pgTable,
   text,
@@ -79,7 +80,7 @@ export const recurringTemplateLine = pgTable("recurring_template_line", {
     .references(() => recurringTemplate.id, { onDelete: "cascade" }),
   description: text("description").notNull(),
   quantity: integer("quantity").notNull().default(100), // 2 decimal as int
-  unitPrice: integer("unit_price").notNull().default(0), // cents
+  unitPrice: moneyInteger("unit_price").notNull().default(0), // cents
   accountId: uuid("account_id").references(() => chartAccount.id),
   taxRateId: uuid("tax_rate_id").references(() => taxRate.id),
   discountPercent: integer("discount_percent").notNull().default(0), // basis points: 1000 = 10%
@@ -88,8 +89,8 @@ export const recurringTemplateLine = pgTable("recurring_template_line", {
   // cents) is posted verbatim to `accountId`; quantity/unitPrice/tax/discount
   // are ignored for journal templates. Default 0 keeps invoice/bill/expense
   // templates (which use quantity*unitPrice) unaffected.
-  debitAmount: integer("debit_amount").notNull().default(0),
-  creditAmount: integer("credit_amount").notNull().default(0),
+  debitAmount: moneyInteger("debit_amount").notNull().default(0),
+  creditAmount: moneyInteger("credit_amount").notNull().default(0),
   sortOrder: integer("sort_order").notNull().default(0),
 });
 

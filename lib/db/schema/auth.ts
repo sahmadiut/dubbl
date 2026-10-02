@@ -1,3 +1,4 @@
+import { moneyInteger } from "../money-column";
 import {
   pgTable,
   text,
@@ -139,11 +140,11 @@ export const organization = pgTable("organization", {
   industrySector: text("industry_sector"),
   referralSource: text("referral_source"),
   onboardingCompletedAt: timestamp("onboarding_completed_at", { mode: "date" }), // null = show getting-started checklist
-  billApprovalThreshold: integer("bill_approval_threshold"), // cents, null = no approval needed
+  billApprovalThreshold: moneyInteger("bill_approval_threshold"), // cents, null = no approval needed
   interestRate: integer("interest_rate"), // basis points, e.g. 500 = 5%
   interestMethod: text("interest_method"), // "simple" or "compound"
   interestGraceDays: integer("interest_grace_days").default(0),
-  mileageRate: integer("mileage_rate").default(67), // cents per mile (IRS rate $0.67)
+  mileageRate: moneyInteger("mileage_rate").default(67), // cents per mile (IRS rate $0.67)
   peppolId: text("peppol_id"), // PEPPOL participant identifier
   peppolScheme: text("peppol_scheme"), // e.g. "0088" (EAN), "9925" (VAT)
   taxLookupEnabled: integer("tax_lookup_enabled").default(0), // 0 = disabled, 1 = enabled

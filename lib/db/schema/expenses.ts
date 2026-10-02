@@ -1,3 +1,4 @@
+import { moneyInteger } from "../money-column";
 import {
   pgTable,
   text,
@@ -28,7 +29,7 @@ export const expenseClaim = pgTable("expense_claim", {
   description: text("description"),
   submittedBy: uuid("submitted_by").notNull().references(() => users.id),
   status: expenseStatusEnum("status").notNull().default("draft"),
-  totalAmount: integer("total_amount").notNull().default(0),
+  totalAmount: moneyInteger("total_amount").notNull().default(0),
   currencyCode: text("currency_code").notNull().default("USD"),
   approvedBy: uuid("approved_by").references(() => users.id),
   journalEntryId: uuid("journal_entry_id").references(() => journalEntry.id),
@@ -48,7 +49,7 @@ export const expenseItem = pgTable("expense_item", {
   expenseClaimId: uuid("expense_claim_id").notNull().references(() => expenseClaim.id, { onDelete: "cascade" }),
   date: date("date").notNull(),
   description: text("description").notNull(),
-  amount: integer("amount").notNull().default(0),
+  amount: moneyInteger("amount").notNull().default(0),
   category: text("category"),
   accountId: uuid("account_id").references(() => chartAccount.id),
   costCenterId: uuid("cost_center_id").references(() => costCenter.id),
@@ -59,7 +60,7 @@ export const expenseItem = pgTable("expense_item", {
   receiptFileName: text("receipt_file_name"),
   isMileage: boolean("is_mileage").notNull().default(false),
   distanceMiles: integer("distance_miles"), // miles x 100 for 2 decimals
-  mileageRate: integer("mileage_rate"), // cents per mile
+  mileageRate: moneyInteger("mileage_rate"), // cents per mile
   sortOrder: integer("sort_order").notNull().default(0),
 });
 

@@ -1,3 +1,4 @@
+import { moneyInteger } from "../money-column";
 import {
   pgTable,
   text,
@@ -91,11 +92,11 @@ export const invoice = pgTable("invoice", {
   dunningLevel: integer("dunning_level").notNull().default(0), // overdue-reminder escalation stage
   reference: text("reference"),
   notes: text("notes"),
-  subtotal: integer("subtotal").notNull().default(0),
-  taxTotal: integer("tax_total").notNull().default(0),
-  total: integer("total").notNull().default(0),
-  amountPaid: integer("amount_paid").notNull().default(0),
-  amountDue: integer("amount_due").notNull().default(0),
+  subtotal: moneyInteger("subtotal").notNull().default(0),
+  taxTotal: moneyInteger("tax_total").notNull().default(0),
+  total: moneyInteger("total").notNull().default(0),
+  amountPaid: moneyInteger("amount_paid").notNull().default(0),
+  amountDue: moneyInteger("amount_due").notNull().default(0),
   currencyCode: text("currency_code").notNull().default("USD"),
   senderSnapshot: jsonb("sender_snapshot"),
   recipientSnapshot: jsonb("recipient_snapshot"),
@@ -121,12 +122,12 @@ export const invoiceLine = pgTable("invoice_line", {
     .references(() => invoice.id, { onDelete: "cascade" }),
   description: text("description").notNull(),
   quantity: integer("quantity").notNull().default(100), // 2 decimal as int (1.00 = 100)
-  unitPrice: integer("unit_price").notNull().default(0), // cents
+  unitPrice: moneyInteger("unit_price").notNull().default(0), // cents
   accountId: uuid("account_id").references(() => chartAccount.id),
   taxRateId: uuid("tax_rate_id").references(() => taxRate.id),
   discountPercent: integer("discount_percent").notNull().default(0), // basis points: 1000 = 10%
-  taxAmount: integer("tax_amount").notNull().default(0),
-  amount: integer("amount").notNull().default(0), // qty * unitPrice - discount (before tax)
+  taxAmount: moneyInteger("tax_amount").notNull().default(0),
+  amount: moneyInteger("amount").notNull().default(0), // qty * unitPrice - discount (before tax)
   costCenterId: uuid("cost_center_id").references(() => costCenter.id),
   // Job-costing dimension. Project lives in ./projects; plain uuid (no FK) to avoid import cycle.
   projectId: uuid("project_id"),
@@ -153,10 +154,10 @@ export const quote = pgTable("quote", {
   status: quoteStatusEnum("status").notNull().default("draft"),
   reference: text("reference"),
   notes: text("notes"),
-  subtotal: integer("subtotal").notNull().default(0),
-  taxTotal: integer("tax_total").notNull().default(0),
-  total: integer("total").notNull().default(0),
-  billedTotal: integer("billed_total").notNull().default(0), // cents already invoiced via progress/milestone billing
+  subtotal: moneyInteger("subtotal").notNull().default(0),
+  taxTotal: moneyInteger("tax_total").notNull().default(0),
+  total: moneyInteger("total").notNull().default(0),
+  billedTotal: moneyInteger("billed_total").notNull().default(0), // cents already invoiced via progress/milestone billing
   currencyCode: text("currency_code").notNull().default("USD"),
   convertedInvoiceId: uuid("converted_invoice_id"),
   sentAt: timestamp("sent_at", { mode: "date" }),
@@ -176,12 +177,12 @@ export const quoteLine = pgTable("quote_line", {
     .references(() => quote.id, { onDelete: "cascade" }),
   description: text("description").notNull(),
   quantity: integer("quantity").notNull().default(100),
-  unitPrice: integer("unit_price").notNull().default(0),
+  unitPrice: moneyInteger("unit_price").notNull().default(0),
   accountId: uuid("account_id").references(() => chartAccount.id),
   taxRateId: uuid("tax_rate_id").references(() => taxRate.id),
   discountPercent: integer("discount_percent").notNull().default(0), // basis points: 1000 = 10%
-  taxAmount: integer("tax_amount").notNull().default(0),
-  amount: integer("amount").notNull().default(0),
+  taxAmount: moneyInteger("tax_amount").notNull().default(0),
+  amount: moneyInteger("amount").notNull().default(0),
   costCenterId: uuid("cost_center_id").references(() => costCenter.id),
   sortOrder: integer("sort_order").notNull().default(0),
 });
@@ -203,11 +204,11 @@ export const creditNote = pgTable("credit_note", {
   status: creditNoteStatusEnum("status").notNull().default("draft"),
   reference: text("reference"),
   notes: text("notes"),
-  subtotal: integer("subtotal").notNull().default(0),
-  taxTotal: integer("tax_total").notNull().default(0),
-  total: integer("total").notNull().default(0),
-  amountApplied: integer("amount_applied").notNull().default(0),
-  amountRemaining: integer("amount_remaining").notNull().default(0),
+  subtotal: moneyInteger("subtotal").notNull().default(0),
+  taxTotal: moneyInteger("tax_total").notNull().default(0),
+  total: moneyInteger("total").notNull().default(0),
+  amountApplied: moneyInteger("amount_applied").notNull().default(0),
+  amountRemaining: moneyInteger("amount_remaining").notNull().default(0),
   currencyCode: text("currency_code").notNull().default("USD"),
   journalEntryId: uuid("journal_entry_id").references(() => journalEntry.id),
   sentAt: timestamp("sent_at", { mode: "date" }),
@@ -228,12 +229,12 @@ export const creditNoteLine = pgTable("credit_note_line", {
     .references(() => creditNote.id, { onDelete: "cascade" }),
   description: text("description").notNull(),
   quantity: integer("quantity").notNull().default(100),
-  unitPrice: integer("unit_price").notNull().default(0),
+  unitPrice: moneyInteger("unit_price").notNull().default(0),
   accountId: uuid("account_id").references(() => chartAccount.id),
   taxRateId: uuid("tax_rate_id").references(() => taxRate.id),
   discountPercent: integer("discount_percent").notNull().default(0), // basis points: 1000 = 10%
-  taxAmount: integer("tax_amount").notNull().default(0),
-  amount: integer("amount").notNull().default(0),
+  taxAmount: moneyInteger("tax_amount").notNull().default(0),
+  amount: moneyInteger("amount").notNull().default(0),
   costCenterId: uuid("cost_center_id").references(() => costCenter.id),
   sortOrder: integer("sort_order").notNull().default(0),
 });
@@ -254,9 +255,9 @@ export const salesReceipt = pgTable("sales_receipt", {
   status: salesReceiptStatusEnum("status").notNull().default("draft"),
   reference: text("reference"),
   notes: text("notes"),
-  subtotal: integer("subtotal").notNull().default(0),
-  taxTotal: integer("tax_total").notNull().default(0),
-  total: integer("total").notNull().default(0),
+  subtotal: moneyInteger("subtotal").notNull().default(0),
+  taxTotal: moneyInteger("tax_total").notNull().default(0),
+  total: moneyInteger("total").notNull().default(0),
   currencyCode: text("currency_code").notNull().default("USD"),
   // Money lands in a bank account (preferred) or, failing that, a chart-of-accounts deposit account.
   bankAccountId: uuid("bank_account_id").references(() => bankAccount.id),
@@ -279,12 +280,12 @@ export const salesReceiptLine = pgTable("sales_receipt_line", {
     .references(() => salesReceipt.id, { onDelete: "cascade" }),
   description: text("description").notNull(),
   quantity: integer("quantity").notNull().default(100), // 2 decimal as int (1.00 = 100)
-  unitPrice: integer("unit_price").notNull().default(0), // cents
+  unitPrice: moneyInteger("unit_price").notNull().default(0), // cents
   accountId: uuid("account_id").references(() => chartAccount.id),
   taxRateId: uuid("tax_rate_id").references(() => taxRate.id),
   discountPercent: integer("discount_percent").notNull().default(0), // basis points: 1000 = 10%
-  taxAmount: integer("tax_amount").notNull().default(0),
-  amount: integer("amount").notNull().default(0), // qty * unitPrice - discount (before tax)
+  taxAmount: moneyInteger("tax_amount").notNull().default(0),
+  amount: moneyInteger("amount").notNull().default(0), // qty * unitPrice - discount (before tax)
   costCenterId: uuid("cost_center_id").references(() => costCenter.id),
   projectId: uuid("project_id"), // job-costing dimension (plain uuid; project lives in ./projects)
   // When set, selling this line relieves inventory and posts COGS for the item.
@@ -306,8 +307,8 @@ export const customerCredit = pgTable("customer_credit", {
     .references(() => contact.id),
   date: date("date").notNull(),
   currencyCode: text("currency_code").notNull().default("USD"),
-  originalAmount: integer("original_amount").notNull().default(0), // cents
-  amountRemaining: integer("amount_remaining").notNull().default(0), // cents unapplied/available
+  originalAmount: moneyInteger("original_amount").notNull().default(0), // cents
+  amountRemaining: moneyInteger("amount_remaining").notNull().default(0), // cents unapplied/available
   sourceType: customerCreditSourceEnum("source_type").notNull(),
   status: customerCreditStatusEnum("status").notNull().default("open"),
   journalEntryId: uuid("journal_entry_id").references(() => journalEntry.id),

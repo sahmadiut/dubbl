@@ -1,3 +1,4 @@
+import { moneyInteger } from "../money-column";
 import {
   pgTable,
   text,
@@ -82,11 +83,11 @@ export const project = pgTable("project", {
   billingType: projectBillingTypeEnum("billing_type").notNull().default("hourly"),
   color: text("color").notNull().default("#10b981"),
   // Financial
-  budget: integer("budget").notNull().default(0), // cents
-  hourlyRate: integer("hourly_rate").notNull().default(0), // cents
-  fixedPrice: integer("fixed_price").notNull().default(0), // cents (for fixed billing)
+  budget: moneyInteger("budget").notNull().default(0), // cents
+  hourlyRate: moneyInteger("hourly_rate").notNull().default(0), // cents
+  fixedPrice: moneyInteger("fixed_price").notNull().default(0), // cents (for fixed billing)
   totalHours: integer("total_hours").notNull().default(0), // minutes
-  totalBilled: integer("total_billed").notNull().default(0), // cents
+  totalBilled: moneyInteger("total_billed").notNull().default(0), // cents
   estimatedHours: integer("estimated_hours").notNull().default(0), // minutes
   currency: text("currency").notNull().default("USD"),
   // Timeline
@@ -119,11 +120,11 @@ export const projectMember = pgTable("project_member", {
     .notNull()
     .references(() => member.id, { onDelete: "cascade" }),
   role: projectMemberRoleEnum("role").notNull().default("contributor"),
-  hourlyRate: integer("hourly_rate"), // cents, BILLING rate, null = use project default
+  hourlyRate: moneyInteger("hourly_rate"), // cents, BILLING rate, null = use project default
   // Internal staff COST rate (cents/hour) used for job-costing labor cost in the
   // profitability report. Distinct from hourlyRate (what the client is billed).
   // null = unknown/zero cost.
-  costRate: integer("cost_rate"), // cents per hour, null = no labor cost recognized
+  costRate: moneyInteger("cost_rate"), // cents per hour, null = no labor cost recognized
   teamAssignmentId: uuid("team_assignment_id"), // tracks which team assignment added this member
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
 });
@@ -156,13 +157,13 @@ export const projectBillableItem = pgTable(
     sourceLineId: uuid("source_line_id").notNull(),
     description: text("description").notNull(),
     // Original cost charged to the project (cents, tax-exclusive).
-    costAmount: integer("cost_amount").notNull().default(0),
+    costAmount: moneyInteger("cost_amount").notNull().default(0),
     // Markup applied when on-billing, in basis points (1000 = 10%). Snapshot of
     // the markup chosen for this line; the billed amount = round(cost*(1+mk)).
     markupBasisPoints: integer("markup_basis_points").notNull().default(0),
     // Set once on-billed: the invoice this item was billed on + the amount billed.
     billedInvoiceId: uuid("billed_invoice_id").references(() => invoice.id),
-    billedAmount: integer("billed_amount").notNull().default(0), // cents actually invoiced
+    billedAmount: moneyInteger("billed_amount").notNull().default(0), // cents actually invoiced
     billedAt: timestamp("billed_at", { mode: "date" }),
     createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   },
@@ -228,7 +229,7 @@ export const milestoneAssignment = pgTable("milestone_assignment", {
     .references(() => projectMilestone.id, { onDelete: "cascade" }),
   employeeId: uuid("employee_id").references(() => payrollEmployee.id, { onDelete: "cascade" }),
   memberId: uuid("member_id").references(() => member.id, { onDelete: "cascade" }),
-  amount: integer("amount").notNull(), // cents
+  amount: moneyInteger("amount").notNull(), // cents
   description: text("description"),
   isPaid: boolean("is_paid").notNull().default(false),
   payrollItemId: uuid("payroll_item_id"), // set when paid via payroll run
@@ -313,8 +314,8 @@ export const projectMilestone = pgTable("project_milestone", {
   description: text("description"),
   status: milestoneStatusEnum("status").notNull().default("upcoming"),
   dueDate: date("due_date"),
-  amount: integer("amount").notNull().default(0), // cents (for milestone billing)
-  invoicedAmountCents: integer("invoiced_amount_cents").notNull().default(0), // cents - how much has been invoiced
+  amount: moneyInteger("amount").notNull().default(0), // cents (for milestone billing)
+  invoicedAmountCents: moneyInteger("invoiced_amount_cents").notNull().default(0), // cents - how much has been invoiced
   progressPercent: integer("progress_percent").notNull().default(0), // 0-100
   completedAt: timestamp("completed_at", { mode: "date" }),
   sortOrder: integer("sort_order").notNull().default(0),
@@ -352,7 +353,7 @@ export const timeEntry = pgTable("time_entry", {
   description: text("description"),
   minutes: integer("minutes").notNull().default(0),
   isBillable: boolean("is_billable").notNull().default(true),
-  hourlyRate: integer("hourly_rate").notNull().default(0), // cents
+  hourlyRate: moneyInteger("hourly_rate").notNull().default(0), // cents
   invoiceId: uuid("invoice_id").references(() => invoice.id),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
 });

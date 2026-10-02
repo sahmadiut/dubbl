@@ -1,3 +1,4 @@
+import { moneyInteger } from "../money-column";
 import {
   pgTable,
   text,
@@ -188,10 +189,10 @@ export const payrollSettings = pgTable("payroll_settings", {
   // and the employer-match calculation (computeEmployerTaxes). All "rate"
   // columns are basis points (10000 = 100%); all "...Cents" columns are annual
   // amounts in integer cents.
-  ssWageBaseCents: integer("ss_wage_base_cents").notNull().default(16810000), // 2026 SS wage base ($168,100)
+  ssWageBaseCents: moneyInteger("ss_wage_base_cents").notNull().default(16810000), // 2026 SS wage base ($168,100)
   ssRateBp: integer("ss_rate_bp").notNull().default(620), // 6.2%
   medicareRateBp: integer("medicare_rate_bp").notNull().default(145), // 1.45%
-  addlMedicareThresholdCents: integer("addl_medicare_threshold_cents")
+  addlMedicareThresholdCents: moneyInteger("addl_medicare_threshold_cents")
     .notNull()
     .default(20000000), // $200,000 YTD threshold for Additional Medicare
   addlMedicareRateBp: integer("addl_medicare_rate_bp").notNull().default(90), // 0.9%
@@ -201,10 +202,10 @@ export const payrollSettings = pgTable("payroll_settings", {
   employerFicaEnabled: boolean("employer_fica_enabled").notNull().default(true),
   // FUTA (federal unemployment): rate on wages up to the annual FUTA wage base.
   futaRateBp: integer("futa_rate_bp").notNull().default(60), // 0.6% net (after SUTA credit)
-  futaWageBaseCents: integer("futa_wage_base_cents").notNull().default(70000), // $7,000
+  futaWageBaseCents: moneyInteger("futa_wage_base_cents").notNull().default(70000), // $7,000
   // SUTA (state unemployment): rate on wages up to the state wage base.
   sutaRateBp: integer("suta_rate_bp").notNull().default(0),
-  sutaWageBaseCents: integer("suta_wage_base_cents").notNull().default(0),
+  sutaWageBaseCents: moneyInteger("suta_wage_base_cents").notNull().default(0),
   // Default tax year used when an employee/jurisdiction has no explicit config.
   defaultTaxYear: integer("default_tax_year"),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
@@ -224,8 +225,8 @@ export const payrollEmployee = pgTable("payroll_employee", {
   position: text("position"),
   department: text("department"),
   compensationType: compensationTypeEnum("compensation_type").notNull().default("salary"),
-  salary: integer("salary").notNull(), // cents - annual
-  hourlyRate: integer("hourly_rate"), // cents
+  salary: moneyInteger("salary").notNull(), // cents - annual
+  hourlyRate: moneyInteger("hourly_rate"), // cents
   payFrequency: payFrequencyEnum("pay_frequency").notNull().default("monthly"),
   taxRate: integer("tax_rate").notNull().default(2000), // basis points
   bankAccountNumber: text("bank_account_number"),
@@ -257,9 +258,9 @@ export const payrollRun = pgTable("payroll_run", {
   approvalStatus: approvalStatusEnum("approval_status"),
   approvedBy: uuid("approved_by").references(() => member.id, { onDelete: "set null" }),
   approvedAt: timestamp("approved_at", { mode: "date" }),
-  totalGross: integer("total_gross").notNull().default(0), // cents
-  totalDeductions: integer("total_deductions").notNull().default(0), // cents
-  totalNet: integer("total_net").notNull().default(0), // cents
+  totalGross: moneyInteger("total_gross").notNull().default(0), // cents
+  totalDeductions: moneyInteger("total_deductions").notNull().default(0), // cents
+  totalNet: moneyInteger("total_net").notNull().default(0), // cents
   journalEntryId: uuid("journal_entry_id").references(() => journalEntry.id),
   processedAt: timestamp("processed_at", { mode: "date" }),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
@@ -277,15 +278,15 @@ export const payrollItem = pgTable("payroll_item", {
     .references(() => payrollEmployee.id),
   type: payrollItemTypeEnum("type").notNull().default("regular_salary"),
   description: text("description"),
-  grossAmount: integer("gross_amount").notNull(), // cents
-  taxAmount: integer("tax_amount").notNull(), // cents
-  deductions: integer("deductions").notNull().default(0), // cents
-  netAmount: integer("net_amount").notNull(), // cents
+  grossAmount: moneyInteger("gross_amount").notNull(), // cents
+  taxAmount: moneyInteger("tax_amount").notNull(), // cents
+  deductions: moneyInteger("deductions").notNull().default(0), // cents
+  netAmount: moneyInteger("net_amount").notNull(), // cents
   overtimeHours: real("overtime_hours"),
-  overtimeAmount: integer("overtime_amount"), // cents
-  bonusAmount: integer("bonus_amount"), // cents
-  preTaxDeductions: integer("pre_tax_deductions").default(0), // cents
-  postTaxDeductions: integer("post_tax_deductions").default(0), // cents
+  overtimeAmount: moneyInteger("overtime_amount"), // cents
+  bonusAmount: moneyInteger("bonus_amount"), // cents
+  preTaxDeductions: moneyInteger("pre_tax_deductions").default(0), // cents
+  postTaxDeductions: moneyInteger("post_tax_deductions").default(0), // cents
   timesheetId: uuid("timesheet_id"),
   currency: text("currency").default("USD"),
   fxRate: real("fx_rate").default(1),
@@ -302,7 +303,7 @@ export const deductionType = pgTable("deduction_type", {
   name: text("name").notNull(),
   description: text("description"),
   category: deductionCategoryEnum("category").notNull().default("post_tax"),
-  defaultAmount: integer("default_amount"), // cents (fixed amount)
+  defaultAmount: moneyInteger("default_amount"), // cents (fixed amount)
   defaultPercent: real("default_percent"), // percentage of gross
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
@@ -319,7 +320,7 @@ export const employeeDeduction = pgTable("employee_deduction", {
     .notNull()
     .references(() => deductionType.id),
   timing: deductionTimingEnum("timing").notNull().default("recurring"),
-  amount: integer("amount"), // cents - override
+  amount: moneyInteger("amount"), // cents - override
   percent: real("percent"), // override
   startDate: date("start_date"),
   endDate: date("end_date"),
@@ -337,7 +338,7 @@ export const payrollItemDeduction = pgTable("payroll_item_deduction", {
   deductionTypeId: uuid("deduction_type_id")
     .notNull()
     .references(() => deductionType.id),
-  amount: integer("amount").notNull(), // cents
+  amount: moneyInteger("amount").notNull(), // cents
   category: deductionCategoryEnum("category").notNull(),
 });
 
@@ -351,7 +352,7 @@ export const payrollBonus = pgTable("payroll_bonus", {
     .notNull()
     .references(() => payrollEmployee.id),
   bonusType: bonusTypeEnum("bonus_type").notNull(),
-  amount: integer("amount").notNull(), // cents
+  amount: moneyInteger("amount").notNull(), // cents
   description: text("description"),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
 });
@@ -365,8 +366,8 @@ export const payrollItemOvertime = pgTable("payroll_item_overtime", {
   regularHours: real("regular_hours").notNull(),
   overtimeHours: real("overtime_hours").notNull(),
   overtimeMultiplier: real("overtime_multiplier").notNull().default(1.5),
-  regularAmount: integer("regular_amount").notNull(), // cents
-  overtimeAmount: integer("overtime_amount").notNull(), // cents
+  regularAmount: moneyInteger("regular_amount").notNull(), // cents
+  overtimeAmount: moneyInteger("overtime_amount").notNull(), // cents
 });
 
 // ─── Approval Chain ─────────────────────────────────────────────────
@@ -452,7 +453,7 @@ export const contractor = pgTable("contractor", {
   email: text("email"),
   company: text("company"),
   taxId: text("tax_id"),
-  hourlyRate: integer("hourly_rate"), // cents
+  hourlyRate: moneyInteger("hourly_rate"), // cents
   currency: text("currency").default("USD"),
   bankAccountNumber: text("bank_account_number"),
   isActive: boolean("is_active").notNull().default(true),
@@ -466,7 +467,7 @@ export const contractorPayment = pgTable("contractor_payment", {
   contractorId: uuid("contractor_id")
     .notNull()
     .references(() => contractor.id, { onDelete: "cascade" }),
-  amount: integer("amount").notNull(), // cents
+  amount: moneyInteger("amount").notNull(), // cents
   currency: text("currency").default("USD"),
   description: text("description"),
   invoiceNumber: text("invoice_number"),
@@ -539,9 +540,9 @@ export const compensationBand = pgTable("compensation_band", {
     .references(() => organization.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   level: text("level"), // e.g. "L3", "Senior"
-  minSalary: integer("min_salary").notNull(), // cents
-  midSalary: integer("mid_salary").notNull(), // cents
-  maxSalary: integer("max_salary").notNull(), // cents
+  minSalary: moneyInteger("min_salary").notNull(), // cents
+  midSalary: moneyInteger("mid_salary").notNull(), // cents
+  maxSalary: moneyInteger("max_salary").notNull(), // cents
   currency: text("currency").default("USD"),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
@@ -556,7 +557,7 @@ export const compensationReview = pgTable("compensation_review", {
   name: text("name").notNull(),
   effectiveDate: date("effective_date").notNull(),
   status: compensationReviewStatusEnum("status").notNull().default("draft"),
-  totalBudget: integer("total_budget"), // cents
+  totalBudget: moneyInteger("total_budget"), // cents
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
   deletedAt: timestamp("deleted_at", { mode: "date" }),
@@ -570,8 +571,8 @@ export const compensationReviewEntry = pgTable("compensation_review_entry", {
   employeeId: uuid("employee_id")
     .notNull()
     .references(() => payrollEmployee.id),
-  currentSalary: integer("current_salary").notNull(), // cents
-  proposedSalary: integer("proposed_salary").notNull(), // cents
+  currentSalary: moneyInteger("current_salary").notNull(), // cents
+  proposedSalary: moneyInteger("proposed_salary").notNull(), // cents
   adjustmentPercent: real("adjustment_percent"),
   reason: text("reason"),
   approved: boolean("approved"),
@@ -597,14 +598,14 @@ export const taxBracket = pgTable("tax_bracket", {
   filingStatus: filingStatusEnum("filing_status"),
   // Tax year these brackets are effective for (e.g. 2026). null = any year.
   taxYear: integer("tax_year"),
-  minIncome: integer("min_income").notNull(), // cents (annual) — bracket floor
-  maxIncome: integer("max_income"), // cents (null = no limit) — bracket ceiling
+  minIncome: moneyInteger("min_income").notNull(), // cents (annual) — bracket floor
+  maxIncome: moneyInteger("max_income"), // cents (null = no limit) — bracket ceiling
   rate: integer("rate").notNull(), // basis points
   // Pub 15-T column C: cumulative tax owed on all income up to minIncome.
-  baseAmountCents: integer("base_amount_cents"), // cents (null = derive from lower brackets)
+  baseAmountCents: moneyInteger("base_amount_cents"), // cents (null = derive from lower brackets)
   // Optional per-bracket-set standard deduction (annual, cents). Usually carried
   // on taxAllowanceConfig, but allowed here for self-contained schedules.
-  standardDeductionCents: integer("standard_deduction_cents"), // cents
+  standardDeductionCents: moneyInteger("standard_deduction_cents"), // cents
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   deletedAt: timestamp("deleted_at", { mode: "date" }),
@@ -621,8 +622,8 @@ export const taxAllowanceConfig = pgTable("tax_allowance_config", {
   jurisdictionLevel: taxJurisdictionLevelEnum("jurisdiction_level").notNull().default("federal"),
   jurisdiction: text("jurisdiction"), // e.g. "CA", "NY" (null = federal/default)
   taxYear: integer("tax_year").notNull(),
-  allowanceValueCents: integer("allowance_value_cents").notNull().default(0), // cents per allowance, annual
-  standardDeductionCents: integer("standard_deduction_cents").notNull().default(0), // cents, annual
+  allowanceValueCents: moneyInteger("allowance_value_cents").notNull().default(0), // cents per allowance, annual
+  standardDeductionCents: moneyInteger("standard_deduction_cents").notNull().default(0), // cents, annual
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   deletedAt: timestamp("deleted_at", { mode: "date" }),
 });
@@ -639,7 +640,7 @@ export const payrollItemTaxBreakdown = pgTable("payroll_item_tax_breakdown", {
   jurisdiction: text("jurisdiction"), // null for federal/FICA
   // e.g. "income_tax", "social_security", "medicare", "additional_medicare"
   taxKind: text("tax_kind").notNull(),
-  amount: integer("amount").notNull(), // cents withheld this period
+  amount: moneyInteger("amount").notNull(), // cents withheld this period
 });
 
 // Per-payroll-item EMPLOYER-side tax, one row per jurisdiction/tax kind. Mirrors
@@ -656,7 +657,7 @@ export const payrollItemEmployerTax = pgTable("payroll_item_employer_tax", {
   jurisdictionLevel: taxJurisdictionLevelEnum("jurisdiction_level").notNull().default("federal"),
   jurisdiction: text("jurisdiction"), // null for federal/FICA
   taxKind: text("tax_kind").notNull(),
-  amount: integer("amount").notNull(), // cents employer owes this period
+  amount: moneyInteger("amount").notNull(), // cents employer owes this period
 });
 
 // A remittance of withheld + employer payroll taxes to a tax authority for a
@@ -674,7 +675,7 @@ export const payrollTaxPayment = pgTable("payroll_tax_payment", {
   jurisdiction: text("jurisdiction"), // e.g. "CA", "NY" (null = federal)
   // What this remittance covers, e.g. "941" (FIT+FICA), "940" (FUTA), "state_income".
   taxKind: text("tax_kind"),
-  amount: integer("amount").notNull(), // cents remitted
+  amount: moneyInteger("amount").notNull(), // cents remitted
   currency: text("currency").default("USD"),
   bankAccountId: uuid("bank_account_id"), // chartAccount id paid from
   reference: text("reference"), // confirmation / EFTPS number
@@ -696,7 +697,7 @@ export const employeeTaxConfig = pgTable("employee_tax_config", {
   filingStatus: filingStatusEnum("filing_status").notNull().default("single"),
   federalAllowances: integer("federal_allowances").notNull().default(0),
   stateAllowances: integer("state_allowances").notNull().default(0),
-  additionalWithholding: integer("additional_withholding").default(0), // cents
+  additionalWithholding: moneyInteger("additional_withholding").default(0), // cents
   exempt: boolean("exempt").notNull().default(false),
   updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
 });
@@ -743,13 +744,13 @@ export const payslip = pgTable("payslip", {
     .notNull()
     .references(() => payrollItem.id),
   status: payslipStatusEnum("status").notNull().default("generated"),
-  grossAmount: integer("gross_amount").notNull(), // cents
-  netAmount: integer("net_amount").notNull(), // cents
-  taxAmount: integer("tax_amount").notNull(), // cents
+  grossAmount: moneyInteger("gross_amount").notNull(), // cents
+  netAmount: moneyInteger("net_amount").notNull(), // cents
+  taxAmount: moneyInteger("tax_amount").notNull(), // cents
   deductionsBreakdown: jsonb("deductions_breakdown"), // [{name, amount, category}]
-  ytdGross: integer("ytd_gross").notNull().default(0), // cents
-  ytdNet: integer("ytd_net").notNull().default(0), // cents
-  ytdTax: integer("ytd_tax").notNull().default(0), // cents
+  ytdGross: moneyInteger("ytd_gross").notNull().default(0), // cents
+  ytdNet: moneyInteger("ytd_net").notNull().default(0), // cents
+  ytdTax: moneyInteger("ytd_tax").notNull().default(0), // cents
   generatedAt: timestamp("generated_at", { mode: "date" }).defaultNow().notNull(),
   sentAt: timestamp("sent_at", { mode: "date" }),
   viewedAt: timestamp("viewed_at", { mode: "date" }),

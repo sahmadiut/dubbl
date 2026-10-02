@@ -1,3 +1,4 @@
+import { moneyInteger } from "../money-column";
 import {
   pgTable,
   text,
@@ -191,8 +192,8 @@ export const journalLine = pgTable("journal_line", {
     .notNull()
     .references(() => chartAccount.id),
   description: text("description"),
-  debitAmount: integer("debit_amount").notNull().default(0),
-  creditAmount: integer("credit_amount").notNull().default(0),
+  debitAmount: moneyInteger("debit_amount").notNull().default(0),
+  creditAmount: moneyInteger("credit_amount").notNull().default(0),
   currencyCode: text("currency_code").notNull().default("USD"),
   exchangeRate: integer("exchange_rate").notNull().default(1000000), // 6 decimal places as int (1.000000 = 1000000)
   costCenterId: uuid("cost_center_id").references(() => costCenter.id),
@@ -475,7 +476,7 @@ export const taxReturnLine = pgTable("tax_return_line", {
     .references(() => taxPeriod.id, { onDelete: "cascade" }),
   boxNumber: text("box_number").notNull(),
   label: text("label").notNull(),
-  amount: integer("amount").notNull().default(0), // cents
+  amount: moneyInteger("amount").notNull().default(0), // cents
   isCalculated: boolean("is_calculated").notNull().default(true),
   sourceDescription: text("source_description"),
   sortOrder: integer("sort_order").notNull().default(0),

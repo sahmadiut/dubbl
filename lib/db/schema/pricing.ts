@@ -1,3 +1,4 @@
+import { moneyInteger } from "../money-column";
 import {
   pgTable,
   text,
@@ -65,7 +66,7 @@ export const priceListItem = pgTable(
       .notNull()
       .references(() => inventoryItem.id, { onDelete: "cascade" }),
     // Unit price in integer cents of the parent price list's currency.
-    unitPrice: integer("unit_price").notNull().default(0),
+    unitPrice: moneyInteger("unit_price").notNull().default(0),
     // Minimum order quantity at which this price applies (quantity-break tier).
     minQuantity: integer("min_quantity").notNull().default(1),
     createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),

@@ -1,6 +1,12 @@
 # Money and FX boundary manifest
 
-Inventory owner: MON-001. Inspected 2026-10-02 (Asia/Tehran), baseline `06b6fae`. MON-002 adds an internal exact-money core; schemas, stored values, legacy contracts and rollout flags remain unchanged.
+Inventory owner: MON-001. Refreshed 2026-10-02 (Asia/Tehran) for MON-003 against entry HEAD `cd124c7`. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter. Rollout flags remain unchanged.
+
+## MON-003 storage expansion
+
+All 194 money columns and the method-dependent landed-cost basis now declare PostgreSQL bigint through `moneyInteger()`. The [migration disposition](MONEY_BIGINT_MIGRATION.json) covers all 402 inventory columns with explicit before/after types and retained exclusions. Migration `0005_clear_senator_kelly` groups 195 identity casts into 88 table rewrites; values, defaults, nullability and units stay unchanged. The [migration runbook](../../lib/db/MONEY_MIGRATION.md) records locking, size, backup/recovery and compatibility limits. Schema declarations and committed migrations are updated; the configured local DB and production have not been migrated.
+
+The adapter retains exact number values for existing callers within the safe integer range and rejects unsafe reads/writes rather than rounding. Full bigint domain adoption, raw SQL/aggregate safety, wire strings and user-facing arithmetic remain MON-006/007/008 work. This is not IRR production qualification.
 
 ## MON-002 primitive implementation
 
@@ -8,13 +14,13 @@ Inventory owner: MON-001. Inspected 2026-10-02 (Asia/Tehran), baseline `06b6fae`
 
 Deprecated `lib/money.ts` functions preserve their behavior for existing consumers. ESLint enforces imported-binding reference ceilings from `scripts/legacy-money-baseline.json`, blocking new imports/uses; static analysis limits are documented in the core contract. Safe-number bridges explicitly reject precision loss. This is not application-wide adoption: the remaining Number-based ledger/FX/public/UI paths retain their assigned MON-004/006/007/008 work, and IRR production readiness remains disabled.
 
-The [column appendix](MONEY_COLUMNS.md) has one row per actual numeric/JSON column: SQL table/column, Drizzle property, source line, type/range, units, currency source and migration owner. Refreshed for MON-002, the [machine-readable consumer index](MONEY_BOUNDARIES.json) contains those 402 columns and 1,074 consumer files with line numbers, search tags, source hashes, currency context, range and owner. It scans 1,289 tracked and new nonignored source/config/documentation files and retains 20,640 lexical occurrences. All exported Drizzle numeric/JSON columns independently match the appendix, with no missing, extra or duplicate rows.
+The [column appendix](MONEY_COLUMNS.md) has one row per actual numeric/JSON column: SQL table/column, Drizzle property, source line, type/range, units, currency source and migration owner. Refreshed for MON-003, the [machine-readable consumer index](MONEY_BOUNDARIES.json) contains those 402 columns and 1,078 consumer files with line numbers, search tags, source hashes, currency context, range and owner. It scans 1,293 tracked and new nonignored source/config/documentation files and retains 20,687 lexical occurrences. All exported Drizzle numeric/JSON columns independently match the appendix, with no missing, extra or duplicate rows.
 
 `python .agentic/scripts/money_inventory.py` checks source reproducibility; `--write` refreshes after reviewed changes. `node --import tsx .agentic/scripts/verify_money_inventory.mjs` checks actual Drizzle exports, column lines, consumer hashes and occurrence lines. Neither reads environment credentials or connects to DB. These are mutable registries; completed task evidence remains immutable.
 
 ## Units, ranges and owners
 
-- 194 monetary columns currently use PostgreSQL signed integer: -2147483648 through 2147483647. One additional landed-cost basis is method-dependent. Legacy REST/MCP descriptions generally say cents; currency-aware display does not establish correct input scaling. USD 1250 remains 1250. No amount column currently uses bigint.
+- 194 monetary columns and one method-dependent landed-cost basis now declare PostgreSQL signed bigint: -9223372036854775808 through 9223372036854775807. Existing minor-unit values are unchanged by the migration; the transitional ORM supports only exact safe-number reads/writes. Legacy REST/MCP descriptions generally say cents; currency-aware display does not establish correct input scaling. USD 1250 remains 1250.
 - JS integer precision is limited to +/-9007199254740991. Products and sums can lose correctness before a write. `.int()` alone does not impose the DB bound. SQL sum(integer) can exceed individual row range; downstream Number coercion and explicit `::int` need independent review. Appendix ranges are physical limits, not promises that every endpoint validates them.
 - `exchangeRate.rate`, `journalLine.exchangeRate` and `consolidationRate.rate` are int32 millionths. Maximum positive multiplier: 2147.483647; tiny reciprocals can round to zero. `payrollItem.fxRate` is approximate PostgreSQL real (binary32), an **unscaled** local-to-base multiplier. All four need MON-004 backfill, each from its actual representation.
 - MON-002 owns exact primitives/rounding; MON-003 monetary storage; MON-004 exact FX storage/backfill; MON-005 providers/history; MON-006 REST/MCP/JSON compatibility; MON-007 core posting/banking/documents; MON-008 auxiliary/UI/public/PDF/jobs; MON-009 currency metadata/regimes; MON-010 qualification. LOC-003 owns localized exact input/presentation; DATA-001/002 extend safe imports/exports.

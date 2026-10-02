@@ -1,3 +1,4 @@
+import { moneyInteger } from "../money-column";
 import {
   pgTable,
   text,
@@ -41,7 +42,7 @@ export const budgetLine = pgTable("budget_line", {
   accountId: uuid("account_id")
     .notNull()
     .references(() => chartAccount.id),
-  total: integer("total").notNull().default(0),
+  total: moneyInteger("total").notNull().default(0),
 });
 
 // Budget Period
@@ -55,7 +56,7 @@ export const budgetPeriod = pgTable("budget_period", {
   label: text("label").notNull(),
   startDate: text("start_date").notNull(),
   endDate: text("end_date").notNull(),
-  amount: integer("amount").notNull().default(0),
+  amount: moneyInteger("amount").notNull().default(0),
   sortOrder: integer("sort_order").notNull().default(0),
 });
 

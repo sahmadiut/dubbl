@@ -1,3 +1,4 @@
+import { moneyInteger } from "../money-column";
 import {
   pgTable,
   text,
@@ -36,8 +37,8 @@ export const revenueSchedule = pgTable("revenue_schedule", {
     .notNull()
     .references(() => invoice.id),
   invoiceLineId: uuid("invoice_line_id").references(() => invoiceLine.id),
-  totalAmount: integer("total_amount").notNull(),
-  recognizedAmount: integer("recognized_amount").notNull().default(0),
+  totalAmount: moneyInteger("total_amount").notNull(),
+  recognizedAmount: moneyInteger("recognized_amount").notNull().default(0),
   startDate: date("start_date").notNull(),
   endDate: date("end_date").notNull(),
   method: revenueMethodEnum("method").notNull().default("straight_line"),
@@ -56,7 +57,7 @@ export const revenueEntry = pgTable("revenue_entry", {
     .notNull()
     .references(() => revenueSchedule.id, { onDelete: "cascade" }),
   periodDate: date("period_date").notNull(),
-  amount: integer("amount").notNull(),
+  amount: moneyInteger("amount").notNull(),
   journalEntryId: uuid("journal_entry_id").references(() => journalEntry.id),
   recognized: boolean("recognized").notNull().default(false),
   sortOrder: integer("sort_order").notNull().default(0),

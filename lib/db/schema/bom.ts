@@ -1,3 +1,4 @@
+import { moneyInteger } from "../money-column";
 import {
   pgTable,
   text,
@@ -29,8 +30,8 @@ export const billOfMaterials = pgTable("bill_of_materials", {
     .references(() => inventoryItem.id),
   name: text("name").notNull(),
   description: text("description"),
-  laborCostCents: integer("labor_cost_cents").notNull().default(0),
-  overheadCostCents: integer("overhead_cost_cents").notNull().default(0),
+  laborCostCents: moneyInteger("labor_cost_cents").notNull().default(0),
+  overheadCostCents: moneyInteger("overhead_cost_cents").notNull().default(0),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),

@@ -1,3 +1,4 @@
+import { moneyInteger } from "../money-column";
 import {
   pgTable,
   text,
@@ -67,7 +68,7 @@ export const deal = pgTable("deal", {
   stageId: text("stage_id").notNull(),
   contactId: uuid("contact_id").references(() => contact.id),
   title: text("title").notNull(),
-  valueCents: integer("value_cents").notNull().default(0),
+  valueCents: moneyInteger("value_cents").notNull().default(0),
   currency: text("currency").notNull().default("USD"),
   probability: integer("probability").default(0),
   expectedCloseDate: date("expected_close_date"),

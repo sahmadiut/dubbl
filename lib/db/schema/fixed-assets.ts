@@ -1,3 +1,4 @@
+import { moneyInteger } from "../money-column";
 import {
   pgTable,
   text,
@@ -55,7 +56,7 @@ export const assetCategory = pgTable("asset_category", {
     .notNull()
     .default("full_month"),
   defaultUsefulLifeMonths: integer("default_useful_life_months"),
-  defaultResidualValue: integer("default_residual_value").notNull().default(0), // cents
+  defaultResidualValue: moneyInteger("default_residual_value").notNull().default(0), // cents
   // Default declining-balance rate, in basis points (2000 = 20%).
   defaultDepreciationRateBp: integer("default_depreciation_rate_bp"),
   assetAccountId: uuid("asset_account_id").references(() => chartAccount.id),
@@ -88,8 +89,8 @@ export const fixedAsset = pgTable("fixed_asset", {
   // Date the asset was placed in service / began depreciating. Defaults to the
   // purchase date when not supplied; used as the convention anchor date.
   inServiceDate: date("in_service_date"),
-  purchasePrice: integer("purchase_price").notNull(), // cents
-  residualValue: integer("residual_value").notNull().default(0), // cents
+  purchasePrice: moneyInteger("purchase_price").notNull(), // cents
+  residualValue: moneyInteger("residual_value").notNull().default(0), // cents
   usefulLifeMonths: integer("useful_life_months").notNull(),
   depreciationMethod: depreciationMethodEnum("depreciation_method")
     .notNull()
@@ -100,10 +101,10 @@ export const fixedAsset = pgTable("fixed_asset", {
   // Units-of-production inputs.
   totalExpectedUnits: integer("total_expected_units"),
   unitOfMeasure: text("unit_of_measure"),
-  accumulatedDepreciation: integer("accumulated_depreciation")
+  accumulatedDepreciation: moneyInteger("accumulated_depreciation")
     .notNull()
     .default(0), // cents
-  netBookValue: integer("net_book_value").notNull(), // cents
+  netBookValue: moneyInteger("net_book_value").notNull(), // cents
   assetAccountId: uuid("asset_account_id").references(() => chartAccount.id),
   depreciationAccountId: uuid("depreciation_account_id").references(
     () => chartAccount.id
@@ -117,8 +118,8 @@ export const fixedAsset = pgTable("fixed_asset", {
   capitalizedDate: date("capitalized_date"),
   cwipAccountId: uuid("cwip_account_id").references(() => chartAccount.id),
   // IAS 16 revaluation model.
-  revaluedAmount: integer("revalued_amount"), // cents — latest revalued carrying amount
-  revaluationSurplusBalance: integer("revaluation_surplus_balance")
+  revaluedAmount: moneyInteger("revalued_amount"), // cents — latest revalued carrying amount
+  revaluationSurplusBalance: moneyInteger("revaluation_surplus_balance")
     .notNull()
     .default(0), // cents — running balance of surplus held in equity for this asset
   revaluationReserveAccountId: uuid("revaluation_reserve_account_id").references(
@@ -129,7 +130,7 @@ export const fixedAsset = pgTable("fixed_asset", {
   ),
   status: assetStatusEnum("status").notNull().default("active"),
   disposalDate: date("disposal_date"),
-  disposalAmount: integer("disposal_amount"), // cents
+  disposalAmount: moneyInteger("disposal_amount"), // cents
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
   deletedAt: timestamp("deleted_at", { mode: "date" }),
@@ -144,7 +145,7 @@ export const depreciationEntry = pgTable("depreciation_entry", {
     .notNull()
     .references(() => fixedAsset.id, { onDelete: "cascade" }),
   date: date("date").notNull(),
-  amount: integer("amount").notNull(), // cents
+  amount: moneyInteger("amount").notNull(), // cents
   // Units consumed this period (units-of-production only; nullable otherwise).
   unitsThisPeriod: integer("units_this_period"),
   // The period this charge covers (informational; nullable for legacy rows).
@@ -162,13 +163,13 @@ export const assetRevaluation = pgTable("asset_revaluation", {
     .references(() => fixedAsset.id, { onDelete: "cascade" }),
   date: date("date").notNull(),
   // Carrying amount before and the new revalued amount, in cents.
-  previousCarryingAmount: integer("previous_carrying_amount").notNull(),
-  revaluedAmount: integer("revalued_amount").notNull(),
+  previousCarryingAmount: moneyInteger("previous_carrying_amount").notNull(),
+  revaluedAmount: moneyInteger("revalued_amount").notNull(),
   // Signed change (revalued − previous): positive = upward, negative = downward.
-  changeAmount: integer("change_amount").notNull(),
+  changeAmount: moneyInteger("change_amount").notNull(),
   // How the change was split between equity surplus and P&L (impairment).
-  surplusAmount: integer("surplus_amount").notNull().default(0), // cents to/from revaluation surplus (equity)
-  impairmentAmount: integer("impairment_amount").notNull().default(0), // cents recognized in P&L
+  surplusAmount: moneyInteger("surplus_amount").notNull().default(0), // cents to/from revaluation surplus (equity)
+  impairmentAmount: moneyInteger("impairment_amount").notNull().default(0), // cents recognized in P&L
   isImpairment: boolean("is_impairment").notNull().default(false),
   notes: text("notes"),
   journalEntryId: uuid("journal_entry_id").references(() => journalEntry.id),
@@ -184,7 +185,7 @@ export const cwipCost = pgTable("cwip_cost", {
     .references(() => fixedAsset.id, { onDelete: "cascade" }),
   date: date("date").notNull(),
   description: text("description"),
-  amount: integer("amount").notNull(), // cents
+  amount: moneyInteger("amount").notNull(), // cents
   journalEntryId: uuid("journal_entry_id").references(() => journalEntry.id),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
 });

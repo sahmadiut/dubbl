@@ -1,0 +1,3623 @@
+{
+  "checkpoint": "0004_faithful_paper_doll",
+  "columns": [
+    {
+      "key": "accrualSchedule.totalAmount",
+      "table": "accrual_schedule",
+      "column": "total_amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "accrualSchedule.periods",
+      "table": "accrual_schedule",
+      "column": "periods",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "accrualEntry.amount",
+      "table": "accrual_entry",
+      "column": "amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "accrualEntry.sortOrder",
+      "table": "accrual_entry",
+      "column": "sort_order",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "approvalWorkflow.conditions",
+      "table": "approval_workflow",
+      "column": "conditions",
+      "classification": "money_envelope",
+      "before": "jsonb",
+      "after": "jsonb",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "approvalWorkflowStep.stepOrder",
+      "table": "approval_workflow_step",
+      "column": "step_order",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "approvalRequest.currentStepOrder",
+      "table": "approval_request",
+      "column": "current_step_order",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "auditLog.changes",
+      "table": "audit_log",
+      "column": "changes",
+      "classification": "money_envelope",
+      "before": "jsonb",
+      "after": "jsonb",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "userTotp.backupCodes",
+      "table": "user_totp",
+      "column": "backup_codes",
+      "classification": "non_money",
+      "before": "jsonb",
+      "after": "jsonb",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "accounts.expires_at",
+      "table": "accounts",
+      "column": "expires_at",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "customRole.permissions",
+      "table": "custom_role",
+      "column": "permissions",
+      "classification": "non_money",
+      "before": "jsonb",
+      "after": "jsonb",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "organization.fiscalYearStartMonth",
+      "table": "organization",
+      "column": "fiscal_year_start_month",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "organization.billApprovalThreshold",
+      "table": "organization",
+      "column": "bill_approval_threshold",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "organization.interestRate",
+      "table": "organization",
+      "column": "interest_rate",
+      "classification": "percentage",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "organization.interestGraceDays",
+      "table": "organization",
+      "column": "interest_grace_days",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "organization.mileageRate",
+      "table": "organization",
+      "column": "mileage_rate",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "organization.taxLookupEnabled",
+      "table": "organization",
+      "column": "tax_lookup_enabled",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "dataBackup.sizeBytes",
+      "table": "data_backup",
+      "column": "size_bytes",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "dataBackup.entityCounts",
+      "table": "data_backup",
+      "column": "entity_counts",
+      "classification": "non_money",
+      "before": "jsonb",
+      "after": "jsonb",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "bankAccount.balance",
+      "table": "bank_account",
+      "column": "balance",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "bankAccount.lowBalanceThreshold",
+      "table": "bank_account",
+      "column": "low_balance_threshold",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "bankStatementImport.openingBalance",
+      "table": "bank_statement_import",
+      "column": "opening_balance",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "bankStatementImport.closingBalance",
+      "table": "bank_statement_import",
+      "column": "closing_balance",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "bankStatementImport.importedCount",
+      "table": "bank_statement_import",
+      "column": "imported_count",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "bankStatementImport.duplicateCount",
+      "table": "bank_statement_import",
+      "column": "duplicate_count",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "bankStatementImport.errorCount",
+      "table": "bank_statement_import",
+      "column": "error_count",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "bankStatementImport.warnings",
+      "table": "bank_statement_import",
+      "column": "warnings",
+      "classification": "non_money",
+      "before": "jsonb",
+      "after": "jsonb",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "bankStatementImport.metadata",
+      "table": "bank_statement_import",
+      "column": "metadata",
+      "classification": "money_envelope",
+      "before": "jsonb",
+      "after": "jsonb",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "bankTransaction.amount",
+      "table": "bank_transaction",
+      "column": "amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "bankTransaction.balance",
+      "table": "bank_transaction",
+      "column": "balance",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "bankTransaction.rawPayload",
+      "table": "bank_transaction",
+      "column": "raw_payload",
+      "classification": "money_envelope",
+      "before": "jsonb",
+      "after": "jsonb",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "bankReconciliation.startBalance",
+      "table": "bank_reconciliation",
+      "column": "start_balance",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "bankReconciliation.endBalance",
+      "table": "bank_reconciliation",
+      "column": "end_balance",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "bankRule.priority",
+      "table": "bank_rule",
+      "column": "priority",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "bankRule.conditions",
+      "table": "bank_rule",
+      "column": "conditions",
+      "classification": "money_envelope",
+      "before": "jsonb",
+      "after": "jsonb",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "bankRule.splitAllocations",
+      "table": "bank_rule",
+      "column": "split_allocations",
+      "classification": "money_envelope",
+      "before": "jsonb",
+      "after": "jsonb",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "subscription.seatCount",
+      "table": "subscription",
+      "column": "seat_count",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "subscription.overrideMembers",
+      "table": "subscription",
+      "column": "override_members",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "subscription.overrideStorageMb",
+      "table": "subscription",
+      "column": "override_storage_mb",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "subscription.overrideContacts",
+      "table": "subscription",
+      "column": "override_contacts",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "subscription.overrideInvoicesPerMonth",
+      "table": "subscription",
+      "column": "override_invoices_per_month",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "subscription.overrideProjects",
+      "table": "subscription",
+      "column": "override_projects",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "subscription.overrideBankAccounts",
+      "table": "subscription",
+      "column": "override_bank_accounts",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "subscription.overrideEntriesPerMonth",
+      "table": "subscription",
+      "column": "override_entries_per_month",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "bill.subtotal",
+      "table": "bill",
+      "column": "subtotal",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "bill.taxTotal",
+      "table": "bill",
+      "column": "tax_total",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "bill.total",
+      "table": "bill",
+      "column": "total",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "bill.amountPaid",
+      "table": "bill",
+      "column": "amount_paid",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "bill.amountDue",
+      "table": "bill",
+      "column": "amount_due",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "billLine.quantity",
+      "table": "bill_line",
+      "column": "quantity",
+      "classification": "quantity",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "billLine.unitPrice",
+      "table": "bill_line",
+      "column": "unit_price",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "billLine.discountPercent",
+      "table": "bill_line",
+      "column": "discount_percent",
+      "classification": "percentage",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "billLine.taxAmount",
+      "table": "bill_line",
+      "column": "tax_amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "billLine.amount",
+      "table": "bill_line",
+      "column": "amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "billLine.sortOrder",
+      "table": "bill_line",
+      "column": "sort_order",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "purchaseOrder.subtotal",
+      "table": "purchase_order",
+      "column": "subtotal",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "purchaseOrder.taxTotal",
+      "table": "purchase_order",
+      "column": "tax_total",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "purchaseOrder.total",
+      "table": "purchase_order",
+      "column": "total",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "purchaseOrderLine.quantity",
+      "table": "purchase_order_line",
+      "column": "quantity",
+      "classification": "quantity",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "purchaseOrderLine.unitPrice",
+      "table": "purchase_order_line",
+      "column": "unit_price",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "purchaseOrderLine.taxAmount",
+      "table": "purchase_order_line",
+      "column": "tax_amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "purchaseOrderLine.amount",
+      "table": "purchase_order_line",
+      "column": "amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "purchaseOrderLine.quantityReceived",
+      "table": "purchase_order_line",
+      "column": "quantity_received",
+      "classification": "quantity",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "purchaseOrderLine.quantityBilled",
+      "table": "purchase_order_line",
+      "column": "quantity_billed",
+      "classification": "quantity",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "purchaseOrderLine.sortOrder",
+      "table": "purchase_order_line",
+      "column": "sort_order",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "debitNote.subtotal",
+      "table": "debit_note",
+      "column": "subtotal",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "debitNote.taxTotal",
+      "table": "debit_note",
+      "column": "tax_total",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "debitNote.total",
+      "table": "debit_note",
+      "column": "total",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "debitNote.amountApplied",
+      "table": "debit_note",
+      "column": "amount_applied",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "debitNote.amountRemaining",
+      "table": "debit_note",
+      "column": "amount_remaining",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "debitNoteLine.quantity",
+      "table": "debit_note_line",
+      "column": "quantity",
+      "classification": "quantity",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "debitNoteLine.unitPrice",
+      "table": "debit_note_line",
+      "column": "unit_price",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "debitNoteLine.taxAmount",
+      "table": "debit_note_line",
+      "column": "tax_amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "debitNoteLine.amount",
+      "table": "debit_note_line",
+      "column": "amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "debitNoteLine.sortOrder",
+      "table": "debit_note_line",
+      "column": "sort_order",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "purchaseRequisition.subtotal",
+      "table": "purchase_requisition",
+      "column": "subtotal",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "purchaseRequisition.taxTotal",
+      "table": "purchase_requisition",
+      "column": "tax_total",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "purchaseRequisition.total",
+      "table": "purchase_requisition",
+      "column": "total",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "purchaseRequisitionLine.quantity",
+      "table": "purchase_requisition_line",
+      "column": "quantity",
+      "classification": "quantity",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "purchaseRequisitionLine.unitPrice",
+      "table": "purchase_requisition_line",
+      "column": "unit_price",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "purchaseRequisitionLine.taxAmount",
+      "table": "purchase_requisition_line",
+      "column": "tax_amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "purchaseRequisitionLine.amount",
+      "table": "purchase_requisition_line",
+      "column": "amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "purchaseRequisitionLine.sortOrder",
+      "table": "purchase_requisition_line",
+      "column": "sort_order",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "landedCostAllocation.totalCostAmount",
+      "table": "landed_cost_allocation",
+      "column": "total_cost_amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "landedCostComponent.amount",
+      "table": "landed_cost_component",
+      "column": "amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "landedCostLineAllocation.allocatedAmount",
+      "table": "landed_cost_line_allocation",
+      "column": "allocated_amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "landedCostLineAllocation.allocationBasis",
+      "table": "landed_cost_line_allocation",
+      "column": "allocation_basis",
+      "classification": "allocation_basis",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "goodsReceiptLine.quantityReceived",
+      "table": "goods_receipt_line",
+      "column": "quantity_received",
+      "classification": "quantity",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "goodsReceiptLine.unitCost",
+      "table": "goods_receipt_line",
+      "column": "unit_cost",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "goodsReceiptLine.sortOrder",
+      "table": "goods_receipt_line",
+      "column": "sort_order",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "procurementSettings.priceTolerancePercent",
+      "table": "procurement_settings",
+      "column": "price_tolerance_percent",
+      "classification": "percentage",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "procurementSettings.qtyTolerancePercent",
+      "table": "procurement_settings",
+      "column": "qty_tolerance_percent",
+      "classification": "percentage",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "billOfMaterials.laborCostCents",
+      "table": "bill_of_materials",
+      "column": "labor_cost_cents",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "billOfMaterials.overheadCostCents",
+      "table": "bill_of_materials",
+      "column": "overhead_cost_cents",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "bomComponent.quantity",
+      "table": "bom_component",
+      "column": "quantity",
+      "classification": "non_money",
+      "before": "numeric",
+      "after": "numeric",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "bomComponent.wastagePercent",
+      "table": "bom_component",
+      "column": "wastage_percent",
+      "classification": "percentage",
+      "before": "numeric",
+      "after": "numeric",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "assemblyOrder.quantity",
+      "table": "assembly_order",
+      "column": "quantity",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "currency.decimalPlaces",
+      "table": "currency",
+      "column": "decimal_places",
+      "classification": "metadata",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "chartAccount.taxDisallowedPercent",
+      "table": "chart_account",
+      "column": "tax_disallowed_percent",
+      "classification": "percentage",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "journalEntry.entryNumber",
+      "table": "journal_entry",
+      "column": "entry_number",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "journalLine.debitAmount",
+      "table": "journal_line",
+      "column": "debit_amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "journalLine.creditAmount",
+      "table": "journal_line",
+      "column": "credit_amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "journalLine.exchangeRate",
+      "table": "journal_line",
+      "column": "exchange_rate",
+      "classification": "fx",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "taxRate.rate",
+      "table": "tax_rate",
+      "column": "rate",
+      "classification": "percentage",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "taxRate.recoverablePercent",
+      "table": "tax_rate",
+      "column": "recoverable_percent",
+      "classification": "percentage",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "taxComponent.rate",
+      "table": "tax_component",
+      "column": "rate",
+      "classification": "percentage",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "attachment.fileSize",
+      "table": "attachment",
+      "column": "file_size",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "exchangeRate.rate",
+      "table": "exchange_rate",
+      "column": "rate",
+      "classification": "fx",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "taxReturnLine.amount",
+      "table": "tax_return_line",
+      "column": "amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "taxReturnLine.sortOrder",
+      "table": "tax_return_line",
+      "column": "sort_order",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "taxJurisdiction.combinedRate",
+      "table": "tax_jurisdiction",
+      "column": "combined_rate",
+      "classification": "percentage",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "taxJurisdiction.stateRate",
+      "table": "tax_jurisdiction",
+      "column": "state_rate",
+      "classification": "percentage",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "taxJurisdiction.countyRate",
+      "table": "tax_jurisdiction",
+      "column": "county_rate",
+      "classification": "percentage",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "taxJurisdiction.cityRate",
+      "table": "tax_jurisdiction",
+      "column": "city_rate",
+      "classification": "percentage",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "taxJurisdiction.specialRate",
+      "table": "tax_jurisdiction",
+      "column": "special_rate",
+      "classification": "percentage",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "budget.varianceThresholdPct",
+      "table": "budget",
+      "column": "variance_threshold_pct",
+      "classification": "percentage",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "budgetLine.total",
+      "table": "budget_line",
+      "column": "total",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "budgetPeriod.amount",
+      "table": "budget_period",
+      "column": "amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "budgetPeriod.sortOrder",
+      "table": "budget_period",
+      "column": "sort_order",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "bulkImportJob.totalRows",
+      "table": "bulk_import_job",
+      "column": "total_rows",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "bulkImportJob.processedRows",
+      "table": "bulk_import_job",
+      "column": "processed_rows",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "bulkImportJob.errorRows",
+      "table": "bulk_import_job",
+      "column": "error_rows",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "bulkImportJob.errorDetails",
+      "table": "bulk_import_job",
+      "column": "error_details",
+      "classification": "non_money",
+      "before": "jsonb",
+      "after": "jsonb",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "consolidationRate.rate",
+      "table": "consolidation_rate",
+      "column": "rate",
+      "classification": "fx",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "consolidationEliminationEntry.amount",
+      "table": "consolidation_elimination_entry",
+      "column": "amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "consolidationEliminationEntry.varianceAmount",
+      "table": "consolidation_elimination_entry",
+      "column": "variance_amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "contact.paymentTermsDays",
+      "table": "contact",
+      "column": "payment_terms_days",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "contact.addresses",
+      "table": "contact",
+      "column": "addresses",
+      "classification": "non_money",
+      "before": "jsonb",
+      "after": "jsonb",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "contact.creditLimit",
+      "table": "contact",
+      "column": "credit_limit",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "pipeline.stages",
+      "table": "pipeline",
+      "column": "stages",
+      "classification": "non_money",
+      "before": "jsonb",
+      "after": "jsonb",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "deal.valueCents",
+      "table": "deal",
+      "column": "value_cents",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "deal.probability",
+      "table": "deal",
+      "column": "probability",
+      "classification": "percentage",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "dashboardLayout.layout",
+      "table": "dashboard_layout",
+      "column": "layout",
+      "classification": "non_money",
+      "before": "jsonb",
+      "after": "jsonb",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "document.fileSize",
+      "table": "document",
+      "column": "file_size",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "emailConfig.smtpPort",
+      "table": "email_config",
+      "column": "smtp_port",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "reminderRule.triggerDays",
+      "table": "reminder_rule",
+      "column": "trigger_days",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "reminderRule.customEmails",
+      "table": "reminder_rule",
+      "column": "custom_emails",
+      "classification": "non_money",
+      "before": "jsonb",
+      "after": "jsonb",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "expenseClaim.totalAmount",
+      "table": "expense_claim",
+      "column": "total_amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "expenseItem.amount",
+      "table": "expense_item",
+      "column": "amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "expenseItem.distanceMiles",
+      "table": "expense_item",
+      "column": "distance_miles",
+      "classification": "quantity",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "expenseItem.mileageRate",
+      "table": "expense_item",
+      "column": "mileage_rate",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "expenseItem.sortOrder",
+      "table": "expense_item",
+      "column": "sort_order",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "assetCategory.defaultUsefulLifeMonths",
+      "table": "asset_category",
+      "column": "default_useful_life_months",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "assetCategory.defaultResidualValue",
+      "table": "asset_category",
+      "column": "default_residual_value",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "assetCategory.defaultDepreciationRateBp",
+      "table": "asset_category",
+      "column": "default_depreciation_rate_bp",
+      "classification": "percentage",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "fixedAsset.purchasePrice",
+      "table": "fixed_asset",
+      "column": "purchase_price",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "fixedAsset.residualValue",
+      "table": "fixed_asset",
+      "column": "residual_value",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "fixedAsset.usefulLifeMonths",
+      "table": "fixed_asset",
+      "column": "useful_life_months",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "fixedAsset.totalExpectedUnits",
+      "table": "fixed_asset",
+      "column": "total_expected_units",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "fixedAsset.accumulatedDepreciation",
+      "table": "fixed_asset",
+      "column": "accumulated_depreciation",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "fixedAsset.netBookValue",
+      "table": "fixed_asset",
+      "column": "net_book_value",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "fixedAsset.revaluedAmount",
+      "table": "fixed_asset",
+      "column": "revalued_amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "fixedAsset.revaluationSurplusBalance",
+      "table": "fixed_asset",
+      "column": "revaluation_surplus_balance",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "fixedAsset.disposalAmount",
+      "table": "fixed_asset",
+      "column": "disposal_amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "depreciationEntry.amount",
+      "table": "depreciation_entry",
+      "column": "amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "depreciationEntry.unitsThisPeriod",
+      "table": "depreciation_entry",
+      "column": "units_this_period",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "assetRevaluation.previousCarryingAmount",
+      "table": "asset_revaluation",
+      "column": "previous_carrying_amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "assetRevaluation.revaluedAmount",
+      "table": "asset_revaluation",
+      "column": "revalued_amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "assetRevaluation.changeAmount",
+      "table": "asset_revaluation",
+      "column": "change_amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "assetRevaluation.surplusAmount",
+      "table": "asset_revaluation",
+      "column": "surplus_amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "assetRevaluation.impairmentAmount",
+      "table": "asset_revaluation",
+      "column": "impairment_amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "cwipCost.amount",
+      "table": "cwip_cost",
+      "column": "amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "stripeIntegration.initialSyncDays",
+      "table": "stripe_integration",
+      "column": "initial_sync_days",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "stripeEntityMap.metadata",
+      "table": "stripe_entity_map",
+      "column": "metadata",
+      "classification": "money_envelope",
+      "before": "jsonb",
+      "after": "jsonb",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "stripeSyncLog.retryCount",
+      "table": "stripe_sync_log",
+      "column": "retry_count",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "stripeSyncLog.payload",
+      "table": "stripe_sync_log",
+      "column": "payload",
+      "classification": "money_envelope",
+      "before": "jsonb",
+      "after": "jsonb",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "inventoryItem.purchasePrice",
+      "table": "inventory_item",
+      "column": "purchase_price",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "inventoryItem.salePrice",
+      "table": "inventory_item",
+      "column": "sale_price",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "inventoryItem.averageCost",
+      "table": "inventory_item",
+      "column": "average_cost",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "inventoryItem.standardCost",
+      "table": "inventory_item",
+      "column": "standard_cost",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "inventoryItem.totalValue",
+      "table": "inventory_item",
+      "column": "total_value",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "inventoryItem.quantityOnHand",
+      "table": "inventory_item",
+      "column": "quantity_on_hand",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "inventoryItem.reorderPoint",
+      "table": "inventory_item",
+      "column": "reorder_point",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "inventoryMovement.quantity",
+      "table": "inventory_movement",
+      "column": "quantity",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "inventoryMovement.previousQuantity",
+      "table": "inventory_movement",
+      "column": "previous_quantity",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "inventoryMovement.newQuantity",
+      "table": "inventory_movement",
+      "column": "new_quantity",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "inventoryMovement.unitCost",
+      "table": "inventory_movement",
+      "column": "unit_cost",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "inventoryMovement.value",
+      "table": "inventory_movement",
+      "column": "value",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "inventoryItemSupplier.leadTimeDays",
+      "table": "inventory_item_supplier",
+      "column": "lead_time_days",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "inventoryItemSupplier.purchasePrice",
+      "table": "inventory_item_supplier",
+      "column": "purchase_price",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "stockTakeLine.expectedQuantity",
+      "table": "stock_take_line",
+      "column": "expected_quantity",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "stockTakeLine.countedQuantity",
+      "table": "stock_take_line",
+      "column": "counted_quantity",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "stockTakeLine.discrepancy",
+      "table": "stock_take_line",
+      "column": "discrepancy",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "stockTakeLine.valueAdjustment",
+      "table": "stock_take_line",
+      "column": "value_adjustment",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "inventoryVariant.purchasePrice",
+      "table": "inventory_variant",
+      "column": "purchase_price",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "inventoryVariant.salePrice",
+      "table": "inventory_variant",
+      "column": "sale_price",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "inventoryVariant.quantityOnHand",
+      "table": "inventory_variant",
+      "column": "quantity_on_hand",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "inventoryVariant.options",
+      "table": "inventory_variant",
+      "column": "options",
+      "classification": "non_money",
+      "before": "jsonb",
+      "after": "jsonb",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "warehouseStock.quantity",
+      "table": "warehouse_stock",
+      "column": "quantity",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "inventoryTransferLine.quantity",
+      "table": "inventory_transfer_line",
+      "column": "quantity",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "inventoryTransferLine.receivedQuantity",
+      "table": "inventory_transfer_line",
+      "column": "received_quantity",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "lotBatch.quantity",
+      "table": "lot_batch",
+      "column": "quantity",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "lotBatch.availableQuantity",
+      "table": "lot_batch",
+      "column": "available_quantity",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "movementLotAssignment.quantity",
+      "table": "movement_lot_assignment",
+      "column": "quantity",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "inventoryCostLayer.originalQuantity",
+      "table": "inventory_cost_layer",
+      "column": "original_quantity",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "inventoryCostLayer.remainingQuantity",
+      "table": "inventory_cost_layer",
+      "column": "remaining_quantity",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "inventoryCostLayer.unitCost",
+      "table": "inventory_cost_layer",
+      "column": "unit_cost",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "inventoryLayerConsumption.quantity",
+      "table": "inventory_layer_consumption",
+      "column": "quantity",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "inventoryLayerConsumption.unitCost",
+      "table": "inventory_layer_consumption",
+      "column": "unit_cost",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "orgInviteLink.maxUses",
+      "table": "org_invite_link",
+      "column": "max_uses",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "orgInviteLink.useCount",
+      "table": "org_invite_link",
+      "column": "use_count",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "invoice.depositPercent",
+      "table": "invoice",
+      "column": "deposit_percent",
+      "classification": "percentage",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "invoice.dunningLevel",
+      "table": "invoice",
+      "column": "dunning_level",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "invoice.subtotal",
+      "table": "invoice",
+      "column": "subtotal",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "invoice.taxTotal",
+      "table": "invoice",
+      "column": "tax_total",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "invoice.total",
+      "table": "invoice",
+      "column": "total",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "invoice.amountPaid",
+      "table": "invoice",
+      "column": "amount_paid",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "invoice.amountDue",
+      "table": "invoice",
+      "column": "amount_due",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "invoice.senderSnapshot",
+      "table": "invoice",
+      "column": "sender_snapshot",
+      "classification": "non_money",
+      "before": "jsonb",
+      "after": "jsonb",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "invoice.recipientSnapshot",
+      "table": "invoice",
+      "column": "recipient_snapshot",
+      "classification": "non_money",
+      "before": "jsonb",
+      "after": "jsonb",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "invoiceLine.quantity",
+      "table": "invoice_line",
+      "column": "quantity",
+      "classification": "quantity",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "invoiceLine.unitPrice",
+      "table": "invoice_line",
+      "column": "unit_price",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "invoiceLine.discountPercent",
+      "table": "invoice_line",
+      "column": "discount_percent",
+      "classification": "percentage",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "invoiceLine.taxAmount",
+      "table": "invoice_line",
+      "column": "tax_amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "invoiceLine.amount",
+      "table": "invoice_line",
+      "column": "amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "invoiceLine.sortOrder",
+      "table": "invoice_line",
+      "column": "sort_order",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "quote.subtotal",
+      "table": "quote",
+      "column": "subtotal",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "quote.taxTotal",
+      "table": "quote",
+      "column": "tax_total",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "quote.total",
+      "table": "quote",
+      "column": "total",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "quote.billedTotal",
+      "table": "quote",
+      "column": "billed_total",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "quoteLine.quantity",
+      "table": "quote_line",
+      "column": "quantity",
+      "classification": "quantity",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "quoteLine.unitPrice",
+      "table": "quote_line",
+      "column": "unit_price",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "quoteLine.discountPercent",
+      "table": "quote_line",
+      "column": "discount_percent",
+      "classification": "percentage",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "quoteLine.taxAmount",
+      "table": "quote_line",
+      "column": "tax_amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "quoteLine.amount",
+      "table": "quote_line",
+      "column": "amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "quoteLine.sortOrder",
+      "table": "quote_line",
+      "column": "sort_order",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "creditNote.subtotal",
+      "table": "credit_note",
+      "column": "subtotal",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "creditNote.taxTotal",
+      "table": "credit_note",
+      "column": "tax_total",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "creditNote.total",
+      "table": "credit_note",
+      "column": "total",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "creditNote.amountApplied",
+      "table": "credit_note",
+      "column": "amount_applied",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "creditNote.amountRemaining",
+      "table": "credit_note",
+      "column": "amount_remaining",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "creditNoteLine.quantity",
+      "table": "credit_note_line",
+      "column": "quantity",
+      "classification": "quantity",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "creditNoteLine.unitPrice",
+      "table": "credit_note_line",
+      "column": "unit_price",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "creditNoteLine.discountPercent",
+      "table": "credit_note_line",
+      "column": "discount_percent",
+      "classification": "percentage",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "creditNoteLine.taxAmount",
+      "table": "credit_note_line",
+      "column": "tax_amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "creditNoteLine.amount",
+      "table": "credit_note_line",
+      "column": "amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "creditNoteLine.sortOrder",
+      "table": "credit_note_line",
+      "column": "sort_order",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "salesReceipt.subtotal",
+      "table": "sales_receipt",
+      "column": "subtotal",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "salesReceipt.taxTotal",
+      "table": "sales_receipt",
+      "column": "tax_total",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "salesReceipt.total",
+      "table": "sales_receipt",
+      "column": "total",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "salesReceiptLine.quantity",
+      "table": "sales_receipt_line",
+      "column": "quantity",
+      "classification": "quantity",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "salesReceiptLine.unitPrice",
+      "table": "sales_receipt_line",
+      "column": "unit_price",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "salesReceiptLine.discountPercent",
+      "table": "sales_receipt_line",
+      "column": "discount_percent",
+      "classification": "percentage",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "salesReceiptLine.taxAmount",
+      "table": "sales_receipt_line",
+      "column": "tax_amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "salesReceiptLine.amount",
+      "table": "sales_receipt_line",
+      "column": "amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "salesReceiptLine.sortOrder",
+      "table": "sales_receipt_line",
+      "column": "sort_order",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "customerCredit.originalAmount",
+      "table": "customer_credit",
+      "column": "original_amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "customerCredit.amountRemaining",
+      "table": "customer_credit",
+      "column": "amount_remaining",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "loan.principalAmount",
+      "table": "loan",
+      "column": "principal_amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "loan.interestRate",
+      "table": "loan",
+      "column": "interest_rate",
+      "classification": "percentage",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "loan.termMonths",
+      "table": "loan",
+      "column": "term_months",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "loan.monthlyPayment",
+      "table": "loan",
+      "column": "monthly_payment",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "loanSchedule.periodNumber",
+      "table": "loan_schedule",
+      "column": "period_number",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "loanSchedule.principalAmount",
+      "table": "loan_schedule",
+      "column": "principal_amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "loanSchedule.interestAmount",
+      "table": "loan_schedule",
+      "column": "interest_amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "loanSchedule.totalPayment",
+      "table": "loan_schedule",
+      "column": "total_payment",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "loanSchedule.remainingBalance",
+      "table": "loan_schedule",
+      "column": "remaining_balance",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "loanSchedule.sortOrder",
+      "table": "loan_schedule",
+      "column": "sort_order",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "mcpOAuthClient.redirectUris",
+      "table": "mcp_oauth_client",
+      "column": "redirect_uris",
+      "classification": "non_money",
+      "before": "jsonb",
+      "after": "jsonb",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "notificationPreference.digestIntervalMinutes",
+      "table": "notification_preference",
+      "column": "digest_interval_minutes",
+      "classification": "time_or_count",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "payment.amount",
+      "table": "payment",
+      "column": "amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "paymentAllocation.amount",
+      "table": "payment_allocation",
+      "column": "amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "payrollSettings.defaultTaxRate",
+      "table": "payroll_settings",
+      "column": "default_tax_rate",
+      "classification": "percentage",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "payrollSettings.overtimeThresholdHours",
+      "table": "payroll_settings",
+      "column": "overtime_threshold_hours",
+      "classification": "time_or_count",
+      "before": "real",
+      "after": "real",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "payrollSettings.overtimeMultiplier",
+      "table": "payroll_settings",
+      "column": "overtime_multiplier",
+      "classification": "multiplier",
+      "before": "real",
+      "after": "real",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "payrollSettings.ssWageBaseCents",
+      "table": "payroll_settings",
+      "column": "ss_wage_base_cents",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "payrollSettings.ssRateBp",
+      "table": "payroll_settings",
+      "column": "ss_rate_bp",
+      "classification": "percentage",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "payrollSettings.medicareRateBp",
+      "table": "payroll_settings",
+      "column": "medicare_rate_bp",
+      "classification": "percentage",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "payrollSettings.addlMedicareThresholdCents",
+      "table": "payroll_settings",
+      "column": "addl_medicare_threshold_cents",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "payrollSettings.addlMedicareRateBp",
+      "table": "payroll_settings",
+      "column": "addl_medicare_rate_bp",
+      "classification": "percentage",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "payrollSettings.futaRateBp",
+      "table": "payroll_settings",
+      "column": "futa_rate_bp",
+      "classification": "percentage",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "payrollSettings.futaWageBaseCents",
+      "table": "payroll_settings",
+      "column": "futa_wage_base_cents",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "payrollSettings.sutaRateBp",
+      "table": "payroll_settings",
+      "column": "suta_rate_bp",
+      "classification": "percentage",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "payrollSettings.sutaWageBaseCents",
+      "table": "payroll_settings",
+      "column": "suta_wage_base_cents",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "payrollSettings.defaultTaxYear",
+      "table": "payroll_settings",
+      "column": "default_tax_year",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "payrollEmployee.salary",
+      "table": "payroll_employee",
+      "column": "salary",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "payrollEmployee.hourlyRate",
+      "table": "payroll_employee",
+      "column": "hourly_rate",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "payrollEmployee.taxRate",
+      "table": "payroll_employee",
+      "column": "tax_rate",
+      "classification": "percentage",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "payrollEmployee.ptoBalanceHours",
+      "table": "payroll_employee",
+      "column": "pto_balance_hours",
+      "classification": "time_or_count",
+      "before": "real",
+      "after": "real",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "payrollRun.totalGross",
+      "table": "payroll_run",
+      "column": "total_gross",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "payrollRun.totalDeductions",
+      "table": "payroll_run",
+      "column": "total_deductions",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "payrollRun.totalNet",
+      "table": "payroll_run",
+      "column": "total_net",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "payrollItem.grossAmount",
+      "table": "payroll_item",
+      "column": "gross_amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "payrollItem.taxAmount",
+      "table": "payroll_item",
+      "column": "tax_amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "payrollItem.deductions",
+      "table": "payroll_item",
+      "column": "deductions",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "payrollItem.netAmount",
+      "table": "payroll_item",
+      "column": "net_amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "payrollItem.overtimeHours",
+      "table": "payroll_item",
+      "column": "overtime_hours",
+      "classification": "time_or_count",
+      "before": "real",
+      "after": "real",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "payrollItem.overtimeAmount",
+      "table": "payroll_item",
+      "column": "overtime_amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "payrollItem.bonusAmount",
+      "table": "payroll_item",
+      "column": "bonus_amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "payrollItem.preTaxDeductions",
+      "table": "payroll_item",
+      "column": "pre_tax_deductions",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "payrollItem.postTaxDeductions",
+      "table": "payroll_item",
+      "column": "post_tax_deductions",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "payrollItem.fxRate",
+      "table": "payroll_item",
+      "column": "fx_rate",
+      "classification": "fx",
+      "before": "real",
+      "after": "real",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "deductionType.defaultAmount",
+      "table": "deduction_type",
+      "column": "default_amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "deductionType.defaultPercent",
+      "table": "deduction_type",
+      "column": "default_percent",
+      "classification": "percentage",
+      "before": "real",
+      "after": "real",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "employeeDeduction.amount",
+      "table": "employee_deduction",
+      "column": "amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "employeeDeduction.percent",
+      "table": "employee_deduction",
+      "column": "percent",
+      "classification": "percentage",
+      "before": "real",
+      "after": "real",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "payrollItemDeduction.amount",
+      "table": "payroll_item_deduction",
+      "column": "amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "payrollBonus.amount",
+      "table": "payroll_bonus",
+      "column": "amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "payrollItemOvertime.regularHours",
+      "table": "payroll_item_overtime",
+      "column": "regular_hours",
+      "classification": "time_or_count",
+      "before": "real",
+      "after": "real",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "payrollItemOvertime.overtimeHours",
+      "table": "payroll_item_overtime",
+      "column": "overtime_hours",
+      "classification": "time_or_count",
+      "before": "real",
+      "after": "real",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "payrollItemOvertime.overtimeMultiplier",
+      "table": "payroll_item_overtime",
+      "column": "overtime_multiplier",
+      "classification": "multiplier",
+      "before": "real",
+      "after": "real",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "payrollItemOvertime.regularAmount",
+      "table": "payroll_item_overtime",
+      "column": "regular_amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "payrollItemOvertime.overtimeAmount",
+      "table": "payroll_item_overtime",
+      "column": "overtime_amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "approvalChainStep.stepOrder",
+      "table": "approval_chain_step",
+      "column": "step_order",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "timesheet.totalHours",
+      "table": "timesheet",
+      "column": "total_hours",
+      "classification": "time_or_count",
+      "before": "real",
+      "after": "real",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "timesheetEntry.hours",
+      "table": "timesheet_entry",
+      "column": "hours",
+      "classification": "time_or_count",
+      "before": "real",
+      "after": "real",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "contractor.hourlyRate",
+      "table": "contractor",
+      "column": "hourly_rate",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "contractorPayment.amount",
+      "table": "contractor_payment",
+      "column": "amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "leavePolicy.accrualRate",
+      "table": "leave_policy",
+      "column": "accrual_rate",
+      "classification": "time_or_count",
+      "before": "real",
+      "after": "real",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "leavePolicy.maxBalance",
+      "table": "leave_policy",
+      "column": "max_balance",
+      "classification": "time_or_count",
+      "before": "real",
+      "after": "real",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "leavePolicy.carryOverMax",
+      "table": "leave_policy",
+      "column": "carry_over_max",
+      "classification": "time_or_count",
+      "before": "real",
+      "after": "real",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "employeeLeaveBalance.balance",
+      "table": "employee_leave_balance",
+      "column": "balance",
+      "classification": "time_or_count",
+      "before": "real",
+      "after": "real",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "employeeLeaveBalance.usedHours",
+      "table": "employee_leave_balance",
+      "column": "used_hours",
+      "classification": "time_or_count",
+      "before": "real",
+      "after": "real",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "employeeLeaveBalance.year",
+      "table": "employee_leave_balance",
+      "column": "year",
+      "classification": "time_or_count",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "leaveRequest.hours",
+      "table": "leave_request",
+      "column": "hours",
+      "classification": "time_or_count",
+      "before": "real",
+      "after": "real",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "compensationBand.minSalary",
+      "table": "compensation_band",
+      "column": "min_salary",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "compensationBand.midSalary",
+      "table": "compensation_band",
+      "column": "mid_salary",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "compensationBand.maxSalary",
+      "table": "compensation_band",
+      "column": "max_salary",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "compensationReview.totalBudget",
+      "table": "compensation_review",
+      "column": "total_budget",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "compensationReviewEntry.currentSalary",
+      "table": "compensation_review_entry",
+      "column": "current_salary",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "compensationReviewEntry.proposedSalary",
+      "table": "compensation_review_entry",
+      "column": "proposed_salary",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "compensationReviewEntry.adjustmentPercent",
+      "table": "compensation_review_entry",
+      "column": "adjustment_percent",
+      "classification": "percentage",
+      "before": "real",
+      "after": "real",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "taxBracket.taxYear",
+      "table": "tax_bracket",
+      "column": "tax_year",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "taxBracket.minIncome",
+      "table": "tax_bracket",
+      "column": "min_income",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "taxBracket.maxIncome",
+      "table": "tax_bracket",
+      "column": "max_income",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "taxBracket.rate",
+      "table": "tax_bracket",
+      "column": "rate",
+      "classification": "percentage",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "taxBracket.baseAmountCents",
+      "table": "tax_bracket",
+      "column": "base_amount_cents",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "taxBracket.standardDeductionCents",
+      "table": "tax_bracket",
+      "column": "standard_deduction_cents",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "taxAllowanceConfig.taxYear",
+      "table": "tax_allowance_config",
+      "column": "tax_year",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "taxAllowanceConfig.allowanceValueCents",
+      "table": "tax_allowance_config",
+      "column": "allowance_value_cents",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "taxAllowanceConfig.standardDeductionCents",
+      "table": "tax_allowance_config",
+      "column": "standard_deduction_cents",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "payrollItemTaxBreakdown.amount",
+      "table": "payroll_item_tax_breakdown",
+      "column": "amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "payrollItemEmployerTax.amount",
+      "table": "payroll_item_employer_tax",
+      "column": "amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "payrollTaxPayment.amount",
+      "table": "payroll_tax_payment",
+      "column": "amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "employeeTaxConfig.federalAllowances",
+      "table": "employee_tax_config",
+      "column": "federal_allowances",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "employeeTaxConfig.stateAllowances",
+      "table": "employee_tax_config",
+      "column": "state_allowances",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "employeeTaxConfig.additionalWithholding",
+      "table": "employee_tax_config",
+      "column": "additional_withholding",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "shiftDefinition.premiumPercent",
+      "table": "shift_definition",
+      "column": "premium_percent",
+      "classification": "percentage",
+      "before": "real",
+      "after": "real",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "employeeSchedule.dayOfWeek",
+      "table": "employee_schedule",
+      "column": "day_of_week",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "payslip.grossAmount",
+      "table": "payslip",
+      "column": "gross_amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "payslip.netAmount",
+      "table": "payslip",
+      "column": "net_amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "payslip.taxAmount",
+      "table": "payslip",
+      "column": "tax_amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "payslip.deductionsBreakdown",
+      "table": "payslip",
+      "column": "deductions_breakdown",
+      "classification": "money_envelope",
+      "before": "jsonb",
+      "after": "jsonb",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "payslip.ytdGross",
+      "table": "payslip",
+      "column": "ytd_gross",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "payslip.ytdNet",
+      "table": "payslip",
+      "column": "ytd_net",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "payslip.ytdTax",
+      "table": "payslip",
+      "column": "ytd_tax",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "taxFormGeneration.taxYear",
+      "table": "tax_form_generation",
+      "column": "tax_year",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "taxForm.taxYear",
+      "table": "tax_form",
+      "column": "tax_year",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "taxForm.formData",
+      "table": "tax_form",
+      "column": "form_data",
+      "classification": "money_envelope",
+      "before": "jsonb",
+      "after": "jsonb",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "priceListItem.unitPrice",
+      "table": "price_list_item",
+      "column": "unit_price",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "priceListItem.minQuantity",
+      "table": "price_list_item",
+      "column": "min_quantity",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "project.budget",
+      "table": "project",
+      "column": "budget",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "project.hourlyRate",
+      "table": "project",
+      "column": "hourly_rate",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "project.fixedPrice",
+      "table": "project",
+      "column": "fixed_price",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "project.totalHours",
+      "table": "project",
+      "column": "total_hours",
+      "classification": "time_or_count",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "project.totalBilled",
+      "table": "project",
+      "column": "total_billed",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "project.estimatedHours",
+      "table": "project",
+      "column": "estimated_hours",
+      "classification": "time_or_count",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "project.tags",
+      "table": "project",
+      "column": "tags",
+      "classification": "non_money",
+      "before": "jsonb",
+      "after": "jsonb",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "projectMember.hourlyRate",
+      "table": "project_member",
+      "column": "hourly_rate",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "projectMember.costRate",
+      "table": "project_member",
+      "column": "cost_rate",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "projectBillableItem.costAmount",
+      "table": "project_billable_item",
+      "column": "cost_amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "projectBillableItem.markupBasisPoints",
+      "table": "project_billable_item",
+      "column": "markup_basis_points",
+      "classification": "percentage",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "projectBillableItem.billedAmount",
+      "table": "project_billable_item",
+      "column": "billed_amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "milestoneAssignment.amount",
+      "table": "milestone_assignment",
+      "column": "amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "projectTask.estimatedMinutes",
+      "table": "project_task",
+      "column": "estimated_minutes",
+      "classification": "time_or_count",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "projectTask.labels",
+      "table": "project_task",
+      "column": "labels",
+      "classification": "non_money",
+      "before": "jsonb",
+      "after": "jsonb",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "projectTask.sortOrder",
+      "table": "project_task",
+      "column": "sort_order",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "taskChecklist.sortOrder",
+      "table": "task_checklist",
+      "column": "sort_order",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "projectMilestone.amount",
+      "table": "project_milestone",
+      "column": "amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "projectMilestone.invoicedAmountCents",
+      "table": "project_milestone",
+      "column": "invoiced_amount_cents",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "projectMilestone.progressPercent",
+      "table": "project_milestone",
+      "column": "progress_percent",
+      "classification": "percentage",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "projectMilestone.sortOrder",
+      "table": "project_milestone",
+      "column": "sort_order",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "timeEntry.minutes",
+      "table": "time_entry",
+      "column": "minutes",
+      "classification": "time_or_count",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "timeEntry.hourlyRate",
+      "table": "time_entry",
+      "column": "hourly_rate",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "runningTimer.accumulatedSeconds",
+      "table": "running_timer",
+      "column": "accumulated_seconds",
+      "classification": "time_or_count",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "recurringTemplate.occurrencesGenerated",
+      "table": "recurring_template",
+      "column": "occurrences_generated",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "recurringTemplate.maxOccurrences",
+      "table": "recurring_template",
+      "column": "max_occurrences",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "recurringTemplateLine.quantity",
+      "table": "recurring_template_line",
+      "column": "quantity",
+      "classification": "quantity",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "recurringTemplateLine.unitPrice",
+      "table": "recurring_template_line",
+      "column": "unit_price",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "recurringTemplateLine.discountPercent",
+      "table": "recurring_template_line",
+      "column": "discount_percent",
+      "classification": "percentage",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "recurringTemplateLine.debitAmount",
+      "table": "recurring_template_line",
+      "column": "debit_amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "recurringTemplateLine.creditAmount",
+      "table": "recurring_template_line",
+      "column": "credit_amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "recurringTemplateLine.sortOrder",
+      "table": "recurring_template_line",
+      "column": "sort_order",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "savedReport.config",
+      "table": "saved_report",
+      "column": "config",
+      "classification": "money_envelope",
+      "before": "jsonb",
+      "after": "jsonb",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "reportSchedule.recipients",
+      "table": "report_schedule",
+      "column": "recipients",
+      "classification": "non_money",
+      "before": "jsonb",
+      "after": "jsonb",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "reportSchedule.dayOfWeek",
+      "table": "report_schedule",
+      "column": "day_of_week",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "reportSchedule.dayOfMonth",
+      "table": "report_schedule",
+      "column": "day_of_month",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "revenueSchedule.totalAmount",
+      "table": "revenue_schedule",
+      "column": "total_amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "revenueSchedule.recognizedAmount",
+      "table": "revenue_schedule",
+      "column": "recognized_amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "revenueEntry.amount",
+      "table": "revenue_entry",
+      "column": "amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "revenueEntry.sortOrder",
+      "table": "revenue_entry",
+      "column": "sort_order",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "scheduledPayment.amount",
+      "table": "scheduled_payment",
+      "column": "amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "paymentBatch.totalAmount",
+      "table": "payment_batch",
+      "column": "total_amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "paymentBatch.paymentCount",
+      "table": "payment_batch",
+      "column": "payment_count",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "paymentBatchItem.amount",
+      "table": "payment_batch_item",
+      "column": "amount",
+      "classification": "money",
+      "before": "integer",
+      "after": "bigint",
+      "action": "widen without rescaling"
+    },
+    {
+      "key": "numberSequence.lastNumber",
+      "table": "number_sequence",
+      "column": "last_number",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "webhook.events",
+      "table": "webhook",
+      "column": "events",
+      "classification": "non_money",
+      "before": "jsonb",
+      "after": "jsonb",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "webhook.metadata",
+      "table": "webhook",
+      "column": "metadata",
+      "classification": "non_money",
+      "before": "jsonb",
+      "after": "jsonb",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "webhookDelivery.payload",
+      "table": "webhook_delivery",
+      "column": "payload",
+      "classification": "money_envelope",
+      "before": "jsonb",
+      "after": "jsonb",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "webhookDelivery.responseStatus",
+      "table": "webhook_delivery",
+      "column": "response_status",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "webhookDelivery.attempts",
+      "table": "webhook_delivery",
+      "column": "attempts",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    },
+    {
+      "key": "webhookDelivery.maxAttempts",
+      "table": "webhook_delivery",
+      "column": "max_attempts",
+      "classification": "non_money",
+      "before": "integer",
+      "after": "integer",
+      "action": "retain; separate migration owner"
+    }
+  ]
+}

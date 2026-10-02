@@ -1,3 +1,4 @@
+import { moneyInteger } from "../money-column";
 import {
   pgTable,
   text,
@@ -28,7 +29,7 @@ export const accrualSchedule = pgTable("accrual_schedule", {
     .notNull()
     .references(() => organization.id, { onDelete: "cascade" }),
   sourceEntryId: uuid("source_entry_id").references(() => journalEntry.id),
-  totalAmount: integer("total_amount").notNull(),
+  totalAmount: moneyInteger("total_amount").notNull(),
   startDate: date("start_date").notNull(),
   endDate: date("end_date").notNull(),
   frequency: accrualFrequencyEnum("frequency").notNull().default("monthly"),
@@ -53,7 +54,7 @@ export const accrualEntry = pgTable("accrual_entry", {
     .notNull()
     .references(() => accrualSchedule.id, { onDelete: "cascade" }),
   periodDate: date("period_date").notNull(),
-  amount: integer("amount").notNull(),
+  amount: moneyInteger("amount").notNull(),
   journalEntryId: uuid("journal_entry_id").references(() => journalEntry.id),
   posted: boolean("posted").notNull().default(false),
   sortOrder: integer("sort_order").notNull().default(0),

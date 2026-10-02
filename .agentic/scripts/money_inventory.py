@@ -247,8 +247,10 @@ def generate():
             block = text[m.end():starts[i + 1].start() if i + 1 < len(starts) else len(text)]
             table, sql_table = m[1], m[2]
             tables[table] = currency_source(table, block)
-            for f in re.finditer(r'^\s+(\w+): (integer|numeric|decimal|real|bigint|doublePrecision|jsonb)\("([^"]+)"\)([^\n]*)', block, re.M):
+            for f in re.finditer(r'^\s+(\w+): (integer|numeric|decimal|real|bigint|moneyInteger|doublePrecision|jsonb)\("([^"]+)"\)([^\n]*)', block, re.M):
                 field, typ, sql_col = f[1], f[2], f[3]
+                if typ == "moneyInteger":
+                    typ = "bigint"
                 line = text.count("\n", 0, m.end() + f.start()) + 1
                 # Leading whitespace can include the previous newline.
                 line += f[0][:f[0].index(field)].count("\n")
@@ -297,7 +299,7 @@ def generate():
             owner = "MON-007 core/MON-008 auxiliary; MON-006 serialization"
         consumers.append(dict(path=path, sha256=hashlib.sha256(source.replace("\r\n", "\n").encode()).hexdigest(),
                               table_references=sorted(refs), units="currency-tagged bigint minor units; rational operands have explicit units" if path.startswith("lib/money/") else "per referenced column; mixed money/FX/quantity/percent; legacy Number candidates require inspection",
-                              range="signed int64 final amounts; arbitrary-precision intermediate ratios" if path.startswith("lib/money/") else "Number safe integer +/-9007199254740991; DB columns int32; intermediates/SQL casts may narrow",
+                              range="signed int64 final amounts; arbitrary-precision intermediate ratios" if path.startswith("lib/money/") else "Number safe integer +/-9007199254740991; DB money columns bigint via guarded safe-number bridge; intermediates/SQL casts may narrow",
                               currency_sources={t: tables[t] for t in sorted(refs)},
                               currency_resolution="explicit currency props/arguments or organization context; absent currency defaults must be reviewed, never infer from locale",
                               migration_owner=owner, occurrences=matches))

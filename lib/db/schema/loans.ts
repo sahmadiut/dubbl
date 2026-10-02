@@ -1,3 +1,4 @@
+import { moneyInteger } from "../money-column";
 import {
   pgTable,
   text,
@@ -30,11 +31,11 @@ export const loan = pgTable("loan", {
     .references(() => organization.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   bankAccountId: uuid("bank_account_id").references(() => bankAccount.id),
-  principalAmount: integer("principal_amount").notNull(),
+  principalAmount: moneyInteger("principal_amount").notNull(),
   interestRate: integer("interest_rate").notNull(), // basis points, e.g. 500 = 5%
   termMonths: integer("term_months").notNull(),
   startDate: date("start_date").notNull(),
-  monthlyPayment: integer("monthly_payment").notNull(), // cents, calculated PMT
+  monthlyPayment: moneyInteger("monthly_payment").notNull(), // cents, calculated PMT
   status: loanStatusEnum("status").notNull().default("active"),
   principalAccountId: uuid("principal_account_id").references(() => chartAccount.id),
   interestAccountId: uuid("interest_account_id").references(() => chartAccount.id),
@@ -53,10 +54,10 @@ export const loanSchedule = pgTable("loan_schedule", {
     .references(() => loan.id, { onDelete: "cascade" }),
   periodNumber: integer("period_number").notNull(),
   date: date("date").notNull(),
-  principalAmount: integer("principal_amount").notNull(),
-  interestAmount: integer("interest_amount").notNull(),
-  totalPayment: integer("total_payment").notNull(),
-  remainingBalance: integer("remaining_balance").notNull(),
+  principalAmount: moneyInteger("principal_amount").notNull(),
+  interestAmount: moneyInteger("interest_amount").notNull(),
+  totalPayment: moneyInteger("total_payment").notNull(),
+  remainingBalance: moneyInteger("remaining_balance").notNull(),
   journalEntryId: uuid("journal_entry_id").references(() => journalEntry.id),
   posted: boolean("posted").notNull().default(false),
   sortOrder: integer("sort_order").notNull().default(0),

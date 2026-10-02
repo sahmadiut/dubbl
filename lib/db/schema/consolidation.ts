@@ -1,3 +1,4 @@
+import { moneyInteger } from "../money-column";
 import {
   pgTable, text, uuid, timestamp, integer, date, pgEnum,
 } from "drizzle-orm/pg-core";
@@ -97,8 +98,8 @@ export const consolidationEliminationEntry = pgTable("consolidation_elimination_
   ruleId: uuid("rule_id").notNull().references(() => consolidationEliminationRule.id, { onDelete: "cascade" }),
   // Presentation currency the eliminated amounts are expressed in.
   currencyCode: text("currency_code").notNull(),
-  amount: integer("amount").notNull().default(0),
-  varianceAmount: integer("variance_amount").notNull().default(0),
+  amount: moneyInteger("amount").notNull().default(0),
+  varianceAmount: moneyInteger("variance_amount").notNull().default(0),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
 });
 

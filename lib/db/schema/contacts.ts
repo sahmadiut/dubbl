@@ -1,3 +1,4 @@
+import { moneyInteger } from "../money-column";
 import {
   pgTable,
   text,
@@ -38,7 +39,7 @@ export const contact = pgTable("contact", {
   notes: text("notes"),
   currencyCode: text("currency_code").default("USD"),
   // Bookkeeping defaults
-  creditLimit: integer("credit_limit"), // cents, nullable = no limit
+  creditLimit: moneyInteger("credit_limit"), // cents, nullable = no limit
   isTaxExempt: boolean("is_tax_exempt").notNull().default(false),
   defaultRevenueAccountId: uuid("default_revenue_account_id").references(() => chartAccount.id),
   defaultExpenseAccountId: uuid("default_expense_account_id").references(() => chartAccount.id),

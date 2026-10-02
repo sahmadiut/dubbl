@@ -1,3 +1,4 @@
+import { moneyInteger } from "../money-column";
 import {
   pgTable,
   text,
@@ -79,15 +80,15 @@ export const inventoryItem = pgTable(
     category: text("category"),
     categoryId: uuid("category_id").references(() => inventoryCategory.id),
     sku: text("sku"),
-    purchasePrice: integer("purchase_price").notNull().default(0), // cents
-    salePrice: integer("sale_price").notNull().default(0), // cents
+    purchasePrice: moneyInteger("purchase_price").notNull().default(0), // cents
+    salePrice: moneyInteger("sale_price").notNull().default(0), // cents
     // Perpetual valuation: costMethod drives how unit cost is derived. averageCost
     // is the moving weighted-average unit cost (cents); totalValue is the on-hand
     // book value (cents) = averageCost*qty (average) or sum of FIFO layer values.
     costMethod: costMethodEnum("cost_method").notNull().default("average"),
-    averageCost: integer("average_cost").notNull().default(0), // cents per unit
-    standardCost: integer("standard_cost").notNull().default(0), // cents per unit
-    totalValue: integer("total_value").notNull().default(0), // cents, on-hand book value
+    averageCost: moneyInteger("average_cost").notNull().default(0), // cents per unit
+    standardCost: moneyInteger("standard_cost").notNull().default(0), // cents per unit
+    totalValue: moneyInteger("total_value").notNull().default(0), // cents, on-hand book value
     unitOfMeasure: text("unit_of_measure"),
     costAccountId: uuid("cost_account_id").references(() => chartAccount.id),
     revenueAccountId: uuid("revenue_account_id").references(() => chartAccount.id),
@@ -164,8 +165,8 @@ export const inventoryMovement = pgTable("inventory_movement", {
   quantity: integer("quantity").notNull(), // can be negative
   previousQuantity: integer("previous_quantity").notNull(),
   newQuantity: integer("new_quantity").notNull(),
-  unitCost: integer("unit_cost").notNull().default(0), // cents per unit at the time of movement
-  value: integer("value").notNull().default(0), // cents, signed GL amount = unitCost*quantity
+  unitCost: moneyInteger("unit_cost").notNull().default(0), // cents per unit at the time of movement
+  value: moneyInteger("value").notNull().default(0), // cents, signed GL amount = unitCost*quantity
   journalEntryId: uuid("journal_entry_id").references(() => journalEntry.id),
   reason: text("reason"),
   referenceType: text("reference_type"),
@@ -193,7 +194,7 @@ export const inventoryItemSupplier = pgTable(
       .references(() => contact.id, { onDelete: "cascade" }),
     supplierCode: text("supplier_code"), // their SKU
     leadTimeDays: integer("lead_time_days").default(0),
-    purchasePrice: integer("purchase_price").default(0), // cents
+    purchasePrice: moneyInteger("purchase_price").default(0), // cents
     isPreferred: boolean("is_preferred").default(false),
     createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
@@ -248,7 +249,7 @@ export const stockTakeLine = pgTable("stock_take_line", {
   countedQuantity: integer("counted_quantity"),
   discrepancy: integer("discrepancy"),
   adjusted: boolean("adjusted").default(false),
-  valueAdjustment: integer("value_adjustment"), // cents, GL value of the true-up
+  valueAdjustment: moneyInteger("value_adjustment"), // cents, GL value of the true-up
   journalEntryId: uuid("journal_entry_id").references(() => journalEntry.id),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
@@ -268,8 +269,8 @@ export const inventoryVariant = pgTable("inventory_variant", {
     .references(() => inventoryItem.id, { onDelete: "cascade" }),
   name: text("name").notNull(), // e.g. "Red / Large"
   sku: text("sku"),
-  purchasePrice: integer("purchase_price").default(0),
-  salePrice: integer("sale_price").default(0),
+  purchasePrice: moneyInteger("purchase_price").default(0),
+  salePrice: moneyInteger("sale_price").default(0),
   quantityOnHand: integer("quantity_on_hand").default(0),
   options: jsonb("options").$type<Record<string, string>>(), // e.g. {"Color": "Red", "Size": "Large"}
   isActive: boolean("is_active").default(true),
@@ -439,7 +440,7 @@ export const inventoryCostLayer = pgTable(
     receivedAt: timestamp("received_at", { mode: "date" }).defaultNow().notNull(),
     originalQuantity: integer("original_quantity").notNull(),
     remainingQuantity: integer("remaining_quantity").notNull(),
-    unitCost: integer("unit_cost").notNull(), // cents per unit for this layer
+    unitCost: moneyInteger("unit_cost").notNull(), // cents per unit for this layer
     sourceMovementId: uuid("source_movement_id").references(() => inventoryMovement.id),
     createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   },
@@ -464,7 +465,7 @@ export const inventoryLayerConsumption = pgTable("inventory_layer_consumption", 
     .notNull()
     .references(() => inventoryCostLayer.id),
   quantity: integer("quantity").notNull(),
-  unitCost: integer("unit_cost").notNull(), // cents per unit consumed from this layer
+  unitCost: moneyInteger("unit_cost").notNull(), // cents per unit consumed from this layer
 });
 
 // --- Relations ---

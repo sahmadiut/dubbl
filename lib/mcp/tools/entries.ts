@@ -1,3 +1,7 @@
+import { deleteDraftJournal } from "@/lib/api/journal-delete";
+import { AuthError } from "@/lib/api/auth-context";
+import { journalLineSchema, journalLineInput, journalTotals, journalTotalDebit, journalLineDto } from "@/lib/api/journal-wire";
+import { assertJournalReferences, assertJournalAccountScope } from "@/lib/api/journal-references";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { db } from "@/lib/db";
@@ -14,7 +18,7 @@ import type { AuthContext } from "@/lib/api/auth-context";
 export function registerEntryTools(server: McpServer, ctx: AuthContext) {
   server.tool(
     "list_entries",
-    "List journal entries with optional filters. Returns entries with total debit amount. Amounts are in integer cents.",
+    "List journal entries with optional filters. Returns totalDebit as a safe stored minor-unit number and totalDebitMinor as its exact integer string. Mixed line currencies retain the raw stored sum, not a converted economic total.",
     {
       status: z
         .enum(["draft", "posted", "void"])
@@ -68,7 +72,7 @@ export function registerEntryTools(server: McpServer, ctx: AuthContext) {
           orderBy: desc(journalEntry.createdAt),
           limit: params.limit,
           offset,
-          with: { lines: true },
+          with: { lines: { columns: { rateExact: false }, extras: { rateExact: sql<string | null>`${journalLine.rateExact}::text`.as("rate_exact_text") } } },
         });
 
         const [countResult] = await db
@@ -77,10 +81,7 @@ export function registerEntryTools(server: McpServer, ctx: AuthContext) {
           .where(and(...conditions));
 
         const result = entries.map((e) => {
-          const totalDebit = e.lines.reduce(
-            (sum, l) => sum + l.debitAmount,
-            0
-          );
+          const totalDebit = journalTotalDebit(e.lines);
           return {
             id: e.id,
             entryNumber: e.entryNumber,
@@ -89,6 +90,7 @@ export function registerEntryTools(server: McpServer, ctx: AuthContext) {
             reference: e.reference,
             status: e.status,
             totalDebit,
+            totalDebitMinor: BigInt(totalDebit).toString(),
             createdAt: e.createdAt,
           };
         });
@@ -104,7 +106,7 @@ export function registerEntryTools(server: McpServer, ctx: AuthContext) {
 
   server.tool(
     "get_entry",
-    "Get a single journal entry by ID with all its line items. Line amounts are in integer cents. Exchange rate is stored as integer with 6 decimal places (1000000 = 1.0).",
+    "Get a single journal entry by ID with all its line items. Returns legacy safe minor-unit numbers plus debitAmountMinor/creditAmountMinor strings and saved rateExact metadata. Automated postings store base amounts; currencyCode can tag the original document. No rescaling or second conversion.",
     {
       entryId: z.string().describe("The UUID of the journal entry"),
     },
@@ -117,17 +119,22 @@ export function registerEntryTools(server: McpServer, ctx: AuthContext) {
           ),
           with: {
             lines: {
+              columns: { rateExact: false },
+              extras: { rateExact: sql<string | null>`${journalLine.rateExact}::text`.as("rate_exact_text") },
               with: { account: true },
             },
           },
         });
 
         if (!entry) throw new Error("Entry not found");
+        assertJournalAccountScope(ctx.organizationId, entry.lines);
 
         return {
           entry: {
             ...entry,
             lines: entry.lines.map((l) => ({
+              ...journalLineDto(l),
+              account: undefined,
               id: l.id,
               accountId: l.accountId,
               accountCode: l.account?.code ?? "",
@@ -145,54 +152,23 @@ export function registerEntryTools(server: McpServer, ctx: AuthContext) {
 
   server.tool(
     "create_entry",
-    "Create a new journal entry. Total debits must equal total credits. All amounts must be in integer cents (e.g. $12.50 = 1250). Minimum 2 lines required.",
+    "Create a new journal entry. Raw stored total debits must equal total credits. Use legacy minor-unit numbers (USD 1250 = $12.50) or debitAmountMinor/creditAmountMinor canonical strings; dual aliases must agree. rateExact must fit int32 millionths exactly. Sums must fit safe Number range; full int64 domain support is pending. Minimum 2 lines required. Saved FX is not applied during this tool's balance validation.",
     {
-      date: z.string().describe("Entry date (YYYY-MM-DD)"),
+      date: z.iso.date().describe("Canonical Gregorian entry date (YYYY-MM-DD)"),
       description: z.string().describe("Entry description/memo"),
       reference: z
         .string()
         .optional()
         .describe("External reference number"),
       autoReverseDate: z
-        .string()
+        .iso.date()
         .optional()
         .describe(
           "Optional auto-reverse date (YYYY-MM-DD). If set, a scheduled job posts a mirror reversing entry on this date (for accruals/prepayments). Must be on or after the entry date."
         ),
       lines: z
         .array(
-          z.object({
-            accountId: z.string().describe("Account UUID"),
-            description: z
-              .string()
-              .optional()
-              .describe("Line description"),
-            debitAmount: z
-              .number()
-              .int()
-              .min(0)
-              .default(0)
-              .describe("Debit amount in cents"),
-            creditAmount: z
-              .number()
-              .int()
-              .min(0)
-              .default(0)
-              .describe("Credit amount in cents"),
-            currencyCode: z
-              .string()
-              .optional()
-              .default("USD")
-              .describe("Currency code"),
-            exchangeRate: z
-              .number()
-              .int()
-              .optional()
-              .default(1000000)
-              .describe(
-                "Exchange rate as integer (1000000 = 1.0)"
-              ),
-          })
+          journalLineSchema
         )
         .min(2)
         .describe("Journal lines (min 2)"),
@@ -200,24 +176,13 @@ export function registerEntryTools(server: McpServer, ctx: AuthContext) {
     (params) =>
       wrapTool(ctx, async () => {
         requireRole(ctx, "create:entries");
+        const lines = params.lines.map(journalLineInput);
+        journalTotals(lines);
+        await assertJournalReferences(ctx.organizationId, lines);
 
         await assertNotLocked(ctx.organizationId, params.date);
         await checkMonthlyLimit(ctx.organizationId, journalEntry, journalEntry.organizationId, journalEntry.createdAt, "entriesPerMonth");
 
-        const totalDebit = params.lines.reduce(
-          (sum, l) => sum + l.debitAmount,
-          0
-        );
-        const totalCredit = params.lines.reduce(
-          (sum, l) => sum + l.creditAmount,
-          0
-        );
-        if (totalDebit !== totalCredit) {
-          throw new Error("Debits must equal credits");
-        }
-        if (totalDebit === 0) {
-          throw new Error("Entry must have non-zero amounts");
-        }
         if (params.autoReverseDate && params.autoReverseDate < params.date) {
           throw new Error(
             "Auto-reverse date must be on or after the entry date"
@@ -233,30 +198,39 @@ export function registerEntryTools(server: McpServer, ctx: AuthContext) {
 
         const entryNumber = (maxResult?.max || 0) + 1;
 
-        const [entry] = await db
-          .insert(journalEntry)
-          .values({
-            organizationId: ctx.organizationId,
-            entryNumber,
-            date: params.date,
-            description: params.description,
-            reference: params.reference ?? null,
-            autoReverseDate: params.autoReverseDate ?? null,
-            createdBy: ctx.userId,
-          })
-          .returning();
+        const entry = await db.transaction(async (tx) => {
+          const [entry] = await tx
+            .insert(journalEntry)
+            .values({
+              organizationId: ctx.organizationId,
+              entryNumber,
+              date: params.date,
+              description: params.description,
+              reference: params.reference ?? null,
+              autoReverseDate: params.autoReverseDate ?? null,
+              createdBy: ctx.userId,
+            })
+            .returning();
 
-        await db.insert(journalLine).values(
-          params.lines.map((l) => ({
-            journalEntryId: entry.id,
-            accountId: l.accountId,
-            description: l.description ?? null,
-            debitAmount: l.debitAmount,
-            creditAmount: l.creditAmount,
-            currencyCode: l.currencyCode ?? "USD",
-            exchangeRate: l.exchangeRate ?? 1000000,
-          }))
-        );
+          await tx.insert(journalLine).values(
+            lines.map((l) => ({
+              journalEntryId: entry.id,
+              accountId: l.accountId,
+              description: l.description ?? null,
+              debitAmount: l.debitAmount,
+              creditAmount: l.creditAmount,
+              currencyCode: l.currencyCode ?? "USD",
+              exchangeRate: l.exchangeRate,
+              rateExact: l.rateExact,
+              rateDirection: l.rateDirection,
+              costCenterId: l.costCenterId ?? null,
+              projectId: l.projectId ?? null,
+            }))
+          );
+
+          return entry;
+        });
+        await logAudit({ ctx, action: "create", entityType: "journal_entry", entityId: entry.id });
 
         return { entry };
       })
@@ -360,10 +334,10 @@ export function registerEntryTools(server: McpServer, ctx: AuthContext) {
 
   server.tool(
     "update_entry",
-    "Edit a DRAFT journal entry — full header + line replace. Posted entries cannot be edited (void and re-create instead). Total debits must equal total credits. Amounts in integer cents. Fails if the entry's old or new date is in a locked period.",
+    "Edit a DRAFT journal entry — full header + line replace. Posted entries cannot be edited (void and re-create instead). Total debits must equal total credits. Use minor-unit numeric or canonical debitAmountMinor/creditAmountMinor aliases; dual aliases must agree, rateExact must fit int32 millionths and sums must fit safe Number range. Fails if the entry's old or new date is in a locked period.",
     {
       entryId: z.string().describe("The UUID of the draft entry to edit"),
-      date: z.string().describe("Entry date (YYYY-MM-DD)"),
+      date: z.iso.date().describe("Canonical Gregorian entry date (YYYY-MM-DD)"),
       description: z.string().describe("Entry description/memo"),
       reference: z
         .string()
@@ -371,44 +345,7 @@ export function registerEntryTools(server: McpServer, ctx: AuthContext) {
         .describe("External reference number"),
       lines: z
         .array(
-          z.object({
-            accountId: z.string().describe("Account UUID"),
-            description: z
-              .string()
-              .optional()
-              .describe("Line description"),
-            debitAmount: z
-              .number()
-              .int()
-              .min(0)
-              .default(0)
-              .describe("Debit amount in cents"),
-            creditAmount: z
-              .number()
-              .int()
-              .min(0)
-              .default(0)
-              .describe("Credit amount in cents"),
-            currencyCode: z
-              .string()
-              .optional()
-              .default("USD")
-              .describe("Currency code"),
-            exchangeRate: z
-              .number()
-              .int()
-              .optional()
-              .default(1000000)
-              .describe("Exchange rate as integer (1000000 = 1.0)"),
-            costCenterId: z
-              .string()
-              .optional()
-              .describe("Cost center UUID for this line"),
-            projectId: z
-              .string()
-              .optional()
-              .describe("Project UUID for this line"),
-          })
+          journalLineSchema
         )
         .min(2)
         .describe("Replacement journal lines (min 2)"),
@@ -416,6 +353,9 @@ export function registerEntryTools(server: McpServer, ctx: AuthContext) {
     (params) =>
       wrapTool(ctx, async () => {
         requireRole(ctx, "edit:entries");
+        const lines = params.lines.map(journalLineInput);
+        journalTotals(lines, false);
+        await assertJournalReferences(ctx.organizationId, lines);
 
         const existing = await db.query.journalEntry.findFirst({
           where: and(
@@ -436,21 +376,6 @@ export function registerEntryTools(server: McpServer, ctx: AuthContext) {
           await assertNotLocked(ctx.organizationId, params.date);
         }
 
-        const totalDebit = params.lines.reduce(
-          (sum, l) => sum + l.debitAmount,
-          0
-        );
-        const totalCredit = params.lines.reduce(
-          (sum, l) => sum + l.creditAmount,
-          0
-        );
-        if (totalDebit !== totalCredit) {
-          throw new Error("Debits must equal credits");
-        }
-        if (totalDebit === 0) {
-          throw new Error("Entry must have non-zero amounts");
-        }
-
         const updated = await db.transaction(async (tx) => {
           const [entry] = await tx
             .update(journalEntry)
@@ -460,21 +385,24 @@ export function registerEntryTools(server: McpServer, ctx: AuthContext) {
               reference: params.reference ?? null,
               updatedAt: new Date(),
             })
-            .where(eq(journalEntry.id, params.entryId))
+            .where(and(eq(journalEntry.id, params.entryId), eq(journalEntry.organizationId, ctx.organizationId), eq(journalEntry.status, "draft")))
             .returning();
+          if (!entry) throw new AuthError("Entry changed before edit", 409);
 
           await tx
             .delete(journalLine)
             .where(eq(journalLine.journalEntryId, params.entryId));
           await tx.insert(journalLine).values(
-            params.lines.map((l) => ({
+            lines.map((l) => ({
               journalEntryId: params.entryId,
               accountId: l.accountId,
               description: l.description ?? null,
               debitAmount: l.debitAmount,
               creditAmount: l.creditAmount,
               currencyCode: l.currencyCode ?? "USD",
-              exchangeRate: l.exchangeRate ?? 1000000,
+              exchangeRate: l.exchangeRate,
+              rateExact: l.rateExact,
+              rateDirection: l.rateDirection,
               costCenterId: l.costCenterId ?? null,
               projectId: l.projectId ?? null,
             }))
@@ -498,13 +426,20 @@ export function registerEntryTools(server: McpServer, ctx: AuthContext) {
                 existing.description !== params.description
                   ? { from: existing.description, to: params.description }
                   : undefined,
-              lines: { replaced: params.lines.length },
+              lines: { replaced: lines.length },
             },
           },
         });
 
         return { entry: updated };
       })
+  );
+
+  server.tool(
+    "delete_entry",
+    "Delete an organization-owned DRAFT journal entry and its legs. Requires edit:entries and an unlocked period; posted entries cannot be deleted. Returns success=true, with no monetary input/output.",
+    { entryId: z.string().uuid().describe("UUID of the draft journal entry to delete") },
+    (params) => wrapTool(ctx, async () => deleteDraftJournal(ctx, params.entryId))
   );
 
   server.tool(

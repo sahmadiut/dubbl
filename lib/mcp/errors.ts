@@ -2,6 +2,7 @@ import { z } from "zod";
 import { AuthError } from "@/lib/api/auth-context";
 import type { AuthContext } from "@/lib/api/auth-context";
 import { LimitExceededError } from "@/lib/api/check-limit";
+import { PeriodLockedError } from "@/lib/api/period-lock";
 import { CurrencyRolloutError } from "@/lib/currency/rollout";
 import { stringifyWire, WireCompatibilityError, type WireRepresentation } from "@/lib/money/wire";
 
@@ -67,6 +68,12 @@ export function wrapTool<T>(
               text: JSON.stringify({ error: err.message, status: 403 }),
             },
           ],
+          isError: true,
+        };
+      }
+      if (err instanceof PeriodLockedError) {
+        return {
+          content: [{ type: "text" as const, text: JSON.stringify({ error: err.message, status: 422 }) }],
           isError: true,
         };
       }

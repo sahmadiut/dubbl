@@ -241,8 +241,35 @@ full-range reporting or production IRR readiness.
 | GET | `/api/v1/entries` | List entries |
 | POST | `/api/v1/entries` | Create entry |
 | GET | `/api/v1/entries/:id` | Get entry |
+| PUT/PATCH | `/api/v1/entries/:id` | Replace a draft entry header and lines |
+| DELETE | `/api/v1/entries/:id` | Delete a draft entry and its lines |
 | POST | `/api/v1/entries/:id/post` | Post entry |
 | POST | `/api/v1/entries/:id/void` | Void entry |
+
+Journal CRUD accepts line `debitAmountMinor` and `creditAmountMinor` canonical
+nonnegative integer strings alongside legacy `debitAmount`/`creditAmount` minor-unit
+numbers. Both aliases must agree; an omitted side defaults to zero. Values and
+per-entry sums must fit the current safe-number workflow (at most 9007199254740991).
+`rateExact` accepts saved quote-per-base decimal strings exactly representable in
+positive int32 millionths; dual `exchangeRate` must agree. Amount/rate range
+failures return 422 with `LEGACY_NUMERIC_RANGE`, before writes.
+
+REST detail retains historical fixed-two-decimal `debitAmount`/`creditAmount`
+strings and adds raw `*Minor` strings plus saved exact FX metadata. REST list
+retains its decimal-string `totalDebit` and adds `totalDebitMinor`. These aliases
+never rescale stored values by currency. Automated entries can store already-base
+amounts while the line currency tags the original document; reads do not apply FX
+again. Mixed manual-currency list totals remain raw stored sums.
+
+Creation requires `create:entries`; replacement/deletion requires `edit:entries`.
+References must belong to the organization, and period locks/closed years apply.
+Replacement/deletion is draft-only. MCP `list_entries`, `get_entry`, `create_entry`,
+`update_entry` and `delete_entry` provide the corresponding operations, with
+minor-unit numeric output plus exact aliases. REST create retains its existing
+base-balance check for mixed currencies/rates, including per-line rounding slack
+and safe FX-product limits; REST replacement and MCP create/update retain raw
+debit/credit equality. These aliases do not enable full-int64 domain posting.
+Post/void/import and recurring contracts have separate qualification work.
 
 ### Banking
 | Method | Path | Description |

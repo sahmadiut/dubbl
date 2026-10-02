@@ -93,3 +93,11 @@ Generated initial scope index; current status always comes from task metadata vi
 | [MON-032](../tasks/MON-032.md) | Adopt exact backup snapshot and restore contracts | backend | no |
 | [MON-033](../tasks/MON-033.md) | Adopt exact generic import and export contracts | backend | no |
 | [MON-034](../tasks/MON-034.md) | Qualify remaining opaque and public rendering boundaries | backend | no |
+
+## MON-018 implementation children
+
+| ID | Task | Role | Optional |
+|---|---|---|---|
+| [MON-035](../tasks/MON-035.md) | Adopt exact journal CRUD contracts | backend | no |
+| [MON-036](../tasks/MON-036.md) | Adopt exact journal lifecycle and bulk import contracts | backend | no |
+| [MON-037](../tasks/MON-037.md) | Adopt exact recurring journal contracts | backend | no |

@@ -106,3 +106,12 @@ transaction with monetary preflight. Seven strict, org-scoped MCP tools expose
 the same operations. See [public contracts](../../.agentic/registries/PUBLIC_PORTAL_WIRE_CONTRACTS.md).
 Checkout, providers, backups, opaque payloads, public frontend/PDF display and
 full-range business consumers retain their assigned tasks. IRR remains disabled.
+
+Journal CRUD accepts `debitAmountMinor`/`creditAmountMinor` and saved `rateExact`
+aliases without changing stored units. REST retains fixed-two-decimal strings;
+MCP retains safe minor-unit numbers. Amount/sum/legacy FX-product ranges are guarded
+before writes, and adopted reads select saved FX as SQL text. The new MCP
+`delete_entry` matches scoped, locked, draft-only REST deletion. See
+[journal contracts](../../.agentic/registries/JOURNAL_WIRE_CONTRACTS.md), including
+the existing REST/MCP balance-policy difference and remaining lifecycle/import/
+recurring/full-domain qualification.

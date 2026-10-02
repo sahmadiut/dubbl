@@ -1,33 +1,24 @@
-import { NextResponse } from "next/server";
+import { deleteDraftJournal } from "@/lib/api/journal-delete";
+import { AuthError } from "@/lib/api/auth-context";
+import { jsonResponse } from "@/lib/api/json-response";
+import { journalLineSchema, journalLineInput, journalTotals, journalLineDto } from "@/lib/api/journal-wire";
+import { assertJournalReferences, assertJournalAccountScope } from "@/lib/api/journal-references";
 import { db } from "@/lib/db";
 import { journalEntry, journalLine } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { getAuthContext } from "@/lib/api/auth-context";
 import { handleError } from "@/lib/api/response";
-import { centsToDecimal } from "@/lib/money";
 import { requireRole } from "@/lib/api/require-role";
 import { assertNotLocked } from "@/lib/api/period-lock";
 import { logAudit } from "@/lib/api/audit";
 import { z } from "zod";
-import { currencyCodeSchema } from "@/lib/currency/zod";
-
-const updateLineSchema = z.object({
-  accountId: z.string().min(1),
-  description: z.string().nullable().optional(),
-  debitAmount: z.number().int().min(0).default(0),
-  creditAmount: z.number().int().min(0).default(0),
-  currencyCode: currencyCodeSchema.default("USD"),
-  exchangeRate: z.number().int().default(1000000),
-  costCenterId: z.string().nullable().optional(),
-  projectId: z.string().nullable().optional(),
-});
 
 const updateSchema = z.object({
-  date: z.string().min(1),
+  date: z.iso.date(),
   description: z.string().min(1),
   reference: z.string().nullable().optional(),
-  fiscalYearId: z.string().nullable().optional(),
-  lines: z.array(updateLineSchema).min(2),
+  fiscalYearId: z.string().uuid().nullable().optional(),
+  lines: z.array(journalLineSchema).min(2),
 });
 
 export async function GET(
@@ -45,6 +36,8 @@ export async function GET(
       ),
       with: {
         lines: {
+          columns: { rateExact: false },
+          extras: { rateExact: sql<string | null>`${journalLine.rateExact}::text`.as("rate_exact_text") },
           with: {
             account: true,
           },
@@ -53,25 +46,26 @@ export async function GET(
     });
 
     if (!entry) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
+      return jsonResponse({ error: "Not found" }, { status: 404 });
     }
+    assertJournalAccountScope(ctx.organizationId, entry.lines);
 
     const result = {
       ...entry,
       lines: entry.lines.map((l) => ({
+        ...journalLineDto(l, true),
+        account: undefined,
         id: l.id,
         accountId: l.accountId,
         accountCode: l.account?.code || "",
         accountName: l.account?.name || "",
         description: l.description,
-        debitAmount: centsToDecimal(l.debitAmount),
-        creditAmount: centsToDecimal(l.creditAmount),
         currencyCode: l.currencyCode,
         exchangeRate: l.exchangeRate,
       })),
     };
 
-    return NextResponse.json({ entry: result });
+    return jsonResponse({ entry: result });
   } catch (err) {
     return handleError(err);
   }
@@ -97,7 +91,10 @@ export async function PUT(
     requireRole(ctx, "edit:entries");
 
     const body = await request.json();
-    const parsed = updateSchema.parse(body);
+    const raw = updateSchema.parse(body);
+    const parsed = { ...raw, lines: raw.lines.map(journalLineInput) };
+    journalTotals(parsed.lines);
+    await assertJournalReferences(ctx.organizationId, parsed.lines, parsed.fiscalYearId);
 
     const existing = await db.query.journalEntry.findFirst({
       where: and(
@@ -107,10 +104,10 @@ export async function PUT(
     });
 
     if (!existing) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
+      return jsonResponse({ error: "Not found" }, { status: 404 });
     }
     if (existing.status !== "draft") {
-      return NextResponse.json(
+      return jsonResponse(
         {
           error:
             "Only draft entries can be edited. Void the posted entry and create a new one to make changes.",
@@ -126,22 +123,6 @@ export async function PUT(
       await assertNotLocked(ctx.organizationId, parsed.date);
     }
 
-    // Re-validate balance on the new lines.
-    const totalDebit = parsed.lines.reduce((sum, l) => sum + l.debitAmount, 0);
-    const totalCredit = parsed.lines.reduce((sum, l) => sum + l.creditAmount, 0);
-    if (totalDebit !== totalCredit) {
-      return NextResponse.json(
-        { error: "Debits must equal credits" },
-        { status: 400 }
-      );
-    }
-    if (totalDebit === 0) {
-      return NextResponse.json(
-        { error: "Entry must have non-zero amounts" },
-        { status: 400 }
-      );
-    }
-
     const updated = await db.transaction(async (tx) => {
       const [entry] = await tx
         .update(journalEntry)
@@ -152,8 +133,9 @@ export async function PUT(
           fiscalYearId: parsed.fiscalYearId ?? null,
           updatedAt: new Date(),
         })
-        .where(eq(journalEntry.id, id))
+        .where(and(eq(journalEntry.id, id), eq(journalEntry.organizationId, ctx.organizationId), eq(journalEntry.status, "draft")))
         .returning();
+      if (!entry) throw new AuthError("Entry changed before edit", 409);
 
       // Full line replace.
       await tx.delete(journalLine).where(eq(journalLine.journalEntryId, id));
@@ -166,6 +148,8 @@ export async function PUT(
           creditAmount: l.creditAmount,
           currencyCode: l.currencyCode,
           exchangeRate: l.exchangeRate,
+          rateExact: l.rateExact,
+          rateDirection: l.rateDirection,
           costCenterId: l.costCenterId ?? null,
           projectId: l.projectId ?? null,
         }))
@@ -174,7 +158,7 @@ export async function PUT(
       return entry;
     });
 
-    logAudit({
+    await logAudit({
       ctx,
       action: "update",
       entityType: "journal_entry",
@@ -199,7 +183,7 @@ export async function PUT(
       request,
     });
 
-    return NextResponse.json({ entry: updated });
+    return jsonResponse({ entry: updated });
   } catch (err) {
     return handleError(err);
   }
@@ -215,28 +199,7 @@ export async function DELETE(
   try {
     const { id } = await params;
     const ctx = await getAuthContext(request);
-
-    const entry = await db.query.journalEntry.findFirst({
-      where: and(
-        eq(journalEntry.id, id),
-        eq(journalEntry.organizationId, ctx.organizationId)
-      ),
-    });
-
-    if (!entry) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
-    }
-    if (entry.status !== "draft") {
-      return NextResponse.json(
-        { error: "Only draft entries can be deleted" },
-        { status: 400 }
-      );
-    }
-
-    await db.delete(journalLine).where(eq(journalLine.journalEntryId, id));
-    await db.delete(journalEntry).where(eq(journalEntry.id, id));
-
-    return NextResponse.json({ success: true });
+    return jsonResponse(await deleteDraftJournal(ctx, id, request));
   } catch (err) {
     return handleError(err);
   }

@@ -102,3 +102,18 @@ custom permissions, deleted/inconsistent references, quote states/replay, unsafe
 raw history and preflight before activity/status writes. An activity-trigger failure
 verifies transaction rollback. Browser/HTTP OAuth, providers/PDF/full ledger and
 frontend display remain assigned work.
+
+## MON-035 journal CRUD contracts
+
+Three pure `journal-wire.test.ts` groups cover numeric/exact/dual aliases, zero
+defaults, USD/IRR/JPY/KWD unit preservation, saved exact FX, conflicting syntax/
+units/ranges, raw sum and FX-product overflow and lossless REST fixed-two-decimal
+strings. `tests/integration/journal-wire.test.ts` migrates a disposable database
+and invokes actual REST/API-key/custom-role and MCP SDK/InMemoryTransport tools.
+It covers five CRUD operations, above-int32/safe-max values, invalid monetary/date/
+dimension inputs with mutation/audit snapshots, both tenant directions, old/new
+period locks and closed years, posted immutability, atomic create/edit rollback
+via a PostgreSQL leg trigger, unsafe sums/history, base-amount read preservation,
+invalid historical rates and deletion cascades. Lifecycle/import and recurring
+qualification remain MON-036/037; posting/domain and HTTP OAuth/browser remain
+their assigned gates. No schema or rollout change is implied.

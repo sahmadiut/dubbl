@@ -62,10 +62,11 @@ class ControllerTests(unittest.TestCase):
         self.runcli('done',id)
 
     def test_initial_graph_has_one_ready_task(self):
+        task_count=len(list((self.root/'tasks').glob('*.md')))
         state=self.runcli('status')
         self.assertEqual(state['ready'],['AUD-001'])
-        self.assertEqual(state['total'],60)
-        self.assertEqual(state['counts'],{'todo':60})
+        self.assertEqual(state['total'],task_count)
+        self.assertEqual(state['counts'],{'todo':task_count})
 
     def test_dependency_start_rejected_without_mutation(self):
         before=(self.root/'tasks/AUD-002.md').read_bytes()
@@ -266,23 +267,41 @@ class ControllerTests(unittest.TestCase):
         self.assertIn('Technical lead',context)
         self.assertIn('docs/REPOSITORY_MAP.md',context)
 
-    def test_full_graph_can_resolve_without_deadlock(self):
+    def assert_graph_resolves(self):
         # Synthetic simulation verifies the shipped dependency graph, not actual delivery.
+        expected_ids={agent.Task(path).id for path in (self.root/'tasks').glob('*.md')}
         completed=[]
-        for _ in range(65):
+        for _ in range(len(expected_ids)+1):
             p=agent.Project(self.root);t=p.next()
             if not t:break
             id=t.id
+            self.assertNotIn(id,completed,'A resolved task was selected again')
             if t.meta['optional']:
                 self.runcli('skip',id,'--reason','Synthetic graph test deferral','--reviewer','synthetic-owner','--evidence',self.evidence(id+'-waiver.md'))
             else:
                 self.finish(id,'human' if t.meta['human_review'] else 'self')
             completed.append(id)
         state=self.runcli('status')
-        self.assertEqual(len(completed),60)
+        self.assertCountEqual(completed,expected_ids)
         self.assertIsNone(state['next'])
         self.assertEqual(state['blocked'],[])
         self.assertEqual(state['waiting'],[])
+
+    def test_full_graph_can_resolve_without_deadlock(self):
+        self.assert_graph_resolves()
+
+    def test_graph_resolution_includes_new_split_child(self):
+        # Add a child only to this test's copied backlog; retain parent acceptance.
+        parent=agent.Task(self.root/'tasks/MON-006.md')
+        child=agent.Task(self.root/'tasks/MON-011.md')
+        child.path=self.root/'tasks/TST-001.md'
+        child.meta.update(id='TST-001',title='Synthetic split child',
+                          depends_on=list(parent.meta['depends_on']))
+        child.save()
+        parent.meta['depends_on'].append('TST-001')
+        parent.save()
+        self.runcli('validate')
+        self.assert_graph_resolves()
 
 if __name__=='__main__':
     unittest.main()

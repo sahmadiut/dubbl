@@ -9,8 +9,8 @@ export type WireRepresentation = "legacy" | "exact";
 export class WireCompatibilityError extends RangeError {
   readonly code = "LEGACY_NUMERIC_RANGE";
   readonly status = 422;
-  constructor() {
-    super("Value cannot be represented safely by the legacy numeric contract; an exact string contract is required");
+  constructor(message = "Value cannot be represented safely by the legacy numeric contract; an exact string contract is required") {
+    super(message);
     this.name = "WireCompatibilityError";
   }
 }
@@ -82,12 +82,14 @@ export function moneyDto(value: Money, representation: WireRepresentation = "leg
 }
 
 /** Legacy rate input is integer millionths, never unscaled decimal Number. */
-export const rateInputSchema = z.object({
+export const rateInputFields = {
   rate: z.number().int().positive().max(2147483647).optional()
     .describe("Optional positive int32 millionths; 1000000 = 1 quote unit per base unit"),
   rateExact: exactRateSchema.optional().describe("Optional exact quote-per-base decimal string"),
   rateDirection: z.literal(FX_DIRECTION).default(FX_DIRECTION).describe("Explicit quote units per one base unit"),
-}).strict().superRefine((value, ctx) => {
+};
+
+export const rateInputSchema = z.object(rateInputFields).strict().superRefine((value, ctx) => {
   if (value.rate === undefined && value.rateExact === undefined) {
     ctx.addIssue({ code: "custom", message: "Provide rate or rateExact", path: ["rateExact"] });
   }
@@ -100,6 +102,11 @@ export const rateInputSchema = z.object({
   rateExact: value.rateExact ?? fromLegacyRate(value.rate!), rateDirection: value.rateDirection,
 }));
 
+type ExactRateDto = { rateExact: string; rateDirection: typeof FX_DIRECTION };
+type LegacyRateDto = ExactRateDto & { rate: number };
+export function rateDto(value: string, representation?: "legacy"): LegacyRateDto;
+export function rateDto(value: string, representation: "exact"): ExactRateDto;
+export function rateDto(value: string, representation: WireRepresentation): LegacyRateDto | ExactRateDto;
 export function rateDto(value: string, representation: WireRepresentation = "legacy") {
   const rateExact = exactRate(value);
   assertRepresentation(representation);

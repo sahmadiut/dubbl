@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { jsonResponse } from "@/lib/api/json-response";
 import { db } from "@/lib/db";
 import { exchangeRate } from "@/lib/db/schema";
 import { eq, and, gte, lte, desc, sql } from "drizzle-orm";
@@ -7,11 +7,14 @@ import { requireRole } from "@/lib/api/require-role";
 import { handleError } from "@/lib/api/response";
 import { logAudit } from "@/lib/api/audit";
 import { parsePagination, paginatedResponse } from "@/lib/api/pagination";
-import { manualRateSchema, manualProviderMetadata } from "@/lib/currency/rate-input";
+import { manualProviderMetadata } from "@/lib/currency/rate-input";
+import { manualWireRateSchema, storedRateDto } from "@/lib/currency/rate-wire";
+import { rateDateSchema } from "@/lib/currency/rate-policy";
+import { currencyCodeSchema } from "@/lib/currency/zod";
 import { z } from "zod";
 
 const createSchema = z.object({
-  rates: z.array(manualRateSchema).min(1).max(500),
+  rates: z.array(manualWireRateSchema).min(1).max(500),
 });
 
 export async function GET(request: Request) {
@@ -28,16 +31,16 @@ export async function GET(request: Request) {
     const conditions = [eq(exchangeRate.organizationId, ctx.organizationId)];
 
     if (startDate) {
-      conditions.push(gte(exchangeRate.date, startDate));
+      conditions.push(gte(exchangeRate.date, rateDateSchema.parse(startDate)));
     }
     if (endDate) {
-      conditions.push(lte(exchangeRate.date, endDate));
+      conditions.push(lte(exchangeRate.date, rateDateSchema.parse(endDate)));
     }
     if (baseCurrency) {
-      conditions.push(eq(exchangeRate.baseCurrency, baseCurrency));
+      conditions.push(eq(exchangeRate.baseCurrency, currencyCodeSchema.parse(baseCurrency)));
     }
     if (targetCurrency) {
-      conditions.push(eq(exchangeRate.targetCurrency, targetCurrency));
+      conditions.push(eq(exchangeRate.targetCurrency, currencyCodeSchema.parse(targetCurrency)));
     }
 
     const where = and(...conditions);
@@ -54,7 +57,7 @@ export async function GET(request: Request) {
       .from(exchangeRate)
       .where(where);
 
-    return NextResponse.json(paginatedResponse(rates, count, page, limit));
+    return jsonResponse(paginatedResponse(rates.map(storedRateDto), count, page, limit));
   } catch (err) {
     return handleError(err);
   }
@@ -73,6 +76,7 @@ export async function POST(request: Request) {
       baseCurrency: r.baseCurrency,
       targetCurrency: r.targetCurrency,
       rate: r.rate,
+      rateExact: r.rateExact,
       date: r.date,
       source: "manual" as const,
       ...manualProviderMetadata,
@@ -90,6 +94,7 @@ export async function POST(request: Request) {
         ],
         set: {
           rate: sql`excluded.rate`,
+          rateExact: sql`excluded.rate_exact`,
           source: sql`excluded.source`,
           ...manualProviderMetadata,
         },
@@ -97,10 +102,10 @@ export async function POST(request: Request) {
       .returning();
 
     for (const rate of created) {
-      logAudit({ ctx, action: "create", entityType: "exchange_rate", entityId: rate.id, request });
+      await logAudit({ ctx, action: "create", entityType: "exchange_rate", entityId: rate.id, request });
     }
 
-    return NextResponse.json({ exchangeRates: created }, { status: 201 });
+    return jsonResponse({ exchangeRates: created.map(storedRateDto) }, { status: 201 });
   } catch (err) {
     return handleError(err);
   }

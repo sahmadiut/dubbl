@@ -48,6 +48,16 @@ high-range posting remains MON-006/007/010, not a pass inferred from storage or
 helper tests. See `../evidence/MON-005-attempt-1.md` and ADR-005. The initial
 matrix above remains the original requirements list, not a current dashboard.
 
+MON-013 adds `tests/rate-wire.test.ts` and the disposable PostgreSQL
+`tests/integration/fx-wire.test.ts`/worker. Actual exchange-rate REST exports use
+hashed synthetic API keys/member permissions and two tenants; registered MCP
+validators/handlers use direct DB access. Fixtures cover numeric/exact aliases,
+bulk pre-write rejection, max/tiny rates, ID mutation tenant filters, manual
+provenance clearing/audits, inverse/missing quotes and bounded conversion preview.
+This qualifies the [FX slice](../registries/FX_WIRE_CONTRACTS.md), not OAuth/session,
+frontend or endpoint-wide/full-range posting. MON-014/015/016 and parent
+MON-012/006 retain remaining contract/integration acceptance.
+
 Use en-US/fa-IR; LTR/RTL; Latin/Persian/Arabic-Indic input; Gregorian/Persian display; IRR/USD/EUR and a three-decimal currency; zero, negative, large and boundary amounts; desktop/mobile; old/new API clients; clean/upgrade databases. A translated UI alone does not satisfy accounting tests.
 
 ## Pull request pipeline

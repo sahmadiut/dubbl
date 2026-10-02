@@ -73,7 +73,11 @@ nonfinite values produce `WireCompatibilityError` / `LEGACY_NUMERIC_RANGE` (422)
 Explicit exact mode serializes bigint as integer strings and rejects already
 unsafe Numbers. No global BigInt prototype changes or magnitude-based fallback.
 
-Endpoint/tool adoption and advertised exact capabilities remain MON-012 work.
+The currency FX REST/MCP slice now accepts `rateExact` aliases during lossless
+int32-millionths coexistence; see [FX contracts](../../.agentic/registries/FX_WIRE_CONTRACTS.md)
+for actual operations, units and unsupported ranges. Legacy conversion preview
+is limited to matching currency scales and safe integer intermediate products.
+Remaining endpoint/tool adoption remains MON-012 and its domain children.
 Direct NextResponse calls, domain input schemas and raw SQL aggregates require
 their own migration. The ORM still exposes safe numbers; full-range business
 paths remain MON-007/008. Serializing a handler result cannot undo earlier writes;

@@ -29,3 +29,5 @@ MON-006 retains final API compatibility integration acceptance. Its implementati
 The plan's broad milestones are decomposed into 60 initial tasks with dependencies, role ownership, criteria and evidence. Split oversized tasks through the controller guide and preserve parent acceptance gates. Optional scope remains visible. Source inspection and evidence determine implementation truth; neither the plan nor tracker counts prove working features.
 
 Auxiliary money consumers, public/signing/PDF boundaries, credit allocations/refunds, reports, imports/exports/views, providers, backup/restore and delayed compatibility cleanup remain covered. Statutory obligations and future monetary rules require explicit scope and official evidence. Owner decisions in docs/DECISIONS.md continue to govern execution.
+
+MON-012 retains rollout integration acceptance after its children MON-013 (currency FX), MON-014 (core accounting), MON-015 (auxiliary/report) and MON-016 (public/opaque). All inherit the migration/API source sections and MON-011 prerequisites.

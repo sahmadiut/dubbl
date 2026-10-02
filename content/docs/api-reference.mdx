@@ -39,6 +39,46 @@ x-organization-id: your-org-id
 /api/v1/
 ```
 
+## Exchange rate inputs
+
+`POST /api/v1/exchange-rates` accepts a batch of manual rates. Exact clients can
+send a decimal string in `rateExact`:
+
+```json
+{
+  "rates": [
+    {
+      "baseCurrency": "USD",
+      "targetCurrency": "EUR",
+      "date": "2026-10-02",
+      "rateExact": "0.9",
+      "rateDirection": "quote_per_base"
+    }
+  ]
+}
+```
+
+This synthetic example means 0.9 EUR per 1 USD. The existing numeric `rate` input
+remains integer millionths: `900000` represents the same quote. If both fields
+are supplied, they must agree. `PUT /api/v1/exchange-rates/{id}` accepts either
+alias too. Responses preserve numeric `rate` and return the normalized string
+`rateExact`, direction and storage/provenance metadata.
+
+During legacy coexistence, saved rates must fit 0.000001 through 2147.483647 with
+at most six decimal places. A valid exact string outside that range returns HTTP
+422 with `code: "LEGACY_NUMERIC_RANGE"` before writing any rate in the batch.
+Invalid or conflicting aliases return 400. Same-currency quotes must equal 1.
+Writes require `manage:tax-config` permission and operate within the authenticated
+organization. Dates are Gregorian `YYYY-MM-DD`.
+
+The MCP `set_exchange_rate` tool accepts `rateExact` too. Its original numeric
+field, `rateDecimal`, is **unscaled** (0.9 in this example), unlike REST `rate`.
+MCP historical inverse lookups return a string rounded to 18 decimal places
+alongside a legacy numeric rate rounded to six places. The `convert_amount`
+tool remains a legacy numeric preview for currencies with matching minor-unit
+scales and safe intermediate products; full-range amount strings and mixed-scale
+conversion are not available in that operation yet.
+
 ## Response Format
 
 <Tabs items={["Success", "Error"]}>

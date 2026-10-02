@@ -8,6 +8,7 @@ import { test } from "node:test";
 import pg from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { journalLine } from "../../lib/db/schema/bookkeeping";
+import { WireCompatibilityError } from "../../lib/money/wire";
 import { withDatabase, historicalSchema, applyCurrent, runMigration } from "./fixtures";
 
 type Column = { table: string; column: string; before: string; after: string };
@@ -142,7 +143,8 @@ test("MON-003 widens all 195 columns, preserving every table checksum, nullabili
       await pool.query("UPDATE journal_line SET debit_amount = $1", [value]);
       assert.equal((await pool.query("SELECT debit_amount::text AS value FROM journal_line")).rows[0].value, value);
       if (BigInt(value) > BigInt(Number.MAX_SAFE_INTEGER) || BigInt(value) < BigInt(Number.MIN_SAFE_INTEGER)) {
-        await assert.rejects(db.select({ amount: journalLine.debitAmount }).from(journalLine), /safe-number/);
+        await assert.rejects(db.select({ amount: journalLine.debitAmount }).from(journalLine), (error: unknown) =>
+          error instanceof WireCompatibilityError && error.code === "LEGACY_NUMERIC_RANGE" && error.status === 422);
       } else {
         assert.equal((await db.select({ amount: journalLine.debitAmount }).from(journalLine))[0].amount, Number(value));
       }

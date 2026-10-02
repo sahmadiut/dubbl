@@ -307,7 +307,7 @@ REST and MCP retain safe numeric **stored minor-unit** `debitAmount` and
 `creditAmount` (USD cents), and add canonical `debitAmountMinor` and
 `creditAmountMinor` strings on legs. Both input aliases must agree. Each leg has
 one positive side; summed debits equal credits and must fit safe integers
-(<=9007199254740991). Malformed/conflicting inputs fail validation; unsupported
+(`<=9007199254740991`). Malformed/conflicting inputs fail validation; unsupported
 numeric ranges return 422 `LEGACY_NUMERIC_RANGE` before mutation.
 
 Saved `currencyCode` is retained on partial edits and posted verbatim without

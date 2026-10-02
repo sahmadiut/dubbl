@@ -1,0 +1,547 @@
+{
+  "app/(dashboard)/accounting/[id]/page.tsx": {
+    "formatMoney": 9,
+    "decimalToCents": 3
+  },
+  "app/(dashboard)/accounting/accounts/[id]/layout.tsx": {
+    "formatMoney": 4
+  },
+  "app/(dashboard)/accounting/accruals/[id]/page.tsx": {
+    "formatMoney": 5
+  },
+  "app/(dashboard)/accounting/accruals/page.tsx": {
+    "formatMoney": 3
+  },
+  "app/(dashboard)/accounting/asset-categories/page.tsx": {
+    "formatMoney": 2,
+    "parseMoney": 2
+  },
+  "app/(dashboard)/accounting/banking/[id]/(detail)/layout.tsx": {
+    "formatMoney": 4
+  },
+  "app/(dashboard)/accounting/banking/[id]/_components.tsx": {
+    "formatMoney": 39,
+    "centsToDecimal": 12
+  },
+  "app/(dashboard)/accounting/banking/[id]/reconcile/page.tsx": {
+    "formatMoney": 7
+  },
+  "app/(dashboard)/accounting/banking/batches/[id]/page.tsx": {
+    "formatMoney": 6
+  },
+  "app/(dashboard)/accounting/banking/batches/page.tsx": {
+    "formatMoney": 4,
+    "parseMoney": 3
+  },
+  "app/(dashboard)/accounting/banking/page.tsx": {
+    "formatMoney": 6
+  },
+  "app/(dashboard)/accounting/banking/scheduled/page.tsx": {
+    "formatMoney": 3,
+    "parseMoney": 2
+  },
+  "app/(dashboard)/accounting/budgets/[id]/layout.tsx": {
+    "formatMoney": 5
+  },
+  "app/(dashboard)/accounting/budgets/[id]/page.tsx": {
+    "formatMoney": 20
+  },
+  "app/(dashboard)/accounting/budgets/[id]/settings/page.tsx": {
+    "formatMoney": 2
+  },
+  "app/(dashboard)/accounting/budgets/page.tsx": {
+    "formatMoney": 10
+  },
+  "app/(dashboard)/accounting/fixed-assets/[id]/page.tsx": {
+    "formatMoney": 13
+  },
+  "app/(dashboard)/accounting/fixed-assets/page.tsx": {
+    "formatMoney": 9
+  },
+  "app/(dashboard)/accounting/loans/[id]/page.tsx": {
+    "formatMoney": 10
+  },
+  "app/(dashboard)/accounting/loans/page.tsx": {
+    "formatMoney": 5
+  },
+  "app/(dashboard)/accounting/opening-balances/page.tsx": {
+    "formatMoney": 5
+  },
+  "app/(dashboard)/accounting/page.tsx": {
+    "formatMoney": 3
+  },
+  "app/(dashboard)/accounting/recurring-journals/[id]/page.tsx": {
+    "formatMoney": 6
+  },
+  "app/(dashboard)/contacts/[id]/activity/page.tsx": {
+    "formatMoney": 2
+  },
+  "app/(dashboard)/contacts/[id]/bookkeeping/page.tsx": {
+    "decimalToCents": 2
+  },
+  "app/(dashboard)/contacts/[id]/layout.tsx": {
+    "centsToDecimal": 2
+  },
+  "app/(dashboard)/contacts/[id]/page.tsx": {
+    "decimalToCents": 2
+  },
+  "app/(dashboard)/contacts/[id]/statement/page.tsx": {
+    "formatMoney": 10
+  },
+  "app/(dashboard)/contacts/page.tsx": {
+    "formatMoney": 5
+  },
+  "app/(dashboard)/crm/analytics/page.tsx": {
+    "formatMoney": 5
+  },
+  "app/(dashboard)/crm/deals/[id]/activity/page.tsx": {
+    "formatMoney": 2
+  },
+  "app/(dashboard)/crm/deals/[id]/layout.tsx": {
+    "formatMoney": 2
+  },
+  "app/(dashboard)/crm/deals/[id]/page.tsx": {
+    "formatMoney": 3
+  },
+  "app/(dashboard)/crm/deals/[id]/settings/page.tsx": {
+    "formatMoney": 2
+  },
+  "app/(dashboard)/crm/page.tsx": {
+    "formatMoney": 5
+  },
+  "app/(dashboard)/dashboard/page.tsx": {
+    "formatMoney": 17
+  },
+  "app/(dashboard)/inventory/[id]/layout.tsx": {
+    "formatMoney": 7
+  },
+  "app/(dashboard)/inventory/[id]/page.tsx": {
+    "centsToDecimal": 4,
+    "formatMoney": 5
+  },
+  "app/(dashboard)/inventory/[id]/suppliers/page.tsx": {
+    "formatMoney": 2
+  },
+  "app/(dashboard)/inventory/[id]/variants/page.tsx": {
+    "formatMoney": 3
+  },
+  "app/(dashboard)/inventory/bom/[id]/page.tsx": {
+    "formatMoney": 6
+  },
+  "app/(dashboard)/inventory/bom/page.tsx": {
+    "formatMoney": 2
+  },
+  "app/(dashboard)/inventory/page.tsx": {
+    "formatMoney": 5
+  },
+  "app/(dashboard)/inventory/valuation/page.tsx": {
+    "formatMoney": 11
+  },
+  "app/(dashboard)/payroll/analytics/page.tsx": {
+    "formatMoney": 8
+  },
+  "app/(dashboard)/payroll/compensation/page.tsx": {
+    "formatMoney": 6
+  },
+  "app/(dashboard)/payroll/compensation/reviews/[id]/page.tsx": {
+    "formatMoney": 6
+  },
+  "app/(dashboard)/payroll/contractors/[id]/page.tsx": {
+    "formatMoney": 2
+  },
+  "app/(dashboard)/payroll/contractors/page.tsx": {
+    "formatMoney": 2
+  },
+  "app/(dashboard)/payroll/employees/[id]/page.tsx": {
+    "formatMoney": 8
+  },
+  "app/(dashboard)/payroll/employees/page.tsx": {
+    "formatMoney": 2
+  },
+  "app/(dashboard)/payroll/forecasting/page.tsx": {
+    "formatMoney": 8
+  },
+  "app/(dashboard)/payroll/page.tsx": {
+    "formatMoney": 8
+  },
+  "app/(dashboard)/payroll/reports/[type]/page.tsx": {
+    "formatMoney": 9
+  },
+  "app/(dashboard)/payroll/reports/page.tsx": {
+    "formatMoney": 4
+  },
+  "app/(dashboard)/payroll/runs/[id]/page.tsx": {
+    "formatMoney": 12
+  },
+  "app/(dashboard)/payroll/runs/[id]/payslips/page.tsx": {
+    "formatMoney": 12
+  },
+  "app/(dashboard)/payroll/runs/page.tsx": {
+    "formatMoney": 4
+  },
+  "app/(dashboard)/payroll/self-service/page.tsx": {
+    "formatMoney": 3
+  },
+  "app/(dashboard)/payroll/tax-liabilities/page.tsx": {
+    "formatMoney": 7
+  },
+  "app/(dashboard)/projects/[id]/layout.tsx": {
+    "formatMoney": 3
+  },
+  "app/(dashboard)/projects/[id]/members/page.tsx": {
+    "formatMoney": 2
+  },
+  "app/(dashboard)/projects/[id]/milestones/page.tsx": {
+    "formatMoney": 16
+  },
+  "app/(dashboard)/projects/[id]/page.tsx": {
+    "formatMoney": 18
+  },
+  "app/(dashboard)/projects/[id]/settings/page.tsx": {
+    "centsToDecimal": 4
+  },
+  "app/(dashboard)/projects/[id]/time/page.tsx": {
+    "formatMoney": 4
+  },
+  "app/(dashboard)/projects/page.tsx": {
+    "formatMoney": 5
+  },
+  "app/(dashboard)/purchases/[id]/page.tsx": {
+    "formatMoney": 9,
+    "minorUnitsToDecimal": 2
+  },
+  "app/(dashboard)/purchases/debit-notes/[id]/page.tsx": {
+    "formatMoney": 11,
+    "decimalToMinorUnits": 2,
+    "minorUnitsToDecimal": 2
+  },
+  "app/(dashboard)/purchases/debit-notes/page.tsx": {
+    "formatMoney": 6
+  },
+  "app/(dashboard)/purchases/expenses/[id]/page.tsx": {
+    "formatMoney": 6,
+    "minorUnitsToDecimal": 2,
+    "decimalToCents": 2
+  },
+  "app/(dashboard)/purchases/expenses/page.tsx": {
+    "formatMoney": 5
+  },
+  "app/(dashboard)/purchases/goods-receipts/[id]/page.tsx": {
+    "formatMoney": 5
+  },
+  "app/(dashboard)/purchases/goods-receipts/page.tsx": {
+    "formatMoney": 3
+  },
+  "app/(dashboard)/purchases/orders/[id]/page.tsx": {
+    "formatMoney": 5,
+    "centsToDecimal": 2
+  },
+  "app/(dashboard)/purchases/orders/page.tsx": {
+    "formatMoney": 5
+  },
+  "app/(dashboard)/purchases/page.tsx": {
+    "formatMoney": 7
+  },
+  "app/(dashboard)/purchases/requisitions/[id]/page.tsx": {
+    "formatMoney": 4
+  },
+  "app/(dashboard)/purchases/requisitions/page.tsx": {
+    "formatMoney": 2
+  },
+  "app/(dashboard)/reports/1099/page.tsx": {
+    "formatMoney": 4
+  },
+  "app/(dashboard)/reports/aged-payables/page.tsx": {
+    "formatMoney": 4
+  },
+  "app/(dashboard)/reports/aged-receivables/page.tsx": {
+    "formatMoney": 4
+  },
+  "app/(dashboard)/reports/bank-cash-flow/page.tsx": {
+    "formatMoney": 11
+  },
+  "app/(dashboard)/reports/bank-reconciliation-status/page.tsx": {
+    "formatMoney": 4
+  },
+  "app/(dashboard)/reports/budget-vs-actual/page.tsx": {
+    "formatMoney": 8
+  },
+  "app/(dashboard)/reports/cash-flow-forecast/page.tsx": {
+    "formatMoney": 8
+  },
+  "app/(dashboard)/reports/cash-flow/page.tsx": {
+    "formatMoney": 6
+  },
+  "app/(dashboard)/reports/comparative-balance-sheet/page.tsx": {
+    "formatMoney": 4
+  },
+  "app/(dashboard)/reports/consolidation/page.tsx": {
+    "formatMoney": 23
+  },
+  "app/(dashboard)/reports/duplicate-detection/page.tsx": {
+    "formatMoney": 2
+  },
+  "app/(dashboard)/reports/executive-summary/page.tsx": {
+    "formatMoney": 3
+  },
+  "app/(dashboard)/reports/expense-analytics/page.tsx": {
+    "formatMoney": 4
+  },
+  "app/(dashboard)/reports/financial-calendar/page.tsx": {
+    "formatMoney": 3
+  },
+  "app/(dashboard)/reports/financial-ratios/page.tsx": {
+    "formatMoney": 2
+  },
+  "app/(dashboard)/reports/general-ledger/page.tsx": {
+    "formatMoney": 7
+  },
+  "app/(dashboard)/reports/income-statement/page.tsx": {
+    "formatMoney": 4
+  },
+  "app/(dashboard)/reports/payment-performance/page.tsx": {
+    "formatMoney": 2
+  },
+  "app/(dashboard)/reports/pnl-comparison/page.tsx": {
+    "formatMoney": 5
+  },
+  "app/(dashboard)/reports/profit-and-loss/page.tsx": {
+    "formatMoney": 8
+  },
+  "app/(dashboard)/reports/profitability/page.tsx": {
+    "formatMoney": 10
+  },
+  "app/(dashboard)/reports/tax-summary/page.tsx": {
+    "formatMoney": 12
+  },
+  "app/(dashboard)/reports/tracking/page.tsx": {
+    "formatMoney": 8
+  },
+  "app/(dashboard)/reports/vat-return/page.tsx": {
+    "formatMoney": 2
+  },
+  "app/(dashboard)/reports/vendor-spend/page.tsx": {
+    "formatMoney": 4
+  },
+  "app/(dashboard)/sales/[id]/page.tsx": {
+    "formatMoney": 14,
+    "minorUnitsToDecimal": 2
+  },
+  "app/(dashboard)/sales/credit-notes/[id]/page.tsx": {
+    "formatMoney": 11,
+    "centsToDecimal": 2
+  },
+  "app/(dashboard)/sales/credit-notes/page.tsx": {
+    "formatMoney": 6
+  },
+  "app/(dashboard)/sales/customer-prepayments/[id]/page.tsx": {
+    "formatMoney": 6,
+    "minorUnitsToDecimal": 2,
+    "decimalToMinorUnits": 2
+  },
+  "app/(dashboard)/sales/customer-prepayments/page.tsx": {
+    "formatMoney": 5
+  },
+  "app/(dashboard)/sales/page.tsx": {
+    "formatMoney": 7
+  },
+  "app/(dashboard)/sales/payments/[id]/page.tsx": {
+    "formatMoney": 8,
+    "minorUnitsToDecimal": 3,
+    "decimalToMinorUnits": 2
+  },
+  "app/(dashboard)/sales/payments/page.tsx": {
+    "formatMoney": 4
+  },
+  "app/(dashboard)/sales/quotes/[id]/page.tsx": {
+    "formatMoney": 4
+  },
+  "app/(dashboard)/sales/quotes/page.tsx": {
+    "formatMoney": 4
+  },
+  "app/(dashboard)/sales/receipts/[id]/page.tsx": {
+    "formatMoney": 7
+  },
+  "app/(dashboard)/sales/receipts/page.tsx": {
+    "formatMoney": 3
+  },
+  "app/(dashboard)/sales/recurring/[id]/page.tsx": {
+    "formatMoney": 3
+  },
+  "app/(dashboard)/sales/recurring/page.tsx": {
+    "formatMoney": 2
+  },
+  "app/(dashboard)/sales/revenue-schedules/[id]/page.tsx": {
+    "formatMoney": 5
+  },
+  "app/(dashboard)/sales/revenue-schedules/page.tsx": {
+    "formatMoney": 7
+  },
+  "app/(dashboard)/tax/bas/page.tsx": {
+    "formatMoney": 7
+  },
+  "app/(dashboard)/tax/currencies/page.tsx": {
+    "formatMoney": 6
+  },
+  "app/(dashboard)/tax/periods/[id]/page.tsx": {
+    "formatMoney": 4
+  },
+  "app/(dashboard)/tax/sales-tax/page.tsx": {
+    "formatMoney": 7
+  },
+  "app/(dashboard)/tax/schedule-c/page.tsx": {
+    "formatMoney": 10
+  },
+  "app/(dashboard)/tax/vat-return/page.tsx": {
+    "formatMoney": 8
+  },
+  "app/api/v1/bank-transactions/[id]/create-expense/route.ts": {
+    "decimalToMinorUnits": 2
+  },
+  "app/api/v1/bank-transfers/route.ts": {
+    "decimalToMinorUnits": 2
+  },
+  "app/api/v1/bills/[id]/route.ts": {
+    "decimalToMinorUnits": 3
+  },
+  "app/api/v1/bills/route.ts": {
+    "decimalToMinorUnits": 3
+  },
+  "app/api/v1/contacts/[id]/statement/email/route.ts": {
+    "formatMoney": 2
+  },
+  "app/api/v1/contacts/[id]/statement/pdf/route.ts": {
+    "formatMoney": 2
+  },
+  "app/api/v1/credit-notes/route.ts": {
+    "decimalToMinorUnits": 3
+  },
+  "app/api/v1/debit-notes/route.ts": {
+    "decimalToMinorUnits": 3
+  },
+  "app/api/v1/entries/[id]/post/route.ts": {
+    "centsToDecimal": 3
+  },
+  "app/api/v1/entries/[id]/route.ts": {
+    "centsToDecimal": 3
+  },
+  "app/api/v1/entries/[id]/void/route.ts": {
+    "centsToDecimal": 3
+  },
+  "app/api/v1/entries/route.ts": {
+    "centsToDecimal": 2
+  },
+  "app/api/v1/expenses/[id]/route.ts": {
+    "decimalToMinorUnits": 2
+  },
+  "app/api/v1/expenses/route.ts": {
+    "decimalToMinorUnits": 2
+  },
+  "app/api/v1/invoices/[id]/charge-interest/route.ts": {
+    "decimalToMinorUnits": 2
+  },
+  "app/api/v1/invoices/[id]/route.ts": {
+    "decimalToMinorUnits": 3
+  },
+  "app/api/v1/invoices/bulk/route.ts": {
+    "formatMoney": 2
+  },
+  "app/api/v1/invoices/route.ts": {
+    "decimalToMinorUnits": 2
+  },
+  "app/api/v1/loans/route.ts": {
+    "decimalToCents": 2
+  },
+  "app/api/v1/payment-batches/[id]/remittance/route.ts": {
+    "formatMoney": 3
+  },
+  "app/api/v1/payments/batch/route.ts": {
+    "decimalToCents": 4
+  },
+  "app/api/v1/purchase-orders/[id]/route.ts": {
+    "decimalToMinorUnits": 3
+  },
+  "app/api/v1/purchase-orders/route.ts": {
+    "decimalToMinorUnits": 3
+  },
+  "app/api/v1/quotes/route.ts": {
+    "decimalToMinorUnits": 2
+  },
+  "app/api/v1/reports/balance-sheet/route.ts": {
+    "centsToDecimal": 5
+  },
+  "app/api/v1/reports/income-statement/route.ts": {
+    "centsToDecimal": 4
+  },
+  "app/api/v1/reports/trial-balance/route.ts": {
+    "centsToDecimal": 4
+  },
+  "app/api/v1/sales-receipts/route.ts": {
+    "decimalToMinorUnits": 3
+  },
+  "app/portal/[token]/invoices/page.tsx": {
+    "formatMoney": 2
+  },
+  "components/dashboard/cash-flow-widget.tsx": {
+    "formatMoney": 4
+  },
+  "components/dashboard/create-drawer.tsx": {
+    "formatMoney": 5,
+    "decimalToCents": 7,
+    "decimalToMinorUnits": 2
+  },
+  "components/dashboard/entry-form.tsx": {
+    "decimalToCents": 3
+  },
+  "components/dashboard/send-document-dialog.tsx": {
+    "formatMoney": 2
+  },
+  "components/ui/dual-amount.tsx": {
+    "formatMoney": 3
+  },
+  "lib/banking/importer.ts": {
+    "decimalToCents": 2
+  },
+  "lib/db/migrate-to-cents.ts": {
+    "decimalToCents": 3
+  },
+  "lib/documents/pdf-generator.ts": {
+    "formatMoney": 27
+  },
+  "lib/email/reminder-processor.ts": {
+    "formatMoney": 2
+  },
+  "lib/mcp/tools/bills.ts": {
+    "decimalToMinorUnits": 3
+  },
+  "lib/mcp/tools/bulk.ts": {
+    "formatMoney": 2
+  },
+  "lib/mcp/tools/email.ts": {
+    "formatMoney": 2
+  },
+  "lib/mcp/tools/expenses.ts": {
+    "decimalToMinorUnits": 2
+  },
+  "lib/mcp/tools/invoices.ts": {
+    "decimalToMinorUnits": 3
+  },
+  "lib/mcp/tools/payments.ts": {
+    "decimalToCents": 4
+  },
+  "lib/mcp/tools/purchasing.ts": {
+    "decimalToMinorUnits": 3,
+    "formatMoney": 3
+  },
+  "lib/mcp/tools/reports.ts": {
+    "centsToDecimal": 12
+  },
+  "lib/mcp/tools/sales-receipts.ts": {
+    "decimalToMinorUnits": 3
+  },
+  "tests/money.test.ts": {
+    "formatMoney": 5,
+    "decimalToMinorUnits": 8,
+    "minorUnitsToDecimal": 2
+  }
+}

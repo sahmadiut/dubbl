@@ -1,17 +1,18 @@
 /**
- * Integer-based money utilities.
+ * Legacy Number-based compatibility utilities. New accounting code must use
+ * lib/money/exact.ts. These functions retain existing v1 behavior until cutover.
  * All amounts are stored as integer minor units (e.g. $12.50 = 1250).
  * The number of minor units depends on the currency — most have 2, but
  * JPY/KRW have 0 and KWD/BHD/OMR have 3, so display scales per currency.
  */
 import { getCurrencyMinorUnits } from "@/lib/currency/iso4217";
 
-/** Convert integer cents to a decimal string (e.g. 1250 → "12.50") */
+/** @deprecated Use toMajorDecimal from lib/money/exact. Legacy fixed scale. */
 export function centsToDecimal(cents: number, decimals = 2): string {
   return (cents / Math.pow(10, decimals)).toFixed(decimals);
 }
 
-/** Convert a decimal string or number to integer cents (e.g. "12.50" → 1250) */
+/** @deprecated Use parseMajor with explicit currency and rounding. */
 export function decimalToCents(value: string | number, decimals = 2): number {
   const num = typeof value === "string" ? parseFloat(value) : value;
   if (isNaN(num)) return 0;
@@ -26,6 +27,7 @@ export function decimalToCents(value: string | number, decimals = 2): number {
  * the codebase threads the document currency through to amount conversion
  * (alongside a one-off migration of any existing non-2dp data).
  */
+/** @deprecated Use parseMajor from lib/money/exact. */
 export function decimalToMinorUnits(
   value: string | number,
   currency = "USD"
@@ -33,6 +35,7 @@ export function decimalToMinorUnits(
   return decimalToCents(value, getCurrencyMinorUnits(currency));
 }
 
+/** @deprecated Use toMajorDecimal from lib/money/exact. */
 export function minorUnitsToDecimal(units: number, currency = "USD"): string {
   return centsToDecimal(units, getCurrencyMinorUnits(currency));
 }
@@ -42,6 +45,7 @@ export function minorUnitsToDecimal(units: number, currency = "USD"): string {
  * Scales and sets fraction digits by the currency's real minor units, so
  * 1250 → "$12.50" (USD), 1250 → "¥1,250" (JPY), 1250 → "KWD 1.250" (KWD).
  */
+/** @deprecated Legacy Number formatter; exact locale adapter is later boundary work. */
 export function formatMoney(
   cents: number,
   currency = "USD",
@@ -57,18 +61,18 @@ export function formatMoney(
   }).format(amount);
 }
 
-/** Parse a user-entered money string to cents (strips symbols/commas) */
+/** @deprecated Legacy permissive parser; use strict parseMajor after locale normalization. */
 export function parseMoney(input: string): number {
   const cleaned = input.replace(/[^0-9.\-]/g, "");
   return decimalToCents(cleaned);
 }
 
-/** Calculate tax amount in cents from a pre-tax amount in cents */
+/** @deprecated Use taxMoney with explicit rounding. */
 export function calculateTax(amountCents: number, ratePercent: number): number {
   return Math.round(amountCents * (ratePercent / 100));
 }
 
-/** Add tax to an amount, returning { net, tax, gross } all in cents */
+/** @deprecated Use taxMoney and addMoney. */
 export function addTax(
   netCents: number,
   ratePercent: number
@@ -77,7 +81,7 @@ export function addTax(
   return { net: netCents, tax, gross: netCents + tax };
 }
 
-/** Sum an array of cent values safely */
+/** @deprecated Use sumMoney; this legacy sum does not enforce safe integer bounds. */
 export function sumCents(values: number[]): number {
   return values.reduce((a, b) => a + b, 0);
 }

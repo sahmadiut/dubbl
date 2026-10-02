@@ -1,8 +1,14 @@
 # Money and FX boundary manifest
 
-Owner: MON-001. Inspected 2026-10-02 (Asia/Tehran), baseline `06b6fae`. Runtime behavior, schemas, stored values and rollout flags are unchanged.
+Inventory owner: MON-001. Inspected 2026-10-02 (Asia/Tehran), baseline `06b6fae`. MON-002 adds an internal exact-money core; schemas, stored values, legacy contracts and rollout flags remain unchanged.
 
-The [column appendix](MONEY_COLUMNS.md) has one row per actual numeric/JSON column: SQL table/column, Drizzle property, source line, type/range, units, currency source and migration owner. The [machine-readable consumer index](MONEY_BOUNDARIES.json) contains those 402 columns and 1,070 consumer files with line numbers, search tags, source hashes, currency context, range and owner. It scans 1,283 tracked source/config/documentation files and retains 20,350 lexical occurrences. All exported Drizzle numeric/JSON columns independently match the appendix, with no missing, extra or duplicate rows.
+## MON-002 primitive implementation
+
+`lib/money/exact.ts` supplies currency-tagged bigint amounts with signed int64 final bounds, strict decimal parsing, exact decimal output, addition/subtraction/sums, rational multiplication, decimal-percent tax and largest-remainder allocation. Parsing/tax/multiplication require an explicit rounding mode, including rejection of fractional minor units. Allocation conserves signed totals, with input-order remainder ties and mirrored refunds. Frozen scales in `lib/money/scales.ts` decouple arithmetic from runtime ICU upgrades. See [core contract](../../lib/money/README.md) and [attempt evidence](../evidence/MON-002-attempt-1.md).
+
+Deprecated `lib/money.ts` functions preserve their behavior for existing consumers. ESLint enforces imported-binding reference ceilings from `scripts/legacy-money-baseline.json`, blocking new imports/uses; static analysis limits are documented in the core contract. Safe-number bridges explicitly reject precision loss. This is not application-wide adoption: the remaining Number-based ledger/FX/public/UI paths retain their assigned MON-004/006/007/008 work, and IRR production readiness remains disabled.
+
+The [column appendix](MONEY_COLUMNS.md) has one row per actual numeric/JSON column: SQL table/column, Drizzle property, source line, type/range, units, currency source and migration owner. Refreshed for MON-002, the [machine-readable consumer index](MONEY_BOUNDARIES.json) contains those 402 columns and 1,074 consumer files with line numbers, search tags, source hashes, currency context, range and owner. It scans 1,289 tracked and new nonignored source/config/documentation files and retains 20,640 lexical occurrences. All exported Drizzle numeric/JSON columns independently match the appendix, with no missing, extra or duplicate rows.
 
 `python .agentic/scripts/money_inventory.py` checks source reproducibility; `--write` refreshes after reviewed changes. `node --import tsx .agentic/scripts/verify_money_inventory.mjs` checks actual Drizzle exports, column lines, consumer hashes and occurrence lines. Neither reads environment credentials or connects to DB. These are mutable registries; completed task evidence remains immutable.
 

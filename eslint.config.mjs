@@ -1,10 +1,19 @@
 import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
+import { readFileSync } from "node:fs";
+import { legacyMoneyRule } from "./scripts/eslint-legacy-money.mjs";
+
+const legacyMoneyBaseline = JSON.parse(readFileSync(new URL("./scripts/legacy-money-baseline.json", import.meta.url), "utf8"));
 
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  {
+    files: ["**/*.ts", "**/*.tsx"],
+    plugins: { money: { rules: { "no-new-legacy": legacyMoneyRule(legacyMoneyBaseline) } } },
+    rules: { "money/no-new-legacy": "error" },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:

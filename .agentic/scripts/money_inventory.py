@@ -234,8 +234,9 @@ def classify(table, field, typ, source):
 
 
 def generate():
-    tracked = subprocess.check_output(["git", "ls-files", "-z"], cwd=ROOT).decode().split("\0")
-    paths = sorted(p for p in tracked if p and Path(p).suffix in {".ts", ".tsx", ".js", ".mjs", ".json", ".mdx"}
+    # Include new nonignored source before commit as well as tracked source.
+    tracked = subprocess.check_output(["git", "ls-files", "--cached", "--others", "--exclude-standard", "-z"], cwd=ROOT).decode().split("\0")
+    paths = sorted(p for p in set(tracked) if p and Path(p).suffix in {".ts", ".tsx", ".js", ".mjs", ".json", ".mdx"}
                    and not p.startswith((".agentic/", "drizzle/")) and p not in {"package-lock.json", "pnpm-lock.yaml"})
     schema = []
     tables = {}
@@ -286,6 +287,8 @@ def generate():
             owner = "MON-006 contracts; MON-007 core/MON-008 auxiliary arithmetic"
         elif path.startswith(("app/", "components/")):
             owner = "MON-008; LOC-003 formatting/input"
+        elif path.startswith("lib/money/"):
+            owner = "MON-002 exact primitives; MON-009 currency regimes"
         elif path.startswith("lib/currency/"):
             owner = "MON-002 primitives; MON-004/005 FX; MON-009 metadata"
         elif path.startswith(("tests/", "scripts/")):
@@ -293,8 +296,8 @@ def generate():
         else:
             owner = "MON-007 core/MON-008 auxiliary; MON-006 serialization"
         consumers.append(dict(path=path, sha256=hashlib.sha256(source.replace("\r\n", "\n").encode()).hexdigest(),
-                              table_references=sorted(refs), units="per referenced column; mixed money/FX/quantity/percent; helper args are legacy Number",
-                              range="Number safe integer +/-9007199254740991; DB columns int32; intermediates/SQL casts may narrow",
+                              table_references=sorted(refs), units="currency-tagged bigint minor units; rational operands have explicit units" if path.startswith("lib/money/") else "per referenced column; mixed money/FX/quantity/percent; legacy Number candidates require inspection",
+                              range="signed int64 final amounts; arbitrary-precision intermediate ratios" if path.startswith("lib/money/") else "Number safe integer +/-9007199254740991; DB columns int32; intermediates/SQL casts may narrow",
                               currency_sources={t: tables[t] for t in sorted(refs)},
                               currency_resolution="explicit currency props/arguments or organization context; absent currency defaults must be reviewed, never infer from locale",
                               migration_owner=owner, occurrences=matches))

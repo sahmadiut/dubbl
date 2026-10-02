@@ -173,13 +173,14 @@ jobs:
             exit 1
           fi
 
-  # On merge to master: apply pending migrations to the production database.
+  # Deployment opt-in only: ordinary development pushes never migrate a target DB.
+  # Set repository variable AUTO_MIGRATE=true only for an authorized deployment.
   # DATABASE_URL is a repository secret — it is never stored in the repo.
   migrate:
     name: Apply Migrations
     runs-on: ubuntu-latest
     needs: [lint, typecheck, test, integration, controller]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master' && vars.AUTO_MIGRATE == 'true'
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

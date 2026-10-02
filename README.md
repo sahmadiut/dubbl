@@ -140,6 +140,8 @@ TEST_DATABASE_URL=postgresql://test_user:test_password@localhost:5432/test_datab
 
 The suite creates and removes randomly named test databases; it does not migrate or reset the connection's existing database. See the [CI runbook](.agentic/docs/CI_RUNBOOK.md) for Windows commands, fixture coverage and known qualification gaps.
 
+GitHub Actions tests migrations against a temporary PostgreSQL database. Applying migrations to a deployment database is disabled by default. Enable the `Apply Migrations` job only for an authorized deployment by setting the repository variable `AUTO_MIGRATE` to `true` and configuring the `DATABASE_URL` repository secret for that target. Leave `AUTO_MIGRATE` unset or `false` during local development. Local `.env` files are not uploaded to CI.
+
 ## Self-Hosting
 
 See the [Self-Hosting Guide](https://dubbl.dev/docs/self-hosting) for instructions on deploying dubbl with Docker.

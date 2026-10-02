@@ -245,6 +245,9 @@ full-range reporting or production IRR readiness.
 | DELETE | `/api/v1/entries/:id` | Delete a draft entry and its lines |
 | POST | `/api/v1/entries/:id/post` | Post entry |
 | POST | `/api/v1/entries/:id/void` | Void entry |
+| POST | `/api/v1/entries/recode` | Reclassify scoped line dimensions |
+| POST | `/api/v1/bulk/entries/preview` | Preview grouped journal imports |
+| POST | `/api/v1/bulk/entries/import` | Import grouped journal entries |
 
 Journal CRUD accepts line `debitAmountMinor` and `creditAmountMinor` canonical
 nonnegative integer strings alongside legacy `debitAmount`/`creditAmount` minor-unit
@@ -269,7 +272,27 @@ minor-unit numeric output plus exact aliases. REST create retains its existing
 base-balance check for mixed currencies/rates, including per-line rounding slack
 and safe FX-product limits; REST replacement and MCP create/update retain raw
 debit/credit equality. These aliases do not enable full-int64 domain posting.
-Post/void/import and recurring contracts have separate qualification work.
+Post/void REST responses also include exact leg aliases and saved FX. Posting
+requires `post:entries` and rechecks locks; void requires `void:entries` and writes
+an atomic mirror without another FX conversion. Recode requires `edit:entries`,
+scoped target dimensions and unlocked dates; `draftOnly=false` explicitly includes
+posted entries. MCP lifecycle tools expose the corresponding header/count outputs.
+
+REST bulk import/preview legacy `debit`/`credit` is fixed-two-decimal input:
+`"12.50"` means 1250 stored units. MCP `import_journal_entries` and the new
+`preview_journal_entries` retain integer cents: `1250` means 1250 units. Both accept
+canonical `debitAmountMinor`/`creditAmountMinor` strings, with dual agreement and
+safe-number value/group-sum limits. Prefer REST decimal strings; numeric decimal
+input above `2^45 - 1` requires text or exact aliases. Extra fractional digits and
+malformed inputs are rejected rather than rounded. Preview adds `totalDebitMinor`,
+`totalCreditMinor` and `imbalanceMinor` strings. Imported legs retain legacy USD/
+1:1 defaults; currency-aware decimal import is not introduced.
+
+Import requires `manage:entries`, plus `post:entries` for `post=true`. Malformed
+wire input fails before job creation. Business-invalid groups are reported in the
+job; valid groups commit independently with atomic headers/legs. Sources are
+quickbooks, xero, freshbooks, wave or custom, and grouped dates/memos/references
+must agree. Recurring and full exact domain qualification remain separate work.
 
 ### Banking
 | Method | Path | Description |

@@ -113,5 +113,14 @@ MCP retains safe minor-unit numbers. Amount/sum/legacy FX-product ranges are gua
 before writes, and adopted reads select saved FX as SQL text. The new MCP
 `delete_entry` matches scoped, locked, draft-only REST deletion. See
 [journal contracts](../../.agentic/registries/JOURNAL_WIRE_CONTRACTS.md), including
-the existing REST/MCP balance-policy difference and remaining lifecycle/import/
-recurring/full-domain qualification.
+the existing REST/MCP balance-policy difference.
+
+Journal post/void/recode/scheduling and bulk imports share scoped direct-DB services.
+Post/void REST responses include exact leg aliases and saved FX; reversal swaps
+stored amounts without reconversion. MCP posting rechecks locks; recode validates
+target ownership and retains money/rates. REST import decimal `12.50` and MCP
+integer `1250` retain 1250 units; both accept exact minor-unit aliases. Each imported
+header/legs is atomic, and MCP preview supplies exact totals. See
+[lifecycle/import contracts](../../.agentic/registries/JOURNAL_LIFECYCLE_WIRE_CONTRACTS.md)
+for ranges, formats, errors, partial-job semantics and remaining recurring/
+scheduled/full-domain qualification.

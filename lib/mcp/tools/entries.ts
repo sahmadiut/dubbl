@@ -9,7 +9,7 @@ import { journalEntry, journalLine } from "@/lib/db/schema";
 import { eq, and, desc, sql, gte, lte, isNull } from "drizzle-orm";
 import { requireRole } from "@/lib/api/require-role";
 import { assertNotLocked } from "@/lib/api/period-lock";
-import { reverseJournalEntry } from "@/lib/api/journal-automation";
+import { postJournal, voidJournal, setJournalAutoReverseDate, recodeJournals, recodeFields } from "@/lib/api/journal-lifecycle";
 import { wrapTool } from "@/lib/mcp/errors";
 import { checkMonthlyLimit } from "@/lib/api/check-limit";
 import { logAudit } from "@/lib/api/audit";
@@ -238,98 +238,19 @@ export function registerEntryTools(server: McpServer, ctx: AuthContext) {
 
   server.tool(
     "post_entry",
-    "Post a draft journal entry to make it final. Only draft entries can be posted. Posted entries affect account balances.",
-    {
-      entryId: z.string().describe("The UUID of the draft entry to post"),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        requireRole(ctx, "post:entries");
-
-        const entry = await db.query.journalEntry.findFirst({
-          where: and(
-            eq(journalEntry.id, params.entryId),
-            eq(journalEntry.organizationId, ctx.organizationId)
-          ),
-        });
-
-        if (!entry) throw new Error("Entry not found");
-        if (entry.status !== "draft") {
-          throw new Error("Only draft entries can be posted");
-        }
-
-        const [updated] = await db
-          .update(journalEntry)
-          .set({
-            status: "posted",
-            postedAt: new Date(),
-            updatedAt: new Date(),
-          })
-          .where(eq(journalEntry.id, params.entryId))
-          .returning();
-
-        return { entry: updated };
-      })
+    "Post an organization-owned draft journal. Checks permission, saved money/rate ranges, active dimensions and period locks before the atomic status change. Returns the posted header; no money input.",
+    { entryId: z.string().uuid().describe("Draft entry UUID") },
+    params => wrapTool(ctx, async () => ({ entry: (await postJournal(ctx, params.entryId)).entry }))
   );
 
   server.tool(
     "void_entry",
-    "Reverse a posted journal entry. Posts a mirror entry (debits/credits swapped) dated the original entry's date and marks the original as reversed; both stay posted so the pair nets to zero in reports and the audit trail is preserved. Blocked if the period is locked or the entry was already reversed.",
-    {
-      entryId: z
-        .string()
-        .describe("The UUID of the posted entry to void"),
-      reason: z.string().describe("Reason for voiding"),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        requireRole(ctx, "void:entries");
-
-        const entry = await db.query.journalEntry.findFirst({
-          where: and(
-            eq(journalEntry.id, params.entryId),
-            eq(journalEntry.organizationId, ctx.organizationId)
-          ),
-          with: { lines: true },
-        });
-
-        if (!entry) throw new Error("Entry not found");
-        if (entry.status !== "posted") {
-          throw new Error("Only posted entries can be voided");
-        }
-        if (entry.reversedByEntryId) {
-          throw new Error("This entry has already been reversed");
-        }
-        // The reversal posts on the original entry's date — block locked/closed
-        // periods.
-        await assertNotLocked(ctx.organizationId, entry.date, ctx);
-
-        // Post a reversing entry and mark the original "reversed", keeping BOTH
-        // posted so the pair nets to zero in reports. (Previously this voided the
-        // original AND added a reversal — double-counting, since reports drop
-        // the void but keep the reversal, leaving a net -original.)
-        const reversal = await db.transaction(async (tx) => {
-          const rev = await reverseJournalEntry(
-            { organizationId: ctx.organizationId, userId: ctx.userId },
-            {
-              entryId: params.entryId,
-              date: entry.date,
-              description: `Reversal of entry #${entry.entryNumber}: ${params.reason}`,
-              reference: `VOID-${entry.entryNumber}`,
-              sourceType: "manual_reversal",
-              sourceId: entry.id,
-            },
-            tx
-          );
-          await tx
-            .update(journalEntry)
-            .set({ voidedAt: new Date(), voidReason: params.reason, updatedAt: new Date() })
-            .where(eq(journalEntry.id, params.entryId));
-          return rev;
-        });
-
-        return { reversedEntry: params.entryId, reversalEntry: reversal };
-      })
+    "Reverse an organization-owned posted journal at its original date. Swaps stored minor-unit amounts without FX conversion; saved FX must be qualified. Locks and already-reversed entries are rejected. Returns original UUID and reversal header.",
+    { entryId: z.string().uuid().describe("Posted entry UUID"), reason: z.string().min(1).describe("Reason for reversal") },
+    params => wrapTool(ctx, async () => {
+      const result = await voidJournal(ctx, params.entryId, params.reason);
+      return { reversedEntry: result.reversedEntry, reversalEntry: result.reversalEntry };
+    })
   );
 
   server.tool(
@@ -444,260 +365,19 @@ export function registerEntryTools(server: McpServer, ctx: AuthContext) {
 
   server.tool(
     "set_auto_reverse_date",
-    "Set or clear the auto-reverse date on a journal entry. When set, a scheduled job posts a mirror reversing entry on that date (accruals/prepayments). Pass autoReverseDate=null to clear it. The date must be on or after the entry's own date.",
-    {
-      entryId: z.string().describe("The UUID of the journal entry"),
-      autoReverseDate: z
-        .string()
-        .nullable()
-        .describe(
-          "Auto-reverse date (YYYY-MM-DD), or null to clear. Must be on or after the entry date."
-        ),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        requireRole(ctx, "edit:entries");
-
-        const entry = await db.query.journalEntry.findFirst({
-          where: and(
-            eq(journalEntry.id, params.entryId),
-            eq(journalEntry.organizationId, ctx.organizationId)
-          ),
-        });
-
-        if (!entry) throw new Error("Entry not found");
-        if (entry.reversedByEntryId) {
-          throw new Error(
-            "Entry has already been auto-reversed; cannot change its auto-reverse date."
-          );
-        }
-        if (
-          params.autoReverseDate &&
-          params.autoReverseDate < entry.date
-        ) {
-          throw new Error(
-            "Auto-reverse date must be on or after the entry date"
-          );
-        }
-
-        const [updated] = await db
-          .update(journalEntry)
-          .set({
-            autoReverseDate: params.autoReverseDate,
-            updatedAt: new Date(),
-          })
-          .where(eq(journalEntry.id, params.entryId))
-          .returning();
-
-        await logAudit({
-          ctx,
-          action: "update",
-          entityType: "journal_entry",
-          entityId: params.entryId,
-          changes: {
-            diff: {
-              autoReverseDate: {
-                from: entry.autoReverseDate,
-                to: params.autoReverseDate,
-              },
-            },
-          },
-        });
-
-        return { entry: updated };
-      })
+    "Set or clear a journal auto-reverse date. Requires edit:entries, original and target unlocked dates, and an unreversed entry. Returns the updated header, with no monetary input/output.",
+    { entryId: z.string().uuid().describe("Journal entry UUID"),
+      autoReverseDate: z.iso.date().nullable().describe("Canonical Gregorian YYYY-MM-DD on/after entry date; null clears") },
+    params => wrapTool(ctx, async () => setJournalAutoReverseDate(ctx, params.entryId, params.autoReverseDate))
   );
 
   server.tool(
     "recode_entries",
-    "Bulk reclassify journal lines. Select lines by filter (date range, accountId, sourceType, costCenterId, projectId) and repoint one dimension on each matching line to a target (accountId, costCenterId, or projectId). Entries stay balanced (each line moves wholesale). Honors the period lock per affected date. Journal lines have no per-line tax rate, so tax can't be recoded here.",
-    {
-      filter: z
-        .object({
-          startDate: z
-            .string()
-            .optional()
-            .describe("Start date filter (YYYY-MM-DD)"),
-          endDate: z
-            .string()
-            .optional()
-            .describe("End date filter (YYYY-MM-DD)"),
-          accountId: z
-            .string()
-            .optional()
-            .describe("Only lines currently coded to this account"),
-          sourceType: z
-            .string()
-            .optional()
-            .describe("Only entries with this source type (e.g. 'manual')"),
-          costCenterId: z
-            .string()
-            .optional()
-            .describe("Only lines with this cost center"),
-          projectId: z
-            .string()
-            .optional()
-            .describe("Only lines with this project"),
-        })
-        .describe("Filter selecting which lines to recode (at least one field)"),
-      target: z
-        .object({
-          accountId: z
-            .string()
-            .optional()
-            .describe("Move matching lines to this account"),
-          costCenterId: z
-            .string()
-            .nullable()
-            .optional()
-            .describe("Set matching lines' cost center (null to clear)"),
-          projectId: z
-            .string()
-            .nullable()
-            .optional()
-            .describe("Set matching lines' project (null to clear)"),
-        })
-        .describe("Target dimension to set on matching lines (at least one)"),
-      draftOnly: z
-        .boolean()
-        .optional()
-        .default(true)
-        .describe("Defaults true (draft entries only) so posted, already-reported lines aren't silently rewritten. Pass false to deliberately include posted entries."),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        requireRole(ctx, "edit:entries");
-
-        const { filter, target, draftOnly } = params;
-        const hasFilter =
-          filter.startDate ||
-          filter.endDate ||
-          filter.accountId ||
-          filter.sourceType ||
-          filter.costCenterId ||
-          filter.projectId;
-        if (!hasFilter) {
-          throw new Error("At least one filter is required to scope the recode");
-        }
-        const hasTarget =
-          target.accountId !== undefined ||
-          target.costCenterId !== undefined ||
-          target.projectId !== undefined;
-        if (!hasTarget) {
-          throw new Error(
-            "A target dimension (accountId, costCenterId, or projectId) is required"
-          );
-        }
-
-        const conditions = [eq(journalEntry.organizationId, ctx.organizationId)];
-        if (filter.startDate)
-          conditions.push(gte(journalEntry.date, filter.startDate));
-        if (filter.endDate)
-          conditions.push(lte(journalEntry.date, filter.endDate));
-        if (filter.sourceType)
-          conditions.push(eq(journalEntry.sourceType, filter.sourceType));
-        if (draftOnly) conditions.push(eq(journalEntry.status, "draft"));
-        if (filter.accountId)
-          conditions.push(eq(journalLine.accountId, filter.accountId));
-        if (filter.costCenterId)
-          conditions.push(eq(journalLine.costCenterId, filter.costCenterId));
-        if (filter.projectId)
-          conditions.push(eq(journalLine.projectId, filter.projectId));
-
-        const rows = await db
-          .select({
-            lineId: journalLine.id,
-            entryId: journalEntry.id,
-            entryNumber: journalEntry.entryNumber,
-            date: journalEntry.date,
-            accountId: journalLine.accountId,
-            costCenterId: journalLine.costCenterId,
-            projectId: journalLine.projectId,
-          })
-          .from(journalLine)
-          .innerJoin(
-            journalEntry,
-            eq(journalLine.journalEntryId, journalEntry.id)
-          )
-          .where(and(...conditions));
-
-        if (rows.length === 0) {
-          return { recoded: 0, entriesAffected: 0 };
-        }
-
-        const dates = [...new Set(rows.map((r) => r.date))];
-        for (const d of dates) {
-          await assertNotLocked(ctx.organizationId, d);
-        }
-
-        const patch: {
-          accountId?: string;
-          costCenterId?: string | null;
-          projectId?: string | null;
-        } = {};
-        if (target.accountId !== undefined) patch.accountId = target.accountId;
-        if (target.costCenterId !== undefined)
-          patch.costCenterId = target.costCenterId;
-        if (target.projectId !== undefined) patch.projectId = target.projectId;
-
-        const toChange = rows.filter(
-          (r) =>
-            (patch.accountId !== undefined && patch.accountId !== r.accountId) ||
-            (patch.costCenterId !== undefined &&
-              patch.costCenterId !== r.costCenterId) ||
-            (patch.projectId !== undefined && patch.projectId !== r.projectId)
-        );
-
-        if (toChange.length === 0) {
-          return { recoded: 0, entriesAffected: 0 };
-        }
-
-        await db.transaction(async (tx) => {
-          for (const r of toChange) {
-            await tx
-              .update(journalLine)
-              .set(patch)
-              .where(eq(journalLine.id, r.lineId));
-          }
-          const entryIds = [...new Set(toChange.map((r) => r.entryId))];
-          for (const entryId of entryIds) {
-            await tx
-              .update(journalEntry)
-              .set({ updatedAt: new Date() })
-              .where(eq(journalEntry.id, entryId));
-          }
-        });
-
-        for (const r of toChange) {
-          const diff: Record<string, { from: unknown; to: unknown }> = {};
-          if (patch.accountId !== undefined && patch.accountId !== r.accountId) {
-            diff.accountId = { from: r.accountId, to: patch.accountId };
-          }
-          if (
-            patch.costCenterId !== undefined &&
-            patch.costCenterId !== r.costCenterId
-          ) {
-            diff.costCenterId = { from: r.costCenterId, to: patch.costCenterId };
-          }
-          if (
-            patch.projectId !== undefined &&
-            patch.projectId !== r.projectId
-          ) {
-            diff.projectId = { from: r.projectId, to: patch.projectId };
-          }
-          await logAudit({
-            ctx,
-            action: "recode",
-            entityType: "journal_line",
-            entityId: r.lineId,
-            changes: { entryId: r.entryId, entryNumber: r.entryNumber, diff },
-          });
-        }
-
-        return {
-          recoded: toChange.length,
-          entriesAffected: new Set(toChange.map((r) => r.entryId)).size,
-        };
-      })
+    "Reclassify organization-owned journal line dimensions with an atomic update. Drafts only by default; draftOnly=false explicitly includes posted entries. Validates scoped target dimensions and period locks. Money and rates are unchanged; returns counts and changed line UUIDs.",
+    recodeFields,
+    params => wrapTool(ctx, async () => {
+      const result = await recodeJournals(ctx, params);
+      return { recoded: result.recoded, entriesAffected: result.entriesAffected };
+    })
   );
 }

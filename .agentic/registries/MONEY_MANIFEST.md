@@ -1,8 +1,17 @@
 # Money and FX boundary manifest
 
-Inventory owner: MON-001. Refreshed 2026-10-02 (Asia/Tehran) for MON-035 against entry HEAD `3691c9a`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+Inventory owner: MON-001. Refreshed 2026-10-03 (Asia/Tehran) for MON-036 against entry HEAD `67d941d`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
 
 ## MON-035 journal CRUD adoption (MON-018 child)
+
+MON-036 also adopts [lifecycle/import contracts](JOURNAL_LIFECYCLE_WIRE_CONTRACTS.md):
+five REST boundaries and six MCP operations, including new preview parity.
+Scoped locked services preserve exact saved FX/raw amounts in atomic reversals,
+enforce posting/scheduling/recode locks and validate target dimensions. Imports
+retain REST decimal versus MCP cents, accept exact aliases, preflight sums before
+job creation and atomically write each independent group. Actual PostgreSQL/SDK
+fixtures verify scopes/ranges, partial jobs, rollback and duplicate-void safety.
+Schema, configured databases and rollout flags are unchanged.
 
 The [journal CRUD inventory](JOURNAL_WIRE_CONTRACTS.md) documents REST list/create/
 detail/full-replace/delete and five corresponding MCP operations. Amount/rate

@@ -117,3 +117,16 @@ via a PostgreSQL leg trigger, unsafe sums/history, base-amount read preservation
 invalid historical rates and deletion cascades. Lifecycle/import and recurring
 qualification remain MON-036/037; posting/domain and HTTP OAuth/browser remain
 their assigned gates. No schema or rollout change is implied.
+
+## MON-036 journal lifecycle and import contracts
+
+Three pure journal-import-wire groups cover decimal formats, minor aliases,
+REST/MCP units, dates, safe edges, sums and preview. The migrated disposable
+journal-lifecycle-wire worker invokes five REST and six registered MCP operations.
+Covers legacy/exact/dual inputs, int32-plus/safe-max, saved FX/base amounts and
+dimensions, both tenants, API keys/custom permissions, locks/closed years,
+date/state errors, unsafe history/sums, unqualified FX, inactive historical
+reversal, literal account codes, partial jobs and mutation snapshots. Forced
+leg failures roll back reversal/import headers; a second-update fault rolls
+back a partial recode; concurrent void calls create one mirror. HTTP/session/
+OAuth/browser, full domain/scheduled workflows and recurring remain separate gates.

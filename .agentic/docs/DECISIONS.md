@@ -6,6 +6,24 @@ Record durable decisions with ID, date, owner, status, context, options, chosen 
 
 Status: requirement from supplied plan, pending validation against actual fork. Keep Dubbl runtime; use Bigcapital public contracts as clean-room requirements. AUD-003 records source/license evidence.
 
+## DEC-002 — Docker execution deferred by owner
+
+Date: 2026-10-02 (Asia/Tehran). Owner: project owner (actual user in this session). Status: accepted, effective until the owner changes it.
+
+The owner stated that they do not currently want or have Docker, authorized writing necessary Docker files, and explicitly said Docker testing is unnecessary and may be omitted. Record of the decision: `../evidence/DOCKER-scope-decision-2026-10-02.md`.
+
+Chosen behavior: Docker installation, container startup, production Docker builds and Docker-specific tests are outside the current execution scope. Agents may prepare or maintain necessary Docker configuration/documentation and inspect it statically. Mark Docker execution as omitted by owner decision and unverified, never passed. Docker absence alone must not block AUD-002, CI-001 or subsequent qualification tasks. Preserve existing Docker support and CI configuration unless a concrete change is needed; this is not an instruction to disable CI jobs or remove Docker files.
+
+Consequences: AUD-002 no longer requires production Docker reproduction. Apply the same execution exception to CI-001 and the test matrix; remaining non-Docker acceptance criteria, financial checks and release gates still apply. Root restrictions on full builds and unrequested dev startup remain in force. No dev-start, database mutation or deployment permission is implied.
+
+## DEC-003 — Existing local database authorized for testing
+
+Date: 2026-10-02 (Asia/Tehran). Owner: project owner (actual user in this session). Status: accepted.
+
+The owner confirmed that the database already configured in .env is a test database and authorized necessary queries. Use DATABASE_URL from the existing environment; do not copy credentials into documentation, code, commands or evidence. The authorized target is the local database named `dubbl`. Its test status no longer requires confirmation or provisioning a separate database as a prerequisite.
+
+Queries and scoped fixture setup needed for project testing may proceed within this authorization. Prefer identifiable fixture records and transactions where appropriate. This does not authorize wholesale resets/deletion, production targets, deployments or dev startup. Root migration and build rules remain applicable. Actual initial read-only checks are recorded in `../evidence/AUD-002-attempt-2.md`.
+
 ## Open scope decisions
 
 | Decision | Owner | Task | Initial state |

@@ -37,6 +37,8 @@ Use en-US/fa-IR; LTR/RTL; Latin/Persian/Arabic-Indic input; Gregorian/Persian di
 
 ## Pull request pipeline
 
+Owner decision DEC-002 (2026-10-02) overrides Docker execution requirements in this matrix: omit Docker installation, builds, container tests and runtime image checks for current work. Necessary configuration/documentation may be prepared without execution. Record these checks as omitted by owner decision and unverified; do not require Docker or block solely on its absence. Other verification requirements remain in scope. Preserve existing CI support unless a concrete change is needed.
+
 Verified lockfile install, typecheck, lint, unit tests, translation-key checks, clean and previous-release PostgreSQL migrations, integration tests, English and Persian critical E2E, accessibility scan, selected visual snapshots, production Docker build and dependency/license/security scans. Match actual repository tooling; do not introduce guessed package scripts.
 
 ## Nightly / release pipeline

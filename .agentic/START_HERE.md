@@ -8,6 +8,8 @@ Current implementation truth is the actual repository plus task evidence. `pytho
 
 ## One-task execution loop
 
+Current owner scope, DEC-005: screenshot capture, screenshot tests and screenshot golden comparisons are not required for continuation or completion. Use financial/data assertions, behavioral checks and accessibility/layout review where relevant. Do not block tasks on browser/screenshot tooling. Historical evidence remains unchanged; this scope decision supersedes its pending screenshot requirements.
+
 Current owner scope, DEC-004: this is a private fork for use in Iran, not an upstream contribution or planned open-source release. The owner accepted the AUD-003 notes and deferred further licensing/provenance work. Retain those notes as reference; the new licensing review/release gates from that audit do not block current tasks. No copying, relicensing or publication authorization is implied.
 
 Current owner scope decision: Docker is not required for the current work. Do not require installation, execute Docker builds/tests, or block tasks solely on unavailable Docker. Necessary Docker configuration/documentation may be written and inspected without execution; record it as untested. This applies to Docker requirements throughout the backlog until the owner changes the decision. See `docs/DECISIONS.md`, DEC-002. Other checks and runtime/financial acceptance requirements remain in scope.

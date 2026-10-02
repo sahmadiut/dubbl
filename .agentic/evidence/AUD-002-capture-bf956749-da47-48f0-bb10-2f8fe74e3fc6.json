@@ -1,0 +1,2964 @@
+{
+  "runId": "bf956749-da47-48f0-bb10-2f8fe74e3fc6",
+  "mode": "direct-route-handler; no HTTP/server/browser",
+  "startedAt": "2026-10-02T02:16:05.941Z",
+  "calls": [
+    {
+      "path": "accounts",
+      "method": "POST",
+      "status": 201,
+      "handlerMs": 154.3434000000002,
+      "result": {
+        "account": {
+          "id": "b495798e-82a1-439a-9bbe-f0d5bd8e4541",
+          "organizationId": "27c074b2-7c89-4d43-9b97-cfeb7d6cb406",
+          "code": "1100",
+          "name": "Bank",
+          "type": "asset",
+          "subType": "bank",
+          "parentId": null,
+          "currencyCode": "USD",
+          "isActive": true,
+          "description": null,
+          "defaultTaxRateId": null,
+          "taxDisallowedPercent": 0,
+          "reportingCode": null,
+          "isSystem": false,
+          "createdAt": "2026-10-02T05:46:07.807Z",
+          "deletedAt": null
+        }
+      }
+    },
+    {
+      "path": "accounts",
+      "method": "POST",
+      "status": 201,
+      "handlerMs": 4.595699999999852,
+      "result": {
+        "account": {
+          "id": "91f399bf-40e1-4f49-9a36-c2c321ee1dec",
+          "organizationId": "27c074b2-7c89-4d43-9b97-cfeb7d6cb406",
+          "code": "1200",
+          "name": "Accounts Receivable",
+          "type": "asset",
+          "subType": "current",
+          "parentId": null,
+          "currencyCode": "USD",
+          "isActive": true,
+          "description": null,
+          "defaultTaxRateId": null,
+          "taxDisallowedPercent": 0,
+          "reportingCode": null,
+          "isSystem": false,
+          "createdAt": "2026-10-02T05:46:07.817Z",
+          "deletedAt": null
+        }
+      }
+    },
+    {
+      "path": "accounts",
+      "method": "POST",
+      "status": 201,
+      "handlerMs": 9.211099999999988,
+      "result": {
+        "account": {
+          "id": "fff119f4-a9b5-42d9-aee2-d6c37b196619",
+          "organizationId": "27c074b2-7c89-4d43-9b97-cfeb7d6cb406",
+          "code": "2100",
+          "name": "Accounts Payable",
+          "type": "liability",
+          "subType": "current",
+          "parentId": null,
+          "currencyCode": "USD",
+          "isActive": true,
+          "description": null,
+          "defaultTaxRateId": null,
+          "taxDisallowedPercent": 0,
+          "reportingCode": null,
+          "isSystem": false,
+          "createdAt": "2026-10-02T05:46:07.827Z",
+          "deletedAt": null
+        }
+      }
+    },
+    {
+      "path": "accounts",
+      "method": "POST",
+      "status": 201,
+      "handlerMs": 4.526600000000144,
+      "result": {
+        "account": {
+          "id": "0432e726-a19d-4cbc-adbb-b2162c4d1b03",
+          "organizationId": "27c074b2-7c89-4d43-9b97-cfeb7d6cb406",
+          "code": "3000",
+          "name": "Contributed Capital",
+          "type": "equity",
+          "subType": "capital",
+          "parentId": null,
+          "currencyCode": "USD",
+          "isActive": true,
+          "description": null,
+          "defaultTaxRateId": null,
+          "taxDisallowedPercent": 0,
+          "reportingCode": null,
+          "isSystem": false,
+          "createdAt": "2026-10-02T05:46:07.833Z",
+          "deletedAt": null
+        }
+      }
+    },
+    {
+      "path": "accounts",
+      "method": "POST",
+      "status": 201,
+      "handlerMs": 5.4465000000000146,
+      "result": {
+        "account": {
+          "id": "4c92a37d-cc57-4e69-b408-0962c13b85ec",
+          "organizationId": "27c074b2-7c89-4d43-9b97-cfeb7d6cb406",
+          "code": "3100",
+          "name": "Retained Earnings",
+          "type": "equity",
+          "subType": "retained",
+          "parentId": null,
+          "currencyCode": "USD",
+          "isActive": true,
+          "description": null,
+          "defaultTaxRateId": null,
+          "taxDisallowedPercent": 0,
+          "reportingCode": null,
+          "isSystem": false,
+          "createdAt": "2026-10-02T05:46:07.839Z",
+          "deletedAt": null
+        }
+      }
+    },
+    {
+      "path": "accounts",
+      "method": "POST",
+      "status": 201,
+      "handlerMs": 3.7049000000001797,
+      "result": {
+        "account": {
+          "id": "65781068-42de-457a-8099-fcd2419af907",
+          "organizationId": "27c074b2-7c89-4d43-9b97-cfeb7d6cb406",
+          "code": "4000",
+          "name": "Sales Revenue",
+          "type": "revenue",
+          "subType": "operating",
+          "parentId": null,
+          "currencyCode": "USD",
+          "isActive": true,
+          "description": null,
+          "defaultTaxRateId": null,
+          "taxDisallowedPercent": 0,
+          "reportingCode": null,
+          "isSystem": false,
+          "createdAt": "2026-10-02T05:46:07.845Z",
+          "deletedAt": null
+        }
+      }
+    },
+    {
+      "path": "accounts",
+      "method": "POST",
+      "status": 201,
+      "handlerMs": 3.698700000000372,
+      "result": {
+        "account": {
+          "id": "579d16aa-0fc0-4941-9619-80d00009ee6e",
+          "organizationId": "27c074b2-7c89-4d43-9b97-cfeb7d6cb406",
+          "code": "6000",
+          "name": "Operating Expense",
+          "type": "expense",
+          "subType": "operating",
+          "parentId": null,
+          "currencyCode": "USD",
+          "isActive": true,
+          "description": null,
+          "defaultTaxRateId": null,
+          "taxDisallowedPercent": 0,
+          "reportingCode": null,
+          "isSystem": false,
+          "createdAt": "2026-10-02T05:46:07.849Z",
+          "deletedAt": null
+        }
+      }
+    },
+    {
+      "path": "bank-accounts",
+      "method": "POST",
+      "status": 201,
+      "handlerMs": 64.01080000000002,
+      "result": {
+        "bankAccount": {
+          "id": "05617a93-fef4-4fc4-97e5-526ecb77f50a",
+          "organizationId": "27c074b2-7c89-4d43-9b97-cfeb7d6cb406",
+          "accountName": "AUD-002 Synthetic Bank",
+          "accountNumber": null,
+          "bankName": null,
+          "currencyCode": "USD",
+          "countryCode": null,
+          "accountType": "checking",
+          "color": "#0f766e",
+          "chartAccountId": "b495798e-82a1-439a-9bbe-f0d5bd8e4541",
+          "balance": 0,
+          "lowBalanceThreshold": null,
+          "isActive": true,
+          "createdAt": "2026-10-02T05:46:07.944Z",
+          "deletedAt": null
+        }
+      }
+    },
+    {
+      "path": "fiscal-years",
+      "method": "POST",
+      "status": 201,
+      "handlerMs": 4.6380999999996675,
+      "result": {
+        "fiscalYear": {
+          "id": "a9e6b05f-a39c-4a00-9fba-0e757737eec8",
+          "organizationId": "27c074b2-7c89-4d43-9b97-cfeb7d6cb406",
+          "name": "AUD-002 2025",
+          "startDate": "2025-01-01",
+          "endDate": "2025-12-31",
+          "isClosed": false,
+          "deletedAt": null
+        }
+      }
+    },
+    {
+      "path": "entries",
+      "method": "POST",
+      "status": 201,
+      "handlerMs": 15.035099999999602,
+      "result": {
+        "entry": {
+          "id": "52d4213f-d199-4b7d-ba99-e4f89fefa55b",
+          "organizationId": "27c074b2-7c89-4d43-9b97-cfeb7d6cb406",
+          "entryNumber": 1,
+          "date": "2025-12-01",
+          "description": "AUD-002 owner contribution",
+          "reference": null,
+          "status": "draft",
+          "fiscalYearId": "a9e6b05f-a39c-4a00-9fba-0e757737eec8",
+          "sourceType": null,
+          "sourceId": null,
+          "createdBy": "9e268b14-b425-4019-b7c0-59028eaae9f2",
+          "postedAt": null,
+          "voidedAt": null,
+          "voidReason": null,
+          "autoReverseDate": null,
+          "reversedByEntryId": null,
+          "reversesEntryId": null,
+          "createdAt": "2026-10-02T05:46:07.988Z",
+          "updatedAt": "2026-10-02T05:46:07.988Z",
+          "deletedAt": null
+        }
+      }
+    },
+    {
+      "path": "entries/[id]/post",
+      "method": "POST",
+      "id": "52d4213f-d199-4b7d-ba99-e4f89fefa55b",
+      "status": 200,
+      "handlerMs": 14.734300000000076,
+      "result": {
+        "entry": {
+          "id": "52d4213f-d199-4b7d-ba99-e4f89fefa55b",
+          "organizationId": "27c074b2-7c89-4d43-9b97-cfeb7d6cb406",
+          "entryNumber": 1,
+          "date": "2025-12-01",
+          "description": "AUD-002 owner contribution",
+          "reference": null,
+          "status": "posted",
+          "fiscalYearId": "a9e6b05f-a39c-4a00-9fba-0e757737eec8",
+          "sourceType": null,
+          "sourceId": null,
+          "createdBy": "9e268b14-b425-4019-b7c0-59028eaae9f2",
+          "postedAt": "2026-10-02T02:16:08.006Z",
+          "voidedAt": null,
+          "voidReason": null,
+          "autoReverseDate": null,
+          "reversedByEntryId": null,
+          "reversesEntryId": null,
+          "createdAt": "2026-10-02T05:46:07.988Z",
+          "updatedAt": "2026-10-02T02:16:08.006Z",
+          "deletedAt": null,
+          "lines": [
+            {
+              "id": "cfa11f15-8852-463c-9827-fda9ed71f1ac",
+              "accountId": "b495798e-82a1-439a-9bbe-f0d5bd8e4541",
+              "accountCode": "1100",
+              "accountName": "Bank",
+              "description": null,
+              "debitAmount": "1000.00",
+              "creditAmount": "0.00"
+            },
+            {
+              "id": "e4774337-7636-45a3-9c3f-3d071001f25f",
+              "accountId": "0432e726-a19d-4cbc-adbb-b2162c4d1b03",
+              "accountCode": "3000",
+              "accountName": "Contributed Capital",
+              "description": null,
+              "debitAmount": "0.00",
+              "creditAmount": "1000.00"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "path": "contacts",
+      "method": "POST",
+      "status": 201,
+      "handlerMs": 5.992099999999937,
+      "result": {
+        "contact": {
+          "id": "666c0196-264d-4329-bc17-8ba85baf2951",
+          "organizationId": "27c074b2-7c89-4d43-9b97-cfeb7d6cb406",
+          "name": "AUD-002 Synthetic Customer",
+          "email": null,
+          "phone": null,
+          "taxNumber": null,
+          "type": "customer",
+          "paymentTermsDays": 30,
+          "addresses": null,
+          "notes": null,
+          "currencyCode": "USD",
+          "creditLimit": null,
+          "isTaxExempt": false,
+          "defaultRevenueAccountId": null,
+          "defaultExpenseAccountId": null,
+          "defaultTaxRateId": null,
+          "peppolId": null,
+          "peppolScheme": null,
+          "is1099Vendor": false,
+          "w9TaxClassification": null,
+          "taxIdentifier": null,
+          "backupWithholding": false,
+          "linkedOrgId": null,
+          "createdAt": "2026-10-02T05:46:08.030Z",
+          "updatedAt": "2026-10-02T05:46:08.030Z",
+          "deletedAt": null
+        }
+      }
+    },
+    {
+      "path": "contacts",
+      "method": "POST",
+      "status": 201,
+      "handlerMs": 4.914499999999862,
+      "result": {
+        "contact": {
+          "id": "d545f52c-8f11-4f11-9e37-edef72d45259",
+          "organizationId": "27c074b2-7c89-4d43-9b97-cfeb7d6cb406",
+          "name": "AUD-002 Synthetic Supplier",
+          "email": null,
+          "phone": null,
+          "taxNumber": null,
+          "type": "supplier",
+          "paymentTermsDays": 30,
+          "addresses": null,
+          "notes": null,
+          "currencyCode": "USD",
+          "creditLimit": null,
+          "isTaxExempt": false,
+          "defaultRevenueAccountId": null,
+          "defaultExpenseAccountId": null,
+          "defaultTaxRateId": null,
+          "peppolId": null,
+          "peppolScheme": null,
+          "is1099Vendor": false,
+          "w9TaxClassification": null,
+          "taxIdentifier": null,
+          "backupWithholding": false,
+          "linkedOrgId": null,
+          "createdAt": "2026-10-02T05:46:08.036Z",
+          "updatedAt": "2026-10-02T05:46:08.036Z",
+          "deletedAt": null
+        }
+      }
+    },
+    {
+      "path": "invoices",
+      "method": "POST",
+      "status": 201,
+      "handlerMs": 18.16399999999976,
+      "result": {
+        "invoice": {
+          "id": "d0dd4cd6-bf2b-48ae-bc00-309721869472",
+          "organizationId": "27c074b2-7c89-4d43-9b97-cfeb7d6cb406",
+          "contactId": "666c0196-264d-4329-bc17-8ba85baf2951",
+          "invoiceNumber": "INV-00001",
+          "issueDate": "2025-12-02",
+          "dueDate": "2025-12-31",
+          "status": "draft",
+          "invoiceType": "standard",
+          "depositPercent": null,
+          "dunningLevel": 0,
+          "reference": null,
+          "notes": null,
+          "subtotal": 20000,
+          "taxTotal": 0,
+          "total": 20000,
+          "amountPaid": 0,
+          "amountDue": 20000,
+          "currencyCode": "USD",
+          "senderSnapshot": null,
+          "recipientSnapshot": null,
+          "paymentLinkToken": null,
+          "journalEntryId": null,
+          "sentAt": null,
+          "paidAt": null,
+          "voidedAt": null,
+          "writtenOffAt": null,
+          "createdBy": "9e268b14-b425-4019-b7c0-59028eaae9f2",
+          "createdAt": "2026-10-02T05:46:08.084Z",
+          "updatedAt": "2026-10-02T05:46:08.084Z",
+          "deletedAt": null
+        },
+        "creditLimitWarning": null
+      }
+    },
+    {
+      "path": "invoices/[id]/send",
+      "method": "POST",
+      "id": "d0dd4cd6-bf2b-48ae-bc00-309721869472",
+      "status": 200,
+      "handlerMs": 15.002399999999852,
+      "result": {
+        "invoice": {
+          "id": "d0dd4cd6-bf2b-48ae-bc00-309721869472",
+          "organizationId": "27c074b2-7c89-4d43-9b97-cfeb7d6cb406",
+          "contactId": "666c0196-264d-4329-bc17-8ba85baf2951",
+          "invoiceNumber": "INV-00001",
+          "issueDate": "2025-12-02",
+          "dueDate": "2025-12-31",
+          "status": "sent",
+          "invoiceType": "standard",
+          "depositPercent": null,
+          "dunningLevel": 0,
+          "reference": null,
+          "notes": null,
+          "subtotal": 20000,
+          "taxTotal": 0,
+          "total": 20000,
+          "amountPaid": 0,
+          "amountDue": 20000,
+          "currencyCode": "USD",
+          "senderSnapshot": {
+            "name": "AUD-002 Baseline",
+            "email": null,
+            "phone": null,
+            "taxId": null,
+            "address": null,
+            "countryCode": null,
+            "registrationNumber": null
+          },
+          "recipientSnapshot": {
+            "name": "AUD-002 Synthetic Customer",
+            "email": null,
+            "address": null,
+            "taxNumber": null
+          },
+          "paymentLinkToken": null,
+          "journalEntryId": "367f4c9a-d268-49f5-ba9c-18ac065b87b9",
+          "sentAt": "2026-10-02T02:16:08.205Z",
+          "paidAt": null,
+          "voidedAt": null,
+          "writtenOffAt": null,
+          "createdBy": "9e268b14-b425-4019-b7c0-59028eaae9f2",
+          "createdAt": "2026-10-02T05:46:08.084Z",
+          "updatedAt": "2026-10-02T02:16:08.205Z",
+          "deletedAt": null
+        }
+      }
+    },
+    {
+      "path": "bills",
+      "method": "POST",
+      "status": 201,
+      "handlerMs": 10.704999999999927,
+      "result": {
+        "bill": {
+          "id": "905b5874-0621-4240-a3cb-2c466dc8b9a0",
+          "organizationId": "27c074b2-7c89-4d43-9b97-cfeb7d6cb406",
+          "contactId": "d545f52c-8f11-4f11-9e37-edef72d45259",
+          "billNumber": "BILL-00001",
+          "issueDate": "2025-12-02",
+          "dueDate": "2025-12-31",
+          "status": "draft",
+          "reference": null,
+          "notes": null,
+          "subtotal": 8000,
+          "taxTotal": 0,
+          "total": 8000,
+          "amountPaid": 0,
+          "amountDue": 8000,
+          "currencyCode": "USD",
+          "journalEntryId": null,
+          "receivedAt": null,
+          "paidAt": null,
+          "voidedAt": null,
+          "approvedBy": null,
+          "approvedAt": null,
+          "rejectedAt": null,
+          "rejectionReason": null,
+          "createdBy": "9e268b14-b425-4019-b7c0-59028eaae9f2",
+          "createdAt": "2026-10-02T05:46:08.240Z",
+          "updatedAt": "2026-10-02T05:46:08.240Z",
+          "deletedAt": null
+        }
+      }
+    },
+    {
+      "path": "bills/[id]/receive",
+      "method": "POST",
+      "id": "905b5874-0621-4240-a3cb-2c466dc8b9a0",
+      "status": 200,
+      "handlerMs": 15.863100000000031,
+      "result": {
+        "bill": {
+          "id": "905b5874-0621-4240-a3cb-2c466dc8b9a0",
+          "organizationId": "27c074b2-7c89-4d43-9b97-cfeb7d6cb406",
+          "contactId": "d545f52c-8f11-4f11-9e37-edef72d45259",
+          "billNumber": "BILL-00001",
+          "issueDate": "2025-12-02",
+          "dueDate": "2025-12-31",
+          "status": "received",
+          "reference": null,
+          "notes": null,
+          "subtotal": 8000,
+          "taxTotal": 0,
+          "total": 8000,
+          "amountPaid": 0,
+          "amountDue": 8000,
+          "currencyCode": "USD",
+          "journalEntryId": "3f65941a-5411-4c17-b0fe-5f22b55a6c28",
+          "receivedAt": "2026-10-02T02:16:08.264Z",
+          "paidAt": null,
+          "voidedAt": null,
+          "approvedBy": null,
+          "approvedAt": null,
+          "rejectedAt": null,
+          "rejectionReason": null,
+          "createdBy": "9e268b14-b425-4019-b7c0-59028eaae9f2",
+          "createdAt": "2026-10-02T05:46:08.240Z",
+          "updatedAt": "2026-10-02T02:16:08.264Z",
+          "deletedAt": null
+        },
+        "grniEntryId": null,
+        "warnings": []
+      }
+    },
+    {
+      "path": "payments",
+      "method": "POST",
+      "status": 201,
+      "handlerMs": 17.120800000000145,
+      "result": {
+        "payment": {
+          "id": "a3c9b236-ba64-4fbc-b769-4771c6c309be",
+          "organizationId": "27c074b2-7c89-4d43-9b97-cfeb7d6cb406",
+          "contactId": "666c0196-264d-4329-bc17-8ba85baf2951",
+          "paymentNumber": "PAY-00001",
+          "type": "received",
+          "date": "2025-12-03",
+          "amount": 5000,
+          "method": "bank_transfer",
+          "reference": null,
+          "notes": null,
+          "bankAccountId": "05617a93-fef4-4fc4-97e5-526ecb77f50a",
+          "bankTransactionId": null,
+          "currencyCode": "USD",
+          "stripePaymentIntentId": null,
+          "journalEntryId": "3da2792f-a5f6-46df-9255-ddc58eaa61a3",
+          "createdBy": "9e268b14-b425-4019-b7c0-59028eaae9f2",
+          "createdAt": "2026-10-02T05:46:08.284Z",
+          "updatedAt": "2026-10-02T02:16:08.290Z",
+          "deletedAt": null,
+          "contact": {
+            "id": "666c0196-264d-4329-bc17-8ba85baf2951",
+            "organizationId": "27c074b2-7c89-4d43-9b97-cfeb7d6cb406",
+            "name": "AUD-002 Synthetic Customer",
+            "email": null,
+            "phone": null,
+            "taxNumber": null,
+            "type": "customer",
+            "paymentTermsDays": 30,
+            "addresses": null,
+            "notes": null,
+            "currencyCode": "USD",
+            "creditLimit": null,
+            "isTaxExempt": false,
+            "defaultRevenueAccountId": null,
+            "defaultExpenseAccountId": null,
+            "defaultTaxRateId": null,
+            "peppolId": null,
+            "peppolScheme": null,
+            "is1099Vendor": false,
+            "w9TaxClassification": null,
+            "taxIdentifier": null,
+            "backupWithholding": false,
+            "linkedOrgId": null,
+            "createdAt": "2026-10-02T05:46:08.030Z",
+            "updatedAt": "2026-10-02T05:46:08.030Z",
+            "deletedAt": null
+          },
+          "allocations": [
+            {
+              "id": "c545fd54-5502-4b79-aa43-f7c11317f2b3",
+              "paymentId": "a3c9b236-ba64-4fbc-b769-4771c6c309be",
+              "documentType": "invoice",
+              "documentId": "d0dd4cd6-bf2b-48ae-bc00-309721869472",
+              "amount": 5000
+            }
+          ]
+        }
+      }
+    },
+    {
+      "path": "payments",
+      "method": "POST",
+      "status": 201,
+      "handlerMs": 14.115900000000238,
+      "result": {
+        "payment": {
+          "id": "03056de6-246a-4dec-9a2e-af1d1086cfae",
+          "organizationId": "27c074b2-7c89-4d43-9b97-cfeb7d6cb406",
+          "contactId": "d545f52c-8f11-4f11-9e37-edef72d45259",
+          "paymentNumber": "PAY-00002",
+          "type": "made",
+          "date": "2025-12-03",
+          "amount": 3000,
+          "method": "bank_transfer",
+          "reference": null,
+          "notes": null,
+          "bankAccountId": "05617a93-fef4-4fc4-97e5-526ecb77f50a",
+          "bankTransactionId": null,
+          "currencyCode": "USD",
+          "stripePaymentIntentId": null,
+          "journalEntryId": "873f085c-ec35-4ca7-8f58-7781b0c61884",
+          "createdBy": "9e268b14-b425-4019-b7c0-59028eaae9f2",
+          "createdAt": "2026-10-02T05:46:08.300Z",
+          "updatedAt": "2026-10-02T02:16:08.306Z",
+          "deletedAt": null,
+          "contact": {
+            "id": "d545f52c-8f11-4f11-9e37-edef72d45259",
+            "organizationId": "27c074b2-7c89-4d43-9b97-cfeb7d6cb406",
+            "name": "AUD-002 Synthetic Supplier",
+            "email": null,
+            "phone": null,
+            "taxNumber": null,
+            "type": "supplier",
+            "paymentTermsDays": 30,
+            "addresses": null,
+            "notes": null,
+            "currencyCode": "USD",
+            "creditLimit": null,
+            "isTaxExempt": false,
+            "defaultRevenueAccountId": null,
+            "defaultExpenseAccountId": null,
+            "defaultTaxRateId": null,
+            "peppolId": null,
+            "peppolScheme": null,
+            "is1099Vendor": false,
+            "w9TaxClassification": null,
+            "taxIdentifier": null,
+            "backupWithholding": false,
+            "linkedOrgId": null,
+            "createdAt": "2026-10-02T05:46:08.036Z",
+            "updatedAt": "2026-10-02T05:46:08.036Z",
+            "deletedAt": null
+          },
+          "allocations": [
+            {
+              "id": "af820bd7-f97f-4195-9157-15d03b43471f",
+              "paymentId": "03056de6-246a-4dec-9a2e-af1d1086cfae",
+              "documentType": "bill",
+              "documentId": "905b5874-0621-4240-a3cb-2c466dc8b9a0",
+              "amount": 3000
+            }
+          ]
+        }
+      }
+    },
+    {
+      "path": "reports/trial-balance?asAt=2025-12-31",
+      "method": "GET",
+      "status": 200,
+      "handlerMs": 7.990699999999833,
+      "result": {
+        "asAt": "2025-12-31",
+        "accounts": [
+          {
+            "accountId": "b495798e-82a1-439a-9bbe-f0d5bd8e4541",
+            "code": "1100",
+            "name": "Bank",
+            "type": "asset",
+            "debitBalance": "1020.00",
+            "creditBalance": "0.00",
+            "balance": "1020.00"
+          },
+          {
+            "accountId": "91f399bf-40e1-4f49-9a36-c2c321ee1dec",
+            "code": "1200",
+            "name": "Accounts Receivable",
+            "type": "asset",
+            "debitBalance": "150.00",
+            "creditBalance": "0.00",
+            "balance": "150.00"
+          },
+          {
+            "accountId": "fff119f4-a9b5-42d9-aee2-d6c37b196619",
+            "code": "2100",
+            "name": "Accounts Payable",
+            "type": "liability",
+            "debitBalance": "50.00",
+            "creditBalance": "0.00",
+            "balance": "50.00"
+          },
+          {
+            "accountId": "0432e726-a19d-4cbc-adbb-b2162c4d1b03",
+            "code": "3000",
+            "name": "Contributed Capital",
+            "type": "equity",
+            "debitBalance": "1000.00",
+            "creditBalance": "0.00",
+            "balance": "1000.00"
+          },
+          {
+            "accountId": "4c92a37d-cc57-4e69-b408-0962c13b85ec",
+            "code": "3100",
+            "name": "Retained Earnings",
+            "type": "equity",
+            "debitBalance": "0.00",
+            "creditBalance": "0.00",
+            "balance": "0.00"
+          },
+          {
+            "accountId": "65781068-42de-457a-8099-fcd2419af907",
+            "code": "4000",
+            "name": "Sales Revenue",
+            "type": "revenue",
+            "debitBalance": "200.00",
+            "creditBalance": "0.00",
+            "balance": "200.00"
+          },
+          {
+            "accountId": "579d16aa-0fc0-4941-9619-80d00009ee6e",
+            "code": "6000",
+            "name": "Operating Expense",
+            "type": "expense",
+            "debitBalance": "80.00",
+            "creditBalance": "0.00",
+            "balance": "80.00"
+          }
+        ]
+      }
+    },
+    {
+      "path": "reports/aged-receivables?asAt=2025-12-31",
+      "method": "GET",
+      "status": 200,
+      "handlerMs": 4.7840000000001055,
+      "result": {
+        "asAt": "2025-12-31",
+        "buckets": [
+          {
+            "label": "Current",
+            "total": 15000,
+            "count": 1,
+            "invoices": [
+              {
+                "id": "d0dd4cd6-bf2b-48ae-bc00-309721869472",
+                "invoiceNumber": "INV-00001",
+                "contactName": "AUD-002 Synthetic Customer",
+                "dueDate": "2025-12-31",
+                "amountDue": 15000,
+                "daysOverdue": 0
+              }
+            ]
+          },
+          {
+            "label": "1-30 days",
+            "total": 0,
+            "count": 0,
+            "invoices": []
+          },
+          {
+            "label": "31-60 days",
+            "total": 0,
+            "count": 0,
+            "invoices": []
+          },
+          {
+            "label": "61-90 days",
+            "total": 0,
+            "count": 0,
+            "invoices": []
+          },
+          {
+            "label": "90+ days",
+            "total": 0,
+            "count": 0,
+            "invoices": []
+          }
+        ],
+        "grandTotal": 15000
+      }
+    },
+    {
+      "path": "reports/aged-payables?asAt=2025-12-31",
+      "method": "GET",
+      "status": 200,
+      "handlerMs": 4.298700000000281,
+      "result": {
+        "asAt": "2025-12-31",
+        "buckets": [
+          {
+            "label": "Current",
+            "total": 5000,
+            "count": 1,
+            "bills": [
+              {
+                "id": "905b5874-0621-4240-a3cb-2c466dc8b9a0",
+                "billNumber": "BILL-00001",
+                "contactName": "AUD-002 Synthetic Supplier",
+                "dueDate": "2025-12-31",
+                "amountDue": 5000,
+                "daysOverdue": 0
+              }
+            ]
+          },
+          {
+            "label": "1-30 days",
+            "total": 0,
+            "count": 0,
+            "bills": []
+          },
+          {
+            "label": "31-60 days",
+            "total": 0,
+            "count": 0,
+            "bills": []
+          },
+          {
+            "label": "61-90 days",
+            "total": 0,
+            "count": 0,
+            "bills": []
+          },
+          {
+            "label": "90+ days",
+            "total": 0,
+            "count": 0,
+            "bills": []
+          }
+        ],
+        "grandTotal": 5000
+      }
+    },
+    {
+      "path": "reports/balance-sheet?asAt=2025-12-31",
+      "method": "GET",
+      "status": 200,
+      "handlerMs": 5.5702000000001135,
+      "result": {
+        "asAt": "2025-12-31",
+        "assets": {
+          "type": "asset",
+          "accounts": [
+            {
+              "accountId": "b495798e-82a1-439a-9bbe-f0d5bd8e4541",
+              "code": "1100",
+              "name": "Bank",
+              "balance": "1020.00"
+            },
+            {
+              "accountId": "91f399bf-40e1-4f49-9a36-c2c321ee1dec",
+              "code": "1200",
+              "name": "Accounts Receivable",
+              "balance": "150.00"
+            }
+          ],
+          "total": "1170.00"
+        },
+        "liabilities": {
+          "type": "liability",
+          "accounts": [
+            {
+              "accountId": "fff119f4-a9b5-42d9-aee2-d6c37b196619",
+              "code": "2100",
+              "name": "Accounts Payable",
+              "balance": "50.00"
+            }
+          ],
+          "total": "50.00"
+        },
+        "equity": {
+          "type": "equity",
+          "accounts": [
+            {
+              "accountId": "0432e726-a19d-4cbc-adbb-b2162c4d1b03",
+              "code": "3000",
+              "name": "Contributed Capital",
+              "balance": "1000.00"
+            },
+            {
+              "accountId": "4c92a37d-cc57-4e69-b408-0962c13b85ec",
+              "code": "3100",
+              "name": "Retained Earnings",
+              "balance": "0.00"
+            },
+            {
+              "accountId": "current-year-earnings",
+              "code": "",
+              "name": "Current Year Earnings",
+              "balance": "120.00"
+            }
+          ],
+          "total": "1120.00"
+        }
+      }
+    },
+    {
+      "path": "bank-accounts",
+      "method": "GET",
+      "status": 200,
+      "handlerMs": 2.638800000000174,
+      "result": {
+        "bankAccounts": [
+          {
+            "id": "05617a93-fef4-4fc4-97e5-526ecb77f50a",
+            "organizationId": "27c074b2-7c89-4d43-9b97-cfeb7d6cb406",
+            "accountName": "AUD-002 Synthetic Bank",
+            "accountNumber": null,
+            "bankName": null,
+            "currencyCode": "USD",
+            "countryCode": null,
+            "accountType": "checking",
+            "color": "#0f766e",
+            "chartAccountId": "b495798e-82a1-439a-9bbe-f0d5bd8e4541",
+            "balance": 0,
+            "lowBalanceThreshold": null,
+            "isActive": true,
+            "createdAt": "2026-10-02T05:46:07.944Z",
+            "deletedAt": null,
+            "chartAccount": {
+              "id": "b495798e-82a1-439a-9bbe-f0d5bd8e4541",
+              "organizationId": "27c074b2-7c89-4d43-9b97-cfeb7d6cb406",
+              "code": "1100",
+              "name": "Bank",
+              "type": "asset",
+              "subType": "bank",
+              "parentId": null,
+              "currencyCode": "USD",
+              "isActive": true,
+              "description": null,
+              "defaultTaxRateId": null,
+              "taxDisallowedPercent": 0,
+              "reportingCode": null,
+              "isSystem": false,
+              "createdAt": "2026-10-02T05:46:07.807Z",
+              "deletedAt": null
+            }
+          }
+        ]
+      }
+    },
+    {
+      "path": "fiscal-years/[id]/close",
+      "method": "POST",
+      "id": "a9e6b05f-a39c-4a00-9fba-0e757737eec8",
+      "status": 200,
+      "handlerMs": 8.83849999999984,
+      "result": {
+        "fiscalYear": {
+          "id": "a9e6b05f-a39c-4a00-9fba-0e757737eec8",
+          "organizationId": "27c074b2-7c89-4d43-9b97-cfeb7d6cb406",
+          "name": "AUD-002 2025",
+          "startDate": "2025-01-01",
+          "endDate": "2025-12-31",
+          "isClosed": true,
+          "deletedAt": null
+        }
+      }
+    },
+    {
+      "path": "reports/trial-balance?asAt=2025-12-31",
+      "method": "GET",
+      "status": 200,
+      "handlerMs": 2.664600000000064,
+      "result": {
+        "asAt": "2025-12-31",
+        "accounts": [
+          {
+            "accountId": "b495798e-82a1-439a-9bbe-f0d5bd8e4541",
+            "code": "1100",
+            "name": "Bank",
+            "type": "asset",
+            "debitBalance": "1020.00",
+            "creditBalance": "0.00",
+            "balance": "1020.00"
+          },
+          {
+            "accountId": "91f399bf-40e1-4f49-9a36-c2c321ee1dec",
+            "code": "1200",
+            "name": "Accounts Receivable",
+            "type": "asset",
+            "debitBalance": "150.00",
+            "creditBalance": "0.00",
+            "balance": "150.00"
+          },
+          {
+            "accountId": "fff119f4-a9b5-42d9-aee2-d6c37b196619",
+            "code": "2100",
+            "name": "Accounts Payable",
+            "type": "liability",
+            "debitBalance": "50.00",
+            "creditBalance": "0.00",
+            "balance": "50.00"
+          },
+          {
+            "accountId": "0432e726-a19d-4cbc-adbb-b2162c4d1b03",
+            "code": "3000",
+            "name": "Contributed Capital",
+            "type": "equity",
+            "debitBalance": "1000.00",
+            "creditBalance": "0.00",
+            "balance": "1000.00"
+          },
+          {
+            "accountId": "4c92a37d-cc57-4e69-b408-0962c13b85ec",
+            "code": "3100",
+            "name": "Retained Earnings",
+            "type": "equity",
+            "debitBalance": "120.00",
+            "creditBalance": "0.00",
+            "balance": "120.00"
+          },
+          {
+            "accountId": "65781068-42de-457a-8099-fcd2419af907",
+            "code": "4000",
+            "name": "Sales Revenue",
+            "type": "revenue",
+            "debitBalance": "0.00",
+            "creditBalance": "0.00",
+            "balance": "0.00"
+          },
+          {
+            "accountId": "579d16aa-0fc0-4941-9619-80d00009ee6e",
+            "code": "6000",
+            "name": "Operating Expense",
+            "type": "expense",
+            "debitBalance": "0.00",
+            "creditBalance": "0.00",
+            "balance": "0.00"
+          }
+        ]
+      }
+    },
+    {
+      "path": "reports/aged-receivables?asAt=2025-12-31",
+      "method": "GET",
+      "status": 200,
+      "handlerMs": 3.1860999999998967,
+      "result": {
+        "asAt": "2025-12-31",
+        "buckets": [
+          {
+            "label": "Current",
+            "total": 15000,
+            "count": 1,
+            "invoices": [
+              {
+                "id": "d0dd4cd6-bf2b-48ae-bc00-309721869472",
+                "invoiceNumber": "INV-00001",
+                "contactName": "AUD-002 Synthetic Customer",
+                "dueDate": "2025-12-31",
+                "amountDue": 15000,
+                "daysOverdue": 0
+              }
+            ]
+          },
+          {
+            "label": "1-30 days",
+            "total": 0,
+            "count": 0,
+            "invoices": []
+          },
+          {
+            "label": "31-60 days",
+            "total": 0,
+            "count": 0,
+            "invoices": []
+          },
+          {
+            "label": "61-90 days",
+            "total": 0,
+            "count": 0,
+            "invoices": []
+          },
+          {
+            "label": "90+ days",
+            "total": 0,
+            "count": 0,
+            "invoices": []
+          }
+        ],
+        "grandTotal": 15000
+      }
+    },
+    {
+      "path": "reports/aged-payables?asAt=2025-12-31",
+      "method": "GET",
+      "status": 200,
+      "handlerMs": 3.0154999999999745,
+      "result": {
+        "asAt": "2025-12-31",
+        "buckets": [
+          {
+            "label": "Current",
+            "total": 5000,
+            "count": 1,
+            "bills": [
+              {
+                "id": "905b5874-0621-4240-a3cb-2c466dc8b9a0",
+                "billNumber": "BILL-00001",
+                "contactName": "AUD-002 Synthetic Supplier",
+                "dueDate": "2025-12-31",
+                "amountDue": 5000,
+                "daysOverdue": 0
+              }
+            ]
+          },
+          {
+            "label": "1-30 days",
+            "total": 0,
+            "count": 0,
+            "bills": []
+          },
+          {
+            "label": "31-60 days",
+            "total": 0,
+            "count": 0,
+            "bills": []
+          },
+          {
+            "label": "61-90 days",
+            "total": 0,
+            "count": 0,
+            "bills": []
+          },
+          {
+            "label": "90+ days",
+            "total": 0,
+            "count": 0,
+            "bills": []
+          }
+        ],
+        "grandTotal": 5000
+      }
+    },
+    {
+      "path": "reports/balance-sheet?asAt=2025-12-31",
+      "method": "GET",
+      "status": 200,
+      "handlerMs": 3.3681000000001404,
+      "result": {
+        "asAt": "2025-12-31",
+        "assets": {
+          "type": "asset",
+          "accounts": [
+            {
+              "accountId": "b495798e-82a1-439a-9bbe-f0d5bd8e4541",
+              "code": "1100",
+              "name": "Bank",
+              "balance": "1020.00"
+            },
+            {
+              "accountId": "91f399bf-40e1-4f49-9a36-c2c321ee1dec",
+              "code": "1200",
+              "name": "Accounts Receivable",
+              "balance": "150.00"
+            }
+          ],
+          "total": "1170.00"
+        },
+        "liabilities": {
+          "type": "liability",
+          "accounts": [
+            {
+              "accountId": "fff119f4-a9b5-42d9-aee2-d6c37b196619",
+              "code": "2100",
+              "name": "Accounts Payable",
+              "balance": "50.00"
+            }
+          ],
+          "total": "50.00"
+        },
+        "equity": {
+          "type": "equity",
+          "accounts": [
+            {
+              "accountId": "0432e726-a19d-4cbc-adbb-b2162c4d1b03",
+              "code": "3000",
+              "name": "Contributed Capital",
+              "balance": "1000.00"
+            },
+            {
+              "accountId": "4c92a37d-cc57-4e69-b408-0962c13b85ec",
+              "code": "3100",
+              "name": "Retained Earnings",
+              "balance": "120.00"
+            }
+          ],
+          "total": "1120.00"
+        }
+      }
+    },
+    {
+      "path": "bank-accounts",
+      "method": "GET",
+      "status": 200,
+      "handlerMs": 2.502100000000155,
+      "result": {
+        "bankAccounts": [
+          {
+            "id": "05617a93-fef4-4fc4-97e5-526ecb77f50a",
+            "organizationId": "27c074b2-7c89-4d43-9b97-cfeb7d6cb406",
+            "accountName": "AUD-002 Synthetic Bank",
+            "accountNumber": null,
+            "bankName": null,
+            "currencyCode": "USD",
+            "countryCode": null,
+            "accountType": "checking",
+            "color": "#0f766e",
+            "chartAccountId": "b495798e-82a1-439a-9bbe-f0d5bd8e4541",
+            "balance": 0,
+            "lowBalanceThreshold": null,
+            "isActive": true,
+            "createdAt": "2026-10-02T05:46:07.944Z",
+            "deletedAt": null,
+            "chartAccount": {
+              "id": "b495798e-82a1-439a-9bbe-f0d5bd8e4541",
+              "organizationId": "27c074b2-7c89-4d43-9b97-cfeb7d6cb406",
+              "code": "1100",
+              "name": "Bank",
+              "type": "asset",
+              "subType": "bank",
+              "parentId": null,
+              "currencyCode": "USD",
+              "isActive": true,
+              "description": null,
+              "defaultTaxRateId": null,
+              "taxDisallowedPercent": 0,
+              "reportingCode": null,
+              "isSystem": false,
+              "createdAt": "2026-10-02T05:46:07.807Z",
+              "deletedAt": null
+            }
+          }
+        ]
+      }
+    },
+    {
+      "path": "fiscal-years/[id]/close",
+      "method": "POST",
+      "id": "a9e6b05f-a39c-4a00-9fba-0e757737eec8",
+      "status": 400,
+      "handlerMs": 2.031199999999899,
+      "result": {
+        "error": "Fiscal year is already closed"
+      }
+    },
+    {
+      "path": "reports/trial-balance?asAt=2025-12-31",
+      "method": "GET",
+      "status": 200,
+      "handlerMs": 2.30600000000004,
+      "result": {
+        "asAt": "2025-12-31",
+        "accounts": [
+          {
+            "accountId": "b495798e-82a1-439a-9bbe-f0d5bd8e4541",
+            "code": "1100",
+            "name": "Bank",
+            "type": "asset",
+            "debitBalance": "1020.00",
+            "creditBalance": "0.00",
+            "balance": "1020.00"
+          },
+          {
+            "accountId": "91f399bf-40e1-4f49-9a36-c2c321ee1dec",
+            "code": "1200",
+            "name": "Accounts Receivable",
+            "type": "asset",
+            "debitBalance": "150.00",
+            "creditBalance": "0.00",
+            "balance": "150.00"
+          },
+          {
+            "accountId": "fff119f4-a9b5-42d9-aee2-d6c37b196619",
+            "code": "2100",
+            "name": "Accounts Payable",
+            "type": "liability",
+            "debitBalance": "50.00",
+            "creditBalance": "0.00",
+            "balance": "50.00"
+          },
+          {
+            "accountId": "0432e726-a19d-4cbc-adbb-b2162c4d1b03",
+            "code": "3000",
+            "name": "Contributed Capital",
+            "type": "equity",
+            "debitBalance": "1000.00",
+            "creditBalance": "0.00",
+            "balance": "1000.00"
+          },
+          {
+            "accountId": "4c92a37d-cc57-4e69-b408-0962c13b85ec",
+            "code": "3100",
+            "name": "Retained Earnings",
+            "type": "equity",
+            "debitBalance": "120.00",
+            "creditBalance": "0.00",
+            "balance": "120.00"
+          },
+          {
+            "accountId": "65781068-42de-457a-8099-fcd2419af907",
+            "code": "4000",
+            "name": "Sales Revenue",
+            "type": "revenue",
+            "debitBalance": "0.00",
+            "creditBalance": "0.00",
+            "balance": "0.00"
+          },
+          {
+            "accountId": "579d16aa-0fc0-4941-9619-80d00009ee6e",
+            "code": "6000",
+            "name": "Operating Expense",
+            "type": "expense",
+            "debitBalance": "0.00",
+            "creditBalance": "0.00",
+            "balance": "0.00"
+          }
+        ]
+      }
+    },
+    {
+      "path": "reports/aged-receivables?asAt=2025-12-31",
+      "method": "GET",
+      "status": 200,
+      "handlerMs": 3.6286999999997533,
+      "result": {
+        "asAt": "2025-12-31",
+        "buckets": [
+          {
+            "label": "Current",
+            "total": 15000,
+            "count": 1,
+            "invoices": [
+              {
+                "id": "d0dd4cd6-bf2b-48ae-bc00-309721869472",
+                "invoiceNumber": "INV-00001",
+                "contactName": "AUD-002 Synthetic Customer",
+                "dueDate": "2025-12-31",
+                "amountDue": 15000,
+                "daysOverdue": 0
+              }
+            ]
+          },
+          {
+            "label": "1-30 days",
+            "total": 0,
+            "count": 0,
+            "invoices": []
+          },
+          {
+            "label": "31-60 days",
+            "total": 0,
+            "count": 0,
+            "invoices": []
+          },
+          {
+            "label": "61-90 days",
+            "total": 0,
+            "count": 0,
+            "invoices": []
+          },
+          {
+            "label": "90+ days",
+            "total": 0,
+            "count": 0,
+            "invoices": []
+          }
+        ],
+        "grandTotal": 15000
+      }
+    },
+    {
+      "path": "reports/aged-payables?asAt=2025-12-31",
+      "method": "GET",
+      "status": 200,
+      "handlerMs": 3.6855000000000473,
+      "result": {
+        "asAt": "2025-12-31",
+        "buckets": [
+          {
+            "label": "Current",
+            "total": 5000,
+            "count": 1,
+            "bills": [
+              {
+                "id": "905b5874-0621-4240-a3cb-2c466dc8b9a0",
+                "billNumber": "BILL-00001",
+                "contactName": "AUD-002 Synthetic Supplier",
+                "dueDate": "2025-12-31",
+                "amountDue": 5000,
+                "daysOverdue": 0
+              }
+            ]
+          },
+          {
+            "label": "1-30 days",
+            "total": 0,
+            "count": 0,
+            "bills": []
+          },
+          {
+            "label": "31-60 days",
+            "total": 0,
+            "count": 0,
+            "bills": []
+          },
+          {
+            "label": "61-90 days",
+            "total": 0,
+            "count": 0,
+            "bills": []
+          },
+          {
+            "label": "90+ days",
+            "total": 0,
+            "count": 0,
+            "bills": []
+          }
+        ],
+        "grandTotal": 5000
+      }
+    },
+    {
+      "path": "reports/balance-sheet?asAt=2025-12-31",
+      "method": "GET",
+      "status": 200,
+      "handlerMs": 3.427900000000136,
+      "result": {
+        "asAt": "2025-12-31",
+        "assets": {
+          "type": "asset",
+          "accounts": [
+            {
+              "accountId": "b495798e-82a1-439a-9bbe-f0d5bd8e4541",
+              "code": "1100",
+              "name": "Bank",
+              "balance": "1020.00"
+            },
+            {
+              "accountId": "91f399bf-40e1-4f49-9a36-c2c321ee1dec",
+              "code": "1200",
+              "name": "Accounts Receivable",
+              "balance": "150.00"
+            }
+          ],
+          "total": "1170.00"
+        },
+        "liabilities": {
+          "type": "liability",
+          "accounts": [
+            {
+              "accountId": "fff119f4-a9b5-42d9-aee2-d6c37b196619",
+              "code": "2100",
+              "name": "Accounts Payable",
+              "balance": "50.00"
+            }
+          ],
+          "total": "50.00"
+        },
+        "equity": {
+          "type": "equity",
+          "accounts": [
+            {
+              "accountId": "0432e726-a19d-4cbc-adbb-b2162c4d1b03",
+              "code": "3000",
+              "name": "Contributed Capital",
+              "balance": "1000.00"
+            },
+            {
+              "accountId": "4c92a37d-cc57-4e69-b408-0962c13b85ec",
+              "code": "3100",
+              "name": "Retained Earnings",
+              "balance": "120.00"
+            }
+          ],
+          "total": "1120.00"
+        }
+      }
+    },
+    {
+      "path": "bank-accounts",
+      "method": "GET",
+      "status": 200,
+      "handlerMs": 2.629899999999907,
+      "result": {
+        "bankAccounts": [
+          {
+            "id": "05617a93-fef4-4fc4-97e5-526ecb77f50a",
+            "organizationId": "27c074b2-7c89-4d43-9b97-cfeb7d6cb406",
+            "accountName": "AUD-002 Synthetic Bank",
+            "accountNumber": null,
+            "bankName": null,
+            "currencyCode": "USD",
+            "countryCode": null,
+            "accountType": "checking",
+            "color": "#0f766e",
+            "chartAccountId": "b495798e-82a1-439a-9bbe-f0d5bd8e4541",
+            "balance": 0,
+            "lowBalanceThreshold": null,
+            "isActive": true,
+            "createdAt": "2026-10-02T05:46:07.944Z",
+            "deletedAt": null,
+            "chartAccount": {
+              "id": "b495798e-82a1-439a-9bbe-f0d5bd8e4541",
+              "organizationId": "27c074b2-7c89-4d43-9b97-cfeb7d6cb406",
+              "code": "1100",
+              "name": "Bank",
+              "type": "asset",
+              "subType": "bank",
+              "parentId": null,
+              "currencyCode": "USD",
+              "isActive": true,
+              "description": null,
+              "defaultTaxRateId": null,
+              "taxDisallowedPercent": 0,
+              "reportingCode": null,
+              "isSystem": false,
+              "createdAt": "2026-10-02T05:46:07.807Z",
+              "deletedAt": null
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "reports": {
+    "beforeClose": {
+      "trial-balance": {
+        "asAt": "2025-12-31",
+        "accounts": [
+          {
+            "accountId": "b495798e-82a1-439a-9bbe-f0d5bd8e4541",
+            "code": "1100",
+            "name": "Bank",
+            "type": "asset",
+            "debitBalance": "1020.00",
+            "creditBalance": "0.00",
+            "balance": "1020.00"
+          },
+          {
+            "accountId": "91f399bf-40e1-4f49-9a36-c2c321ee1dec",
+            "code": "1200",
+            "name": "Accounts Receivable",
+            "type": "asset",
+            "debitBalance": "150.00",
+            "creditBalance": "0.00",
+            "balance": "150.00"
+          },
+          {
+            "accountId": "fff119f4-a9b5-42d9-aee2-d6c37b196619",
+            "code": "2100",
+            "name": "Accounts Payable",
+            "type": "liability",
+            "debitBalance": "50.00",
+            "creditBalance": "0.00",
+            "balance": "50.00"
+          },
+          {
+            "accountId": "0432e726-a19d-4cbc-adbb-b2162c4d1b03",
+            "code": "3000",
+            "name": "Contributed Capital",
+            "type": "equity",
+            "debitBalance": "1000.00",
+            "creditBalance": "0.00",
+            "balance": "1000.00"
+          },
+          {
+            "accountId": "4c92a37d-cc57-4e69-b408-0962c13b85ec",
+            "code": "3100",
+            "name": "Retained Earnings",
+            "type": "equity",
+            "debitBalance": "0.00",
+            "creditBalance": "0.00",
+            "balance": "0.00"
+          },
+          {
+            "accountId": "65781068-42de-457a-8099-fcd2419af907",
+            "code": "4000",
+            "name": "Sales Revenue",
+            "type": "revenue",
+            "debitBalance": "200.00",
+            "creditBalance": "0.00",
+            "balance": "200.00"
+          },
+          {
+            "accountId": "579d16aa-0fc0-4941-9619-80d00009ee6e",
+            "code": "6000",
+            "name": "Operating Expense",
+            "type": "expense",
+            "debitBalance": "80.00",
+            "creditBalance": "0.00",
+            "balance": "80.00"
+          }
+        ]
+      },
+      "aged-receivables": {
+        "asAt": "2025-12-31",
+        "buckets": [
+          {
+            "label": "Current",
+            "total": 15000,
+            "count": 1,
+            "invoices": [
+              {
+                "id": "d0dd4cd6-bf2b-48ae-bc00-309721869472",
+                "invoiceNumber": "INV-00001",
+                "contactName": "AUD-002 Synthetic Customer",
+                "dueDate": "2025-12-31",
+                "amountDue": 15000,
+                "daysOverdue": 0
+              }
+            ]
+          },
+          {
+            "label": "1-30 days",
+            "total": 0,
+            "count": 0,
+            "invoices": []
+          },
+          {
+            "label": "31-60 days",
+            "total": 0,
+            "count": 0,
+            "invoices": []
+          },
+          {
+            "label": "61-90 days",
+            "total": 0,
+            "count": 0,
+            "invoices": []
+          },
+          {
+            "label": "90+ days",
+            "total": 0,
+            "count": 0,
+            "invoices": []
+          }
+        ],
+        "grandTotal": 15000
+      },
+      "aged-payables": {
+        "asAt": "2025-12-31",
+        "buckets": [
+          {
+            "label": "Current",
+            "total": 5000,
+            "count": 1,
+            "bills": [
+              {
+                "id": "905b5874-0621-4240-a3cb-2c466dc8b9a0",
+                "billNumber": "BILL-00001",
+                "contactName": "AUD-002 Synthetic Supplier",
+                "dueDate": "2025-12-31",
+                "amountDue": 5000,
+                "daysOverdue": 0
+              }
+            ]
+          },
+          {
+            "label": "1-30 days",
+            "total": 0,
+            "count": 0,
+            "bills": []
+          },
+          {
+            "label": "31-60 days",
+            "total": 0,
+            "count": 0,
+            "bills": []
+          },
+          {
+            "label": "61-90 days",
+            "total": 0,
+            "count": 0,
+            "bills": []
+          },
+          {
+            "label": "90+ days",
+            "total": 0,
+            "count": 0,
+            "bills": []
+          }
+        ],
+        "grandTotal": 5000
+      },
+      "balance-sheet": {
+        "asAt": "2025-12-31",
+        "assets": {
+          "type": "asset",
+          "accounts": [
+            {
+              "accountId": "b495798e-82a1-439a-9bbe-f0d5bd8e4541",
+              "code": "1100",
+              "name": "Bank",
+              "balance": "1020.00"
+            },
+            {
+              "accountId": "91f399bf-40e1-4f49-9a36-c2c321ee1dec",
+              "code": "1200",
+              "name": "Accounts Receivable",
+              "balance": "150.00"
+            }
+          ],
+          "total": "1170.00"
+        },
+        "liabilities": {
+          "type": "liability",
+          "accounts": [
+            {
+              "accountId": "fff119f4-a9b5-42d9-aee2-d6c37b196619",
+              "code": "2100",
+              "name": "Accounts Payable",
+              "balance": "50.00"
+            }
+          ],
+          "total": "50.00"
+        },
+        "equity": {
+          "type": "equity",
+          "accounts": [
+            {
+              "accountId": "0432e726-a19d-4cbc-adbb-b2162c4d1b03",
+              "code": "3000",
+              "name": "Contributed Capital",
+              "balance": "1000.00"
+            },
+            {
+              "accountId": "4c92a37d-cc57-4e69-b408-0962c13b85ec",
+              "code": "3100",
+              "name": "Retained Earnings",
+              "balance": "0.00"
+            },
+            {
+              "accountId": "current-year-earnings",
+              "code": "",
+              "name": "Current Year Earnings",
+              "balance": "120.00"
+            }
+          ],
+          "total": "1120.00"
+        }
+      },
+      "bank": {
+        "bankAccounts": [
+          {
+            "id": "05617a93-fef4-4fc4-97e5-526ecb77f50a",
+            "organizationId": "27c074b2-7c89-4d43-9b97-cfeb7d6cb406",
+            "accountName": "AUD-002 Synthetic Bank",
+            "accountNumber": null,
+            "bankName": null,
+            "currencyCode": "USD",
+            "countryCode": null,
+            "accountType": "checking",
+            "color": "#0f766e",
+            "chartAccountId": "b495798e-82a1-439a-9bbe-f0d5bd8e4541",
+            "balance": 0,
+            "lowBalanceThreshold": null,
+            "isActive": true,
+            "createdAt": "2026-10-02T05:46:07.944Z",
+            "deletedAt": null,
+            "chartAccount": {
+              "id": "b495798e-82a1-439a-9bbe-f0d5bd8e4541",
+              "organizationId": "27c074b2-7c89-4d43-9b97-cfeb7d6cb406",
+              "code": "1100",
+              "name": "Bank",
+              "type": "asset",
+              "subType": "bank",
+              "parentId": null,
+              "currencyCode": "USD",
+              "isActive": true,
+              "description": null,
+              "defaultTaxRateId": null,
+              "taxDisallowedPercent": 0,
+              "reportingCode": null,
+              "isSystem": false,
+              "createdAt": "2026-10-02T05:46:07.807Z",
+              "deletedAt": null
+            }
+          }
+        ]
+      }
+    },
+    "afterClose": {
+      "trial-balance": {
+        "asAt": "2025-12-31",
+        "accounts": [
+          {
+            "accountId": "b495798e-82a1-439a-9bbe-f0d5bd8e4541",
+            "code": "1100",
+            "name": "Bank",
+            "type": "asset",
+            "debitBalance": "1020.00",
+            "creditBalance": "0.00",
+            "balance": "1020.00"
+          },
+          {
+            "accountId": "91f399bf-40e1-4f49-9a36-c2c321ee1dec",
+            "code": "1200",
+            "name": "Accounts Receivable",
+            "type": "asset",
+            "debitBalance": "150.00",
+            "creditBalance": "0.00",
+            "balance": "150.00"
+          },
+          {
+            "accountId": "fff119f4-a9b5-42d9-aee2-d6c37b196619",
+            "code": "2100",
+            "name": "Accounts Payable",
+            "type": "liability",
+            "debitBalance": "50.00",
+            "creditBalance": "0.00",
+            "balance": "50.00"
+          },
+          {
+            "accountId": "0432e726-a19d-4cbc-adbb-b2162c4d1b03",
+            "code": "3000",
+            "name": "Contributed Capital",
+            "type": "equity",
+            "debitBalance": "1000.00",
+            "creditBalance": "0.00",
+            "balance": "1000.00"
+          },
+          {
+            "accountId": "4c92a37d-cc57-4e69-b408-0962c13b85ec",
+            "code": "3100",
+            "name": "Retained Earnings",
+            "type": "equity",
+            "debitBalance": "120.00",
+            "creditBalance": "0.00",
+            "balance": "120.00"
+          },
+          {
+            "accountId": "65781068-42de-457a-8099-fcd2419af907",
+            "code": "4000",
+            "name": "Sales Revenue",
+            "type": "revenue",
+            "debitBalance": "0.00",
+            "creditBalance": "0.00",
+            "balance": "0.00"
+          },
+          {
+            "accountId": "579d16aa-0fc0-4941-9619-80d00009ee6e",
+            "code": "6000",
+            "name": "Operating Expense",
+            "type": "expense",
+            "debitBalance": "0.00",
+            "creditBalance": "0.00",
+            "balance": "0.00"
+          }
+        ]
+      },
+      "aged-receivables": {
+        "asAt": "2025-12-31",
+        "buckets": [
+          {
+            "label": "Current",
+            "total": 15000,
+            "count": 1,
+            "invoices": [
+              {
+                "id": "d0dd4cd6-bf2b-48ae-bc00-309721869472",
+                "invoiceNumber": "INV-00001",
+                "contactName": "AUD-002 Synthetic Customer",
+                "dueDate": "2025-12-31",
+                "amountDue": 15000,
+                "daysOverdue": 0
+              }
+            ]
+          },
+          {
+            "label": "1-30 days",
+            "total": 0,
+            "count": 0,
+            "invoices": []
+          },
+          {
+            "label": "31-60 days",
+            "total": 0,
+            "count": 0,
+            "invoices": []
+          },
+          {
+            "label": "61-90 days",
+            "total": 0,
+            "count": 0,
+            "invoices": []
+          },
+          {
+            "label": "90+ days",
+            "total": 0,
+            "count": 0,
+            "invoices": []
+          }
+        ],
+        "grandTotal": 15000
+      },
+      "aged-payables": {
+        "asAt": "2025-12-31",
+        "buckets": [
+          {
+            "label": "Current",
+            "total": 5000,
+            "count": 1,
+            "bills": [
+              {
+                "id": "905b5874-0621-4240-a3cb-2c466dc8b9a0",
+                "billNumber": "BILL-00001",
+                "contactName": "AUD-002 Synthetic Supplier",
+                "dueDate": "2025-12-31",
+                "amountDue": 5000,
+                "daysOverdue": 0
+              }
+            ]
+          },
+          {
+            "label": "1-30 days",
+            "total": 0,
+            "count": 0,
+            "bills": []
+          },
+          {
+            "label": "31-60 days",
+            "total": 0,
+            "count": 0,
+            "bills": []
+          },
+          {
+            "label": "61-90 days",
+            "total": 0,
+            "count": 0,
+            "bills": []
+          },
+          {
+            "label": "90+ days",
+            "total": 0,
+            "count": 0,
+            "bills": []
+          }
+        ],
+        "grandTotal": 5000
+      },
+      "balance-sheet": {
+        "asAt": "2025-12-31",
+        "assets": {
+          "type": "asset",
+          "accounts": [
+            {
+              "accountId": "b495798e-82a1-439a-9bbe-f0d5bd8e4541",
+              "code": "1100",
+              "name": "Bank",
+              "balance": "1020.00"
+            },
+            {
+              "accountId": "91f399bf-40e1-4f49-9a36-c2c321ee1dec",
+              "code": "1200",
+              "name": "Accounts Receivable",
+              "balance": "150.00"
+            }
+          ],
+          "total": "1170.00"
+        },
+        "liabilities": {
+          "type": "liability",
+          "accounts": [
+            {
+              "accountId": "fff119f4-a9b5-42d9-aee2-d6c37b196619",
+              "code": "2100",
+              "name": "Accounts Payable",
+              "balance": "50.00"
+            }
+          ],
+          "total": "50.00"
+        },
+        "equity": {
+          "type": "equity",
+          "accounts": [
+            {
+              "accountId": "0432e726-a19d-4cbc-adbb-b2162c4d1b03",
+              "code": "3000",
+              "name": "Contributed Capital",
+              "balance": "1000.00"
+            },
+            {
+              "accountId": "4c92a37d-cc57-4e69-b408-0962c13b85ec",
+              "code": "3100",
+              "name": "Retained Earnings",
+              "balance": "120.00"
+            }
+          ],
+          "total": "1120.00"
+        }
+      },
+      "bank": {
+        "bankAccounts": [
+          {
+            "id": "05617a93-fef4-4fc4-97e5-526ecb77f50a",
+            "organizationId": "27c074b2-7c89-4d43-9b97-cfeb7d6cb406",
+            "accountName": "AUD-002 Synthetic Bank",
+            "accountNumber": null,
+            "bankName": null,
+            "currencyCode": "USD",
+            "countryCode": null,
+            "accountType": "checking",
+            "color": "#0f766e",
+            "chartAccountId": "b495798e-82a1-439a-9bbe-f0d5bd8e4541",
+            "balance": 0,
+            "lowBalanceThreshold": null,
+            "isActive": true,
+            "createdAt": "2026-10-02T05:46:07.944Z",
+            "deletedAt": null,
+            "chartAccount": {
+              "id": "b495798e-82a1-439a-9bbe-f0d5bd8e4541",
+              "organizationId": "27c074b2-7c89-4d43-9b97-cfeb7d6cb406",
+              "code": "1100",
+              "name": "Bank",
+              "type": "asset",
+              "subType": "bank",
+              "parentId": null,
+              "currencyCode": "USD",
+              "isActive": true,
+              "description": null,
+              "defaultTaxRateId": null,
+              "taxDisallowedPercent": 0,
+              "reportingCode": null,
+              "isSystem": false,
+              "createdAt": "2026-10-02T05:46:07.807Z",
+              "deletedAt": null
+            }
+          }
+        ]
+      }
+    },
+    "afterDuplicateClose": {
+      "trial-balance": {
+        "asAt": "2025-12-31",
+        "accounts": [
+          {
+            "accountId": "b495798e-82a1-439a-9bbe-f0d5bd8e4541",
+            "code": "1100",
+            "name": "Bank",
+            "type": "asset",
+            "debitBalance": "1020.00",
+            "creditBalance": "0.00",
+            "balance": "1020.00"
+          },
+          {
+            "accountId": "91f399bf-40e1-4f49-9a36-c2c321ee1dec",
+            "code": "1200",
+            "name": "Accounts Receivable",
+            "type": "asset",
+            "debitBalance": "150.00",
+            "creditBalance": "0.00",
+            "balance": "150.00"
+          },
+          {
+            "accountId": "fff119f4-a9b5-42d9-aee2-d6c37b196619",
+            "code": "2100",
+            "name": "Accounts Payable",
+            "type": "liability",
+            "debitBalance": "50.00",
+            "creditBalance": "0.00",
+            "balance": "50.00"
+          },
+          {
+            "accountId": "0432e726-a19d-4cbc-adbb-b2162c4d1b03",
+            "code": "3000",
+            "name": "Contributed Capital",
+            "type": "equity",
+            "debitBalance": "1000.00",
+            "creditBalance": "0.00",
+            "balance": "1000.00"
+          },
+          {
+            "accountId": "4c92a37d-cc57-4e69-b408-0962c13b85ec",
+            "code": "3100",
+            "name": "Retained Earnings",
+            "type": "equity",
+            "debitBalance": "120.00",
+            "creditBalance": "0.00",
+            "balance": "120.00"
+          },
+          {
+            "accountId": "65781068-42de-457a-8099-fcd2419af907",
+            "code": "4000",
+            "name": "Sales Revenue",
+            "type": "revenue",
+            "debitBalance": "0.00",
+            "creditBalance": "0.00",
+            "balance": "0.00"
+          },
+          {
+            "accountId": "579d16aa-0fc0-4941-9619-80d00009ee6e",
+            "code": "6000",
+            "name": "Operating Expense",
+            "type": "expense",
+            "debitBalance": "0.00",
+            "creditBalance": "0.00",
+            "balance": "0.00"
+          }
+        ]
+      },
+      "aged-receivables": {
+        "asAt": "2025-12-31",
+        "buckets": [
+          {
+            "label": "Current",
+            "total": 15000,
+            "count": 1,
+            "invoices": [
+              {
+                "id": "d0dd4cd6-bf2b-48ae-bc00-309721869472",
+                "invoiceNumber": "INV-00001",
+                "contactName": "AUD-002 Synthetic Customer",
+                "dueDate": "2025-12-31",
+                "amountDue": 15000,
+                "daysOverdue": 0
+              }
+            ]
+          },
+          {
+            "label": "1-30 days",
+            "total": 0,
+            "count": 0,
+            "invoices": []
+          },
+          {
+            "label": "31-60 days",
+            "total": 0,
+            "count": 0,
+            "invoices": []
+          },
+          {
+            "label": "61-90 days",
+            "total": 0,
+            "count": 0,
+            "invoices": []
+          },
+          {
+            "label": "90+ days",
+            "total": 0,
+            "count": 0,
+            "invoices": []
+          }
+        ],
+        "grandTotal": 15000
+      },
+      "aged-payables": {
+        "asAt": "2025-12-31",
+        "buckets": [
+          {
+            "label": "Current",
+            "total": 5000,
+            "count": 1,
+            "bills": [
+              {
+                "id": "905b5874-0621-4240-a3cb-2c466dc8b9a0",
+                "billNumber": "BILL-00001",
+                "contactName": "AUD-002 Synthetic Supplier",
+                "dueDate": "2025-12-31",
+                "amountDue": 5000,
+                "daysOverdue": 0
+              }
+            ]
+          },
+          {
+            "label": "1-30 days",
+            "total": 0,
+            "count": 0,
+            "bills": []
+          },
+          {
+            "label": "31-60 days",
+            "total": 0,
+            "count": 0,
+            "bills": []
+          },
+          {
+            "label": "61-90 days",
+            "total": 0,
+            "count": 0,
+            "bills": []
+          },
+          {
+            "label": "90+ days",
+            "total": 0,
+            "count": 0,
+            "bills": []
+          }
+        ],
+        "grandTotal": 5000
+      },
+      "balance-sheet": {
+        "asAt": "2025-12-31",
+        "assets": {
+          "type": "asset",
+          "accounts": [
+            {
+              "accountId": "b495798e-82a1-439a-9bbe-f0d5bd8e4541",
+              "code": "1100",
+              "name": "Bank",
+              "balance": "1020.00"
+            },
+            {
+              "accountId": "91f399bf-40e1-4f49-9a36-c2c321ee1dec",
+              "code": "1200",
+              "name": "Accounts Receivable",
+              "balance": "150.00"
+            }
+          ],
+          "total": "1170.00"
+        },
+        "liabilities": {
+          "type": "liability",
+          "accounts": [
+            {
+              "accountId": "fff119f4-a9b5-42d9-aee2-d6c37b196619",
+              "code": "2100",
+              "name": "Accounts Payable",
+              "balance": "50.00"
+            }
+          ],
+          "total": "50.00"
+        },
+        "equity": {
+          "type": "equity",
+          "accounts": [
+            {
+              "accountId": "0432e726-a19d-4cbc-adbb-b2162c4d1b03",
+              "code": "3000",
+              "name": "Contributed Capital",
+              "balance": "1000.00"
+            },
+            {
+              "accountId": "4c92a37d-cc57-4e69-b408-0962c13b85ec",
+              "code": "3100",
+              "name": "Retained Earnings",
+              "balance": "120.00"
+            }
+          ],
+          "total": "1120.00"
+        }
+      },
+      "bank": {
+        "bankAccounts": [
+          {
+            "id": "05617a93-fef4-4fc4-97e5-526ecb77f50a",
+            "organizationId": "27c074b2-7c89-4d43-9b97-cfeb7d6cb406",
+            "accountName": "AUD-002 Synthetic Bank",
+            "accountNumber": null,
+            "bankName": null,
+            "currencyCode": "USD",
+            "countryCode": null,
+            "accountType": "checking",
+            "color": "#0f766e",
+            "chartAccountId": "b495798e-82a1-439a-9bbe-f0d5bd8e4541",
+            "balance": 0,
+            "lowBalanceThreshold": null,
+            "isActive": true,
+            "createdAt": "2026-10-02T05:46:07.944Z",
+            "deletedAt": null,
+            "chartAccount": {
+              "id": "b495798e-82a1-439a-9bbe-f0d5bd8e4541",
+              "organizationId": "27c074b2-7c89-4d43-9b97-cfeb7d6cb406",
+              "code": "1100",
+              "name": "Bank",
+              "type": "asset",
+              "subType": "bank",
+              "parentId": null,
+              "currencyCode": "USD",
+              "isActive": true,
+              "description": null,
+              "defaultTaxRateId": null,
+              "taxDisallowedPercent": 0,
+              "reportingCode": null,
+              "isSystem": false,
+              "createdAt": "2026-10-02T05:46:07.807Z",
+              "deletedAt": null
+            }
+          }
+        ]
+      }
+    }
+  },
+  "checks": [
+    {
+      "name": "Aged AR cents",
+      "actual": 15000,
+      "expected": 15000,
+      "passed": true
+    },
+    {
+      "name": "Aged AP cents",
+      "actual": 5000,
+      "expected": 5000,
+      "passed": true
+    },
+    {
+      "name": "Bank API balance cents",
+      "actual": 0,
+      "expected": 102000,
+      "passed": false
+    },
+    {
+      "name": "Before-close TB natural balance 1100",
+      "actual": "1020.00",
+      "expected": "1020.00",
+      "passed": true
+    },
+    {
+      "name": "Before-close TB natural balance 1200",
+      "actual": "150.00",
+      "expected": "150.00",
+      "passed": true
+    },
+    {
+      "name": "Before-close TB natural balance 2100",
+      "actual": "50.00",
+      "expected": "50.00",
+      "passed": true
+    },
+    {
+      "name": "Before-close TB natural balance 3000",
+      "actual": "1000.00",
+      "expected": "1000.00",
+      "passed": true
+    },
+    {
+      "name": "Before-close TB natural balance 3100",
+      "actual": "0.00",
+      "expected": "0.00",
+      "passed": true
+    },
+    {
+      "name": "Before-close TB natural balance 4000",
+      "actual": "200.00",
+      "expected": "200.00",
+      "passed": true
+    },
+    {
+      "name": "Before-close TB natural balance 6000",
+      "actual": "80.00",
+      "expected": "80.00",
+      "passed": true
+    },
+    {
+      "name": "Before-close TB AP credit column",
+      "actual": "0.00",
+      "expected": "50.00",
+      "passed": false
+    },
+    {
+      "name": "Before-close balance sheet assets",
+      "actual": "1170.00",
+      "expected": "1170.00",
+      "passed": true
+    },
+    {
+      "name": "Before-close balance sheet liabilities",
+      "actual": "50.00",
+      "expected": "50.00",
+      "passed": true
+    },
+    {
+      "name": "Before-close balance sheet equity incl current earnings",
+      "actual": "1120.00",
+      "expected": "1120.00",
+      "passed": true
+    },
+    {
+      "name": "After-close TB natural balance 1100",
+      "actual": "1020.00",
+      "expected": "1020.00",
+      "passed": true
+    },
+    {
+      "name": "After-close TB natural balance 1200",
+      "actual": "150.00",
+      "expected": "150.00",
+      "passed": true
+    },
+    {
+      "name": "After-close TB natural balance 2100",
+      "actual": "50.00",
+      "expected": "50.00",
+      "passed": true
+    },
+    {
+      "name": "After-close TB natural balance 3000",
+      "actual": "1000.00",
+      "expected": "1000.00",
+      "passed": true
+    },
+    {
+      "name": "After-close TB natural balance 3100",
+      "actual": "120.00",
+      "expected": "120.00",
+      "passed": true
+    },
+    {
+      "name": "After-close TB natural balance 4000",
+      "actual": "0.00",
+      "expected": "0.00",
+      "passed": true
+    },
+    {
+      "name": "After-close TB natural balance 6000",
+      "actual": "0.00",
+      "expected": "0.00",
+      "passed": true
+    },
+    {
+      "name": "After-close aged AR cents",
+      "actual": 15000,
+      "expected": 15000,
+      "passed": true
+    },
+    {
+      "name": "After-close aged AP cents",
+      "actual": 5000,
+      "expected": 5000,
+      "passed": true
+    },
+    {
+      "name": "Duplicate close leaves reports unchanged",
+      "actual": {
+        "trial-balance": {
+          "asAt": "2025-12-31",
+          "accounts": [
+            {
+              "accountId": "b495798e-82a1-439a-9bbe-f0d5bd8e4541",
+              "code": "1100",
+              "name": "Bank",
+              "type": "asset",
+              "debitBalance": "1020.00",
+              "creditBalance": "0.00",
+              "balance": "1020.00"
+            },
+            {
+              "accountId": "91f399bf-40e1-4f49-9a36-c2c321ee1dec",
+              "code": "1200",
+              "name": "Accounts Receivable",
+              "type": "asset",
+              "debitBalance": "150.00",
+              "creditBalance": "0.00",
+              "balance": "150.00"
+            },
+            {
+              "accountId": "fff119f4-a9b5-42d9-aee2-d6c37b196619",
+              "code": "2100",
+              "name": "Accounts Payable",
+              "type": "liability",
+              "debitBalance": "50.00",
+              "creditBalance": "0.00",
+              "balance": "50.00"
+            },
+            {
+              "accountId": "0432e726-a19d-4cbc-adbb-b2162c4d1b03",
+              "code": "3000",
+              "name": "Contributed Capital",
+              "type": "equity",
+              "debitBalance": "1000.00",
+              "creditBalance": "0.00",
+              "balance": "1000.00"
+            },
+            {
+              "accountId": "4c92a37d-cc57-4e69-b408-0962c13b85ec",
+              "code": "3100",
+              "name": "Retained Earnings",
+              "type": "equity",
+              "debitBalance": "120.00",
+              "creditBalance": "0.00",
+              "balance": "120.00"
+            },
+            {
+              "accountId": "65781068-42de-457a-8099-fcd2419af907",
+              "code": "4000",
+              "name": "Sales Revenue",
+              "type": "revenue",
+              "debitBalance": "0.00",
+              "creditBalance": "0.00",
+              "balance": "0.00"
+            },
+            {
+              "accountId": "579d16aa-0fc0-4941-9619-80d00009ee6e",
+              "code": "6000",
+              "name": "Operating Expense",
+              "type": "expense",
+              "debitBalance": "0.00",
+              "creditBalance": "0.00",
+              "balance": "0.00"
+            }
+          ]
+        },
+        "aged-receivables": {
+          "asAt": "2025-12-31",
+          "buckets": [
+            {
+              "label": "Current",
+              "total": 15000,
+              "count": 1,
+              "invoices": [
+                {
+                  "id": "d0dd4cd6-bf2b-48ae-bc00-309721869472",
+                  "invoiceNumber": "INV-00001",
+                  "contactName": "AUD-002 Synthetic Customer",
+                  "dueDate": "2025-12-31",
+                  "amountDue": 15000,
+                  "daysOverdue": 0
+                }
+              ]
+            },
+            {
+              "label": "1-30 days",
+              "total": 0,
+              "count": 0,
+              "invoices": []
+            },
+            {
+              "label": "31-60 days",
+              "total": 0,
+              "count": 0,
+              "invoices": []
+            },
+            {
+              "label": "61-90 days",
+              "total": 0,
+              "count": 0,
+              "invoices": []
+            },
+            {
+              "label": "90+ days",
+              "total": 0,
+              "count": 0,
+              "invoices": []
+            }
+          ],
+          "grandTotal": 15000
+        },
+        "aged-payables": {
+          "asAt": "2025-12-31",
+          "buckets": [
+            {
+              "label": "Current",
+              "total": 5000,
+              "count": 1,
+              "bills": [
+                {
+                  "id": "905b5874-0621-4240-a3cb-2c466dc8b9a0",
+                  "billNumber": "BILL-00001",
+                  "contactName": "AUD-002 Synthetic Supplier",
+                  "dueDate": "2025-12-31",
+                  "amountDue": 5000,
+                  "daysOverdue": 0
+                }
+              ]
+            },
+            {
+              "label": "1-30 days",
+              "total": 0,
+              "count": 0,
+              "bills": []
+            },
+            {
+              "label": "31-60 days",
+              "total": 0,
+              "count": 0,
+              "bills": []
+            },
+            {
+              "label": "61-90 days",
+              "total": 0,
+              "count": 0,
+              "bills": []
+            },
+            {
+              "label": "90+ days",
+              "total": 0,
+              "count": 0,
+              "bills": []
+            }
+          ],
+          "grandTotal": 5000
+        },
+        "balance-sheet": {
+          "asAt": "2025-12-31",
+          "assets": {
+            "type": "asset",
+            "accounts": [
+              {
+                "accountId": "b495798e-82a1-439a-9bbe-f0d5bd8e4541",
+                "code": "1100",
+                "name": "Bank",
+                "balance": "1020.00"
+              },
+              {
+                "accountId": "91f399bf-40e1-4f49-9a36-c2c321ee1dec",
+                "code": "1200",
+                "name": "Accounts Receivable",
+                "balance": "150.00"
+              }
+            ],
+            "total": "1170.00"
+          },
+          "liabilities": {
+            "type": "liability",
+            "accounts": [
+              {
+                "accountId": "fff119f4-a9b5-42d9-aee2-d6c37b196619",
+                "code": "2100",
+                "name": "Accounts Payable",
+                "balance": "50.00"
+              }
+            ],
+            "total": "50.00"
+          },
+          "equity": {
+            "type": "equity",
+            "accounts": [
+              {
+                "accountId": "0432e726-a19d-4cbc-adbb-b2162c4d1b03",
+                "code": "3000",
+                "name": "Contributed Capital",
+                "balance": "1000.00"
+              },
+              {
+                "accountId": "4c92a37d-cc57-4e69-b408-0962c13b85ec",
+                "code": "3100",
+                "name": "Retained Earnings",
+                "balance": "120.00"
+              }
+            ],
+            "total": "1120.00"
+          }
+        },
+        "bank": {
+          "bankAccounts": [
+            {
+              "id": "05617a93-fef4-4fc4-97e5-526ecb77f50a",
+              "organizationId": "27c074b2-7c89-4d43-9b97-cfeb7d6cb406",
+              "accountName": "AUD-002 Synthetic Bank",
+              "accountNumber": null,
+              "bankName": null,
+              "currencyCode": "USD",
+              "countryCode": null,
+              "accountType": "checking",
+              "color": "#0f766e",
+              "chartAccountId": "b495798e-82a1-439a-9bbe-f0d5bd8e4541",
+              "balance": 0,
+              "lowBalanceThreshold": null,
+              "isActive": true,
+              "createdAt": "2026-10-02T05:46:07.944Z",
+              "deletedAt": null,
+              "chartAccount": {
+                "id": "b495798e-82a1-439a-9bbe-f0d5bd8e4541",
+                "organizationId": "27c074b2-7c89-4d43-9b97-cfeb7d6cb406",
+                "code": "1100",
+                "name": "Bank",
+                "type": "asset",
+                "subType": "bank",
+                "parentId": null,
+                "currencyCode": "USD",
+                "isActive": true,
+                "description": null,
+                "defaultTaxRateId": null,
+                "taxDisallowedPercent": 0,
+                "reportingCode": null,
+                "isSystem": false,
+                "createdAt": "2026-10-02T05:46:07.807Z",
+                "deletedAt": null
+              }
+            }
+          ]
+        }
+      },
+      "expected": {
+        "trial-balance": {
+          "asAt": "2025-12-31",
+          "accounts": [
+            {
+              "accountId": "b495798e-82a1-439a-9bbe-f0d5bd8e4541",
+              "code": "1100",
+              "name": "Bank",
+              "type": "asset",
+              "debitBalance": "1020.00",
+              "creditBalance": "0.00",
+              "balance": "1020.00"
+            },
+            {
+              "accountId": "91f399bf-40e1-4f49-9a36-c2c321ee1dec",
+              "code": "1200",
+              "name": "Accounts Receivable",
+              "type": "asset",
+              "debitBalance": "150.00",
+              "creditBalance": "0.00",
+              "balance": "150.00"
+            },
+            {
+              "accountId": "fff119f4-a9b5-42d9-aee2-d6c37b196619",
+              "code": "2100",
+              "name": "Accounts Payable",
+              "type": "liability",
+              "debitBalance": "50.00",
+              "creditBalance": "0.00",
+              "balance": "50.00"
+            },
+            {
+              "accountId": "0432e726-a19d-4cbc-adbb-b2162c4d1b03",
+              "code": "3000",
+              "name": "Contributed Capital",
+              "type": "equity",
+              "debitBalance": "1000.00",
+              "creditBalance": "0.00",
+              "balance": "1000.00"
+            },
+            {
+              "accountId": "4c92a37d-cc57-4e69-b408-0962c13b85ec",
+              "code": "3100",
+              "name": "Retained Earnings",
+              "type": "equity",
+              "debitBalance": "120.00",
+              "creditBalance": "0.00",
+              "balance": "120.00"
+            },
+            {
+              "accountId": "65781068-42de-457a-8099-fcd2419af907",
+              "code": "4000",
+              "name": "Sales Revenue",
+              "type": "revenue",
+              "debitBalance": "0.00",
+              "creditBalance": "0.00",
+              "balance": "0.00"
+            },
+            {
+              "accountId": "579d16aa-0fc0-4941-9619-80d00009ee6e",
+              "code": "6000",
+              "name": "Operating Expense",
+              "type": "expense",
+              "debitBalance": "0.00",
+              "creditBalance": "0.00",
+              "balance": "0.00"
+            }
+          ]
+        },
+        "aged-receivables": {
+          "asAt": "2025-12-31",
+          "buckets": [
+            {
+              "label": "Current",
+              "total": 15000,
+              "count": 1,
+              "invoices": [
+                {
+                  "id": "d0dd4cd6-bf2b-48ae-bc00-309721869472",
+                  "invoiceNumber": "INV-00001",
+                  "contactName": "AUD-002 Synthetic Customer",
+                  "dueDate": "2025-12-31",
+                  "amountDue": 15000,
+                  "daysOverdue": 0
+                }
+              ]
+            },
+            {
+              "label": "1-30 days",
+              "total": 0,
+              "count": 0,
+              "invoices": []
+            },
+            {
+              "label": "31-60 days",
+              "total": 0,
+              "count": 0,
+              "invoices": []
+            },
+            {
+              "label": "61-90 days",
+              "total": 0,
+              "count": 0,
+              "invoices": []
+            },
+            {
+              "label": "90+ days",
+              "total": 0,
+              "count": 0,
+              "invoices": []
+            }
+          ],
+          "grandTotal": 15000
+        },
+        "aged-payables": {
+          "asAt": "2025-12-31",
+          "buckets": [
+            {
+              "label": "Current",
+              "total": 5000,
+              "count": 1,
+              "bills": [
+                {
+                  "id": "905b5874-0621-4240-a3cb-2c466dc8b9a0",
+                  "billNumber": "BILL-00001",
+                  "contactName": "AUD-002 Synthetic Supplier",
+                  "dueDate": "2025-12-31",
+                  "amountDue": 5000,
+                  "daysOverdue": 0
+                }
+              ]
+            },
+            {
+              "label": "1-30 days",
+              "total": 0,
+              "count": 0,
+              "bills": []
+            },
+            {
+              "label": "31-60 days",
+              "total": 0,
+              "count": 0,
+              "bills": []
+            },
+            {
+              "label": "61-90 days",
+              "total": 0,
+              "count": 0,
+              "bills": []
+            },
+            {
+              "label": "90+ days",
+              "total": 0,
+              "count": 0,
+              "bills": []
+            }
+          ],
+          "grandTotal": 5000
+        },
+        "balance-sheet": {
+          "asAt": "2025-12-31",
+          "assets": {
+            "type": "asset",
+            "accounts": [
+              {
+                "accountId": "b495798e-82a1-439a-9bbe-f0d5bd8e4541",
+                "code": "1100",
+                "name": "Bank",
+                "balance": "1020.00"
+              },
+              {
+                "accountId": "91f399bf-40e1-4f49-9a36-c2c321ee1dec",
+                "code": "1200",
+                "name": "Accounts Receivable",
+                "balance": "150.00"
+              }
+            ],
+            "total": "1170.00"
+          },
+          "liabilities": {
+            "type": "liability",
+            "accounts": [
+              {
+                "accountId": "fff119f4-a9b5-42d9-aee2-d6c37b196619",
+                "code": "2100",
+                "name": "Accounts Payable",
+                "balance": "50.00"
+              }
+            ],
+            "total": "50.00"
+          },
+          "equity": {
+            "type": "equity",
+            "accounts": [
+              {
+                "accountId": "0432e726-a19d-4cbc-adbb-b2162c4d1b03",
+                "code": "3000",
+                "name": "Contributed Capital",
+                "balance": "1000.00"
+              },
+              {
+                "accountId": "4c92a37d-cc57-4e69-b408-0962c13b85ec",
+                "code": "3100",
+                "name": "Retained Earnings",
+                "balance": "120.00"
+              }
+            ],
+            "total": "1120.00"
+          }
+        },
+        "bank": {
+          "bankAccounts": [
+            {
+              "id": "05617a93-fef4-4fc4-97e5-526ecb77f50a",
+              "organizationId": "27c074b2-7c89-4d43-9b97-cfeb7d6cb406",
+              "accountName": "AUD-002 Synthetic Bank",
+              "accountNumber": null,
+              "bankName": null,
+              "currencyCode": "USD",
+              "countryCode": null,
+              "accountType": "checking",
+              "color": "#0f766e",
+              "chartAccountId": "b495798e-82a1-439a-9bbe-f0d5bd8e4541",
+              "balance": 0,
+              "lowBalanceThreshold": null,
+              "isActive": true,
+              "createdAt": "2026-10-02T05:46:07.944Z",
+              "deletedAt": null,
+              "chartAccount": {
+                "id": "b495798e-82a1-439a-9bbe-f0d5bd8e4541",
+                "organizationId": "27c074b2-7c89-4d43-9b97-cfeb7d6cb406",
+                "code": "1100",
+                "name": "Bank",
+                "type": "asset",
+                "subType": "bank",
+                "parentId": null,
+                "currencyCode": "USD",
+                "isActive": true,
+                "description": null,
+                "defaultTaxRateId": null,
+                "taxDisallowedPercent": 0,
+                "reportingCode": null,
+                "isSystem": false,
+                "createdAt": "2026-10-02T05:46:07.807Z",
+                "deletedAt": null
+              }
+            }
+          ]
+        }
+      },
+      "passed": true
+    }
+  ],
+  "organizationId": "27c074b2-7c89-4d43-9b97-cfeb7d6cb406",
+  "userId": "9e268b14-b425-4019-b7c0-59028eaae9f2",
+  "completed": true,
+  "verificationPassed": false,
+  "credentialRevoked": true,
+  "finishedAt": "2026-10-02T02:16:08.432Z"
+}

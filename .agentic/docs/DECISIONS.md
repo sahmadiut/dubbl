@@ -34,6 +34,16 @@ Keep the completed inventory and policy notes as reference. Defer further licens
 
 Evidence: the owner's message during AUD-003, recorded in `../evidence/AUD-003-attempt-1.md`. The controller still closes exactly one task per continuation; AUD-004 is selected next after AUD-003.
 
+## DEC-005 — Screenshot requirements removed by owner
+
+Date: 2026-10-02 (Asia/Tehran). Owner: project owner (actual user in this session). Status: accepted.
+
+The owner said screenshots are unnecessary for continuation, instructed removing screenshot requirements from `.agentic`, and requested a commit to prepare for the next task. Screenshot capture, screenshot tests and screenshot golden comparisons are outside the current scope throughout the backlog. Their absence and unavailable browser/screenshot helpers must not block task completion. Financial reconciliation, actual behavioral/layout/accessibility review, native linguistic/accounting review and PDF correctness remain applicable. No screenshot or browser check is claimed passed.
+
+Updated AUD-002, RTL-001, L10N-002 through L10N-008, the baseline runbook, test matrix and requirements source accordingly. Historical evidence and task history are retained as records of the earlier scope. The owner also reported starting the local dev server; authenticated HTTP captures now succeeded. No general future agent dev-start authorization or production deployment is inferred.
+
+Evidence: `../evidence/AUD-002-attempt-4.md`.
+
 ## Remaining open scope decisions
 
 | Decision | Owner | Task | Initial state |

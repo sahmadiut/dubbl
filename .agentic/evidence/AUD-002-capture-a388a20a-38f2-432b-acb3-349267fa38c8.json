@@ -1,0 +1,534 @@
+{
+  "runId": "a388a20a-38f2-432b-acb3-349267fa38c8",
+  "mode": "direct-route-handler; no HTTP/server/browser",
+  "startedAt": "2026-10-02T02:15:01.695Z",
+  "calls": [
+    {
+      "path": "accounts",
+      "method": "POST",
+      "status": 201,
+      "handlerMs": 51.97119999999995,
+      "result": {
+        "account": {
+          "id": "4ef6ad32-18dc-41c0-b95b-41ffe5008a8f",
+          "organizationId": "68dbd5e8-ebed-446f-be3e-9f78e91d0c11",
+          "code": "1100",
+          "name": "Bank",
+          "type": "asset",
+          "subType": "bank",
+          "parentId": null,
+          "currencyCode": "USD",
+          "isActive": true,
+          "description": null,
+          "defaultTaxRateId": null,
+          "taxDisallowedPercent": 0,
+          "reportingCode": null,
+          "isSystem": false,
+          "createdAt": "2026-10-02T05:45:03.197Z",
+          "deletedAt": null
+        }
+      }
+    },
+    {
+      "path": "accounts",
+      "method": "POST",
+      "status": 201,
+      "handlerMs": 33.31700000000001,
+      "result": {
+        "account": {
+          "id": "d2de3f9b-42bb-4ee5-8904-e16d91b3bb16",
+          "organizationId": "68dbd5e8-ebed-446f-be3e-9f78e91d0c11",
+          "code": "1200",
+          "name": "Accounts Receivable",
+          "type": "asset",
+          "subType": "current",
+          "parentId": null,
+          "currencyCode": "USD",
+          "isActive": true,
+          "description": null,
+          "defaultTaxRateId": null,
+          "taxDisallowedPercent": 0,
+          "reportingCode": null,
+          "isSystem": false,
+          "createdAt": "2026-10-02T05:45:03.239Z",
+          "deletedAt": null
+        }
+      }
+    },
+    {
+      "path": "accounts",
+      "method": "POST",
+      "status": 201,
+      "handlerMs": 4.0271999999999935,
+      "result": {
+        "account": {
+          "id": "019efbad-3fe5-4959-bc39-99611d708440",
+          "organizationId": "68dbd5e8-ebed-446f-be3e-9f78e91d0c11",
+          "code": "2000",
+          "name": "Accounts Payable",
+          "type": "liability",
+          "subType": "current",
+          "parentId": null,
+          "currencyCode": "USD",
+          "isActive": true,
+          "description": null,
+          "defaultTaxRateId": null,
+          "taxDisallowedPercent": 0,
+          "reportingCode": null,
+          "isSystem": false,
+          "createdAt": "2026-10-02T05:45:03.246Z",
+          "deletedAt": null
+        }
+      }
+    },
+    {
+      "path": "accounts",
+      "method": "POST",
+      "status": 201,
+      "handlerMs": 7.438900000000103,
+      "result": {
+        "account": {
+          "id": "3cb56db9-91ca-41ed-ad9e-98ee99d5d11c",
+          "organizationId": "68dbd5e8-ebed-446f-be3e-9f78e91d0c11",
+          "code": "3000",
+          "name": "Contributed Capital",
+          "type": "equity",
+          "subType": "capital",
+          "parentId": null,
+          "currencyCode": "USD",
+          "isActive": true,
+          "description": null,
+          "defaultTaxRateId": null,
+          "taxDisallowedPercent": 0,
+          "reportingCode": null,
+          "isSystem": false,
+          "createdAt": "2026-10-02T05:45:03.255Z",
+          "deletedAt": null
+        }
+      }
+    },
+    {
+      "path": "accounts",
+      "method": "POST",
+      "status": 201,
+      "handlerMs": 4.214399999999841,
+      "result": {
+        "account": {
+          "id": "99366283-317b-41b1-b8bc-3fc6510cb5fb",
+          "organizationId": "68dbd5e8-ebed-446f-be3e-9f78e91d0c11",
+          "code": "3100",
+          "name": "Retained Earnings",
+          "type": "equity",
+          "subType": "retained",
+          "parentId": null,
+          "currencyCode": "USD",
+          "isActive": true,
+          "description": null,
+          "defaultTaxRateId": null,
+          "taxDisallowedPercent": 0,
+          "reportingCode": null,
+          "isSystem": false,
+          "createdAt": "2026-10-02T05:45:03.260Z",
+          "deletedAt": null
+        }
+      }
+    },
+    {
+      "path": "accounts",
+      "method": "POST",
+      "status": 201,
+      "handlerMs": 3.0327000000002045,
+      "result": {
+        "account": {
+          "id": "91f289b6-d3fb-424d-9177-8e3c266b2100",
+          "organizationId": "68dbd5e8-ebed-446f-be3e-9f78e91d0c11",
+          "code": "4000",
+          "name": "Sales Revenue",
+          "type": "revenue",
+          "subType": "operating",
+          "parentId": null,
+          "currencyCode": "USD",
+          "isActive": true,
+          "description": null,
+          "defaultTaxRateId": null,
+          "taxDisallowedPercent": 0,
+          "reportingCode": null,
+          "isSystem": false,
+          "createdAt": "2026-10-02T05:45:03.265Z",
+          "deletedAt": null
+        }
+      }
+    },
+    {
+      "path": "accounts",
+      "method": "POST",
+      "status": 201,
+      "handlerMs": 2.9306000000001404,
+      "result": {
+        "account": {
+          "id": "c2c62dc5-8f61-479f-8ff4-b2de9a3c7048",
+          "organizationId": "68dbd5e8-ebed-446f-be3e-9f78e91d0c11",
+          "code": "6000",
+          "name": "Operating Expense",
+          "type": "expense",
+          "subType": "operating",
+          "parentId": null,
+          "currencyCode": "USD",
+          "isActive": true,
+          "description": null,
+          "defaultTaxRateId": null,
+          "taxDisallowedPercent": 0,
+          "reportingCode": null,
+          "isSystem": false,
+          "createdAt": "2026-10-02T05:45:03.269Z",
+          "deletedAt": null
+        }
+      }
+    },
+    {
+      "path": "bank-accounts",
+      "method": "POST",
+      "status": 201,
+      "handlerMs": 26.94699999999966,
+      "result": {
+        "bankAccount": {
+          "id": "aee50db8-2aa3-49c0-8343-c44d5e2980ba",
+          "organizationId": "68dbd5e8-ebed-446f-be3e-9f78e91d0c11",
+          "accountName": "AUD-002 Synthetic Bank",
+          "accountNumber": null,
+          "bankName": null,
+          "currencyCode": "USD",
+          "countryCode": null,
+          "accountType": "checking",
+          "color": "#0f766e",
+          "chartAccountId": "4ef6ad32-18dc-41c0-b95b-41ffe5008a8f",
+          "balance": 0,
+          "lowBalanceThreshold": null,
+          "isActive": true,
+          "createdAt": "2026-10-02T05:45:03.320Z",
+          "deletedAt": null
+        }
+      }
+    },
+    {
+      "path": "fiscal-years",
+      "method": "POST",
+      "status": 201,
+      "handlerMs": 5.279399999999896,
+      "result": {
+        "fiscalYear": {
+          "id": "30ad030e-baae-445e-84a8-79a65410bdad",
+          "organizationId": "68dbd5e8-ebed-446f-be3e-9f78e91d0c11",
+          "name": "AUD-002 2025",
+          "startDate": "2025-01-01",
+          "endDate": "2025-12-31",
+          "isClosed": false,
+          "deletedAt": null
+        }
+      }
+    },
+    {
+      "path": "entries",
+      "method": "POST",
+      "status": 201,
+      "handlerMs": 14.989799999999832,
+      "result": {
+        "entry": {
+          "id": "cd737f2c-27ae-4086-bf64-6582fd15d804",
+          "organizationId": "68dbd5e8-ebed-446f-be3e-9f78e91d0c11",
+          "entryNumber": 1,
+          "date": "2025-12-01",
+          "description": "AUD-002 owner contribution",
+          "reference": null,
+          "status": "draft",
+          "fiscalYearId": "30ad030e-baae-445e-84a8-79a65410bdad",
+          "sourceType": null,
+          "sourceId": null,
+          "createdBy": "a7ee7a95-7bbc-4a2b-b35b-1bff7ea87238",
+          "postedAt": null,
+          "voidedAt": null,
+          "voidReason": null,
+          "autoReverseDate": null,
+          "reversedByEntryId": null,
+          "reversesEntryId": null,
+          "createdAt": "2026-10-02T05:45:03.359Z",
+          "updatedAt": "2026-10-02T05:45:03.359Z",
+          "deletedAt": null
+        }
+      }
+    },
+    {
+      "path": "entries/[id]/post",
+      "method": "POST",
+      "id": "cd737f2c-27ae-4086-bf64-6582fd15d804",
+      "status": 200,
+      "handlerMs": 14.367299999999886,
+      "result": {
+        "entry": {
+          "id": "cd737f2c-27ae-4086-bf64-6582fd15d804",
+          "organizationId": "68dbd5e8-ebed-446f-be3e-9f78e91d0c11",
+          "entryNumber": 1,
+          "date": "2025-12-01",
+          "description": "AUD-002 owner contribution",
+          "reference": null,
+          "status": "posted",
+          "fiscalYearId": "30ad030e-baae-445e-84a8-79a65410bdad",
+          "sourceType": null,
+          "sourceId": null,
+          "createdBy": "a7ee7a95-7bbc-4a2b-b35b-1bff7ea87238",
+          "postedAt": "2026-10-02T02:15:03.376Z",
+          "voidedAt": null,
+          "voidReason": null,
+          "autoReverseDate": null,
+          "reversedByEntryId": null,
+          "reversesEntryId": null,
+          "createdAt": "2026-10-02T05:45:03.359Z",
+          "updatedAt": "2026-10-02T02:15:03.376Z",
+          "deletedAt": null,
+          "lines": [
+            {
+              "id": "4104f42b-c438-4f3e-842e-18a478217483",
+              "accountId": "4ef6ad32-18dc-41c0-b95b-41ffe5008a8f",
+              "accountCode": "1100",
+              "accountName": "Bank",
+              "description": null,
+              "debitAmount": "1000.00",
+              "creditAmount": "0.00"
+            },
+            {
+              "id": "ea8090db-35d9-4a07-bf38-73bbc9016c7b",
+              "accountId": "3cb56db9-91ca-41ed-ad9e-98ee99d5d11c",
+              "accountCode": "3000",
+              "accountName": "Contributed Capital",
+              "description": null,
+              "debitAmount": "0.00",
+              "creditAmount": "1000.00"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "path": "contacts",
+      "method": "POST",
+      "status": 201,
+      "handlerMs": 5.475000000000364,
+      "result": {
+        "contact": {
+          "id": "12288fb8-634d-446c-b031-0ad670c840ef",
+          "organizationId": "68dbd5e8-ebed-446f-be3e-9f78e91d0c11",
+          "name": "AUD-002 Synthetic Customer",
+          "email": null,
+          "phone": null,
+          "taxNumber": null,
+          "type": "customer",
+          "paymentTermsDays": 30,
+          "addresses": null,
+          "notes": null,
+          "currencyCode": "USD",
+          "creditLimit": null,
+          "isTaxExempt": false,
+          "defaultRevenueAccountId": null,
+          "defaultExpenseAccountId": null,
+          "defaultTaxRateId": null,
+          "peppolId": null,
+          "peppolScheme": null,
+          "is1099Vendor": false,
+          "w9TaxClassification": null,
+          "taxIdentifier": null,
+          "backupWithholding": false,
+          "linkedOrgId": null,
+          "createdAt": "2026-10-02T05:45:03.403Z",
+          "updatedAt": "2026-10-02T05:45:03.403Z",
+          "deletedAt": null
+        }
+      }
+    },
+    {
+      "path": "contacts",
+      "method": "POST",
+      "status": 201,
+      "handlerMs": 4.205399999999827,
+      "result": {
+        "contact": {
+          "id": "f787c0c8-a4ec-4963-879f-498a3164b685",
+          "organizationId": "68dbd5e8-ebed-446f-be3e-9f78e91d0c11",
+          "name": "AUD-002 Synthetic Supplier",
+          "email": null,
+          "phone": null,
+          "taxNumber": null,
+          "type": "supplier",
+          "paymentTermsDays": 30,
+          "addresses": null,
+          "notes": null,
+          "currencyCode": "USD",
+          "creditLimit": null,
+          "isTaxExempt": false,
+          "defaultRevenueAccountId": null,
+          "defaultExpenseAccountId": null,
+          "defaultTaxRateId": null,
+          "peppolId": null,
+          "peppolScheme": null,
+          "is1099Vendor": false,
+          "w9TaxClassification": null,
+          "taxIdentifier": null,
+          "backupWithholding": false,
+          "linkedOrgId": null,
+          "createdAt": "2026-10-02T05:45:03.409Z",
+          "updatedAt": "2026-10-02T05:45:03.409Z",
+          "deletedAt": null
+        }
+      }
+    },
+    {
+      "path": "invoices",
+      "method": "POST",
+      "status": 201,
+      "handlerMs": 25.6266999999998,
+      "result": {
+        "invoice": {
+          "id": "6098af3d-9f41-42c9-8bbd-62bfd014cbed",
+          "organizationId": "68dbd5e8-ebed-446f-be3e-9f78e91d0c11",
+          "contactId": "12288fb8-634d-446c-b031-0ad670c840ef",
+          "invoiceNumber": "INV-00001",
+          "issueDate": "2025-12-02",
+          "dueDate": "2025-12-31",
+          "status": "draft",
+          "invoiceType": "standard",
+          "depositPercent": null,
+          "dunningLevel": 0,
+          "reference": null,
+          "notes": null,
+          "subtotal": 20000,
+          "taxTotal": 0,
+          "total": 20000,
+          "amountPaid": 0,
+          "amountDue": 20000,
+          "currencyCode": "USD",
+          "senderSnapshot": null,
+          "recipientSnapshot": null,
+          "paymentLinkToken": null,
+          "journalEntryId": null,
+          "sentAt": null,
+          "paidAt": null,
+          "voidedAt": null,
+          "writtenOffAt": null,
+          "createdBy": "a7ee7a95-7bbc-4a2b-b35b-1bff7ea87238",
+          "createdAt": "2026-10-02T05:45:03.456Z",
+          "updatedAt": "2026-10-02T05:45:03.456Z",
+          "deletedAt": null
+        },
+        "creditLimitWarning": null
+      }
+    },
+    {
+      "path": "invoices/[id]/send",
+      "method": "POST",
+      "id": "6098af3d-9f41-42c9-8bbd-62bfd014cbed",
+      "status": 200,
+      "handlerMs": 15.035400000000209,
+      "result": {
+        "invoice": {
+          "id": "6098af3d-9f41-42c9-8bbd-62bfd014cbed",
+          "organizationId": "68dbd5e8-ebed-446f-be3e-9f78e91d0c11",
+          "contactId": "12288fb8-634d-446c-b031-0ad670c840ef",
+          "invoiceNumber": "INV-00001",
+          "issueDate": "2025-12-02",
+          "dueDate": "2025-12-31",
+          "status": "sent",
+          "invoiceType": "standard",
+          "depositPercent": null,
+          "dunningLevel": 0,
+          "reference": null,
+          "notes": null,
+          "subtotal": 20000,
+          "taxTotal": 0,
+          "total": 20000,
+          "amountPaid": 0,
+          "amountDue": 20000,
+          "currencyCode": "USD",
+          "senderSnapshot": {
+            "name": "AUD-002 Baseline",
+            "email": null,
+            "phone": null,
+            "taxId": null,
+            "address": null,
+            "countryCode": null,
+            "registrationNumber": null
+          },
+          "recipientSnapshot": {
+            "name": "AUD-002 Synthetic Customer",
+            "email": null,
+            "address": null,
+            "taxNumber": null
+          },
+          "paymentLinkToken": null,
+          "journalEntryId": "82adc44c-166e-49af-ac46-d18f97f58b51",
+          "sentAt": "2026-10-02T02:15:04.540Z",
+          "paidAt": null,
+          "voidedAt": null,
+          "writtenOffAt": null,
+          "createdBy": "a7ee7a95-7bbc-4a2b-b35b-1bff7ea87238",
+          "createdAt": "2026-10-02T05:45:03.456Z",
+          "updatedAt": "2026-10-02T02:15:04.540Z",
+          "deletedAt": null
+        }
+      }
+    },
+    {
+      "path": "bills",
+      "method": "POST",
+      "status": 201,
+      "handlerMs": 11.349999999999909,
+      "result": {
+        "bill": {
+          "id": "c5c86d2f-37a6-460a-9589-4292a4f9e192",
+          "organizationId": "68dbd5e8-ebed-446f-be3e-9f78e91d0c11",
+          "contactId": "f787c0c8-a4ec-4963-879f-498a3164b685",
+          "billNumber": "BILL-00001",
+          "issueDate": "2025-12-02",
+          "dueDate": "2025-12-31",
+          "status": "draft",
+          "reference": null,
+          "notes": null,
+          "subtotal": 8000,
+          "taxTotal": 0,
+          "total": 8000,
+          "amountPaid": 0,
+          "amountDue": 8000,
+          "currencyCode": "USD",
+          "journalEntryId": null,
+          "receivedAt": null,
+          "paidAt": null,
+          "voidedAt": null,
+          "approvedBy": null,
+          "approvedAt": null,
+          "rejectedAt": null,
+          "rejectionReason": null,
+          "createdBy": "a7ee7a95-7bbc-4a2b-b35b-1bff7ea87238",
+          "createdAt": "2026-10-02T05:45:04.578Z",
+          "updatedAt": "2026-10-02T05:45:04.578Z",
+          "deletedAt": null
+        }
+      }
+    },
+    {
+      "path": "bills/[id]/approve",
+      "method": "POST",
+      "id": "c5c86d2f-37a6-460a-9589-4292a4f9e192",
+      "status": 400,
+      "handlerMs": 5.860400000000027,
+      "result": {
+        "error": "Only bills pending approval can be approved"
+      }
+    }
+  ],
+  "reports": {},
+  "checks": [],
+  "organizationId": "68dbd5e8-ebed-446f-be3e-9f78e91d0c11",
+  "userId": "a7ee7a95-7bbc-4a2b-b35b-1bff7ea87238",
+  "completed": false,
+  "failure": "Unexpected status 400 at POST bills/[id]/approve",
+  "credentialRevoked": true,
+  "finishedAt": "2026-10-02T02:15:04.595Z"
+}

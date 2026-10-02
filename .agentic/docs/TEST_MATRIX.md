@@ -37,10 +37,12 @@ Use en-US/fa-IR; LTR/RTL; Latin/Persian/Arabic-Indic input; Gregorian/Persian di
 
 ## Pull request pipeline
 
+Owner decision DEC-005 (2026-10-02) removes screenshot capture, screenshot tests and screenshot golden comparisons throughout this matrix. Retain behavioral, layout, accessibility, accounting and PDF checks; do not block continuation on browser/screenshot tooling. Historical requirements are superseded, not recorded as passed.
+
 Owner decision DEC-002 (2026-10-02) overrides Docker execution requirements in this matrix: omit Docker installation, builds, container tests and runtime image checks for current work. Necessary configuration/documentation may be prepared without execution. Record these checks as omitted by owner decision and unverified; do not require Docker or block solely on its absence. Other verification requirements remain in scope. Preserve existing CI support unless a concrete change is needed.
 
-Verified lockfile install, typecheck, lint, unit tests, translation-key checks, clean and previous-release PostgreSQL migrations, integration tests, English and Persian critical E2E, accessibility scan, selected visual snapshots, production Docker build and dependency/license/security scans. Match actual repository tooling; do not introduce guessed package scripts.
+Verified lockfile install, typecheck, lint, unit tests, translation-key checks, clean and previous-release PostgreSQL migrations, integration tests, English and Persian critical E2E, accessibility scan, layout/behavior review, production Docker build and dependency/license/security scans. Apply owner scope decisions above. Match actual repository tooling; do not introduce guessed package scripts.
 
 ## Nightly / release pipeline
 
-All supported browsers, full visual and PDF goldens, larger migration fixtures, report reconciliation, import stress and SBOM/image checks. Include manual native-accounting, accessibility and operational reviews where automation is insufficient. Document real omissions as blockers or approved limitations, never as passes.
+All supported browsers, layout/behavior review and PDF correctness checks, larger migration fixtures, report reconciliation, import stress and SBOM/image checks. Apply owner scope decisions above. Include manual native-accounting, accessibility and operational reviews where automation is insufficient. Document real omissions as blockers or approved limitations, never as passes.

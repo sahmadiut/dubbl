@@ -432,7 +432,7 @@ gantt
 
 The step-by-step execution order should be:
 
-**First, freeze the baseline.** Fork Dubbl, tag the upstream commit, reproduce local development and production Docker builds, seed a representative organization, and capture English screenshots and accounting fixture outputs. Dubbl's current production setup already has a multi-stage Node 22 Dockerfile and a PostgreSQL 16 Compose service, so extend rather than replace it. 
+**First, freeze the baseline.** Fork Dubbl, tag the upstream commit, reproduce local development and production Docker builds, seed a representative organization, and capture accounting fixture outputs. Screenshot capture is omitted by owner decision DEC-005. Dubbl's current production setup already has a multi-stage Node 22 Dockerfile and a PostgreSQL 16 Compose service, so extend rather than replace it.
 
 **Second, establish provenance and parity evidence.** For every Bigcapital API group, record `existing`, `partial`, `missing`, `not valuable`, or `unspecified`. Link the corresponding Dubbl schema/API/UI/tests. Bigcapital's feature catalog should be input to this exercise, not copied code. 
 
@@ -466,13 +466,13 @@ Testing must prove not only that Persian text appears, but that **accounting res
 | API integration | old and new money/rate contracts | both | HTTP integration tests | Compatibility contract green |
 | RTL component | drawers, menus, tabs, forms, tables | rtl/ltr | Playwright | No logical-direction regressions |
 | E2E | quote→invoice→payment; bill→credit; bank reconcile | en and fa | Playwright | Critical journeys green |
-| Visual | dashboard, invoice, report, portal, PDF | desktop/mobile, en/fa | Playwright screenshots | Reviewed golden diffs |
+| Visual | dashboard, invoice, report, portal, PDF | desktop/mobile, en/fa | Layout/behavior and accessibility checks without screenshot capture (DEC-005) | Reviewed observations and assertions |
 | Accessibility | names, focus, contrast, landmarks, dialogs | en/fa | Playwright + axe | No serious/critical violations |
 | PDF | font shaping, bidi, totals, page breaks | en/fa | snapshot/render tests | Accountant/linguist approval |
 | Performance | report latency, huge rial values, imports | both | load scripts/APM | No agreed regression |
 | Security | authz, org isolation, webhooks, uploads, Unicode | both | ASVS checklist + tests | High findings closed |
 
-Playwright directly supports screenshot comparison and accessibility testing, making it suitable for the RTL visual/a11y regression layer. 
+Playwright supports browser automation and accessibility testing for RTL behavior checks. Screenshot comparisons are omitted by owner decision DEC-005.
 
 Representative test cases should include:
 
@@ -1033,7 +1033,7 @@ A practical PR sequence is:
 - [ ] Direction-aware drawers/dropdowns/popovers/tabs.
 - [ ] Numeric and mixed-text bidi isolation.
 - [ ] Persian font.
-- [ ] Screenshot tests.
+- [ ] Layout/behavior and accessibility checks without screenshot tests (DEC-005).
 
 **PR: IRR**
 - [ ] Explicit IRR fallback metadata.
@@ -1147,7 +1147,7 @@ Quarterly maintenance should include upstream Dubbl merge review, dependency/sec
 | Persian UI font | Vazirmatn, self-hosted | Persian/Arabic UI font under OFL.  |
 | Amount DB storage | PostgreSQL `bigint` | Exact integer storage with much larger range.  |
 | FX DB storage | PostgreSQL `numeric` | Exact arbitrary-precision decimal rates.  |
-| E2E/visual | Playwright | Cross-browser automation and screenshot comparison.  |
+| E2E/visual | Playwright | Cross-browser automation and accessibility checks; screenshot comparisons omitted (DEC-005).  |
 | Accessibility automation | Playwright + axe | Automated detection of common a11y issues.  |
 | Security baseline | OWASP ASVS 5 | Structured application-security verification.  |
 | CI | GitHub Actions + PostgreSQL service | Reproducible DB/integration CI.  |

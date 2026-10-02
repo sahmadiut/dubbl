@@ -20,3 +20,10 @@ All risks originate in the [Markdown implementation plan](../sources/SOURCE.md) 
 | Evolving upstream / moving parity target | Pinned snapshot, merge log and maintenance: AUD-001, OPS-001 |
 | Tracker records untrue completion | Evidence, honest review and Git review; CLI is not proof of external facts |
 | Competing assistants or manual state edits | Single writer, lock, dependency validation; no distributed coordination |
+
+## Observed baseline findings (AUD-002, 2026-10-02)
+
+Evidence: `../evidence/AUD-002-attempt-3.md` and its corrected synthetic capture. Accounting/API owner review remains pending; these are open, not fixed.
+
+- High: trial balance splits natural-signed balances by sign, placing positive payable/equity/revenue balances in its debit column. Verify debit/credit presentation and totals before relying on this report; tracked in AUD-002 baseline handoff and later accounting QA.
+- Medium: bank account API balance 0 differs from GL balance 102000 cents after opening journal/payment workflows. Resolve statement versus book balance semantics and selected-bank journal routing before reconciliation qualification; tracked in AUD-002 baseline handoff and later banking QA.

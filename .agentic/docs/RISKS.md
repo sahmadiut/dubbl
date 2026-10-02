@@ -27,3 +27,13 @@ Evidence: `../evidence/AUD-002-attempt-3.md` and its corrected synthetic capture
 
 - High: trial balance splits natural-signed balances by sign, placing positive payable/equity/revenue balances in its debit column. Verify debit/credit presentation and totals before relying on this report; remediation/qualification tasks: PAR-008 and QA-001.
 - Medium: bank account API balance 0 differs from GL balance 102000 cents after opening journal/payment workflows. Resolve statement versus book balance semantics and selected-bank journal routing before reconciliation qualification; remediation/qualification tasks: DATA-004, MON-007 and QA-001.
+
+## Observed money boundaries (MON-001, 2026-10-02)
+
+Evidence: [money manifest](../registries/MONEY_MANIFEST.md), [column appendix](../registries/MONEY_COLUMNS.md) and [consumer index](../registries/MONEY_BOUNDARIES.json). Inventory completion does not remediate these risks.
+
+- High: 194 monetary int32 columns, method-dependent landed-cost basis and Number/SQL aggregate narrowing can overflow or lose exactness. Owners MON-002/003/007/008/010.
+- High: three millionths FX columns coexist with payrollItem.fxRate stored as unscaled approximate real. One universal rate backfill would corrupt payroll rates. Owners MON-004/005/008/010.
+- High: fixed-two-decimal input/import/public/PDF paths coexist with currency-aware formatting. Identify malformed IRR cohorts by provenance; never rescale by magnitude. Local test DB has zero direct IRR-tagged records in 31 checked tables and zero IRR FX pairs; production/incorrect tags are not qualified. Owners MON-008/009/010, LOC-003, QA-005.
+- High: org-context configuration/inventory/assets/budgets/loans and mixed payroll totals require explicit historical currency/unit policy; journal currency tags can describe original documents while amounts are already base. Owners MON-007/008/010.
+- High: REST/MCP, JSON envelopes, webhook/audit/backup, provider payloads and exports cannot adopt bigint through unmodified Number/JSON.stringify paths. Owners MON-006/008, DATA-001/002, QA-005. Raw historical payloads must retain their original contract.

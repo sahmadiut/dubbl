@@ -1,0 +1,197 @@
+{
+  "date": "2026-10-02",
+  "target": "owner-authorized local test database from DATABASE_URL; credentials omitted",
+  "readOnly": true,
+  "cohorts": [
+    {
+      "table": "organization",
+      "column": "default_currency",
+      "total": "5",
+      "irr": "0"
+    },
+    {
+      "table": "invoice",
+      "column": "currency_code",
+      "total": "13",
+      "irr": "0"
+    },
+    {
+      "table": "quote",
+      "column": "currency_code",
+      "total": "5",
+      "irr": "0"
+    },
+    {
+      "table": "credit_note",
+      "column": "currency_code",
+      "total": "3",
+      "irr": "0"
+    },
+    {
+      "table": "sales_receipt",
+      "column": "currency_code",
+      "total": "0",
+      "irr": "0"
+    },
+    {
+      "table": "customer_credit",
+      "column": "currency_code",
+      "total": "0",
+      "irr": "0"
+    },
+    {
+      "table": "bill",
+      "column": "currency_code",
+      "total": "13",
+      "irr": "0"
+    },
+    {
+      "table": "purchase_order",
+      "column": "currency_code",
+      "total": "5",
+      "irr": "0"
+    },
+    {
+      "table": "debit_note",
+      "column": "currency_code",
+      "total": "2",
+      "irr": "0"
+    },
+    {
+      "table": "purchase_requisition",
+      "column": "currency_code",
+      "total": "0",
+      "irr": "0"
+    },
+    {
+      "table": "landed_cost_allocation",
+      "column": "currency_code",
+      "total": "0",
+      "irr": "0"
+    },
+    {
+      "table": "payment",
+      "column": "currency_code",
+      "total": "12",
+      "irr": "0"
+    },
+    {
+      "table": "expense_claim",
+      "column": "currency_code",
+      "total": "2",
+      "irr": "0"
+    },
+    {
+      "table": "bank_account",
+      "column": "currency_code",
+      "total": "6",
+      "irr": "0"
+    },
+    {
+      "table": "bank_transaction",
+      "column": "currency_code",
+      "total": "17",
+      "irr": "0"
+    },
+    {
+      "table": "bank_statement_import",
+      "column": "statement_currency",
+      "total": "0",
+      "irr": "0"
+    },
+    {
+      "table": "journal_line",
+      "column": "currency_code",
+      "total": "58",
+      "irr": "0"
+    },
+    {
+      "table": "recurring_template",
+      "column": "currency_code",
+      "total": "4",
+      "irr": "0"
+    },
+    {
+      "table": "scheduled_payment",
+      "column": "currency_code",
+      "total": "3",
+      "irr": "0"
+    },
+    {
+      "table": "payment_batch",
+      "column": "currency_code",
+      "total": "0",
+      "irr": "0"
+    },
+    {
+      "table": "price_list",
+      "column": "currency_code",
+      "total": "0",
+      "irr": "0"
+    },
+    {
+      "table": "payroll_settings",
+      "column": "default_currency",
+      "total": "1",
+      "irr": "0"
+    },
+    {
+      "table": "payroll_employee",
+      "column": "currency",
+      "total": "4",
+      "irr": "0"
+    },
+    {
+      "table": "payroll_item",
+      "column": "currency",
+      "total": "8",
+      "irr": "0"
+    },
+    {
+      "table": "contractor",
+      "column": "currency",
+      "total": "0",
+      "irr": "0"
+    },
+    {
+      "table": "contractor_payment",
+      "column": "currency",
+      "total": "0",
+      "irr": "0"
+    },
+    {
+      "table": "compensation_band",
+      "column": "currency",
+      "total": "0",
+      "irr": "0"
+    },
+    {
+      "table": "payroll_tax_payment",
+      "column": "currency",
+      "total": "0",
+      "irr": "0"
+    },
+    {
+      "table": "project",
+      "column": "currency",
+      "total": "3",
+      "irr": "0"
+    },
+    {
+      "table": "deal",
+      "column": "currency",
+      "total": "8",
+      "irr": "0"
+    },
+    {
+      "table": "consolidation_elimination_entry",
+      "column": "currency_code",
+      "total": "0",
+      "irr": "0"
+    }
+  ],
+  "exchangeRates": {
+    "irr_pairs": "0"
+  },
+  "limits": "Counts include deleted/draft/history rows. Currency-less child records need parent joins in migration qualification. Count alone cannot identify malformed units."
+}

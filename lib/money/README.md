@@ -124,3 +124,17 @@ header/legs is atomic, and MCP preview supplies exact totals. See
 [lifecycle/import contracts](../../.agentic/registries/JOURNAL_LIFECYCLE_WIRE_CONTRACTS.md)
 for ranges, formats, errors, partial-job semantics and remaining recurring/
 scheduled/full-domain qualification.
+
+## Recurring journal contracts (MON-037)
+
+Recurring-journals REST and MCP share described canonical *AmountMinor aliases,
+strict safe-number line/sum guards and atomic template/leg mutations. Retained
+currency is not reset by partial edits. Templates have no configurable FX storage;
+fixed rateExact "1" aliases declare the existing verbatim posting behavior.
+Unsupported rates fail before mutation; no live rate is guessed. Generated legs
+persist identity FX with explicit provenance. Tenant dimensions and current amounts
+are revalidated under the template lock; catch-up journals and schedule commit
+atomically per template. Concurrent runs of the same template do not duplicate
+occurrences; locked dates retain the existing skip/consume policy.
+See [recurring contracts](../../.agentic/registries/RECURRING_JOURNAL_WIRE_CONTRACTS.md)
+for all operations, supported ranges, partial-run semantics and remaining domain gates.

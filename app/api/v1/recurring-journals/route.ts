@@ -1,49 +1,14 @@
-import { NextResponse } from "next/server";
+import { jsonResponse } from "@/lib/api/json-response";
 import { db } from "@/lib/db";
-import { recurringTemplate, recurringTemplateLine } from "@/lib/db/schema";
+import { recurringTemplate } from "@/lib/db/schema";
 import { eq, and, desc, asc, sql } from "drizzle-orm";
 import { getAuthContext } from "@/lib/api/auth-context";
-import { requireRole } from "@/lib/api/require-role";
 import { handleError } from "@/lib/api/response";
-import { logAudit } from "@/lib/api/audit";
 import { notDeleted } from "@/lib/db/soft-delete";
 import { parsePagination, paginatedResponse } from "@/lib/api/pagination";
-import { z } from "zod";
-
-// A journal-template leg: posts debitAmount/creditAmount (integer cents) to
-// accountId verbatim. Exactly one of debit/credit is non-zero per leg.
-const legSchema = z
-  .object({
-    description: z.string().min(1),
-    accountId: z.string().min(1),
-    debitAmount: z.number().int().min(0).default(0),
-    creditAmount: z.number().int().min(0).default(0),
-    costCenterId: z.string().nullable().optional(),
-  })
-  .refine((l) => (l.debitAmount > 0) !== (l.creditAmount > 0), {
-    message: "Each leg must have exactly one of debitAmount or creditAmount non-zero",
-  });
-
-const createSchema = z
-  .object({
-    name: z.string().min(1),
-    frequency: z.enum(["weekly", "fortnightly", "monthly", "quarterly", "semi_annual", "annual"]),
-    startDate: z.string().min(1),
-    endDate: z.string().nullable().optional(),
-    maxOccurrences: z.number().int().min(1).nullable().optional(),
-    reference: z.string().nullable().optional(),
-    notes: z.string().nullable().optional(),
-    currencyCode: z.string().optional(),
-    lines: z.array(legSchema).min(2),
-  })
-  .refine(
-    (b) => {
-      const dr = b.lines.reduce((s, l) => s + l.debitAmount, 0);
-      const cr = b.lines.reduce((s, l) => s + l.creditAmount, 0);
-      return dr === cr && dr > 0;
-    },
-    { message: "Journal must be balanced (total debits = total credits, non-zero)" }
-  );
+import { createRecurringJournal } from "@/lib/api/recurring-journal";
+import { recurringJournalDto } from "@/lib/api/recurring-journal-wire";
+import { assertJournalReferences } from "@/lib/api/journal-references";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const SORT_COLUMNS: Record<string, any> = {
@@ -100,8 +65,9 @@ export async function GET(request: Request) {
       .from(recurringTemplate)
       .where(and(...conditions));
 
-    return NextResponse.json(
-      paginatedResponse(templates, Number(countResult?.count || 0), page, limit)
+    for (const template of templates) await assertJournalReferences(ctx.organizationId, template.lines.map(line => ({ accountId: line.accountId ?? undefined, costCenterId: line.costCenterId })), undefined, true);
+    return jsonResponse(
+      paginatedResponse(templates.map(template => recurringJournalDto(template)), Number(countResult?.count || 0), page, limit)
     );
   } catch (err) {
     return handleError(err);
@@ -111,46 +77,6 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const ctx = await getAuthContext(request);
-    requireRole(ctx, "manage:recurring");
-
-    const body = await request.json();
-    const parsed = createSchema.parse(body);
-
-    const [created] = await db
-      .insert(recurringTemplate)
-      .values({
-        organizationId: ctx.organizationId,
-        name: parsed.name,
-        type: "journal",
-        contactId: null,
-        frequency: parsed.frequency,
-        startDate: parsed.startDate,
-        endDate: parsed.endDate || null,
-        nextRunDate: parsed.startDate,
-        maxOccurrences: parsed.maxOccurrences || null,
-        reference: parsed.reference || null,
-        notes: parsed.notes || null,
-        currencyCode: parsed.currencyCode || "USD",
-        createdBy: ctx.userId,
-      })
-      .returning();
-
-    await db.insert(recurringTemplateLine).values(
-      parsed.lines.map((l, i) => ({
-        templateId: created.id,
-        description: l.description,
-        accountId: l.accountId,
-        debitAmount: l.debitAmount,
-        creditAmount: l.creditAmount,
-        costCenterId: l.costCenterId || null,
-        sortOrder: i,
-      }))
-    );
-
-    logAudit({ ctx, action: "create", entityType: "recurring_journal", entityId: created.id, request });
-
-    return NextResponse.json({ template: created }, { status: 201 });
-  } catch (err) {
-    return handleError(err);
-  }
+    return jsonResponse(await createRecurringJournal(ctx, await request.json(), request), { status: 201 });
+  } catch (err) { return handleError(err); }
 }

@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { recurringTemplate, recurringTemplateLine, invoice, invoiceLine, bill, billLine, expenseClaim, expenseItem, contact, journalEntry, journalLine } from "@/lib/db/schema";
-import { eq, and, lte } from "drizzle-orm";
+import { eq, and, lte, inArray } from "drizzle-orm";
 import { notDeleted } from "@/lib/db/soft-delete";
 import { getNextNumber } from "@/lib/api/numbering";
 import { preloadTaxRates, calcTax } from "@/lib/api/tax-calculator";
@@ -9,6 +9,11 @@ import { assertNotLocked, PeriodLockedError } from "@/lib/api/period-lock";
 import { buildSenderSnapshot, buildRecipientSnapshot } from "@/lib/documents/snapshots";
 import { sendDocumentEmail } from "@/lib/email/document-sender";
 import { renderDocumentEmailHtml } from "@/lib/email/render-document-email";
+import { recurringJournalScope } from "./recurring-journal";
+import { recurringJournalLegs, recurringJournalDto, assertRecurringJournalDates, recurringJournalCreateHeader } from "./recurring-journal-wire";
+import { assertJournalReferences } from "./journal-references";
+import { WireCompatibilityError } from "@/lib/money/wire";
+import { z } from "zod";
 
 /**
  * Advance a date by the given frequency.
@@ -39,88 +44,47 @@ function advanceDate(date: string, frequency: string): string {
 }
 
 type RecurringTemplateRow = typeof recurringTemplate.$inferSelect;
-type RecurringTemplateLineRow = typeof recurringTemplateLine.$inferSelect;
-
-/**
- * Materialize one occurrence of a recurring JOURNAL template into a posted,
- * balanced manual journal entry on `runDate`.
- *
- * Each template line carries an explicit debit/credit (integer cents) against
- * its accountId — they are posted verbatim. Before posting we RE-VALIDATE that
- * total debits === total credits (and are non-zero) and that the run date is not
- * in a locked period / closed fiscal year (assertNotLocked), so a template that
- * was valid at creation but now targets a locked period (or was edited into an
- * imbalance) fails this occurrence instead of corrupting the ledger.
- *
- * getNextEntryNumber is called WITH the surrounding tx so concurrent entries in
- * the same transaction don't collide on (organizationId, entryNumber). Returns
- * true if an entry was posted, false if the template had no postable legs.
- */
-async function materializeJournalOccurrence(
-  organizationId: string,
-  userId: string | null,
-  tmpl: RecurringTemplateRow,
-  lines: RecurringTemplateLineRow[],
-  runDate: string
-): Promise<boolean> {
-  const legs = lines
-    .filter((l) => l.accountId && (l.debitAmount > 0 || l.creditAmount > 0))
-    .map((l, i) => ({
-      accountId: l.accountId as string,
-      description: l.description,
-      debitAmount: l.debitAmount,
-      creditAmount: l.creditAmount,
-      costCenterId: l.costCenterId,
-      sortOrder: l.sortOrder ?? i,
-    }));
-
-  if (legs.length < 2) return false;
-
-  const totalDebit = legs.reduce((s, l) => s + l.debitAmount, 0);
-  const totalCredit = legs.reduce((s, l) => s + l.creditAmount, 0);
-  if (totalDebit === 0) return false;
-  if (totalDebit !== totalCredit) {
-    throw new Error(
-      `Recurring journal template "${tmpl.name}" is unbalanced (debits ${totalDebit} != credits ${totalCredit}); occurrence on ${runDate} skipped.`
-    );
-  }
-
-  // Guard the target date against period locks / closed fiscal years before we
-  // post anything.
-  await assertNotLocked(organizationId, runDate);
-
-  await db.transaction(async (tx) => {
-    const entryNumber = await getNextEntryNumber(organizationId, tx);
-    const [entry] = await tx
-      .insert(journalEntry)
-      .values({
-        organizationId,
-        entryNumber,
-        date: runDate,
-        description: tmpl.notes || tmpl.name,
-        reference: tmpl.reference ?? null,
-        status: "posted",
-        sourceType: "recurring_journal",
-        sourceId: tmpl.id,
-        postedAt: new Date(),
-        createdBy: userId,
-      })
-      .returning();
-
-    await tx.insert(journalLine).values(
-      legs.map((l) => ({
-        journalEntryId: entry.id,
-        accountId: l.accountId,
-        description: l.description,
-        debitAmount: l.debitAmount,
-        creditAmount: l.creditAmount,
-        currencyCode: tmpl.currencyCode,
-        costCenterId: l.costCenterId ?? null,
-      }))
-    );
+/** Serialize a template's entire catch-up with edits/runs, committing schedule and entries together. */
+async function processJournalTemplate(organizationId: string, id: string, today: string): Promise<number> {
+  return db.transaction(async tx => {
+    const [tmpl] = await tx.select().from(recurringTemplate).where(recurringJournalScope(id, organizationId)).for("update");
+    if (!tmpl || tmpl.status !== "active" || tmpl.nextRunDate > today) return 0;
+    recurringJournalDto(tmpl); // Validate saved currency, never fetch or infer a new FX rate.
+    recurringJournalCreateHeader.parse(tmpl);
+    z.number().int().min(0).max(2147483647).parse(tmpl.occurrencesGenerated);
+    assertRecurringJournalDates(tmpl.startDate, tmpl.endDate);
+    z.iso.date().parse(tmpl.nextRunDate);
+    const lines = await tx.select().from(recurringTemplateLine).where(eq(recurringTemplateLine.templateId, id));
+    const legs = recurringJournalLegs(lines.map(line => ({ description: line.description, accountId: line.accountId,
+      debitAmount: line.debitAmount, creditAmount: line.creditAmount, costCenterId: line.costCenterId })), tmpl.currencyCode);
+    await assertJournalReferences(organizationId, legs);
+    let nextRun = tmpl.nextRunDate, occurrences = tmpl.occurrencesGenerated;
+    const dates: string[] = [];
+    // Preflight the whole catch-up before writing entries or consuming the schedule.
+    while (nextRun <= today && (tmpl.maxOccurrences === null || occurrences < tmpl.maxOccurrences) && (!tmpl.endDate || nextRun <= tmpl.endDate)) {
+      if (occurrences >= 2147483647 || occurrences < 0) throw new WireCompatibilityError("Recurring occurrence count exceeds int32 range");
+      try { await assertNotLocked(organizationId, nextRun); dates.push(nextRun); }
+      catch (err) { if (!(err instanceof PeriodLockedError)) throw err; } // Preserve locked-date skip policy.
+      const advanced = advanceDate(nextRun, tmpl.frequency);
+      z.iso.date().parse(advanced);
+      if (advanced <= nextRun) throw new Error("Recurring schedule must advance");
+      nextRun = advanced; occurrences++;
+    }
+    for (const runDate of dates) {
+      const entryNumber = await getNextEntryNumber(organizationId, tx);
+      const [entry] = await tx.insert(journalEntry).values({ organizationId, entryNumber, date: runDate,
+        description: tmpl.notes || tmpl.name, reference: tmpl.reference, status: "posted", sourceType: "recurring_journal",
+        sourceId: tmpl.id, postedAt: new Date(), createdBy: tmpl.createdBy }).returning();
+      await tx.insert(journalLine).values(legs.map((leg, sortOrder) => ({ journalEntryId: entry.id, accountId: leg.accountId,
+        description: leg.description, debitAmount: leg.debitAmount, creditAmount: leg.creditAmount, currencyCode: tmpl.currencyCode,
+        exchangeRate: 1000000, rateExact: "1", rateDirection: "quote_per_base", rateMigrationStatus: "exact",
+        rateProvenance: "recurring_journal_identity", costCenterId: leg.costCenterId ?? null, sortOrder })));
+    }
+    const completed = (tmpl.maxOccurrences !== null && occurrences >= tmpl.maxOccurrences) || (tmpl.endDate !== null && nextRun > tmpl.endDate);
+    await tx.update(recurringTemplate).set({ nextRunDate: nextRun, lastRunDate: today, occurrencesGenerated: occurrences,
+      status: completed ? "completed" : "active", updatedAt: new Date() }).where(recurringJournalScope(id, organizationId));
+    return dates.length;
   });
-
-  return true;
 }
 
 /**
@@ -250,22 +214,25 @@ export async function processRecurringTemplates(
   const today = new Date().toISOString().split("T")[0];
 
   // Find all active templates that are due
-  let dueTemplates = await db.query.recurringTemplate.findMany({
+  const allowedTypes = opts?.types ?? DEFAULT_RECURRING_TYPES;
+  const dueTemplates = await db.query.recurringTemplate.findMany({
     where: and(
       eq(recurringTemplate.organizationId, organizationId),
       eq(recurringTemplate.status, "active"),
+      inArray(recurringTemplate.type, allowedTypes),
       lte(recurringTemplate.nextRunDate, today),
       notDeleted(recurringTemplate.deletedAt),
     ),
     with: { lines: true },
   });
 
-  const allowed = new Set<string>(opts?.types ?? DEFAULT_RECURRING_TYPES);
-  dueTemplates = dueTemplates.filter((t) => allowed.has(t.type));
-
   let generated = 0;
 
   for (const tmpl of dueTemplates) {
+    if (tmpl.type === "journal") {
+      generated += await processJournalTemplate(organizationId, tmpl.id, today);
+      continue;
+    }
     // Generate all missed invoices (if nextRunDate is far in the past, catch up)
     let nextRun = tmpl.nextRunDate;
     let occurrences = tmpl.occurrencesGenerated;
@@ -278,36 +245,6 @@ export async function processRecurringTemplates(
       // Check end date
       if (tmpl.endDate && nextRun > tmpl.endDate) {
         break;
-      }
-
-      if (tmpl.type === "journal") {
-        // Materialize a balanced, posted manual journal entry for this
-        // occurrence. Re-validates DR==CR and assertNotLocked inside. A locked
-        // period or an imbalanced template skips just this occurrence (we still
-        // advance the schedule) rather than aborting the whole run.
-        try {
-          const posted = await materializeJournalOccurrence(
-            organizationId,
-            tmpl.createdBy,
-            tmpl,
-            tmpl.lines,
-            nextRun
-          );
-          if (posted) generated++;
-        } catch (err) {
-          // Skip this occurrence on a known, recoverable misconfiguration — a
-          // locked period / closed fiscal year, or a template that no longer
-          // balances — so one bad template doesn't abort the whole sweep. Let
-          // anything unexpected (e.g. a DB/infra error) propagate so the task's
-          // retry can act on it.
-          const recoverable =
-            err instanceof PeriodLockedError ||
-            (err instanceof Error && err.message.includes("is unbalanced"));
-          if (!recoverable) throw err;
-        }
-        occurrences++;
-        nextRun = advanceDate(nextRun, tmpl.frequency);
-        continue;
       }
 
       if (tmpl.type === "bill") {

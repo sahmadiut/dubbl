@@ -292,7 +292,44 @@ Import requires `manage:entries`, plus `post:entries` for `post=true`. Malformed
 wire input fails before job creation. Business-invalid groups are reported in the
 job; valid groups commit independently with atomic headers/legs. Sources are
 quickbooks, xero, freshbooks, wave or custom, and grouped dates/memos/references
-must agree. Recurring and full exact domain qualification remain separate work.
+must agree. Full exact domain qualification remains separate work.
+
+### Recurring Journals
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET/POST | `/api/v1/recurring-journals` | List/create journal templates |
+| GET/PATCH/DELETE | `/api/v1/recurring-journals/:id` | Read/edit/soft-delete a template |
+| POST | `/api/v1/recurring-journals/:id/pause` | Toggle active/paused |
+| POST | `/api/v1/recurring-journals/run` | Run this organization's due templates |
+
+REST and MCP retain safe numeric **stored minor-unit** `debitAmount` and
+`creditAmount` (USD cents), and add canonical `debitAmountMinor` and
+`creditAmountMinor` strings on legs. Both input aliases must agree. Each leg has
+one positive side; summed debits equal credits and must fit safe integers
+(<=9007199254740991). Malformed/conflicting inputs fail validation; unsupported
+numeric ranges return 422 `LEGACY_NUMERIC_RANGE` before mutation.
+
+Saved `currencyCode` is retained on partial edits and posted verbatim without
+rescaling. Templates have no configurable FX storage: rate aliases explicitly
+represent fixed `exchangeRate:1000000`, `rateExact:"1"` and
+`rateDirection:"quote_per_base"`. Nonidentity FX is rejected. This preserves the
+existing template posting behavior, not currency-aware base conversion.
+
+Dates are canonical Gregorian YYYY-MM-DD; startDate is immutable on edits.
+Nullable endDate/maxOccurrences/reference/notes clear with null. Editing lines
+fully replaces the balanced legs atomically. Writes require `manage:recurring`
+and active organization-owned accounts/cost centers. Corresponding MCP tools are
+`list_recurring_journals`, `get_recurring_journal`, `create_recurring_journal`,
+`update_recurring_journal`, `set_recurring_journal_status`,
+`pause_recurring_journal`, `delete_recurring_journal` and `run_recurring_journals`.
+
+Generation validates retained amounts and dimensions, then commits each
+**template's** entire catch-up and schedule together under a row lock. Concurrent
+runs of that template do not duplicate entries. Locked/closed dates consume an
+occurrence without posting; malformed templates fail without consuming their
+schedule. Resume keeps nextRunDate and catches up. An earlier template can remain
+committed if a later one fails; runs are not atomic across all templates.
 
 ### Banking
 | Method | Path | Description |

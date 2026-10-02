@@ -1,6 +1,21 @@
 # Money and FX boundary manifest
 
-Inventory owner: MON-001. Refreshed 2026-10-03 (Asia/Tehran) for MON-036 against entry HEAD `67d941d`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+Inventory owner: MON-001. Refreshed 2026-10-03 (Asia/Tehran) for MON-037 against entry HEAD `6c49155`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+
+## MON-037 recurring journal adoption (MON-018 child)
+
+The [recurring inventory](RECURRING_JOURNAL_WIRE_CONTRACTS.md) records every
+recurring-journals REST operation, eight corresponding MCP tools and journal
+materialization/maintenance. Minor aliases preserve safe numeric stored values;
+bigint sums and strict dimensions/dates guard all writes. Templates store currency
+but no configurable FX: fixed identity aliases explicitly declare existing verbatim
+posting; unsupported rates fail instead of being discarded. Partial edits retain
+currency. Header/legs and every template's full catch-up/schedule are transactional;
+parent locks serialize edits/toggles/runs, with real concurrent/rollback fixtures.
+Locked/closed dates retain skip/consume behavior. Unsafe or malformed history does
+not consume the affected schedule. Runs commit per template; full currency-aware
+posting and cross-template concurrency still require MON-007/QA qualification.
+No schema, migration, configured database or rollout flag changes.
 
 ## MON-035 journal CRUD adoption (MON-018 child)
 

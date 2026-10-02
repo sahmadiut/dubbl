@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { jsonResponse } from "@/lib/api/json-response";
 import { getAuthContext } from "@/lib/api/auth-context";
 import { requireRole } from "@/lib/api/require-role";
 import { handleError } from "@/lib/api/response";
@@ -19,7 +19,7 @@ export async function POST(request: Request) {
 
     const posted = await processRecurringJournals(ctx.organizationId);
 
-    logAudit({
+    await logAudit({
       ctx,
       action: "run",
       entityType: "recurring_journal",
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
       request,
     });
 
-    return NextResponse.json({ posted });
+    return jsonResponse({ posted });
   } catch (err) {
     return handleError(err);
   }

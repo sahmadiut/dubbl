@@ -130,3 +130,18 @@ reversal, literal account codes, partial jobs and mutation snapshots. Forced
 leg failures roll back reversal/import headers; a second-update fault rolls
 back a partial recode; concurrent void calls create one mirror. HTTP/session/
 OAuth/browser, full domain/scheduled workflows and recurring remain separate gates.
+
+## MON-037 recurring journal contracts
+
+Three pure recurring-journal-wire groups cover canonical minor aliases, malformed/
+conflicting/unsafe amounts and sums, balanced one-sided legs, immutable canonical
+dates, nullable partial fields and fixed 1:1 FX. The migrated disposable
+recurring-journal-wire worker invokes every REST operation and eight registered MCP
+tools through the actual SDK. Covers four currency scales, legacy/exact/dual,
+int32-plus/safe-max, retained currency edits, API-key/custom-permission/two-tenant
+isolation, foreign/inactive dimensions, soft deletion, locks/closed years, paused
+catch-up, concurrent runs, forced create/edit leg failures, failure after generated
+entries before final schedule update, malformed/unsafe retained history and cross-org
+maintenance. SQL snapshots assert amounts, schedules, journal rows and audit counts.
+HTTP/session/OAuth/browser, full currency-aware domain math and cross-template
+number-allocation/reference/lock races retain their separate qualification gates.

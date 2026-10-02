@@ -1,0 +1,88 @@
+[
+  {
+    "id": "dubbl-local-license",
+    "repository": "https://github.com/dubbl-org/dubbl",
+    "commit": "13c3cf14e7900d32ad0ee8081c385e404dc120f9",
+    "path": "LICENSE",
+    "url": "https://github.com/dubbl-org/dubbl/blob/13c3cf14e7900d32ad0ee8081c385e404dc120f9/LICENSE",
+    "retrieved_date": "2026-10-02",
+    "sha256": "ce62b09ba24f6f5b27052c00b6594907cdedc6ba759bc5987b80629401be556a",
+    "scope": "Local upstream baseline compared byte-for-byte with fork LICENSE; no remote freshness claim"
+  },
+  {
+    "id": "bigcapital-license",
+    "repository": "https://github.com/bigcapitalhq/bigcapital",
+    "commit": "a4fb2d9dc3187d5e6940aaac6e922c4103cea09f",
+    "path": "LICENSE",
+    "url": "https://raw.githubusercontent.com/bigcapitalhq/bigcapital/a4fb2d9dc3187d5e6940aaac6e922c4103cea09f/LICENSE",
+    "retrieved_date": "2026-10-02",
+    "sha256": "6222fdf64728d91bef797fae1c610f97737df67fd07026b7a83d661252fdade6",
+    "bytes": 34282,
+    "license_heading": "### GNU AFFERO GENERAL PUBLIC LICENSE",
+    "scope": "License text only; no implementation code accessed"
+  },
+  {
+    "id": "paper-shaders-license",
+    "repository": "https://github.com/paper-design/shaders",
+    "commit": "43cd68db79fa0b1759f72ffc941b3238e2a3954c",
+    "path": "LICENSE",
+    "url": "https://raw.githubusercontent.com/paper-design/shaders/43cd68db79fa0b1759f72ffc941b3238e2a3954c/LICENSE",
+    "retrieved_date": "2026-10-02",
+    "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+    "bytes": 11357,
+    "license_heading": "Apache License",
+    "scope": "License text only; no implementation code accessed"
+  },
+  {
+    "id": "geist-font-license",
+    "repository": "https://github.com/google/fonts",
+    "commit": "9710da1eacb3be272583c3224dcb70f9da6eadbb",
+    "path": "ofl/geist/OFL.txt",
+    "url": "https://raw.githubusercontent.com/google/fonts/9710da1eacb3be272583c3224dcb70f9da6eadbb/ofl/geist/OFL.txt",
+    "retrieved_date": "2026-10-02",
+    "sha256": "1781d2806a07d91c4edf4740b88449fab7d0eadad53f7c351b94cd4d4eb8c00f",
+    "bytes": 4387,
+    "license_heading": "This Font Software is licensed under the SIL Open Font License, Version 1.1.",
+    "scope": "License text only; no implementation code accessed"
+  },
+  {
+    "id": "geist-mono-font-license",
+    "repository": "https://github.com/google/fonts",
+    "commit": "9710da1eacb3be272583c3224dcb70f9da6eadbb",
+    "path": "ofl/geistmono/OFL.txt",
+    "url": "https://raw.githubusercontent.com/google/fonts/9710da1eacb3be272583c3224dcb70f9da6eadbb/ofl/geistmono/OFL.txt",
+    "retrieved_date": "2026-10-02",
+    "sha256": "1781d2806a07d91c4edf4740b88449fab7d0eadad53f7c351b94cd4d4eb8c00f",
+    "bytes": 4387,
+    "license_heading": "This Font Software is licensed under the SIL Open Font License, Version 1.1.",
+    "scope": "License text only; no implementation code accessed"
+  },
+  {
+    "id": "playfair-font-license",
+    "repository": "https://github.com/google/fonts",
+    "commit": "9710da1eacb3be272583c3224dcb70f9da6eadbb",
+    "path": "ofl/playfairdisplay/OFL.txt",
+    "url": "https://raw.githubusercontent.com/google/fonts/9710da1eacb3be272583c3224dcb70f9da6eadbb/ofl/playfairdisplay/OFL.txt",
+    "retrieved_date": "2026-10-02",
+    "sha256": "566be814f8e96e93dfa16101331557eb6b5467e9e03f627c0910fe93ca12300e",
+    "bytes": 4449,
+    "license_heading": "This Font Software is licensed under the SIL Open Font License, Version 1.1.",
+    "scope": "License text only; no implementation code accessed"
+  },
+  {
+    "id": "bigcapital-api-introduction",
+    "url": "https://docs.bigcapital.app/api-reference/introduction",
+    "retrieved_date": "2026-10-02",
+    "sha256": "75d94de3f955c397c81026ee0e96e531fab8be7106a0ba8630e83d294338051f",
+    "bytes": 401568,
+    "scope": "Moving public documentation; retrieval digest, not versioned contract or reuse permission"
+  },
+  {
+    "id": "apache-gpl-guidance",
+    "url": "https://www.apache.org/licenses/GPL-compatibility.html",
+    "retrieved_date": "2026-10-02",
+    "sha256": "04c1e1f657ff6a1302a420279fd9745cde460ab8da0508a59a100839bd4354b5",
+    "bytes": 27795,
+    "scope": "Moving public documentation; retrieval digest, not versioned contract or reuse permission"
+  }
+]

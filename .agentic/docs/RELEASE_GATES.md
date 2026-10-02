@@ -15,6 +15,7 @@ This is a policy map; current state is computed from task dependencies. No relea
 | Performance | QA-004 against agreed budgets |
 | Migration / backup / restore | QA-005 with actual rehearsal |
 | Operational readiness | REL-001 |
+| Third-party distribution and provenance | Further licensing review deferred by owner under DEC-004 for the private Iran-use fork; AUD-003 findings retained as reference, not current task/release blockers |
 | Candidate and production authorization | REL-002 for the exact candidate and scope |
 | Production acceptance | REL-003: observed canary metrics and reconciliation |
 | Delayed contract cleanup | REL-004 only after the real deprecation window |

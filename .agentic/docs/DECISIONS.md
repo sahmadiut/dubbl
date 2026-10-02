@@ -24,7 +24,17 @@ The owner confirmed that the database already configured in .env is a test datab
 
 Queries and scoped fixture setup needed for project testing may proceed within this authorization. Prefer identifiable fixture records and transactions where appropriate. This does not authorize wholesale resets/deletion, production targets, deployments or dev startup. Root migration and build rules remain applicable. Actual initial read-only checks are recorded in `../evidence/AUD-002-attempt-2.md`.
 
-## Open scope decisions
+## DEC-004 — Private fork; further licensing work deferred
+
+Date: 2026-10-02 (Asia/Tehran). Owner: project owner (actual user in this session). Status: accepted.
+
+The owner clarified that this is their own private project for use in Iran, with no intention to contribute to upstream Dubbl or release it as open source. They accepted the AUD-003 notes already written and directed the assistant to ignore further licensing work and move past this task.
+
+Keep the completed inventory and policy notes as reference. Defer further license/provenance remediation, distribution-notice assembly and the new licensing review/release gates proposed during AUD-003; do not let these findings block current project execution. Remove the new public contribution-guide addition. Do not publish, contribute upstream, relicense dependencies, or infer a right to copy third-party implementation from this scope decision. Existing license files remain unchanged. Other accounting, localization, authorization, migration and task-review requirements remain in scope.
+
+Evidence: the owner's message during AUD-003, recorded in `../evidence/AUD-003-attempt-1.md`. The controller still closes exactly one task per continuation; AUD-004 is selected next after AUD-003.
+
+## Remaining open scope decisions
 
 | Decision | Owner | Task | Initial state |
 |---|---|---|---|

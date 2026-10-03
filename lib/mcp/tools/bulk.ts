@@ -5,23 +5,16 @@ import {
   bankTransaction,
   bankAccount,
   chartAccount,
-  invoice,
   contact,
-  organization,
-  emailConfig,
-  reminderLog,
   auditLog,
 } from "@/lib/db/schema";
-import { eq, and, inArray, sql } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import { notDeleted, softDelete } from "@/lib/db/soft-delete";
 import { requireRole } from "@/lib/api/require-role";
 import { wrapTool } from "@/lib/mcp/errors";
 import { createCategorizationJournalEntry, resolveBaseRate } from "@/lib/api/journal-automation";
 import { ensureBankLedgerAccount } from "@/lib/api/bank-ledger";
 import { MissingExchangeRateError } from "@/lib/currency/converter";
-import { sendEmail } from "@/lib/email/smtp-client";
-import { renderTemplate } from "@/lib/email/template-engine";
-import { formatMoney } from "@/lib/money";
 import type { AuthContext } from "@/lib/api/auth-context";
 
 /**
@@ -31,9 +24,6 @@ import type { AuthContext } from "@/lib/api/auth-context";
  *
  * Mirrors these REST routes exactly:
  *   - POST /api/v1/bulk/bank-transactions/categorize  (per-item cash coding)
- *   - POST /api/v1/bulk/invoices/mark-paid
- *   - POST /api/v1/bulk/invoices/send                 (draft -> sent flip)
- *   - POST /api/v1/invoices/bulk  (action: "send-reminder")
  *   - POST /api/v1/bulk/contacts/tag                  (sets customer/supplier/both)
  *   - POST /api/v1/bulk/contacts/delete
  *
@@ -266,253 +256,6 @@ export function registerBulkTools(server: McpServer, ctx: AuthContext) {
         const failed = results.length - succeeded;
 
         return { results, summary: { total: results.length, succeeded, failed } };
-      })
-  );
-
-  // -------------------------------------------------------------------------
-  // bulk_mark_invoices_paid — mark many invoices fully paid.
-  // Mirrors POST /api/v1/bulk/invoices/mark-paid. Void invoices are skipped.
-  // -------------------------------------------------------------------------
-  server.tool(
-    "bulk_mark_invoices_paid",
-    "Mark many invoices as fully PAID in one call (sets status=paid, amountPaid=total, amountDue=0, paidAt=now). Use this to clear off invoices that have been settled outside the system. Void invoices in the list are skipped. Every id is org-scoped — only invoices in THIS org are touched. NOTE: this is a status/balance flip only; it does NOT record a payment or post a payment journal entry (use pay_invoice for a single invoice with a real payment + GL posting). Returns the number updated.",
-    {
-      ids: z
-        .array(z.string().uuid())
-        .min(1)
-        .max(100)
-        .describe("UUIDs of the invoices to mark as paid (max 100)"),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        requireRole(ctx, "manage:invoices");
-
-        const ids = params.ids;
-
-        const invoices = await db.query.invoice.findMany({
-          where: and(inArray(invoice.id, ids), eq(invoice.organizationId, ctx.organizationId)),
-        });
-
-        let count = 0;
-        for (const inv of invoices) {
-          if (inv.status === "void") continue;
-          await db
-            .update(invoice)
-            .set({
-              status: "paid",
-              amountPaid: inv.total,
-              amountDue: 0,
-              paidAt: new Date(),
-              updatedAt: new Date(),
-            })
-            .where(eq(invoice.id, inv.id));
-          count++;
-        }
-
-        const paidIds = invoices.filter((inv) => inv.status !== "void").map((inv) => inv.id);
-        await db.insert(auditLog).values({
-          organizationId: ctx.organizationId,
-          userId: ctx.userId,
-          action: "pay",
-          entityType: "invoice",
-          entityId: ctx.organizationId,
-          changes: { count, ids: paidIds, bulk: true },
-        });
-
-        return { updated: count };
-      })
-  );
-
-  // -------------------------------------------------------------------------
-  // bulk_mark_invoices_sent — flip many draft invoices to "sent".
-  // Mirrors POST /api/v1/bulk/invoices/send. Only DRAFT invoices in this org
-  // are touched. (This is the lightweight status flip — it does NOT email or
-  // post a GL entry; use the per-invoice send for that.)
-  // -------------------------------------------------------------------------
-  server.tool(
-    "bulk_mark_invoices_sent",
-    "Mark many DRAFT invoices as SENT in one call (sets status=sent, sentAt=now). Only invoices in THIS org that are currently in draft are updated; non-draft and other-org ids are ignored. NOTE: this is a status flip only — it does NOT email the customer and does NOT post a recognition/COGS journal entry. Returns the count and the ids actually updated.",
-    {
-      ids: z
-        .array(z.string().uuid())
-        .min(1)
-        .max(100)
-        .describe("UUIDs of the draft invoices to mark as sent (max 100)"),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        requireRole(ctx, "manage:invoices");
-
-        const ids = params.ids;
-
-        const updated = await db
-          .update(invoice)
-          .set({ status: "sent", sentAt: new Date(), updatedAt: new Date() })
-          .where(
-            and(
-              inArray(invoice.id, ids),
-              eq(invoice.organizationId, ctx.organizationId),
-              eq(invoice.status, "draft")
-            )
-          )
-          .returning({ id: invoice.id });
-
-        await db.insert(auditLog).values({
-          organizationId: ctx.organizationId,
-          userId: ctx.userId,
-          action: "send",
-          entityType: "invoice",
-          entityId: ctx.organizationId,
-          changes: { count: updated.length, ids: updated.map((r) => r.id), bulk: true },
-        });
-
-        return { updated: updated.length, ids: updated.map((r) => r.id) };
-      })
-  );
-
-  // -------------------------------------------------------------------------
-  // bulk_send_invoice_reminders — email overdue reminders for many invoices.
-  // Mirrors POST /api/v1/invoices/bulk { action: "send-reminder" }.
-  // -------------------------------------------------------------------------
-  // Default reminder copy used when the org has no reminder rule template. Kept
-  // plain and customer-facing (end users aren't accountants). Mirrors the route.
-  const DEFAULT_SUBJECT = "Reminder: invoice {{documentNumber}} from {{organizationName}}";
-  const DEFAULT_BODY =
-    "<p>Hi {{contactName}},</p>" +
-    "<p>This is a friendly reminder that invoice <strong>{{documentNumber}}</strong> " +
-    "for <strong>{{amountDue}}</strong> was due on {{dueDate}}.</p>" +
-    "<p>If you've already paid, please ignore this message. Thank you!</p>" +
-    "<p>{{organizationName}}</p>";
-
-  server.tool(
-    "bulk_send_invoice_reminders",
-    "Email a payment reminder for each of the given invoices in one call. Requires verified org email (SMTP) to be set up. Only invoices that are owed money are reminded — draft, void, and paid invoices are skipped, as are invoices whose customer has no email. One email per invoice; a single failure never aborts the batch (each result is reported as sent/skipped/failed). Each successful reminder is logged and bumps that invoice's overdue (dunning) stage by one. All ids are org-scoped to THIS org. Returns per-invoice results plus a summary.",
-    {
-      invoiceIds: z
-        .array(z.string().min(1))
-        .min(1)
-        .max(200)
-        .describe("UUIDs of the invoices to send reminders for (max 200; duplicates ignored)"),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        // Sending reminders is an email/recurring concern — same permission the
-        // reminder rules + processor (and the REST route) use.
-        requireRole(ctx, "manage:recurring");
-
-        // De-dupe ids while preserving order.
-        const ids = [...new Set(params.invoiceIds)];
-
-        // SMTP must be configured + verified or nothing can go out.
-        const config = await db.query.emailConfig.findFirst({
-          where: eq(emailConfig.organizationId, ctx.organizationId),
-        });
-        if (!config || !config.isVerified) {
-          throw new Error("Email is not set up yet. Connect and verify your email to send reminders.");
-        }
-
-        const org = await db.query.organization.findFirst({
-          where: eq(organization.id, ctx.organizationId),
-        });
-
-        // Org-scoped load of just the requested invoices, with the contact for
-        // the recipient email + name.
-        const invoices = await db.query.invoice.findMany({
-          where: and(
-            eq(invoice.organizationId, ctx.organizationId),
-            inArray(invoice.id, ids),
-            notDeleted(invoice.deletedAt)
-          ),
-          with: { contact: true },
-        });
-        const byId = new Map(invoices.map((i) => [i.id, i]));
-
-        type ResultStatus = "sent" | "skipped" | "failed";
-        const results: Array<{ invoiceId: string; status: ResultStatus; message?: string }> = [];
-        let sent = 0;
-
-        for (const id of ids) {
-          const inv = byId.get(id);
-          if (!inv) {
-            results.push({ invoiceId: id, status: "skipped", message: "Not found" });
-            continue;
-          }
-          // Reminders only make sense for invoices that are owed money.
-          if (inv.status === "draft" || inv.status === "void" || inv.status === "paid") {
-            results.push({ invoiceId: id, status: "skipped", message: "Nothing owed on this invoice" });
-            continue;
-          }
-          const recipient = inv.contact?.email;
-          if (!recipient) {
-            results.push({ invoiceId: id, status: "skipped", message: "Customer has no email" });
-            continue;
-          }
-
-          const dueDate = new Date(inv.dueDate);
-          const diffDays = Math.floor((Date.now() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
-          const vars = {
-            contactName: inv.contact?.name || "",
-            documentNumber: inv.invoiceNumber,
-            amountDue: formatMoney(inv.amountDue, inv.currencyCode),
-            dueDate: inv.dueDate,
-            organizationName: org?.name || "",
-            daysOverdue: String(Math.max(0, diffDays)),
-          };
-          const subject = renderTemplate(DEFAULT_SUBJECT, vars);
-          const html = renderTemplate(DEFAULT_BODY, vars);
-
-          try {
-            await sendEmail(config, { to: recipient, subject, html });
-            await db.insert(reminderLog).values({
-              organizationId: ctx.organizationId,
-              reminderRuleId: null,
-              documentType: "invoice",
-              documentId: inv.id,
-              recipientEmail: recipient,
-              subject,
-              status: "sent",
-            });
-            // Bump this invoice's dunning stage by one per sent reminder.
-            // Org-scoped so we never touch another org's row.
-            await db
-              .update(invoice)
-              .set({ dunningLevel: sql`${invoice.dunningLevel} + 1` })
-              .where(and(eq(invoice.id, inv.id), eq(invoice.organizationId, ctx.organizationId)));
-            results.push({ invoiceId: id, status: "sent", message: `Sent to ${recipient}` });
-            sent++;
-          } catch (err) {
-            const message = err instanceof Error ? err.message : "Send failed";
-            await db.insert(reminderLog).values({
-              organizationId: ctx.organizationId,
-              reminderRuleId: null,
-              documentType: "invoice",
-              documentId: inv.id,
-              recipientEmail: recipient,
-              subject,
-              status: "failed",
-              errorMessage: message,
-            });
-            results.push({ invoiceId: id, status: "failed", message });
-          }
-        }
-
-        await db.insert(auditLog).values({
-          organizationId: ctx.organizationId,
-          userId: ctx.userId,
-          action: "bulk-send-reminder",
-          entityType: "invoice",
-          entityId: ctx.organizationId,
-          changes: { requested: ids.length, sent, bulk: true },
-        });
-
-        const summary = {
-          total: results.length,
-          sent: results.filter((r) => r.status === "sent").length,
-          skipped: results.filter((r) => r.status === "skipped").length,
-          failed: results.filter((r) => r.status === "failed").length,
-        };
-
-        return { action: "send-reminder", results, summary };
       })
   );
 

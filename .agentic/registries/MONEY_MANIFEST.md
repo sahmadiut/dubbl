@@ -1,6 +1,20 @@
 # Money and FX boundary manifest
 
-Inventory owner: MON-001. Refreshed 2026-10-03 (Asia/Tehran) for MON-044 against entry HEAD `e78cf52`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+Inventory owner: MON-001. Refreshed 2026-10-03 (Asia/Tehran) for MON-045 against entry HEAD `a5601dc`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+
+## MON-045 bulk invoice adoption (MON-019 child)
+
+[Bulk invoice contracts](INVOICE_BULK_WIRE_CONTRACTS.md) cover preview/import,
+two batch actions, combined send/reminder REST and five registered MCP tools.
+Decimal-major prices/exact aliases and explicit currency scales preserve import
+units; grouped CSV and nested documents use exact ratios/sums. Unsupported money
+rejects before jobs. Per-document atomic number/header/line import and whole-batch
+lifecycle posting replace unsafe arithmetic and status-only send. Mark-paid stays
+an explicitly guarded externally-settled annotation; MON-021 retains settlement
+coordination. Reminder displays preserve every minor unit. Actual REST/SDK migrated
+PostgreSQL fixtures cover roles/tenants/ranges, partial jobs, repeat/concurrent send
+and rollback. Full-int64, broader CSV/parser, durable delivery and financial/provider
+qualification remain assigned gates. No schema or production IRR change.
 
 ## MON-044 recurring invoice adoption (MON-019 child)
 

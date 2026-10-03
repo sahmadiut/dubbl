@@ -77,6 +77,7 @@ export function BulkImportWizard({
   const [fileName, setFileName] = useState("");
   const [result, setResult] = useState<{ processedRows: number; errorRows: number; errorDetails?: Array<{ row: number; error: string }> } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -92,6 +93,7 @@ export function BulkImportWizard({
     setFileName("");
     setResult(null);
     setDragActive(false);
+    setError(null);
   }, []);
 
   const processFile = useCallback((file: File) => {
@@ -150,6 +152,7 @@ export function BulkImportWizard({
 
   const handlePreview = useCallback(async () => {
     setLoading(true);
+    setError(null);
     const mappedRows = csvData.map(row => {
       const mapped: Record<string, unknown> = {};
       mappings.forEach(m => {
@@ -167,11 +170,12 @@ export function BulkImportWizard({
         body: JSON.stringify({ rows: mappedRows, source }),
       });
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Import request failed");
       setPreview(data.preview || []);
       setValidCount(data.validCount || 0);
       setStep("preview");
-    } catch {
-      // ignore
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Preview failed");
     } finally {
       setLoading(false);
     }
@@ -179,6 +183,7 @@ export function BulkImportWizard({
 
   const handleImport = useCallback(async () => {
     setStep("importing");
+    setError(null);
     const mappedRows = csvData.map(row => {
       const mapped: Record<string, unknown> = {};
       mappings.forEach(m => {
@@ -196,6 +201,7 @@ export function BulkImportWizard({
         body: JSON.stringify({ fileName, rows: mappedRows, source }),
       });
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Import request failed");
       setResult({
         processedRows: data.job?.processedRows || 0,
         errorRows: data.job?.errorRows || 0,
@@ -203,7 +209,8 @@ export function BulkImportWizard({
       });
       setStep("results");
       onComplete?.();
-    } catch {
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Import failed");
       setStep("preview");
     }
   }, [csvData, mappings, importEndpoint, orgId, fileName, onComplete, source]);
@@ -259,6 +266,7 @@ export function BulkImportWizard({
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
+          {error && <p role="alert" className="text-sm text-destructive mb-4">{error}</p>}
           {/* Upload step */}
           {step === "upload" && (
             <div

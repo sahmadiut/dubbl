@@ -605,3 +605,50 @@ saved data leave the schedule pending for retry. Auto-send attempts email after
 commit; delivery failure retains the posted invoice. MCP also provides
 `delete_recurring_invoice` and `preview_recurring_invoice`. Other document types
 retain their existing numeric price contracts.
+
+## Bulk invoice contracts
+
+| POST path | Input | Result |
+|-----------|-------|--------|
+| `/api/v1/bulk/invoices/preview` | `{source?, rows}` | Preview, validation counts and exact totals |
+| `/api/v1/bulk/invoices/import` | `{fileName, source?, rows}` | `{job}` (201), document counts/errors |
+| `/api/v1/bulk/invoices/send` | `{ids}` (1 through 100) | `{updated, ids}` |
+| `/api/v1/bulk/invoices/mark-paid` | `{ids}` (1 through 100) | `{updated}` |
+| `/api/v1/invoices/bulk` | `{action, invoiceIds}` (1 through 200) | Per-invoice results and summary |
+
+Import accepts nested documents with `contactId`, `issueDate`, `dueDate`, optional
+`reference`/`currencyCode`, and `lines`. Numeric `unitPrice` is decimal major units;
+`unitPriceExact` is decimal-major text and `unitPriceMinor` is an integer minor-unit
+string. Aliases must agree. Currency defaults to USD for import; explicit currency
+determines its scale. Prices, products and sums must fit safe integers. Imported
+lines retain extended-price rounding, with quantity stored in hundredths.
+
+Flat mapped CSV rows use `lineDescription`, `lineQuantity`, `lineUnitPrice`,
+`lineUnitPriceExact`, `lineUnitPriceMinor`, `lineAccountId` and `lineTaxRateId`.
+They group by `invoiceNumber`, otherwise contact/date/reference; all group headers
+must agree. Supply Dubbl contact/account UUIDs. CSV prices are canonical decimal
+text, and string quantities have at most two fractional digits. Source selects date
+preprocessing only. Generated invoice numbers use the organization's sequence.
+
+Malformed or unsupported money fails before import job creation. Business errors
+are reported per document, with each number/header/lines committed atomically.
+Repeating an import creates new documents; inspect job results before retrying.
+Preview adds numeric `subtotal`, `taxTotal`, `total` and matching `*Minor` strings.
+Import jobs count grouped documents, not physical CSV lines.
+
+Bulk send and `action: "mark-as-sent"` require `approve:invoices` and atomically
+recognize all qualifying drafts with their journals, stock effects and snapshots.
+They send no email; one failing eligible document rolls back the batch. Foreign,
+deleted and non-draft IDs are ignored. Repeating a successful send updates zero.
+
+Bulk mark-paid requires `manage:invoices` and remains a compatibility annotation
+for invoices settled outside Dubbl. It records no payment, allocation or settlement
+journal. Only sent/partial/overdue invoices with consistent safe balances and
+unlocked issue dates qualify; the update is atomic. Use payment operations to
+record an accounting settlement.
+
+`action: "send-reminder"` requires `manage:recurring` and verified organization
+email. Saved money/references preflight before delivery; delivery failures are
+reported per item. Repeating can send another reminder. MCP counterparts are
+`preview_invoice_import`, `import_invoices`, `bulk_mark_invoices_sent`,
+`bulk_mark_invoices_paid` and `bulk_send_invoice_reminders`.

@@ -228,3 +228,16 @@ documents, automated posting and catch-up advancement commit together; failed
 posting leaves the schedule pending. Email delivery follows committed posting.
 See [recurring invoice contracts](../../.agentic/registries/RECURRING_INVOICE_WIRE_CONTRACTS.md)
 for all operations, currency/FX policies, ranges and remaining qualification limits.
+
+
+## Bulk invoice contracts (MON-045)
+
+Nested and grouped invoice imports retain decimal-major numeric prices, additive
+exact major/minor aliases, USD omission default and extended-price rounding.
+Bigint products/sums protect the safe-number coexistence range. Preview totals
+add Minor strings; grouped jobs count documents. Shared direct-DB REST/MCP services
+preflight malformed money before jobs and atomically commit each invoice/number.
+Bulk send reuses exact lifecycle posting in one batch transaction; bulk mark-paid
+remains a guarded status annotation without settlement. Reminder formatting uses
+exact strings/bigint Intl parts. See [bulk invoice contracts](../../.agentic/registries/INVOICE_BULK_WIRE_CONTRACTS.md)
+for all boundaries, error/partial-job/retry policies and MON-021 coordination.

@@ -118,6 +118,13 @@ const ENTITIES: {
       { key: "issueDate", label: "Issue Date", required: true },
       { key: "dueDate", label: "Due Date", required: true },
       { key: "reference", label: "Reference" },
+      { key: "invoiceNumber", label: "Invoice Group" },
+      { key: "currencyCode", label: "Currency (default USD)" },
+      { key: "lineDescription", label: "Line Description", required: true },
+      { key: "lineQuantity", label: "Line Quantity" },
+      { key: "lineUnitPrice", label: "Unit Price (decimal)" },
+      { key: "lineUnitPriceMinor", label: "Unit Price (minor units)" },
+      { key: "lineAccountId", label: "Revenue Account ID" },
     ],
   },
   {

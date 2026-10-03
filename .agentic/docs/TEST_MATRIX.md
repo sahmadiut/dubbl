@@ -247,3 +247,21 @@ template-line/journal-line/schedule faults and failed auto-send email after post
 Invoice lifecycle and recurring journal integration workers are regression checks.
 No successful provider delivery, browser/session/OAuth, full domain or production
 accounting/IRR qualification is inferred.
+
+
+## MON-045 bulk invoice contracts
+
+- Pure groups: decimal-major/minor aliases, USD/JPY/IRR/KWD, signed extended-price
+  rounding, gross/sum/range rejection, flat grouping/header agreement and exact
+  safe-limit reminder formatting.
+- Actual REST routes and registered SDK tools on migrated disposable PostgreSQL:
+  legacy/exact/dual imports/preview, grouping, custom-role/API-key/org scoping,
+  invalid-money-before-job, partial business errors, number/header/line rollback,
+  atomic recognition journals/saved FX, duplicate/concurrent send and whole-batch
+  rollback, annotation-only paid balances/locks/retries, unsafe saved history and
+  reminder preflight/skips/local delivery failure without provider traffic.
+- Unit regression, adjacent invoice write/lifecycle/recurring integration,
+  typecheck/lint and source-inventory verification. No build/dev server.
+- No settlement/report/full-int64, browser/session/OAuth, successful SMTP/provider,
+  broad quoted-CSV or production/IRR qualification is inferred. MON-021 owns
+  annotation interaction with payment/allocation/reversal/bank/FX/report writers.

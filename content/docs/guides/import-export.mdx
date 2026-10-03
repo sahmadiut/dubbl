@@ -113,6 +113,8 @@ The following MCP tools are available for programmatic import/export:
 - `import_csv_data` - Import CSV data directly (accounts, contacts, products)
 - `export_csv_data` - Export data as CSV text
 - `list_import_jobs` - List past import jobs
+- `preview_invoice_import` - Validate nested invoices or grouped mapped CSV lines and exact totals
+- `import_invoices` - Import draft invoices with per-document job results
 
 ## Troubleshooting
 
@@ -120,7 +122,7 @@ The following MCP tools are available for programmatic import/export:
 Dubbl accepts dates in `YYYY-MM-DD`, `MM/DD/YYYY`, and `DD-MMM-YYYY` formats. If your dates aren't being recognized, ensure they match one of these patterns.
 
 ### Money precision
-All amounts are stored as integer cents internally. When importing, provide decimal values (e.g. `125.50`). When exporting, you'll receive decimal strings.
+Invoice amounts are stored in integer currency minor units: cents for USD, whole units for JPY/IRR, and thousandths for KWD. Invoice import prices use decimal major values (e.g. `125.50`) or explicit exact major/minor aliases. Export formats and other entity import contracts should be checked separately.
 
 ### Missing references
 If an import fails with "Contact not found" or "Account not found", ensure the referenced contacts or accounts have been imported first. Follow the recommended import order above.
@@ -130,3 +132,26 @@ The import process does not check for duplicates. If you run an import twice, yo
 
 ### Account type mapping
 Account types from other systems are automatically mapped to Dubbl types (asset, liability, equity, revenue, expense). For example, QuickBooks "Bank" and "Other Current Asset" both map to "asset".
+
+## Invoice import details
+
+Map Contact ID, Issue Date, Due Date and Line Description. Add Line Quantity,
+Unit Price (decimal), Revenue Account ID and optional Invoice Group/Reference/
+Currency columns. Supply existing Dubbl UUIDs for contacts and accounts. Currency
+defaults to USD; select it explicitly when importing another currency. CSV decimal
+prices must be plain ASCII text (`12.50`); commas, symbols, exponents and trailing
+text are rejected. CSV quantity strings allow at most two decimal places.
+
+For exact integer prices, map Unit Price (minor units): `1250` means USD 12.50,
+JPY/IRR 1250, or KWD 1.250. Supplying decimal and minor aliases together requires
+agreement. Lines with the same Invoice Group form one document; without a group,
+contact/date/reference determines the grouping. Grouped headers must agree.
+Generated document numbers come from Dubbl's sequence, and import history counts
+documents rather than physical CSV lines.
+
+Preview validates references and totals. Import also checks permissions, period
+locks and plan limits. Invalid monetary inputs reject the request before creating
+a job. Valid documents commit independently; a failed line write rolls back its
+entire invoice and number. Inspect job errors before retrying: reimporting creates
+new documents. The wizard's CSV reader supports simple unquoted rows; embedded
+commas and multiline quoted fields require a structured API/MCP import.

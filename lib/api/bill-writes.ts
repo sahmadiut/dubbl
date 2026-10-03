@@ -13,6 +13,7 @@ import { diffChanges } from "./audit";
 import { publicLineDto } from "./public-money-wire";
 import { invoiceInputError, safeInvoiceMinor } from "./invoice-write-wire";
 import { billCreateSchema, billUpdateSchema, billWriteDto, billWriteTotals, type BillWriteLine } from "./bill-write-wire";
+import { purchaseOrderReservations } from "./purchase-order-reservations";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 const scope = (id: string, org: string) => and(eq(bill.id, id), eq(bill.organizationId, org), notDeleted(bill.deletedAt));
@@ -49,7 +50,7 @@ async function lockOrganization(tx: Tx, ctx: AuthContext) {
   if (!org) throw new AuthError("Organization not found", 404);
   return org;
 }
-async function nextNumber(tx: Tx, org: string) {
+export async function nextBillNumber(tx: Tx, org: string) {
   const [sequence] = await tx.select().from(numberSequence).where(and(eq(numberSequence.organizationId, org), eq(numberSequence.entityType, "bill"))).for("update");
   // Supplier invoice identifiers can contain arbitrary text. Seed from numeric auto-number forms only.
   const [maximum] = await tx.select({ value: sql<string>`coalesce(max(substring(${bill.billNumber} from '^(?:BILL-)?([0-9]+)$')::numeric), 0)::text` })
@@ -100,7 +101,7 @@ export async function createBill(ctx: AuthContext, input: unknown, transport: "r
       }
     }
     const [created] = await tx.insert(bill).values({ organizationId: ctx.organizationId, contactId: parsed.contactId,
-      billNumber: supplied || await nextNumber(tx, ctx.organizationId), issueDate: parsed.issueDate, dueDate: parsed.dueDate,
+      billNumber: supplied || await nextBillNumber(tx, ctx.organizationId), issueDate: parsed.issueDate, dueDate: parsed.dueDate,
       status: parsed.submitForApproval || held ? "pending_approval" : "draft", reference: parsed.reference || null, notes: parsed.notes || null,
       currencyCode: currency, subtotal: calculated.subtotal, taxTotal: calculated.taxTotal, total: calculated.total,
       amountPaid: 0, amountDue: calculated.amountDue, createdBy: ctx.userId }).returning();
@@ -117,6 +118,8 @@ async function draft(tx: Tx, ctx: AuthContext, id: string) {
   const [row] = await tx.select().from(bill).where(scope(id, ctx.organizationId)).for("update");
   if (!row) throw new AuthError("Bill not found", 404);
   if (row.status !== "draft") throw new AuthError("Only draft bills can be edited or deleted", 400);
+  if ((await purchaseOrderReservations(tx, ctx.organizationId, id)).length)
+    throw new AuthError("A converted purchase-order bill cannot be edited or deleted; void it to release its reserved quantities", 400);
   if (row.journalEntryId || row.amountPaid !== 0) throw new AuthError("A draft bill with posted bookkeeping or recorded payments cannot be edited or deleted", 400);
   stringifyWire(billWriteDto(row));
   await assertNotLocked(ctx.organizationId, row.issueDate);

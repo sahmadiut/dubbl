@@ -37,11 +37,11 @@ type CountRow = { status: string; count: number; amount: string; minAmount: stri
   currencyCount: number; currencyCode: string };
 
 /** SQL aggregates arrive as text, including min/max to detect unsafe offsetting history. */
-export function billCountsDto(rows: CountRow[]) {
+export function billCountsDto(rows: CountRow[], label = "Bill") {
   const counts: Record<string, { count: number; amount: number; amountMinor: string; currencyCode: string }> = {};
   let total = 0;
   for (const row of rows) {
-    if (row.currencyCount !== 1) throw new WireCompatibilityError("Bill status totals cannot combine different currencies");
+    if (row.currencyCount !== 1) throw new WireCompatibilityError(`${label} status totals cannot combine different currencies`);
     safeMinor(row.minAmount); safeMinor(row.maxAmount);
     const amount = safeMinor(row.amount);
     counts[row.status] = { count: row.count, amount, amountMinor: BigInt(row.amount).toString(), currencyCode: row.currencyCode };

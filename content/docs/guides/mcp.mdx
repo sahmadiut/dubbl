@@ -164,6 +164,16 @@ dubbl uses OAuth 2.1 with PKCE for MCP authentication:
 - `pay_bill` -- Record a payment (amount in cents)
 - `void_bill` -- Void an unsettled bill using saved ledger, FX and stock values
 
+### Purchase orders
+- `create_purchase_order` -- Create a draft with exact major/minor price aliases
+- `list_purchase_orders` -- List scoped orders, supplier and lines
+- `get_purchase_order` -- Get order detail with exact money aliases
+- `get_purchase_order_counts` -- Count and total orders per status and currency
+- `update_purchase_order` -- Edit a draft atomically with legacy PATCH tax policy
+- `delete_purchase_order` -- Soft-delete a draft and remove its lines
+- `send_purchase_order` -- Mark sent and optionally deliver email after commit
+- `convert_po_to_bill` -- Convert remaining or partial quantities exactly
+
 ### Reports
 - `trial_balance` -- Trial balance report
 - `balance_sheet` -- Balance sheet
@@ -174,7 +184,7 @@ dubbl uses OAuth 2.1 with PKCE for MCP authentication:
 ## Amount Conventions
 
 - All monetary amounts in tool inputs/outputs are in **integer cents** (e.g. `1250` = $12.50)
-- Invoice/bill write `unitPrice` is decimal major units (USD 12.50); `unitPriceExact` is an exact major decimal string and `unitPriceMinor` is an integer minor string. Quantity is decimal physical units. Bill write responses include exact header `*Minor` aliases; supported amounts remain signed safe integers. See [API Reference](/docs/api-reference) for currency, rounding and duplicate policies.
+- Invoice/bill/purchase-order write `unitPrice` is decimal major units (USD 12.50); `unitPriceExact` is an exact major decimal string and `unitPriceMinor` is an integer minor string. Quantity is decimal physical units. Bill write responses include exact header `*Minor` aliases; supported amounts remain signed safe integers. See [API Reference](/docs/api-reference) for currency, rounding and duplicate policies.
 - Exchange rates are stored as integers with 6 decimal places (`1000000` = 1.0)
 
 ## Testing

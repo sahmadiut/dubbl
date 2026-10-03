@@ -326,3 +326,26 @@ accounting/IRR qualification is inferred.
   typecheck/lint and inventory/legacy gates apply. No build/dev. Settlement races,
   foreign GRNI, legacy remediation, full-int64, browser/session/OAuth/provider,
   production migrations, human financial/security/IRR qualification remain separate.
+
+## MON-049 purchase order contracts
+
+- Pure fixtures: major/minor/dual aliases, USD/JPY/IRR/KWD scales, extended signed
+  rounding, discounts/exclusive tax, retained PATCH no-tax/discount semantics,
+  range/date/email/schema rejection, exact partial residuals and counts guards.
+- Actual REST/API-key/custom-role and full registered MCP SDK fixtures: every PO
+  operation, compatible envelopes/aliases, above-int32/safe-max/signed values,
+  supplier/dimension/tenant isolation, saved corruption, period locks/closed years,
+  empty/malformed bodies, supplier filters, mixed/unsafe/offsetting counts.
+- Partial/full conversion and void preserve net/tax residuals, first bill pointer,
+  reservations, reverse-charge due and quantities. Actual linked GRNI accrual
+  tests prevent receipt reuse/double recognition and release posted/unposted
+  reservations. Converted bill edits reject; unknown legacy partial history fails.
+- SQL-text snapshots cover PO/bill/line/link/sequence state and audit/ledger/stock/
+  email effects. Injected PO/bill line, link, tally and audit failures prove atomic
+  rollback. Concurrent first creates/send/convert/delete have no duplicate effects.
+- Email-failure fixtures explicitly blank provider credentials, retain sent state,
+  report 502 and persist failed logs without PDF; audit failure prevents delivery.
+- Adjacent bill write/read/lifecycle regression, full units, lint/typecheck and
+  source inventory/legacy checks apply. No build/dev/Docker or live provider.
+  Other procurement writers, foreign receipt FX, full-int64, migration/release,
+  independent financial/security/native-language/IRR gates remain separate.

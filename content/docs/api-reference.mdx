@@ -741,3 +741,41 @@ email. Saved money/references preflight before delivery; delivery failures are
 reported per item. Repeating can send another reminder. MCP counterparts are
 `preview_invoice_import`, `import_invoices`, `bulk_mark_invoices_sent`,
 `bulk_mark_invoices_paid` and `bulk_send_invoice_reminders`.
+
+## Purchase order exact contracts
+
+`/api/v1/purchase-orders` supports list/create; `/:id` supports detail/draft
+edit/delete; `/counts` returns status buckets; `/:id/send` marks a draft sent;
+`/:id/convert` creates a draft bill. Prices use decimal-major numeric `unitPrice`,
+exact decimal-major `unitPriceExact` or integer minor-unit `unitPriceMinor` strings.
+Aliases must agree. Currency defaults USD. Physical quantities store as hundredths;
+discounts and tax rates are basis points. Headers and returned lines retain numeric
+currency minor units (USD cents) and add `*Minor` strings. Money must fit signed
+safe integers; unsupported ranges return 422 before committing mutations.
+
+Replacement PATCH lines preserve the legacy no-discount/no-tax calculation while
+retaining `taxRateId`; header-only edits preserve amounts. Number/currency remain
+fixed. All writes validate tenant references and strict issue-date locks. Number,
+header, lines, links, tallies and audit commit together.
+
+Conversion accepts an empty body for the unbilled remainder, or `{lines:[{
+purchaseOrderLineId,quantity}]}` for unique partial physical quantities. Saved
+net/tax amounts allocate exactly, preserving discounts and rounding residuals.
+Qualified partial orders can subsequently convert their remaining quantities.
+Each received slice links once. Reverse-charge VAT is excluded from bill amountDue.
+Conversion reserves billed tallies; bill recognition does not reserve again.
+Void releases them. Converted bills cannot be edited/deleted through draft CRUD;
+void and reconvert. Legacy partially billed orders lacking exact allocation history
+return 422 instead of guessing their residuals.
+
+Send requires `approve:bills`; other PO writes require `manage:bills`. Empty send
+body marks sent without email. `sendEmail:true` requires recipientEmail, subject and
+templateProps. Delivery follows commit; failure returns 502 with sent state retained.
+Use document email tools to retry. The legacy attachPdf flag is accepted but no PO
+PDF is attached. Invalid JSON/email bodies return 400 before mutation.
+
+Counts add `amountMinor` and `currencyCode` per status. Mixed currency buckets,
+unsafe constituents (including offsetting history) and unsafe sums reject 422.
+All eight operations have corresponding MCP tools, including draft edit/delete,
+detail/counts and send. PDF, full-int64, other procurement contracts and production
+currency qualification remain separate.

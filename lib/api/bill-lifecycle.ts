@@ -20,6 +20,8 @@ import { convertInvoiceLegs } from "./invoice-lifecycle-wire";
 import { getProcurementSettings } from "./procurement";
 import { billUnits, billInt32, billTaxSplit, billVarianceBp, billRejectSchema } from "./bill-lifecycle-wire";
 import { billStockMovement } from "./bill-stock";
+import { purchaseOrderReservations } from "./purchase-order-reservations";
+import { derivePurchaseOrderStatusAfterBilling } from "./procurement";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type Bill = typeof bill.$inferSelect;
@@ -83,7 +85,8 @@ async function load(tx: Tx, ctx: AuthContext, id: string) {
     }
     receipts.set(id, { ...row, po });
   }
-  return { found, org, lines, receipts };
+  const reservations = found.status === "void" ? [] : await purchaseOrderReservations(tx, ctx.organizationId, id);
+  return { found, org, lines, receipts, reservations };
 }
 async function audit(tx: Tx, ctx: AuthContext, found: Bill, action: string, request?: Request) {
   await tx.insert(auditLog).values({ organizationId: ctx.organizationId, userId: ctx.userId, entityType: "bill", entityId: found.id,
@@ -211,8 +214,9 @@ async function recognize(tx: Tx, ctx: AuthContext, loaded: Awaited<ReturnType<ty
       issue(line, "price_out_of_tolerance", "Bill unit cost exceeds procurement price tolerance", !matched.po && settings.blockOverBill);
     if (matched.po) {
       const po = matched.po;
-      const qty = billInt32(BigInt(po.quantityBilled) + BigInt(proposedPo.get(po.id) ?? 0) + BigInt(line.quantity));
-      proposedPo.set(po.id, billInt32(BigInt(proposedPo.get(po.id) ?? 0) + BigInt(line.quantity)));
+      const reserved = loaded.reservations.some(reservation => reservation.line.id === po.id);
+      const qty = reserved ? po.quantityBilled : billInt32(BigInt(po.quantityBilled) + BigInt(proposedPo.get(po.id) ?? 0) + BigInt(line.quantity));
+      if (!reserved) proposedPo.set(po.id, billInt32(BigInt(proposedPo.get(po.id) ?? 0) + BigInt(line.quantity)));
       if (qty > po.quantityReceived) issue(line, "over_bill_qty", "Bill quantity exceeds PO received quantity", settings.blockOverBill || settings.requireGrnBeforeBill);
       const tolerance = invoiceRound(BigInt(po.quantity) * BigInt(settings.qtyTolerancePercent), 10000n);
       if (BigInt(qty) > BigInt(po.quantity) + tolerance) issue(line, "over_bill_qty", "Bill quantity exceeds PO ordered tolerance", settings.blockOverBill);
@@ -331,7 +335,7 @@ async function reverse(tx: Tx, ctx: AuthContext, found: Bill, entry: typeof jour
 export async function voidBill(ctx: AuthContext, id: string, request?: Request) {
   requireRole(ctx, "approve:bills");
   return db.transaction(async tx => {
-    const { found, lines, receipts } = await load(tx, ctx, id);
+    const { found, lines, receipts, reservations } = await load(tx, ctx, id);
     if (found.status === "void") fail("Already voided");
     if (found.amountPaid !== 0) fail("Cannot void a bill with recorded payments or applied credits. Unapply or refund settlement first.");
     await assertNotLocked(ctx.organizationId, found.issueDate);
@@ -358,7 +362,7 @@ export async function voidBill(ctx: AuthContext, id: string, request?: Request) 
       for (const line of lines) {
         if (!line.goodsReceiptLineId) continue;
         const receipt = receipts.get(line.goodsReceiptLineId)!;
-        if (receipt.po) {
+        if (receipt.po && !reservations.some(reservation => reservation.line.id === receipt.po!.id)) {
           const [po] = await tx.select().from(purchaseOrderLine).where(eq(purchaseOrderLine.id, receipt.po.id));
           await tx.update(purchaseOrderLine).set({ quantityBilled: billInt32(BigInt(po.quantityBilled) - BigInt(line.quantity)) }).where(eq(purchaseOrderLine.id, po.id));
         }
@@ -375,6 +379,14 @@ export async function voidBill(ctx: AuthContext, id: string, request?: Request) 
             eq(bill.organizationId, ctx.organizationId), ne(bill.id, id), ne(bill.status, "void"), isNull(bill.deletedAt), sql`${bill.journalEntryId} is not null`));
         await tx.update(goodsReceipt).set({ status: remaining.length ? "billed" : "received", updatedAt: new Date() }).where(eq(goodsReceipt.id, receipt.receipt.id));
       }
+    }
+    for (const reserved of reservations) await tx.update(purchaseOrderLine)
+      .set({ quantityBilled: billInt32(BigInt(reserved.line.quantityBilled) - BigInt(reserved.quantity)) }).where(eq(purchaseOrderLine.id, reserved.line.id));
+    for (const poId of [...new Set(reservations.map(reservation => reservation.purchaseOrderId))]) {
+      const remaining = await tx.select({ quantity: purchaseOrderLine.quantity, quantityBilled: purchaseOrderLine.quantityBilled })
+        .from(purchaseOrderLine).where(eq(purchaseOrderLine.purchaseOrderId, poId));
+      await tx.update(purchaseOrder).set({ status: derivePurchaseOrderStatusAfterBilling(remaining), updatedAt: new Date() })
+        .where(and(eq(purchaseOrder.id, poId), eq(purchaseOrder.organizationId, ctx.organizationId)));
     }
     await tx.update(approvalRequest).set({ status: "cancelled", updatedAt: new Date() }).where(and(eq(approvalRequest.organizationId, ctx.organizationId),
       eq(approvalRequest.entityType, "bill"), eq(approvalRequest.entityId, id), eq(approvalRequest.status, "pending")));

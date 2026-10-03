@@ -277,3 +277,14 @@ and linked variance history. Approval workflow actions and audit commit together
 See [bill lifecycle contracts](../../.agentic/registries/BILL_LIFECYCLE_WIRE_CONTRACTS.md)
 for supported ranges, legacy/FIFO/GRNI limits, permissions and settlement coordination.
 Full-int64, foreign-currency receipt FX and actual settlement remain separate gates.
+
+## Purchase order contracts (MON-049)
+
+REST and MCP now share PO reads/counts, CRUD, send and bill conversion. Numeric
+prices retain decimal major units; unitPriceExact and unitPriceMinor supply exact
+aliases. Safe header/line money adds *Minor strings. Existing PATCH replacement
+lines retain zero tax/discount calculation. Atomic numbering and procurement
+allocations use exact saved net/tax values, preserve discounts/residuals after
+partial void, and avoid GRN reuse or repeated recognition tallies. Converted bill
+CRUD protects reservations; void releases them. See [purchase order contracts](../../.agentic/registries/PURCHASE_ORDER_WIRE_CONTRACTS.md)
+for boundaries, compatibility changes and remaining qualification limits.

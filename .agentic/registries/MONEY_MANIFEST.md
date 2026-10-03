@@ -1,6 +1,21 @@
 # Money and FX boundary manifest
 
-Inventory owner: MON-001. Refreshed 2026-10-03 (Asia/Tehran) for MON-048 against entry HEAD `85f6619`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+Inventory owner: MON-001. Refreshed 2026-10-03 (Asia/Tehran) for MON-049 against entry HEAD `7583781`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+
+## MON-049 purchase order adoption (MON-020 child)
+
+[Purchase order contracts](PURCHASE_ORDER_WIRE_CONTRACTS.md) cover all PO reads,
+CRUD, counts, send and partial/full bill conversion in shared REST/MCP services.
+Decimal-major/exact-major/minor price aliases preserve extended rounding and
+existing PATCH no-tax semantics. Headers/lines/contact limits add exact aliases;
+counts reject unsafe constituents/sums and mixed currencies. Scoped transactions
+commit numbering/header/lines/links/tallies/audit with preflight and strict dates.
+Conversion allocates saved net/tax exactly, including discounts and residuals after
+void, and links GRN slices without reuse. Reservation history prevents recognition
+from double-counting and releases tallies on void; converted bill edits reject.
+Real migrated PostgreSQL handlers/SDK verify legacy/exact/dual clients, tenant/
+role/date/range/failure/concurrency/GRNI/email-failure behavior. MON-020 retains
+combined procurement qualification and all full-range/production/IRR gates.
 
 ## MON-048 bill lifecycle adoption (MON-020 child)
 

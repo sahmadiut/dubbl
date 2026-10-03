@@ -53,3 +53,24 @@ If PO line items reference inventory items, receiving the PO can automatically u
 ## PDF Download
 
 Purchase orders can be downloaded as PDFs. The layout uses your configured template with your branding, accent color, and notes. To customize, go to **Settings > Templates**. See [Templates](/docs/settings/document-templates) for all available options.
+
+## API and MCP compatibility
+
+PO prices accept decimal major-unit `unitPrice` (USD 12.50), exact decimal-major
+`unitPriceExact`, or integer-minor `unitPriceMinor` strings. Responses retain
+numeric minor amounts and add `*Minor` strings. Quantities store as hundredths.
+Amounts, products and sums must fit signed safe integers; currency defaults USD.
+See [API Reference](/docs/api-reference) for all operations and error policies.
+
+Partial conversion preserves saved discounts/tax and exact rounding residuals;
+a later conversion can bill the remaining quantity. Converted bills reserve PO
+quantities, which recognition retains and voiding releases. To change a converted
+bill, void it and reconvert. Historical partial orders without qualified exact
+allocations require remediation before further conversion. Draft PATCH line
+replacement retains its existing zero-tax/discount calculation; header-only edits
+preserve totals.
+
+MCP tools: `create_purchase_order`, `list_purchase_orders`, `get_purchase_order`,
+`get_purchase_order_counts`, `update_purchase_order`, `delete_purchase_order`,
+`send_purchase_order`, and `convert_po_to_bill`. Email delivery follows the committed
+sent status; a 502 delivery error leaves the PO sent for a separate email retry.

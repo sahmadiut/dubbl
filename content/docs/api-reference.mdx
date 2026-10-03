@@ -443,6 +443,32 @@ both old and new dates. Numbering, header, lines, procurement links and audit
 commit atomically. MCP `create_bill`, `update_bill` and `delete_bill` use the same
 direct-DB services. Creating a draft does not post stock or bookkeeping.
 
+Bill receive/approve/reject/void now share direct-DB services with MCP
+`receive_bill`, `approve_bill`, `reject_bill` and `void_bill`. Receive requires an
+unposted draft and `approve:bills`; approve/reject require pending approval and
+`manage:bills`; void requires `approve:bills` and no recorded payments/credits.
+Each response retains numeric minor-unit bill fields and additive `*Minor`
+strings. Receive/final approval returns `{bill,grniEntryId,warnings}` (optional
+`request` for a workflow); reject returns `{bill,request?}` and void `{bill}`.
+Reject accepts optional `reason` text up to 10000 characters. Generic approval
+request actions share final bill posting and assigned-step checks.
+
+Ledger, stock, GRNI/PO, approval state and audit commit atomically. Recognition
+validates saved totals, active accounts, tenant references and strict period
+locks; FX converts with currency scales and saves exact transaction aliases.
+Void swaps saved journal amounts/FX and removes original stock value. It rejects
+unqualified legacy stock/FX or consumed FIFO receipts rather than using current
+costs. Stock received through GRNI is not received twice. GRNI requires a posted,
+balanced identity-FX goods receipt in the current base currency; foreign-currency
+receipt qualification remains separate. Money/cost/converted sums must fit safe
+integer coexistence; invalid history or unsupported FX/stock fails 422 before
+commit. There is no exact-only switch or full-int64 workflow claim.
+
+REST bill pay and MCP `pay_bill` require a recognized outstanding bill; payable
+arithmetic subtracts the actual outstanding balance, including reverse charge.
+Payment/allocation/bank/settlement FX and exact payment aliases remain separately
+qualified. MCP `pay_bill` retains its existing balance-only behavior.
+
 ### Purchase Orders
 | Method | Path | Description |
 |--------|------|-------------|

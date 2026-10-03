@@ -303,3 +303,26 @@ accounting/IRR qualification is inferred.
   inventory verification apply. No build/dev. Lifecycle/approval execution,
   settlement, full-int64, production/IRR, browser/session/OAuth/provider and human
   financial/security/migration gates are not inferred from these fixtures.
+
+## MON-048 bill lifecycle contracts
+
+- Pure contracts: safe tax/recoverability/reverse-charge ratios, quantity rounding,
+  int32 tallies, exact price tolerances, reason schema and recognition/payable barriers.
+- Real REST/API-key/custom-role and registered MCP SDK fixtures: numeric/exact/dual
+  bill clients, receive/approve/reject/void, large safe amounts, saved FX and cross-
+  scale conversion, sub-minor inventory/GL residual agreement, tax/AP agreement,
+  average/FIFO/warehouse stock and saved-value reversal, consumed-FIFO refusal.
+- Actual existing goods-receipt handler creates the tested accrual; lifecycle fixtures
+  cover matched GRNI/tax/PPV revaluation, partial bills, PO quantities/receipt stamps,
+  no second stock receipt, tolerances and original accrual restoration on void.
+- Workflow assignment, nonconsecutive steps, generic REST/MCP actions, direct pending
+  approval, cancellation, tenant/read-only/invalid credentials, unsafe saved money,
+  foreign account, inconsistent headers, missing FX/accounts, date locks/closed years,
+  existing settlements/orphan journals and pay recognition barriers are exercised.
+- SQL-text snapshots compare all relevant bill/ledger/stock/warehouse/GRNI/PO/approval/
+  audit state; journal-line/header/audit/stock failures prove whole-operation rollback.
+  Concurrent receive/void has one successful operation and no duplicates.
+- Full unit regression, adjacent bill reads/writes/invoice lifecycle integration,
+  typecheck/lint and inventory/legacy gates apply. No build/dev. Settlement races,
+  foreign GRNI, legacy remediation, full-int64, browser/session/OAuth/provider,
+  production migrations, human financial/security/IRR qualification remain separate.

@@ -22,7 +22,7 @@ import { logAudit } from "@/lib/api/audit";
  *   - unitPrice = the GRN line's recorded unit cost (PO unit cost at receipt)
  *   - goodsReceiptLineId links the bill line to the GRN line so that, when the
  *     bill is later received/approved, the existing GRNI/PPV three-way-match
- *     logic (see app/api/v1/bills/_procurement.ts) clears the GRNI accrual that
+ *     logic (see lib/api/bill-lifecycle.ts) clears the GRNI accrual that
  *     was posted at receipt time and stamps the GRN as billed.
  *
  * We intentionally do NOT post any journal entry here: the bill is a draft, and

@@ -1,3 +1,4 @@
+import { billApprovalRequestAction } from "@/lib/api/bill-lifecycle";
 import { invoiceApprovalRequestAction } from "@/lib/api/invoice-lifecycle";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
@@ -394,6 +395,8 @@ export function registerApprovalTools(server: McpServer, ctx: AuthContext) {
     },
     (params) =>
       wrapTool(ctx, async () => {
+        const billResult = await billApprovalRequestAction(ctx, params.requestId, "approve", params.comment);
+        if (billResult) return { request: billResult.request };
         const invoiceResult = await invoiceApprovalRequestAction(ctx, params.requestId, "approve", params.comment);
         if (invoiceResult) return { request: invoiceResult.request };
 
@@ -427,6 +430,8 @@ export function registerApprovalTools(server: McpServer, ctx: AuthContext) {
     },
     (params) =>
       wrapTool(ctx, async () => {
+        const billResult = await billApprovalRequestAction(ctx, params.requestId, "reject", params.comment);
+        if (billResult) return { request: billResult.request };
         const invoiceResult = await invoiceApprovalRequestAction(ctx, params.requestId, "reject", params.comment);
         if (invoiceResult) return { request: invoiceResult.request };
 

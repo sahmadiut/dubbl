@@ -19,6 +19,18 @@ When a bill is **received**, a journal entry is created:
 - **Debit** Expense accounts (per line item)
 - **Credit** Accounts Payable
 
+Bills submitted for approval first enter **Pending Approval**. Final approval
+posts the same ledger and stock effects as receiving a draft. Rejection returns
+the bill to draft. Approval requests with several steps post only after the last
+assigned approver acts.
+
+Receiving or approving records expense/inventory, recoverable VAT and Accounts
+Payable in one transaction with stock, receipt matching and audit. Goods already
+received through a goods receipt are not received again. Voiding an unsettled bill
+reverses saved journal amounts, FX and original stock value. Recorded payments,
+locked periods, consumed FIFO receipts and unsupported historical records must
+be resolved before voiding.
+
 ### Recording Payments
 
 Click **Record Payment** on a bill to:

@@ -1,6 +1,20 @@
 # Money and FX boundary manifest
 
-Inventory owner: MON-001. Refreshed 2026-10-03 (Asia/Tehran) for MON-047 against entry HEAD `0f6e77e`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+Inventory owner: MON-001. Refreshed 2026-10-03 (Asia/Tehran) for MON-048 against entry HEAD `85f6619`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+
+## MON-048 bill lifecycle adoption (MON-020 child)
+
+[Bill lifecycle contracts](BILL_LIFECYCLE_WIRE_CONTRACTS.md) cover receive, approve,
+reject, void and generic bill approval actions in REST/MCP. Safe numeric header
+money adds exact *Minor strings; exact ratio tax/FX/stock/GRNI math, saved FX and
+value reversal, tenant/period checks and atomic posting/status/approval/audit
+replace divergent partial/status-only writers. New receive_bill/reject_bill tools
+complete transport parity. Legacy/FIFO/foreign-GRNI qualification failures reject
+without committed effects. Settlement receives common recognition/range barriers,
+but MON-021 retains payment aliases, ledger, allocation, locking and carrying FX.
+Real migrated PostgreSQL handler/SDK fixtures verify legacy/exact clients, stock/
+FX/tax/GRNI, workflow, concurrency, authorization and failure rollback. MON-020
+retains combined acceptance; full-range/production/IRR gates remain separate.
 
 ## MON-047 bill CRUD adoption (MON-020 child)
 

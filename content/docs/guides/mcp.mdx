@@ -158,9 +158,11 @@ dubbl uses OAuth 2.1 with PKCE for MCP authentication:
 - `get_bill_counts` -- Count bills and amount due per status and currency
 - `update_bill` -- Edit draft bill header or replace lines atomically
 - `delete_bill` -- Soft-delete a draft bill atomically
-- `approve_bill` -- Approve a draft/pending bill
+- `receive_bill` -- Receive a draft with atomic ledger, stock and GRNI posting
+- `approve_bill` -- Approve a pending bill with atomic posting on final approval
+- `reject_bill` -- Reject a pending bill back to draft with audit
 - `pay_bill` -- Record a payment (amount in cents)
-- `void_bill` -- Void a bill
+- `void_bill` -- Void an unsettled bill using saved ledger, FX and stock values
 
 ### Reports
 - `trial_balance` -- Trial balance report

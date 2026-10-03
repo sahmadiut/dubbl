@@ -3,6 +3,8 @@ import { db } from "@/lib/db";
 import { bill, payment, paymentAllocation } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { getAuthContext } from "@/lib/api/auth-context";
+import { requireRole } from "@/lib/api/require-role";
+import { assertBillSettlementReady, billSettlementBalances } from "@/lib/api/bill-lifecycle-wire";
 import { handleError, notFound } from "@/lib/api/response";
 import { notDeleted } from "@/lib/db/soft-delete";
 import { createPaymentJournalEntry } from "@/lib/api/journal-automation";
@@ -25,6 +27,7 @@ export async function POST(
   try {
     const { id } = await params;
     const ctx = await getAuthContext(request);
+    requireRole(ctx, "manage:bills");
 
     const body = await request.json();
     const parsed = paySchema.parse(body);
@@ -38,6 +41,7 @@ export async function POST(
     });
 
     if (!found) return notFound("Bill");
+    assertBillSettlementReady(found);
     if (found.status === "draft" || found.status === "void") {
       return NextResponse.json(
         { error: "Cannot record payment for this bill status" },
@@ -60,8 +64,7 @@ export async function POST(
     // self-accounted VAT never leaves the bank), so amountDue < total; deriving
     // the remainder from total left a phantom balance = the RC VAT and the bill
     // could never reach "paid".
-    const newAmountPaid = found.amountPaid + parsed.amount;
-    const newAmountDue = found.amountDue - parsed.amount;
+    const { amountPaid: newAmountPaid, amountDue: newAmountDue } = billSettlementBalances(found, parsed.amount);
     const newStatus = newAmountDue <= 0 ? "paid" : "partial";
 
     // Generate payment number

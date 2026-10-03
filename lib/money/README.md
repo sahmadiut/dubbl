@@ -265,3 +265,15 @@ draft state and saved-history validation. New update_bill/delete_bill tools
 match REST CRUD. See [bill write contracts](../../.agentic/registries/BILL_WRITE_WIRE_CONTRACTS.md)
 for inputs, aliases, supported ranges, duplicate/approval policy and remaining
 lifecycle/settlement/full-int64/IRR qualification.
+
+## Bill lifecycle contracts (MON-048)
+
+Receive/approve/reject/void REST and MCP now share atomic scoped services, with
+numeric header minor units plus *Minor aliases. Exact ratios preserve partial
+and reverse-charge tax, document/base scales and posted stock rounding residuals.
+Saved FX and stock values reverse verbatim; no current-cost valuation. GRNI clears
+only remaining received quantities, avoids double receipts and reverses PO/receipt
+and linked variance history. Approval workflow actions and audit commit together.
+See [bill lifecycle contracts](../../.agentic/registries/BILL_LIFECYCLE_WIRE_CONTRACTS.md)
+for supported ranges, legacy/FIFO/GRNI limits, permissions and settlement coordination.
+Full-int64, foreign-currency receipt FX and actual settlement remain separate gates.

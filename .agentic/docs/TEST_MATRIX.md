@@ -232,3 +232,18 @@ and audit effects. Invoice lifecycle/credit workers provide shared-helper regres
 External writer/configuration coordination, historical unlinked inventory/base
 currency policy, full-int64 domain, frontend/PDF/provider and financial/IRR release
 qualification remain assigned gates, not implied by these fixtures.
+
+## MON-044 recurring invoice contracts
+
+Four `tests/recurring-invoice-wire.test.ts` groups assert alias/currency-scale
+agreement, canonical syntax, exact signed price-first/quantity-hundredth rounding,
+products/taxes/sums/ranges, saved DTO guards and schedule/header/FX rejection.
+`tests/integration/recurring-invoices.test.ts` migrates disposable PostgreSQL and
+invokes actual authenticated dedicated/generic REST handlers and eight registered
+SDK tools. Fixtures cover legacy/exact/dual clients, tenant/role/type/deletion
+isolation, preview/update/pause, zero terms, safe max, concurrent catch-up, saved
+exact FX, locks/missing rates/foreign/deleted references, second-occurrence rollback,
+template-line/journal-line/schedule faults and failed auto-send email after posting.
+Invoice lifecycle and recurring journal integration workers are regression checks.
+No successful provider delivery, browser/session/OAuth, full domain or production
+accounting/IRR qualification is inferred.

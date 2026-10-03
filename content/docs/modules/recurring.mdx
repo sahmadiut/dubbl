@@ -52,3 +52,14 @@ The recurring list shows:
 - Review generated invoices and expenses periodically to ensure accuracy
 - Use recurring invoices for retainer clients and subscription-based services
 - Use recurring expenses for rent, subscriptions, and regular supplier payments
+
+## Invoice generation failures
+
+Recurring invoice generation commits each template's catch-up together with its
+invoice numbers and lines. When automatic approval or sending is enabled, posting
+also commits in that transaction. Locked periods, missing historical exchange
+rates or invalid saved lines leave the schedule pending. Correct the issue and
+retry; explicitly disable automation if you want drafts instead. Email delivery
+is attempted after posting commits, so an email failure leaves the invoice sent
+and does not generate another invoice on the next scheduled run. Pausing retains
+the next run date; resuming catches up from that date.

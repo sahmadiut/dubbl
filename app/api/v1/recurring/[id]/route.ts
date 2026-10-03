@@ -1,3 +1,6 @@
+import { readRecurringInvoiceJson } from "@/lib/api/recurring-invoice-wire";
+import { getRecurringInvoice, changeRecurringInvoice } from "@/lib/api/recurring-invoice";
+import { jsonResponse } from "@/lib/api/json-response";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { recurringTemplate } from "@/lib/db/schema";
@@ -40,6 +43,7 @@ export async function GET(
     });
 
     if (!found) return notFound("Recurring template");
+    if (found.type === "invoice") return jsonResponse({ template: await getRecurringInvoice(ctx, id) });
     return NextResponse.json({ template: found });
   } catch (err) {
     return handleError(err);
@@ -55,7 +59,9 @@ export async function PATCH(
     const ctx = await getAuthContext(request);
     requireRole(ctx, "manage:recurring");
 
-    const body = await request.json();
+    const body = await readRecurringInvoiceJson(request);
+    const target = await db.query.recurringTemplate.findFirst({ where: and(eq(recurringTemplate.id, id), eq(recurringTemplate.organizationId, ctx.organizationId), notDeleted(recurringTemplate.deletedAt)) });
+    if (target?.type === "invoice") return jsonResponse(await changeRecurringInvoice(ctx, id, body, request, "update", "recurring_template"));
     const parsed = updateSchema.parse(body);
 
     const existing = await db.query.recurringTemplate.findFirst({
@@ -100,6 +106,8 @@ export async function DELETE(
     });
 
     if (!existing) return notFound("Recurring template");
+
+    if (existing.type === "invoice") return jsonResponse(await changeRecurringInvoice(ctx, id, {}, request, "delete", "recurring_template"));
 
     await db
       .update(recurringTemplate)

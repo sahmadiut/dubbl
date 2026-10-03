@@ -1,3 +1,5 @@
+import { previewRecurringInvoice } from "@/lib/api/recurring-invoice";
+import { jsonResponse } from "@/lib/api/json-response";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { recurringTemplate } from "@/lib/db/schema";
@@ -51,6 +53,7 @@ export async function GET(
     });
 
     if (!found) return notFound("Recurring template");
+    if (found.type === "invoice") return jsonResponse(await previewRecurringInvoice(ctx, id, count));
     if (found.status !== "active") {
       return NextResponse.json({ upcoming: [], template: found });
     }

@@ -124,38 +124,41 @@ async function audit(ctx: AuthContext, id: string, action: string, request?: Req
 /** Recognize revenue and COGS atomically before any optional external email delivery. */
 export async function sendInvoice(ctx: AuthContext, id: string, request?: Request) {
   requireRole(ctx, "approve:invoices");
-  const result = await db.transaction(async tx => {
-    const { found, lines, org, customer } = await load(tx, ctx, id);
-    if (found.status !== "draft" || found.journalEntryId) fail("Only unposted draft invoices can be sent");
-    await assertNotLocked(ctx.organizationId, found.issueDate, ctx);
-    const base = currencyCodeSchema.parse(org.defaultCurrency ?? "USD"), fx = await rate(ctx, found.currencyCode, base, found.issueDate);
-    const ar = await account(tx, ctx.organizationId, "1200");
-    const revenue = lines.map(line => {
-      if (!line.accountId || line.amount < 0 || line.taxAmount < 0) fail("Sending requires nonnegative lines with revenue accounts");
-      return { accountId: line.accountId, debitAmount: 0, creditAmount: line.amount, costCenterId: line.costCenterId, projectId: line.projectId };
-    });
-    const subtotal = safeInvoiceMinor(lines.reduce((s, line) => s + BigInt(line.amount), 0n));
-    const tax = safeInvoiceMinor(lines.reduce((s, line) => s + BigInt(line.taxAmount), 0n));
-    if (subtotal !== found.subtotal || tax !== found.taxTotal || safeInvoiceMinor(BigInt(subtotal) + BigInt(tax)) !== found.total || found.total <= 0 ||
-      found.amountPaid !== 0 || found.amountDue !== found.total) fail("Invoice header and line balances must agree before sending");
-    const accountIds = [...new Set(revenue.map(line => line.accountId))];
-    const active = await tx.select({ id: chartAccount.id }).from(chartAccount).where(and(eq(chartAccount.organizationId, ctx.organizationId),
-      inArray(chartAccount.id, accountIds), eq(chartAccount.isActive, true), isNull(chartAccount.deletedAt))).for("share");
-    if (active.length !== accountIds.length) fail("Invoice revenue accounts must be active");
-    if (tax > 0) revenue.push({ accountId: (await account(tx, ctx.organizationId, "2200")).id, debitAmount: 0, creditAmount: tax, costCenterId: null, projectId: null });
-    const entry = await post(tx, ctx, { date: found.issueDate, description: `Invoice ${found.invoiceNumber}`, reference: found.invoiceNumber,
-      sourceType: "invoice", sourceId: id }, [{ accountId: ar.id, debitAmount: found.total, creditAmount: 0 }, ...revenue], found.currencyCode, base, fx);
-    const stock = await invoiceStock(tx, ctx, base, id, lines);
-    if (stock.legs.length) {
-      const cogs = await post(tx, ctx, { date: found.issueDate, description: `Cost of sales ${found.invoiceNumber}`, reference: found.invoiceNumber,
-        sourceType: "inventory_cogs", sourceId: id }, stock.legs, base, base, { rateExact: "1", source: "same", effectiveDate: found.issueDate });
-      await tx.update(inventoryMovement).set({ journalEntryId: cogs.id }).where(inArray(inventoryMovement.id, stock.movements));
-    }
-    const senderSnapshot = { name: org.name || "Company", baseCurrencyCode: base, address: [org.addressStreet, org.addressCity, org.addressState, org.addressPostalCode, org.addressCountry].filter(Boolean).join(", ") || null,
-      taxId: org.taxId, registrationNumber: org.businessRegistrationNumber, phone: org.contactPhone, email: org.contactEmail, countryCode: org.countryCode };
-    return { invoice: await update(tx, ctx, id, { status: "sent", sentAt: new Date(), journalEntryId: entry.id, senderSnapshot, recipientSnapshot: buildRecipientSnapshot(customer) }) };
-  });
+  const result = await db.transaction(tx => sendInvoiceInTransaction(tx, ctx, id));
   await audit(ctx, id, "send", request, { previousStatus: "draft" }); return result;
+}
+
+/** Internal scheduler reuse; caller supplies authorization and an organization transaction. */
+export async function sendInvoiceInTransaction(tx: Tx, ctx: AuthContext, id: string) {
+  const { found, lines, org, customer } = await load(tx, ctx, id);
+  if (found.status !== "draft" || found.journalEntryId) fail("Only unposted draft invoices can be sent");
+  await assertNotLocked(ctx.organizationId, found.issueDate, ctx);
+  const base = currencyCodeSchema.parse(org.defaultCurrency ?? "USD"), fx = await rate(ctx, found.currencyCode, base, found.issueDate);
+  const ar = await account(tx, ctx.organizationId, "1200");
+  const revenue = lines.map(line => {
+    if (!line.accountId || line.amount < 0 || line.taxAmount < 0) fail("Sending requires nonnegative lines with revenue accounts");
+    return { accountId: line.accountId, debitAmount: 0, creditAmount: line.amount, costCenterId: line.costCenterId, projectId: line.projectId };
+  });
+  const subtotal = safeInvoiceMinor(lines.reduce((s, line) => s + BigInt(line.amount), 0n));
+  const tax = safeInvoiceMinor(lines.reduce((s, line) => s + BigInt(line.taxAmount), 0n));
+  if (subtotal !== found.subtotal || tax !== found.taxTotal || safeInvoiceMinor(BigInt(subtotal) + BigInt(tax)) !== found.total || found.total <= 0 ||
+    found.amountPaid !== 0 || found.amountDue !== found.total) fail("Invoice header and line balances must agree before sending");
+  const accountIds = [...new Set(revenue.map(line => line.accountId))];
+  const active = await tx.select({ id: chartAccount.id }).from(chartAccount).where(and(eq(chartAccount.organizationId, ctx.organizationId),
+    inArray(chartAccount.id, accountIds), eq(chartAccount.isActive, true), isNull(chartAccount.deletedAt))).for("share");
+  if (active.length !== accountIds.length) fail("Invoice revenue accounts must be active");
+  if (tax > 0) revenue.push({ accountId: (await account(tx, ctx.organizationId, "2200")).id, debitAmount: 0, creditAmount: tax, costCenterId: null, projectId: null });
+  const entry = await post(tx, ctx, { date: found.issueDate, description: `Invoice ${found.invoiceNumber}`, reference: found.invoiceNumber,
+    sourceType: "invoice", sourceId: id }, [{ accountId: ar.id, debitAmount: found.total, creditAmount: 0 }, ...revenue], found.currencyCode, base, fx);
+  const stock = await invoiceStock(tx, ctx, base, id, lines);
+  if (stock.legs.length) {
+    const cogs = await post(tx, ctx, { date: found.issueDate, description: `Cost of sales ${found.invoiceNumber}`, reference: found.invoiceNumber,
+      sourceType: "inventory_cogs", sourceId: id }, stock.legs, base, base, { rateExact: "1", source: "same", effectiveDate: found.issueDate });
+    await tx.update(inventoryMovement).set({ journalEntryId: cogs.id }).where(inArray(inventoryMovement.id, stock.movements));
+  }
+  const senderSnapshot = { name: org.name || "Company", baseCurrencyCode: base, address: [org.addressStreet, org.addressCity, org.addressState, org.addressPostalCode, org.addressCountry].filter(Boolean).join(", ") || null,
+    taxId: org.taxId, registrationNumber: org.businessRegistrationNumber, phone: org.contactPhone, email: org.contactEmail, countryCode: org.countryCode };
+  return { invoice: await update(tx, ctx, id, { status: "sent", sentAt: new Date(), journalEntryId: entry.id, senderSnapshot, recipientSnapshot: buildRecipientSnapshot(customer) }) };
 }
 
 async function reverseEntry(tx: Tx, ctx: AuthContext, id: string, found: Invoice) {

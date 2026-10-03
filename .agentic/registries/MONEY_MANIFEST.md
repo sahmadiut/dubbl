@@ -1,6 +1,20 @@
 # Money and FX boundary manifest
 
-Inventory owner: MON-001. Refreshed 2026-10-03 (Asia/Tehran) for MON-043 against entry HEAD `e2e9bf2`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+Inventory owner: MON-001. Refreshed 2026-10-03 (Asia/Tehran) for MON-044 against entry HEAD `e78cf52`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+
+## MON-044 recurring invoice adoption (MON-019 child)
+
+[Recurring invoice contracts](RECURRING_INVOICE_WIRE_CONTRACTS.md) inventory the
+invoice-only and generic REST surfaces, eight MCP operations and background
+pipeline. Decimal-major legacy/exact prices and minor aliases preserve stored
+currency units; exact integer ratios guard every product/component/sum. Scoped
+services serialize edits and whole catch-up generation with invoice numbering,
+headers/lines/recognition/saved FX and schedule in one transaction per template.
+Failed recognition or locked dates retain pending schedules. Email is best effort
+after commit. Actual handler/SDK migrated PostgreSQL fixtures cover compatibility,
+tenants/roles, concurrency, rollback and failed delivery. Recurring bill/expense
+writers, full-int64/financial qualification and durable delivery remain separate
+gates. No schema or production IRR rollout change.
 
 ## MON-043 sales receipt adoption (MON-019 child)
 

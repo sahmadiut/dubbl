@@ -1,19 +1,17 @@
 import { db } from "@/lib/db";
-import { recurringTemplate, recurringTemplateLine, invoice, invoiceLine, bill, billLine, expenseClaim, expenseItem, contact, journalEntry, journalLine } from "@/lib/db/schema";
+import { recurringTemplate, recurringTemplateLine, bill, billLine, expenseClaim, expenseItem, contact, journalEntry, journalLine } from "@/lib/db/schema";
 import { eq, and, lte, inArray } from "drizzle-orm";
 import { notDeleted } from "@/lib/db/soft-delete";
 import { getNextNumber } from "@/lib/api/numbering";
 import { preloadTaxRates, calcTax } from "@/lib/api/tax-calculator";
-import { getNextEntryNumber, createInvoiceJournalEntry, createCogsJournalEntry } from "@/lib/api/journal-automation";
+import { getNextEntryNumber } from "@/lib/api/journal-automation";
 import { assertNotLocked, PeriodLockedError } from "@/lib/api/period-lock";
-import { buildSenderSnapshot, buildRecipientSnapshot } from "@/lib/documents/snapshots";
-import { sendDocumentEmail } from "@/lib/email/document-sender";
-import { renderDocumentEmailHtml } from "@/lib/email/render-document-email";
 import { recurringJournalScope } from "./recurring-journal";
 import { recurringJournalLegs, recurringJournalDto, assertRecurringJournalDates, recurringJournalCreateHeader } from "./recurring-journal-wire";
 import { assertJournalReferences } from "./journal-references";
 import { WireCompatibilityError } from "@/lib/money/wire";
 import { z } from "zod";
+import { processRecurringInvoiceTemplate } from "./recurring-invoice-generate";
 
 /**
  * Advance a date by the given frequency.
@@ -43,7 +41,6 @@ function advanceDate(date: string, frequency: string): string {
   return d.toISOString().split("T")[0];
 }
 
-type RecurringTemplateRow = typeof recurringTemplate.$inferSelect;
 /** Serialize a template's entire catch-up with edits/runs, committing schedule and entries together. */
 async function processJournalTemplate(organizationId: string, id: string, today: string): Promise<number> {
   return db.transaction(async tx => {
@@ -88,110 +85,6 @@ async function processJournalTemplate(organizationId: string, id: string, today:
 }
 
 /**
- * Run the GL + send pipeline for a freshly-generated recurring invoice when the
- * template has autoSend or createAsApproved set. Posts the invoice journal entry
- * (and any COGS for stock lines), flips the invoice to "sent", and — for
- * autoSend — emails the contact (best effort; an email failure does not roll
- * back the posting, mirroring the manual send route which posts the GL after the
- * email attempt). createAsApproved posts + marks sent WITHOUT emailing.
- */
-async function autoSendRecurringInvoice(
-  organizationId: string,
-  userId: string | null,
-  tmpl: RecurringTemplateRow,
-  invoiceId: string
-): Promise<void> {
-  const inv = await db.query.invoice.findFirst({
-    where: eq(invoice.id, invoiceId),
-    with: { lines: true, contact: true },
-  });
-  if (!inv) return;
-
-  // Email first (best effort) so a missing template/contact email doesn't block
-  // the GL posting. Only autoSend emails; createAsApproved posts silently.
-  if (tmpl.autoSend && inv.contact?.email) {
-    try {
-      const sender = await buildSenderSnapshot(organizationId);
-      const html = await renderDocumentEmailHtml({
-        organizationName: sender.name,
-        contactName: inv.contact.name,
-        documentType: "Invoice",
-        documentNumber: inv.invoiceNumber,
-        issueDateFormatted: inv.issueDate,
-        dueDateFormatted: inv.dueDate,
-      });
-      await sendDocumentEmail({
-        orgId: organizationId,
-        userId: userId ?? "",
-        documentType: "invoice",
-        documentId: invoiceId,
-        recipientEmail: inv.contact.email,
-        subject: `Invoice ${inv.invoiceNumber}`,
-        body: html,
-        attachPdf: false,
-      });
-    } catch {
-      // Best effort — fall through to post the GL and mark sent regardless.
-    }
-  }
-
-  // Post the invoice GL (revenue recognition) for this occurrence.
-  const entry = await createInvoiceJournalEntry(
-    { organizationId, userId: userId ?? "" },
-    {
-      invoiceNumber: inv.invoiceNumber,
-      total: inv.total,
-      taxTotal: inv.taxTotal,
-      subtotal: inv.subtotal,
-      lines: inv.lines.map((l) => ({
-        accountId: l.accountId,
-        amount: l.amount,
-        taxAmount: l.taxAmount,
-      })),
-      date: inv.issueDate,
-      currencyCode: inv.currencyCode,
-    }
-  );
-
-  // Cost of goods sold for any stock lines (mirrors the manual send route).
-  const stockLines = inv.lines.filter((l) => l.inventoryItemId);
-  if (stockLines.length > 0) {
-    await db.transaction(async (tx) => {
-      await createCogsJournalEntry(
-        { organizationId, userId: userId ?? "" },
-        {
-          reference: inv.invoiceNumber,
-          date: inv.issueDate,
-          currencyCode: inv.currencyCode,
-          lines: stockLines.map((l) => ({
-            inventoryItemId: l.inventoryItemId as string,
-            quantity: l.quantity,
-            warehouseId: l.warehouseId,
-          })),
-        },
-        tx
-      );
-    });
-  }
-
-  const recipientSnapshot = inv.contact
-    ? buildRecipientSnapshot(inv.contact)
-    : { name: "Unknown", email: null, address: null, taxNumber: null };
-
-  await db
-    .update(invoice)
-    .set({
-      status: "sent",
-      sentAt: new Date(),
-      journalEntryId: entry?.id || null,
-      senderSnapshot: await buildSenderSnapshot(organizationId),
-      recipientSnapshot,
-      updatedAt: new Date(),
-    })
-    .where(eq(invoice.id, invoiceId));
-}
-
-/**
  * Process due recurring templates for an organization and return the count
  * generated.
  *
@@ -231,6 +124,10 @@ export async function processRecurringTemplates(
   for (const tmpl of dueTemplates) {
     if (tmpl.type === "journal") {
       generated += await processJournalTemplate(organizationId, tmpl.id, today);
+      continue;
+    }
+    if (tmpl.type === "invoice") {
+      generated += await processRecurringInvoiceTemplate(organizationId, tmpl.id, today);
       continue;
     }
     // Generate all missed invoices (if nextRunDate is far in the past, catch up)
@@ -363,102 +260,7 @@ export async function processRecurringTemplates(
         continue;
       }
 
-      if (tmpl.type !== "invoice") {
-        break;
-      }
-
-      // Invoice templates always carry a contact (enforced on create).
-      if (!tmpl.contactId) break;
-
-      const invoiceNumber = await getNextNumber(organizationId, "invoice", "invoice_number", "INV");
-
-      // Use contact payment terms for due date
-      const invContact = await db.query.contact.findFirst({
-        where: eq(contact.id, tmpl.contactId),
-        columns: { paymentTermsDays: true },
-      });
-      const invTermsDays = invContact?.paymentTermsDays ?? 30;
-      const dueDate = new Date(nextRun + "T00:00:00Z");
-      dueDate.setUTCDate(dueDate.getUTCDate() + invTermsDays);
-      const dueDateStr = dueDate.toISOString().split("T")[0];
-
-      // Preload tax rates
-      const invTaxRateIds = tmpl.lines.map((l) => l.taxRateId).filter(Boolean) as string[];
-      const invRatesMap = await preloadTaxRates(invTaxRateIds);
-
-      // Calculate totals from template lines
-      let subtotal = 0;
-      const processedLines = tmpl.lines.map((l, i) => {
-        const grossAmount = Math.round((l.quantity / 100) * l.unitPrice);
-        const discountAmount = l.discountPercent ? Math.round(grossAmount * l.discountPercent / 10000) : 0;
-        const amount = grossAmount - discountAmount;
-        subtotal += amount;
-        const taxAmount = l.taxRateId ? calcTax(amount, invRatesMap.get(l.taxRateId) ?? 0) : 0;
-        return {
-          description: l.description,
-          quantity: l.quantity,
-          unitPrice: l.unitPrice,
-          accountId: l.accountId,
-          taxRateId: l.taxRateId,
-          discountPercent: l.discountPercent,
-          taxAmount,
-          amount,
-          sortOrder: l.sortOrder ?? i,
-        };
-      });
-
-      const taxTotal = processedLines.reduce((sum, l) => sum + l.taxAmount, 0);
-      const total = subtotal + taxTotal;
-
-      const [created] = await db
-        .insert(invoice)
-        .values({
-          organizationId,
-          contactId: tmpl.contactId,
-          invoiceNumber,
-          issueDate: nextRun,
-          dueDate: dueDateStr,
-          reference: tmpl.reference,
-          notes: tmpl.notes,
-          subtotal,
-          taxTotal,
-          total,
-          amountPaid: 0,
-          amountDue: total,
-          currencyCode: tmpl.currencyCode,
-          createdBy: tmpl.createdBy,
-        })
-        .returning();
-
-      if (processedLines.length > 0) {
-        await db.insert(invoiceLine).values(
-          processedLines.map((l) => ({
-            invoiceId: created.id,
-            ...l,
-          }))
-        );
-      }
-
-      // Auto-send / create-as-approved: post the invoice GL (status -> sent) and
-      // run the send pipeline for this occurrence. Best effort — a failure here
-      // (e.g. a locked period or a missing FX rate) leaves the invoice as a
-      // draft for manual sending rather than aborting the whole template run.
-      if (tmpl.autoSend || tmpl.createAsApproved) {
-        try {
-          await autoSendRecurringInvoice(
-            organizationId,
-            tmpl.createdBy,
-            tmpl,
-            created.id
-          );
-        } catch {
-          // Leave the generated invoice as a draft on failure.
-        }
-      }
-
-      occurrences++;
-      generated++;
-      nextRun = advanceDate(nextRun, tmpl.frequency);
+      break;
     }
 
     // Determine new status

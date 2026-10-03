@@ -1,3 +1,5 @@
+import { changeRecurringInvoice } from "@/lib/api/recurring-invoice";
+import { jsonResponse } from "@/lib/api/json-response";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { recurringTemplate } from "@/lib/db/schema";
@@ -25,6 +27,8 @@ export async function POST(
     });
 
     if (!existing) return notFound("Recurring template");
+
+    if (existing.type === "invoice") return jsonResponse(await changeRecurringInvoice(ctx, id, {}, request, "pause", "recurring_template"));
 
     if (existing.status === "completed") {
       return NextResponse.json(

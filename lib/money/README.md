@@ -215,3 +215,16 @@ revenue/tax/stock effects and void saved FX/COGS/cost history. Missing revenue
 accounts and unqualified legacy inventory fail without committed effects.
 See [receipt contracts](../../.agentic/registries/SALES_RECEIPT_WIRE_CONTRACTS.md)
 for all seven REST/MCP operations, units, errors and qualification limits.
+
+## Recurring invoice contracts (MON-044)
+
+Recurring invoice REST and MCP accept numeric unitPrice in decimal major units,
+unitPriceExact decimal-major strings and unitPriceMinor canonical minor strings.
+Aliases agree before storage; stored prices and quantities round before exact
+integer-ratio gross/discount/tax calculation. Responses add unitPriceMinor,
+creditLimitMinor and preview lineTotalMinor while preserving numeric fields.
+Shared scoped services serialize template edits and generation. Numbering,
+documents, automated posting and catch-up advancement commit together; failed
+posting leaves the schedule pending. Email delivery follows committed posting.
+See [recurring invoice contracts](../../.agentic/registries/RECURRING_INVOICE_WIRE_CONTRACTS.md)
+for all operations, currency/FX policies, ranges and remaining qualification limits.

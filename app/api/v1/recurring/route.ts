@@ -1,3 +1,6 @@
+import { readRecurringInvoiceJson } from "@/lib/api/recurring-invoice-wire";
+import { createRecurringInvoice, getRecurringInvoice } from "@/lib/api/recurring-invoice";
+import { jsonResponse } from "@/lib/api/json-response";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { recurringTemplate, recurringTemplateLine } from "@/lib/db/schema";
@@ -82,8 +85,9 @@ export async function GET(request: Request) {
       .from(recurringTemplate)
       .where(and(...conditions));
 
-    return NextResponse.json(
-      paginatedResponse(templates, Number(countResult?.count || 0), page, limit)
+    const safeTemplates = await Promise.all(templates.map(row => row.type === "invoice" ? getRecurringInvoice(ctx, row.id) : row));
+    return jsonResponse(
+      paginatedResponse(safeTemplates, Number(countResult?.count || 0), page, limit)
     );
   } catch (err) {
     return handleError(err);
@@ -95,7 +99,11 @@ export async function POST(request: Request) {
     const ctx = await getAuthContext(request);
     requireRole(ctx, "manage:recurring");
 
-    const body = await request.json();
+    const body = await readRecurringInvoiceJson(request);
+    if (body?.type === "invoice") {
+      const input = { ...body }; delete input.type;
+      return jsonResponse(await createRecurringInvoice(ctx, input, request, "recurring_template"), { status: 201 });
+    }
     const parsed = createSchema.parse(body);
 
     const [created] = await db

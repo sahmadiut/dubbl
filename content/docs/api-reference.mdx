@@ -580,3 +580,28 @@ to the authenticated organization. Reads require `view:data`; acceptance require
 <Callout type="info">
   See the [API Integration Guide](/docs/guides/api-integration) for detailed examples and authentication setup.
 </Callout>
+
+## Exact recurring invoice prices
+
+Recurring invoice endpoints (`/api/v1/recurring-invoices` and invoice targets of
+`/api/v1/recurring`) and MCP `create_recurring_template` with `type: "invoice"`
+accept additive `unitPriceExact` decimal-major strings and `unitPriceMinor`
+canonical currency-minor integer strings alongside numeric decimal-major
+`unitPrice`. For USD, `12.50`, `"12.50"` and `"1250"` denote the same price.
+If several aliases are supplied, they must agree. Stored line `unitPrice` remains
+numeric minor units and gains `unitPriceMinor`; preview `lineTotal` gains
+`lineTotalMinor` and a currency code. Preview totals remain before discount/tax.
+
+Prices, line products and totals must fit safe integers (absolute value at most
+9007199254740991). Invalid aliases reject before writes. Schedule dates use
+Gregorian `YYYY-MM-DD`, occurrence caps fit int32, and every reference belongs to
+the organization. Template FX inputs are unsupported; automated posting resolves
+historical FX for each occurrence and saves exact posting rates. Changing currency
+across minor-unit scales requires a new template with explicit prices.
+
+Generation atomically commits invoice numbers, documents, automated posting and
+schedule advancement per template. Locked dates, missing posting FX or invalid
+saved data leave the schedule pending for retry. Auto-send attempts email after
+commit; delivery failure retains the posted invoice. MCP also provides
+`delete_recurring_invoice` and `preview_recurring_invoice`. Other document types
+retain their existing numeric price contracts.

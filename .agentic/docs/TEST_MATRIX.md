@@ -217,3 +217,18 @@ audit counts; auth key last-used metadata is excluded. Invoice write/lifecycle
 workers supply regression coverage. MON-021/024/007 and QA retain settlement FX,
 external writer/configuration and complete accounting/inventory qualification;
 provider/email/PDF, HTTP/session/OAuth/browser and production gates are unclaimed.
+
+MON-043 adds five `tests/sales-receipt-wire.test.ts` groups and migrated disposable
+PostgreSQL `tests/integration/sales-receipts.test.ts` / `sales-receipts-worker.ts`.
+Seven actual authenticated REST operations and seven registered MCP SDK tools
+verify numeric/exact/dual major-price aliases, currency scales, whitelisted draft
+CRUD, nested money aliases, all foreign line/cash dimensions, custom permissions,
+two-tenant isolation, old/new locked dates, safe maximum and unsafe stored values,
+complete revenue/tax/cash recognition, changed-rate saved reversal, average/FIFO
+and zero-cost stock/warehouse restoration, missing/corrupt issue history, mixed
+REST/MCP duplicate post/void and first-sequence numbering. Fault injection and
+complete snapshots cover sequence/header/line/ledger/bank/chart/stock/warehouse
+and audit effects. Invoice lifecycle/credit workers provide shared-helper regression.
+External writer/configuration coordination, historical unlinked inventory/base
+currency policy, full-int64 domain, frontend/PDF/provider and financial/IRR release
+qualification remain assigned gates, not implied by these fixtures.

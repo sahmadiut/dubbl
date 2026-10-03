@@ -470,9 +470,6 @@
   "app/api/v1/reports/trial-balance/route.ts": {
     "centsToDecimal": 4
   },
-  "app/api/v1/sales-receipts/route.ts": {
-    "decimalToMinorUnits": 3
-  },
   "app/portal/[token]/invoices/page.tsx": {
     "formatMoney": 2
   },
@@ -529,9 +526,6 @@
   },
   "lib/mcp/tools/reports.ts": {
     "centsToDecimal": 12
-  },
-  "lib/mcp/tools/sales-receipts.ts": {
-    "decimalToMinorUnits": 3
   },
   "tests/money.test.ts": {
     "formatMoney": 5,

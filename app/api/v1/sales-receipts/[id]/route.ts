@@ -1,38 +1,17 @@
-import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { salesReceipt } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
 import { getAuthContext } from "@/lib/api/auth-context";
-import { handleError, notFound } from "@/lib/api/response";
-import { notDeleted } from "@/lib/db/soft-delete";
+import { ok, handleError } from "@/lib/api/response";
+import { getSalesReceipt, updateSalesReceipt, deleteSalesReceipt } from "@/lib/api/sales-receipts";
+import { readSalesReceiptJson } from "@/lib/api/sales-receipt-wire";
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const ctx = await getAuthContext(request);
-
-    const found = await db.query.salesReceipt.findFirst({
-      where: and(
-        eq(salesReceipt.id, id),
-        eq(salesReceipt.organizationId, ctx.organizationId),
-        notDeleted(salesReceipt.deletedAt)
-      ),
-      with: {
-        contact: true,
-        lines: true,
-        bankAccount: true,
-        depositAccount: true,
-        journalEntry: true,
-      },
-    });
-
-    if (!found) return notFound("Sales receipt");
-
-    return NextResponse.json({ salesReceipt: found });
-  } catch (err) {
-    return handleError(err);
-  }
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  try { return ok(await getSalesReceipt(await getAuthContext(request), (await params).id)); }
+  catch (err) { return handleError(err); }
+}
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  try { const ctx = await getAuthContext(request); return ok(await updateSalesReceipt(ctx, (await params).id, await readSalesReceiptJson(request), request)); }
+  catch (err) { return handleError(err); }
+}
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  try { return ok(await deleteSalesReceipt(await getAuthContext(request), (await params).id, request)); }
+  catch (err) { return handleError(err); }
 }

@@ -202,3 +202,16 @@ Shared org-scoped atomic services guard state/references/locks and numbering;
 credit-note application posts no second AR journal. Void preserves saved FX and
 new stock-return costs. See [credit contracts](../../.agentic/registries/CREDIT_WIRE_CONTRACTS.md)
 for all operations, amounts/units, errors, historical stock and carrying-FX limits.
+
+## Sales receipt contracts (MON-043)
+
+Receipt REST and MCP numeric unitPrice both retain decimal major units. Exact
+unitPriceExact major strings and unitPriceMinor integer strings must agree;
+bigint ratios retain extended-price, discount and exclusive-tax rounding. Header,
+line, contact and bank money adds named *Minor strings without rescaling. The
+safe integer ORM coexistence limit still applies to every price/product/sum/FX.
+Shared scoped services atomically create/edit/delete drafts, post complete cash
+revenue/tax/stock effects and void saved FX/COGS/cost history. Missing revenue
+accounts and unqualified legacy inventory fail without committed effects.
+See [receipt contracts](../../.agentic/registries/SALES_RECEIPT_WIRE_CONTRACTS.md)
+for all seven REST/MCP operations, units, errors and qualification limits.

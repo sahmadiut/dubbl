@@ -1,6 +1,22 @@
 # Money and FX boundary manifest
 
-Inventory owner: MON-001. Refreshed 2026-10-03 (Asia/Tehran) for MON-042 against entry HEAD `1694b63`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+Inventory owner: MON-001. Refreshed 2026-10-03 (Asia/Tehran) for MON-043 against entry HEAD `e2e9bf2`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+
+## MON-043 sales receipt adoption (MON-019 child)
+
+The [receipt contracts](SALES_RECEIPT_WIRE_CONTRACTS.md) cover seven REST and seven
+registered MCP operations, including new draft edit/delete parity. Both receipt
+transports retain decimal-major numeric prices, explicit exact major/minor
+aliases and extended-price/discount/exclusive-tax rounding. Bigint ratios/sums
+guard safe-number coexistence. Shared services lock organizations/documents and
+atomically persist numbering, headers/lines, bank links, revenue/tax recognition,
+average/FIFO stock/warehouse costs and saved-FX/COGS reversals. Missing revenue,
+foreign references, invalid saved balances, unsupported unlinked stock, cost/COGS
+mismatch and duplicate lifecycle requests reject. Actual authenticated REST and
+SDK fixtures on disposable migrated PostgreSQL qualify roles, tenants, locks,
+ranges, concurrency and rollback. Full-int64 domain, external inventory/config
+writers, base-currency history policy, frontend/PDF/provider and combined financial
+qualification remain assigned gates. No schema or IRR rollout change.
 
 ## MON-042 receivable credit adoption (MON-019 child)
 

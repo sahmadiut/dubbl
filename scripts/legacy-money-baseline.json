@@ -413,9 +413,6 @@
   "app/api/v1/contacts/[id]/statement/pdf/route.ts": {
     "formatMoney": 2
   },
-  "app/api/v1/credit-notes/route.ts": {
-    "decimalToMinorUnits": 3
-  },
   "app/api/v1/debit-notes/route.ts": {
     "decimalToMinorUnits": 3
   },

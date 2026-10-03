@@ -202,3 +202,18 @@ locks, role/two-tenant isolation, unsafe saved values, milestone/percentage/fina
 billing, concurrent send/conversion/numbering and injected transaction failures.
 No provider email, browser/session/OAuth, PDF or financial release approval is
 claimed. MON-019 retains combined receivable integration acceptance.
+
+
+MON-042 adds five `tests/credit-wire.test.ts` groups and disposable migrated
+PostgreSQL `tests/integration/credits.test.ts` / `credits-worker.ts`. Fourteen
+actual authenticated REST operations and fourteen SDK-registered MCP tools cover
+legacy/exact/dual prices and amounts, USD/IRR/JPY/KWD minor preservation, summary
+int32-plus/unsafe/mixed totals, whitelisted edits, foreign/new/saved dimensions,
+custom permission denial and two-tenant isolation, locked old/new/posting dates,
+unsafe stored values, pure note offsets/customer-deposit application, saved FX
+reversal, average/FIFO return/void, races and injected rollback. Complete table
+snapshots include headers/lines/numbering/journals/carriers/stock/bank/chart and
+audit counts; auth key last-used metadata is excluded. Invoice write/lifecycle
+workers supply regression coverage. MON-021/024/007 and QA retain settlement FX,
+external writer/configuration and complete accounting/inventory qualification;
+provider/email/PDF, HTTP/session/OAuth/browser and production gates are unclaimed.

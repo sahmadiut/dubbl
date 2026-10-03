@@ -2562,7 +2562,7 @@ function CreditNoteDrawer({ open, onClose }: { open: boolean; onClose: () => voi
           lines: lines.map((l) => ({
             description: l.description,
             quantity: parseFloat(l.quantity) || 1,
-            unitPrice: parseFloat(l.unitPrice) || 0,
+            unitPriceExact: l.unitPrice || "0",
             accountId: l.accountId || null,
             taxRateId: l.taxRateId || null,
           })),

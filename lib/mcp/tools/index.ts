@@ -43,6 +43,7 @@ import { registerAccrualScheduleTools } from "./accrual-schedules";
 import { registerRevenueScheduleTools } from "./revenue-schedules";
 import { registerExpenseTools } from "./expenses";
 import { registerCreditNoteTools } from "./credit-notes";
+import { registerCustomerCreditTools } from "./customer-credits";
 import { registerRecurringTemplateTools } from "./recurring-templates";
 import { registerPaymentTools } from "./payments";
 import { registerPurchaseRequisitionTools } from "./purchase-requisitions";
@@ -101,6 +102,7 @@ export function registerAllTools(server: McpServer, ctx: AuthContext) {
   registerRevenueScheduleTools(server, ctx);
   registerExpenseTools(server, ctx);
   registerCreditNoteTools(server, ctx);
+  registerCustomerCreditTools(server, ctx);
   registerRecurringTemplateTools(server, ctx);
   registerPaymentTools(server, ctx);
   registerPurchaseRequisitionTools(server, ctx);

@@ -189,3 +189,16 @@ exclusive tax rounding and deterministic final progress-billing residuals.
 Organization/quote locks serialize atomic numbering, CRUD and conversion. See
 `.agentic/registries/QUOTE_WIRE_CONTRACTS.md` for supported units, operations,
 limits and intentionally separate public/PDF/provider/full-domain qualification.
+
+## Receivable credit contracts (MON-042)
+
+Credit-note REST prices remain decimal major units; MCP numeric prices are minor
+units. `unitPriceExact` and `unitPriceMinor` agree explicitly, and extended-price
+rounding retains the original credit policy. Customer-credit creation and both
+credit application types accept numeric minor `amount` and canonical `amountMinor`.
+All money/products/sums/FX outputs fit the safe integer coexistence range.
+Header/line/contact/summary/available-credit envelopes add named `*Minor` strings.
+Shared org-scoped atomic services guard state/references/locks and numbering;
+credit-note application posts no second AR journal. Void preserves saved FX and
+new stock-return costs. See [credit contracts](../../.agentic/registries/CREDIT_WIRE_CONTRACTS.md)
+for all operations, amounts/units, errors, historical stock and carrying-FX limits.

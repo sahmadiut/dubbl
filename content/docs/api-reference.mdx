@@ -316,6 +316,60 @@ MCP send records status only; REST email delivery follows the committed status
 change and can fail independently. PDF/public/provider paths retain separate
 contracts.
 
+### Credit Notes and Customer Credits
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET/POST | `/api/v1/credit-notes` | List / create draft notes |
+| GET/PATCH/DELETE | `/api/v1/credit-notes/:id` | Read / edit permitted draft fields / delete draft |
+| GET | `/api/v1/credit-notes/summary` | Single-currency totals and status breakdown |
+| POST | `/api/v1/credit-notes/:id/send` | Recognize note and return linked stock; optional email |
+| POST | `/api/v1/credit-notes/:id/apply` | Offset note against a same-customer/currency invoice |
+| POST | `/api/v1/credit-notes/:id/void` | Reverse recognition, stock return and applications |
+| GET/POST | `/api/v1/customer-credits` | List / record cash and a customer deposit |
+| GET | `/api/v1/customer-credits/:id` | Read credit/contact/recognition journal |
+| POST | `/api/v1/customer-credits/:id/apply` | Apply deposit to a same-customer/currency invoice |
+| GET | `/api/v1/invoices/:id/available-credits` | Open positive matching customer credits |
+
+Numeric money retains currency minor units and adds corresponding `*Minor`
+strings. Credit-note headers include subtotal/tax/total/applied/remaining aliases;
+lines include price/amount/tax aliases. Customer credits include original/remaining
+aliases. Summary adds exact total/status amounts and rejects mixed currencies.
+Available credits include `amountDueMinor` for the invoice and credit aliases.
+
+REST line `unitPrice` remains decimal major units; MCP numeric prices are integer
+minor units. Both accept `unitPriceExact` (decimal major string) and `unitPriceMinor`
+(canonical minor string). Aliases must agree. Credit lines extend the unrounded
+major price by physical quantity, then round gross/discount/exclusive tax; quantities
+are physical units on input and hundredths on output, discounts basis points.
+Creation defaults currency to USD and omitted prices to zero. PATCH permits
+contact, original invoice, Gregorian issue date, reference, notes, currency and
+replacement lines; arbitrary tenant/status/header-total fields reject.
+
+Customer-credit create and both application operations accept positive integer
+minor `amount` or canonical `amountMinor`, agreeing when both supplied. All money,
+rounded products, taxes, sums and converted amounts must fit the JavaScript safe
+integer range; larger valid exact inputs return 422 without committed changes.
+Customer-credit currency defaults contact/org/USD; creation requires exactly one
+cash `bankAccountId` or asset `depositAccountId`, and bank currency must match.
+Application optionally accepts Gregorian `date` for customer credits, defaulting
+to today (UTC). Both credit types require matching invoice customer/currency and
+eligible state/positive balance. Credit-note application records allocations with
+no second AR journal; customer-credit application posts DR deposits / CR AR.
+
+Corresponding MCP tools are `list_credit_notes`, `get_credit_note`,
+`create_credit_note`, `update_credit_note`, `delete_credit_note`,
+`get_credit_note_summary`, `send_credit_note`, `apply_credit_note`,
+`void_credit_note`, `list_customer_credits`, `get_customer_credit`,
+`create_customer_credit`, `apply_customer_credit`, `list_invoice_available_credits`.
+Writes require `manage:credit-notes` or `manage:payments` and open periods. Atomic
+services protect numbering, references, GL, stock and carrier/invoice balances.
+Note void uses saved FX/base amounts and new return quantities/costs. Customer
+application retains application-date FX; complete carrying-value settlement is
+separately qualified. Standard/serial/lot returns reject; consumed FIFO return
+layers reject. Optional email delivery follows commit and can fail independently;
+retry email separately. PDF/provider and full-domain contracts remain separate.
+
 ### Bills
 | Method | Path | Description |
 |--------|------|-------------|

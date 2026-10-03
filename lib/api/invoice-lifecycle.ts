@@ -23,6 +23,8 @@ import { invoiceStock } from "./invoice-stock";
 import { lifecycleDto, writeOffSchema, interestSchema, interestOverride, recoveredAmount, exactInterest, convertInvoiceLegs, approveFields, rejectFields } from "./invoice-lifecycle-wire";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+// Shared bounded exact posting primitives for the receivable credit workflows.
+export { rate as receivablePostingRate, post as postReceivable, account as receivableAccount };
 type Invoice = typeof invoice.$inferSelect;
 type Leg = { accountId: string; debitAmount: number; creditAmount: number; costCenterId?: string | null; projectId?: string | null };
 function fail(message: string): never { throw new AuthError(message, 400); }

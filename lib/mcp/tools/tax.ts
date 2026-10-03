@@ -5,7 +5,6 @@ import {
   taxPeriod,
   taxReturnLine,
   chartAccount,
-  creditNote,
   taxRate,
   taxComponent,
 } from "@/lib/db/schema";
@@ -13,11 +12,9 @@ import { eq, and, ne } from "drizzle-orm";
 import { requireRole } from "@/lib/api/require-role";
 import { wrapTool } from "@/lib/mcp/errors";
 import { notDeleted } from "@/lib/db/soft-delete";
-import { assertNotLocked } from "@/lib/api/period-lock";
 import {
   createVatReturnClearingJournalEntry,
   recordTaxSettlementJournalEntry,
-  createCreditNoteJournalEntry,
 } from "@/lib/api/journal-automation";
 import {
   getOrgTaxConfig,
@@ -487,75 +484,6 @@ export function registerTaxTools(server: McpServer, ctx: AuthContext) {
           settlementJournalEntryId: entry?.id ?? null,
           amount: params.amount,
           isRefund: params.isRefund,
-        };
-      })
-  );
-
-  server.tool(
-    "send_credit_note",
-    "Send a draft customer credit note. Posts the reversing journal entry (DR Revenue, DR Output VAT, CR Accounts Receivable) so the credit note reverses revenue and output VAT, marks it sent, and sets amountRemaining to the full total. Amounts are in integer cents. Returns the updated credit note and its journalEntryId.",
-    {
-      creditNoteId: z
-        .string()
-        .describe("UUID of the draft credit note to send"),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        requireRole(ctx, "manage:credit-notes");
-
-        const found = await db.query.creditNote.findFirst({
-          where: and(
-            eq(creditNote.id, params.creditNoteId),
-            eq(creditNote.organizationId, ctx.organizationId),
-            notDeleted(creditNote.deletedAt)
-          ),
-          with: { lines: true },
-        });
-        if (!found) throw new Error("Credit note not found");
-        if (found.status !== "draft") {
-          throw new Error("Only draft credit notes can be sent");
-        }
-
-        await assertNotLocked(ctx.organizationId, found.issueDate);
-
-        // Post the reversing JE + the status/journalEntryId update in ONE
-        // transaction so a mid-post failure can't leave an orphaned journal
-        // entry or a sent credit note with no GL.
-        const { updated, entry } = await db.transaction(async (tx) => {
-          const e = await createCreditNoteJournalEntry(
-            { organizationId: ctx.organizationId, userId: ctx.userId },
-            {
-              creditNoteNumber: found.creditNoteNumber,
-              total: found.total,
-              taxTotal: found.taxTotal,
-              lines: found.lines.map((l) => ({
-                accountId: l.accountId,
-                amount: l.amount,
-                taxAmount: l.taxAmount,
-              })),
-              date: found.issueDate,
-              currencyCode: found.currencyCode,
-            },
-            tx
-          );
-
-          const [row] = await tx
-            .update(creditNote)
-            .set({
-              status: "sent",
-              sentAt: new Date(),
-              amountRemaining: found.total,
-              journalEntryId: e?.id || null,
-              updatedAt: new Date(),
-            })
-            .where(eq(creditNote.id, params.creditNoteId))
-            .returning();
-          return { updated: row, entry: e };
-        });
-
-        return {
-          creditNote: updated,
-          journalEntryId: entry?.id ?? null,
         };
       })
   );

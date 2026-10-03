@@ -130,8 +130,10 @@ export default function CreditNotesPage() {
     totalAmount: number;
     totalApplied: number;
     totalRemaining: number;
+    currencyCode: string | null;
     statusBreakdown: Record<string, { count: number; amount: number }>;
   } | null>(null);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState("all");
   const [sortBy, setSortBy] = useState("created");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
@@ -222,11 +224,23 @@ export default function CreditNotesPage() {
   // Fetch summary stats (independent of filters)
   useEffect(() => {
     if (!orgId) return;
+    const controller = new AbortController();
     fetch(`/api/v1/credit-notes/summary`, {
       headers: { "x-organization-id": orgId },
+      signal: controller.signal,
     })
-      .then((r) => r.json())
-      .then((data) => setSummary(data));
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Credit-note totals are unavailable");
+        return data;
+      })
+      .then((data) => { setSummary(data); setSummaryError(null); })
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) return;
+        setSummary(null);
+        setSummaryError(error instanceof Error ? error.message : "Credit-note totals are unavailable");
+      });
+    return () => controller.abort();
   }, [orgId]);
 
   const handleSort = useCallback((key: string) => {
@@ -369,10 +383,11 @@ export default function CreditNotesPage() {
     <ContentReveal className="space-y-6">
       {/* Top: Stats */}
       <div className="grid gap-3 sm:grid-cols-3">
-        <StatCard title="Total Issued" value={formatMoney(totalIssued)} icon={CreditCard} />
-        <StatCard title="Applied" value={formatMoney(totalApplied)} icon={CreditCard} />
-        <StatCard title="Remaining" value={formatMoney(totalRemaining)} icon={CreditCard} />
+        <StatCard title="Total Issued" value={summaryError ? "Unavailable" : formatMoney(totalIssued, summary?.currencyCode ?? "USD")} icon={CreditCard} />
+        <StatCard title="Applied" value={summaryError ? "Unavailable" : formatMoney(totalApplied, summary?.currencyCode ?? "USD")} icon={CreditCard} />
+        <StatCard title="Remaining" value={summaryError ? "Unavailable" : formatMoney(totalRemaining, summary?.currencyCode ?? "USD")} icon={CreditCard} />
       </div>
+      {summaryError && <p role="alert" className="text-sm text-destructive">{summaryError}</p>}
 
       <div className="h-px bg-border" />
 

@@ -1,6 +1,22 @@
 # Money and FX boundary manifest
 
-Inventory owner: MON-001. Refreshed 2026-10-03 (Asia/Tehran) for MON-041 against entry HEAD `541c299`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+Inventory owner: MON-001. Refreshed 2026-10-03 (Asia/Tehran) for MON-042 against entry HEAD `1694b63`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+
+## MON-042 receivable credit adoption (MON-019 child)
+
+The [credit contracts](CREDIT_WIRE_CONTRACTS.md) cover fourteen REST and fourteen
+registered MCP operations. Credit-note REST decimal-major/MCP integer-minor
+prices and customer-credit/application minor amounts gain exact aliases with
+explicit agreement. Bigint rounding/products/sums/FX preflight safe coexistence.
+Scoped atomic services cover whitelisted draft CRUD, recognition, carrier
+application and saved-history reversal, with org/document/invoice/stock locks.
+New stock returns retain quantities/costs for exact void after price/line changes;
+invalid references, unsafe balances, mixed summaries and concurrent overdrawing
+reject. Actual authenticated REST/SDK fixtures on migrated disposable PostgreSQL
+verify roles, tenants, locks, legacy/exact/dual clients, FX/stock and rollback.
+MON-021 retains payment-domain/carrying-FX coordination; PDF/email/provider,
+external writers and full financial qualification remain assigned gates. No schema
+or functional-IRR flag change.
 
 ## MON-041 quote adoption (MON-019 child)
 

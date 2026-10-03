@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
+import { jsonResponse } from "@/lib/api/json-response";
+import { listPayments } from "@/lib/api/payment-reads";
 import { db } from "@/lib/db";
 import { payment, paymentAllocation, invoice, bill } from "@/lib/db/schema";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { getAuthContext } from "@/lib/api/auth-context";
 import { requireRole } from "@/lib/api/require-role";
 import { handleError } from "@/lib/api/response";
 import { logAudit } from "@/lib/api/audit";
-import { notDeleted } from "@/lib/db/soft-delete";
-import { parsePagination, paginatedResponse } from "@/lib/api/pagination";
+import { paginatedResponse } from "@/lib/api/pagination";
 import { assertNotLocked } from "@/lib/api/period-lock";
 import { getNextNumber } from "@/lib/api/numbering";
 import { createPaymentJournalEntry } from "@/lib/api/journal-automation";
@@ -38,39 +39,13 @@ export async function GET(request: Request) {
   try {
     const ctx = await getAuthContext(request);
     const url = new URL(request.url);
-    const { page, limit, offset } = parsePagination(url);
-    const type = url.searchParams.get("type");
-    const contactId = url.searchParams.get("contactId");
-
-    const conditions = [
-      eq(payment.organizationId, ctx.organizationId),
-      notDeleted(payment.deletedAt),
-    ];
-
-    if (type) {
-      conditions.push(eq(payment.type, type as "received" | "made"));
-    }
-
-    if (contactId) {
-      conditions.push(eq(payment.contactId, contactId));
-    }
-
-    const payments = await db.query.payment.findMany({
-      where: and(...conditions),
-      orderBy: desc(payment.createdAt),
-      limit,
-      offset,
-      with: { contact: true, allocations: true },
+    const result = await listPayments(ctx, {
+      page: url.searchParams.has("page") ? Number(url.searchParams.get("page")) : undefined,
+      limit: url.searchParams.has("limit") ? Number(url.searchParams.get("limit")) : undefined,
+      type: url.searchParams.get("type") ?? undefined,
+      contactId: url.searchParams.get("contactId") ?? undefined,
     });
-
-    const [countResult] = await db
-      .select({ count: sql<number>`count(*)`.mapWith(Number) })
-      .from(payment)
-      .where(and(...conditions));
-
-    return NextResponse.json(
-      paginatedResponse(payments, Number(countResult?.count || 0), page, limit)
-    );
+    return jsonResponse(paginatedResponse(result.payments, result.total, result.page, result.limit));
   } catch (err) {
     return handleError(err);
   }

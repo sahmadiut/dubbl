@@ -435,3 +435,19 @@ financial approval is claimed. See BILL_BULK_WIRE_CONTRACTS and MON-053 evidence
 - Adjacent bill lifecycle/PO/debit-note integration, units, lint/typecheck and
   inventory/legacy checks apply. Broader residual/partial FX, other inventory
   writers, full-int64, production and independent financial/security/IRR gates remain.
+
+## MON-055 payment read contracts
+
+Three pure groups verify signed exact minor aliases, USD/IRR/JPY/KWD unchanged
+units, nullable contact/bank values, paired allocations, unsupported history,
+foreign nested relations and bounded list inputs. Disposable migrated PostgreSQL
+fixtures call actual list/detail REST exports with synthetic API keys/custom
+read-only roles and registered MCP SDK tools. Assertions cover empty/list/detail
+legacy/exact parity, signed/zero/above-int32/safe-max values, stable pagination,
+filters, read-only access, invalid/expired auth, foreign/deleted/missing IDs,
+all five polymorphic allocation types, unknown/missing/foreign documents,
+foreign journal/statement links, unsafe int64 saved money and immutable SQL-text
+business snapshots. Same-tenant inactive/deleted history and noncash carrier
+pairs remain readable. Adjacent credit/debit-note fixture regressions run.
+No payment mutation/GL settlement, HTTP/session/OAuth/provider or full-int64/IRR
+qualification is inferred. See PAYMENT_READ_WIRE_CONTRACTS and MON-055 evidence.

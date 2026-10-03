@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { jsonResponse } from "@/lib/api/json-response";
+import { getPayment } from "@/lib/api/payment-reads";
 import { db } from "@/lib/db";
 import { payment, invoice, bill } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
@@ -18,21 +20,9 @@ export async function GET(
     const { id } = await params;
     const ctx = await getAuthContext(request);
 
-    const found = await db.query.payment.findFirst({
-      where: and(
-        eq(payment.id, id),
-        eq(payment.organizationId, ctx.organizationId),
-        notDeleted(payment.deletedAt)
-      ),
-      with: {
-        contact: true,
-        bankAccount: true,
-        allocations: true,
-      },
-    });
-
-    if (!found) return notFound("Payment");
-    return NextResponse.json({ payment: found });
+    const result = await getPayment(ctx, id);
+    if (!result) return notFound("Payment");
+    return jsonResponse(result);
   } catch (err) {
     return handleError(err);
   }

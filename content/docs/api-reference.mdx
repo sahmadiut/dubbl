@@ -109,6 +109,31 @@ unlike currencies or rounding amounts. MCP contact listings retain their existin
 shape without these balance aggregates. Full int64 business operations and
 currency-grouped contact balance reporting are pending further rollout.
 
+## Payment read amounts
+
+`GET /api/v1/payments` and `GET /api/v1/payments/:id` preserve numeric
+payment/allocation `amount` and add the matching `amountMinor` string in existing
+currency minor units (USD cents). `1250` remains `1250` for every currency.
+Related contacts add nullable `creditLimitMinor`; detail bank accounts add
+`balanceMinor` and nullable `lowBalanceThresholdMinor` in their own currency.
+List retains `{data, pagination}` with contact/allocations; detail retains
+`{payment}` with contact/bank account/allocations. MCP `list_payments` and
+`get_payment` return the same aliases in their existing envelopes.
+
+Signed safe integer history from -9007199254740991 through 9007199254740991
+is supported. Unsupported history or foreign nested/document/journal/statement
+references returns 422 (`LEGACY_NUMERIC_RANGE`), preserving stored amounts.
+Noncash credit/debit-note carrier allocations remain separate rows without
+being summed into cash. Same-organization inactive/deleted references remain
+readable as history; deleted payments return 404.
+
+Lists accept `type=received|made`, a contact UUID, `page` (1..21474836) and
+`limit` (1..100), defaulting to page 1 and limit 50. Invalid/fractional/out-of-range
+filters or pagination return 400. Reads require existing authenticated
+organization access and permit read-only roles. These aliases qualify reads;
+creation, reversals, settlement/FX and full-int64 business operations retain
+separate rollout work.
+
 ## Budget amount inputs
 
 Budget POST/PATCH requests accept string aliases for signed integer cents:

@@ -128,3 +128,23 @@ Generated initial scope index; current status always comes from task metadata vi
 | [MON-052](../tasks/MON-052.md) | Adopt exact goods receipt contracts | backend | no |
 | [MON-053](../tasks/MON-053.md) | Adopt exact bill bulk contracts | backend | no |
 | [MON-054](../tasks/MON-054.md) | Adopt exact procurement setting contracts | backend | no |
+
+## Payment, expense and banking contract slices
+
+| Task | Outcome | Role | Optional |
+|---|---|---|---|
+| [MON-055](../tasks/MON-055.md) | Adopt exact payment read contracts | backend | no |
+| [MON-056](../tasks/MON-056.md) | Adopt exact payment settlement contracts | backend | no |
+| [MON-057](../tasks/MON-057.md) | Adopt exact payment reversal contracts | backend | no |
+| [MON-058](../tasks/MON-058.md) | Adopt exact payment batch contracts | backend | no |
+| [MON-059](../tasks/MON-059.md) | Adopt exact scheduled payment contracts | backend | no |
+| [MON-060](../tasks/MON-060.md) | Adopt exact expense CRUD contracts | backend | no |
+| [MON-061](../tasks/MON-061.md) | Adopt exact expense claim lifecycle contracts | backend | no |
+| [MON-062](../tasks/MON-062.md) | Adopt exact bank account contracts | backend | no |
+| [MON-063](../tasks/MON-063.md) | Adopt exact bank transaction read contracts | backend | no |
+| [MON-064](../tasks/MON-064.md) | Adopt exact bank import contracts | backend | no |
+| [MON-065](../tasks/MON-065.md) | Adopt exact bank categorization contracts | backend | no |
+| [MON-066](../tasks/MON-066.md) | Adopt exact bank document matching contracts | backend | no |
+| [MON-067](../tasks/MON-067.md) | Adopt exact bank transfer contracts | backend | no |
+| [MON-068](../tasks/MON-068.md) | Adopt exact bank reconciliation contracts | backend | no |
+| [MON-069](../tasks/MON-069.md) | Adopt exact bank rule contracts | backend | no |

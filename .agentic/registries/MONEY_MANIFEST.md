@@ -1,6 +1,18 @@
 # Money and FX boundary manifest
 
-Inventory owner: MON-001. Refreshed 2026-10-04 (Asia/Tehran) for MON-054 against entry HEAD `f3444c7`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+Inventory owner: MON-001. Refreshed 2026-10-04 (Asia/Tehran) for MON-055 against entry HEAD `a9ba797`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+
+## MON-055 payment read adoption (MON-021 child)
+
+[Payment read contracts](PAYMENT_READ_WIRE_CONTRACTS.md) cover REST/MCP list
+and detail with numeric minor-unit compatibility and exact payment/allocation,
+contact and bank aliases. Shared repeatable-read services guard tenant relations,
+polymorphic allocation documents, scalar journal/statement links, saved ranges,
+UUIDs and pagination. Signed/zero history and noncash paired allocations retain
+their values without FX or cash aggregation. Pure and real handler/API-key/custom
+role/registered SDK fixtures qualify supported reads and unchanged business
+snapshots. MON-021 retains combined acceptance after MON-055 through MON-069;
+settlement/reversal/expense/banking and full-int64/IRR gates remain pending.
 
 ## MON-054 procurement settings adoption (MON-020 child)
 

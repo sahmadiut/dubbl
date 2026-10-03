@@ -2,7 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { payment, paymentAllocation, invoice, bill } from "@/lib/db/schema";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { notDeleted, softDelete } from "@/lib/db/soft-delete";
 import { requireRole } from "@/lib/api/require-role";
 import { getNextNumber } from "@/lib/api/numbering";
@@ -14,6 +14,9 @@ import {
 import { isValidCurrencyCode } from "@/lib/currency/iso4217";
 import { decimalToCents } from "@/lib/money";
 import { wrapTool } from "@/lib/mcp/errors";
+import { listPayments, getPayment } from "@/lib/api/payment-reads";
+import { paymentListFields } from "@/lib/api/payment-read-wire";
+import { AuthError } from "@/lib/api/auth-context";
 import type { AuthContext } from "@/lib/api/auth-context";
 
 /**
@@ -38,89 +41,20 @@ import type { AuthContext } from "@/lib/api/auth-context";
 export function registerPaymentTools(server: McpServer, ctx: AuthContext) {
   server.tool(
     "list_payments",
-    "List standalone payment records (money received from customers or paid to suppliers) with optional filters and pagination. Each payment's `amount` is in integer cents, and includes its contact and allocation rows (each allocation `amount` is in integer cents). Returns the payments plus the total count.",
-    {
-      type: z
-        .enum(["received", "made"])
-        .optional()
-        .describe(
-          "Filter by payment direction: 'received' = customer payments (settle invoices/AR); 'made' = supplier payments (settle bills/AP)"
-        ),
-      contactId: z
-        .string()
-        .optional()
-        .describe("Filter by the customer/supplier contact UUID"),
-      limit: z
-        .number()
-        .int()
-        .min(1)
-        .max(100)
-        .optional()
-        .default(50)
-        .describe("Number of payments to return (max 100)"),
-      page: z
-        .number()
-        .int()
-        .min(1)
-        .optional()
-        .default(1)
-        .describe("Page number (1-based)"),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        const conditions = [
-          eq(payment.organizationId, ctx.organizationId),
-          notDeleted(payment.deletedAt),
-        ];
-        if (params.type) conditions.push(eq(payment.type, params.type));
-        if (params.contactId)
-          conditions.push(eq(payment.contactId, params.contactId));
-
-        const offset = (params.page - 1) * params.limit;
-        const payments = await db.query.payment.findMany({
-          where: and(...conditions),
-          orderBy: desc(payment.createdAt),
-          limit: params.limit,
-          offset,
-          with: { contact: true, allocations: true },
-        });
-        const [countResult] = await db
-          .select({ count: sql<number>`count(*)`.mapWith(Number) })
-          .from(payment)
-          .where(and(...conditions));
-
-        return {
-          payments,
-          total: Number(countResult?.count || 0),
-          page: params.page,
-          limit: params.limit,
-        };
-      })
+    "List organization-scoped payments with optional direction/contact filters and pagination. Returns payments, total count, page and limit. Payment/allocation amount is an integer in existing currency minor units (USD cents); amountMinor is the exact string alias. Includes contact creditLimitMinor. Signed safe-integer history and noncash credit/debit-note carriers retain their units. Unsupported ranges or tenant references fail explicitly.",
+    paymentListFields,
+    params => wrapTool(ctx, async () => listPayments(ctx, params))
   );
 
   server.tool(
     "get_payment",
-    "Get a single standalone payment record by ID, including its contact, bank account, and allocation rows (the invoices/bills it settled). The payment `amount` and each allocation `amount` are in integer cents.",
-    {
-      paymentId: z.string().describe("The UUID of the payment"),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        const found = await db.query.payment.findFirst({
-          where: and(
-            eq(payment.id, params.paymentId),
-            eq(payment.organizationId, ctx.organizationId),
-            notDeleted(payment.deletedAt)
-          ),
-          with: {
-            contact: true,
-            bankAccount: true,
-            allocations: true,
-          },
-        });
-        if (!found) throw new Error("Payment not found");
-        return { payment: found };
-      })
+    "Get one organization-scoped payment by UUID with contact, bank account and allocations. Returns {payment}; numeric minor-unit money (USD cents) keeps its type and adds amountMinor, creditLimitMinor, balanceMinor and nullable lowBalanceThresholdMinor. Includes noncash paired allocations without summing or converting them. Missing/deleted payments return 404; unsupported ranges or tenant references fail explicitly.",
+    { paymentId: z.string().uuid().describe("UUID of the payment in the authenticated organization") },
+    params => wrapTool(ctx, async () => {
+      const result = await getPayment(ctx, params.paymentId);
+      if (!result) throw new AuthError("Payment not found", 404);
+      return result;
+    })
   );
 
   server.tool(

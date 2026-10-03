@@ -43,3 +43,5 @@ MON-018 retains journal integration acceptance after MON-035 CRUD, MON-036 lifec
 MON-019 retains combined receivable acceptance after MON-038 invoice reads, MON-039 invoice writes, MON-040 lifecycle, MON-041 quotes, MON-042 credits, MON-043 receipts, MON-044 recurring invoices and MON-045 bulk. Children inherit MON-011 and trace to migration/API compatibility sections.
 
 MON-020 retains combined payable/procurement acceptance after MON-046 bill reads, MON-047 CRUD, MON-048 lifecycle, MON-049 purchase orders, MON-050 requisitions, MON-051 debit notes, MON-052 goods receipts, MON-053 bulk and MON-054 settings. Children inherit MON-011 and trace to migration/API compatibility; original parent criteria remain unchanged.
+
+MON-021 retains combined payment/expense/banking acceptance after MON-055 through MON-069. Verified independent read, settlement/reversal, batch/schedule, expense CRUD/lifecycle, bank account/read/import/coding/matching/transfer/reconciliation/rule workflows inherit MON-011 and trace to migration/API compatibility; original parent criteria remain unchanged.

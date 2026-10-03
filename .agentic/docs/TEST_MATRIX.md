@@ -386,6 +386,22 @@ accounting/IRR qualification is inferred.
   and legacy-money checks apply. Full-int64/partial-GRNI-specialized tax/settlement
   cross-writer/provider/session/OAuth/production/independent financial/IRR gates remain.
 
+## MON-054 procurement setting contracts
+
+Pure procurement-settings-wire tests assert integer numeric basis points 0..100000,
+500 = 5%, boolean controls, invalid type/range/coercion/history and legacy unknown
+key stripping. Actual migrated PostgreSQL procurement-settings fixtures invoke
+GET/PATCH/compatible PUT plus registered MCP SDK read/update tools with API-key
+and custom-role authorization. Assert defaults without writes, numeric response/
+timestamp parity, 0/false/omission/empty upsert, tenant/currency isolation, denied
+writes and invalid/expired keys, negative inputs without settings/audit effects,
+concurrent initial/existing partial saves, repeats/row identity, scoped audits,
+unsupported stored controls and explicit repair, matching tolerance/GRN behavior
+and injected audit rollback of existing update and initial insert. Adjacent bill
+lifecycle and purchase-order fixtures, units, typecheck/lint and inventory checks
+apply. No browser/session/OAuth/production/independent financial or IRR readiness
+is inferred. See PROCUREMENT_SETTING_WIRE_CONTRACTS and MON-054 evidence.
+
 ## MON-053 bill bulk contracts
 
 Pure tests/bill-bulk-wire.test.ts covers legacy/exact/dual prices, formatted amount

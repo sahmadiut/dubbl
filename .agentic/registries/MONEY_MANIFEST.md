@@ -1,6 +1,18 @@
 # Money and FX boundary manifest
 
-Inventory owner: MON-001. Refreshed 2026-10-04 (Asia/Tehran) for MON-053 against entry HEAD `3697454`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+Inventory owner: MON-001. Refreshed 2026-10-04 (Asia/Tehran) for MON-054 against entry HEAD `f3444c7`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+
+## MON-054 procurement settings adoption (MON-020 child)
+
+[Procurement setting contracts](PROCUREMENT_SETTING_WIRE_CONTRACTS.md) cover
+GET/PATCH, compatible PUT and the existing read/update MCP operations. Bounded
+numeric basis points and booleans keep identical units for legacy/exact clients;
+no monetary aliases or rescaling apply. Shared schemas/services validate inputs,
+saved controls and matching consumers. Atomic partial upsert/audit prevents
+concurrent first-save loss and auditless mutations. Actual REST/API-key/custom-role
+and registered SDK fixtures verify units/ranges, defaults, roles/isolation,
+history/rollback/repeat/concurrency and matching controls. MON-020 retains combined
+procurement acceptance; other financial/IRR qualification remains unchanged.
 
 ## MON-053 bill bulk adoption (MON-020 child)
 

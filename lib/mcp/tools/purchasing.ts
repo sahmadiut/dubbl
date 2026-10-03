@@ -3,7 +3,6 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import {
   purchaseOrder,
-  procurementSettings,
   organization,
 } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
@@ -15,7 +14,6 @@ import { sendDocumentEmail } from "@/lib/email/document-sender";
 import {
   getProcurementSettings,
   threeWayMatch,
-  DEFAULT_PROCUREMENT_SETTINGS,
 } from "@/lib/api/procurement";
 import { buildSupplierStatement, NotASupplierError } from "@/lib/api/supplier-statement";
 import {
@@ -108,7 +106,7 @@ function renderRemittanceHtml(
  * goods receipts (GRN), three-way match,
  * procurement settings, supplier statements, and remittance advice (data + email).
  * Purchase order and receipt contracts live in dedicated tool files. This file retains
- * settings, matching, supplier statement and remittance operations.
+ * matching, supplier statement and remittance operations. Settings live in a dedicated tool file.
  *
  * CONVENTIONS (matching the rest of the codebase):
  *  • MONETARY AMOUNTS are integer cents (e.g. $12.50 = 1250). Unit prices on
@@ -339,68 +337,4 @@ export function registerPurchasingTools(server: McpServer, ctx: AuthContext) {
       })
   );
 
-  // ─── Get procurement settings ───────────────────────────────────────
-  server.tool(
-    "get_procurement_settings",
-    "Get the org's procurement (three-way-match) settings. Tolerances are in basis points (500 = 5%). requireGrnBeforeBill blocks billing un-received goods; blockOverBill blocks billing beyond the ordered quantity. Returns safe defaults (no tolerance, nothing blocked) when never configured.",
-    {},
-    () =>
-      wrapTool(ctx, async () => {
-        const existing = await db.query.procurementSettings.findFirst({
-          where: eq(procurementSettings.organizationId, ctx.organizationId),
-        });
-        return {
-          procurementSettings:
-            existing ?? { organizationId: ctx.organizationId, ...DEFAULT_PROCUREMENT_SETTINGS },
-        };
-      })
-  );
-
-  // ─── Update procurement settings ────────────────────────────────────
-  server.tool(
-    "update_procurement_settings",
-    "Update the org's procurement (three-way-match) settings (upsert). Tolerances are in basis points (500 = 5%). Only provided fields are changed.",
-    {
-      priceTolerancePercent: z.number().int().min(0).max(100000).optional().describe("Price tolerance in basis points (500 = 5%)"),
-      qtyTolerancePercent: z.number().int().min(0).max(100000).optional().describe("Quantity tolerance in basis points (500 = 5%)"),
-      requireGrnBeforeBill: z.boolean().optional().describe("Block billing goods that have not been received via a GRN"),
-      blockOverBill: z.boolean().optional().describe("Block billing beyond the ordered quantity"),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        requireRole(ctx, "manage:bills");
-
-        const existing = await db.query.procurementSettings.findFirst({
-          where: eq(procurementSettings.organizationId, ctx.organizationId),
-        });
-
-        let saved;
-        if (existing) {
-          [saved] = await db
-            .update(procurementSettings)
-            .set({
-              ...(params.priceTolerancePercent !== undefined && { priceTolerancePercent: params.priceTolerancePercent }),
-              ...(params.qtyTolerancePercent !== undefined && { qtyTolerancePercent: params.qtyTolerancePercent }),
-              ...(params.requireGrnBeforeBill !== undefined && { requireGrnBeforeBill: params.requireGrnBeforeBill }),
-              ...(params.blockOverBill !== undefined && { blockOverBill: params.blockOverBill }),
-              updatedAt: new Date(),
-            })
-            .where(eq(procurementSettings.organizationId, ctx.organizationId))
-            .returning();
-        } else {
-          [saved] = await db
-            .insert(procurementSettings)
-            .values({
-              organizationId: ctx.organizationId,
-              priceTolerancePercent: params.priceTolerancePercent ?? DEFAULT_PROCUREMENT_SETTINGS.priceTolerancePercent,
-              qtyTolerancePercent: params.qtyTolerancePercent ?? DEFAULT_PROCUREMENT_SETTINGS.qtyTolerancePercent,
-              requireGrnBeforeBill: params.requireGrnBeforeBill ?? DEFAULT_PROCUREMENT_SETTINGS.requireGrnBeforeBill,
-              blockOverBill: params.blockOverBill ?? DEFAULT_PROCUREMENT_SETTINGS.blockOverBill,
-            })
-            .returning();
-        }
-
-        return { procurementSettings: saved };
-      })
-  );
 }

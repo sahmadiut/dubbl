@@ -5,6 +5,7 @@ import {
   goodsReceipt,
 } from "@/lib/db/schema";
 import { eq, and, inArray, asc } from "drizzle-orm";
+import { validateProcurementControls } from "./procurement-settings-wire";
 
 /**
  * Procurement helpers: per-org three-way-match tolerances + the match engine
@@ -47,12 +48,7 @@ export async function getProcurementSettings(
     where: eq(procurementSettings.organizationId, organizationId),
   });
   if (!row) return { ...DEFAULT_PROCUREMENT_SETTINGS };
-  return {
-    priceTolerancePercent: row.priceTolerancePercent,
-    qtyTolerancePercent: row.qtyTolerancePercent,
-    requireGrnBeforeBill: row.requireGrnBeforeBill,
-    blockOverBill: row.blockOverBill,
-  };
+  return validateProcurementControls(row);
 }
 
 /** A single PO line's ordered / received / billed state for matching. */
@@ -123,6 +119,7 @@ export function threeWayMatch(
   lines: MatchLineInput[],
   settings: ResolvedProcurementSettings
 ): MatchResult {
+  validateProcurementControls(settings);
   const lineResults: MatchLineResult[] = lines.map((l) => {
     const quantityToBill = l.quantityToBill ?? 0;
     const unitPriceBilled = l.unitPriceBilled ?? l.unitPriceOrdered;

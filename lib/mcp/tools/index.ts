@@ -32,6 +32,7 @@ import { registerFixedAssetTools } from "./fixed-assets";
 import { registerInventoryTools } from "./inventory";
 import { registerPricingTools } from "./pricing";
 import { registerPurchasingTools } from "./purchasing";
+import { registerProcurementSettingsTools } from "./procurement-settings";
 import { registerPurchaseOrderTools } from "./purchase-orders";
 import { registerSalesReceiptTools } from "./sales-receipts";
 import { registerQuoteTools } from "./quotes";
@@ -94,6 +95,7 @@ export function registerAllTools(server: McpServer, ctx: AuthContext) {
   registerInventoryTools(server, ctx);
   registerPricingTools(server, ctx);
   registerPurchasingTools(server, ctx);
+  registerProcurementSettingsTools(server, ctx);
   registerGoodsReceiptTools(server, ctx);
   registerPurchaseOrderTools(server, ctx);
   registerSalesReceiptTools(server, ctx);

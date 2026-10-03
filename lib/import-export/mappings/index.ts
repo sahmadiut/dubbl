@@ -46,11 +46,16 @@ const registry: MappingRegistry = {
 
 /**
  * Get column aliases for a source/entity combination.
- * Returns empty array for "custom" source or unknown combos.
+ * Bills also expose canonical names and exact money fields for every source.
+ * Other custom-source or unknown combinations return an empty array.
  */
 export function getMapping(source: SourceSystem, entity: ImportEntity): ColumnAlias[] {
-  if (source === "custom") return [];
-  return registry[`${source}:${entity}`] || [];
+  const mapped = registry[`${source}:${entity}`] || [];
+  if (entity !== "bills") return mapped;
+  const canonical = ["billNumber", "contactName", "issueDate", "dueDate", "currencyCode", "lineDescription", "lineQuantity",
+    "lineUnitPrice", "lineUnitPriceExact", "lineUnitPriceMinor", "lineAmount", "lineAmountExact", "lineAmountMinor", "lineAccountCode"];
+  return canonical.map(targetField => ({ targetField,
+    aliases: [...new Set([targetField, ...(mapped.find(field => field.targetField === targetField)?.aliases ?? [])])] }));
 }
 
 /**

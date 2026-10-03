@@ -300,6 +300,17 @@ without recomputation; the UI draft submission now performs a real transition,
 with distinct MCP edit/delete/submit operations. See [requisition contracts](../../.agentic/registries/PURCHASE_REQUISITION_WIRE_CONTRACTS.md)
 for all boundary envelopes, units, ranges, compatibility corrections and limits.
 
+## Bill bulk contracts (MON-053)
+
+REST/MCP flat CSV preview/import share exact bigint-ratio price/quantity/override
+math. Legacy numeric/CSV prices and amount overrides remain decimal major units;
+named Exact/Minor aliases add canonical major/minor strings. Grouped headers and
+safe prices/products/overrides/sums validate before jobs. Preview keeps line counts
+and adds stored minor numeric amounts with *Minor strings. Each draft/number/
+lines/create audit commits atomically; business failures remain partial jobs.
+Repeat creates new drafts; no ledger/payment posting. See [bill bulk contracts](../../.agentic/registries/BILL_BULK_WIRE_CONTRACTS.md)
+for formats, mixed count units, signed rounding and retry/race limits.
+
 ## Supplier debit-note contracts (MON-051)
 
 REST/MCP CRUD, send, apply and void share atomic organization-scoped services.

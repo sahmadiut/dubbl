@@ -386,6 +386,22 @@ accounting/IRR qualification is inferred.
   and legacy-money checks apply. Full-int64/partial-GRNI-specialized tax/settlement
   cross-writer/provider/session/OAuth/production/independent financial/IRR gates remain.
 
+## MON-053 bill bulk contracts
+
+Pure tests/bill-bulk-wire.test.ts covers legacy/exact/dual prices, formatted amount
+overrides, signed rounding, four currency scales, alias disagreement, safe limits,
+int32 quantity boundaries, grouping/collisions/header sums and template aliases.
+Actual tests/integration/bill-bulk.test.ts runs real REST/API-key/registered MCP
+SDK operations in randomly created, migrated and dropped PostgreSQL databases.
+Fixtures exercise readback aliases, no-write preview, scoped roles/invalid keys,
+cross-tenant/literal/ambiguous/deleted/inactive references, grouped formats/counts,
+malformed/range preflight, partial/repeated imports, period/closed-year barriers,
+line/audit rollback with sequence/header snapshots, concurrent numbering,
+supplied-number collisions/exhaustion and zero ledger/stock/payment effects.
+Adjacent bill CRUD/read and invoice bulk workers supply regression coverage.
+No provider/browser/session/OAuth, full-int64, production/IRR or independent
+financial approval is claimed. See BILL_BULK_WIRE_CONTRACTS and MON-053 evidence.
+
 ## MON-052 goods receipt contracts
 
 - Exact physical quantities/dual aliases, int32 hundredths, whole stock, signed

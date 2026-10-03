@@ -1,6 +1,20 @@
 # Money and FX boundary manifest
 
-Inventory owner: MON-001. Refreshed 2026-10-04 (Asia/Tehran) for MON-052 against entry HEAD `0d629c6`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+Inventory owner: MON-001. Refreshed 2026-10-04 (Asia/Tehran) for MON-053 against entry HEAD `3697454`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+
+## MON-053 bill bulk adoption (MON-020 child)
+
+[Bill bulk contracts](BILL_BULK_WIRE_CONTRACTS.md) cover REST/MCP flat CSV preview
+and import with decimal-major prices/extended overrides and exact major/minor
+aliases. Bigint ratios preserve extended-price and formatted amount rounding,
+currency scales and grouped sums. All monetary input preflights before jobs;
+literal scoped references and strict periods qualify each document. Organization/
+sequence locks commit draft/number/lines/create audit together, with isolated
+business failures and explicit mixed line/document count units. Preview retains
+line envelopes and adds stored money aliases; wizard/templates expose aliases.
+Real handler/SDK/PostgreSQL fixtures prove supported ranges, roles/isolation,
+partial/repeat/concurrent imports and rollback. No ledger/stock/payment posting,
+full-int64, durable retry or production/IRR qualification is inferred.
 
 ## MON-052 goods receipt adoption (MON-020 child)
 

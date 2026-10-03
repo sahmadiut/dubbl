@@ -369,6 +369,23 @@ Or in Cursor's `.cursor/mcp.json`:
 
 Restart your agent and it will initiate the OAuth flow in your browser.
 
+## Bill CSV import
+
+Use `get_import_template` with `entityType: "bills"`, then `preview_bill_import`
+and `import_bills` with flat mapped rows. Prices and extended amount overrides
+use decimal **major** units in REST and MCP. `lineUnitPriceExact`/`lineAmountExact`
+are decimal-major strings; `lineUnitPriceMinor`/`lineAmountMinor` are integer
+currency minor strings. Aliases must agree; money/products/group totals must fit
+safe integers. Currency defaults USD; names/accounts resolve in the current org.
+
+Nonempty `billNumber` groups lines; omission/blank creates separate bills. Import
+requires `manage:bills` and `fileName`, checks periods and commits each draft,
+number, lines and create audit atomically. Returned job totalRows counts input
+lines; processedRows/errorRows count documents. Failures can be partial; repeating
+creates new bills. Preview writes nothing and returns per-line validation with
+numeric stored minor amounts plus named `*Minor` strings. No ledger/payment
+posting occurs; full-int64/production currency qualification remains separate.
+
 ## Troubleshooting
 
 ### "MCP access requires a Pro plan"

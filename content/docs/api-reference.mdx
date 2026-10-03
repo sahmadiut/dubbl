@@ -821,6 +821,35 @@ All eight operations have corresponding MCP tools, including draft edit/delete,
 detail/counts and send. PDF, full-int64, other procurement contracts and production
 currency qualification remain separate.
 
+## Bill bulk exact contracts
+
+POST `/api/v1/bulk/bills/preview` accepts `{source?, rows}`, returning per-line
+`{preview, validCount, totalCount}`. POST `/api/v1/bulk/bills/import` also requires
+`fileName` and `manage:bills`, returning 201 `{job}`. Inspect processed/error counts
+and errorDetails for partial failures. Flat CSV lines group by nonempty
+`billNumber`; omission/blank creates separate bills. Grouped supplier, dates and
+currency must agree. The group key is never stored as the number or a retry key.
+
+Required fields are `contactName`, `issueDate`, `dueDate` and `lineDescription`.
+Supplier names and optional `lineAccountCode` resolve literally within the current
+organization; ambiguous/deleted suppliers and missing/inactive accounts fail.
+Currency defaults USD. `lineUnitPrice` is numeric/CSV decimal-major price;
+`lineUnitPriceExact` is exact decimal-major text; `lineUnitPriceMinor` is integer
+currency minor text. Optional extended amount overrides use `lineAmount` (major
+units, with grouped CSV money support), `lineAmountExact` or `lineAmountMinor`.
+Aliases must agree. Quantity is physical units stored as signed int32 hundredths;
+tax remains zero. Prices/products/overrides/group sums must fit safe integers;
+unsupported values fail before job creation.
+
+Preview adds stored numeric minor `unitPrice`, `amount`, `taxAmount` and matching
+`*Minor` strings. Job totalRows counts input lines; processed/error counts and
+error ordinals count documents. Each draft/number/lines/create audit commits
+atomically; period/reference/database failures are isolated. Reimport creates new
+drafts; inspect before retry. There is no ledger/settlement posting. MCP tools
+`preview_bill_import` and `import_bills` share these contracts, and CSV mapping/
+template tools expose all aliases. Full-int64/production currency qualification
+remains separate.
+
 ## Purchase requisition exact contracts
 
 `/api/v1/purchase-requisitions` supports list/create; `/:id` supports GET, draft

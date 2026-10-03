@@ -177,3 +177,15 @@ Send and interest require complete accounts; settled invoices cannot be voided.
 See [invoice lifecycle contracts](../../.agentic/registries/INVOICE_LIFECYCLE_WIRE_CONTRACTS.md)
 for all units, ranges, permissions, legacy stock/FX limitations, optional email
 delivery semantics and remaining financial/settlement/provider qualification.
+
+## Quote contracts (MON-041)
+
+`lib/api/quote-wire.ts` and `quotes.ts` share REST/MCP quote operations. Numeric
+REST prices remain decimal major units; MCP prices remain integer minor units.
+Exact major/minor aliases agree explicitly; safe-number coexistence still limits
+all prices, rounded products and sums. Quote/header/line/billing aliases never
+rescale historic minor units. Bigint ratios implement price-first, discount and
+exclusive tax rounding and deterministic final progress-billing residuals.
+Organization/quote locks serialize atomic numbering, CRUD and conversion. See
+`.agentic/registries/QUOTE_WIRE_CONTRACTS.md` for supported units, operations,
+limits and intentionally separate public/PDF/provider/full-domain qualification.

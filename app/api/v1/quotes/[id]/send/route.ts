@@ -1,12 +1,9 @@
-import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { quote, organization, portalAccessToken } from "@/lib/db/schema";
+import { organization, portalAccessToken } from "@/lib/db/schema";
 import { eq, and, isNull } from "drizzle-orm";
 import { getAuthContext } from "@/lib/api/auth-context";
-import { requireRole } from "@/lib/api/require-role";
-import { handleError, notFound } from "@/lib/api/response";
-import { notDeleted } from "@/lib/db/soft-delete";
-import { logAudit } from "@/lib/api/audit";
+import { ok, handleError } from "@/lib/api/response";
+import { sendQuote } from "@/lib/api/quotes";
 import { sendDocumentEmail } from "@/lib/email/document-sender";
 import { renderDocumentEmailHtml } from "@/lib/email/render-document-email";
 import { randomBytes } from "crypto";
@@ -40,28 +37,19 @@ export async function POST(
   try {
     const { id } = await params;
     const ctx = await getAuthContext(request);
-    requireRole(ctx, "manage:invoices");
-
-    const found = await db.query.quote.findFirst({
-      where: and(
-        eq(quote.id, id),
-        eq(quote.organizationId, ctx.organizationId),
-        notDeleted(quote.deletedAt)
-      ),
-    });
-
-    if (!found) return notFound("Quote");
-    if (found.status !== "draft") {
-      return NextResponse.json(
-        { error: "Only draft quotes can be sent" },
-        { status: 400 }
-      );
+    const text = await request.text();
+    let rawBody: unknown = {};
+    if (text.trim()) {
+      try { rawBody = JSON.parse(text); }
+      catch { throw new z.ZodError([{ code: "custom", path: [], message: "Invalid JSON send body" }]); }
     }
+    const options = z.object({ sendEmail: z.boolean().optional() }).passthrough().parse(rawBody);
+    const emailParsed = options.sendEmail === true ? sendBodySchema.safeParse(rawBody) : null;
+    if (emailParsed && !emailParsed.success) throw emailParsed.error;
+    const result = await sendQuote(ctx, id, request);
+    const found = result.quote;
 
-    const rawBody = await request.json().catch(() => ({}));
-    const emailParsed = sendBodySchema.safeParse(rawBody);
-
-    if (emailParsed.success) {
+    if (emailParsed?.success) {
       const { recipientEmail, subject, templateProps } = emailParsed.data;
 
       // Generate portal access URL for the quote
@@ -108,19 +96,7 @@ export async function POST(
       });
     }
 
-    const [updated] = await db
-      .update(quote)
-      .set({
-        status: "sent",
-        sentAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .where(eq(quote.id, id))
-      .returning();
-
-    logAudit({ ctx, action: "send", entityType: "quote", entityId: id, changes: { previousStatus: found.status }, request });
-
-    return NextResponse.json({ quote: updated });
+    return ok(result);
   } catch (err) {
     return handleError(err);
   }

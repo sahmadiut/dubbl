@@ -1,121 +1,17 @@
-import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { quote, quoteLine } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
 import { getAuthContext } from "@/lib/api/auth-context";
-import { requireRole } from "@/lib/api/require-role";
-import { handleError, notFound } from "@/lib/api/response";
-import { logAudit, diffChanges } from "@/lib/api/audit";
-import { notDeleted, softDelete } from "@/lib/db/soft-delete";
+import { ok, handleError } from "@/lib/api/response";
+import { getQuote, updateQuote, deleteQuote } from "@/lib/api/quotes";
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const ctx = await getAuthContext(request);
-
-    const found = await db.query.quote.findFirst({
-      where: and(
-        eq(quote.id, id),
-        eq(quote.organizationId, ctx.organizationId),
-        notDeleted(quote.deletedAt)
-      ),
-      with: {
-        contact: true,
-        lines: {
-          with: { account: true, taxRate: true },
-        },
-      },
-    });
-
-    if (!found) return notFound("Quote");
-    return NextResponse.json({ quote: found });
-  } catch (err) {
-    return handleError(err);
-  }
+type Params = { params: Promise<{ id: string }> };
+export async function GET(request: Request, { params }: Params) {
+  try { return ok(await getQuote(await getAuthContext(request), (await params).id)); }
+  catch (err) { return handleError(err); }
 }
-
-export async function PATCH(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const ctx = await getAuthContext(request);
-    requireRole(ctx, "manage:invoices");
-
-    const existing = await db.query.quote.findFirst({
-      where: and(
-        eq(quote.id, id),
-        eq(quote.organizationId, ctx.organizationId),
-        notDeleted(quote.deletedAt)
-      ),
-    });
-
-    if (!existing) return notFound("Quote");
-    if (existing.status !== "draft") {
-      return NextResponse.json(
-        { error: "Only draft quotes can be edited" },
-        { status: 400 }
-      );
-    }
-
-    const body = await request.json();
-    const [updated] = await db
-      .update(quote)
-      .set({ ...body, updatedAt: new Date() })
-      .where(eq(quote.id, id))
-      .returning();
-
-    logAudit({ ctx, action: "update", entityType: "quote", entityId: id, changes: diffChanges(existing as Record<string, unknown>, updated as Record<string, unknown>), request });
-
-    return NextResponse.json({ quote: updated });
-  } catch (err) {
-    return handleError(err);
-  }
+export async function PATCH(request: Request, { params }: Params) {
+  try { return ok(await updateQuote(await getAuthContext(request), (await params).id, await request.json(), "rest", request)); }
+  catch (err) { return handleError(err); }
 }
-
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const ctx = await getAuthContext(request);
-    requireRole(ctx, "manage:invoices");
-
-    const existing = await db.query.quote.findFirst({
-      where: and(
-        eq(quote.id, id),
-        eq(quote.organizationId, ctx.organizationId),
-        notDeleted(quote.deletedAt)
-      ),
-    });
-
-    if (!existing) return notFound("Quote");
-    if (existing.status !== "draft") {
-      return NextResponse.json(
-        { error: "Only draft quotes can be deleted" },
-        { status: 400 }
-      );
-    }
-
-    await db.delete(quoteLine).where(eq(quoteLine.quoteId, id));
-    await db.update(quote).set(softDelete()).where(eq(quote.id, id));
-
-    logAudit({
-      ctx,
-      action: "delete",
-      entityType: "quote",
-      entityId: id,
-      changes: existing as Record<string, unknown>,
-      request,
-    });
-
-    return NextResponse.json({ success: true });
-  } catch (err) {
-    return handleError(err);
-  }
+export async function DELETE(request: Request, { params }: Params) {
+  try { return ok(await deleteQuote(await getAuthContext(request), (await params).id, request)); }
+  catch (err) { return handleError(err); }
 }

@@ -464,9 +464,6 @@
   "app/api/v1/purchase-orders/route.ts": {
     "decimalToMinorUnits": 3
   },
-  "app/api/v1/quotes/route.ts": {
-    "decimalToMinorUnits": 2
-  },
   "app/api/v1/reports/balance-sheet/route.ts": {
     "centsToDecimal": 5
   },

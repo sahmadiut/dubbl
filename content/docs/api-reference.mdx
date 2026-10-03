@@ -267,13 +267,54 @@ Lifecycle and bulk routes retain their separate contracts.
 ### Quotes
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/v1/quotes` | List quotes |
-| POST | `/api/v1/quotes` | Create quote |
-| GET | `/api/v1/quotes/:id` | Get quote |
-| POST | `/api/v1/quotes/:id/send` | Send quote |
-| POST | `/api/v1/quotes/:id/accept` | Accept quote |
-| POST | `/api/v1/quotes/:id/decline` | Decline quote |
-| POST | `/api/v1/quotes/:id/convert` | Convert to invoice |
+| GET | `/api/v1/quotes` | List quotes with pagination and optional status |
+| POST | `/api/v1/quotes` | Create draft quote |
+| GET | `/api/v1/quotes/:id` | Get quote with lines and contact |
+| PATCH | `/api/v1/quotes/:id` | Update permitted draft headers or replace lines |
+| DELETE | `/api/v1/quotes/:id` | Delete draft quote |
+| POST | `/api/v1/quotes/:id/send` | Mark draft sent; optional email |
+| POST | `/api/v1/quotes/:id/accept` | Accept an unexpired sent quote |
+| POST | `/api/v1/quotes/:id/decline` | Decline sent quote |
+| POST | `/api/v1/quotes/:id/convert` | Convert accepted quote to a draft invoice or progress bill |
+
+Quote responses retain numeric currency minor units and add `subtotalMinor`,
+`taxTotalMinor`, `totalMinor`, `billedTotalMinor`. Detail lines add
+`unitPriceMinor`, `amountMinor`, `taxAmountMinor`; contact adds `creditLimitMinor`.
+The list keeps `{data, pagination}`. Currency defaults to USD in both transports.
+
+REST line `unitPrice` remains decimal major units; MCP `create_quote` and
+`update_quote` numeric `unitPrice` remains integer minor units (USD cents).
+Both accept `unitPriceExact` (decimal major-unit string) and `unitPriceMinor`
+(canonical integer minor-unit string). Supplied aliases must agree: REST major
+aliases agree exactly, minor aliases agree with the rounded major price. Prices
+round before extending by physical quantity. Quantity is physical units on input,
+hundredths on output; discounts and tax rates use basis points. Tax is exclusive.
+All monetary inputs, individual rounded products and sums must fit the safe
+integer range; larger exact strings return 422 without writes.
+
+PATCH accepts contact, Gregorian issue/expiry dates, reference, notes, currency
+and replacement lines. Retained minor amounts are never rescaled by currency
+edits. Arbitrary database fields (including status, tenant and header totals) are
+rejected. Replacement prices default to zero, with no price lookup. Creation
+supports item/list lookup; items are lookup-only, and list currency must match.
+
+Conversion accepts an empty body, `percentage` greater than zero through 100,
+or `lines: [{quoteLineId, quantity}]`; nonempty lines take precedence. Percentage
+bills a share of the original total, rounded per original line; omission bills the
+exact remaining balance with deterministic residual allocation. It returns
+`{quote, invoice, billing}` with numeric `invoiced`, `billedTotal`, `remaining`,
+matching `*Minor` strings and `fullyBilled`. Partial bills remain accepted; only
+zero remaining marks converted. Overbilling returns 400 with numeric/exact
+`remaining` and `requested`. Malformed conversion JSON returns 400.
+
+All writes require `manage:invoices`, organization-owned references and unlocked
+issue dates; conversion also checks today's invoice date (UTC). Numbering,
+headers, lines and billing totals commit atomically. Matching MCP operations are
+`list_quotes`, `get_quote`, `create_quote`, `update_quote`, `delete_quote`,
+`send_quote`, `accept_quote`, `decline_quote`, `convert_quote_to_invoice`.
+MCP send records status only; REST email delivery follows the committed status
+change and can fail independently. PDF/public/provider paths retain separate
+contracts.
 
 ### Bills
 | Method | Path | Description |

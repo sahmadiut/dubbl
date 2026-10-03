@@ -55,7 +55,7 @@ export function safeInvoiceMinor(value: bigint): number {
 }
 // Interpret a numeric client's shortest decimal spelling, including scientific notation,
 // without multiplying binary floats. Exact strings never permit scientific notation.
-function ratio(value: number | string) {
+export function invoiceDecimalRatio(value: number | string) {
   const spelling = String(value);
   const match = /^(-?)(\d+)(?:\.(\d+))?(?:e([+-]?\d+))?$/.exec(spelling);
   if (!match) invoiceInputError("Invalid decimal price or quantity");
@@ -76,8 +76,8 @@ export function hasInvoicePrice(line: InvoiceWriteLine) {
 }
 export function invoicePrice(line: InvoiceWriteLine, currency: string, fallback = 0) {
   const scale = 10n ** BigInt(currencyMetadata(currency).minorUnits);
-  const numeric = line.unitPrice === undefined ? undefined : ratio(line.unitPrice);
-  const exact = line.unitPriceExact === undefined ? undefined : ratio(line.unitPriceExact);
+  const numeric = line.unitPrice === undefined ? undefined : invoiceDecimalRatio(line.unitPrice);
+  const exact = line.unitPriceExact === undefined ? undefined : invoiceDecimalRatio(line.unitPriceExact);
   if (numeric && exact && numeric.numerator * exact.denominator !== exact.numerator * numeric.denominator) {
     invoiceInputError("unitPrice and unitPriceExact disagree");
   }
@@ -93,7 +93,7 @@ export function invoiceWriteTotals(lines: InvoiceWriteLine[], currency: string, 
   let subtotal = 0n, taxTotal = 0n;
   const processedLines = lines.map((line, sortOrder) => {
     const price = invoicePrice(line, currency, fallbackPrices[sortOrder] ?? 0);
-    const qty = ratio(line.quantity);
+    const qty = invoiceDecimalRatio(line.quantity);
     const quantity = Number(invoiceRound(qty.numerator * 100n, qty.denominator));
     if (!Number.isInteger(quantity) || quantity < -2147483648 || quantity > 2147483647) invoiceInputError("Quantity exceeds signed int32 hundredths");
     const gross = invoiceRound(qty.numerator * (roundPriceFirst ? price.minor : price.numerator), qty.denominator * (roundPriceFirst ? 1n : price.denominator));

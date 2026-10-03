@@ -23,7 +23,7 @@ function scope(id: string, orgId: string) {
 }
 
 /** Lock validated references until commit; retained history may be inactive but must be owned. */
-async function references(tx: Transaction, orgId: string, contactId: string, lines: InvoiceWriteLine[], historical = false) {
+export async function references(tx: Transaction, orgId: string, contactId: string, lines: InvoiceWriteLine[], historical = false) {
   const [customer] = await tx.select().from(contact).where(and(eq(contact.id, contactId),
     eq(contact.organizationId, orgId), historical ? undefined : notDeleted(contact.deletedAt))).for("share");
   if (!customer) invoiceInputError("Invoice contact must belong to this organization and be available");
@@ -42,13 +42,13 @@ async function references(tx: Transaction, orgId: string, contactId: string, lin
   return customer;
 }
 
-async function taxRates(tx: Transaction, lines: InvoiceWriteLine[]) {
+export async function taxRates(tx: Transaction, lines: InvoiceWriteLine[]) {
   const ids = [...new Set(lines.flatMap(line => line.taxRateId ? [line.taxRateId] : []))];
   const rows = ids.length ? await tx.select({ id: taxRate.id, rate: taxRate.rate }).from(taxRate).where(inArray(taxRate.id, ids)) : [];
   return new Map(rows.map(row => [row.id, row.rate]));
 }
 
-async function prices(tx: Transaction, orgId: string, baseCurrency: string, currency: string, date: string,
+export async function prices(tx: Transaction, orgId: string, baseCurrency: string, currency: string, date: string,
   lines: InvoiceWriteLine[], documentListId?: string | null) {
   const values: number[] = [];
   for (const line of lines) {
@@ -70,7 +70,7 @@ async function prices(tx: Transaction, orgId: string, baseCurrency: string, curr
   return values;
 }
 
-async function nextNumber(tx: Transaction, orgId: string) {
+export async function nextNumber(tx: Transaction, orgId: string) {
   // All invoice CRUD callers lock the organization first, including first-sequence creation.
   const [sequence] = await tx.select().from(numberSequence).where(and(eq(numberSequence.organizationId, orgId), eq(numberSequence.entityType, "invoice"))).for("update");
   const [maximum] = sequence ? [] : await tx.select({ value: sql<string>`coalesce(max(nullif(regexp_replace(${invoice.invoiceNumber}, '^[A-Z]+-', ''), '')::numeric), 0)::text` })

@@ -1,6 +1,20 @@
 # Money and FX boundary manifest
 
-Inventory owner: MON-001. Refreshed 2026-10-03 (Asia/Tehran) for MON-040 against entry HEAD `c40826c`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+Inventory owner: MON-001. Refreshed 2026-10-03 (Asia/Tehran) for MON-041 against entry HEAD `541c299`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+
+## MON-041 quote adoption (MON-019 child)
+
+The [quote contracts](QUOTE_WIRE_CONTRACTS.md) cover nine REST and nine registered
+MCP operations. Decimal-major REST and integer-minor MCP numeric prices retain
+their units with explicit major/minor aliases. Exact ratios/sums preflight safe
+coexistence; whitelisted draft edits prevent arbitrary tenant/status/total writes.
+Atomic scoped CRUD/status/conversion with organization/quote locks preserves
+numbering and history. Percentage/milestone billing retain rounding policy; final
+remaining billing allocates the exact residual and never forgives a minor unit.
+Actual PostgreSQL authenticated REST/SDK fixtures cover units, four currencies,
+references, roles, locks, unsafe history, races, rollback and rejected snapshots.
+Email follows committed send state; PDF/provider/public/external-writer and full
+financial/migration qualification remain separate gates. No schema/IRR change.
 
 ## MON-040 invoice lifecycle adoption (MON-019 child)
 

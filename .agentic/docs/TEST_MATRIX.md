@@ -191,3 +191,14 @@ concurrent duplicate send/void and forced rollback of monetary/stock/number/
 approval effects. See the lifecycle registry/evidence for exact limits. Email/PDF/
 provider, external writer/configuration races, full-domain/settlement/reporting,
 HTTP/session/OAuth/browser and production financial gates remain unqualified.
+
+
+MON-041 adds `tests/quote-wire.test.ts` (transport price units, aliases, signed
+rounding, ranges, exact remaining allocation and read scoping) and disposable
+migrated PostgreSQL `tests/integration/quotes.test.ts` / `quotes-worker.ts`.
+Actual authenticated handlers and nine SDK-registered tools cover legacy/exact/
+dual clients, USD/IRR/JPY/KWD, price tiers/fallback, header edits, line replacement,
+locks, role/two-tenant isolation, unsafe saved values, milestone/percentage/final
+billing, concurrent send/conversion/numbering and injected transaction failures.
+No provider email, browser/session/OAuth, PDF or financial release approval is
+claimed. MON-019 retains combined receivable integration acceptance.

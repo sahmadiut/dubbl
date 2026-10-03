@@ -161,3 +161,22 @@ mixed-currency and unsafe summaries. Exact text snapshots verify no invoice/line
 payment/allocation/rate/journal/audit changes from successful or rejected reads.
 Auth-key last-used metadata is excluded. HTTP/session/OAuth/browser and write/
 lifecycle/full-domain qualification remain assigned tasks; schema and flags stay unchanged.
+
+## MON-039 invoice CRUD write contracts
+
+Three pure contract groups cover major/minor aliases across USD/JPY/IRR/KWD,
+canonical strings/conflicts, scientific numeric spelling, signed tie rounding,
+distinct create/edit price order, quantities, tax/discount, individual safe-max,
+oversized gross products and header/tax sums. The migrated disposable PostgreSQL
+worker calls actual authenticated REST create/patch/delete and registered MCP
+create/update/delete via SDK/InMemoryTransport. Verifies legacy/exact/dual clients,
+currency/terms/omission defaults, price tiers/overrides/inactive/window fallback,
+all foreign dimensions, custom role denial, foreign IDs, old/new locks, sent/
+approval-pending protection, unsafe header/line/snapshot preflight, inactive retained
+history, int32-plus/safe-max amounts, credit warnings/hard blocks/mixed currencies/
+unsafe rows, plan/multicurrency limits and same-service concurrent numbering.
+Text snapshots cover invoice/line/number/approval rows and audit counts. Forced
+line and approval failures prove full create/replacement rollback. Existing invoice
+read worker also passes after write-route/tool changes. HTTP/session/OAuth/browser,
+external-writer races, full posting/inventory/approval lifecycle and production
+qualification remain separate gates. Fixtures create/drop only random databases.

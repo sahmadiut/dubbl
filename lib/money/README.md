@@ -149,3 +149,16 @@ SQL text and bigint sums in a read-only snapshot, rejecting mixed currencies and
 unsafe totals/aging buckets. Nested foreign-tenant references fail before disclosure.
 See [invoice read contracts](../../.agentic/registries/INVOICE_READ_WIRE_CONTRACTS.md)
 for units, safe ranges, filters/errors and remaining write/lifecycle/full-domain gates.
+
+## Invoice CRUD write contracts (MON-039)
+
+REST create/draft patch/delete and MCP create/update/delete share atomic direct-DB
+services. Major prices retain `unitPrice`, adding decimal-major `unitPriceExact`
+and integer-minor `unitPriceMinor`; aliases must agree. Bigint ratios preserve the
+distinct create/edit rounding order, discount/tax ties and safe range without
+floating products. Tenant references, old/new locks, pricing currency, credit
+totals and response serialization are checked before mutation. Number/header/line/
+create approval request roll back together. Numeric header/credit warning fields
+add `*Minor` strings; full-int64 exact mode is unavailable during numeric coexistence.
+See [invoice write contracts](../../.agentic/registries/INVOICE_WRITE_WIRE_CONTRACTS.md)
+for defaults, units/ranges, concurrency/audit limits and remaining domain gates.

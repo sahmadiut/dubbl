@@ -212,8 +212,27 @@ Summary returns numeric/string outstanding, overdue and aging amounts with one
 `currencyCode` (null when empty). Mixed-currency outstanding invoices and unsafe
 amounts/totals return 422 `LEGACY_NUMERIC_RANGE`. All numeric money remains limited
 to the safe integer range. MCP `list_invoices`, `get_invoice` and
-`get_invoice_summary` expose the same scoped read contracts. Invoice write,
-lifecycle and bulk contracts retain their existing separate behavior.
+`get_invoice_summary` expose the same scoped read contracts.
+
+Invoice create and draft update accept legacy decimal-major `unitPrice` numbers,
+exact decimal-major `unitPriceExact` strings and integer-minor `unitPriceMinor`
+strings. Aliases must agree: USD `12.50` maps to `1250` minor units. Numeric money
+and exact inputs currently support only the safe integer monetary range. Quantity
+is decimal physical units; discount is basis points. Create/update responses retain
+`{invoice}` with numeric minor totals plus `*Minor` strings; create also returns
+nullable `creditLimitWarning` with numeric/exact amounts. Draft deletion returns
+`{success:true}`. MCP `create_invoice`, `update_invoice` and `delete_invoice` use
+the same scoped atomic CRUD services and require `manage:invoices`.
+
+REST create rounds unit price before quantity multiplication; draft update and
+MCP create round the extended major price. Send `unitPriceExact` for sub-minor
+precision. REST missing prices use price-list/item defaults; MCP retains zero
+unless a price list is specified, and update omission remains zero. Price-list
+currency must match; inventory fallback requires organization currency. Create
+currency defaults to contact/org/USD in REST, USD in MCP. Old/new issue-date locks,
+owned references and safe totals are checked before writes. Hard credit limits
+return 403; mixed-currency credit comparisons and unsafe money return 422.
+Lifecycle and bulk routes retain their separate contracts.
 
 ### Quotes
 | Method | Path | Description |

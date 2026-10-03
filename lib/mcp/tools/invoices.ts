@@ -1,19 +1,16 @@
+import { createInvoice, updateInvoice, deleteInvoice } from "@/lib/api/invoice-writes";
+import { invoiceCreateFields, invoiceUpdateFields } from "@/lib/api/invoice-write-wire";
 import { listInvoices, getInvoice, getInvoiceSummary } from "@/lib/api/invoice-reads";
 import { invoiceListFields } from "@/lib/api/invoice-read-wire";
 import { AuthError } from "@/lib/api/auth-context";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { invoice, invoiceLine, invoiceSignature, emailConfig, organization, contact, approvalRequest, member } from "@/lib/db/schema";
+import { invoice, invoiceSignature, emailConfig, organization, approvalRequest, member } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { notDeleted } from "@/lib/db/soft-delete";
 import { requireRole } from "@/lib/api/require-role";
-import { getNextNumber } from "@/lib/api/numbering";
-import { decimalToMinorUnits } from "@/lib/money";
-import { assertNotLocked } from "@/lib/api/period-lock";
-import { preloadTaxRates, calcTax } from "@/lib/api/tax-calculator";
 import { wrapTool } from "@/lib/mcp/errors";
-import { checkMonthlyLimit, checkMultiCurrency } from "@/lib/api/check-limit";
 import { sendEmail } from "@/lib/email/smtp-client";
 import { randomBytes } from "crypto";
 import type { AuthContext } from "@/lib/api/auth-context";
@@ -48,187 +45,23 @@ export function registerInvoiceTools(server: McpServer, ctx: AuthContext) {
 
   server.tool(
     "create_invoice",
-    "Create a new invoice with line items. Unit prices are decimal numbers (e.g. 12.50 for $12.50). Quantities are decimal numbers. The system calculates totals and assigns an invoice number automatically.",
-    {
-      contactId: z.string().describe("Customer contact UUID"),
-      issueDate: z.string().describe("Issue date (YYYY-MM-DD)"),
-      dueDate: z
-        .string()
-        .optional()
-        .describe("Due date (YYYY-MM-DD). If omitted, auto-calculated from contact payment terms or org default."),
-      reference: z
-        .string()
-        .optional()
-        .describe("External reference"),
-      notes: z.string().optional().describe("Invoice notes"),
-      currencyCode: z
-        .string()
-        .optional()
-        .default("USD")
-        .describe("Currency code"),
-      invoiceType: z
-        .enum(["standard", "deposit", "retainer"])
-        .optional()
-        .default("standard")
-        .describe(
-          "Invoice flavour. 'deposit'/'retainer' are normal AR invoices flagged as an upfront request (no special GL); defaults to 'standard'."
-        ),
-      depositPercent: z
-        .number()
-        .int()
-        .min(0)
-        .max(10000)
-        .optional()
-        .describe(
-          "For deposit/retainer invoices: the deposit percentage in basis points (e.g. 2500 = 25%). Optional."
-        ),
-      lines: z
-        .array(
-          z.object({
-            description: z.string().describe("Line item description"),
-            quantity: z
-              .number()
-              .optional()
-              .default(1)
-              .describe("Quantity (decimal)"),
-            unitPrice: z
-              .number()
-              .optional()
-              .default(0)
-              .describe("Unit price (decimal, e.g. 12.50)"),
-            accountId: z
-              .string()
-              .optional()
-              .describe("Revenue account UUID"),
-            taxRateId: z
-              .string()
-              .optional()
-              .describe("Tax rate UUID"),
-            discountPercent: z
-              .number()
-              .int()
-              .min(0)
-              .max(10000)
-              .optional()
-              .default(0)
-              .describe("Discount in basis points (1000 = 10%)"),
-            inventoryItemId: z
-              .string()
-              .optional()
-              .describe(
-                "Inventory item UUID. When set, selling this line will relieve stock and post COGS for the item when the invoice is posted/sent."
-              ),
-            warehouseId: z
-              .string()
-              .optional()
-              .describe(
-                "Warehouse UUID to draw the inventory from (only meaningful with inventoryItemId)."
-              ),
-            projectId: z
-              .string()
-              .optional()
-              .describe("Project UUID for job-costing this line."),
-          })
-        )
-        .min(1)
-        .describe("Invoice line items"),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        requireRole(ctx, "manage:invoices");
+    "Create an organization-scoped invoice atomically. unitPrice is decimal major units (USD 12.50); unitPriceExact is an ASCII decimal string; unitPriceMinor is an integer currency minor-unit string. Aliases must agree; safe integer monetary range only. Quantity is decimal, discounts are basis points. Currency defaults USD; omitted prices default zero unless a price list is specified. Returns {invoice, creditLimitWarning} with numeric minor units and *Minor strings; checks roles, references, locks, plan limits, credit limits and optional approval.",
+    invoiceCreateFields,
+    params => wrapTool(ctx, () => createInvoice(ctx, params, "mcp"))
+  );
 
-        await assertNotLocked(ctx.organizationId, params.issueDate);
-        await checkMonthlyLimit(ctx.organizationId, invoice, invoice.organizationId, invoice.createdAt, "invoicesPerMonth", invoice.deletedAt);
-        await checkMultiCurrency(ctx.organizationId, params.currencyCode ?? "USD");
+  server.tool(
+    "update_invoice",
+    "Edit an organization-owned draft invoice atomically. Optional lines replace all lines; omitted prices become zero. unitPrice is decimal major units; unitPriceExact is decimal major text and unitPriceMinor integer currency minor text. Checks alias agreement, safe monetary range, references and old/new issue-date locks. Returns {invoice} with numeric minor-unit totals and *Minor strings; quantity is decimal and discounts basis points.",
+    { invoiceId: z.string().uuid().describe("Organization-owned draft invoice UUID"), ...invoiceUpdateFields },
+    params => wrapTool(ctx, () => updateInvoice(ctx, params.invoiceId, params))
+  );
 
-        // Auto-calculate due date if not provided
-        let dueDate = params.dueDate;
-        if (!dueDate) {
-          const contactRecord = await db.query.contact.findFirst({
-            where: eq(contact.id, params.contactId),
-            columns: { paymentTermsDays: true },
-          });
-          let termsDays = contactRecord?.paymentTermsDays;
-          if (termsDays == null) {
-            const org = await db.query.organization.findFirst({
-              where: eq(organization.id, ctx.organizationId),
-              columns: { defaultPaymentTerms: true },
-            });
-            termsDays = org?.defaultPaymentTerms ? parseInt(org.defaultPaymentTerms) : 30;
-          }
-          const d = new Date(params.issueDate + "T00:00:00Z");
-          d.setUTCDate(d.getUTCDate() + (termsDays || 30));
-          dueDate = d.toISOString().split("T")[0];
-        }
-
-        const invoiceNumber = await getNextNumber(
-          ctx.organizationId,
-          "invoice",
-          "invoice_number",
-          "INV"
-        );
-
-        const taxRateIds = params.lines.map((l) => l.taxRateId).filter(Boolean) as string[];
-        const ratesMap = await preloadTaxRates(taxRateIds);
-
-        let subtotal = 0;
-        const processedLines = params.lines.map((l, i) => {
-          const grossAmount = decimalToMinorUnits(l.quantity * l.unitPrice, params.currencyCode);
-          const discountAmount = l.discountPercent ? Math.round(grossAmount * l.discountPercent / 10000) : 0;
-          const amount = grossAmount - discountAmount;
-          subtotal += amount;
-          const taxRateId = l.taxRateId ?? null;
-          const taxAmount = taxRateId ? calcTax(amount, ratesMap.get(taxRateId) ?? 0) : 0;
-          return {
-            description: l.description,
-            quantity: Math.round(l.quantity * 100),
-            unitPrice: decimalToMinorUnits(l.unitPrice, params.currencyCode),
-            accountId: l.accountId ?? null,
-            taxRateId,
-            discountPercent: l.discountPercent,
-            taxAmount,
-            amount,
-            inventoryItemId: l.inventoryItemId ?? null,
-            warehouseId: l.warehouseId ?? null,
-            projectId: l.projectId ?? null,
-            sortOrder: i,
-          };
-        });
-
-        const taxTotal = processedLines.reduce((sum, l) => sum + l.taxAmount, 0);
-        const total = subtotal + taxTotal;
-
-        const [created] = await db
-          .insert(invoice)
-          .values({
-            organizationId: ctx.organizationId,
-            contactId: params.contactId,
-            invoiceNumber,
-            issueDate: params.issueDate,
-            dueDate,
-            reference: params.reference ?? null,
-            notes: params.notes ?? null,
-            subtotal,
-            taxTotal,
-            total,
-            amountPaid: 0,
-            amountDue: total,
-            currencyCode: params.currencyCode,
-            invoiceType: params.invoiceType,
-            depositPercent: params.depositPercent ?? null,
-            createdBy: ctx.userId,
-          })
-          .returning();
-
-        await db.insert(invoiceLine).values(
-          processedLines.map((l) => ({
-            invoiceId: created.id,
-            ...l,
-          }))
-        );
-
-        return { invoice: created };
-      })
+  server.tool(
+    "delete_invoice",
+    "Soft-delete an organization-owned draft invoice and remove its lines atomically. Checks manage:invoices, issue-date locks, safe history and reference ownership. Returns {success:true}; sent, paid and approval-pending invoices cannot be deleted.",
+    { invoiceId: z.string().uuid().describe("Organization-owned draft invoice UUID") },
+    params => wrapTool(ctx, () => deleteInvoice(ctx, params.invoiceId))
   );
 
   server.tool(

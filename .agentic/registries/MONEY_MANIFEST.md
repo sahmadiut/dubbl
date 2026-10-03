@@ -1,6 +1,19 @@
 # Money and FX boundary manifest
 
-Inventory owner: MON-001. Refreshed 2026-10-03 (Asia/Tehran) for MON-038 against entry HEAD `42f2563`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+Inventory owner: MON-001. Refreshed 2026-10-03 (Asia/Tehran) for MON-039 against entry HEAD `d23996d`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+
+## MON-039 invoice CRUD write adoption (MON-019 child)
+
+The [invoice write contracts](INVOICE_WRITE_WIRE_CONTRACTS.md) record create/patch/
+delete REST and create/new-update/new-delete MCP direct-DB parity. Decimal-major
+and integer-minor aliases agree explicitly, with bigint ratios/sums and safe
+numeric coexistence. Existing create/edit rounding order and transport defaults
+are preserved. Scoped references, price currency, credit totals, locks and output
+serialization are preflighted. Numbering/header/lines/create approval requests
+are transactional; organization/invoice locks serialize service CRUD. SDK/REST
+PostgreSQL fixtures qualify successful and rejected operations plus fault rollback.
+Best-effort audit policy and external-writer/lock/workflow races retain later gates.
+No schema, configured DB, rollout flag or deployment change.
 
 ## MON-038 invoice read adoption (MON-019 child)
 
@@ -174,7 +187,7 @@ The adapter retains exact number values for existing callers within the safe int
 
 Deprecated `lib/money.ts` functions preserve their behavior for existing consumers. ESLint enforces imported-binding reference ceilings from `scripts/legacy-money-baseline.json`, blocking new imports/uses; static analysis limits are documented in the core contract. Safe-number bridges explicitly reject precision loss. This is not application-wide adoption: the remaining Number-based ledger/FX/public/UI paths retain their assigned MON-004/006/007/008 work, and IRR production readiness remains disabled.
 
-The [column appendix](MONEY_COLUMNS.md) has one row per actual numeric/JSON column: SQL table/column, Drizzle property, source line, type/range, units, currency source and migration owner. Refreshed for MON-035, the [machine-readable consumer index](MONEY_BOUNDARIES.json) contains 410 columns and 1,109 consumer files with line numbers, search tags, source hashes, currency context, range and owner. It scans 1,332 tracked and new nonignored source/config/documentation files and retains 21,618 lexical occurrences. All exported Drizzle numeric/JSON columns independently match the appendix, with no missing, extra or duplicate rows. The MON-003 disposition retains its historical 402-column scope.
+The [column appendix](MONEY_COLUMNS.md) has one row per actual numeric/JSON column: SQL table/column, Drizzle property, source line, type/range, units, currency source and migration owner. Refreshed for MON-039, the [machine-readable consumer index](MONEY_BOUNDARIES.json) contains 410 columns and 1,123 consumer files with line numbers, search tags, source hashes, currency context, range and owner. It scans 1,353 tracked and new nonignored source/config/documentation files and retains 21,874 lexical occurrences. All exported Drizzle numeric/JSON columns independently match the appendix, with no missing, extra or duplicate rows. The MON-003 disposition retains its historical 402-column scope.
 
 `python .agentic/scripts/money_inventory.py` checks source reproducibility; `--write` refreshes after reviewed changes. `node --import tsx .agentic/scripts/verify_money_inventory.mjs` checks actual Drizzle exports, column lines, consumer hashes and occurrence lines. Neither reads environment credentials or connects to DB. These are mutable registries; completed task evidence remains immutable.
 

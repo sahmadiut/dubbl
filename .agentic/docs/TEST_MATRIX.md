@@ -451,3 +451,22 @@ business snapshots. Same-tenant inactive/deleted history and noncash carrier
 pairs remain readable. Adjacent credit/debit-note fixture regressions run.
 No payment mutation/GL settlement, HTTP/session/OAuth/provider or full-int64/IRR
 qualification is inferred. See PAYMENT_READ_WIRE_CONTRACTS and MON-055 evidence.
+
+
+## MON-056 payment settlement contracts
+
+`tests/payment-settlement-wire.test.ts` covers canonical aliases, complete/distinct
+allocation constraints, currency minor scales, safe output limits and cumulative
+carrying residuals. `tests/integration/payment-settlements.test.ts` invokes real
+REST pay/create exports with synthetic API keys/custom permissions and registered
+SDK tools against disposable migrated PostgreSQL. It verifies partial/final and
+multi-document received/made cash, header/payment aliases, roles/isolation/retry
+isolation, bank linkage/currency, locked/closed dates, saved recognition after FX
+edits, both gain/loss directions, USD/IRR/JPY/KWD scales, zero rounded carrying,
+reverse-charge payable, split/clearing-only GRNI AP, changed invoice recognition,
+note/prepayment carriers, unsafe SQL history, output FX
+overflow, mandatory audit rollback, first-number concurrency, competing requests
+and identical retries. SQL-text business snapshots exclude API-key usage metadata.
+Payment-read, credit, debit-note and bill-lifecycle integration regressions run
+alongside it. No real HTTP/session/OAuth, live provider, configured-target migration,
+IRR or full-int64 qualification is inferred. See settlement registry and evidence.

@@ -20,7 +20,7 @@ export interface HistoricalRate {
  * Both requested as-of and resolved effective-date keys include tenant/base/quote.
  * A new resolver observes subsequent writes; a batch keeps a consistent cached quote.
  */
-export function createHistoricalRateResolver(orgId: string, database: typeof db = db) {
+export function createHistoricalRateResolver(orgId: string, database: Pick<typeof db, "query"> = db) {
   if (!orgId) throw new TypeError("Organization is required for rate lookup");
   const requests = new Map<string, Promise<Readonly<HistoricalRate> | null>>();
   const effective = new Map<string, Readonly<HistoricalRate>>();

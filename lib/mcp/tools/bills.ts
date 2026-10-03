@@ -1,5 +1,7 @@
+import { payDocument } from "@/lib/api/payment-settlements";
+import { paymentMcpPayFields } from "@/lib/api/payment-settlement-wire";
 import { receiveBill, actBillApproval, voidBill } from "@/lib/api/bill-lifecycle";
-import { billRejectFields, assertBillSettlementReady, billSettlementBalances } from "@/lib/api/bill-lifecycle-wire";
+import { billRejectFields } from "@/lib/api/bill-lifecycle-wire";
 import { createBill, updateBill, deleteBill } from "@/lib/api/bill-writes";
 import { billCreateFields, billUpdateFields } from "@/lib/api/bill-write-wire";
 import { listBills, getBill, getBillCounts } from "@/lib/api/bill-reads";
@@ -7,11 +9,6 @@ import { billListFields } from "@/lib/api/bill-read-wire";
 import { AuthError } from "@/lib/api/auth-context";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { db } from "@/lib/db";
-import { bill } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
-import { notDeleted } from "@/lib/db/soft-delete";
-import { requireRole } from "@/lib/api/require-role";
 import { wrapTool } from "@/lib/mcp/errors";
 import type { AuthContext } from "@/lib/api/auth-context";
 
@@ -83,58 +80,12 @@ export function registerBillTools(server: McpServer, ctx: AuthContext) {
 
   server.tool(
     "pay_bill",
-    "Annotate payment against an organization-owned recognized outstanding bill. Amount is a positive safe integer in the bill's stored minor units (USD 1250 = $12.50); no exact payment aliases yet. Returns {bill} and updates paid/due/status using the actual payable. Retains legacy balance-only behavior: creates no payment, allocation or settlement journal. Full settlement belongs to payment tools.",
-    {
-      billId: z.string().describe("The UUID of the bill"),
-      amount: z
-        .number()
-        .int()
-        .min(1)
-        .describe("Positive safe integer payment amount in the bill currency's stored minor units (USD cents)"),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        requireRole(ctx, "manage:bills");
-
-        const existing = await db.query.bill.findFirst({
-          where: and(
-            eq(bill.id, params.billId),
-            eq(bill.organizationId, ctx.organizationId),
-            notDeleted(bill.deletedAt)
-          ),
-        });
-
-        if (!existing) throw new Error("Bill not found");
-        assertBillSettlementReady(existing);
-        if (existing.status === "void") {
-          throw new Error("Cannot pay a voided bill");
-        }
-        if (existing.status === "paid") {
-          throw new Error("Bill is already fully paid");
-        }
-        if (params.amount > existing.amountDue) {
-          throw new Error(
-            `Payment amount (${params.amount}) exceeds amount due (${existing.amountDue})`
-          );
-        }
-
-        const { amountPaid: newAmountPaid, amountDue: newAmountDue } = billSettlementBalances(existing, params.amount);
-        const newStatus = newAmountDue === 0 ? "paid" : "partial";
-
-        const [updated] = await db
-          .update(bill)
-          .set({
-            amountPaid: newAmountPaid,
-            amountDue: newAmountDue,
-            status: newStatus,
-            paidAt: newAmountDue === 0 ? new Date() : null,
-            updatedAt: new Date(),
-          })
-          .where(eq(bill.id, params.billId))
-          .returning();
-
-        return { bill: updated };
-      })
+    "Settle an organization-owned recognized outstanding bill with new cash. amount is a positive safe integer in document minor units (USD cents); amountMinor is a matching canonical string. Requires manage:payments, open payment date, valid bank and saved recognition FX. Atomically creates payment/allocation/GL cash/control/realised-FX/audit and updates paid/due/status. Date defaults today in UTC. Optional idempotencyKey safely retries. Returns {bill,payment} with numeric money and *Minor aliases. Unsupported history or overpayment fails without mutation.",
+    { billId: z.string().uuid().describe("Organization-owned recognized outstanding bill UUID"), ...paymentMcpPayFields },
+    params => wrapTool(ctx, () => {
+      const { billId, ...input } = params;
+      return payDocument(ctx, "bill", billId, { ...input, date: input.date ?? new Date().toISOString().slice(0, 10) });
+    })
   );
 
   server.tool(

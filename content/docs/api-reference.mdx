@@ -131,8 +131,53 @@ Lists accept `type=received|made`, a contact UUID, `page` (1..21474836) and
 `limit` (1..100), defaulting to page 1 and limit 50. Invalid/fractional/out-of-range
 filters or pagination return 400. Reads require existing authenticated
 organization access and permit read-only roles. These aliases qualify reads;
-creation, reversals, settlement/FX and full-int64 business operations retain
-separate rollout work.
+settlement creation is covered below. Reversals, batch/scheduled payments and
+full-int64 business operations retain separate rollout work.
+
+## Payment settlement amounts
+
+`POST /api/v1/payments`, `POST /api/v1/invoices/:id/pay` and
+`POST /api/v1/bills/:id/pay` accept positive integer `amount` or canonical string
+`amountMinor`, or both with exact agreement. Units are the document currency's
+stored minor units (USD cents); no currency or magnitude rescales the input.
+The same aliases apply to standalone payment allocations. Supported monetary
+values and converted results must fit 1 through 9007199254740991; larger valid
+int64 strings return 422 with `LEGACY_NUMERIC_RANGE` before committing writes.
+
+Single-document requests require Gregorian `date` (`YYYY-MM-DD`) and optionally
+`method`, `reference`, `bankAccountId` and `idempotencyKey`. Standalone creation
+also requires `contactId`, `type` (`received` for invoices, `made` for bills) and
+1-1000 distinct `allocations` containing `documentType`, `documentId` and either
+amount alias. Optional `currencyCode` must match every document; omission derives
+it. Allocations must fully cover cash for one contact/currency, without exceeding
+outstanding balances. Use customer credits for unapplied cash.
+
+All three operations require `manage:payments`, recognized outstanding documents
+with qualified saved journals, an open payment date on/after recognition, and an
+active organization-owned bank in the document currency when supplied. Cash posts
+to the linked bank GL account, or code 1100 when omitted. Bill settlement subtracts
+the actual payable, including reverse-charge handling. Document balances, cash,
+allocation rows, saved-FX control release, realised FX and audit commit atomically.
+Missing rates, unqualified historical annotations/carriers and unsupported FX or
+rounding return explicit errors. Historical recognition rates are never reloaded
+from current quotes; final settlement releases the saved rounding remainder.
+
+Creation returns `{payment}` (201) with contact and allocations. Invoice/bill pay
+returns `{invoice,payment}` or `{bill,payment}` (200), retaining numeric header
+amounts and adding matching `*Minor` strings; payment includes `amountMinor`,
+`currencyCode` and `journalEntryId`. MCP `create_payment`, `pay_invoice` and
+`pay_bill` use these contracts; single-document MCP dates default today in UTC.
+MCP single-document payments now create actual cash/GL records and require
+payment permission; their former balance-only annotation behavior is replaced.
+
+Supply `Idempotency-Key` or body/tool `idempotencyKey` (1-128 ASCII letters,
+digits or `._:-`) for retries. Header/body aliases must agree. Keys are shared
+across these settlement operations within the organization: equivalent normalized
+requests return the original response, while changed operations/data return 409.
+Amount alias choice and allocation order do not change the request identity.
+Specify the date on retrying MCP calls across days. Without a key each successful
+call records new cash. Retry/provenance guarantees require retaining the payment
+settlement audit row; ordinary references are not retry keys.
 
 ## Budget amount inputs
 

@@ -1,3 +1,5 @@
+import { payDocument } from "@/lib/api/payment-settlements";
+import { paymentMcpPayFields } from "@/lib/api/payment-settlement-wire";
 import { createInvoice, updateInvoice, deleteInvoice } from "@/lib/api/invoice-writes";
 import { invoiceCreateFields, invoiceUpdateFields } from "@/lib/api/invoice-write-wire";
 import { listInvoices, getInvoice, getInvoiceSummary } from "@/lib/api/invoice-reads";
@@ -65,58 +67,12 @@ export function registerInvoiceTools(server: McpServer, ctx: AuthContext) {
 
   server.tool(
     "pay_invoice",
-    "Record a payment against an invoice. Amount is in integer cents (e.g. 1250 = $12.50). Automatically updates the invoice status to 'paid' if fully paid or 'partial' if partially paid.",
-    {
-      invoiceId: z.string().describe("The UUID of the invoice"),
-      amount: z
-        .number()
-        .int()
-        .min(1)
-        .describe("Payment amount in cents"),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        requireRole(ctx, "manage:invoices");
-
-        const existing = await db.query.invoice.findFirst({
-          where: and(
-            eq(invoice.id, params.invoiceId),
-            eq(invoice.organizationId, ctx.organizationId),
-            notDeleted(invoice.deletedAt)
-          ),
-        });
-
-        if (!existing) throw new Error("Invoice not found");
-        if (existing.status === "void") {
-          throw new Error("Cannot pay a voided invoice");
-        }
-        if (existing.status === "paid") {
-          throw new Error("Invoice is already fully paid");
-        }
-        if (params.amount > existing.amountDue) {
-          throw new Error(
-            `Payment amount (${params.amount}) exceeds amount due (${existing.amountDue})`
-          );
-        }
-
-        const newAmountPaid = existing.amountPaid + params.amount;
-        const newAmountDue = existing.total - newAmountPaid;
-        const newStatus = newAmountDue === 0 ? "paid" : "partial";
-
-        const [updated] = await db
-          .update(invoice)
-          .set({
-            amountPaid: newAmountPaid,
-            amountDue: newAmountDue,
-            status: newStatus,
-            paidAt: newAmountDue === 0 ? new Date() : null,
-            updatedAt: new Date(),
-          })
-          .where(eq(invoice.id, params.invoiceId))
-          .returning();
-
-        return { invoice: updated };
-      })
+    "Settle an organization-owned recognized outstanding invoice with new cash. amount is a positive safe integer in document minor units (USD cents); amountMinor is a matching canonical string. Requires manage:payments, open payment date, valid bank and saved recognition FX. Atomically creates payment/allocation/GL cash/control/realised-FX/audit and updates paid/due/status. Date defaults today in UTC. Optional idempotencyKey safely retries. Returns {invoice,payment} with numeric money and *Minor aliases. Unsupported history or overpayment fails without mutation.",
+    { invoiceId: z.string().uuid().describe("Organization-owned recognized outstanding invoice UUID"), ...paymentMcpPayFields },
+    params => wrapTool(ctx, () => {
+      const { invoiceId, ...input } = params;
+      return payDocument(ctx, "invoice", invoiceId, { ...input, date: input.date ?? new Date().toISOString().slice(0, 10) });
+    })
   );
 
   server.tool(

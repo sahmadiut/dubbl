@@ -1,3 +1,5 @@
+import { createSettlementPayment } from "@/lib/api/payment-settlements";
+import { paymentCreateFields } from "@/lib/api/payment-settlement-wire";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { db } from "@/lib/db";
@@ -11,7 +13,6 @@ import {
   createPaymentJournalEntry,
   reverseJournalEntry,
 } from "@/lib/api/journal-automation";
-import { isValidCurrencyCode } from "@/lib/currency/iso4217";
 import { decimalToCents } from "@/lib/money";
 import { wrapTool } from "@/lib/mcp/errors";
 import { listPayments, getPayment } from "@/lib/api/payment-reads";
@@ -20,20 +21,19 @@ import { AuthError } from "@/lib/api/auth-context";
 import type { AuthContext } from "@/lib/api/auth-context";
 
 /**
- * MCP tools for STANDALONE / on-account payment records — a single cash
+ * MCP tools for standalone payment records — a single cash
  * movement (money received from a customer or paid to a supplier) that settles
  * one or more invoices (type "received", AR) or bills (type "made", AP) via
  * allocations. These are the same records as the /api/v1/payments REST routes.
  *
- * NOTE: this is NOT the same as paying a single invoice/bill in one step — for
- * that use pay_invoice / pay_bill. It is also distinct from bank transfers
- * (record_bank_transfer). These tools create the dedicated `payment` record,
+ * pay_invoice / pay_bill use the same settlement service for one document.
+ * Bank transfers use record_bank_transfer. Settlement creates the payment,
  * its allocations, the document balance/status updates, AND the GL journal
  * entry (DR Bank / CR AR for received; DR AP / CR Bank for made), all in one
  * atomic transaction, exactly like the REST routes.
  *
- * Money convention: ALL monetary amounts — both INPUTS and RESULTS — are
- * integer cents (e.g. $12.50 = 1250). The one exception is record_payment_batch,
+ * Settlement money uses integer document-currency minor units (USD cents),
+ * with additive amountMinor strings. The legacy exception is record_payment_batch,
  * whose allocation `amount` is a DECIMAL number of currency units (e.g. 12.50),
  * mirroring the batch REST route which converts to cents internally. Direct DB
  * access via Drizzle (no HTTP self-calls); org-scoped via the AuthContext.
@@ -59,273 +59,9 @@ export function registerPaymentTools(server: McpServer, ctx: AuthContext) {
 
   server.tool(
     "create_payment",
-    "Record a standalone payment that settles one or more invoices (type 'received', AR) or bills (type 'made', AP) for a single contact. `amount` is the total cash moved in integer cents; each allocation `amount` is also in integer cents and the allocations total must not exceed `amount`. A 'received' payment can only allocate to invoices; a 'made' payment only to bills. All settled documents must share one currency; the payment currency is derived from them (you may pass currencyCode but it must match). Atomically: inserts the payment + allocation rows, reduces each document's amountDue / increases amountPaid and flips its status to 'paid' or 'partial', posts the GL journal entry (DR Bank / CR Accounts Receivable for received; DR Accounts Payable / CR Bank for made), and links the entry. Fails if `date` is in a locked period. Returns the created payment with its contact and allocations.",
-    {
-      contactId: z
-        .string()
-        .describe("Customer (for received) or supplier (for made) contact UUID"),
-      type: z
-        .enum(["received", "made"])
-        .describe(
-          "'received' = money in from a customer (settles invoices/AR); 'made' = money out to a supplier (settles bills/AP)"
-        ),
-      date: z.string().describe("Payment date (YYYY-MM-DD); the journal entry posts on this date"),
-      amount: z
-        .number()
-        .int()
-        .positive()
-        .describe("Total payment amount in integer cents (e.g. 1250 = $12.50); must be >= the allocations total"),
-      method: z
-        .enum(["bank_transfer", "cash", "check", "card", "other"])
-        .optional()
-        .default("bank_transfer")
-        .describe("How the money moved (defaults to bank_transfer)"),
-      reference: z
-        .string()
-        .nullable()
-        .optional()
-        .describe("External reference (check number, transfer ref, etc.)"),
-      notes: z.string().nullable().optional().describe("Free-text notes"),
-      bankAccountId: z
-        .string()
-        .nullable()
-        .optional()
-        .describe("UUID of the bank account the cash moved through (optional)"),
-      currencyCode: z
-        .string()
-        .length(3)
-        .optional()
-        .describe(
-          "3-letter currency code; optional and normally derived from the settled documents. If given, must be a valid ISO-4217 code and match the documents' currency."
-        ),
-      allocations: z
-        .array(
-          z.object({
-            documentType: z
-              .enum(["invoice", "bill"])
-              .describe(
-                "Type of document being settled: 'invoice' for received payments, 'bill' for made payments"
-              ),
-            documentId: z
-              .string()
-              .min(1)
-              .describe("UUID of the invoice or bill being settled"),
-            amount: z
-              .number()
-              .int()
-              .positive()
-              .describe("Amount applied to this document, in integer cents"),
-          })
-        )
-        .min(1)
-        .describe("How the payment is split across the documents it settles (at least one)"),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        requireRole(ctx, "manage:payments");
-
-        await assertNotLocked(ctx.organizationId, params.date);
-
-        // Allocations must not exceed the payment amount.
-        const allocationsTotal = params.allocations.reduce(
-          (sum, a) => sum + a.amount,
-          0
-        );
-        if (allocationsTotal > params.amount) {
-          throw new Error("Allocations total exceeds payment amount");
-        }
-
-        // A "received" payment settles invoices (AR); a "made" payment settles
-        // bills (AP). Reject inconsistent allocations so the journal posts to
-        // the correct control account and realised-FX direction.
-        const expectedDocType = params.type === "received" ? "invoice" : "bill";
-        if (params.allocations.some((a) => a.documentType !== expectedDocType)) {
-          throw new Error(
-            `A '${params.type}' payment can only settle ${expectedDocType}s`
-          );
-        }
-
-        // Resolve the payment currency from the documents it settles, and
-        // capture each document's currency + issue date so the journal entry can
-        // convert to base currency and book realised FX. A payment settles one
-        // currency only.
-        const docCurrencies = new Set<string>();
-        const journalAllocations: {
-          amount: number;
-          currencyCode: string;
-          issueDate: string;
-        }[] = [];
-        for (const alloc of params.allocations) {
-          if (alloc.documentType === "invoice") {
-            const doc = await db.query.invoice.findFirst({
-              where: and(
-                eq(invoice.id, alloc.documentId),
-                eq(invoice.organizationId, ctx.organizationId)
-              ),
-              columns: { currencyCode: true, issueDate: true },
-            });
-            if (!doc) throw new Error(`Invoice ${alloc.documentId} not found`);
-            docCurrencies.add(doc.currencyCode);
-            journalAllocations.push({
-              amount: alloc.amount,
-              currencyCode: doc.currencyCode,
-              issueDate: doc.issueDate,
-            });
-          } else {
-            const doc = await db.query.bill.findFirst({
-              where: and(
-                eq(bill.id, alloc.documentId),
-                eq(bill.organizationId, ctx.organizationId)
-              ),
-              columns: { currencyCode: true, issueDate: true },
-            });
-            if (!doc) throw new Error(`Bill ${alloc.documentId} not found`);
-            docCurrencies.add(doc.currencyCode);
-            journalAllocations.push({
-              amount: alloc.amount,
-              currencyCode: doc.currencyCode,
-              issueDate: doc.issueDate,
-            });
-          }
-        }
-
-        if (docCurrencies.size > 1) {
-          throw new Error("All settled documents must share the same currency");
-        }
-
-        const docCurrency = [...docCurrencies][0];
-        const providedCurrency = params.currencyCode?.toUpperCase();
-        if (providedCurrency && !isValidCurrencyCode(providedCurrency)) {
-          throw new Error(`${providedCurrency} is not a recognized currency code`);
-        }
-        if (providedCurrency && docCurrency && providedCurrency !== docCurrency) {
-          throw new Error(
-            "Payment currency must match the settled documents' currency"
-          );
-        }
-        const currencyCode = providedCurrency ?? docCurrency ?? "USD";
-
-        // Generate payment number
-        const paymentNumber = await getNextNumber(
-          ctx.organizationId,
-          "payment",
-          "payment_number",
-          "PAY"
-        );
-
-        // Atomically write the payment, its allocations, the settled-document
-        // balance/status updates, the GL journal entry, and the payment→journal
-        // link. createPaymentJournalEntry can throw MissingExchangeRateError
-        // when a foreign-currency allocation lacks a rate; wrapping everything
-        // in a single transaction ensures that — or any other failure — rolls
-        // the whole settlement back together instead of leaving
-        // orphaned/inconsistent rows.
-        const { created } = await db.transaction(async (tx) => {
-          const [created] = await tx
-            .insert(payment)
-            .values({
-              organizationId: ctx.organizationId,
-              contactId: params.contactId,
-              paymentNumber,
-              type: params.type,
-              date: params.date,
-              amount: params.amount,
-              currencyCode,
-              method: params.method,
-              reference: params.reference || null,
-              notes: params.notes || null,
-              bankAccountId: params.bankAccountId || null,
-              createdBy: ctx.userId,
-            })
-            .returning();
-
-          await tx.insert(paymentAllocation).values(
-            params.allocations.map((a) => ({
-              paymentId: created.id,
-              documentType: a.documentType,
-              documentId: a.documentId,
-              amount: a.amount,
-            }))
-          );
-
-          // Update allocated documents
-          for (const alloc of params.allocations) {
-            if (alloc.documentType === "invoice") {
-              const existing = await tx.query.invoice.findFirst({
-                where: and(
-                  eq(invoice.id, alloc.documentId),
-                  eq(invoice.organizationId, ctx.organizationId)
-                ),
-              });
-              if (existing) {
-                const newAmountPaid = existing.amountPaid + alloc.amount;
-                const newAmountDue = existing.amountDue - alloc.amount;
-                const newStatus = newAmountDue <= 0 ? "paid" : "partial";
-                await tx
-                  .update(invoice)
-                  .set({
-                    amountPaid: newAmountPaid,
-                    amountDue: Math.max(0, newAmountDue),
-                    status: newStatus,
-                    updatedAt: new Date(),
-                  })
-                  .where(eq(invoice.id, alloc.documentId));
-              }
-            } else if (alloc.documentType === "bill") {
-              const existing = await tx.query.bill.findFirst({
-                where: and(
-                  eq(bill.id, alloc.documentId),
-                  eq(bill.organizationId, ctx.organizationId)
-                ),
-              });
-              if (existing) {
-                const newAmountPaid = existing.amountPaid + alloc.amount;
-                const newAmountDue = existing.amountDue - alloc.amount;
-                const newStatus = newAmountDue <= 0 ? "paid" : "partial";
-                await tx
-                  .update(bill)
-                  .set({
-                    amountPaid: newAmountPaid,
-                    amountDue: Math.max(0, newAmountDue),
-                    status: newStatus,
-                    updatedAt: new Date(),
-                  })
-                  .where(eq(bill.id, alloc.documentId));
-              }
-            }
-          }
-
-          // Create journal entry
-          const journalEntry = await createPaymentJournalEntry(
-            { organizationId: ctx.organizationId, userId: ctx.userId },
-            {
-              type: params.type === "received" ? "invoice" : "bill",
-              reference: paymentNumber,
-              amount: params.amount,
-              date: params.date,
-              allocations: journalAllocations,
-            },
-            tx
-          );
-
-          // Link journal entry to payment
-          if (journalEntry) {
-            await tx
-              .update(payment)
-              .set({ journalEntryId: journalEntry.id, updatedAt: new Date() })
-              .where(eq(payment.id, created.id));
-          }
-
-          return { created, journalEntry };
-        });
-
-        const result = await db.query.payment.findFirst({
-          where: eq(payment.id, created.id),
-          with: { contact: true, allocations: true },
-        });
-
-        return { payment: result };
-      })
+    "Create one cash payment with fully covering, distinct invoice (received) or bill (made) allocations for one contact/currency. amount is a positive safe integer in document minor units (USD cents); amountMinor is a canonical matching string, also supported on allocations. Checks manage:payments, recognition/carrying FX, bank ownership/currency, period locks and outstanding balances. Atomically posts cash/control/realised FX, updates documents and audits; optional idempotencyKey replays the original result. Returns {payment} with numeric money and amountMinor aliases. Unapplied cash and unqualified historical carrying values fail before commit.",
+    paymentCreateFields,
+    params => wrapTool(ctx, () => createSettlementPayment(ctx, params))
   );
 
   server.tool(

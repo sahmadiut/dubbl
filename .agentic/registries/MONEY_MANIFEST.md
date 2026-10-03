@@ -1,6 +1,20 @@
 # Money and FX boundary manifest
 
-Inventory owner: MON-001. Refreshed 2026-10-04 (Asia/Tehran) for MON-055 against entry HEAD `a9ba797`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+Inventory owner: MON-001. Refreshed 2026-10-04 (Asia/Tehran) for MON-056 against entry HEAD `b89fdc0`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+
+## MON-056 payment settlement adoption (MON-021 child)
+
+[Payment settlement contracts](PAYMENT_SETTLEMENT_WIRE_CONTRACTS.md) cover
+standalone creation and invoice/bill pay REST/MCP with positive numeric minor
+units and additive amountMinor aliases. Shared transactional services qualify
+recognition, cumulative saved control carrying, exact payment FX/scale conversion,
+bank linkage, locks, document balances, mandatory audit, organization-wide optional
+retry keys and concurrent settlement. Existing credit/debit-note and prepayment
+carriers remain separate from new cash with explicit historical qualification.
+MCP document pay now creates real settlement records using manage:payments.
+Pure and actual migrated PostgreSQL handler/registered SDK fixtures qualify the
+bounded safe-number contract. No schema or rollout flag changed; reversal, batch,
+scheduled, expense/banking and MON-021 combined acceptance remain assigned work.
 
 ## MON-055 payment read adoption (MON-021 child)
 

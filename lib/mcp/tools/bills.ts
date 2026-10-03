@@ -1,8 +1,11 @@
+import { listBills, getBill, getBillCounts } from "@/lib/api/bill-reads";
+import { billListFields } from "@/lib/api/bill-read-wire";
+import { AuthError } from "@/lib/api/auth-context";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { bill, billLine, inventoryItem } from "@/lib/db/schema";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { notDeleted } from "@/lib/db/soft-delete";
 import { requireRole } from "@/lib/api/require-role";
 import { getNextNumber } from "@/lib/api/numbering";
@@ -17,69 +20,27 @@ import type { AuthContext } from "@/lib/api/auth-context";
 export function registerBillTools(server: McpServer, ctx: AuthContext) {
   server.tool(
     "list_bills",
-    "List bills (accounts payable) with optional status filter. Amounts are in integer cents.",
-    {
-      status: z
-        .enum([
-          "draft",
-          "pending_approval",
-          "received",
-          "partial",
-          "paid",
-          "overdue",
-          "void",
-        ])
-        .optional()
-        .describe("Filter by bill status"),
-      limit: z
-        .number()
-        .int()
-        .min(1)
-        .max(100)
-        .optional()
-        .default(50)
-        .describe("Number of bills to return (max 100)"),
-      page: z
-        .number()
-        .int()
-        .min(1)
-        .optional()
-        .default(1)
-        .describe("Page number"),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        const conditions = [
-          eq(bill.organizationId, ctx.organizationId),
-          notDeleted(bill.deletedAt),
-        ];
+    "List organization-scoped bills with status and pagination. Returns {bills,total,page,limit}. Numeric money retains stored minor units (USD cents); header *Minor strings and contact creditLimitMinor preserve every digit. Quantities/percentages retain units. Unsafe history fails with 422; mixed-currency pages retain per-bill currencies.",
+    billListFields,
+    params => wrapTool(ctx, () => listBills(ctx, params))
+  );
 
-        if (params.status) {
-          conditions.push(eq(bill.status, params.status));
-        }
+  server.tool(
+    "get_bill",
+    "Get an organization-owned bill with contact, account/tax line relations and base-currency display. Returns {bill,base}, numeric money in stored minor units (USD cents) plus header/line/contact *Minor strings. Quantity is hundredths, discount is basis points. Base FX is issue-date lookup, not saved posting FX; missing rates return nulls. Safe numeric and matching-scale display only; unsupported money/references fail with 422.",
+    { billId: z.string().uuid().describe("Organization-owned bill UUID") },
+    params => wrapTool(ctx, async () => {
+      const result = await getBill(ctx, params.billId);
+      if (!result) throw new AuthError("Bill not found", 404);
+      return result;
+    })
+  );
 
-        const offset = (params.page - 1) * params.limit;
-
-        const bills = await db.query.bill.findMany({
-          where: and(...conditions),
-          orderBy: desc(bill.createdAt),
-          limit: params.limit,
-          offset,
-          with: { contact: true },
-        });
-
-        const [countResult] = await db
-          .select({ count: sql<number>`count(*)`.mapWith(Number) })
-          .from(bill)
-          .where(and(...conditions));
-
-        return {
-          bills,
-          total: Number(countResult?.count ?? 0),
-          page: params.page,
-          limit: params.limit,
-        };
-      })
+  server.tool(
+    "get_bill_counts",
+    "Get bill counts and amount-due totals per status for this organization. Returns {counts,total}, with count, safe numeric minor-unit amount (USD cents), amountMinor string and currencyCode per status. Empty statuses are omitted. Rejects mixed currencies within a status or unsafe individual/summed money with 422. Counts include all nondeleted statuses; no FX or writes.",
+    {},
+    () => wrapTool(ctx, () => getBillCounts(ctx))
   );
 
   server.tool(

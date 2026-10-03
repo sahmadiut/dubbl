@@ -114,3 +114,17 @@ Generated initial scope index; current status always comes from task metadata vi
 | [MON-043](../tasks/MON-043.md) | Adopt exact sales receipt contracts | backend | no |
 | [MON-044](../tasks/MON-044.md) | Adopt exact recurring invoice contracts | backend | no |
 | [MON-045](../tasks/MON-045.md) | Adopt exact invoice bulk contracts | backend | no |
+
+## MON-020 implementation children
+
+| ID | Task | Role | Optional |
+|---|---|---|---|
+| [MON-046](../tasks/MON-046.md) | Adopt exact bill read contracts | backend | no |
+| [MON-047](../tasks/MON-047.md) | Adopt exact bill CRUD write contracts | backend | no |
+| [MON-048](../tasks/MON-048.md) | Adopt exact bill lifecycle contracts | backend | no |
+| [MON-049](../tasks/MON-049.md) | Adopt exact purchase order contracts | backend | no |
+| [MON-050](../tasks/MON-050.md) | Adopt exact purchase requisition contracts | backend | no |
+| [MON-051](../tasks/MON-051.md) | Adopt exact payable debit note contracts | backend | no |
+| [MON-052](../tasks/MON-052.md) | Adopt exact goods receipt contracts | backend | no |
+| [MON-053](../tasks/MON-053.md) | Adopt exact bill bulk contracts | backend | no |
+| [MON-054](../tasks/MON-054.md) | Adopt exact procurement setting contracts | backend | no |

@@ -1,12 +1,10 @@
 import { z } from "zod";
 import { invoiceStatusEnum } from "@/lib/db/schema/invoicing";
 import { rateDateSchema } from "@/lib/currency/rate-policy";
-import { currencyMetadata, roundRatio } from "@/lib/money/exact";
 import { legacyMinor, WireCompatibilityError } from "@/lib/money/wire";
-import { fromLegacyRate, FX_DIRECTION } from "@/lib/currency/exact-rate";
 import { contactDto } from "./contact-wire";
 import { publicMoneyDto, publicLineDto } from "./public-money-wire";
-import type { RateStatus } from "@/lib/currency/rate-status";
+export { documentBaseDto as invoiceBaseDto } from "./document-base-wire";
 
 export const invoiceListFields = {
   status: z.enum(invoiceStatusEnum.enumValues).optional().describe("Optional invoice status, including approval states"),
@@ -45,30 +43,6 @@ export function invoiceReadDto<T extends Header & { contact: Contact | null; lin
   return { ...publicMoneyDto(value, ["subtotal", "taxTotal", "total", "amountPaid", "amountDue"]),
     contact: value.contact ? contactDto(value.contact) : null,
     ...(value.lines ? { lines: value.lines.map(publicLineDto) } : {}) };
-}
-
-/** This is a display lookup at the issue date, not an invoice's persisted posting FX. */
-export function invoiceBaseDto(currencyCode: string, baseCurrency: string, amounts: Header, status: RateStatus) {
-  const rate = status.rate;
-  const converted: Record<string, number | string | null> = {};
-  if (rate !== null && (!Number.isSafeInteger(rate) || rate <= 0 || rate > 2147483647)) {
-    throw new WireCompatibilityError("Invoice display rate is outside positive int32 millionths");
-  }
-  if (rate !== null && currencyMetadata(currencyCode).minorUnits !== currencyMetadata(baseCurrency).minorUnits) {
-    throw new WireCompatibilityError("Legacy invoice base display requires matching currency scales");
-  }
-  for (const [key, amount] of Object.entries(amounts)) {
-    if (!Number.isSafeInteger(amount)) throw new WireCompatibilityError();
-    if (rate === null) { converted[key] = null; converted[`${key}Minor`] = null; continue; }
-    const product = BigInt(amount) * BigInt(rate);
-    // Retain the declared legacy product range; identity does not multiply a Number.
-    if (rate !== 1000000) safeMinor(product);
-    // Matches Math.round's tie toward +infinity, using exact integer arithmetic.
-    const result = rate === 1000000 ? BigInt(amount) : roundRatio(2n * product + 1000000n, 2000000n, "floor");
-    converted[key] = safeMinor(result); converted[`${key}Minor`] = result.toString();
-  }
-  return { baseCurrency, rate, rateExact: rate === null ? null : fromLegacyRate(rate),
-    rateDirection: FX_DIRECTION, rateBasis: "historical_lookup_millionths", amounts: converted, status };
 }
 
 type SummaryRow = { status: string; dueDate: string; amountDue: string; currencyCode: string };

@@ -7,7 +7,8 @@ import { requireRole } from "@/lib/api/require-role";
 import { handleError, notFound } from "@/lib/api/response";
 import { logAudit, diffChanges } from "@/lib/api/audit";
 import { notDeleted, softDelete } from "@/lib/db/soft-delete";
-import { toBaseAmounts } from "@/lib/currency/base-amount";
+import { getBill } from "@/lib/api/bill-reads";
+import { jsonResponse } from "@/lib/api/json-response";
 import { decimalToMinorUnits } from "@/lib/money";
 import { preloadTaxRates, calcTax } from "@/lib/api/tax-calculator";
 import { z } from "zod";
@@ -52,37 +53,9 @@ export async function GET(
     const { id } = await params;
     const ctx = await getAuthContext(request);
 
-    const found = await db.query.bill.findFirst({
-      where: and(
-        eq(bill.id, id),
-        eq(bill.organizationId, ctx.organizationId),
-        notDeleted(bill.deletedAt)
-      ),
-      with: {
-        contact: true,
-        lines: {
-          with: { account: true, taxRate: true },
-        },
-      },
-    });
-
-    if (!found) return notFound("Bill");
-
-    // Base-currency equivalents (for dual-currency display) at the issue rate.
-    const base = await toBaseAmounts(
-      ctx.organizationId,
-      found.currencyCode,
-      found.issueDate,
-      {
-        total: found.total,
-        amountDue: found.amountDue,
-        amountPaid: found.amountPaid,
-        subtotal: found.subtotal,
-        taxTotal: found.taxTotal,
-      }
-    );
-
-    return NextResponse.json({ bill: found, base });
+    const result = await getBill(ctx, id);
+    if (!result) return notFound("Bill");
+    return jsonResponse(result);
   } catch (err) {
     return handleError(err);
   }

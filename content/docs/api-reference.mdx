@@ -374,11 +374,45 @@ retry email separately. PDF/provider and full-domain contracts remain separate.
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/api/v1/bills` | List bills |
+| GET | `/api/v1/bills/counts` | Bill counts and amount due per status |
 | POST | `/api/v1/bills` | Create bill |
 | GET | `/api/v1/bills/:id` | Get bill |
 | POST | `/api/v1/bills/:id/receive` | Receive bill |
 | POST | `/api/v1/bills/:id/pay` | Record payment |
 | POST | `/api/v1/bills/:id/void` | Void bill |
+
+Bill list/detail reads retain numeric stored minor units (USD cents), adding
+`subtotalMinor`, `taxTotalMinor`, `totalMinor`, `amountPaidMinor`, `amountDueMinor`
+integer strings. Detail lines add `unitPriceMinor`, `amountMinor`, `taxAmountMinor`;
+contact credit limits add nullable `creditLimitMinor`. Read `unitPrice` is in minor
+units; bill write `unitPrice` remains decimal major units. Quantity stays hundredths
+(150 = 1.5 items), discounts/tax rates stay basis points (1000 = 10%).
+
+List accepts optional bill `status`, `page` and `limit` (defaults 1/50, max 100
+per page). REST retains pagination clamping; malformed or excessive pages fail
+400. Lists retain `{data,pagination}` and may contain different currencies with
+per-bill `currencyCode`. Detail retains `{bill,base}`. Base display uses issue-date
+FX lookup and adds `rateExact`, `rateDirection: "quote_per_base"`,
+`rateBasis: "historical_lookup_millionths"` and nullable amount `*Minor` strings.
+It does not report saved posting FX. Missing rates return nulls. Available legacy
+display FX requires matching currency scales and safe amount/rate products.
+
+Counts return `{counts,total}` with `{count,amount,amountMinor,currencyCode}` per
+present status. Amount sums stored `amountDue` for every nondeleted bill in that
+status, including draft/paid/void. Empty statuses are omitted; empty counts are
+`{counts:{},total:0}`. Each status must have one currency; different statuses may
+have different currencies because no cross-status money is summed.
+
+All read money and status totals must fit signed safe integers
+(-9007199254740991 through 9007199254740991). Unsupported history, sums, display
+FX or foreign nested contact/account/tax references fail 422 with
+`LEGACY_NUMERIC_RANGE`. Foreign/deleted bills return 404. Exact clients read the
+additive strings; both numeric and string aliases preserve stored units. There
+is no exact-only switch. MCP `list_bills`, `get_bill`, and `get_bill_counts` use
+the same scoped direct-DB operations; list returns `{bills,total,page,limit}`, and
+detail/counts match REST. Reads retain authenticated-member access, including
+custom roles without write permissions. CRUD/lifecycle/settlement contracts are
+qualified separately.
 
 ### Purchase Orders
 | Method | Path | Description |

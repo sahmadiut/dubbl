@@ -1,7 +1,9 @@
+import { listBills } from "@/lib/api/bill-reads";
+import { jsonResponse } from "@/lib/api/json-response";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { bill, billLine, organization, taxRate } from "@/lib/db/schema";
-import { eq, and, desc, sql, ne, inArray } from "drizzle-orm";
+import { eq, and, ne, inArray } from "drizzle-orm";
 import { getAuthContext } from "@/lib/api/auth-context";
 import { requireRole } from "@/lib/api/require-role";
 import { handleError } from "@/lib/api/response";
@@ -57,34 +59,9 @@ export async function GET(request: Request) {
   try {
     const ctx = await getAuthContext(request);
     const url = new URL(request.url);
-    const { page, limit, offset } = parsePagination(url);
-    const status = url.searchParams.get("status");
-
-    const conditions = [
-      eq(bill.organizationId, ctx.organizationId),
-      notDeleted(bill.deletedAt),
-    ];
-
-    if (status) {
-      conditions.push(eq(bill.status, status as typeof bill.status.enumValues[number]));
-    }
-
-    const bills = await db.query.bill.findMany({
-      where: and(...conditions),
-      orderBy: desc(bill.createdAt),
-      limit,
-      offset,
-      with: { contact: true },
-    });
-
-    const [countResult] = await db
-      .select({ count: sql<number>`count(*)`.mapWith(Number) })
-      .from(bill)
-      .where(and(...conditions));
-
-    return NextResponse.json(
-      paginatedResponse(bills, Number(countResult?.count || 0), page, limit)
-    );
+    const { page, limit } = parsePagination(url);
+    const result = await listBills(ctx, { page, limit, status: url.searchParams.get("status") || undefined });
+    return jsonResponse(paginatedResponse(result.bills, result.total, result.page, result.limit));
   } catch (err) {
     return handleError(err);
   }

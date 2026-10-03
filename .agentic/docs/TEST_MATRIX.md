@@ -265,3 +265,21 @@ accounting/IRR qualification is inferred.
 - No settlement/report/full-int64, browser/session/OAuth, successful SMTP/provider,
   broad quoted-CSV or production/IRR qualification is inferred. MON-021 owns
   annotation interaction with payment/allocation/reversal/bank/FX/report writers.
+
+## MON-046 bill read contracts
+
+- Pure DTO/filter/base-display/status-count fixtures cover aliases, stored currency
+  units, signed ties, unsafe header/line/contact/rate/product history, SQL-text sums,
+  min/max cancellation guards and mixed currencies per status.
+- Actual REST API-key handlers and registered MCP SDK tools on migrated disposable
+  PostgreSQL cover list/detail/count envelopes, every status, above-int32/safe-max/
+  signed money, pagination/filter validation, read-only custom roles, conflicting
+  organization headers, foreign/deleted parents and nested contact/account/tax
+  references. SQL-text snapshots prove successful/rejected reads do not mutate
+  bill/line/contact/rate/ledger/stock/allocation business state.
+- Historical issue-date FX excludes foreign/future rates; missing rates return
+  nulls; available cross-scale/unsafe-product displays fail visibly. Adjacent actual
+  invoice reads and their pure fixtures verify the shared display adapter.
+- Full-int64, CRUD/lifecycle/settlement/procurement, browser/session/OAuth, providers,
+  deployment, native accounting and functional IRR remain separate qualification.
+  Typecheck/lint/inventory verification apply; no build/dev server.

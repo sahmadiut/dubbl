@@ -1,6 +1,19 @@
 # Money and FX boundary manifest
 
-Inventory owner: MON-001. Refreshed 2026-10-03 (Asia/Tehran) for MON-045 against entry HEAD `a5601dc`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+Inventory owner: MON-001. Refreshed 2026-10-03 (Asia/Tehran) for MON-046 against entry HEAD `ca6f88d`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+
+## MON-046 bill read adoption (MON-020 child)
+
+[Bill read contracts](BILL_READ_WIRE_CONTRACTS.md) inventory three REST and three
+registered MCP reads: list, detail/base display and status counts. Safe numeric
+header/line/contact money adds named exact aliases; shared issue-date display FX
+adds decimal rate/direction/basis and guarded amount aliases. Status totals use
+SQL text sum/min/max and bigint guards, rejecting mixed currencies per status
+and unsafe individuals even when they cancel. Actual migrated PostgreSQL fixtures
+cover API-key/custom read-only roles, tenants, legacy/exact consumers, above-int32/
+safe-max/signed history, missing/historical FX and no business mutation. MON-020
+retains combined acceptance after MON-046..054; MON-021 owns settlement and MON-024
+inventory. Full-int64 and financial/IRR rollout remain separate gates.
 
 ## MON-045 bulk invoice adoption (MON-019 child)
 

@@ -150,6 +150,17 @@ unsafe totals/aging buckets. Nested foreign-tenant references fail before disclo
 See [invoice read contracts](../../.agentic/registries/INVOICE_READ_WIRE_CONTRACTS.md)
 for units, safe ranges, filters/errors and remaining write/lifecycle/full-domain gates.
 
+## Bill read contracts (MON-046)
+
+Bill list/detail REST and MCP share safe numeric stored minor units plus additive
+header/line/contact `*Minor` strings. Detail base display declares issue-date lookup
+FX with rateExact and matching-scale/product guards through the shared document
+display adapter. Status counts select SQL sums/min/max as text; bigint guards
+reject unsafe individuals/totals and mixed currencies within each status.
+`get_bill` and `get_bill_counts` now expose the existing REST reads to MCP.
+See [bill read contracts](../../.agentic/registries/BILL_READ_WIRE_CONTRACTS.md)
+for units, ranges, errors and pending CRUD/lifecycle/procurement/settlement gates.
+
 ## Invoice CRUD write contracts (MON-039)
 
 REST create/draft patch/delete and MCP create/update/delete share atomic direct-DB

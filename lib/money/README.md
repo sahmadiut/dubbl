@@ -252,3 +252,16 @@ Bulk send reuses exact lifecycle posting in one batch transaction; bulk mark-pai
 remains a guarded status annotation without settlement. Reminder formatting uses
 exact strings/bigint Intl parts. See [bulk invoice contracts](../../.agentic/registries/INVOICE_BULK_WIRE_CONTRACTS.md)
 for all boundaries, error/partial-job/retry policies and MON-021 coordination.
+
+## Bill CRUD contracts (MON-047)
+
+Bill REST and MCP writes retain decimal-major numeric prices, additive exact
+major/minor strings and extended-price rounding. Exact ratios and sums protect
+the safe-number coexistence range; header responses add named *Minor aliases.
+Both transports now preserve REST create's exclusion of reverse-charge VAT
+from supplier amountDue on create/edit. Scoped services atomically commit
+numbering, header/lines, procurement links and audit, with strict date locks,
+draft state and saved-history validation. New update_bill/delete_bill tools
+match REST CRUD. See [bill write contracts](../../.agentic/registries/BILL_WRITE_WIRE_CONTRACTS.md)
+for inputs, aliases, supported ranges, duplicate/approval policy and remaining
+lifecycle/settlement/full-int64/IRR qualification.

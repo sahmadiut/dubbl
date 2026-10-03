@@ -377,6 +377,8 @@ retry email separately. PDF/provider and full-domain contracts remain separate.
 | GET | `/api/v1/bills/counts` | Bill counts and amount due per status |
 | POST | `/api/v1/bills` | Create bill |
 | GET | `/api/v1/bills/:id` | Get bill |
+| PATCH | `/api/v1/bills/:id` | Edit draft bill header or replace lines |
+| DELETE | `/api/v1/bills/:id` | Soft-delete draft bill and remove lines |
 | POST | `/api/v1/bills/:id/receive` | Receive bill |
 | POST | `/api/v1/bills/:id/pay` | Record payment |
 | POST | `/api/v1/bills/:id/void` | Void bill |
@@ -411,8 +413,35 @@ additive strings; both numeric and string aliases preserve stored units. There
 is no exact-only switch. MCP `list_bills`, `get_bill`, and `get_bill_counts` use
 the same scoped direct-DB operations; list returns `{bills,total,page,limit}`, and
 detail/counts match REST. Reads retain authenticated-member access, including
-custom roles without write permissions. CRUD/lifecycle/settlement contracts are
+custom roles without write permissions. Lifecycle/settlement contracts are
 qualified separately.
+
+Create and draft edit accept line `unitPrice` in decimal major units (USD 12.50),
+`unitPriceExact` as an exact decimal major string, or `unitPriceMinor` as a
+canonical integer minor string. Supplied aliases must agree; omitted prices
+default to zero. Write quantity is decimal physical units (1.5), while storage
+uses hundredths; discounts are basis points. Extended prices round before
+discount and exclusive tax using exact arithmetic. All prices, rounded products,
+taxes and sums must fit the signed safe integer range. Header write responses
+add the same `*Minor` aliases as reads: create returns `{bill,held?}` with HTTP
+201, edit returns `{bill}`, and delete returns `{success:true}`.
+
+Create requires supplier UUID, canonical Gregorian issue/due dates and 1 through
+1000 lines. Optional `billNumber`, `purchaseOrderIds`, `confirmDuplicate` and
+`submitForApproval` retain duplicate/procurement/approval submission behavior.
+REST currency omission resolves supplier/org/USD; MCP omission defaults USD.
+Duplicate warn/block returns 409; only warn accepts `confirmDuplicate:true`.
+Hold creates `pending_approval` with `held:true`; `submitForApproval:true` also
+creates pending approval. Reverse-charge VAT is included in `taxTotal`/`total`
+but excluded from supplier `amountDue`, including on edit and MCP create.
+
+Edit permits supplier, dates, reference, notes and optional full line replacement;
+currency, bill number and status stay fixed. Create/edit/delete require
+`manage:bills`; references must belong to the organization. Draft edit/delete
+reject saved bookkeeping or payments and locked issue dates; date changes check
+both old and new dates. Numbering, header, lines, procurement links and audit
+commit atomically. MCP `create_bill`, `update_bill` and `delete_bill` use the same
+direct-DB services. Creating a draft does not post stock or bookkeeping.
 
 ### Purchase Orders
 | Method | Path | Description |

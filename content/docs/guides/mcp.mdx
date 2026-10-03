@@ -154,6 +154,10 @@ dubbl uses OAuth 2.1 with PKCE for MCP authentication:
 ### Bills
 - `list_bills` -- List bills with status filter
 - `create_bill` -- Create a bill with line items
+- `get_bill` -- Get bill detail with exact money aliases and base display
+- `get_bill_counts` -- Count bills and amount due per status and currency
+- `update_bill` -- Edit draft bill header or replace lines atomically
+- `delete_bill` -- Soft-delete a draft bill atomically
 - `approve_bill` -- Approve a draft/pending bill
 - `pay_bill` -- Record a payment (amount in cents)
 - `void_bill` -- Void a bill
@@ -168,7 +172,7 @@ dubbl uses OAuth 2.1 with PKCE for MCP authentication:
 ## Amount Conventions
 
 - All monetary amounts in tool inputs/outputs are in **integer cents** (e.g. `1250` = $12.50)
-- Invoice/bill line item `unitPrice` and `quantity` are decimal numbers (the system converts to cents internally)
+- Invoice/bill write `unitPrice` is decimal major units (USD 12.50); `unitPriceExact` is an exact major decimal string and `unitPriceMinor` is an integer minor string. Quantity is decimal physical units. Bill write responses include exact header `*Minor` aliases; supported amounts remain signed safe integers. See [API Reference](/docs/api-reference) for currency, rounding and duplicate policies.
 - Exchange rates are stored as integers with 6 decimal places (`1000000` = 1.0)
 
 ## Testing

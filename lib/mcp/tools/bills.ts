@@ -1,3 +1,5 @@
+import { createBill, updateBill, deleteBill } from "@/lib/api/bill-writes";
+import { billCreateFields, billUpdateFields } from "@/lib/api/bill-write-wire";
 import { listBills, getBill, getBillCounts } from "@/lib/api/bill-reads";
 import { billListFields } from "@/lib/api/bill-read-wire";
 import { AuthError } from "@/lib/api/auth-context";
@@ -8,12 +10,9 @@ import { bill, billLine, inventoryItem } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { notDeleted } from "@/lib/db/soft-delete";
 import { requireRole } from "@/lib/api/require-role";
-import { getNextNumber } from "@/lib/api/numbering";
-import { decimalToMinorUnits } from "@/lib/money";
 import { assertNotLocked } from "@/lib/api/period-lock";
 import { reverseJournalEntry } from "@/lib/api/journal-automation";
 import { recordInventoryIssue, type ValuedItem } from "@/lib/api/inventory-valuation";
-import { preloadTaxRates, calcTax } from "@/lib/api/tax-calculator";
 import { wrapTool } from "@/lib/mcp/errors";
 import type { AuthContext } from "@/lib/api/auth-context";
 
@@ -45,144 +44,23 @@ export function registerBillTools(server: McpServer, ctx: AuthContext) {
 
   server.tool(
     "create_bill",
-    "Create a new bill (accounts payable). Unit prices are decimal numbers (e.g. 12.50 for $12.50). The system calculates totals and assigns a bill number automatically. A line with inventoryItemId is a stock purchase: on posting it capitalises into the item's Inventory account and increases on-hand quantity/value (optionally into warehouseId) instead of expensing. Pass projectId on a line to job-cost it against a project.",
-    {
-      contactId: z.string().describe("Supplier contact UUID"),
-      issueDate: z.string().describe("Issue date (YYYY-MM-DD)"),
-      dueDate: z.string().describe("Due date (YYYY-MM-DD)"),
-      reference: z
-        .string()
-        .optional()
-        .describe("Supplier's invoice reference"),
-      notes: z.string().optional().describe("Bill notes"),
-      currencyCode: z
-        .string()
-        .optional()
-        .default("USD")
-        .describe("Currency code"),
-      lines: z
-        .array(
-          z.object({
-            description: z.string().describe("Line item description"),
-            quantity: z
-              .number()
-              .optional()
-              .default(1)
-              .describe("Quantity (decimal)"),
-            unitPrice: z
-              .number()
-              .optional()
-              .default(0)
-              .describe("Unit price (decimal, e.g. 12.50)"),
-            accountId: z
-              .string()
-              .optional()
-              .describe("Expense account UUID"),
-            taxRateId: z
-              .string()
-              .optional()
-              .describe("Tax rate UUID"),
-            discountPercent: z
-              .number()
-              .int()
-              .min(0)
-              .max(10000)
-              .optional()
-              .describe("Discount in basis points (1000 = 10%)"),
-            inventoryItemId: z
-              .string()
-              .optional()
-              .describe(
-                "Inventory item UUID. Marks this line as a stock purchase: on bill posting it capitalises into the item's Inventory account and increases on-hand quantity/value instead of expensing."
-              ),
-            warehouseId: z
-              .string()
-              .optional()
-              .describe(
-                "Warehouse UUID the stock is received into (used with inventoryItemId)."
-              ),
-            projectId: z
-              .string()
-              .optional()
-              .describe("Project UUID for job-costing this line against a project."),
-          })
-        )
-        .min(1)
-        .describe("Bill line items"),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        requireRole(ctx, "manage:bills");
+    "Create an organization-owned bill atomically with numbering, lines, purchase-order links and audit. Legacy unitPrice is decimal major units (USD 12.50), unitPriceExact is an exact major decimal string, unitPriceMinor is an integer minor string. Quantity is decimal physical units; discount/tax are basis points. Extended prices round before discount/exclusive tax; reverse-charge VAT is excluded from supplier amountDue. Returns {bill,held?} with safe numeric money and *Minor strings. MCP currency omission defaults USD. Duplicate warn/block rejects with 409 (confirmDuplicate overrides warn only); hold creates pending_approval. Period/tenant checks apply; unsupported amounts fail with 422 before mutation.",
+    billCreateFields,
+    params => wrapTool(ctx, () => createBill(ctx, params, "mcp"))
+  );
 
-        await assertNotLocked(ctx.organizationId, params.issueDate);
+  server.tool(
+    "update_bill",
+    "Edit an organization-owned draft bill header and optionally replace all lines atomically with audit. Prices use decimal major unitPrice/unitPriceExact or integer unitPriceMinor; omitted replacement prices default zero. Currency and bill number stay fixed. Returns {bill} with numeric minor money (USD cents) plus *Minor strings. Both issue dates must be unlocked; posted/paid/non-draft bills and invalid references reject before mutation. Reverse-charge VAT remains excluded from supplier amountDue.",
+    { billId: z.string().uuid().describe("Organization-owned draft bill UUID"), ...billUpdateFields },
+    ({ billId, ...params }) => wrapTool(ctx, () => updateBill(ctx, billId, params))
+  );
 
-        const billNumber = await getNextNumber(
-          ctx.organizationId,
-          "bill",
-          "bill_number",
-          "BILL"
-        );
-
-        const taxRateIds = params.lines.map((l) => l.taxRateId).filter(Boolean) as string[];
-        const ratesMap = await preloadTaxRates(taxRateIds);
-
-        let subtotal = 0;
-        const processedLines = params.lines.map((l, i) => {
-          const discountPercent = l.discountPercent ?? 0;
-          const grossAmount = decimalToMinorUnits(l.quantity * l.unitPrice, params.currencyCode);
-          const discountAmount = discountPercent ? Math.round(grossAmount * discountPercent / 10000) : 0;
-          const amount = grossAmount - discountAmount;
-          subtotal += amount;
-          const taxRateId = l.taxRateId ?? null;
-          const taxAmount = taxRateId ? calcTax(amount, ratesMap.get(taxRateId) ?? 0) : 0;
-          return {
-            description: l.description,
-            quantity: Math.round(l.quantity * 100),
-            unitPrice: decimalToMinorUnits(l.unitPrice, params.currencyCode),
-            accountId: l.accountId ?? null,
-            taxRateId,
-            discountPercent,
-            taxAmount,
-            amount,
-            inventoryItemId: l.inventoryItemId ?? null,
-            warehouseId: l.warehouseId ?? null,
-            projectId: l.projectId ?? null,
-            sortOrder: i,
-          };
-        });
-
-        const taxTotal = processedLines.reduce((sum, l) => sum + l.taxAmount, 0);
-        const total = subtotal + taxTotal;
-
-        const [created] = await db
-          .insert(bill)
-          .values({
-            organizationId: ctx.organizationId,
-            contactId: params.contactId,
-            billNumber,
-            issueDate: params.issueDate,
-            dueDate: params.dueDate,
-            reference: params.reference ?? null,
-            notes: params.notes ?? null,
-            subtotal,
-            taxTotal,
-            total,
-            amountPaid: 0,
-            amountDue: total,
-            currencyCode: params.currencyCode,
-            createdBy: ctx.userId,
-          })
-          .returning();
-
-        await db.insert(billLine).values(
-          processedLines.map((l) => ({
-            billId: created.id,
-            ...l,
-          }))
-        );
-
-        return { bill: created };
-      })
+  server.tool(
+    "delete_bill",
+    "Soft-delete an organization-owned draft bill and remove its lines atomically with audit. Returns {success:true}. The issue date must be unlocked; paid/posted/non-draft bills and unsupported saved money reject before mutation. Purchase-order links remain attached to the deleted historical header.",
+    { billId: z.string().uuid().describe("Organization-owned draft bill UUID") },
+    params => wrapTool(ctx, () => deleteBill(ctx, params.billId))
   );
 
   server.tool(

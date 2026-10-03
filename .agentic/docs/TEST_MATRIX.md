@@ -283,3 +283,23 @@ accounting/IRR qualification is inferred.
 - Full-int64, CRUD/lifecycle/settlement/procurement, browser/session/OAuth, providers,
   deployment, native accounting and functional IRR remain separate qualification.
   Typecheck/lint/inventory verification apply; no build/dev server.
+
+## MON-047 bill CRUD write contracts
+
+- Pure fixtures cover legacy/exact/dual major/minor prices, USD/JPY/IRR/KWD
+  scales, quantity/discount/tax units, extended signed rounding, reverse-charge
+  net payable, defaults and price/product/tax/sum range rejection.
+- Actual authenticated REST handlers and registered MCP SDK tools on disposable
+  migrated PostgreSQL cover create/edit/delete, legacy/exact compatibility,
+  API-key/custom-role/tenant isolation, all foreign reference types, historical
+  inactive/deleted references, source PO/receipt dimensions, duplicate strategies,
+  approval submission state, old/new date locks/closed years, saved-money safety,
+  concurrent first numbering/duplicate creates, numbering capacity and soft delete.
+- SQL-text bill/line/link/sequence plus audit/ledger/stock/allocation snapshots
+  verify failed operations leave no changes. Injected line, link, header delete
+  and audit constraints prove whole-operation rollback. CRUD creates no ledger,
+  stock or payment allocations; retained PO links stay on deleted headers.
+- Adjacent bill read integration, full unit regression, typecheck/lint and source
+  inventory verification apply. No build/dev. Lifecycle/approval execution,
+  settlement, full-int64, production/IRR, browser/session/OAuth/provider and human
+  financial/security/migration gates are not inferred from these fixtures.

@@ -1,6 +1,21 @@
 # Money and FX boundary manifest
 
-Inventory owner: MON-001. Refreshed 2026-10-03 (Asia/Tehran) for MON-046 against entry HEAD `ca6f88d`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+Inventory owner: MON-001. Refreshed 2026-10-03 (Asia/Tehran) for MON-047 against entry HEAD `0f6e77e`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+
+## MON-047 bill CRUD adoption (MON-020 child)
+
+[Bill write contracts](BILL_WRITE_WIRE_CONTRACTS.md) cover create, draft edit and
+delete in REST and corresponding MCP, including new update_bill/delete_bill.
+Both transports retain decimal-major numeric prices, explicit exact major/minor
+aliases, decimal quantities and basis-point discounts/taxes. Bigint ratios/sums
+guard every money component and safe numeric coexistence output. Shared scoped
+transactions serialize numbering and duplicate policy, enforce old/new period
+locks, validate references/history, and commit headers/lines/PO links/audit
+together. PATCH/MCP create now exclude reverse-charge VAT from supplier due,
+matching REST create. Actual migrated PostgreSQL handler/SDK fixtures cover
+compatibility, tenants/roles, duplicate/approval states, concurrency and injected
+DB rollback. Parent MON-020 retains combined acceptance; lifecycle/settlement,
+full-int64 and financial/IRR qualification remain separate. No schema change.
 
 ## MON-046 bill read adoption (MON-020 child)
 

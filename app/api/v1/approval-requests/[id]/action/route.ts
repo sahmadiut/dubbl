@@ -1,3 +1,4 @@
+import { invoiceApprovalRequestAction } from "@/lib/api/invoice-lifecycle";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { approvalRequest, member } from "@/lib/db/schema";
@@ -32,6 +33,9 @@ export async function POST(
 
     const body = await request.json();
     const parsed = actionSchema.parse(body);
+
+    const invoiceResult = await invoiceApprovalRequestAction(ctx, id, parsed.action, parsed.comment, request);
+    if (invoiceResult) return NextResponse.json({ request: invoiceResult.request });
 
     // Resolve the member ID for the current user in this org
     const mem = await db.query.member.findFirst({

@@ -1,6 +1,19 @@
 # Money and FX boundary manifest
 
-Inventory owner: MON-001. Refreshed 2026-10-03 (Asia/Tehran) for MON-039 against entry HEAD `d23996d`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+Inventory owner: MON-001. Refreshed 2026-10-03 (Asia/Tehran) for MON-040 against entry HEAD `c40826c`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+
+## MON-040 invoice lifecycle adoption (MON-019 child)
+
+The [lifecycle contracts](INVOICE_LIFECYCLE_WIRE_CONTRACTS.md) cover eight REST
+invoice operations, nine registered MCP tools and generic invoice approval-request
+parity. Interest decimal-major and recovery integer-minor aliases retain distinct
+units; bigint interest/FX/stock ratios and sums protect safe numeric coexistence.
+Posting/status/stock/FIFO/number/approval effects are atomic, saved FX is preserved,
+new stock reverses original cost and duplicate send/void serializes. Actual
+PostgreSQL REST/SDK fixtures qualify scope/permissions/locks/ranges and rollback.
+Legacy unlinked stock/FX, external writer/configuration races, email/PDF/provider,
+settlement/full-domain and financial release qualification retain assigned gates.
+No schema, configured DB, IRR flag or deployment change.
 
 ## MON-039 invoice CRUD write adoption (MON-019 child)
 

@@ -1,3 +1,4 @@
+import { invoiceApprovalRequestAction } from "@/lib/api/invoice-lifecycle";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { db } from "@/lib/db";
@@ -393,6 +394,9 @@ export function registerApprovalTools(server: McpServer, ctx: AuthContext) {
     },
     (params) =>
       wrapTool(ctx, async () => {
+        const invoiceResult = await invoiceApprovalRequestAction(ctx, params.requestId, "approve", params.comment);
+        if (invoiceResult) return { request: invoiceResult.request };
+
         const mem = await db.query.member.findFirst({
           where: and(
             eq(member.organizationId, ctx.organizationId),
@@ -423,6 +427,9 @@ export function registerApprovalTools(server: McpServer, ctx: AuthContext) {
     },
     (params) =>
       wrapTool(ctx, async () => {
+        const invoiceResult = await invoiceApprovalRequestAction(ctx, params.requestId, "reject", params.comment);
+        if (invoiceResult) return { request: invoiceResult.request };
+
         const mem = await db.query.member.findFirst({
           where: and(
             eq(member.organizationId, ctx.organizationId),

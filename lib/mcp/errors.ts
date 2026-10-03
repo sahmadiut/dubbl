@@ -3,6 +3,7 @@ import { AuthError } from "@/lib/api/auth-context";
 import type { AuthContext } from "@/lib/api/auth-context";
 import { LimitExceededError } from "@/lib/api/check-limit";
 import { PeriodLockedError } from "@/lib/api/period-lock";
+import { MissingExchangeRateError } from "@/lib/currency/converter";
 import { CurrencyRolloutError } from "@/lib/currency/rollout";
 import { stringifyWire, WireCompatibilityError, type WireRepresentation } from "@/lib/money/wire";
 
@@ -71,7 +72,7 @@ export function wrapTool<T>(
           isError: true,
         };
       }
-      if (err instanceof PeriodLockedError) {
+      if (err instanceof PeriodLockedError || err instanceof MissingExchangeRateError) {
         return {
           content: [{ type: "text" as const, text: JSON.stringify({ error: err.message, status: 422 }) }],
           isError: true,

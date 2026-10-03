@@ -197,6 +197,36 @@ full-range reporting or production IRR readiness.
 | POST | `/api/v1/invoices/:id/send` | Send invoice |
 | POST | `/api/v1/invoices/:id/pay` | Record payment |
 | POST | `/api/v1/invoices/:id/void` | Void invoice |
+| POST | `/api/v1/invoices/:id/write-off` | Write off bad debt or record its recovery |
+| POST | `/api/v1/invoices/calculate-interest` | Preview exact overdue interest |
+| POST | `/api/v1/invoices/:id/charge-interest` | Create and post an interest invoice |
+| POST | `/api/v1/invoices/:id/submit-for-approval` | Submit a draft to its approval workflow |
+| POST | `/api/v1/invoices/:id/approve` | Approve the assigned workflow step |
+| POST | `/api/v1/invoices/:id/reject` | Reject the assigned workflow step |
+
+Lifecycle responses retain numeric minor-unit totals and add matching `*Minor`
+strings. Write-off defaults to `{action:"write-off",method:"direct"}`; allowance
+is also supported. Recovery uses `{action:"recover",amount:1250}` or
+`{action:"recover",amountMinor:"1250"}` in integer invoice-currency minor units;
+omission defaults to invoice total. Interest overrides use decimal-major
+`amount:12.5` or `amountExact:"12.50"`, or integer-minor `amountMinor:"1250"`
+for USD. Dual aliases must agree. Calculated simple/daily compound interest uses
+exact ratios and one final rounding; overdue duration supports up to 36500 days.
+Recovery and interest responses add `recoveredMinor` and `interestAmountMinor`.
+
+Send/void/bad-debt/approval decisions require `approve:invoices`; interest charges
+and approval submission require `manage:invoices`. Issue-date locks are checked,
+and interest checks today's posting date too. Sending requires complete active
+revenue/control accounts and agreeing nonnegative line/header balances. Voiding
+settled invoices requires refunding/unapplying payments or credits first. Each
+operation commits its accounting/status/stock/approval effects atomically; saved
+FX is retained, and voiding reverses stored amounts without reconversion.
+Optional send email runs after accounting commits; delivery failures should be
+retried using email operations. Monetary values remain within safe integer range;
+unsupported amounts/FX return 422 instead of being rounded into legacy fields.
+Matching MCP tools include `send_invoice`, `void_invoice`, `write_off_invoice`,
+`recover_written_off_invoice`, `calculate_invoice_interest`,
+`charge_invoice_interest` and the submit/approve/reject invoice tools.
 
 Invoice list/detail reads retain numeric `subtotal`, `taxTotal`, `total`,
 `amountPaid` and `amountDue` in stored minor units (USD cents), alongside exact

@@ -180,3 +180,14 @@ line and approval failures prove full create/replacement rollback. Existing invo
 read worker also passes after write-route/tool changes. HTTP/session/OAuth/browser,
 external-writer races, full posting/inventory/approval lifecycle and production
 qualification remain separate gates. Fixtures create/drop only random databases.
+
+MON-040 adds `tests/invoice-lifecycle-wire.test.ts` and the disposable migrated
+PostgreSQL `tests/integration/invoice-lifecycle.test.ts`/worker. Actual invoice
+send/void/write-off/recovery/interest/approval REST exports and registered MCP SDK
+callbacks verify numeric/exact/dual aliases, currency scales, permissions/two-org
+isolation, unsafe saved money/snapshots, locks, saved-FX preservation/reversal,
+original stock/FIFO cost restoration, approval steps/generic request parity,
+concurrent duplicate send/void and forced rollback of monetary/stock/number/
+approval effects. See the lifecycle registry/evidence for exact limits. Email/PDF/
+provider, external writer/configuration races, full-domain/settlement/reporting,
+HTTP/session/OAuth/browser and production financial gates remain unqualified.

@@ -162,3 +162,18 @@ create approval request roll back together. Numeric header/credit warning fields
 add `*Minor` strings; full-int64 exact mode is unavailable during numeric coexistence.
 See [invoice write contracts](../../.agentic/registries/INVOICE_WRITE_WIRE_CONTRACTS.md)
 for defaults, units/ranges, concurrency/audit limits and remaining domain gates.
+
+## Invoice lifecycle contracts (MON-040)
+
+Send/void/bad-debt/interest/approval REST and MCP share scoped direct-DB services,
+preserving numeric minor-unit money with `*Minor` strings. Interest override
+`amount`/`amountExact` are decimal major units; recovery `amount` is integer minor
+units. Both support `amountMinor`, with explicit alias agreement and safe numeric
+range. Simple/daily compound interest and document-to-base scale conversion use
+bigint ratios and one final rounding. Posting saves qualified FX; reversal mirrors
+saved amounts and rates, and bad debt reuses recognition FX when linked. Header/
+line/journal/stock/FIFO/warehouse/number/approval mutations commit atomically.
+Send and interest require complete accounts; settled invoices cannot be voided.
+See [invoice lifecycle contracts](../../.agentic/registries/INVOICE_LIFECYCLE_WIRE_CONTRACTS.md)
+for all units, ranges, permissions, legacy stock/FX limitations, optional email
+delivery semantics and remaining financial/settlement/provider qualification.

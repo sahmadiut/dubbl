@@ -5,6 +5,7 @@ import { registerAccountTools } from "./accounts";
 import { registerEntryTools } from "./entries";
 import { registerContactTools } from "./contacts";
 import { registerInvoiceTools } from "./invoices";
+import { registerInvoiceLifecycleTools } from "./invoice-lifecycle";
 import { registerBillTools } from "./bills";
 import { registerReportTools } from "./reports";
 import { registerNotificationTools } from "./notifications";
@@ -62,6 +63,7 @@ export function registerAllTools(server: McpServer, ctx: AuthContext) {
   registerEntryTools(server, ctx);
   registerContactTools(server, ctx);
   registerInvoiceTools(server, ctx);
+  registerInvoiceLifecycleTools(server, ctx);
   registerBillTools(server, ctx);
   registerReportTools(server, ctx);
   registerNotificationTools(server, ctx);

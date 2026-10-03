@@ -86,10 +86,13 @@ consumed FIFO layers, stranded zero-quantity value and unlinked legacy stock fai
 Average/standard reversal uses saved value and recalculates the remaining average.
 
 Matched stock is not received again. GRNI requires one posted, unreversed,
-balanced goods_receipt accrual for the receipt number, qualified identity FX in
-the current base currency, safe received cost and a received/billed receipt from
-the same supplier. Foreign-currency or ambiguous/unqualified accruals reject;
-MON-052 owns saved receipt FX qualification. Billed-vs-ordered prices use exact
+balanced goods_receipt accrual for the receipt number, qualified saved FX,
+safe received cost and a received/billed receipt from the same supplier.
+Base receipts require identity FX. MON-052 qualifies new full single foreign
+receipts at identical saved FX, unchanged costs and no stock tax, with linked
+audit/base/accrual proof; see GOODS_RECEIPT_WIRE_CONTRACTS. Nonstock receipt lines
+use expense/AP, not GRNI. Changed-rate/partial or unqualified foreign clearing
+remains unsupported. Billed-vs-ordered prices use exact
 basis-point ratios; price warnings follow the existing PO policy (PO price
 variance warns, GRN-only price variance can block). Quantity/required-receipt
 settings retain their block/warn behavior. Duplicate lines and partial bills

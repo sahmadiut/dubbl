@@ -9,10 +9,13 @@ import { billInt32 } from "./bill-lifecycle-wire";
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 export async function billStockMovement(tx: Tx, ctx: AuthContext, data: {
   billId: string; itemId: string; warehouseId: string | null; quantity: number; value: number;
-  journalEntryId: string; reverseMovementId?: string;
+  journalEntryId: string | null; reverseMovementId?: string; referenceType?: "goods_receipt";
 }) {
   const [item] = await tx.select().from(inventoryItem).where(and(eq(inventoryItem.id, data.itemId), eq(inventoryItem.organizationId, ctx.organizationId))).for("update");
   if (!item) throw new WireCompatibilityError("Bill stock item belongs to another organization");
+  if ((!data.referenceType && !data.journalEntryId) || (data.referenceType === "goods_receipt" &&
+    (!Number.isInteger(data.quantity) || data.quantity <= 0 || data.value < 0 || item.trackingMethod !== "none")))
+    throw new WireCompatibilityError("Receipt stock requires positive whole units and nonnegative value; bill stock requires a journal link");
   for (const value of [item.averageCost, item.totalValue, data.value]) if (!Number.isSafeInteger(value)) throw new WireCompatibilityError();
   if (item.totalValue < 0 || item.averageCost < 0 || !["average", "fifo", "standard"].includes(item.costMethod)) throw new WireCompatibilityError("Unsupported bill inventory history");
   const quantity = billInt32(BigInt(item.quantityOnHand) + BigInt(data.quantity));
@@ -44,7 +47,7 @@ export async function billStockMovement(tx: Tx, ctx: AuthContext, data: {
   const [movement] = await tx.insert(inventoryMovement).values({ organizationId: ctx.organizationId, inventoryItemId: item.id,
     warehouseId: data.warehouseId, quantity: data.quantity, previousQuantity: item.quantityOnHand, newQuantity: quantity, unitCost,
     value: data.value, type: data.reverseMovementId ? "adjustment" : data.quantity ? "purchase" : "adjustment",
-    referenceType: data.reverseMovementId ? "bill_void" : "bill", referenceId: data.billId,
+    referenceType: data.reverseMovementId ? "bill_void" : data.referenceType ?? "bill", referenceId: data.billId,
     journalEntryId: data.journalEntryId, createdBy: ctx.userId }).returning();
   await tx.update(inventoryItem).set({ quantityOnHand: quantity, totalValue: value, averageCost, updatedAt: new Date() }).where(eq(inventoryItem.id, item.id));
   if (layer) await tx.update(inventoryCostLayer).set({ remainingQuantity: 0 }).where(eq(inventoryCostLayer.id, layer.id));

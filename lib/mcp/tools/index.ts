@@ -1,3 +1,4 @@
+import { registerGoodsReceiptTools } from "./goods-receipts";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { AuthContext } from "@/lib/api/auth-context";
 import { registerOrganizationTools } from "./organization";
@@ -92,6 +93,7 @@ export function registerAllTools(server: McpServer, ctx: AuthContext) {
   registerInventoryTools(server, ctx);
   registerPricingTools(server, ctx);
   registerPurchasingTools(server, ctx);
+  registerGoodsReceiptTools(server, ctx);
   registerPurchaseOrderTools(server, ctx);
   registerSalesReceiptTools(server, ctx);
   registerQuoteTools(server, ctx);

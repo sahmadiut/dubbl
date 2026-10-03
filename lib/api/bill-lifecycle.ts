@@ -22,6 +22,7 @@ import { billUnits, billInt32, billTaxSplit, billVarianceBp, billRejectSchema } 
 import { billStockMovement } from "./bill-stock";
 import { purchaseOrderReservations } from "./purchase-order-reservations";
 import { derivePurchaseOrderStatusAfterBilling } from "./procurement";
+import { exactRate, toLegacyRate } from "@/lib/currency/exact-rate";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type Bill = typeof bill.$inferSelect;
@@ -29,6 +30,9 @@ type Line = typeof billLine.$inferSelect;
 type Leg = { accountId: string; debitAmount: number; creditAmount: number; costCenterId?: string | null; projectId?: string | null };
 function fail(message: string): never { throw new AuthError(message, 400); }
 function unsupported(message: string): never { throw new WireCompatibilityError(message); }
+function sameReceiptRate(first: unknown, second: string) {
+  try { return typeof first === "string" && exactRate(first) === exactRate(second); } catch { return false; }
+}
 const scope = (ctx: AuthContext, id: string) => and(eq(bill.id, id), eq(bill.organizationId, ctx.organizationId), isNull(bill.deletedAt));
 
 async function ownedAccount(tx: Tx, ctx: AuthContext, id: string, historical = false) {
@@ -185,8 +189,42 @@ async function recognize(tx: Tx, ctx: AuthContext, loaded: Awaited<ReturnType<ty
       continue;
     }
     if (!["received", "billed"].includes(matched.receipt.status) || matched.receipt.deletedAt) fail("Goods receipt must be received and available");
-    // Current GRN storage has no saved FX/base snapshot. Preserve its costs verbatim only in base currency.
-    if (found.currencyCode !== base) unsupported("Foreign-currency GRNI requires qualified saved receipt FX (MON-052)");
+    if (!item) {
+      const [used] = await tx.select({ value: sql<string>`coalesce(sum(${billLine.quantity}),0)::text` }).from(billLine)
+        .innerJoin(bill, eq(billLine.billId, bill.id)).where(and(eq(bill.organizationId, ctx.organizationId), eq(billLine.goodsReceiptLineId, matched.line.id),
+          ne(bill.status, "void"), isNull(bill.deletedAt), sql`${bill.journalEntryId} is not null`));
+      const proposed = billInt32(BigInt(proposedGrn.get(matched.line.id) ?? 0) + BigInt(line.quantity));
+      if (BigInt(used.value) + BigInt(proposed) > BigInt(matched.line.quantityReceived)) fail("Bill quantity exceeds received nonstock quantity");
+      proposedGrn.set(matched.line.id, proposed);
+      if (matched.po && !loaded.reservations.some(reservation => reservation.line.id === matched.po!.id)) {
+        const proposed = billInt32(BigInt(proposedPo.get(matched.po.id) ?? 0) + BigInt(line.quantity));
+        if (BigInt(matched.po.quantityBilled) + BigInt(proposed) > BigInt(matched.po.quantityReceived)) fail("Bill quantity exceeds PO received nonstock quantity");
+        proposedPo.set(matched.po.id, proposed);
+      }
+      const cost = safeInvoiceMinor(BigInt(line.amount) + BigInt(split.blocked));
+      if (cost) main.push({ accountId: costId!, debitAmount: cost, creditAmount: 0, ...dims });
+      mainAp += BigInt(split.supplier);
+      continue;
+    }
+    // MON-052 qualifies new foreign receipts only for full, unchanged-cost clearing
+    // at their saved FX. Changed-rate and partial FX residual allocation remain unsupported.
+    let receiptSnapshot: { journalEntryId?: string; grniTotalMinor?: string } | undefined;
+    if (found.currencyCode !== base) {
+      const snapshots = await tx.select({ changes: auditLog.changes }).from(auditLog).where(and(eq(auditLog.organizationId, ctx.organizationId),
+        eq(auditLog.entityType, "goods_receipt"), eq(auditLog.entityId, matched.receipt.id), eq(auditLog.action, "create")));
+      const snapshot = snapshots[0]?.changes as { baseCurrencyCode?: string; currencyCode?: string; rateExact?: string; rateDirection?: string;
+        journalEntryId?: string; grniTotalMinor?: string } | null;
+      if (snapshots.length !== 1 || snapshot?.baseCurrencyCode !== base || snapshot.currencyCode !== found.currencyCode ||
+        snapshot.rateDirection !== "quote_per_base" || !sameReceiptRate(snapshot.rateExact, fx.rateExact) ||
+        new Set([...receipts.values()].map(value => value.receipt.id)).size !== 1 || lines.some(value => !value.goodsReceiptLineId) ||
+        line.quantity !== matched.line.quantityReceived || line.taxAmount !== 0 ||
+        BigInt(line.amount) !== BigInt(matched.line.unitCost) * BigInt(billUnits(line.quantity)))
+        unsupported("Foreign GRNI requires a full single receipt, unchanged costs, no tax and matching saved FX/base currency");
+      receiptSnapshot = snapshot;
+      const allReceived = await tx.select({ id: goodsReceiptLine.id }).from(goodsReceiptLine).where(eq(goodsReceiptLine.goodsReceiptId, matched.receipt.id));
+      if (allReceived.length !== lines.length || new Set(lines.map(value => value.goodsReceiptLineId)).size !== allReceived.length)
+        unsupported("Foreign GRNI requires every receipt line exactly once");
+    }
     const accruals = await tx.select().from(journalEntry).where(and(eq(journalEntry.organizationId, ctx.organizationId),
       eq(journalEntry.sourceType, "goods_receipt"), eq(journalEntry.reference, matched.receipt.receiptNumber),
       eq(journalEntry.status, "posted"), isNull(journalEntry.deletedAt), isNull(journalEntry.reversedByEntryId))).for("share");
@@ -195,16 +233,20 @@ async function recognize(tx: Tx, ctx: AuthContext, loaded: Awaited<ReturnType<ty
     if (!accrualLines.length) unsupported("Goods receipt accrual has no saved legs");
     for (const saved of accrualLines) {
       journalLineDto(saved); await ownedAccount(tx, ctx, saved.accountId, true);
-      if (saved.currencyCode !== base || saved.exchangeRate !== 1000000 || saved.rateMigrationStatus !== "exact" || saved.rateFormatVersion !== 1)
-        unsupported("GRNI requires qualified identity FX in the current base currency; no historical receipt repair");
+      if (saved.currencyCode !== found.currencyCode || saved.exchangeRate !== toLegacyRate(fx.rateExact) ||
+        !sameReceiptRate(saved.rateExact, fx.rateExact) || saved.rateMigrationStatus !== "exact" || saved.rateFormatVersion !== 1)
+        unsupported("GRNI requires qualified saved FX matching bill recognition; no historical receipt repair");
     }
     const accrualDebit = safeInvoiceMinor(accrualLines.reduce((sum, leg) => sum + BigInt(leg.debitAmount), 0n));
     const accrualCredit = safeInvoiceMinor(accrualLines.reduce((sum, leg) => sum + BigInt(leg.creditAmount), 0n));
+    if (receiptSnapshot && (receiptSnapshot.journalEntryId !== accruals[0].id || accruals[0].sourceId !== matched.receipt.id ||
+      receiptSnapshot.grniTotalMinor !== String(accrualCredit))) unsupported("Foreign receipt accrual does not match its saved audit snapshot");
     if (accrualDebit !== accrualCredit || accrualLines.some(leg => leg.debitAmount < 0 || leg.creditAmount < 0)) unsupported("Goods receipt accrual legs must balance");
     const [used] = await tx.select({ value: sql<string>`coalesce(sum(${billLine.quantity}),0)::text` }).from(billLine)
       .innerJoin(bill, eq(billLine.billId, bill.id)).where(and(eq(bill.organizationId, ctx.organizationId), eq(billLine.goodsReceiptLineId, matched.line.id),
         ne(bill.status, "void"), isNull(bill.deletedAt), sql`${bill.journalEntryId} is not null`));
     const cumulative = billInt32(BigInt(used.value) + BigInt(proposedGrn.get(matched.line.id) ?? 0) + BigInt(line.quantity));
+    if (found.currencyCode !== base && BigInt(used.value) !== 0n) unsupported("Foreign GRNI cannot reuse previously billed receipt quantities");
     proposedGrn.set(matched.line.id, billInt32(BigInt(proposedGrn.get(matched.line.id) ?? 0) + BigInt(line.quantity)));
     if (cumulative > matched.line.quantityReceived) issue(line, "over_bill_qty", "Bill quantity exceeds goods receipt quantity", settings.blockOverBill || settings.requireGrnBeforeBill);
     const units = billUnits(line.quantity), billedCost = units ? safeInvoiceMinor(invoiceRound(BigInt(line.amount), BigInt(units))) : 0;
@@ -258,7 +300,7 @@ async function recognize(tx: Tx, ctx: AuthContext, loaded: Awaited<ReturnType<ty
   }
   for (const id of proposedGrn.keys()) {
     const receipt = receipts.get(id)!;
-    await tx.update(goodsReceiptLine).set({ journalEntryId: clearing!.id }).where(eq(goodsReceiptLine.id, id));
+    await tx.update(goodsReceiptLine).set({ journalEntryId: (receipt.line.inventoryItemId ? clearing : entry)!.id }).where(eq(goodsReceiptLine.id, id));
     await tx.update(goodsReceipt).set({ status: "billed", updatedAt: new Date() }).where(eq(goodsReceipt.id, receipt.receipt.id));
   }
   return { entryId: (entry ?? clearing)!.id, grniEntryId: clearing?.id ?? null, warnings };
@@ -348,7 +390,7 @@ export async function voidBill(ctx: AuthContext, id: string, request?: Request) 
       const entries = await tx.select().from(journalEntry).where(and(eq(journalEntry.organizationId, ctx.organizationId),
         sql`(${journalEntry.id} = ${found.journalEntryId} or (${journalEntry.sourceId} = ${id} and ${journalEntry.sourceType} in ('bill','bill_grni')))`)).for("update");
       if (!entries.some(entry => entry.id === found.journalEntryId)) unsupported("Bill recognition journal belongs to another organization");
-      if (receipts.size && !entries.some(entry => entry.sourceType === "bill_grni" && entry.sourceId === id)) unsupported("Legacy GRNI bill has no qualified linked clearing history");
+      if ([...receipts.values()].some(receipt => receipt.line.inventoryItemId) && !entries.some(entry => entry.sourceType === "bill_grni" && entry.sourceId === id)) unsupported("Legacy GRNI bill has no qualified linked clearing history");
       const saved = await tx.select().from(inventoryMovement).where(and(eq(inventoryMovement.organizationId, ctx.organizationId), eq(inventoryMovement.referenceId, id), eq(inventoryMovement.referenceType, "bill"))).orderBy(inventoryMovement.quantity, inventoryMovement.createdAt).for("update");
       const expected = lines.filter(line => line.inventoryItemId && !line.goodsReceiptLineId && billUnits(line.quantity)).map(line => `${line.inventoryItemId}/${line.warehouseId ?? ""}/${billUnits(line.quantity)}`).sort();
       const actual = saved.filter(m => m.quantity > 0).map(m => `${m.inventoryItemId}/${m.warehouseId ?? ""}/${m.quantity}`).sort();
@@ -373,7 +415,7 @@ export async function voidBill(ctx: AuthContext, id: string, request?: Request) 
           .where(and(eq(bill.organizationId, ctx.organizationId), ne(bill.id, id), eq(billLine.goodsReceiptLineId, line.goodsReceiptLineId),
             ne(bill.status, "void"), isNull(bill.deletedAt), sql`${bill.journalEntryId} is not null`));
         const [remainingEntry] = other ? await tx.select({ id: journalEntry.id }).from(journalEntry).where(and(eq(journalEntry.organizationId, ctx.organizationId),
-          eq(journalEntry.sourceId, other.billId), eq(journalEntry.sourceType, "bill_grni"), isNull(journalEntry.reversedByEntryId))) :
+          eq(journalEntry.sourceId, other.billId), eq(journalEntry.sourceType, receipt.line.inventoryItemId ? "bill_grni" : "bill"), isNull(journalEntry.reversedByEntryId))) :
           await tx.select({ id: journalEntry.id }).from(journalEntry).where(and(eq(journalEntry.organizationId, ctx.organizationId), eq(journalEntry.sourceType, "goods_receipt"),
             eq(journalEntry.reference, receipt.receipt.receiptNumber), eq(journalEntry.status, "posted"), isNull(journalEntry.deletedAt), isNull(journalEntry.reversedByEntryId)));
         await tx.update(goodsReceiptLine).set({ journalEntryId: remainingEntry?.id ?? null }).where(eq(goodsReceiptLine.id, line.goodsReceiptLineId));

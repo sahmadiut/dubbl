@@ -385,3 +385,21 @@ accounting/IRR qualification is inferred.
 - Adjacent bill lifecycle/credit integration, full units, lint/typecheck, inventory
   and legacy-money checks apply. Full-int64/partial-GRNI-specialized tax/settlement
   cross-writer/provider/session/OAuth/production/independent financial/IRR gates remain.
+
+## MON-052 goods receipt contracts
+
+- Exact physical quantities/dual aliases, int32 hundredths, whole stock, signed
+  rounding, safe minor costs/products and output aliases without currency rescale.
+- Migrated PostgreSQL actual REST/MCP registry with API-key/custom-role auth;
+  receive/list/detail/create-bill, conflict org headers, roles and foreign IDs/
+  supplier/PO-line/item/warehouse/account/journal validation, strict list/dates.
+- Exact GL and warehouse/average/FIFO receipts, zero values, above-int32/safe-max
+  costs, USD/JPY/KWD/EUR scales, saved FX, same-rate full GRNI clearing, nonstock
+  expense/AP recognition and void. Changed FX, partial/unknown FX, tracked stock,
+  unsafe cost/products/stock totals, indivisible FIFO and negative residuals reject.
+- SQL-text business snapshots prove no committed mutation after input/lock/history
+  failures or injected audit/stock errors. Concurrent full receive and mixed REST/
+  MCP create-bill have one winner; active draft links prevent repeat billing.
+- Adjacent bill lifecycle/PO/debit-note integration, units, lint/typecheck and
+  inventory/legacy checks apply. Broader residual/partial FX, other inventory
+  writers, full-int64, production and independent financial/security/IRR gates remain.

@@ -1,6 +1,21 @@
 # Money and FX boundary manifest
 
-Inventory owner: MON-001. Refreshed 2026-10-04 (Asia/Tehran) for MON-051 against entry HEAD `9989a0d`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+Inventory owner: MON-001. Refreshed 2026-10-04 (Asia/Tehran) for MON-052 against entry HEAD `0d629c6`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+
+## MON-052 goods receipt adoption (MON-020 child)
+
+[Goods receipt contracts](GOODS_RECEIPT_WIRE_CONTRACTS.md) cover receipt list,
+detail, receive and create-bill in shared REST/MCP services. Exact physical
+quantity aliases preserve hundredths/whole-stock units; saved PO minor costs,
+nested money and draft bill balances add named Minor strings. Receipt FX/base
+snapshot, exact GL/stock/FIFO/warehouse values, numbering, PO tallies and audit
+commit together. Atomic create-bill rejects active receipt-linked bill reuse.
+Nonstock recognition/void uses expense/AP and receipt tallies. Full unchanged-cost
+foreign receipt clearing qualifies only at identical saved FX, with linked audit/
+accrual/base proof; differing/partial FX remains explicitly unsupported. Tracked
+stock and unrepresentable FIFO/residual/range/history fail safely. Real handler/
+SDK/PostgreSQL fixtures establish supported boundaries. MON-020 and MON-024 retain
+combined procurement and other inventory writers; rollout flags remain unchanged.
 
 ## MON-051 supplier debit-note adoption (MON-020 child)
 

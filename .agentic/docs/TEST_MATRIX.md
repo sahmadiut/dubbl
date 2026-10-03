@@ -349,3 +349,21 @@ accounting/IRR qualification is inferred.
   source inventory/legacy checks apply. No build/dev/Docker or live provider.
   Other procurement writers, foreign receipt FX, full-int64, migration/release,
   independent financial/security/native-language/IRR gates remain separate.
+
+## MON-050 purchase requisition contracts
+
+- Pure exact price aliases, numeric/exact/dual agreement, currency scales, signed
+  extension ties, subminor residuals, zero tax, safe prices/products/sums, int32
+  quantities, date/canonical syntax and corrupt saved balance rejection.
+- Actual migrated PostgreSQL handlers and full registered MCP SDK: all CRUD,
+  submission/approve/reject/conversion, numeric/exact/dual clients, signed/large
+  safe values, JPY/KWD, no-supplier conversion refusal, exact copied line amounts.
+- Actual API-key/custom-role resolution, conflicting org header, read-only role,
+  invalid key, foreign ID/contact/account/tax/converted PO refusal before disclosure.
+- SQL-text snapshots prove unchanged business rows/numbering/audit/ledger/stock/
+  email after input/history/lock failures and injected line/header/status/audit
+  constraints. Concurrent first numbering, decisions and conversion plus PO create
+  prevent duplicate numbers/orders. Sequence exhaustion rejects before mutation.
+- Adjacent PO integration, full units, typecheck/lint and source/legacy inventory.
+  No build/dev/production qualification; independent financial/security/migration/
+  browser/session/OAuth/IRR and parent procurement gates remain assigned.

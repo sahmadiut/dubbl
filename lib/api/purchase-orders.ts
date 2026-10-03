@@ -49,7 +49,7 @@ async function references(tx: Tx, org: string, supplierId: string,
   }
   return supplier;
 }
-async function nextNumber(tx: Tx, org: string) {
+export async function nextPurchaseOrderNumber(tx: Tx, org: string) {
   const [sequence] = await tx.select().from(numberSequence).where(and(eq(numberSequence.organizationId, org), eq(numberSequence.entityType, "purchase_order"))).for("update");
   const [maximum] = await tx.select({ value: sql<string>`coalesce(max(substring(${purchaseOrder.poNumber} from '^(?:PO-)?([0-9]+)$')::numeric), 0)::text` })
     .from(purchaseOrder).where(eq(purchaseOrder.organizationId, org));
@@ -104,7 +104,7 @@ export async function createPurchaseOrder(ctx: AuthContext, input: unknown, requ
     await assertNotLocked(ctx.organizationId, parsed.issueDate);
     const calculated = await totals(tx, ctx, parsed.lines, parsed.currencyCode);
     const [created] = await tx.insert(purchaseOrder).values({ organizationId: ctx.organizationId, contactId: parsed.contactId,
-      poNumber: await nextNumber(tx, ctx.organizationId), issueDate: parsed.issueDate, deliveryDate: parsed.deliveryDate ?? null,
+      poNumber: await nextPurchaseOrderNumber(tx, ctx.organizationId), issueDate: parsed.issueDate, deliveryDate: parsed.deliveryDate ?? null,
       reference: parsed.reference ?? null, notes: parsed.notes ?? null, currencyCode: parsed.currencyCode,
       subtotal: calculated.subtotal, taxTotal: calculated.taxTotal, total: calculated.total, createdBy: ctx.userId }).returning();
     await tx.insert(purchaseOrderLine).values(calculated.processedLines.map(line => ({ ...line, purchaseOrderId: created.id })));

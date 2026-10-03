@@ -1,6 +1,20 @@
 # Money and FX boundary manifest
 
-Inventory owner: MON-001. Refreshed 2026-10-03 (Asia/Tehran) for MON-049 against entry HEAD `7583781`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+Inventory owner: MON-001. Refreshed 2026-10-03 (Asia/Tehran) for MON-050 against entry HEAD `dd8c2b9`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+
+## MON-050 purchase requisition adoption (MON-020 child)
+
+[Purchase requisition contracts](PURCHASE_REQUISITION_WIRE_CONTRACTS.md) cover
+CRUD, submission, approve/reject and PO conversion in shared REST/MCP services.
+Exact major/minor price aliases preserve extended-price rounding and zero-tax
+policy. Numeric header/line/contact money adds *Minor strings; safe bounds,
+tenant references, dates, saved balances and state/link checks precede writes.
+Number/header/lines/status/link/audit commit atomically; PO conversion copies
+saved amounts and uses the existing locked PO allocator. The UI submission now
+reaches the server; distinct MCP edit/delete/submit tools complete parity.
+Real migrated PostgreSQL fixtures cover legacy/exact clients, roles/isolation,
+range/date/history, injected rollback and concurrent numbering/decision/conversion.
+MON-020 retains combined qualification; all full-range/production/IRR gates remain.
 
 ## MON-049 purchase order adoption (MON-020 child)
 

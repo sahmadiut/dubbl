@@ -3,33 +3,29 @@ title: Purchase Requisitions
 description: Request and approve purchases before creating purchase orders.
 ---
 
-Purchase requisitions allow team members to request purchases that require approval before a purchase order is created. Navigate to **Purchases > Requisitions**.
+Purchase requisitions record internal requests to buy before creating a purchase
+order. Navigate to **Purchases > Requisitions**.
 
-## How It Works
+## Creating and submitting a requisition
 
-1. A team member creates a requisition with the items they need
-2. The requisition is routed through the approval workflow
-3. Once approved, it can be converted to a purchase order
-4. If rejected, the requester is notified with a reason
+Create a requisition with descriptions, physical quantities and estimated prices,
+a request date, and optional notes/reference/required date. A supplier is optional
+until conversion. Requisitions calculate no tax, even when a tax reference is saved.
+Click **Submit for Approval** on the draft to change its server status to submitted.
 
-## Creating a Requisition
+Submitted requests can be approved or rejected by users with purchase approval
+permission. Rejection records an optional reason. This requisition workflow does
+not automatically route approval steps or send notifications.
 
-1. Click **New Requisition**
-2. Add line items with descriptions, quantities, and estimated prices
-3. Provide a justification for the purchase
-4. Submit for approval
+## Converting to a purchase order
 
-## Approval Workflow
+An approved requisition with a supplier can be converted once to a draft purchase
+order. Its saved amounts, lines and currency are copied; the order date is today
+in UTC and its delivery date is the requisition's required date. The requisition
+becomes converted and links to the order. Approved/converted requisitions cannot
+be edited or deleted. Draft deletion retains historical lines.
 
-Requisitions follow the approval workflows configured in **Settings > Workflows**. Approvers receive notifications and can approve, reject, or request changes.
-
-See [Workflows](/docs/settings/workflows) for details on configuring approval rules.
-
-## Converting to Purchase Order
-
-After approval:
-
-1. Open the approved requisition
-2. Click **Convert to PO**
-3. Select the supplier and finalize details
-4. The PO is linked to the original requisition
+Writes check tenant references and locked request dates. Conversion also checks
+the new purchase-order date. Draft supplier/date/reference/notes edits and exact
+price aliases are available through the [API Reference](/docs/api-reference) and
+[MCP tools](/docs/guides/mcp).

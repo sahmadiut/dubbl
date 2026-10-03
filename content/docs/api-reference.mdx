@@ -779,3 +779,34 @@ unsafe constituents (including offsetting history) and unsafe sums reject 422.
 All eight operations have corresponding MCP tools, including draft edit/delete,
 detail/counts and send. PDF, full-int64, other procurement contracts and production
 currency qualification remain separate.
+
+## Purchase requisition exact contracts
+
+`/api/v1/purchase-requisitions` supports list/create; `/:id` supports GET, draft
+PUT and DELETE. Create returns `{requisition}`; detail and edits return a bare
+document; list returns `{data,pagination}`. Prices accept decimal-major numeric
+`unitPrice` (USD 12.50), exact decimal-major `unitPriceExact` or canonical integer
+minor `unitPriceMinor` strings. Aliases must agree. Currency defaults USD; quantities
+are physical units stored as signed int32 hundredths. Exact ratios preserve
+extended-price rounding; tax is always zero and `taxRateId` is only a reference.
+Numeric header and returned line amounts retain currency minor units (USD cents),
+with additive `*Minor` strings. Money must fit signed safe integers; unsupported
+prices/products/sums/history reject with 422 before mutation.
+
+PUT edits draft supplier, required date, reference or notes. Lines, request date,
+currency and number remain fixed. PUT `{status:"submitted"}` submits a draft;
+other status changes reject. `/approve` and `/reject` accept only submitted
+requisitions; rejection accepts an optional reason. `/convert` accepts only an
+approved requisition with a supplier, copying saved money/lines/currency to one
+draft PO dated today in UTC and linking it. Repeated conversion rejects.
+Approved/converted requests cannot be edited or deleted. DELETE soft-deletes a
+draft and retains its historical lines.
+
+Create/edit/delete/submit/convert require `manage:purchases`; approve/reject
+require `approve:purchases`. Every write validates tenant references and strict
+request-date period/fiscal locks; conversion also checks the new PO date.
+Number/header/lines/status/link/audit commit together. No automatic approval
+workflow routing or notifications are performed. MCP counterparts include distinct
+`update_purchase_requisition`, `delete_purchase_requisition` and
+`submit_purchase_requisition` tools, with existing list/get/create/approve/reject/
+convert tools. Full-int64 and production currency qualification remain separate.

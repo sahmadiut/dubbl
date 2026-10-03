@@ -14,7 +14,6 @@ import {
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatMoney } from "@/lib/money";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
@@ -95,15 +94,6 @@ export default function RequisitionDetailPage() {
     if (!orgId || !req) return;
     setActing(true);
     try {
-      const res = await fetch(`/api/v1/purchase-requisitions/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "x-organization-id": orgId,
-        },
-        body: JSON.stringify({}),
-      });
-      // Use a separate submit-like approach: update status to submitted
       const submitRes = await fetch(`/api/v1/purchase-requisitions/${id}`, {
         method: "PUT",
         headers: {
@@ -114,7 +104,7 @@ export default function RequisitionDetailPage() {
       });
       if (submitRes.ok) {
         const data = await submitRes.json();
-        setReq((prev) => (prev ? { ...prev, ...data, status: data.status || "submitted" } : prev));
+        setReq((prev) => (prev ? { ...prev, ...data, status: data.status } : prev));
         toast.success("Requisition submitted for approval");
       } else {
         toast.error("Failed to submit");

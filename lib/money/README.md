@@ -288,3 +288,14 @@ allocations use exact saved net/tax values, preserve discounts/residuals after
 partial void, and avoid GRN reuse or repeated recognition tallies. Converted bill
 CRUD protects reservations; void releases them. See [purchase order contracts](../../.agentic/registries/PURCHASE_ORDER_WIRE_CONTRACTS.md)
 for boundaries, compatibility changes and remaining qualification limits.
+
+## Purchase requisition contracts (MON-050)
+
+Shared REST/MCP requisition services use exact price ratios and bigint sums,
+retaining decimal-major numeric input, additive exact major/minor aliases and
+zero-tax extension semantics. Header/line money adds *Minor strings. Atomic
+numbering, header/line/status/PO-link/audit writes validate supported safe bounds,
+references, dates and history before committing. Conversion copies saved amounts
+without recomputation; the UI draft submission now performs a real transition,
+with distinct MCP edit/delete/submit operations. See [requisition contracts](../../.agentic/registries/PURCHASE_REQUISITION_WIRE_CONTRACTS.md)
+for all boundary envelopes, units, ranges, compatibility corrections and limits.

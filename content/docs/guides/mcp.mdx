@@ -164,6 +164,17 @@ dubbl uses OAuth 2.1 with PKCE for MCP authentication:
 - `pay_bill` -- Record a payment (amount in cents)
 - `void_bill` -- Void an unsettled bill using saved ledger, FX and stock values
 
+### Purchase requisitions
+- `create_purchase_requisition` -- Create a draft with exact major/minor price aliases
+- `list_purchase_requisitions` -- List scoped requisitions, supplier and lines
+- `get_purchase_requisition` -- Get detail with exact money aliases
+- `update_purchase_requisition` -- Edit draft supplier/date/reference/notes
+- `delete_purchase_requisition` -- Soft-delete a draft, retaining lines
+- `submit_purchase_requisition` -- Submit a draft for approval
+- `approve_purchase_requisition` -- Approve a submitted request
+- `reject_purchase_requisition` -- Reject a submitted request with a reason
+- `convert_purchase_requisition` -- Copy approved saved amounts to one draft PO
+
 ### Purchase orders
 - `create_purchase_order` -- Create a draft with exact major/minor price aliases
 - `list_purchase_orders` -- List scoped orders, supplier and lines
@@ -184,7 +195,7 @@ dubbl uses OAuth 2.1 with PKCE for MCP authentication:
 ## Amount Conventions
 
 - All monetary amounts in tool inputs/outputs are in **integer cents** (e.g. `1250` = $12.50)
-- Invoice/bill/purchase-order write `unitPrice` is decimal major units (USD 12.50); `unitPriceExact` is an exact major decimal string and `unitPriceMinor` is an integer minor string. Quantity is decimal physical units. Bill write responses include exact header `*Minor` aliases; supported amounts remain signed safe integers. See [API Reference](/docs/api-reference) for currency, rounding and duplicate policies.
+- Invoice/bill/purchase-order/requisition write `unitPrice` is decimal major units (USD 12.50); `unitPriceExact` is an exact major decimal string and `unitPriceMinor` is an integer minor string. Quantity is decimal physical units. Bill write responses include exact header `*Minor` aliases; supported amounts remain signed safe integers. See [API Reference](/docs/api-reference) for currency, rounding and duplicate policies.
 - Exchange rates are stored as integers with 6 decimal places (`1000000` = 1.0)
 
 ## Testing

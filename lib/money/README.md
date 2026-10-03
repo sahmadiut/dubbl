@@ -299,3 +299,16 @@ references, dates and history before committing. Conversion copies saved amounts
 without recomputation; the UI draft submission now performs a real transition,
 with distinct MCP edit/delete/submit operations. See [requisition contracts](../../.agentic/registries/PURCHASE_REQUISITION_WIRE_CONTRACTS.md)
 for all boundary envelopes, units, ranges, compatibility corrections and limits.
+
+## Supplier debit-note contracts (MON-051)
+
+REST/MCP CRUD, send, apply and void share atomic organization-scoped services.
+REST numeric prices remain decimal major units; MCP numeric prices remain
+integer minor units. Exact major/minor aliases preserve extension/tax/discount
+rounding; header/line numeric minor amounts add *Minor strings. Linked recognition
+uses saved bill FX; reversal swaps saved journal legs and restores qualified
+complete average/FIFO stock returns and paired noncash allocations. Unsafe history,
+unsupported partial/GRNI/tracked stock, specialized expense taxes and differing
+carrying-FX settlement reject before commit. See [debit-note contracts](../../.agentic/registries/DEBIT_NOTE_WIRE_CONTRACTS.md)
+for envelopes, ranges, legacy history and MON-021 coordination. Full-range,
+production migration, independent financial/security and IRR gates remain separate.

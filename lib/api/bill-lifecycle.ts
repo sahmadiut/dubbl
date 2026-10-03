@@ -3,7 +3,7 @@ import { and, eq, inArray, isNull, ne, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { bill, billLine, organization, contact, chartAccount, taxRate, costCenter, project, inventoryItem, warehouse,
   goodsReceipt, goodsReceiptLine, purchaseOrder, purchaseOrderLine, billPurchaseOrder, journalEntry, journalLine,
-  inventoryMovement, auditLog, approvalRequest, approvalAction, approvalWorkflow, approvalWorkflowStep, member } from "@/lib/db/schema";
+  inventoryMovement, auditLog, approvalRequest, approvalAction, approvalWorkflow, approvalWorkflowStep, member, debitNote } from "@/lib/db/schema";
 import { AuthError, type AuthContext } from "./auth-context";
 import { requireRole } from "./require-role";
 import { assertNotLocked } from "./period-lock";
@@ -337,6 +337,9 @@ export async function voidBill(ctx: AuthContext, id: string, request?: Request) 
   return db.transaction(async tx => {
     const { found, lines, receipts, reservations } = await load(tx, ctx, id);
     if (found.status === "void") fail("Already voided");
+    const activeDebitNotes = await tx.select({ id: debitNote.id }).from(debitNote).where(and(eq(debitNote.organizationId, ctx.organizationId),
+      eq(debitNote.billId, id), inArray(debitNote.status, ["sent", "applied"]), isNull(debitNote.deletedAt)));
+    if (activeDebitNotes.length) fail("Void linked debit notes before voiding this bill");
     if (found.amountPaid !== 0) fail("Cannot void a bill with recorded payments or applied credits. Unapply or refund settlement first.");
     await assertNotLocked(ctx.organizationId, found.issueDate);
     if (["received", "partial", "paid", "overdue"].includes(found.status) && !found.journalEntryId) unsupported("Posted bill has no recognition journal");

@@ -1,14 +1,11 @@
-import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { debitNote, organization } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { organization } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 import { getAuthContext } from "@/lib/api/auth-context";
 import { requireRole } from "@/lib/api/require-role";
-import { handleError, notFound } from "@/lib/api/response";
-import { logAudit } from "@/lib/api/audit";
-import { notDeleted } from "@/lib/db/soft-delete";
-import { createDebitNoteJournalEntry } from "@/lib/api/journal-automation";
-import { assertNotLocked } from "@/lib/api/period-lock";
+import { ok, handleError } from "@/lib/api/response";
+import { jsonResponse } from "@/lib/api/json-response";
+import { sendDebitNote } from "@/lib/api/debit-notes";
 import { sendDocumentEmail } from "@/lib/email/document-sender";
 import { renderDocumentEmailHtml } from "@/lib/email/render-document-email";
 import { z } from "zod";
@@ -34,89 +31,29 @@ const sendBodySchema = z.object({
   attachPdf: z.boolean().default(false),
 });
 
-export async function POST(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await params;
-    const ctx = await getAuthContext(request);
+    const ctx = await getAuthContext(request), { id } = await params;
     requireRole(ctx, "manage:debit-notes");
-
-    const found = await db.query.debitNote.findFirst({
-      where: and(
-        eq(debitNote.id, id),
-        eq(debitNote.organizationId, ctx.organizationId),
-        notDeleted(debitNote.deletedAt)
-      ),
-      with: { lines: true },
-    });
-
-    if (!found) return notFound("Debit note");
-    if (found.status !== "draft") {
-      return NextResponse.json(
-        { error: "Only draft debit notes can be sent" },
-        { status: 400 }
-      );
+    const text = await request.text();
+    let body: unknown = {};
+    if (text.trim()) {
+      try { body = JSON.parse(text); }
+      catch { throw new z.ZodError([{ code: "custom", path: [], message: "Invalid JSON send body" }]); }
     }
-
-    const rawBody = await request.json().catch(() => ({}));
-    const emailParsed = sendBodySchema.safeParse(rawBody);
-
-    if (emailParsed.success) {
-      const { recipientEmail, subject, templateProps } = emailParsed.data;
-      const html = await renderDocumentEmailHtml(templateProps);
-      const org = await db.query.organization.findFirst({
-        where: eq(organization.id, ctx.organizationId),
-      });
-
-      await sendDocumentEmail({
-        orgId: ctx.organizationId,
-        userId: ctx.userId,
-        documentType: "debit_note",
-        documentId: id,
-        recipientEmail,
-        subject,
-        body: html,
-        attachPdf: false,
-        replyTo: org?.contactEmail || undefined,
-      });
-    }
-
-    await assertNotLocked(ctx.organizationId, found.issueDate);
-
-    // Create journal entry
-    const entry = await createDebitNoteJournalEntry(
-      { organizationId: ctx.organizationId, userId: ctx.userId },
-      {
-        debitNoteNumber: found.debitNoteNumber,
-        total: found.total,
-        taxTotal: found.taxTotal,
-        lines: found.lines.map((l) => ({
-          accountId: l.accountId,
-          amount: l.amount,
-          taxAmount: l.taxAmount,
-        })),
-        date: found.issueDate,
+    const options = z.object({ sendEmail: z.boolean().optional() }).passthrough().parse(body);
+    const email = options.sendEmail === true ? sendBodySchema.parse(body) : null;
+    const result = await sendDebitNote(ctx, id, request);
+    if (email) {
+      try {
+        const org = await db.query.organization.findFirst({ where: eq(organization.id, ctx.organizationId) });
+        await sendDocumentEmail({ orgId: ctx.organizationId, userId: ctx.userId, documentType: "debit_note", documentId: id,
+          recipientEmail: email.recipientEmail, subject: email.subject, body: await renderDocumentEmailHtml(email.templateProps),
+          attachPdf: false, replyTo: org?.contactEmail || undefined });
+      } catch {
+        return jsonResponse({ ...result, error: "Debit note recognized, but email delivery failed. Retry delivery through document emails." }, { status: 502 });
       }
-    );
-
-    const [updated] = await db
-      .update(debitNote)
-      .set({
-        status: "sent",
-        sentAt: new Date(),
-        amountRemaining: found.total,
-        journalEntryId: entry?.id || null,
-        updatedAt: new Date(),
-      })
-      .where(eq(debitNote.id, id))
-      .returning();
-
-    logAudit({ ctx, action: "send", entityType: "debit_note", entityId: id, changes: { previousStatus: found.status }, request });
-
-    return NextResponse.json({ debitNote: updated });
-  } catch (err) {
-    return handleError(err);
-  }
+    }
+    return ok({ debitNote: result.debitNote });
+  } catch (err) { return handleError(err); }
 }

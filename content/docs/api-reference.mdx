@@ -370,6 +370,47 @@ separately qualified. Standard/serial/lot returns reject; consumed FIFO return
 layers reject. Optional email delivery follows commit and can fail independently;
 retry email separately. PDF/provider and full-domain contracts remain separate.
 
+### Supplier debit notes
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET/POST | `/api/v1/debit-notes` | List / create supplier debit notes |
+| GET/PATCH/DELETE | `/api/v1/debit-notes/:id` | Read / edit draft / soft-delete draft |
+| POST | `/api/v1/debit-notes/:id/send` | Recognize AP credit and optional email |
+| POST | `/api/v1/debit-notes/:id/apply` | Offset a recognized supplier bill |
+| POST | `/api/v1/debit-notes/:id/void` | Reverse recognition, stock and allocations |
+
+REST line `unitPrice` is decimal major units; MCP numeric prices are integer
+minor units (USD cents). Both accept exact `unitPriceExact` major decimals and
+`unitPriceMinor` integer strings, with agreement when combined. Prices default to
+zero, currency to USD. Quantity is decimal physical units on input and hundredths
+on output; discounts are basis points. Exact ratios extend prices before rounding
+gross, discount and exclusive tax. All prices, products, taxes, sums and posting
+amounts must fit signed safe integers. Numeric header/line amounts retain their
+minor units and add corresponding `*Minor` strings. Larger exact inputs fail with
+422 before committed mutation. PATCH allows supplier/original bill/date/currency/
+reference/notes and replacement lines; tenant/status/totals/posted IDs reject.
+
+Writes require `manage:debit-notes` and open dates. Expense recognition supports
+standard fully recoverable input VAT; linked bills supply saved FX. Complete
+matching non-GRNI stock bill returns preserve original journal/receipt values
+and unconsumed average/FIFO inventory. Partial/GRNI/tracked/standard-cost stock
+and specialized expense tax require further qualification and reject safely.
+Voiding uses saved FX/amounts, restores returned stock and unwinds exact paired
+allocations. Bills with active linked debit notes must have those notes voided first.
+
+Apply accepts positive minor-unit `amount` or canonical `amountMinor`. Supplier,
+currency, recognized state, saved AP account/FX and proportional carrying values
+must match. It records noncash payment/allocation carriers with no second AP
+journal. Differing FX/rounding settlement remains separately qualified. Orphaned
+legacy allocations and bank-linked carriers cannot be automatically unwound.
+Optional email follows accounting commit; delivery failure returns 502 with the
+sent debit note. Retry delivery through document emails. PDF remains separate.
+
+MCP tools: `list_debit_notes`, `get_debit_note`, `create_debit_note`,
+`update_debit_note`, `delete_debit_note`, `send_debit_note`, `apply_debit_note`,
+`void_debit_note`. All operations share direct-DB transactional services.
+
 ### Bills
 | Method | Path | Description |
 |--------|------|-------------|

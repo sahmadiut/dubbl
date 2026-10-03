@@ -367,3 +367,21 @@ accounting/IRR qualification is inferred.
 - Adjacent PO integration, full units, typecheck/lint and source/legacy inventory.
   No build/dev/production qualification; independent financial/security/migration/
   browser/session/OAuth/IRR and parent procurement gates remain assigned.
+
+## MON-051 supplier debit-note contracts
+
+- Pure REST major/MCP minor/exact/dual price units, extension/discount/tax ratios,
+  USD/JPY/IRR/KWD scales, malformed/conflicting/unsafe aliases and header balances.
+- Actual migrated PostgreSQL handlers/full MCP SDK cover CRUD/send/apply/void,
+  numeric/exact clients, above-int32 and safe-max values, saved KWD FX after quote
+  changes, standard VAT, complete average/FIFO warehouse return and restoration.
+- API-key/custom-role/foreign organization and reference checks on every selected
+  operation, conflicting org header, bounded dates/list queries and mass assignment.
+- SQL-text snapshots establish unchanged business tables after rejected values,
+  unsafe history, consumed FIFO, partial stock, differing FX and period/year locks.
+  Injected line/journal/allocation/stock/void-audit failures prove rollback.
+- Concurrent first/subsequent numbering, send/full application/void, allocation
+  unwind, bill void coordination and email-failure retained sent state are covered.
+- Adjacent bill lifecycle/credit integration, full units, lint/typecheck, inventory
+  and legacy-money checks apply. Full-int64/partial-GRNI-specialized tax/settlement
+  cross-writer/provider/session/OAuth/production/independent financial/IRR gates remain.

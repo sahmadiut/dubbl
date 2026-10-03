@@ -1,6 +1,20 @@
 # Money and FX boundary manifest
 
-Inventory owner: MON-001. Refreshed 2026-10-03 (Asia/Tehran) for MON-050 against entry HEAD `dd8c2b9`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+Inventory owner: MON-001. Refreshed 2026-10-04 (Asia/Tehran) for MON-051 against entry HEAD `9989a0d`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+
+## MON-051 supplier debit-note adoption (MON-020 child)
+
+[Debit-note contracts](DEBIT_NOTE_WIRE_CONTRACTS.md) inventory REST/MCP CRUD,
+send, apply and void. Decimal-major REST/integer-minor MCP prices accept exact
+major/minor aliases; safe numeric header/line amounts add *Minor strings. Shared
+transactions protect numbering, references, journal/stock, paired carrier/bill
+balances and audit. Recognition saves FX; linked complete non-GRNI stock returns
+mirror original receipt/GL values and FIFO layers. Void restores saved history
+and allocations; bill void refuses active linked notes. Differing AP carrying FX,
+partial/GRNI/tracked stock, specialized expense tax and unqualified legacy history
+fail safely with explicit qualification limits. Email follows commit with a 502
+sent-state response on failure. Actual handler/SDK fixtures qualify supported
+boundaries, not full-range/production/IRR or parent procurement acceptance.
 
 ## MON-050 purchase requisition adoption (MON-020 child)
 

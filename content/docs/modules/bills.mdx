@@ -56,6 +56,23 @@ Accepted purchase orders can be **converted to bills**, copying all line items. 
 
 Bills use the prefix `BILL-` and purchase orders use `PO-`, both auto-numbered sequentially.
 
+## Supplier debit notes
+
+Supplier debit notes record returns or overcharges as AP credits. Drafts can be
+edited or deleted. Sending posts the credit; applying it reduces a recognized
+bill's outstanding balance for the same supplier and currency. Voiding reverses
+the saved accounting and unwinds applications together. Void active linked notes
+before voiding their original bill.
+
+Complete matching stock returns use original bill receipt costs and unconsumed
+average/FIFO stock. Partial stock, GRNI, tracked stock and specialized expense tax
+need further qualification and currently reject. Allocation also requires matching
+saved carrying FX; differing FX is separately qualified. Email delivery follows
+accounting recognition and can be retried separately if it fails.
+
+See [API Reference](/docs/api-reference) for exact price/amount aliases, retained
+REST major-unit and MCP minor-unit price conventions, and supported safe ranges.
+
 ## PDF Download
 
 Bills and purchase orders can be downloaded as PDFs. The layout uses your configured template with your branding, accent color, and notes. To customize, go to **Settings > Templates**. See [Templates](/docs/settings/document-templates) for all available options.

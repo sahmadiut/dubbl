@@ -164,6 +164,22 @@ dubbl uses OAuth 2.1 with PKCE for MCP authentication:
 - `pay_bill` -- Record a payment (amount in cents)
 - `void_bill` -- Void an unsettled bill using saved ledger, FX and stock values
 
+### Supplier debit notes
+- `list_debit_notes` -- List supplier notes with safe numeric money and exact aliases
+- `get_debit_note` -- Read supplier, lines and recognition journal
+- `create_debit_note` -- Create a draft; numeric prices are integer minor units
+- `update_debit_note` -- Edit a draft or replace its lines atomically
+- `delete_debit_note` -- Soft-delete a draft and retain its lines
+- `send_debit_note` -- Recognize AP credit and qualified complete stock returns
+- `apply_debit_note` -- Offset recognized matching supplier/currency/carrying-FX bills
+- `void_debit_note` -- Reverse saved journal/stock and unwind carrier allocations
+
+Debit-note `unitPriceExact` is decimal major units and `unitPriceMinor` integer
+minor units; combined aliases must agree. Numeric prices retain integer minor
+units (USD cents). Amounts and derived values must fit safe integers. Sending
+recognizes accounting only; use `send_document_email` for delivery. Partial/GRNI
+stock returns and differing carrying-FX settlement reject pending qualification.
+
 ### Purchase requisitions
 - `create_purchase_requisition` -- Create a draft with exact major/minor price aliases
 - `list_purchase_requisitions` -- List scoped requisitions, supplier and lines

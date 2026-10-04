@@ -441,6 +441,8 @@ export const inventoryCostLayer = pgTable(
     originalQuantity: integer("original_quantity").notNull(),
     remainingQuantity: integer("remaining_quantity").notNull(),
     unitCost: moneyInteger("unit_cost").notNull(), // cents per unit for this layer
+    // Null preserves historical quantity * unitCost; new flows retain residual cents.
+    remainingValue: moneyInteger("remaining_value"),
     sourceMovementId: uuid("source_movement_id").references(() => inventoryMovement.id),
     createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   },
@@ -466,6 +468,7 @@ export const inventoryLayerConsumption = pgTable("inventory_layer_consumption", 
     .references(() => inventoryCostLayer.id),
   quantity: integer("quantity").notNull(),
   unitCost: moneyInteger("unit_cost").notNull(), // cents per unit consumed from this layer
+  value: moneyInteger("value"), // exact consumed carrying value; null for historical rows
 });
 
 // --- Relations ---

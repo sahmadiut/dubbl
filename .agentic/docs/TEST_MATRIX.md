@@ -1,5 +1,23 @@
 # Verification matrix
 
+## MON-077 inventory valuation and landed costs
+
+- Pure contracts: canonical legacy/exact component amounts, ties, unsafe inputs/
+  totals, largest-remainder conservation and historical/new layer/consumption DTOs.
+- Disposable migrated PostgreSQL: pre-0008 historical layer remains unchanged with
+  new null value; actual REST/API-key and SDK in-memory MCP operations, full tool
+  registration, all CRUD/read/report/layer paths, 2 tenants/custom read role,
+  foreign/corrupt sources, malformed/unsafe input and output, exact allocation,
+  FIFO residual exhaustion across 1/2 layers, average receipt integration,
+  MON-052 goods receipt writer, locks, one-winner concurrency and 4 audit rollbacks.
+- Aggregate checks: all journals balanced, allocated line totals conserved,
+  safe values beyond int32, unsafe saved int64/report aggregate rejected unchanged.
+- Regressions: MON-074/075/076/052 fixtures and bill lifecycle/migration fixtures.
+- Layout source review: API field names, book-value column, exact decimal display
+  and CSV currency. No browser/screenshot/session/OAuth/independent human review.
+  MON-078/024 and assigned money/migration/IRR/release gates remain open.
+
+
 ## MON-076 inventory movement and warehouses
 
 - Three pure groups verify agreeing canonical cents aliases, signed safe limits,

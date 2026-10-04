@@ -1,4 +1,4 @@
-import { exactBlendAverageCost, roundInventoryRatio } from "@/lib/money/inventory-cost";
+import { exactBlendAverageCost, roundInventoryRatio, inventoryLayerValue } from "@/lib/money/inventory-cost";
 import { db } from "@/lib/db";
 import {
   inventoryItem,
@@ -122,6 +122,7 @@ export async function recordInventoryReceipt(
       originalQuantity: qty,
       remainingQuantity: qty,
       unitCost: args.unitCost,
+      remainingValue: value,
       sourceMovementId: movement.id,
       ...(args.receivedAt ? { receivedAt: args.receivedAt } : {}),
     });
@@ -160,7 +161,7 @@ export async function recordInventoryIssue(
   const newQty = catalogQuantity.parse(prevQty - qty);
 
   let cost: number;
-  let consumptions: { costLayerId: string; quantity: number; unitCost: number }[] = [];
+  let consumptions: { costLayerId: string; quantity: number; unitCost: number; value: number }[] = [];
 
   if (item.costMethod === "fifo") {
     const consumed = await consumeFifoLayers(tx, item, qty);
@@ -173,6 +174,7 @@ export async function recordInventoryIssue(
     cost = legacyMinor(exactCost);
   }
 
+  if (newQty >= 0 && cost > item.totalValue) throw new WireCompatibilityError("Cost of issue exceeds saved inventory carrying value");
   const newValue = Math.max(0, legacyMinor(BigInt(item.totalValue) - BigInt(cost)));
 
   const [movement] = await tx
@@ -206,6 +208,7 @@ export async function recordInventoryIssue(
         costLayerId: c.costLayerId,
         quantity: c.quantity,
         unitCost: c.unitCost,
+        value: c.value,
       }))
     );
   }
@@ -227,7 +230,8 @@ export async function consumeFifoLayers(
   tx: Tx,
   item: ValuedItem,
   qty: number
-): Promise<{ totalCost: number; consumptions: { costLayerId: string; quantity: number; unitCost: number }[] }> {
+): Promise<{ totalCost: number; consumptions: { costLayerId: string; quantity: number; unitCost: number; value: number }[] }> {
+  catalogQuantity.pipe(zPositiveQuantity).parse(qty);
   const layers = await tx
     .select()
     .from(inventoryCostLayer)
@@ -243,17 +247,19 @@ export async function consumeFifoLayers(
 
   let remaining = qty;
   let totalCost = 0;
-  const consumptions: { costLayerId: string; quantity: number; unitCost: number }[] = [];
+  const consumptions: { costLayerId: string; quantity: number; unitCost: number; value: number }[] = [];
 
   for (const layer of layers) {
     if (remaining <= 0) break;
     const take = Math.min(remaining, layer.remainingQuantity);
     catalogQuantity.parse(layer.remainingQuantity); legacyMinorSchema.min(0).parse(layer.unitCost);
-    totalCost = legacyMinor(BigInt(totalCost) + BigInt(take) * BigInt(layer.unitCost));
-    consumptions.push({ costLayerId: layer.id, quantity: take, unitCost: layer.unitCost });
+    const carrying = inventoryLayerValue(layer);
+    const consumedValue = take === layer.remainingQuantity ? carrying : Math.min(carrying, roundInventoryRatio(BigInt(carrying) * BigInt(take), BigInt(layer.remainingQuantity)));
+    totalCost = legacyMinor(BigInt(totalCost) + BigInt(consumedValue));
+    consumptions.push({ costLayerId: layer.id, quantity: take, unitCost: layer.unitCost, value: consumedValue });
     await tx
       .update(inventoryCostLayer)
-      .set({ remainingQuantity: layer.remainingQuantity - take })
+      .set({ remainingQuantity: layer.remainingQuantity - take, remainingValue: carrying - consumedValue })
       .where(eq(inventoryCostLayer.id, layer.id));
     remaining -= take;
   }

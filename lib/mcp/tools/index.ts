@@ -1,3 +1,4 @@
+import { registerInventoryValuationTools } from "./inventory-valuation";
 import { registerInventoryMasterTools } from "./inventory-master";
 import { registerBankDocumentMatchTools } from "./bank-document-matches";
 import { registerBankTransferTools } from "./bank-transfers";
@@ -142,6 +143,7 @@ export function registerAllTools(server: McpServer, ctx: AuthContext) {
   registerScheduledPaymentTools(server, ctx);
   registerPurchaseRequisitionTools(server, ctx);
   registerLandedCostTools(server, ctx);
+  registerInventoryValuationTools(server, ctx);
   registerBulkTools(server, ctx);
   registerInvoiceBulkTools(server, ctx);
   registerBillBulkTools(server, ctx);

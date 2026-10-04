@@ -6,6 +6,8 @@ import { WireCompatibilityError } from "@/lib/money/wire";
 import { invoiceRound, safeInvoiceMinor } from "./invoice-write-wire";
 import { billInt32 } from "./bill-lifecycle-wire";
 
+import { inventoryLayerValue } from "@/lib/money/inventory-cost";
+
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 export async function billStockMovement(tx: Tx, ctx: AuthContext, data: {
   billId: string; itemId: string; warehouseId: string | null; quantity: number; value: number;
@@ -31,7 +33,7 @@ export async function billStockMovement(tx: Tx, ctx: AuthContext, data: {
       layer = layers[0];
       if (layers.length !== 1 || layer.organizationId !== ctx.organizationId || layer.inventoryItemId !== item.id ||
         layer.warehouseId !== data.warehouseId || layer.originalQuantity !== -data.quantity || layer.remainingQuantity !== layer.originalQuantity ||
-        safeInvoiceMinor(BigInt(layer.unitCost) * BigInt(layer.originalQuantity)) !== -data.value)
+        inventoryLayerValue(layer) !== -data.value)
         throw new WireCompatibilityError("Cannot void consumed or unqualified bill FIFO receipts");
     } else if (safeInvoiceMinor(BigInt(unitCost) * BigInt(data.quantity)) !== data.value) {
       throw new WireCompatibilityError("FIFO bill receipt value must divide exactly into whole-unit costs");
@@ -50,8 +52,8 @@ export async function billStockMovement(tx: Tx, ctx: AuthContext, data: {
     referenceType: data.reverseMovementId ? "bill_void" : data.referenceType ?? "bill", referenceId: data.billId,
     journalEntryId: data.journalEntryId, createdBy: ctx.userId }).returning();
   await tx.update(inventoryItem).set({ quantityOnHand: quantity, totalValue: value, averageCost, updatedAt: new Date() }).where(eq(inventoryItem.id, item.id));
-  if (layer) await tx.update(inventoryCostLayer).set({ remainingQuantity: 0 }).where(eq(inventoryCostLayer.id, layer.id));
+  if (layer) await tx.update(inventoryCostLayer).set({ remainingQuantity: 0, remainingValue: 0 }).where(eq(inventoryCostLayer.id, layer.id));
   else if (item.costMethod === "fifo" && data.quantity > 0) await tx.insert(inventoryCostLayer).values({ organizationId: ctx.organizationId,
-    inventoryItemId: item.id, warehouseId: data.warehouseId, originalQuantity: data.quantity, remainingQuantity: data.quantity, unitCost, sourceMovementId: movement.id });
+    inventoryItemId: item.id, warehouseId: data.warehouseId, originalQuantity: data.quantity, remainingQuantity: data.quantity, unitCost, remainingValue: data.value, sourceMovementId: movement.id });
   return movement;
 }

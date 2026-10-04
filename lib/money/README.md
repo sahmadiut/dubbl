@@ -1,5 +1,13 @@
 # Exact money core
 
+MON-077 inventory valuation/landed costs use exact conserving apportionment and
+nullable FIFO carrying/consumption values, with historical null read fallback.
+REST/MCP numeric amounts retain their units and add Minor aliases; legacy component
+major numbers still scale by 100. Report saved carrying values are separate from
+legacy price projections. See [valuation contracts](../../.agentic/registries/INVENTORY_VALUATION_WIRE_CONTRACTS.md)
+for the additive migration, supported states/ranges, locks, atomic GL/audit and
+remaining assembly/combined qualification gates.
+
 Approval conditions (MON-073) keep string `value` and add `valueMinor` only for
 monetary document-header thresholds. Both are canonical signed int64 strings
 in the document currency's minor units; both supplied must agree. All six

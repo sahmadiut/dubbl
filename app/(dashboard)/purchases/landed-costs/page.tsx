@@ -29,6 +29,8 @@ import {
 import { Plus, Trash2 } from "lucide-react";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { toast } from "sonner";
+import { money, toMajorDecimal } from "@/lib/money/exact";
+import { catalogPriceMinor } from "@/lib/money/catalog-input";
 
 interface CostComponent {
   description: string;
@@ -41,14 +43,14 @@ interface LandedCost {
   name: string;
   allocationMethod: string;
   totalCostAmount: number;
+  currencyCode: string;
   status: string;
   createdAt: string;
   purchaseOrder?: { poNumber: string } | null;
   bill?: { billNumber: string } | null;
 }
 
-const formatMoney = (cents: number) =>
-  (cents / 100).toLocaleString("en-US", { style: "currency", currency: "USD" });
+const formatMoney = (amount: number, currency: string) => `${currency} ${toMajorDecimal(money(BigInt(amount), currency))}`;
 
 export default function LandedCostsPage() {
   const router = useRouter();
@@ -141,7 +143,7 @@ export default function LandedCostsPage() {
           allocationMethod,
           components: components.map((c) => ({
             description: c.description,
-            amount: parseFloat(c.amount) || 0,
+            amountMinor: catalogPriceMinor(c.amount),
             accountId: c.accountId || null,
           })),
         }),
@@ -272,7 +274,7 @@ export default function LandedCostsPage() {
                     {item.allocationMethod.replace(/_/g, " ")}
                   </TableCell>
                   <TableCell className="text-right font-mono text-sm tabular-nums">
-                    {formatMoney(item.totalCostAmount)}
+                    {formatMoney(item.totalCostAmount, item.currencyCode)}
                   </TableCell>
                   <TableCell>
                     <Badge
@@ -386,8 +388,6 @@ export default function LandedCostsPage() {
                     <SelectContent>
                       <SelectItem value="by_value">By Value</SelectItem>
                       <SelectItem value="by_quantity">By Quantity</SelectItem>
-                      <SelectItem value="by_weight">By Weight</SelectItem>
-                      <SelectItem value="manual">Manual</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

@@ -11,6 +11,7 @@ import { recordInventoryReceipt } from "./inventory-valuation";
 import { getNextEntryNumber, ensureControlAccount, ensureAccountByCode, resolveBaseRate, createInventoryAdjustmentJournalEntry } from "./journal-automation";
 import { listInventorySuppliers } from "./inventory-catalog";
 import { z } from "zod";
+import { inventoryLayerValue, roundInventoryRatio } from "@/lib/money/inventory-cost";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 const itemScope = (ctx: AuthContext, id?: string) => and(eq(inventoryItem.organizationId, ctx.organizationId), isNull(inventoryItem.deletedAt), id ? eq(inventoryItem.id, id) : undefined);
@@ -187,7 +188,8 @@ export async function preflightAdjustment(tx: Tx, ctx: AuthContext, item: typeof
     for (const layer of layers) {
       if (remaining <= 0) break;
       if (!Number.isSafeInteger(layer.unitCost) || layer.unitCost < 0) throw new WireCompatibilityError();
-      const take = Math.min(remaining, layer.remainingQuantity); cost += BigInt(take) * BigInt(layer.unitCost); legacyMinor(cost); remaining -= take;
+      const take = Math.min(remaining, layer.remainingQuantity), carrying = inventoryLayerValue(layer);
+      cost += BigInt(take === layer.remainingQuantity ? carrying : Math.min(carrying, roundInventoryRatio(BigInt(carrying) * BigInt(take), BigInt(layer.remainingQuantity)))); legacyMinor(cost); remaining -= take;
     }
     cost += BigInt(remaining) * BigInt(item.averageCost);
   }

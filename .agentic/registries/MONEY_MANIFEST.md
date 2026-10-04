@@ -1,5 +1,20 @@
 # Money and FX boundary manifest
 
+## MON-077 inventory valuation/landed cost adoption
+
+[INVENTORY_VALUATION_WIRE_CONTRACTS](INVENTORY_VALUATION_WIRE_CONTRACTS.md)
+records five REST route files/eight operations and eight tools, supported safe money ranges,
+legacy two-decimal major component inputs and exact Minor aliases. Shared
+transactional services conserve every component via largest-remainder allocation,
+post balanced base-currency inventory/clearing GL with audit, enforce scoped source
+references/permissions/period locks and prevent repeat capitalization. Nullable
+bigint layer carrying/consumption values preserve FIFO residuals without rewriting
+historical unit costs; generated migration 0008 has no backfill or rescale.
+Report retains legacy price projections and adds exact saved carrying values;
+UI/CSV use exact display and correct API field names. Standard/service/weight/manual
+and unqualified foreign-currency/history allocation fail explicitly. Parent MON-024
+and MON-078 retain combined/assembly acceptance; no IRR/full-int64 enablement.
+
 ## MON-076 inventory movement/warehouse adoption
 
 [INVENTORY_MOVEMENT_WIRE_CONTRACTS](INVENTORY_MOVEMENT_WIRE_CONTRACTS.md) records

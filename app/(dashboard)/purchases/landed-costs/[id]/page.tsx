@@ -16,6 +16,7 @@ import {
 import { ArrowLeft } from "lucide-react";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { toast } from "sonner";
+import { money, toMajorDecimal } from "@/lib/money/exact";
 
 interface CostComponent {
   id: string;
@@ -37,6 +38,7 @@ interface LandedCostDetail {
   name: string;
   allocationMethod: string;
   totalCostAmount: number;
+  currencyCode: string;
   status: string;
   createdAt: string;
   allocatedAt: string | null;
@@ -46,8 +48,7 @@ interface LandedCostDetail {
   lineAllocations: LineAllocation[];
 }
 
-const formatMoney = (cents: number) =>
-  (cents / 100).toLocaleString("en-US", { style: "currency", currency: "USD" });
+const formatMoney = (amount: number, currency: string) => `${currency} ${toMajorDecimal(money(BigInt(amount), currency))}`;
 
 export default function LandedCostDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -144,7 +145,7 @@ export default function LandedCostDetailPage() {
             </div>
             <p className="text-sm text-muted-foreground mt-0.5">
               {item.allocationMethod.replace(/_/g, " ")} · Total{" "}
-              {formatMoney(item.totalCostAmount)}
+              {formatMoney(item.totalCostAmount, item.currencyCode)}
             </p>
           </div>
         </div>
@@ -175,7 +176,7 @@ export default function LandedCostDetailPage() {
         <div className="rounded-lg border bg-card p-4">
           <p className="text-xs text-muted-foreground">Total Cost</p>
           <p className="mt-1 text-xl font-bold font-mono tabular-nums">
-            {formatMoney(item.totalCostAmount)}
+            {formatMoney(item.totalCostAmount, item.currencyCode)}
           </p>
         </div>
         <div className="rounded-lg border bg-card p-4">
@@ -211,7 +212,7 @@ export default function LandedCostDetailPage() {
                     {comp.description}
                   </TableCell>
                   <TableCell className="text-right font-mono text-sm tabular-nums">
-                    {formatMoney(comp.amount)}
+                    {formatMoney(comp.amount, item.currencyCode)}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {comp.accountId || "-"}
@@ -252,7 +253,7 @@ export default function LandedCostDetailPage() {
                       {la.allocationBasis}
                     </TableCell>
                     <TableCell className="text-right font-mono text-sm tabular-nums">
-                      {formatMoney(la.allocatedAmount)}
+                      {formatMoney(la.allocatedAmount, item.currencyCode)}
                     </TableCell>
                   </TableRow>
                 ))}

@@ -1,6 +1,20 @@
 # Money and FX boundary manifest
 
-Inventory owner: MON-001. Refreshed 2026-10-04 (Asia/Tehran) for MON-056 against entry HEAD `b89fdc0`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+Inventory owner: MON-001. Refreshed 2026-10-04 (Asia/Tehran) for MON-057 against entry HEAD `0409565`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
+
+## MON-057 payment reversal adoption (MON-021 child)
+
+[Payment reversal contracts](PAYMENT_REVERSAL_WIRE_CONTRACTS.md) cover DELETE and
+delete_payment with one direct-DB service, unchanged success envelope and original
+minor units. Safe exact balance arithmetic, active allocation checks, paired note/
+prepayment restoration, saved-FX journal reversal, organization/period/reference
+checks, atomic audit and concurrent deletion qualify the bounded history slice.
+Note voids ignore retained soft-deleted carriers. Bank/provider-linked payments
+require unmatch/refund first. Actual migrated PostgreSQL handler/SDK fixtures and
+pure tests cover success/rejection/rollback; generalized residual carrying after
+out-of-order rounded reversal remains unsupported by the settlement guard until
+remaining applications are unwound. No schema/rollout change; MON-021 retains
+combined acceptance and remaining payment/expense/banking child gates.
 
 ## MON-056 payment settlement adoption (MON-021 child)
 

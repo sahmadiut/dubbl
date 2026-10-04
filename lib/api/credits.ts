@@ -349,7 +349,9 @@ export async function voidCreditNote(ctx: AuthContext, id: string, request?: Req
         description: `Void credit note restock ${row.creditNoteNumber}`, reference: row.creditNoteNumber, sourceType: "credit_note_void_cogs", sourceId: id }, stock.legs, base, base,
         { rateExact: "1", source: "base_inventory", effectiveDate: row.issueDate });
     }
-    const allocations = await tx.select().from(paymentAllocation).where(and(eq(paymentAllocation.documentType, "credit_note"), eq(paymentAllocation.documentId, id)));
+    const allocations = await tx.select({ paymentId: paymentAllocation.paymentId }).from(paymentAllocation)
+      .innerJoin(payment, eq(payment.id, paymentAllocation.paymentId))
+      .where(and(eq(paymentAllocation.documentType, "credit_note"), eq(paymentAllocation.documentId, id), notDeleted(payment.deletedAt)));
     const paymentIds = [...new Set(allocations.map(a => a.paymentId))];
     if (paymentIds.length) {
       const carriers = await tx.select().from(payment).where(inArray(payment.id, paymentIds)).for("update");

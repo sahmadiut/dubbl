@@ -453,6 +453,23 @@ No payment mutation/GL settlement, HTTP/session/OAuth/provider or full-int64/IRR
 qualification is inferred. See PAYMENT_READ_WIRE_CONTRACTS and MON-055 evidence.
 
 
+## MON-057 payment reversal contracts
+
+Pure `payment-reversal-wire.test.ts` checks exact safe-limit subtraction/addition,
+no clamping, nonnegative operands and overflow. Actual `payment-reversals.test.ts`
+invokes REST/API-key/custom-role and registered MCP SDK operations against a
+random disposable fully migrated PostgreSQL database. Numeric/exact-created
+payments, received/made/multi/partial, safe-max/above-int32, four currency scales,
+saved FX after quote edits, dimensions/inactive bank, legacy null sourceId,
+paired note reapply/void and prepayment restoration retain their amounts/history.
+Rounded zero control legs reverse verbatim; all-application unwind permits new
+settlement. Tenant/auth/UUID/lock/fiscal/bank/provider/corrupt/unsafe history and
+injected final audit failures preserve complete business SQL-text snapshots.
+Competing deletes produce one success, one 404, one reversal and one audit.
+Six payment/credit/debit/bill lifecycle regression workers run alongside the slice.
+No real HTTP/session/OAuth/provider, full-int64/financial/IRR, external-writer
+concurrency or generalized retained residual-carrying qualification is implied.
+
 ## MON-056 payment settlement contracts
 
 `tests/payment-settlement-wire.test.ts` covers canonical aliases, complete/distinct

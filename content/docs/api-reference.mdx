@@ -131,7 +131,7 @@ Lists accept `type=received|made`, a contact UUID, `page` (1..21474836) and
 `limit` (1..100), defaulting to page 1 and limit 50. Invalid/fractional/out-of-range
 filters or pagination return 400. Reads require existing authenticated
 organization access and permit read-only roles. These aliases qualify reads;
-settlement creation is covered below. Reversals, batch/scheduled payments and
+settlement creation and reversals are covered below. Batch/scheduled payments and
 full-int64 business operations retain separate rollout work.
 
 ## Payment settlement amounts
@@ -178,6 +178,30 @@ Amount alias choice and allocation order do not change the request identity.
 Specify the date on retrying MCP calls across days. Without a key each successful
 call records new cash. Retry/provenance guarantees require retaining the payment
 settlement audit row; ordinary references are not retry keys.
+
+## Payment reversals
+
+`DELETE /api/v1/payments/:id` and MCP `delete_payment` accept an organization
+payment UUID and return `{success:true}`. There is no money input or currency
+conversion. Both require `manage:payments` and open payment/document/credit dates.
+They restore invoice/bill paid/due/status and clear `paidAt`, restore paired
+credit/debit-note or prepayment balances, reverse the saved cash/application
+journal verbatim (including exact FX and dimensions), and soft-delete/audit in
+one transaction. Note recognition and original prepayment deposits are retained.
+Allocation rows and bank/reference metadata remain available as history.
+
+Saved amounts and balance sums must fit safe integer minor units (USD cents);
+invalid/foreign/ambiguous or unsupported history returns 422 before committed
+mutation. Bank-matched or provider-backed payments return 409 until unmatched
+or refunded through the appropriate workflow; deletion does not issue a refund.
+Missing/deleted payments return 404, including repeated deletes. No cash entry
+or audit is duplicated. Settlement retry keys continue to replay original results;
+use a new key when recording new cash after reversal.
+
+Reversal never reloads current exchange rates or changes saved rounding. If
+out-of-order reversals leave rounded carrying that fails the settlement guard,
+unwind the remaining applications before recording cash again. Full-int64 and
+generalized residual-carrying qualification remain separate work.
 
 ## Budget amount inputs
 

@@ -1,3 +1,5 @@
+import { deletePayment } from "@/lib/api/payment-reversals";
+import { paymentDeleteFields } from "@/lib/api/payment-reversal-wire";
 import { createSettlementPayment } from "@/lib/api/payment-settlements";
 import { paymentCreateFields } from "@/lib/api/payment-settlement-wire";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -5,13 +7,10 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { payment, paymentAllocation, invoice, bill } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
-import { notDeleted, softDelete } from "@/lib/db/soft-delete";
 import { requireRole } from "@/lib/api/require-role";
 import { getNextNumber } from "@/lib/api/numbering";
-import { assertNotLocked } from "@/lib/api/period-lock";
 import {
   createPaymentJournalEntry,
-  reverseJournalEntry,
 } from "@/lib/api/journal-automation";
 import { decimalToCents } from "@/lib/money";
 import { wrapTool } from "@/lib/mcp/errors";
@@ -21,7 +20,7 @@ import { AuthError } from "@/lib/api/auth-context";
 import type { AuthContext } from "@/lib/api/auth-context";
 
 /**
- * MCP tools for standalone payment records — a single cash
+ * MCP tools for standalone payment records â€” a single cash
  * movement (money received from a customer or paid to a supplier) that settles
  * one or more invoices (type "received", AR) or bills (type "made", AP) via
  * allocations. These are the same records as the /api/v1/payments REST routes.
@@ -66,7 +65,7 @@ export function registerPaymentTools(server: McpServer, ctx: AuthContext) {
 
   server.tool(
     "record_payment_batch",
-    "Record ONE standalone payment that settles multiple documents in a batch for a single contact. UNLIKE the other payment tools, each allocation `amount` here is a DECIMAL number of currency units (e.g. 12.50, NOT cents) — it is converted to cents internally, and the payment total is the sum of those allocations. A 'received' batch can only settle invoices (AR); a 'made' batch only bills (AP); all settled documents must share one currency. Atomically: inserts the payment + allocation rows, updates each document's amountPaid/amountDue and status ('paid' or 'partial'), posts the GL journal entry (DR Bank / CR AR for received; DR AP / CR Bank for made), and links it. NOTE: this batch path does NOT enforce a period lock and does NOT cap the total against a separate amount (the total IS the allocations). Returns the created payment with its contact and allocations (amounts in integer cents).",
+    "Record ONE standalone payment that settles multiple documents in a batch for a single contact. UNLIKE the other payment tools, each allocation `amount` here is a DECIMAL number of currency units (e.g. 12.50, NOT cents) â€” it is converted to cents internally, and the payment total is the sum of those allocations. A 'received' batch can only settle invoices (AR); a 'made' batch only bills (AP); all settled documents must share one currency. Atomically: inserts the payment + allocation rows, updates each document's amountPaid/amountDue and status ('paid' or 'partial'), posts the GL journal entry (DR Bank / CR AR for received; DR AP / CR Bank for made), and links it. NOTE: this batch path does NOT enforce a period lock and does NOT cap the total against a separate amount (the total IS the allocations). Returns the created payment with its contact and allocations (amounts in integer cents).",
     {
       contactId: z
         .string()
@@ -325,115 +324,8 @@ export function registerPaymentTools(server: McpServer, ctx: AuthContext) {
 
   server.tool(
     "delete_payment",
-    "Delete (soft-delete) a standalone payment and fully UNWIND it: reverses every allocation on its invoices/bills (restoring amountDue / reducing amountPaid and reverting status), reverses the payment's own GL journal entry (so the bank and AR/AP control accounts come back in line), then soft-deletes the payment — all atomically. A zero-cash carrier payment with no journalEntryId has nothing to reverse on the GL. Fails if the payment's date is in a locked period. Returns success.",
-    {
-      paymentId: z.string().describe("The UUID of the payment to delete"),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        requireRole(ctx, "manage:payments");
-
-        const existing = await db.query.payment.findFirst({
-          where: and(
-            eq(payment.id, params.paymentId),
-            eq(payment.organizationId, ctx.organizationId),
-            notDeleted(payment.deletedAt)
-          ),
-          with: { allocations: true },
-        });
-
-        if (!existing) throw new Error("Payment not found");
-
-        await assertNotLocked(ctx.organizationId, existing.date);
-
-        // Do the doc unwind, the GL reversal, and the soft-delete atomically, so
-        // a deleted payment can't leave its bank/AR/AP movement posted (orphaned
-        // cash that overstates the bank and never reconciles).
-        await db.transaction(async (tx) => {
-          // Reverse allocations on documents
-          for (const alloc of existing.allocations) {
-            if (alloc.documentType === "invoice") {
-              const doc = await tx.query.invoice.findFirst({
-                where: and(
-                  eq(invoice.id, alloc.documentId),
-                  eq(invoice.organizationId, ctx.organizationId)
-                ),
-              });
-              if (doc) {
-                const newAmountPaid = Math.max(0, doc.amountPaid - alloc.amount);
-                const newAmountDue = doc.amountDue + alloc.amount;
-                const newStatus =
-                  newAmountPaid <= 0
-                    ? doc.status === "paid" || doc.status === "partial"
-                      ? "sent"
-                      : doc.status
-                    : "partial";
-                await tx
-                  .update(invoice)
-                  .set({
-                    amountPaid: newAmountPaid,
-                    amountDue: newAmountDue,
-                    status: newStatus,
-                    updatedAt: new Date(),
-                  })
-                  .where(eq(invoice.id, alloc.documentId));
-              }
-            } else if (alloc.documentType === "bill") {
-              const doc = await tx.query.bill.findFirst({
-                where: and(
-                  eq(bill.id, alloc.documentId),
-                  eq(bill.organizationId, ctx.organizationId)
-                ),
-              });
-              if (doc) {
-                const newAmountPaid = Math.max(0, doc.amountPaid - alloc.amount);
-                const newAmountDue = doc.amountDue + alloc.amount;
-                const newStatus =
-                  newAmountPaid <= 0
-                    ? doc.status === "paid" || doc.status === "partial"
-                      ? "received"
-                      : doc.status
-                    : "partial";
-                await tx
-                  .update(bill)
-                  .set({
-                    amountPaid: newAmountPaid,
-                    amountDue: newAmountDue,
-                    status: newStatus,
-                    updatedAt: new Date(),
-                  })
-                  .where(eq(bill.id, alloc.documentId));
-              }
-            }
-          }
-
-          // Reverse the payment's own GL entry (DR Bank/CR AR, or DR AP/CR Bank)
-          // so the bank and the control accounts come back in line. A zero-cash
-          // carrier payment (credit-note application) has no journalEntryId —
-          // nothing to reverse there.
-          if (existing.journalEntryId) {
-            await reverseJournalEntry(
-              { organizationId: ctx.organizationId, userId: ctx.userId },
-              {
-                entryId: existing.journalEntryId,
-                date: existing.date,
-                description: `Reversal of payment ${existing.paymentNumber}`,
-                reference: existing.paymentNumber,
-                sourceType: "payment_void",
-                sourceId: existing.id,
-              },
-              tx
-            );
-          }
-
-          // Soft-delete the payment
-          await tx
-            .update(payment)
-            .set(softDelete())
-            .where(eq(payment.id, params.paymentId));
-        });
-
-        return { success: true };
-      })
+    "Reverse one live organization payment by UUID with manage:payments. Restores invoice/bill and paired credit/debit-note/prepayment balances in original currency minor units (USD cents), reverses saved cash/application GL and exact FX verbatim, then soft-deletes and audits atomically. Returns {success:true}; no money input. Safe numeric history adds exact aliases in audit. Locked dates, inconsistent/foreign history and unsupported ranges fail without writes. Bank-matched/provider-backed payments require unmatch/refund first. Repeating deletion returns 404.",
+    paymentDeleteFields,
+    params => wrapTool(ctx, () => deletePayment(ctx, params.paymentId))
   );
 }

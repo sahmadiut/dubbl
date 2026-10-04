@@ -322,7 +322,9 @@ export async function voidDebitNote(ctx: AuthContext, id: string, request?: Requ
         }
       }
     }
-    const allocations = await tx.select().from(paymentAllocation).where(and(eq(paymentAllocation.documentType, "debit_note"), eq(paymentAllocation.documentId, id)));
+    const allocations = await tx.select({ paymentId: paymentAllocation.paymentId }).from(paymentAllocation)
+      .innerJoin(payment, eq(payment.id, paymentAllocation.paymentId))
+      .where(and(eq(paymentAllocation.documentType, "debit_note"), eq(paymentAllocation.documentId, id), notDeleted(payment.deletedAt)));
     const ids = [...new Set(allocations.map(a => a.paymentId))];
     if (ids.length) {
       const carriers = await tx.select().from(payment).where(inArray(payment.id, ids)).for("update");

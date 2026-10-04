@@ -60,6 +60,7 @@ import { InventoryItemPicker } from "@/components/dashboard/inventory-item-picke
 import { WarehousePicker } from "@/components/dashboard/warehouse-picker";
 import { CategoryPicker } from "@/components/dashboard/category-picker";
 import { CurrencyInput } from "@/components/ui/currency-input";
+import { catalogPriceMinor, catalogWholeInput } from "@/lib/money/catalog-input";
 import { formatMoney, decimalToCents, decimalToMinorUnits } from "@/lib/money";
 
 type DrawerType = "contact" | "project" | "invoice" | "bill" | "entry" | "inventory" | "quote" | "salesReceipt" | "purchaseOrder" | "expense" | "fixedAsset" | "budget" | "employee" | "creditNote" | "recurring" | "account" | "bankAccount" | "warehouse" | "stockTake" | "category" | "transfer" | "bankTransfer" | "contractor" | "deal" | "debitNote" | "customerCredit" | "loan" | "openingBalance" | "accrualSchedule" | "revenueSchedule" | "recurringJournal";
@@ -1031,10 +1032,10 @@ function InventoryDrawer({ open, onClose }: { open: boolean; onClose: () => void
           description: form.get("description") || null,
           categoryId: categoryId || null,
           sku: form.get("sku") || null,
-          purchasePrice: Math.round(parseFloat(form.get("purchasePrice") as string || "0") * 100),
-          salePrice: Math.round(parseFloat(form.get("salePrice") as string || "0") * 100),
-          quantityOnHand: parseInt(form.get("quantityOnHand") as string) || 0,
-          reorderPoint: parseInt(form.get("reorderPoint") as string) || 0,
+          purchasePriceMinor: catalogPriceMinor(form.get("purchasePrice") as string || "0"),
+          salePriceMinor: catalogPriceMinor(form.get("salePrice") as string || "0"),
+          quantityOnHand: catalogWholeInput(form.get("quantityOnHand") as string || "0", true),
+          reorderPoint: catalogWholeInput(form.get("reorderPoint") as string || "0"),
         }),
       });
       if (!res.ok) {

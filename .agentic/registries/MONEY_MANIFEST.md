@@ -1,5 +1,20 @@
 # Money and FX boundary manifest
 
+## MON-075 inventory master/import adoption
+
+[INVENTORY_MASTER_WIRE_CONTRACTS](INVENTORY_MASTER_WIRE_CONTRACTS.md) records
+item/category CRUD, opening stock, CSV import, reorder and five bulk operations.
+Integer cents prices add canonical Minor aliases; item cost/book/product DTOs and
+SQL summaries guard safe bounds. Physical quantities remain whole int32 units;
+CSV legacy prices stay two-decimal major units, with explicit Minor columns.
+Shared org-scoped services preserve opening DR Inventory / CR Opening Equity,
+FIFO bulk costs, period/reference barriers and atomic audit. CSV rows commit
+independently with ledger/value/audit together, replayed codes update master only.
+Sixteen strict MCP tools use these services. Editors and local CSV export use
+exact conversions/display. MON-076 retains other stock writers and can reuse this
+bulk adoption; MON-077/078 valuation/assembly; MON-033 generic exports/imports;
+MON-024 combined acceptance. No schema/units/full-int64/IRR rollout change.
+
 ## MON-074 inventory catalog adoption
 
 Variant and supplier-link REST/MCP operations share described strict schemas and

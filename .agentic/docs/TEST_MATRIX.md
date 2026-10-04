@@ -798,3 +798,23 @@ combined financial acceptance. No stored rescaling or configured database migrat
   pass separately. No browser/session/OAuth/provider/current-law/PostgreSQL16 or
   independent human accounting/security qualification. MON-072/029 retain
   tax-period money/filing/settlement and reports; MON-022 combined acceptance.
+
+## MON-075 inventory master/import contracts
+
+- Three pure groups qualify exact price aliases, safe products and physical bounds,
+  signed exact average-cost ties, quoted CSV records, major/minor agreement and
+  inventory-list export/status round trips at the safe price maximum.
+- Migrated disposable PostgreSQL18 fixtures call actual REST API-key handlers,
+  custom viewer/manager roles and SDK MCP, including full unique tool registration
+  and a separate strict/described sixteen-tool registry. KWD base ledger retains
+  legacy cents units. Opening entries and movements agree and balance; existing
+  CSV codes never receive stock twice. Per-row failures preserve successful rows.
+- Negative SQL snapshots cover invalid bodies, quantities, aliases, references,
+  period locks, tenant spoofing, permission/auth failures, unsafe saved bigint and
+  unsafe unfiltered aggregates. Average/FIFO bulk postings, overflow barriers,
+  duplicate concurrent code race and nine audit-trigger rollback paths qualify
+  item/category/import/bulk atomicity including GL and cost layers.
+- MON-074 catalog and MON-052 goods-receipt PostgreSQL regressions pass separately.
+  No browser/session/OAuth/PostgreSQL16 or independent financial/security proof.
+  MON-076/077/078 and parent MON-024 retain combined inventory qualification;
+  MON-033 retains generic import/export surfaces.

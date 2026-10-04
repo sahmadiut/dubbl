@@ -468,3 +468,15 @@ Editors parse and display exact cents. See
 [inventory catalog contracts](../../.agentic/registries/INVENTORY_CATALOG_WIRE_CONTRACTS.md).
 Other inventory/valuation workflows and production/full-range qualification remain
 with MON-024 and its remaining children.
+
+## Inventory master/import wire adoption (MON-075)
+
+Item master cents prices and book costs retain safe numeric fields and add exact
+Minor strings. Opening products and bulk FIFO/average costs use exact preflight;
+valuation unit-cost ratios round with bigint. CSV legacy purchase/sale columns
+remain two-decimal major units, exact Minor columns remain cents, physical units
+remain whole int32. Scoped atomic services share REST and sixteen MCP tools;
+new CSV rows post opening ledger within their own valuation/audit transaction.
+Local master CSV export uses exact decimals; generic exports remain MON-033.
+See [inventory master contracts](../../.agentic/registries/INVENTORY_MASTER_WIRE_CONTRACTS.md).
+No schema, historical rescale, full-int64 or production IRR change.

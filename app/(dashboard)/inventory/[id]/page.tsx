@@ -18,7 +18,10 @@ import {
   SheetDescription,
   SheetFooter,
 } from "@/components/ui/sheet";
-import { centsToDecimal, formatMoney } from "@/lib/money";
+import { catalogPriceMinor, catalogWholeInput } from "@/lib/money/catalog-input";
+import { toMajorDecimal } from "@/lib/money/exact";
+import { bankMoneyDisplay } from "@/lib/money/bank-display";
+const formatMoney = (value: number | bigint) => bankMoneyDisplay(value, "USD");
 import { useConfirm } from "@/lib/hooks/use-confirm";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { setEntityTitle } from "@/lib/hooks/use-entity-title";
@@ -41,8 +44,8 @@ export default function InventoryItemDetailsPage() {
   const { item, setItem } = useInventoryItem();
   const [saving, setSaving] = useState(false);
   const [categoryId, setCategoryId] = useState(item.categoryId || "");
-  const [invPurchasePrice, setInvPurchasePrice] = useState(centsToDecimal(item.purchasePrice));
-  const [invSalePrice, setInvSalePrice] = useState(centsToDecimal(item.salePrice));
+  const [invPurchasePrice, setInvPurchasePrice] = useState(toMajorDecimal({ amountMinor: BigInt(item.purchasePrice), currency: "USD" }));
+  const [invSalePrice, setInvSalePrice] = useState(toMajorDecimal({ amountMinor: BigInt(item.salePrice), currency: "USD" }));
   const [warehouseStocks, setWarehouseStocks] = useState<WarehouseStockEntry[]>([]);
   // "Revalue stock" sheet: set the book value directly (mark-to-market) without
   // changing the count.
@@ -84,9 +87,9 @@ export default function InventoryItemDetailsPage() {
           description: form.get("description") || null,
           categoryId: categoryId || null,
           sku: form.get("sku") || null,
-          purchasePrice: Math.round(parseFloat(invPurchasePrice || "0") * 100),
-          salePrice: Math.round(parseFloat(invSalePrice || "0") * 100),
-          reorderPoint: parseInt(form.get("reorderPoint") as string) || 0,
+          purchasePriceMinor: catalogPriceMinor(invPurchasePrice || "0"),
+          salePriceMinor: catalogPriceMinor(invSalePrice || "0"),
+          reorderPoint: catalogWholeInput(form.get("reorderPoint") as string || "0"),
         }),
       });
 
@@ -120,11 +123,11 @@ export default function InventoryItemDetailsPage() {
     router.push("/inventory");
   }
 
-  const currentBookValue = item.totalValue ?? item.quantityOnHand * item.purchasePrice;
+  const currentBookValue = item.totalValue ?? BigInt(item.quantityOnHand) * BigInt(item.purchasePrice);
 
   function openRevalue() {
     // Pre-fill with the current value so the user adjusts from a known starting point.
-    setRevalueValue(centsToDecimal(currentBookValue));
+    setRevalueValue(toMajorDecimal({ amountMinor: BigInt(currentBookValue), currency: "USD" }));
     setRevalueReason("");
     setRevalueOpen(true);
   }
@@ -136,7 +139,7 @@ export default function InventoryItemDetailsPage() {
       toast.error("Enter the new value and a reason");
       return;
     }
-    if (newTotalValue === currentBookValue) {
+    if (BigInt(newTotalValue) === BigInt(currentBookValue)) {
       toast.error("That's the same as the current value");
       return;
     }

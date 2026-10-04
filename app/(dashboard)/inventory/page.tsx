@@ -1,5 +1,7 @@
 "use client";
 
+import { catalogWholeInput } from "@/lib/money/catalog-input";
+import { toMajorDecimal, money } from "@/lib/money/exact";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence, MotionConfig } from "motion/react";
@@ -52,7 +54,8 @@ import {
   SheetTitle,
   SheetFooter,
 } from "@/components/ui/sheet";
-import { formatMoney } from "@/lib/money";
+import { bankMoneyDisplay } from "@/lib/money/bank-display";
+const formatMoney = (value: number | bigint) => bankMoneyDisplay(value, "USD");
 
 import { useCreateDrawer } from "@/components/dashboard/create-drawer";
 import { CategoryPicker } from "@/components/dashboard/category-picker";
@@ -322,8 +325,8 @@ export default function InventoryPage() {
       i.sku || "",
       i.quantityOnHand,
       i.reorderPoint,
-      (i.purchasePrice / 100).toFixed(2),
-      (i.salePrice / 100).toFixed(2),
+      toMajorDecimal(money(BigInt(i.purchasePrice), "USD")),
+      toMajorDecimal(money(BigInt(i.salePrice), "USD")),
       i.isActive ? "Active" : "Inactive",
     ]);
     const csv = [headers, ...rows].map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
@@ -735,7 +738,7 @@ export default function InventoryPage() {
 
                 {/* Value */}
                 <div className="hidden lg:block text-right w-24">
-                  <p className="text-xs font-mono tabular-nums font-medium">{formatMoney(item.quantityOnHand * item.purchasePrice)}</p>
+                  <p className="text-xs font-mono tabular-nums font-medium">{formatMoney(BigInt(item.quantityOnHand) * BigInt(item.purchasePrice))}</p>
                   <p className="text-[11px] text-muted-foreground">value</p>
                 </div>
 
@@ -846,7 +849,9 @@ export default function InventoryPage() {
             <Button variant="outline" onClick={() => setBulkAdjustOpen(false)}>Cancel</Button>
             <Button
               onClick={async () => {
-                const adj = parseInt(bulkAdjustment);
+                let adj: number | undefined;
+                try { adj = catalogWholeInput(bulkAdjustment, true); }
+                catch (error) { toast.error(error instanceof Error ? error.message : "Enter a whole number"); return; }
                 if (!adj) { toast.error("Enter how many units to add or remove"); return; }
                 await bulkAction("adjust_stock", { adjustment: adj, reason: bulkAdjustReason });
                 setBulkAdjustOpen(false);

@@ -20,7 +20,8 @@ import {
 } from "@/components/ui/sheet";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
-import { formatMoney } from "@/lib/money";
+import { bankMoneyDisplay } from "@/lib/money/bank-display";
+const formatMoney = (value: number | bigint) => bankMoneyDisplay(value, "USD");
 import { setEntityTitle } from "@/lib/hooks/use-entity-title";
 import { cn } from "@/lib/utils";
 
@@ -199,7 +200,7 @@ export default function InventoryItemLayout({ children }: { children: React.Reac
   }
 
   const isLowStock = item.quantityOnHand <= item.reorderPoint && item.isActive;
-  const stockValue = item.quantityOnHand * item.purchasePrice;
+  const stockValue = BigInt(item.quantityOnHand) * BigInt(item.purchasePrice);
   const margin = item.purchasePrice > 0
     ? ((item.salePrice - item.purchasePrice) / item.purchasePrice * 100)
     : 0;
@@ -468,7 +469,7 @@ export default function InventoryItemLayout({ children }: { children: React.Reac
               <div className="rounded-lg bg-muted p-3">
                 <p className="text-xs text-muted-foreground">Current value in your books</p>
                 <p className="text-xl font-bold font-mono tabular-nums truncate">
-                  {formatMoney(item.totalValue ?? item.quantityOnHand * item.purchasePrice)}
+                  {formatMoney(item.totalValue ?? BigInt(item.quantityOnHand) * BigInt(item.purchasePrice))}
                 </p>
               </div>
               <div className="space-y-2">

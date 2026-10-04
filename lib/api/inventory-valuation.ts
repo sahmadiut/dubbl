@@ -1,3 +1,4 @@
+import { exactBlendAverageCost, roundInventoryRatio } from "@/lib/money/inventory-cost";
 import { db } from "@/lib/db";
 import {
   inventoryItem,
@@ -40,9 +41,7 @@ export function blendAverageCost(
   qty: number,
   unitCost: number
 ): number {
-  const totalQty = prevQty + qty;
-  if (totalQty <= 0) return unitCost;
-  return Math.round((prevQty * prevAvg + qty * unitCost) / totalQty);
+  return exactBlendAverageCost(prevQty, prevAvg, qty, unitCost);
 }
 
 /**
@@ -163,7 +162,7 @@ export async function recordInventoryIssue(
       quantity: -qty,
       previousQuantity: prevQty,
       newQuantity: newQty,
-      unitCost: qty > 0 ? Math.round(cost / qty) : 0,
+      unitCost: qty > 0 ? roundInventoryRatio(BigInt(cost), BigInt(qty)) : 0,
       value: -cost,
       referenceType: args.referenceType ?? null,
       referenceId: args.referenceId ?? null,

@@ -37,8 +37,7 @@
     "formatMoney": 6
   },
   "app/(dashboard)/accounting/banking/scheduled/page.tsx": {
-    "formatMoney": 3,
-    "parseMoney": 2
+    "formatMoney": 3
   },
   "app/(dashboard)/accounting/budgets/[id]/layout.tsx": {
     "formatMoney": 5

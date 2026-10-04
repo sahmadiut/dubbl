@@ -1,110 +1,17 @@
-import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { scheduledPayment } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
 import { getAuthContext } from "@/lib/api/auth-context";
-import { requireRole } from "@/lib/api/require-role";
-import { handleError, notFound } from "@/lib/api/response";
-import { notDeleted, softDelete } from "@/lib/db/soft-delete";
-import { logAudit, diffChanges } from "@/lib/api/audit";
-import { z } from "zod";
+import { handleError, ok } from "@/lib/api/response";
+import { getScheduledPayment, updateScheduledPayment, deleteScheduledPayment } from "@/lib/api/scheduled-payments";
 
-const updateSchema = z.object({
-  scheduledDate: z.string().optional(),
-  amount: z.number().int().positive().optional(),
-  notes: z.string().nullable().optional(),
-  status: z.enum(["cancelled"]).optional(),
-});
-
-export async function PATCH(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const ctx = await getAuthContext(request);
-    requireRole(ctx, "manage:payments");
-
-    const existing = await db.query.scheduledPayment.findFirst({
-      where: and(
-        eq(scheduledPayment.id, id),
-        eq(scheduledPayment.organizationId, ctx.organizationId),
-        notDeleted(scheduledPayment.deletedAt)
-      ),
-    });
-
-    if (!existing) return notFound("Scheduled payment");
-
-    if (existing.status !== "pending") {
-      return NextResponse.json(
-        { error: "Only pending scheduled payments can be updated" },
-        { status: 400 }
-      );
-    }
-
-    const body = await request.json();
-    const parsed = updateSchema.parse(body);
-
-    const updates: Record<string, unknown> = { updatedAt: new Date() };
-    if (parsed.scheduledDate !== undefined)
-      updates.scheduledDate = parsed.scheduledDate;
-    if (parsed.amount !== undefined) updates.amount = parsed.amount;
-    if (parsed.notes !== undefined) updates.notes = parsed.notes;
-    if (parsed.status === "cancelled") updates.status = "cancelled";
-
-    await db
-      .update(scheduledPayment)
-      .set(updates)
-      .where(eq(scheduledPayment.id, id));
-
-    const result = await db.query.scheduledPayment.findFirst({
-      where: eq(scheduledPayment.id, id),
-      with: { bill: { with: { contact: true } }, contact: true },
-    });
-
-    logAudit({ ctx, action: "update", entityType: "scheduled_payment", entityId: id, changes: diffChanges(existing as Record<string, unknown>, result as Record<string, unknown>), request });
-
-    return NextResponse.json({ scheduledPayment: result });
-  } catch (err) {
-    return handleError(err);
-  }
+type Params = { params: Promise<{ id: string }> };
+export async function GET(request: Request, { params }: Params) {
+  try { return ok(await getScheduledPayment(await getAuthContext(request), (await params).id)); }
+  catch (err) { return handleError(err); }
 }
-
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const ctx = await getAuthContext(request);
-    requireRole(ctx, "manage:payments");
-
-    const existing = await db.query.scheduledPayment.findFirst({
-      where: and(
-        eq(scheduledPayment.id, id),
-        eq(scheduledPayment.organizationId, ctx.organizationId),
-        notDeleted(scheduledPayment.deletedAt)
-      ),
-    });
-
-    if (!existing) return notFound("Scheduled payment");
-
-    await db
-      .update(scheduledPayment)
-      .set(softDelete())
-      .where(eq(scheduledPayment.id, id));
-
-    logAudit({
-      ctx,
-      action: "delete",
-      entityType: "scheduled_payment",
-      entityId: id,
-      changes: existing as Record<string, unknown>,
-      request,
-    });
-
-    return NextResponse.json({ success: true });
-  } catch (err) {
-    return handleError(err);
-  }
+export async function PATCH(request: Request, { params }: Params) {
+  try { return ok(await updateScheduledPayment(await getAuthContext(request), (await params).id, await request.json(), request)); }
+  catch (err) { return handleError(err); }
+}
+export async function DELETE(request: Request, { params }: Params) {
+  try { return ok(await deleteScheduledPayment(await getAuthContext(request), (await params).id, request)); }
+  catch (err) { return handleError(err); }
 }

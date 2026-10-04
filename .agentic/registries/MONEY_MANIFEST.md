@@ -538,3 +538,15 @@ The disabled functional-selection gate does not freeze all writes to preexisting
 ## Verification limits
 
 This inventory is source coverage plus local read-only cohort counts, not successful runtime qualification of every workflow. Mixed-unit profiles, inheritance and currency-policy gaps are findings assigned to migration owners. A lexical match is not automatically a bug, and absence of one is not transitive dataflow proof. Generic forwarding/opaque JSON/external contracts need MON-006/008/010 integration coverage. The inventory alone asserts no live provider capability, official currency rule, new statutory compliance or production approval. Implemented reference-rate rounding is recorded separately in ADR-005. No build/dev server/schema generation/deployment/migration is needed for these audit-only changes.
+
+## MON-059 scheduled payment adoption
+
+Scheduled CRUD/read/process REST and six described MCP tools share direct-DB
+services; see [scheduled contracts](SCHEDULED_PAYMENT_WIRE_CONTRACTS.md). Numeric
+amount remains positive minor units with amountMinor aliases; nested bill/contact
+responses add exact aliases and guard saved money/tenant ownership. Schedule/form
+input retains currency scales with exact parsing/prefill. Atomic per-item settlement
+includes status/completion/numbering/ledger/bill/audit, retains saved date/currency
+and carrying/FX, and prevents duplicate concurrent/retry cash. Failed attempts
+remain pending with classified response failures; legacy failed/processing is not
+automatically retried. No schema/unit/IRR changes; broader MON-021 gates remain.

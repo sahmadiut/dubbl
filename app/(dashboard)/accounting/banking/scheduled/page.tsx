@@ -31,7 +31,8 @@ import {
 } from "@/components/ui/dialog";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
-import { formatMoney, parseMoney } from "@/lib/money";
+import { formatMoney } from "@/lib/money";
+import { parseMajor, fromLegacyNumber, toMajorDecimal } from "@/lib/money/exact";
 import { cn } from "@/lib/utils";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 
@@ -149,6 +150,9 @@ export default function ScheduledPaymentsPage() {
         if (data.processed > 0) {
           toast.success(`Processed ${data.processed} scheduled payment(s)`);
         }
+        if (data.failed > 0) {
+          toast.error(`${data.failed} scheduled payment(s) could not be processed and remain pending`);
+        }
       })
       .catch(() => {})
       .finally(() => fetchItems());
@@ -176,10 +180,18 @@ export default function ScheduledPaymentsPage() {
 
   async function handleSchedule() {
     if (!orgId || !selectedBillId || !scheduledDate || !amount) return;
-    setSaving(true);
-
     const selectedBill = bills.find((b) => b.id === selectedBillId);
     if (!selectedBill) return;
+    let amountMinor: string;
+    try {
+      const parsed = parseMajor(amount.trim(), selectedBill.currencyCode, "half-away-from-zero");
+      if (parsed.amountMinor <= 0n || parsed.amountMinor > BigInt(Number.MAX_SAFE_INTEGER)) throw new RangeError();
+      amountMinor = parsed.amountMinor.toString();
+    } catch {
+      toast.error("Enter a positive decimal amount within the supported range");
+      return;
+    }
+    setSaving(true);
 
     try {
       const res = await fetch("/api/v1/scheduled-payments", {
@@ -191,7 +203,8 @@ export default function ScheduledPaymentsPage() {
         body: JSON.stringify({
           billId: selectedBillId,
           contactId: selectedBill.contactId,
-          amount: parseMoney(amount),
+          currencyCode: selectedBill.currencyCode,
+          amountMinor,
           scheduledDate,
           notes: notes || null,
         }),
@@ -247,10 +260,17 @@ export default function ScheduledPaymentsPage() {
         headers: { "x-organization-id": orgId },
       });
       const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || "Failed to process payments");
+        return;
+      }
       if (data.processed > 0) {
         toast.success(`Processed ${data.processed} payment(s)`);
-      } else {
+      } else if (!data.failed) {
         toast.info("No payments due for processing");
+      }
+      if (data.failed > 0) {
+        toast.error(`${data.failed} payment(s) could not be processed and remain pending`);
       }
       fetchItems();
     } catch {
@@ -460,7 +480,7 @@ export default function ScheduledPaymentsPage() {
                 onValueChange={(val) => {
                   setSelectedBillId(val);
                   const b = bills.find((x) => x.id === val);
-                  if (b) setAmount((b.amountDue / 100).toFixed(2));
+                  if (b) setAmount(toMajorDecimal(fromLegacyNumber(b.amountDue, b.currencyCode)));
                 }}
               >
                 <SelectTrigger>

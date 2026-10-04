@@ -489,6 +489,22 @@ alongside it. No real HTTP/session/OAuth, live provider, configured-target migra
 IRR or full-int64 qualification is inferred. See settlement registry and evidence.
 
 
+## MON-059 scheduled payment contracts
+
+- Pure wire fixtures: legacy/exact minor aliases, canonical syntax, safe max and
+  overflow rejection, USD/JPY/KWD/IRR preservation and exact form scale/tie rounding.
+- Disposable migrated PostgreSQL: actual REST and MCP SDK list/detail/CRUD/process,
+  key expiry, permissions, organization isolation, unsafe/null/foreign/deleted
+  relations, statuses/date locks/closed years, stale balance and partial success.
+- Inject final mandatory audit failure: schedule/payment/allocation/GL/bill/number
+  and audit snapshots unchanged; failures remain pending. Retry/concurrent REST/MCP
+  process and concurrent cancellation cannot duplicate cash. Future/cancelled/deleted/
+  completed and legacy failed/processing rows are excluded. EUR cash retains currency,
+  scheduled date, recognition carrying and payment-date FX; missing FX/cash rejects.
+- Typecheck/lint and payment batch/settlement/reversal/read/bill lifecycle regressions.
+- Broader browser/session/OAuth/provider, full-int64, nonadopted writer concurrency,
+  ambiguous legacy recovery, financial/migration/security/IRR gates remain assigned.
+
 ## MON-058 payment batch contracts
 
 Pure batch schema/arithmetic fixtures distinguish legacy decimal-major immediate

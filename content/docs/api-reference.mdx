@@ -131,8 +131,8 @@ Lists accept `type=received|made`, a contact UUID, `page` (1..21474836) and
 `limit` (1..100), defaulting to page 1 and limit 50. Invalid/fractional/out-of-range
 filters or pagination return 400. Reads require existing authenticated
 organization access and permit read-only roles. These aliases qualify reads;
-settlement creation and reversals are covered below. Batch/scheduled payments and
-full-int64 business operations retain separate rollout work.
+settlement creation, batches, scheduled payments and reversals are covered below.
+Full-int64 business operations retain separate rollout work.
 
 ## Payment settlement amounts
 
@@ -224,6 +224,44 @@ without settlement linkage fail 422; reversed cash fails 409. Sending accepts
 optional supplier contactId and plain text personalMessage, preflights all groups,
 and returns sent/skipped lists. Missing email skips. Email delivery is sequential;
 provider failures can leave earlier deliveries committed, and repeats can resend.
+
+## Scheduled payments
+
+| Method | Path | MCP |
+|---|---|---|
+| GET / POST | `/api/v1/scheduled-payments` | `list_scheduled_payments` / `create_scheduled_payment` |
+| GET / PATCH / DELETE | `/api/v1/scheduled-payments/:id` | `get_scheduled_payment` / `update_scheduled_payment` / `delete_scheduled_payment` |
+| POST | `/api/v1/scheduled-payments/process` | `process_scheduled_payments` |
+
+Create requires billId, contactId, scheduledDate and positive integer minor-unit
+`amount` (USD cents) or canonical `amountMinor` string, or both with exact agreement.
+Currency defaults to USD and must match the bill; existing minor amounts never
+rescale. Optional notes is nullable. Scheduling requires a recognized outstanding
+supplier bill, matching organization/contact/currency, no overpayment and an open
+Gregorian posting date on/after recognition. Amounts and converted results must
+fit 1..9007199254740991. Larger exact int64 values fail 422 before mutation.
+
+PATCH edits pending schedules' amount aliases, scheduledDate or notes, or cancels
+with `status:"cancelled"`. Old/new dates must be open. DELETE soft-deletes only
+pending, cancelled or legacy failed schedules; it never reverses cash. Processing
+or completed schedules reject deletion. Writes/process require `manage:payments`;
+reads permit authenticated read-only roles. CRUD/audit writes are atomic.
+
+Create/detail/edit return `{scheduledPayment}`, retaining numeric amount and adding
+amountMinor plus expanded bill money *Minor/contact creditLimitMinor strings.
+List returns `{data,pagination}` with optional status and page/limit (1/50 defaults,
+limit capped at 100). Unsupported money or foreign nested references fail explicitly.
+
+Process uses today's UTC date as the due cutoff, posting each pending item on its
+saved scheduledDate via bank_transfer and GL 1100. Exact settlement, retained
+currency/carrying/FX, bill balance, ledger, numbering, schedule completion and
+mandatory audits commit together per item. Concurrent/repeated processing cannot
+duplicate completed cash. Failed items roll back and remain pending for retry;
+legacy failed/processing rows are not retried. Independent successes stay committed.
+Returns `{processed,total,skipped,failed,failures:[{scheduledPaymentId,status,error,code?}]}`.
+Inspect failed/failures even on HTTP 200 or successful MCP calls. No automatic
+background cash-posting job is added. Multiple schedules do not reserve a balance;
+current outstanding is rechecked at execution. Repeated create makes new intent.
 
 ## Payment reversals
 

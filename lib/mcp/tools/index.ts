@@ -1,5 +1,6 @@
 import { registerGoodsReceiptTools } from "./goods-receipts";
 import { registerPaymentBatchTools } from "./payment-batches";
+import { registerScheduledPaymentTools } from "./scheduled-payments";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { AuthContext } from "@/lib/api/auth-context";
 import { registerOrganizationTools } from "./organization";
@@ -115,6 +116,7 @@ export function registerAllTools(server: McpServer, ctx: AuthContext) {
   registerRecurringTemplateTools(server, ctx);
   registerPaymentTools(server, ctx);
   registerPaymentBatchTools(server, ctx);
+  registerScheduledPaymentTools(server, ctx);
   registerPurchaseRequisitionTools(server, ctx);
   registerLandedCostTools(server, ctx);
   registerBulkTools(server, ctx);

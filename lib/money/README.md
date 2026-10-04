@@ -429,3 +429,14 @@ Affected completed sessions reopen and only proven synthetic movements delete.
 See [reconciliation contracts](../../.agentic/registries/BANK_RECONCILIATION_WIRE_CONTRACTS.md)
 for all envelopes, units, safe ranges, compatibility corrections, retry policy,
 base-currency completion/adjustment limits and remaining MON-021/069 gates.
+
+## Tax rate/profile contracts (MON-071)
+
+Tax rates, compound components, recovery shares, country profiles and cached
+jurisdiction rates use bounded numeric basis points, never money/FX strings.
+Legacy and exact consumers share these lossless int32 fields; unknown aliases
+reject. Scoped org-locked direct DB services atomically preserve defaults,
+component replacements, idempotent profile batches/NULL-key upserts and audits.
+See [tax configuration contracts](../../.agentic/registries/TAX_RATE_PROFILE_WIRE_CONTRACTS.md)
+for all operation envelopes/ranges, authorization, compatible corrections and
+separate filing/report/historical-data gates. No rate-policy or currency change.

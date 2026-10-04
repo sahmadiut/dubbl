@@ -1,5 +1,19 @@
 # Money and FX boundary manifest
 
+## MON-071 bounded tax rate/profile adoption
+
+[Tax configuration contracts](TAX_RATE_PROFILE_WIRE_CONTRACTS.md) record all rate
+CRUD/components, country profile and cached jurisdiction REST/MCP boundaries.
+Dimensionless rates stay numeric int32 basis points; recovery stays 0..10000.
+No money/FX aliases or scale conversion. Strict schemas and saved DTO guards
+reject unsupported values; shared org-locked direct DB services preserve partial
+patches/defaults and scoped live component accounts. Required audits commit with
+writes. Profile batches and nullable jurisdiction key upserts resist concurrent
+duplication; new detail/delete/lookup/write tools close MCP parity gaps. Real SDK,
+API-key/custom-role and PostgreSQL fixtures prove isolation and rollback.
+MON-072 retains tax-period money/filing/settlement; MON-029 keeps reports/1099,
+MON-073 approval JSON and MON-022 combined configuration acceptance.
+
 ## MON-070 organization settings adoption
 
 [Organization contracts](ORGANIZATION_WIRE_CONTRACTS.md) document member-scoped

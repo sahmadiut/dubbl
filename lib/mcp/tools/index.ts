@@ -33,6 +33,8 @@ import { registerImportExportTools } from "./import-export";
 import { registerTrashTools } from "./trash";
 import { registerBackupTools } from "./backups";
 import { registerCurrencyTools } from "./currencies";
+import { registerTaxRateTools } from "./tax-rates";
+import { registerTaxLookupTools } from "./tax-lookup";
 import { registerTaxTools } from "./tax";
 import { registerConsolidationTools } from "./consolidation";
 import { registerPayrollTools } from "./payroll";
@@ -103,6 +105,8 @@ export function registerAllTools(server: McpServer, ctx: AuthContext) {
   registerTrashTools(server, ctx);
   registerBackupTools(server, ctx);
   registerCurrencyTools(server, ctx);
+  registerTaxRateTools(server, ctx);
+  registerTaxLookupTools(server, ctx);
   registerTaxTools(server, ctx);
   registerConsolidationTools(server, ctx);
   registerPayrollTools(server, ctx);

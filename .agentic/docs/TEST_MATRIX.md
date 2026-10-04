@@ -732,3 +732,21 @@ combined financial acceptance. No stored rescaling or configured database migrat
   session/OAuth/email/browser/PostgreSQL16/independent financial/security proof.
   Expense CRUD/lifecycle regressions cover the adjacent mileage consumers.
   MON-022 retains combined configuration acceptance after all four children.
+
+## MON-071 bounded tax configuration
+
+- Four pure groups cover lossless numeric basis points in legacy/exact modes,
+  int32/recovery bounds, partial patches, strict unsupported alias handling,
+  profile country validation and corrupt saved DTOs.
+- Disposable migrated PostgreSQL18 actual REST/API-key/custom-role and registered
+  SDK MCP tests cover all ten rate/profile/jurisdiction operations, two tenants,
+  spoofed org headers, expired/invalid auth, scoped active component references,
+  int32 maximum, retained fields/component replacement and country resolution.
+- SQL snapshots prove no mutation for invalid input, foreign references, corrupt
+  saved rates/components/jurisdictions and audit faults in rate CRUD, profile
+  batches and jurisdiction save/delete. Concurrent defaults, repeated profile
+  applies and NULL-key upserts retain deterministic single-write behavior.
+- Organization-settings/onboarding tax-seed and bank-rule PostgreSQL regressions
+  pass separately. No browser/session/OAuth/provider/current-law/PostgreSQL16 or
+  independent human accounting/security qualification. MON-072/029 retain
+  tax-period money/filing/settlement and reports; MON-022 combined acceptance.

@@ -2,6 +2,9 @@ import { db } from "@/lib/db";
 import { taxRate, organization, payment, contact } from "@/lib/db/schema";
 import { eq, and, ne, gte, lte } from "drizzle-orm";
 import { notDeleted } from "@/lib/db/soft-delete";
+import { taxCreateSchema, taxRateDto } from "./tax-rate-wire";
+import { lockTaxOrganization, auditTax } from "./tax-config-transaction";
+import { AuthError, type AuthContext } from "./auth-context";
 import type { taxRate as taxRateTable } from "@/lib/db/schema";
 
 /**
@@ -310,7 +313,7 @@ export async function resolveProfileForOrg(
   if (explicit) return explicit;
 
   const org = await db.query.organization.findFirst({
-    where: eq(organization.id, organizationId),
+    where: and(eq(organization.id, organizationId), notDeleted(organization.deletedAt)),
     columns: { taxRegime: true, countryCode: true, country: true },
   });
 
@@ -336,7 +339,7 @@ export interface ApplyProfileResult {
 }
 
 /**
- * Seed the org's taxRate rows from a country profile. Idempotent-ish: a rate is
+ * Atomically seed the org's taxRate rows from a country profile. A rate is
  * skipped (not duplicated) when an active rate with the same (name, rate, type,
  * kind) already exists for the org. When the profile marks a default rate and
  * the org has no default yet, the seeded default is honored; otherwise the
@@ -348,55 +351,33 @@ export interface ApplyProfileResult {
  */
 export async function applyTaxProfile(
   organizationId: string,
-  profile: CountryTaxProfile
+  profile: CountryTaxProfile,
+  ctx: AuthContext,
+  request?: Request
 ): Promise<ApplyProfileResult> {
-  const existing = await db.query.taxRate.findMany({
-    where: and(
-      eq(taxRate.organizationId, organizationId),
-      notDeleted(taxRate.deletedAt)
-    ),
-    columns: { name: true, rate: true, type: true, kind: true, isDefault: true },
-  });
-
-  const key = (r: { name: string; rate: number; type: string; kind: string }) =>
-    `${r.name.trim().toLowerCase()}|${r.rate}|${r.type}|${r.kind}`;
-  const existingKeys = new Set(existing.map(key));
-  const orgHasDefault = existing.some((r) => r.isDefault);
-
-  const created: (typeof taxRateTable.$inferSelect)[] = [];
-  const skipped: { name: string; rate: number; reason: string }[] = [];
-
-  for (const r of profile.rates) {
-    if (existingKeys.has(key(r))) {
-      skipped.push({ name: r.name, rate: r.rate, reason: "already exists" });
-      continue;
+  if (organizationId !== ctx.organizationId) throw new AuthError("Organization scope mismatch", 403);
+  // Parse the whole profile before any insert; serialize all returned values before commit.
+  const rates = profile.rates.map(r => taxCreateSchema.parse(r));
+  return db.transaction(async tx => {
+    await lockTaxOrganization(tx, organizationId);
+    const existing = await tx.select().from(taxRate).where(and(
+      eq(taxRate.organizationId, organizationId), notDeleted(taxRate.deletedAt)));
+    const key = (r: { name: string; rate: number; type: string; kind: string }) =>
+      JSON.stringify([r.name.trim().toLowerCase(), r.rate, r.type, r.kind]);
+    const keys = new Set(existing.map(key));
+    let hasDefault = existing.some(r => r.isDefault);
+    const created: ApplyProfileResult["created"] = [], skipped: ApplyProfileResult["skipped"] = [];
+    for (const r of rates) {
+      if (keys.has(key(r))) { skipped.push({ name: r.name, rate: r.rate, reason: "already exists" }); continue; }
+      const [row] = await tx.insert(taxRate).values({ organizationId, name: r.name, rate: r.rate,
+        type: r.type, kind: r.kind, recoverablePercent: r.recoverablePercent,
+        isDefault: r.isDefault && !hasDefault }).returning();
+      created.push(taxRateDto(row)); keys.add(key(r)); hasDefault ||= row.isDefault;
     }
-    // Only seed the default flag when the org currently has no default rate, so
-    // applying a profile never silently changes an org's chosen default.
-    const isDefault = !!r.isDefault && !orgHasDefault;
-    const [row] = await db
-      .insert(taxRate)
-      .values({
-        organizationId,
-        name: r.name,
-        rate: r.rate,
-        type: r.type,
-        kind: r.kind,
-        recoverablePercent: r.recoverablePercent,
-        isDefault,
-      })
-      .returning();
-    created.push(row);
-    existingKeys.add(key(r));
-  }
-
-  return {
-    country: profile.country,
-    regime: profile.regime,
-    taxName: profile.taxName,
-    created,
-    skipped,
-  };
+    const result = { country: profile.country, regime: profile.regime, taxName: profile.taxName, created, skipped };
+    await auditTax(tx, organizationId, "tax_profile", organizationId, "apply_tax_profile", result, ctx, request);
+    return result;
+  });
 }
 
 /**
@@ -409,11 +390,12 @@ export async function applyTaxProfile(
  */
 export async function ensureTaxRatesSeeded(
   organizationId: string,
-  country?: string | null
+  country: string | null | undefined,
+  ctx: AuthContext
 ): Promise<ApplyProfileResult | null> {
   const profile = await resolveProfileForOrg(organizationId, country);
   if (!profile) return null;
-  return applyTaxProfile(organizationId, profile);
+  return applyTaxProfile(organizationId, profile, ctx);
 }
 
 /**

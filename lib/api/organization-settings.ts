@@ -65,7 +65,7 @@ export async function updateOrganizationSettings(ctx: AuthContext, input: unknow
     // Preserve lazy onboarding seeding; these existing idempotent services run
     // after the settings transaction. Account lists also self-heal templates.
     await seedDefaultAccounts(ctx.organizationId, result.organization.defaultCurrency, result.organization.countryCode || undefined);
-    try { await ensureTaxRatesSeeded(ctx.organizationId, result.organization.countryCode || result.organization.country || undefined); } catch { /* existing best-effort tax seeding */ }
+    try { await ensureTaxRatesSeeded(ctx.organizationId, result.organization.countryCode || result.organization.country || undefined, ctx); } catch { /* existing best-effort tax seeding */ }
   }
   return { organization: result.organization };
 }

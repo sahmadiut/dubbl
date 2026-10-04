@@ -1,64 +1,23 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { requireRole } from "@/lib/api/require-role";
+import { taxProfileSchema } from "@/lib/api/tax-rate-wire";
+import { readTaxProfiles, seedTaxProfile } from "@/lib/api/tax-profile-contracts";
 import { wrapTool } from "@/lib/mcp/errors";
 import type { AuthContext } from "@/lib/api/auth-context";
 import {
-  listTaxProfiles,
-  getTaxProfileByCountry,
-  resolveProfileForOrg,
-  applyTaxProfile,
   build1099Report,
   FORM_1099_NEC_THRESHOLD_CENTS,
 } from "@/lib/api/tax-profiles";
 
 export function registerTaxProfileTools(server: McpServer, ctx: AuthContext) {
-  server.tool(
-    "list_tax_profiles",
-    "List the available country tax profiles (US, GB, ZA, AU, CA, IE, IN, NL). Each profile describes a country's default tax rate set (rates in basis points, 2000 = 20%), rate kinds, periodic return boxes, and which GL control accounts it posts to (output VAT/GST 2200 or US sales tax payable 2230, input VAT/GST 1500, VAT suspense 2240). Also returns recommendedCountry — the profile that best fits this organization based on its taxRegime/country. Use list_tax_profiles to discover what apply_tax_profile can seed. No amounts are monetary; rates are basis points.",
-    {},
-    () =>
-      wrapTool(ctx, async () => {
-        const profiles = listTaxProfiles();
-        const recommended = await resolveProfileForOrg(ctx.organizationId);
-        return {
-          profiles,
-          recommendedCountry: recommended?.country ?? null,
-        };
-      })
-  );
-
-  server.tool(
-    "apply_tax_profile",
-    "Apply a country tax profile to this organization: seeds the profile's tax rate rows (rates in basis points) so the org has a compliant default set for VAT/GST/sales tax. Pass a two-letter ISO country code (e.g. GB, US, AU); when omitted, the profile is resolved from the org's taxRegime/country. Idempotent: rates that already exist (same name, rate, type, kind) are skipped, never duplicated. The org default rate is only set when the org has no default yet (an existing chosen default is never changed). Does not modify the chart of accounts (control accounts are created on demand at posting time). Requires the manage:tax-rates permission. Returns the created rates and the skipped ones with reasons.",
-    {
-      country: z
-        .string()
-        .length(2)
-        .optional()
-        .describe(
-          "Two-letter ISO country code of the profile to apply (US, GB, ZA, AU, CA, IE, IN, NL). Omit to auto-resolve from the organization's taxRegime/country."
-        ),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        requireRole(ctx, "manage:tax-rates");
-
-        const profile = params.country
-          ? getTaxProfileByCountry(params.country)
-          : await resolveProfileForOrg(ctx.organizationId);
-
-        if (!profile) {
-          throw new Error(
-            params.country
-              ? `No tax profile for country "${params.country}"`
-              : "Could not determine a tax profile for this organization; pass a country code"
-          );
-        }
-
-        return applyTaxProfile(ctx.organizationId, profile);
-      })
-  );
+  server.registerTool("list_tax_profiles", {
+    description: "List existing country tax profiles and recommendedCountry, or get one by country. All rates/recovery shares are numeric integer basis points, not money/FX. Catalogue is a stored starting point, not a live statutory-rate service.",
+    inputSchema: taxProfileSchema,
+  }, args => wrapTool(ctx, () => readTaxProfiles(ctx, args)));
+  server.registerTool("apply_tax_profile", {
+    description: "Atomically seed this organization's country profile rates; skip existing name/rate/type/kind matches and preserve chosen default. Requires manage:tax-rates. Returns created headers and skipped rates/reasons. Integer basis points; no money/FX aliases.",
+    inputSchema: taxProfileSchema,
+  }, args => wrapTool(ctx, () => seedTaxProfile(ctx, args)));
 
   server.tool(
     "report_1099",

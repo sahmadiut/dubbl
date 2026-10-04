@@ -1,5 +1,22 @@
 # Money and FX boundary manifest
 
+## MON-076 inventory movement/warehouse adoption
+
+[INVENTORY_MOVEMENT_WIRE_CONTRACTS](INVENTORY_MOVEMENT_WIRE_CONTRACTS.md) records
+seventeen REST route files, twenty-two movement tools and six warehouse tools.
+Stock/value adjustments retain cents semantics and add exact Minor aliases;
+physical quantities stay whole int32, with safe SQL chart sums beyond int32.
+Scoped atomic stock/GL/audit services fix warehouse/global count comparison,
+zero-discrepancy recounts and partial/repeated transfers. Exact carrying-value
+exhaustion and receipt ratios preserve rounding residuals; ordered item locks
+coordinate master/bulk and MON-052 receipt writers, stale engine pre-reads reject.
+FIFO/standard value-only adjustment explicitly rejects pending layer qualification.
+Serial/lot endpoints retain allocation metadata without receiving stock or GL;
+historical owned locations remain readable, foreign saved joins fail closed.
+REST target/MCP signed-delta revaluation and their distinct offset accounts remain
+documented compatibility contracts. No schema/full-int64/IRR change. MON-077/078
+and parent MON-024 retain valuation/assembly/combined inventory qualification.
+
 ## MON-075 inventory master/import adoption
 
 [INVENTORY_MASTER_WIRE_CONTRACTS](INVENTORY_MASTER_WIRE_CONTRACTS.md) records

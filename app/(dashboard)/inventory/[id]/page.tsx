@@ -134,19 +134,20 @@ export default function InventoryItemDetailsPage() {
 
   async function handleRevalue() {
     if (!orgId) return;
-    const newTotalValue = Math.round(parseFloat(revalueValue || "0") * 100);
-    if (Number.isNaN(newTotalValue) || newTotalValue < 0 || !revalueReason.trim()) {
+    let newTotalValueMinor: string | undefined;
+    try { newTotalValueMinor = catalogPriceMinor(revalueValue); } catch { toast.error("Enter an exact value with at most two decimals"); return; }
+    if (newTotalValueMinor === undefined || !revalueReason.trim()) {
       toast.error("Enter the new value and a reason");
       return;
     }
-    if (BigInt(newTotalValue) === BigInt(currentBookValue)) {
+    if (BigInt(newTotalValueMinor) === BigInt(currentBookValue)) {
       toast.error("That's the same as the current value");
       return;
     }
 
     const confirmed = await confirm({
       title: "Revalue this stock?",
-      description: `Its book value will change from ${formatMoney(currentBookValue)} to ${formatMoney(newTotalValue)}. The count stays the same.`,
+      description: `Its book value will change from ${formatMoney(currentBookValue)} to ${formatMoney(BigInt(newTotalValueMinor))}. The count stays the same.`,
       confirmLabel: "Revalue",
     });
     if (!confirmed) return;
@@ -158,7 +159,7 @@ export default function InventoryItemDetailsPage() {
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify({
           adjustmentType: "revaluation",
-          newTotalValue,
+          newTotalValueMinor,
           reason: revalueReason,
         }),
       });

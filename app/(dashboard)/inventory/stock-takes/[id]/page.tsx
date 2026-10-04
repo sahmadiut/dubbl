@@ -38,6 +38,7 @@ import { useConfirm } from "@/lib/hooks/use-confirm";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { cn } from "@/lib/utils";
+import { catalogWholeInput } from "@/lib/money/catalog-input";
 
 type SortKey = "name" | "code" | "expected" | "counted" | "discrepancy";
 
@@ -129,8 +130,9 @@ function CounterCell({
   function handleBlur() {
     setEditing(false);
     if (editValue === "") return;
-    const num = parseInt(editValue);
-    if (isNaN(num) || num < 0) return;
+    let num: number | undefined;
+    try { num = catalogWholeInput(editValue, false); } catch { toast.error("Enter nonnegative whole units within the supported range"); return; }
+    if (num === undefined) return;
     if (num !== line.countedQuantity) {
       onUpdate(line.id, num);
     }

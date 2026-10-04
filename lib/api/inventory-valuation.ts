@@ -8,6 +8,11 @@ import {
   warehouseStock,
 } from "@/lib/db/schema";
 import { and, eq, asc, sql } from "drizzle-orm";
+import { legacyMinor, legacyMinorSchema, WireCompatibilityError } from "@/lib/money/wire";
+import { catalogQuantity } from "./inventory-catalog-wire";
+import { z } from "zod";
+
+const zPositiveQuantity = z.number().positive();
 
 /**
  * Perpetual inventory valuation engine (average cost + FIFO cost layers).
@@ -32,6 +37,17 @@ export interface ValuedItem {
   averageCost: number;
   quantityOnHand: number;
   totalValue: number;
+}
+
+// Row locking also protects callers in adjacent invoice/bill/assembly workflows.
+// A stale pre-read must fail instead of overwriting a concurrent movement.
+async function lockValuedItem(tx: Tx, item: ValuedItem) {
+  const [current] = await tx.select().from(inventoryItem).where(and(eq(inventoryItem.id, item.id), eq(inventoryItem.organizationId, item.organizationId))).for("update");
+  if (!current || current.deletedAt) throw new WireCompatibilityError("Live owned inventory item required");
+  for (const key of ["quantityOnHand", "averageCost", "totalValue", "costMethod"] as const)
+    if (current[key] !== item[key]) throw new WireCompatibilityError("Inventory changed concurrently; reload and retry");
+  catalogQuantity.parse(item.quantityOnHand);
+  legacyMinorSchema.min(0).parse(item.averageCost); legacyMinorSchema.min(0).parse(item.totalValue);
 }
 
 /** New moving-average unit cost after receiving `qty` units at `unitCost`. */
@@ -65,12 +81,15 @@ export async function recordInventoryReceipt(
   }
 ): Promise<{ movementId: string; unitCost: number }> {
   const { item } = args;
+  await lockValuedItem(tx, item);
   const qty = args.quantity;
-  const value = args.unitCost * qty;
+  catalogQuantity.pipe(zPositiveQuantity).parse(qty);
+  legacyMinorSchema.min(0).parse(args.unitCost);
+  const value = legacyMinor(BigInt(args.unitCost) * BigInt(qty));
   const prevQty = item.quantityOnHand;
-  const newQty = prevQty + qty;
-  const newAvg = blendAverageCost(prevQty, item.averageCost, qty, args.unitCost);
-  const newValue = item.totalValue + value;
+  const newQty = catalogQuantity.parse(prevQty + qty);
+  const newValue = legacyMinor(BigInt(item.totalValue) + BigInt(value));
+  const newAvg = newQty > 0 ? roundInventoryRatio(BigInt(newValue), BigInt(newQty)) : args.unitCost;
 
   const [movement] = await tx
     .insert(inventoryMovement)
@@ -134,9 +153,11 @@ export async function recordInventoryIssue(
   }
 ): Promise<{ movementId: string; cost: number }> {
   const { item } = args;
+  await lockValuedItem(tx, item);
   const qty = args.quantity;
+  catalogQuantity.pipe(zPositiveQuantity).parse(qty);
   const prevQty = item.quantityOnHand;
-  const newQty = prevQty - qty;
+  const newQty = catalogQuantity.parse(prevQty - qty);
 
   let cost: number;
   let consumptions: { costLayerId: string; quantity: number; unitCost: number }[] = [];
@@ -147,10 +168,12 @@ export async function recordInventoryIssue(
     consumptions = consumed.consumptions;
   } else {
     // average / standard: value at current average unit cost
-    cost = item.averageCost * qty;
+    let exactCost = BigInt(item.averageCost) * BigInt(qty);
+    if (item.costMethod === "average" && newQty >= 0) exactCost = newQty === 0 ? BigInt(item.totalValue) : exactCost > BigInt(item.totalValue) ? BigInt(item.totalValue) : exactCost;
+    cost = legacyMinor(exactCost);
   }
 
-  const newValue = Math.max(0, item.totalValue - cost);
+  const newValue = Math.max(0, legacyMinor(BigInt(item.totalValue) - BigInt(cost)));
 
   const [movement] = await tx
     .insert(inventoryMovement)
@@ -225,7 +248,8 @@ export async function consumeFifoLayers(
   for (const layer of layers) {
     if (remaining <= 0) break;
     const take = Math.min(remaining, layer.remainingQuantity);
-    totalCost += take * layer.unitCost;
+    catalogQuantity.parse(layer.remainingQuantity); legacyMinorSchema.min(0).parse(layer.unitCost);
+    totalCost = legacyMinor(BigInt(totalCost) + BigInt(take) * BigInt(layer.unitCost));
     consumptions.push({ costLayerId: layer.id, quantity: take, unitCost: layer.unitCost });
     await tx
       .update(inventoryCostLayer)
@@ -237,7 +261,7 @@ export async function consumeFifoLayers(
   // Shortfall (issuing more than recorded layers): value the remainder at the
   // item's average cost so the issue still posts a sensible cost.
   if (remaining > 0) {
-    totalCost += remaining * item.averageCost;
+    totalCost = legacyMinor(BigInt(totalCost) + BigInt(remaining) * BigInt(item.averageCost));
   }
 
   return { totalCost, consumptions };
@@ -261,7 +285,7 @@ async function upsertWarehouseStock(
   if (existing) {
     await tx
       .update(warehouseStock)
-      .set({ quantity: existing.quantity + qtyDelta, updatedAt: new Date() })
+      .set({ quantity: catalogQuantity.parse(existing.quantity + qtyDelta), updatedAt: new Date() })
       .where(eq(warehouseStock.id, existing.id));
   } else {
     await tx.insert(warehouseStock).values({

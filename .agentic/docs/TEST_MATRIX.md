@@ -1,5 +1,30 @@
 # Verification matrix
 
+## MON-076 inventory movement and warehouses
+
+- Three pure groups verify agreeing canonical cents aliases, signed safe limits,
+  DTO null/signed history, physical int32 bounds and Gregorian dates.
+- Actual migrated disposable PostgreSQL18 fixture calls every adopted REST and
+  SDK MCP operation, all twenty-eight strict described movement/warehouse tools,
+  full unique registry, two tenants, API keys/custom viewer/manager permissions,
+  KWD base posting with unchanged cents units, quantities/values, stock/count and
+  metadata-only allocations. Invalid inputs/foreign saved joins/auth/roles/unsafe
+  bigint/products/locks leave SQL snapshots unchanged.
+- Warehouse count 6->5 changes global 10->9; stored zero-discrepancy count rechecks
+  after live movement. FIFO issue uses actual layers. Full average exhaustion
+  issues authoritative carrying value, including safe-max with an unsafe rounded
+  unit-cost product. Chart negates int32 min safely and sums beyond int32.
+- Transfer/take terminal retries cannot repost; concurrent transfer has one winner.
+  Master bulk/standalone and direct MON-052 receipt-writer races preserve counts
+  and value; stale cost-flow pre-read fails without overwrite. Sixteen audit-trigger
+  failure families roll back stock, cost layers, GL, state and metadata together.
+  Linked monetary movements equal asset GL net; journals balance in KWD. The
+  synthetic direct receipt race deliberately has no GL fixture; real MON-052
+  REST/MCP regression separately covers complete receipt accounting.
+- MON-074/075/052 regressions pass. No browser/session/OAuth/PostgreSQL16 or
+  independent human financial/security review. MON-077/078 and parent MON-024,
+  full-range/IRR/migration/production acceptance remain separate.
+
 ## MON-074 inventory variants and suppliers
 
 - Pure tests qualify canonical/dual price aliases, cents preservation, safe limits,

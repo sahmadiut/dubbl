@@ -20,7 +20,7 @@ async function audit(tx: Tx, ctx: AuthContext, type: string, id: string, action:
     changes: JSON.parse(stringifyWire(changes)), ipAddress: request?.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null, userAgent: request?.headers.get("user-agent") || null });
 }
 // Serializes code uniqueness, category graph edits and journal numbering for this slice.
-async function orgLock(tx: Tx, ctx: AuthContext) {
+export async function orgLock(tx: Tx, ctx: AuthContext) {
   // Compatible with FK key-share locks held by adjacent catalog/stock writers.
   const [row] = await tx.select({ id: organization.id }).from(organization).where(eq(organization.id, ctx.organizationId)).for("no key update");
   if (!row) throw new AuthError("Organization not found", 404);
@@ -37,7 +37,7 @@ async function references(tx: Tx, ctx: AuthContext, values: z.infer<typeof itemU
     if (!row || row.type !== type) throw new AuthError(`Account must be a live owned ${type} account`, 404);
   }
 }
-async function postingAccount(tx: Tx, ctx: AuthContext, id: string, type: "asset" | "equity" | "expense", currency: string) {
+export async function postingAccount(tx: Tx, ctx: AuthContext, id: string, type: "asset" | "equity" | "expense", currency: string) {
   const [row] = await tx.select().from(chartAccount).where(and(eq(chartAccount.id, id), eq(chartAccount.organizationId, ctx.organizationId), isNull(chartAccount.deletedAt), eq(chartAccount.isActive, true))).for("share");
   if (!row || row.type !== type || row.currencyCode !== currency) throw new AuthError(`Inventory posting requires a live owned ${type} account in base currency ${currency}`, 422);
 }
@@ -45,7 +45,7 @@ async function codeAvailable(tx: Tx, ctx: AuthContext, code: string, except?: st
   const found = await tx.query.inventoryItem.findFirst({ where: and(eq(inventoryItem.organizationId, ctx.organizationId), eq(inventoryItem.code, code)) });
   if (found && found.id !== except) throw new AuthError("Item code already exists (including deleted history)", 409);
 }
-async function lockedItem(tx: Tx, ctx: AuthContext, id: string) {
+export async function lockedItem(tx: Tx, ctx: AuthContext, id: string) {
   catalogId.parse(id);
   const [row] = await tx.select().from(inventoryItem).where(itemScope(ctx, id)).for("update");
   if (!row) throw new AuthError("Inventory item not found", 404); itemDto(row); return row;
@@ -172,8 +172,10 @@ export async function reorderInventorySuggestions(ctx: AuthContext) {
     suppliers: (await listInventorySuppliers(ctx, item.id)).map(catalogDto).sort((a, b) => Number(b.isPreferred) - Number(a.isPreferred)) })));
 }
 
-async function preflightAdjustment(tx: Tx, ctx: AuthContext, item: typeof inventoryItem.$inferSelect, delta: number) {
+export async function preflightAdjustment(tx: Tx, ctx: AuthContext, item: typeof inventoryItem.$inferSelect, delta: number) {
   itemDto(item); await references(tx, ctx, item);
+  if (item.costMethod === "standard") throw new AuthError("Standard costing stock adjustments are unsupported", 422);
+  if (item.quantityOnHand < 0) throw new AuthError("Negative saved on-hand stock requires inventory remediation", 422);
   const newQty = item.quantityOnHand + delta;
   if (newQty < 0) throw new AuthError(`Adjustment would make "${item.name}" quantity negative`, 400);
   catalogQuantity.parse(newQty);
@@ -189,9 +191,10 @@ async function preflightAdjustment(tx: Tx, ctx: AuthContext, item: typeof invent
     }
     cost += BigInt(remaining) * BigInt(item.averageCost);
   }
+  if (delta < 0 && item.costMethod === "average") cost = -delta === item.quantityOnHand ? BigInt(item.totalValue) : cost > BigInt(item.totalValue) ? BigInt(item.totalValue) : cost;
+  if (delta < 0 && cost > BigInt(item.totalValue)) throw new AuthError("Cost of issue exceeds inventory carrying value", 422);
+  if (delta < 0 && newQty === 0 && cost !== BigInt(item.totalValue)) throw new AuthError("Issue would strand carrying value without stock", 422);
   legacyMinor(cost); legacyMinor(delta > 0 ? BigInt(item.totalValue) + cost : BigInt(item.totalValue) - cost);
-  // Existing Number receipt bridge uses this numerator; reject before mutation.
-  if (delta > 0) legacyMinor(BigInt(item.quantityOnHand) * BigInt(item.averageCost) + cost);
 }
 export async function bulkInventoryItems(ctx: AuthContext, input: unknown, request?: Request) {
   requireRole(ctx, "manage:inventory"); const p = bulkItemSchema.parse(input);

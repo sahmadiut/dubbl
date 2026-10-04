@@ -480,3 +480,17 @@ new CSV rows post opening ledger within their own valuation/audit transaction.
 Local master CSV export uses exact decimals; generic exports remain MON-033.
 See [inventory master contracts](../../.agentic/registries/INVENTORY_MASTER_WIRE_CONTRACTS.md).
 No schema, historical rescale, full-int64 or production IRR change.
+
+## Inventory movement/warehouse wire adoption (MON-076)
+
+Shared REST/MCP adjustment, warehouse, transfer, stock-take and serial/lot metadata
+services keep cents money aliases exact and whole physical units unscaled. Every
+adopted writer is tenant-scoped and audits atomically; stock/value changes enforce
+period/account/range checks. Warehouse counts compare location stock, every
+counted line rechecks live stock, and completion cannot repost transfers/takes.
+Exact carrying-value residuals and bigint cost ratios avoid rounded over-issues.
+Value-only FIFO/standard adjustments reject pending layer qualification. See
+[inventory movement contracts](../../.agentic/registries/INVENTORY_MOVEMENT_WIRE_CONTRACTS.md)
+for REST target versus MCP delta semantics, offsets, envelopes, ranges and
+metadata-only serial/lot behavior. General tracked workflows/valuation/assembly,
+full-int64 and production IRR remain separate inventory/qualification gates.

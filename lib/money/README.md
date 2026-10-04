@@ -338,3 +338,18 @@ and explicit currencies. See [expense CRUD contracts](../../.agentic/registries/
 for boundary units, compatibility corrections, limits and remaining lifecycle/
 generic create-drawer/locale/provider/full-range/financial qualification. Stored
 history, schema and production IRR enablement are unchanged.
+
+
+## Expense lifecycle contracts (MON-061)
+
+Six expense lifecycle REST/MCP operations now share atomic scoped services with
+CRUD locks/validators. Header numeric totalAmount adds totalAmountMinor without
+rescaling. Approval posts exact inclusive/recoverable/reverse-charge tax and
+saved historical FX; reimbursement clears the actual saved payable carrying
+value and books realised FX separately. Reversal mirrors complete saved money,
+FX and dimensions on original open dates. Posting audit records qualify base
+currency/history; missing or ambiguous legacy history rejects rather than guesses.
+See [expense lifecycle contracts](../../.agentic/registries/EXPENSE_LIFECYCLE_WIRE_CONTRACTS.md)
+for units, ranges, correction/compatibility policy, concurrency and qualification
+limits. Full-int64, historical remediation, compound tax and combined MON-021/
+independent financial/provider/production/IRR gates remain separate.

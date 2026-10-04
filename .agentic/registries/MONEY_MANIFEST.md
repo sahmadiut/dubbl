@@ -563,3 +563,17 @@ validate saved lines; status totals use SQL text and reject mixed currency/range
 Editor IDs retain omitted metadata and exact amounts; summary display preserves
 fractions and currency. Historical values/schema/IRR flags are unchanged; lifecycle,
 old create-drawer math, generic writers and MON-021 qualification remain separate.
+
+
+## MON-061 expense lifecycle adoption
+
+Submit/recall/approve/reject/pay/reverse REST and six strict MCP tools share
+atomic organization/claim services; see [lifecycle contracts](EXPENSE_LIFECYCLE_WIRE_CONTRACTS.md).
+Header totalAmountMinor preserves numeric saved units. Exact tax-inclusive,
+recoverability and reverse-charge ratios plus currency-scale FX qualify approval.
+Full reimbursement clears saved carrying value and posts realised FX separately;
+reversal mirrors amounts/rates/dimensions, preserving history. Posting-specific
+atomic audit supplies base/history provenance; unqualified/ambiguous legacy,
+compound tax, unsafe money and changed base currency fail without committed effects.
+State locks prevent duplicate posting and serialize adopted CRUD. No migration,
+stored-unit or IRR changes; generic writers and MON-021/financial gates remain.

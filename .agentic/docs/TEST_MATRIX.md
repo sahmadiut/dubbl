@@ -544,3 +544,29 @@ OAuth, full-int64, broader financial/security/migration/release and IRR gates re
   regressions, typecheck/lint and lexical/legacy inventories. Broader lifecycle,
   bank/restore writers, old create-drawer mileage math, performance, browser/locale/
   provider/session/OAuth/financial/security/migration/full-int64/IRR remain assigned.
+
+
+## MON-061 expense claim lifecycle contracts
+
+- Pure tests: tests/expense-lifecycle.test.ts verifies inclusive/partial/blocked/
+  reverse-charge VAT, exact half ties, safe maximum/overflow and strict canonical
+  pay dates/rejection inputs.
+- tests/integration/expense-lifecycle.test.ts launches the actual route/MCP worker
+  on a migrated randomly named disposable PostgreSQL database. Six operations,
+  registered SDK schemas, API-key/custom roles, organization isolation, legacy/
+  exact saved money, future/invalid/locked dates, two-tier bypass and fiscal closure.
+- Exact approval tax legs/dimensions; EUR loss and JPY gain/currency scales; max-safe
+  approval/payment/reversal; missing/tiny/nonrepresentable inverse FX; compound tax;
+  mismatch/unsafe/foreign/inactive saved amounts/references; base changes and
+  ambiguous/draft/missing-provenance history. Saved reversal preserves all sides,
+  rates and dimensions without live rate lookup; repeated cycles select own audit.
+- Real SQL audit faults assert no committed status/account/number/journal/reversal
+  changes. Parallel double approval, REST/MCP pay, double reversal, edit/submit
+  and recall/approve assert serialized state and no duplicate financial effects.
+- Regression workers: MON-060 CRUD, MON-056/057 settlement/reversal,
+  MON-042/051 carriers and MON-048 bill lifecycle. These preserve domain handoffs;
+  MON-021 retains combined acceptance.
+- Limits: PostgreSQL 18.6 local synthetic fixture only; not PostgreSQL 16, clean
+  install, browser/OAuth/session, generic reference/configuration writer races,
+  compound-tax or old history remediation, full-int64 or production/independent
+  financial/security/provider/IRR qualification. No build or dev server.

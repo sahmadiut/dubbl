@@ -136,3 +136,12 @@ functional IRR gates remain assigned work. No schema/migration/flag/deployment c
 The generic create drawer's legacy mileage calculation and display, broader list/
 detail locale formatting and receipt signing remain their existing separate
 money-consumer/locale/provider qualification; CRUD does not claim those are exact.
+
+
+## MON-061 lifecycle coordination
+
+The six lifecycle operations now acquire these same organization/claim locks and
+reuse saved money/reference validation; see [lifecycle contracts](EXPENSE_LIFECYCLE_WIRE_CONTRACTS.md).
+Actual edit/submit and recall/approve races are covered there. The earlier paragraph
+about legacy lifecycle reflects the MON-060 baseline; generic bank/restore/merge/
+reference/configuration writers and combined MON-021 qualification remain pending.

@@ -205,3 +205,8 @@ export async function deleteExpenseClaim(ctx: AuthContext, id: string, request?:
     await audit(tx, ctx, id, "delete", { ...before, items: saved }, request); return { success: true };
   });
 }
+
+// Lifecycle operations reuse the same tenant, saved-money and reference validation.
+export { lockOrganization as lockExpenseOrganization, load as loadExpenseClaim,
+  header as expenseClaimHeader, lines as expenseClaimLines, audit as auditExpenseClaim,
+  openDates as assertExpenseDatesOpen, person as expenseClaimPerson };

@@ -179,6 +179,52 @@ Specify the date on retrying MCP calls across days. Without a key each successfu
 call records new cash. Retry/provenance guarantees require retaining the payment
 settlement audit row; ordinary references are not retry keys.
 
+## Payment batches
+
+`POST /api/v1/payments/batch` and MCP `record_payment_batch` record **one** payment
+for multiple distinct documents of one contact/currency. Each allocation's
+numeric `amount` is decimal **major** units (USD `12.50`), with optional
+`amountExact: "12.50"` and `amountMinor: "1250"` aliases. Major aliases must agree
+exactly; minor aliases must equal the rounded major value. Total is the sum of
+rounded allocations. Currency scales apply to new inputs (JPY/IRR `1250` major,
+KWD `1.250` major all become `1250` minor); existing history is never rescaled.
+Positive ties round up using exact ratios. `date` is required. Optional method,
+bankAccountId, reference and idempotencyKey follow payment settlement rules.
+Requires `manage:payments`, recognized outstanding documents and open periods.
+Returns `{payment}` (201) with numeric minor amounts and `amountMinor` strings.
+
+| Method | Path | MCP |
+|---|---|---|
+| GET / POST | `/api/v1/payment-batches` | `list_payment_batches` / `create_payment_batch` |
+| GET / PATCH | `/api/v1/payment-batches/:id` | `get_payment_batch` / `update_payment_batch` |
+| POST | `/api/v1/payment-batches/:id/submit` | `submit_payment_batch` |
+| GET | `/api/v1/payment-batches/:id/remittance` | `generate_remittance` |
+| POST | `/api/v1/payment-batches/:id/remittance` | `send_payment_batch_remittance` |
+
+Stored batch creation requires `name`, optional `currencyCode` (USD default), and
+`items` with billId/contactId, numeric integer **minor** `amount` or matching
+`amountMinor` string, and currencyCode (USD default). All 1-1000 distinct bills
+must be recognized, outstanding and match their supplier and batch currency.
+PATCH accepts name, addItems and removeItemIds on drafts only. Returns `{batch}`;
+list retains `{data,pagination}`. Header totalAmount and item amount add *Minor
+strings; detail/edit/submit expand bill money aliases and contact creditLimitMinor.
+
+Submission posts one bank_transfer payment per item on today's UTC date using
+GL 1100. All cash, GL, balances, numbering, item/batch status and mandatory audits
+commit together. Any failure leaves the draft unchanged. Returns
+`{batch,processed,total}`; repeated/concurrent submission cannot duplicate cash.
+Amounts, totals and converted journal sides must fit the safe numeric range
+(maximum `9007199254740991` minor units). Larger exact inputs fail 422 before
+commit. No exact-only representation or production IRR enablement is implied.
+
+Remittances require completed items and qualified linked live payment history.
+They return `{batch,remittances}` with numeric totalAmount/totalPaid/billTotal/
+amountPaid and corresponding *Minor strings. Drafts reject; legacy batches
+without settlement linkage fail 422; reversed cash fails 409. Sending accepts
+optional supplier contactId and plain text personalMessage, preflights all groups,
+and returns sent/skipped lists. Missing email skips. Email delivery is sequential;
+provider failures can leave earlier deliveries committed, and repeats can resend.
+
 ## Payment reversals
 
 `DELETE /api/v1/payments/:id` and MCP `delete_payment` accept an organization

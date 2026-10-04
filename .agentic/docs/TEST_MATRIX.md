@@ -487,3 +487,23 @@ and identical retries. SQL-text business snapshots exclude API-key usage metadat
 Payment-read, credit, debit-note and bill-lifecycle integration regressions run
 alongside it. No real HTTP/session/OAuth, live provider, configured-target migration,
 IRR or full-int64 qualification is inferred. See settlement registry and evidence.
+
+
+## MON-058 payment batch contracts
+
+Pure batch schema/arithmetic fixtures distinguish legacy decimal-major immediate
+allocations from integer-minor stored items, including exact aliases, rational
+agreement, positive ties, currency scales, malformed aliases and safe limits.
+Actual REST exports use synthetic API keys/custom roles and registered SDK tools
+against disposable migrated PostgreSQL. Fixtures cover immediate received/made
+and multiple/partial documents, normalized retries, stored create/list/detail/edit/
+submission and remittance data/send-skipped operations. Tenant/auth/bank/UUID/
+date/period/fiscal/state/amount/currency/reference/aggregate/unsafe-history failures
+preserve SQL-text business snapshots; forced final batch audits roll back earlier
+cash/GL/numbering/balances/status. Competing submissions produce one completion
+without duplicate payments. Live settlement provenance qualifies remittance;
+malformed, draft, old unlinked, foreign and reversed history fail. Exact safe-max
+formatting and escaped HTML are checked; no real email is sent. Four currency
+scales retain stored minor units. Payment settlement/read/reversal, credit,
+debit-note and bill-lifecycle regressions apply. Provider, actual HTTP/session/
+OAuth, full-int64, broader financial/security/migration/release and IRR gates remain.

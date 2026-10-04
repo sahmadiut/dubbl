@@ -154,13 +154,13 @@ async function nextNumber(tx: Tx, ctx: AuthContext) {
 }
 
 type SettlementInput = Pay & { amount: number; type: "received" | "made"; allocations: Allocation[]; contactId?: string; currencyCode?: string; notes?: string | null };
-async function settle(ctx: AuthContext, input: SettlementInput, operation: string, request?: Request): Promise<Record<string, unknown>> {
+async function settle(ctx: AuthContext, input: SettlementInput, operation: string, request?: Request, executor?: Tx): Promise<Record<string, unknown>> {
   requireRole(ctx, "manage:payments");
   const canonical = { operation, type: input.type, contactId: input.contactId ?? null, currencyCode: input.currencyCode ?? null,
     amount: input.amount, date: input.date, method: input.method, reference: input.reference || null, notes: input.notes || null,
     bankAccountId: input.bankAccountId ?? null, allocations: input.allocations };
   const fingerprint = createHash("sha256").update(stringifyWire(canonical)).digest("hex");
-  return db.transaction(async tx => {
+  const run = async (tx: Tx) => {
     // All adopted document writers/carriers take this organization lock too.
     // It serializes first numbering, request retries and multi-document settlement.
     const [org] = await tx.select().from(organization).where(eq(organization.id, ctx.organizationId)).for("update");
@@ -270,7 +270,15 @@ async function settle(ctx: AuthContext, input: SettlementInput, operation: strin
         allocations: docs.map(doc => ({ documentId: doc.row.id, amountMinor: String(doc.allocation.amount), carryingBaseMinor: String(doc.carrying), recognitionRateExact: doc.rateExact })) },
       ipAddress: request?.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null, userAgent: request?.headers.get("user-agent") || null });
     return json;
-  });
+  };
+  return executor ? run(executor) : db.transaction(run);
+}
+
+/** Batch orchestration owns the transaction; never open a second settlement transaction. */
+export function createSettlementPaymentInTransaction(ctx: AuthContext, input: unknown, tx: Tx, request?: Request) {
+  requireRole(ctx, "manage:payments");
+  const parsed = paymentCreateSchema.parse(input), amounts = paymentAllocations(parsed);
+  return settle(ctx, { ...parsed, ...amounts }, "create", request, tx);
 }
 
 export function createSettlementPayment(ctx: AuthContext, input: unknown, request?: Request) {

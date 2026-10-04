@@ -449,12 +449,6 @@
   "app/api/v1/loans/route.ts": {
     "decimalToCents": 2
   },
-  "app/api/v1/payment-batches/[id]/remittance/route.ts": {
-    "formatMoney": 3
-  },
-  "app/api/v1/payments/batch/route.ts": {
-    "decimalToCents": 4
-  },
   "app/api/v1/purchase-orders/[id]/route.ts": {
     "decimalToMinorUnits": 3
   },
@@ -516,13 +510,6 @@
   },
   "lib/mcp/tools/invoices.ts": {
     "decimalToMinorUnits": 3
-  },
-  "lib/mcp/tools/payments.ts": {
-    "decimalToCents": 4
-  },
-  "lib/mcp/tools/purchasing.ts": {
-    "decimalToMinorUnits": 3,
-    "formatMoney": 3
   },
   "lib/mcp/tools/reports.ts": {
     "centsToDecimal": 12

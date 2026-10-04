@@ -72,6 +72,7 @@ export async function recordInventoryReceipt(
     item: ValuedItem;
     quantity: number; // whole units, > 0
     unitCost: number; // cents per unit
+    totalCost?: number; // exact assembly carrying value; default unitCost * quantity
     warehouseId?: string | null;
     type?: "purchase" | "adjustment" | "transfer_in" | "initial";
     referenceType?: string | null;
@@ -85,7 +86,9 @@ export async function recordInventoryReceipt(
   const qty = args.quantity;
   catalogQuantity.pipe(zPositiveQuantity).parse(qty);
   legacyMinorSchema.min(0).parse(args.unitCost);
-  const value = legacyMinor(BigInt(args.unitCost) * BigInt(qty));
+  const value = args.totalCost === undefined ? legacyMinor(BigInt(args.unitCost) * BigInt(qty)) : legacyMinorSchema.min(0).parse(args.totalCost);
+  if (args.totalCost !== undefined && args.unitCost !== roundInventoryRatio(BigInt(value), BigInt(qty)))
+    throw new WireCompatibilityError("Exact receipt value must agree with rounded unit cost");
   const prevQty = item.quantityOnHand;
   const newQty = catalogQuantity.parse(prevQty + qty);
   const newValue = legacyMinor(BigInt(item.totalValue) + BigInt(value));

@@ -75,12 +75,13 @@ export default function AssemblyOrdersPage() {
   }
 
   async function handleStart(orderId: string) {
-    await fetch(`/api/v1/inventory/assembly-orders/${orderId}`, {
+    const res = await fetch(`/api/v1/inventory/assembly-orders/${orderId}`, {
       method: "PATCH",
       headers: getHeaders(),
       body: JSON.stringify({ status: "in_progress" }),
     });
     await fetchOrders();
+    if (!res.ok) { const data = await res.json(); toast.error(data.error || "Unable to start assembly"); return; }
     toast.success("Assembly started");
   }
 

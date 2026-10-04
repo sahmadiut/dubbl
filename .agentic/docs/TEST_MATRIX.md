@@ -1,5 +1,24 @@
 # Verification matrix
 
+## MON-078 inventory BOM and assembly
+
+- Pure tests: canonical money/aliases and safe bounds, exact physical decimal
+  quantities/wastage, int32 finished quantities, exact ceilings/estimates, date
+  validation and completion-only lifecycle.
+- Migrated disposable PostgreSQL: actual fifteen REST/MCP operations and full
+  tool catalog, legacy/exact clients, API keys/custom roles, two organizations,
+  foreign/corrupt nested references, grouped stock insufficiency, inactive/empty
+  BOMs/items, FIFO consistency, standard method rejection, safe/unsafe amounts,
+  period/advisor/fiscal locks, one-winner concurrent REST/MCP completion and
+  transaction rollback under injected audit failures.
+- Financial assertions: MON-052 goods receipt -> MON-077 landed capitalization ->
+  MON-078 completion; exact 88+9=97 receipt/layer/GL and residual exhaustion;
+  historical null FIFO values, zero/high costs, decimal ceilings/wastage,
+  duplicate-line rollup, all posted journals balanced and movements linked.
+- Regression fixtures: inventory catalog/master/movements/valuation, goods receipts
+  and bill lifecycle. Layout/API alignment inspected in source only; no browser,
+  OAuth/session, independent human, IRR/full-int64 or release qualification.
+
 ## MON-077 inventory valuation and landed costs
 
 - Pure contracts: canonical legacy/exact component amounts, ties, unsafe inputs/

@@ -16,7 +16,7 @@ import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { useConfirm } from "@/lib/hooks/use-confirm";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
-import { formatMoney } from "@/lib/money";
+import { expenseMoneyDisplay } from "@/lib/money/expense-display";
 
 interface BOM {
   id: string;
@@ -24,6 +24,8 @@ interface BOM {
   description: string | null;
   assemblyItem: { id: string; name: string; code: string } | null;
   components: { id: string; componentItem: { name: string; purchasePrice: number } | null; quantity: string }[];
+  currencyCode: string;
+  costBreakdown: { totalCostMinor: string };
   laborCostCents: number;
   overheadCostCents: number;
   isActive: boolean;
@@ -55,7 +57,8 @@ export default function BOMListPage() {
       confirmLabel: "Delete",
       destructive: true,
       onConfirm: async () => {
-        await fetch(`/api/v1/inventory/bom/${bom.id}`, { method: "DELETE", headers: getHeaders() });
+        const res = await fetch(`/api/v1/inventory/bom/${bom.id}`, { method: "DELETE", headers: getHeaders() });
+        if (!res.ok) { const data = await res.json(); toast.error(data.error || "Unable to delete BOM"); return; }
         toast.success("BOM deleted");
         setBoms((prev) => prev.filter((b) => b.id !== bom.id));
       },
@@ -171,10 +174,6 @@ export default function BOMListPage() {
         ) : (
           <div className="space-y-2">
             {boms.map((bom) => {
-              const componentCost = bom.components.reduce((sum, c) => {
-                return sum + parseFloat(c.quantity) * (c.componentItem?.purchasePrice || 0);
-              }, 0);
-              const totalCost = Math.round(componentCost) + bom.laborCostCents + bom.overheadCostCents;
 
               return (
                 <div
@@ -190,7 +189,7 @@ export default function BOMListPage() {
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {bom.assemblyItem?.name || "Unknown item"} · {bom.components.length} components · Est. {formatMoney(totalCost)}
+                      {bom.assemblyItem?.name || "Unknown item"} · {bom.components.length} components · Est. {expenseMoneyDisplay(BigInt(bom.costBreakdown.totalCostMinor), bom.currencyCode)}
                     </p>
                   </div>
                   <DropdownMenu>

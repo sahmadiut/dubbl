@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
-import { formatMoney } from "@/lib/money";
+import { expenseMoneyDisplay } from "@/lib/money/expense-display";
 
 interface BOMDetail {
   bom: {
@@ -17,6 +17,7 @@ interface BOMDetail {
     name: string;
     description: string | null;
     assemblyItem: { id: string; name: string; code: string } | null;
+    currencyCode: string;
     laborCostCents: number;
     overheadCostCents: number;
     isActive: boolean;
@@ -24,14 +25,19 @@ interface BOMDetail {
       id: string;
       quantity: string;
       wastagePercent: string | null;
-      componentItem: { id: string; name: string; code: string; purchasePrice: number } | null;
+      wastagePercentExact: string;
+      componentItem: { id: string; name: string; code: string; purchasePrice: number; purchasePriceMinor: string } | null;
     }[];
   };
   costBreakdown: {
     componentCost: number;
+    componentCostMinor: string;
     laborCost: number;
+    laborCostMinor: string;
     overheadCost: number;
+    overheadCostMinor: string;
     totalCost: number;
+    totalCostMinor: string;
   };
 }
 
@@ -49,19 +55,21 @@ export default function BOMDetailPage() {
   useEffect(() => {
     fetch(`/api/v1/inventory/bom/${id}`, { headers: getHeaders() })
       .then((r) => r.json())
-      .then(setData)
+      .then((result) => { if (result.bom) setData(result); else toast.error(result.error || "Unable to load BOM"); })
       .finally(() => setLoading(false));
   }, [id]);
 
   async function removeComponent(componentId: string) {
-    await fetch(`/api/v1/inventory/bom/${id}/components?componentId=${componentId}`, {
+    const removal = await fetch(`/api/v1/inventory/bom/${id}/components?componentId=${componentId}`, {
       method: "DELETE",
       headers: getHeaders(),
     });
+    if (!removal.ok) { const result = await removal.json(); toast.error(result.error || "Unable to remove component"); return; }
     toast.success("Component removed");
     // Refetch
     const res = await fetch(`/api/v1/inventory/bom/${id}`, { headers: getHeaders() });
-    setData(await res.json());
+    const result = await res.json();
+    if (result.bom) setData(result); else toast.error(result.error || "Unable to reload BOM");
   }
 
   if (loading) return <BrandLoader />;
@@ -91,19 +99,19 @@ export default function BOMDetailPage() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div>
               <p className="text-xs text-muted-foreground">Components</p>
-              <p className="text-sm font-mono font-medium tabular-nums">{formatMoney(costBreakdown.componentCost)}</p>
+              <p className="text-sm font-mono font-medium tabular-nums">{expenseMoneyDisplay(BigInt(costBreakdown.componentCostMinor), bom.currencyCode)}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Labor</p>
-              <p className="text-sm font-mono font-medium tabular-nums">{formatMoney(costBreakdown.laborCost)}</p>
+              <p className="text-sm font-mono font-medium tabular-nums">{expenseMoneyDisplay(BigInt(costBreakdown.laborCostMinor), bom.currencyCode)}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Overhead</p>
-              <p className="text-sm font-mono font-medium tabular-nums">{formatMoney(costBreakdown.overheadCost)}</p>
+              <p className="text-sm font-mono font-medium tabular-nums">{expenseMoneyDisplay(BigInt(costBreakdown.overheadCostMinor), bom.currencyCode)}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground font-medium">Total Cost</p>
-              <p className="text-sm font-mono font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">{formatMoney(costBreakdown.totalCost)}</p>
+              <p className="text-sm font-mono font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">{expenseMoneyDisplay(BigInt(costBreakdown.totalCostMinor), bom.currencyCode)}</p>
             </div>
           </div>
         </div>
@@ -125,8 +133,8 @@ export default function BOMDetailPage() {
                     </p>
                     <p className="text-xs text-muted-foreground">
                       Qty: {comp.quantity}
-                      {comp.wastagePercent && parseFloat(comp.wastagePercent) > 0 && ` · ${comp.wastagePercent}% wastage`}
-                      {comp.componentItem && ` · ${formatMoney(comp.componentItem.purchasePrice)} each`}
+                      {comp.wastagePercent && !/^0(?:\.0+)?$/.test(comp.wastagePercentExact) && ` · ${comp.wastagePercent}% wastage`}
+                      {comp.componentItem && ` · ${expenseMoneyDisplay(BigInt(comp.componentItem.purchasePriceMinor), bom.currencyCode)} each`}
                     </p>
                   </div>
                   <Button variant="ghost" size="sm" className="size-7 p-0 text-destructive" onClick={() => removeComponent(comp.id)}>

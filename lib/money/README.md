@@ -1,5 +1,17 @@
 # Exact money core
 
+## Inventory assembly adoption (MON-078)
+
+BOM/components and assembly REST/MCP use scoped transactional services with exact
+minor cost aliases and physical decimal quantities. Component consumption uses
+bigint ratios and whole-unit ceilings; completion retains full carrying cost in
+finished stock/FIFO layers, separate from rounded unitCost. Journal/stock/layers/
+status/audit commit together under source/account/range/period/retry checks.
+BOM screens use the server's exact purchase-price estimate including wastage.
+See [assembly contracts](../../.agentic/registries/INVENTORY_ASSEMBLY_WIRE_CONTRACTS.md)
+for operations, ranges and limits. Procurement receipts retain their contract;
+MON-024 combined acceptance and money/migration/IRR/release gates remain separate.
+
 MON-077 inventory valuation/landed costs use exact conserving apportionment and
 nullable FIFO carrying/consumption values, with historical null read fallback.
 REST/MCP numeric amounts retain their units and add Minor aliases; legacy component

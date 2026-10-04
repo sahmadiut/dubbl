@@ -1,0 +1,29 @@
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { z } from "zod";
+import type { AuthContext } from "@/lib/api/auth-context";
+import { wrapTool } from "@/lib/mcp/errors";
+import { bomCreateSchema, bomUpdateSchema, componentCreateSchema, componentUpdateSchema, assemblyCreateSchema, assemblyUpdateSchema } from "@/lib/api/inventory-assembly-wire";
+import { listBoms, getBom, createBom, updateBom, deleteBom, listBomComponents, addBomComponent, updateBomComponent, removeBomComponent, listAssemblyOrders, getAssemblyOrder, createAssemblyOrder, updateAssemblyOrder, deleteAssemblyOrder } from "@/lib/api/inventory-assembly";
+
+const bomId = z.string().uuid().describe("Live organization-owned BOM UUID");
+const assemblyOrderId = z.string().uuid().describe("Live organization-owned assembly order UUID");
+const componentId = z.string().uuid().describe("Component UUID belonging to the supplied owned BOM");
+const empty = z.object({}).strict();
+const bomRef = z.object({ bomId }).strict();
+const orderRef = z.object({ assemblyOrderId }).strict();
+export function registerInventoryAssemblyTools(server: McpServer, ctx: AuthContext) {
+  server.registerTool("update_bom_component", { description: "Edit an owned BOM component's item/physical decimal quantity/wastage. Omitted values retain; exact aliases must agree. Returns component; requires manage:inventory.", inputSchema: componentUpdateSchema.extend({ bomId, componentId }) }, p => { const { bomId, componentId, ...input } = p; return wrapTool(ctx, () => updateBomComponent(ctx, bomId, componentId, input)); });
+  server.registerTool("list_boms", { description: "List owned live recipes with nested owned items/components and purchase-price estimates. Costs are numeric base-currency minor units with *Minor strings; quantities are exact physical decimals.", inputSchema: empty }, () => wrapTool(ctx, () => listBoms(ctx)));
+  server.registerTool("get_bom", { description: "Return owned BOM and costBreakdown estimate (purchase prices, wastage, labor/overhead); money in numeric minor units plus *Minor strings. Estimate differs from actual carrying cost at build time.", inputSchema: bomRef }, p => wrapTool(ctx, () => getBom(ctx, p.bomId)));
+  server.registerTool("create_bom", { description: "Create recipe for a live active owned finished item. Labor/overhead in integer base-currency minor units or matching canonical *Minor strings, safe Number range. Returns bom; requires manage:inventory.", inputSchema: bomCreateSchema }, p => wrapTool(ctx, () => createBom(ctx, p)));
+  server.registerTool("update_bom", { description: "Edit owned live recipe metadata/costs/activity. Costs in integer base-currency minor units or matching *Minor strings; omitted values retain. Returns bom; requires manage:inventory.", inputSchema: bomUpdateSchema.extend({ bomId }) }, p => { const { bomId, ...input } = p; return wrapTool(ctx, () => updateBom(ctx, bomId, input)); });
+  server.registerTool("delete_bom", { description: "Soft-delete owned live BOM after open orders are cancelled/deleted. Returns success; requires manage:inventory.", inputSchema: bomRef }, p => wrapTool(ctx, () => deleteBom(ctx, p.bomId)));
+  server.registerTool("list_bom_components", { description: "List components of owned live BOM with owned inventory DTOs. quantity/quantityExact are physical decimal units; wastagePercent/Exact are percent, not money.", inputSchema: bomRef }, p => wrapTool(ctx, () => listBomComponents(ctx, p.bomId)));
+  server.registerTool("add_bom_component", { description: "Add live active owned component to BOM. Physical quantity and wastage allow six decimals; aliases must agree; self-consumption rejects. Returns component; requires manage:inventory.", inputSchema: componentCreateSchema.extend({ bomId }) }, p => { const { bomId, ...input } = p; return wrapTool(ctx, () => addBomComponent(ctx, bomId, input)); });
+  server.registerTool("remove_bom_component", { description: "Delete the specified component from an owned live BOM; foreign parents/components reject. Returns success; requires manage:inventory.", inputSchema: bomRef.extend({ componentId }) }, p => wrapTool(ctx, () => removeBomComponent(ctx, p.bomId, p.componentId)));
+  server.registerTool("list_assembly_orders", { description: "List owned live assembly orders with owned recipe/finished item. Quantity is whole physical units; nested costs in minor units with exact aliases. Returns data.", inputSchema: empty }, () => wrapTool(ctx, () => listAssemblyOrders(ctx)));
+  server.registerTool("get_assembly_order", { description: "Get owned live assembly order and recipe/finished item. Whole physical quantity; nested minor-unit costs with exact aliases. Returns order.", inputSchema: orderRef }, p => wrapTool(ctx, () => getAssemblyOrder(ctx, p.assemblyOrderId)));
+  server.registerTool("create_assembly_order", { description: "Create draft order for live active owned BOM. Quantity is positive int32 whole finished units. Returns order; requires manage:inventory.", inputSchema: assemblyCreateSchema }, p => wrapTool(ctx, () => createAssemblyOrder(ctx, p)));
+  server.registerTool("update_assembly_order", { description: "Edit draft/in-progress order quantity, notes or status. Whole physical units; completed/cancelled orders immutable. Completion requires build_assembly. Returns order; requires manage:inventory.", inputSchema: assemblyUpdateSchema.extend({ assemblyOrderId }) }, p => { const { assemblyOrderId, ...input } = p; return wrapTool(ctx, () => updateAssemblyOrder(ctx, assemblyOrderId, input)); });
+  server.registerTool("delete_assembly_order", { description: "Soft-delete owned draft/in-progress/cancelled order; completed orders reject. Returns success; requires manage:inventory.", inputSchema: orderRef }, p => wrapTool(ctx, () => deleteAssemblyOrder(ctx, p.assemblyOrderId)));
+}

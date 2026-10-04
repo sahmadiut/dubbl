@@ -1,5 +1,19 @@
 # Money and FX boundary manifest
 
+## MON-078 inventory assembly adoption
+
+[INVENTORY_ASSEMBLY_WIRE_CONTRACTS](INVENTORY_ASSEMBLY_WIRE_CONTRACTS.md) records
+six REST route files/fifteen operations and fifteen tools. Shared scoped services
+retain minor money and physical quantity units with exact aliases; recipe ratios,
+whole-unit consumption, cost rollup and journals use exact intermediates. Atomic
+completion preserves full component/conversion carrying value in finished stock
+and FIFO layers, including residuals when rounded unitCost times quantity differs.
+Permissions, nested ownership, stock/account/method checks, date locks, repeat
+protection and transactional audit/response preflight apply. BOM estimates/UI
+share exact purchase-price estimates including wastage. Existing goods-receipt
+writer remains compatible; no schema changes or history rescale. MON-024 retains
+combined inventory acceptance, with full-int64/migration/IRR/release gates separate.
+
 ## MON-077 inventory valuation/landed cost adoption
 
 [INVENTORY_VALUATION_WIRE_CONTRACTS](INVENTORY_VALUATION_WIRE_CONTRACTS.md)

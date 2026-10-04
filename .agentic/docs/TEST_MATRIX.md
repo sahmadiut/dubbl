@@ -1,5 +1,18 @@
 # Verification matrix
 
+## MON-072 tax periods
+
+- tests/tax-period-wire.test.ts: minor aliases/serializer compatibility, signed
+  DTOs, canonical syntax, safe bounds, >int64 aggregates, dates and basis points.
+- tests/integration/tax-period-contracts.test.ts and worker: actual REST and
+  registered SDK on disposable migrated PostgreSQL18; CRUD, both filing names,
+  linked/standalone payment/refund, zero/max-safe values, permissions/tenants,
+  frozen figures, concurrency, cash/flat-rate/EC, malformed/unsafe data, period
+  and fiscal locks, currency scale/IRR gate, audit/journal rollback snapshots.
+- Remaining: network/session/OAuth, PostgreSQL16, statutory policy/report parity,
+  foreign EC/settlement FX, historical remediation, full-int64, global closure/
+  lock concurrency and independent accounting/security/migration/IRR gates.
+
 These are required product checks, not results. Every result is initially NOT RUN. Retain exact fixtures and actual commands in task evidence. This package only tests its controller.
 
 | Case | Expected invariant | Owning tasks | Initial result |

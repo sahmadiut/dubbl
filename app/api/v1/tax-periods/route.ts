@@ -1,54 +1,13 @@
-import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { taxPeriod } from "@/lib/db/schema";
-import { eq, and, desc } from "drizzle-orm";
 import { getAuthContext } from "@/lib/api/auth-context";
-import { requireRole } from "@/lib/api/require-role";
 import { handleError } from "@/lib/api/response";
-import { z } from "zod";
-
-const createSchema = z.object({
-  name: z.string().min(1),
-  startDate: z.string().min(1),
-  endDate: z.string().min(1),
-  type: z.enum(["monthly", "quarterly", "annual"]),
-  notes: z.string().optional(),
-});
-
+import { jsonResponse } from "@/lib/api/json-response";
+import { readTaxJson } from "@/lib/api/tax-rate-wire";
+import { listTaxPeriods, createTaxPeriod } from "@/lib/api/tax-periods";
 export async function GET(request: Request) {
-  try {
-    const ctx = await getAuthContext(request);
-
-    const periods = await db.query.taxPeriod.findMany({
-      where: eq(taxPeriod.organizationId, ctx.organizationId),
-      orderBy: desc(taxPeriod.startDate),
-      with: { lines: true },
-    });
-
-    return NextResponse.json({ taxPeriods: periods });
-  } catch (err) {
-    return handleError(err);
-  }
+  try { return jsonResponse({ taxPeriods: await listTaxPeriods(await getAuthContext(request)) }); }
+  catch (error) { return handleError(error); }
 }
-
 export async function POST(request: Request) {
-  try {
-    const ctx = await getAuthContext(request);
-    requireRole(ctx, "manage:tax-config");
-
-    const body = await request.json();
-    const parsed = createSchema.parse(body);
-
-    const [created] = await db
-      .insert(taxPeriod)
-      .values({
-        organizationId: ctx.organizationId,
-        ...parsed,
-      })
-      .returning();
-
-    return NextResponse.json({ taxPeriod: created }, { status: 201 });
-  } catch (err) {
-    return handleError(err);
-  }
+  try { return jsonResponse({ taxPeriod: await createTaxPeriod(await getAuthContext(request), await readTaxJson(request), request) }, { status: 201 }); }
+  catch (error) { return handleError(error); }
 }

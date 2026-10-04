@@ -1,5 +1,16 @@
 # Money and FX boundary manifest
 
+## MON-072 tax period adoption
+
+[Tax period contracts](TAX_PERIOD_WIRE_CONTRACTS.md) cover CRUD, both filing names
+and linked/standalone settlements. Numeric base minor units add Minor strings;
+text SQL sums and bigint math guard boxes and posting sides. Foreign EC units
+reject. Org/period locks, frozen figures, journal/identity FX and audit commit
+together. SDK/API-key/custom-role/PostgreSQL fixtures verify races, rollback,
+scope and range. Reports MON-029, approvals MON-073 and combined MON-022 remain;
+full-range/history/global fiscal concurrency/independent financial/IRR gates are
+separate. No schema, statutory policy or production flag change.
+
 ## MON-071 bounded tax rate/profile adoption
 
 [Tax configuration contracts](TAX_RATE_PROFILE_WIRE_CONTRACTS.md) record all rate

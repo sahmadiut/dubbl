@@ -1,5 +1,11 @@
 # Exact money core
 
+MON-072 tax period REST/MCP adds exact minor aliases to frozen lines, VAT totals
+and base-currency cash settlement. Shared services freeze, post and audit
+atomically with bigint aggregates and filing locks. See
+[tax period contracts](../../.agentic/registries/TAX_PERIOD_WIRE_CONTRACTS.md)
+for operations, safe bounds, cash/flat-rate/EC limits and remaining gates.
+
 New monetary calculations import `lib/money/exact.ts`. A `Money` carries a signed
 bigint minor-unit amount and a validated currency. Final amounts must fit signed
 PostgreSQL bigint, including in memory before the storage migration. Intermediate

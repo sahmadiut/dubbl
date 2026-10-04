@@ -1,108 +1,13 @@
-import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import {
-  bankTransaction,
-  bankAccount,
-  bankReconciliation,
-  journalEntry,
-  auditLog,
-} from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
 import { getAuthContext } from "@/lib/api/auth-context";
-import { requireRole } from "@/lib/api/require-role";
-import { handleError, notFound } from "@/lib/api/response";
-import { notDeleted } from "@/lib/db/soft-delete";
-import { z } from "zod";
+import { handleError } from "@/lib/api/response";
+import { jsonResponse } from "@/lib/api/json-response";
+import { reconcileBankTransaction } from "@/lib/api/bank-reconciliations";
+import { readBankTransferJson } from "@/lib/api/bank-transfer-wire";
 
-const reconcileSchema = z.object({
-  reconciliationId: z.string().nullable().optional(),
-  journalEntryId: z.string().nullable().optional(),
-});
-
-export async function POST(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await params;
-    const ctx = await getAuthContext(request);
-    requireRole(ctx, "manage:banking");
-
-    // Find the transaction and verify ownership through bank account
-    const transaction = await db.query.bankTransaction.findFirst({
-      where: eq(bankTransaction.id, id),
-      with: { bankAccount: true },
-    });
-
-    if (!transaction) return notFound("Bank transaction");
-
-    // Verify the bank account belongs to this organization
-    const account = await db.query.bankAccount.findFirst({
-      where: and(
-        eq(bankAccount.id, transaction.bankAccountId),
-        eq(bankAccount.organizationId, ctx.organizationId),
-        notDeleted(bankAccount.deletedAt)
-      ),
-    });
-
-    if (!account) return notFound("Bank transaction");
-
-    if (transaction.status === "reconciled") {
-      return NextResponse.json(
-        { error: "Transaction is already reconciled" },
-        { status: 400 }
-      );
-    }
-
-    const body = await request.json();
-    const parsed = reconcileSchema.parse(body);
-
-    // Validate that any supplied journalEntry / reconciliation belong to THIS
-    // org before stamping them onto the bank line — otherwise a caller could
-    // point a line at another org's records.
-    if (parsed.journalEntryId) {
-      const je = await db.query.journalEntry.findFirst({
-        where: and(
-          eq(journalEntry.id, parsed.journalEntryId),
-          eq(journalEntry.organizationId, ctx.organizationId)
-        ),
-      });
-      if (!je) return notFound("Journal entry");
-    }
-    if (parsed.reconciliationId) {
-      const rec = await db.query.bankReconciliation.findFirst({
-        where: and(
-          eq(bankReconciliation.id, parsed.reconciliationId),
-          eq(bankReconciliation.bankAccountId, account.id)
-        ),
-      });
-      if (!rec) return notFound("Reconciliation");
-    }
-
-    const [updated] = await db
-      .update(bankTransaction)
-      .set({
-        status: "reconciled",
-        reconciliationId: parsed.reconciliationId || null,
-        journalEntryId: parsed.journalEntryId || null,
-      })
-      .where(eq(bankTransaction.id, id))
-      .returning();
-
-    await db.insert(auditLog).values({
-      organizationId: ctx.organizationId,
-      userId: ctx.userId,
-      action: "reconciled",
-      entityType: "bank_transaction",
-      entityId: id,
-      changes: {
-        previousStatus: transaction.status,
-        reconciliationId: parsed.reconciliationId || null,
-      },
-    });
-
-    return NextResponse.json({ transaction: updated });
-  } catch (err) {
-    return handleError(err);
-  }
+    const { id } = await params, ctx = await getAuthContext(request);
+    const { transaction } = await reconcileBankTransaction(ctx, id, await readBankTransferJson(request), request);
+    return jsonResponse({ transaction });
+  } catch (error) { return handleError(error); }
 }

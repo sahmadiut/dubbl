@@ -667,3 +667,27 @@ combined financial acceptance. No stored rescaling or configured database migrat
 - Read/account/import/categorization/document-match regression suites retain their
   own qualification. No browser/provider/OAuth/PostgreSQL16/production/human
   accounting proof; MON-068/069 and MON-021 retain remaining/combined acceptance.
+
+## MON-068 bank reconciliation
+
+- Pure reconciliation-wire/display groups exercise signed numeric/exact/dual
+  aliases, canonical syntax, safe bounds, dates/IDs/strict fields and exact
+  negative fractional/large USD/JPY/KWD/IRR presentation.
+- Actual exported REST and SDK MCP in bank-reconciliations-worker qualify all
+  eight operations with API keys, custom bank/viewer roles, invalid/expired keys,
+  two tenants and spoofed org headers on migrated disposable PostgreSQL 18.
+- Session completion requires all accounted lines, exact statement and GL proof;
+  undo reopens completed sessions. SQL-text snapshots prove no committed effects
+  for unsafe balances/sums/differences/history, unmatched/foreign/noncash values,
+  invalid IDs/dates/periods, duplicate/overlapping windows and explicit ID errors.
+- Exact reversals preserve saved FX, accounts/dimensions and retained allocations;
+  bank-created cash restores invoice/bill balances, existing cash/manual journals
+  detach, bank expenses soft-delete, adjustment synthetic and proven transfer
+  synthetic legs remove, real statement dates/balances remain unchanged.
+- Final audit faults roll back sessions, adjustments, marks, exclusions, cash,
+  expense, coding and transfer undo. Concurrent undo/completion/opposite transfer
+  fixtures leave one successful exclusive transition. Current FX changes do not
+  alter foreign cash reversal. Sessions protect bank currency identity.
+- Relevant account/coding/matching/transfer/expense/payment reversal/settlement
+  regression suites remain separately qualified. No browser/provider/OAuth,
+  PostgreSQL16, independent financial/security, production or IRR gate claim.

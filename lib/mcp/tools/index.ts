@@ -24,7 +24,7 @@ import { registerWebhookTools } from "./webhooks";
 import { registerReportScheduleTools } from "./report-schedule-tools";
 import { registerApprovalTools } from "./approvals";
 import { registerBankRuleTools } from "./bank-rules";
-import { registerBankTransactionTools } from "./bank-transactions";
+import { registerBankReconciliationTools } from "./bank-reconciliations";
 import { registerDocumentTools } from "./documents";
 import { registerIntegrationTools } from "./integrations";
 import { registerEmailTools } from "./email";
@@ -91,7 +91,7 @@ export function registerAllTools(server: McpServer, ctx: AuthContext) {
   registerBankImportTools(server, ctx);
   registerBankTransactionReadTools(server, ctx);
   registerBankRuleTools(server, ctx);
-  registerBankTransactionTools(server, ctx);
+  registerBankReconciliationTools(server, ctx);
   registerBankTransferTools(server, ctx);
   registerBankCategorizationTools(server, ctx);
   registerBankDocumentMatchTools(server, ctx);

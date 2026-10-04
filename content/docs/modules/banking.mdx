@@ -113,3 +113,21 @@ contribute to transaction totals and the ledger. Standalone API/MCP transfer
 creation also records a linked pair; each call creates a new transfer, so inspect
 the records before retrying after an uncertain result. Undo remains a separate
 workflow.
+
+### Statement checks and undo
+
+Start a statement check with its Gregorian dates and opening/closing balances in
+the bank's currency. Balance inputs and displays respect that currency's decimal
+scale. Every nonignored movement must be accounted for before completion, and
+both the statement movements and ledger balance must agree with the closing
+balance. Overlapping statement windows are rejected. Checks and write-offs for
+foreign-currency balances require separate currency qualification; the report
+shows the statement and base-currency books separately.
+
+Undoing a check reopens affected completed statements. Existing matched cash
+payments and journals retain their accounting. Payments created from statement
+matching restore invoice/bill balances; bank-created expense/category/transfer
+postings receive exact reversals using their saved amounts and exchange rates.
+Both transfer legs unwind together, with generated mirrors removed and original
+statement dates/amounts/balances retained. Expense undo also requires expense
+management permission. Locked or ambiguous history must be resolved before undo.

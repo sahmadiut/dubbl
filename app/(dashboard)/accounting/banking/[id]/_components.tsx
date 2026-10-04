@@ -60,6 +60,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { bankMoneyDisplay } from "@/lib/money/bank-display";
 import { formatMoney, centsToDecimal } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import { AccountPicker } from "@/components/dashboard/account-picker";
@@ -2730,9 +2731,13 @@ export interface ReconciliationData {
     endBalance: number;
     status: string;
   } | null;
+  currencyCode: string;
+  glCurrencyCode: string;
+  comparisonUnavailableReason: string | null;
   statementEndBalance: number;
   glBalance: number | null;
   difference: number | null;
+  differenceMinor: string | null;
   isBalanced: boolean;
   hasLedgerAccount: boolean;
   reconciled: { count: number; total: number; transactions: Transaction[] };
@@ -2760,7 +2765,7 @@ export function ReconciliationReport({
   const balanced = data.isBalanced;
 
   async function postAdjustment() {
-    if (!orgId || diff == null || diff === 0) return;
+    if (!orgId || diff == null || diff === 0 || data.reconciliation?.status === "completed") return;
     setPosting(true);
     try {
       const res = await fetch(`/api/v1/bank-accounts/${bankAccountId}/reconciliation`, {
@@ -2768,7 +2773,7 @@ export function ReconciliationReport({
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify({
           action: "adjustment",
-          amount: diff,
+          amountMinor: data.differenceMinor,
           date: data.reconciliation?.endDate || new Date().toISOString().slice(0, 10),
           description: adjustDesc.trim() || "Reconciliation adjustment",
           reconciliationId: data.reconciliation?.id,
@@ -2792,12 +2797,12 @@ export function ReconciliationReport({
         <div className="grid grid-cols-1 divide-y sm:grid-cols-3 sm:divide-x sm:divide-y-0">
           <div className="p-4">
             <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Bank statement balance</p>
-            <p className="mt-1 text-xl font-semibold font-mono tabular-nums">{formatMoney(data.statementEndBalance, currencyCode)}</p>
+            <p className="mt-1 text-xl font-semibold font-mono tabular-nums">{bankMoneyDisplay(data.statementEndBalance, currencyCode)}</p>
           </div>
           <div className="p-4">
             <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Balance in your books</p>
             <p className="mt-1 text-xl font-semibold font-mono tabular-nums">
-              {data.glBalance == null ? "—" : formatMoney(data.glBalance, currencyCode)}
+              {data.glBalance == null ? "—" : bankMoneyDisplay(data.glBalance, data.glCurrencyCode)}
             </p>
           </div>
           <div className="p-4">
@@ -2806,7 +2811,7 @@ export function ReconciliationReport({
               "mt-1 text-xl font-semibold font-mono tabular-nums",
               diff == null ? "text-muted-foreground" : balanced ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"
             )}>
-              {diff == null ? "—" : formatMoney(diff, currencyCode)}
+              {diff == null ? "—" : bankMoneyDisplay(diff, currencyCode)}
             </p>
           </div>
         </div>
@@ -2816,6 +2821,8 @@ export function ReconciliationReport({
         )}>
           {!data.hasLedgerAccount ? (
             <span className="text-xs text-muted-foreground">This bank account isn&apos;t set up for bookkeeping yet, so its balance in your books can&apos;t be worked out.</span>
+          ) : data.comparisonUnavailableReason === "different_currency_units" ? (
+            <span className="text-xs text-muted-foreground">The statement and books use different currencies. A currency-qualified statement check is required.</span>
           ) : balanced ? (
             <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
               <CheckCircle className="size-3.5" />Your books match the statement.
@@ -2829,7 +2836,7 @@ export function ReconciliationReport({
                   : "Your books show more than the statement."}
               </span>
               <div className="flex-1" />
-              <Button size="sm" variant="outline" onClick={() => setAdjustOpen(true)} disabled={diff == null || diff === 0} title="Add a small entry so your books match the statement exactly">
+              <Button size="sm" variant="outline" onClick={() => setAdjustOpen(true)} disabled={diff == null || diff === 0 || data.reconciliation?.status === "completed"} title="Add a small entry so your books match the statement exactly">
                 <Scale className="mr-1.5 size-3.5" />Write off the difference
               </Button>
             </>
@@ -2842,7 +2849,7 @@ export function ReconciliationReport({
           <div className="flex items-center justify-between border-b px-3 py-2">
             <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Matched to statement</span>
             <span className="text-xs font-mono tabular-nums text-muted-foreground">
-              {data.reconciled.count} · {formatMoney(data.reconciled.total, currencyCode)}
+              {data.reconciled.count} · {bankMoneyDisplay(data.reconciled.total, currencyCode)}
             </span>
           </div>
           <RecLineList transactions={data.reconciled.transactions} currencyCode={currencyCode} empty="Nothing matched to the statement yet." />
@@ -2851,7 +2858,7 @@ export function ReconciliationReport({
           <div className="flex items-center justify-between border-b px-3 py-2">
             <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Not yet matched</span>
             <span className="text-xs font-mono tabular-nums text-muted-foreground">
-              {data.unreconciled.count} · {formatMoney(data.unreconciled.total, currencyCode)}
+              {data.unreconciled.count} · {bankMoneyDisplay(data.unreconciled.total, currencyCode)}
             </span>
           </div>
           <RecLineList transactions={data.unreconciled.transactions} currencyCode={currencyCode} empty="Nothing left to match." />
@@ -2874,7 +2881,7 @@ export function ReconciliationReport({
                   "font-mono font-semibold tabular-nums",
                   diff != null && diff > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
                 )}>
-                  {diff != null ? formatMoney(diff, currencyCode) : "—"}
+                  {diff != null ? bankMoneyDisplay(diff, currencyCode) : "—"}
                 </span>
               </div>
               <p className="mt-1.5 text-[11px] text-muted-foreground">
@@ -2890,7 +2897,7 @@ export function ReconciliationReport({
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAdjustOpen(false)}>Cancel</Button>
-            <Button onClick={postAdjustment} disabled={posting || diff == null || diff === 0} className="bg-emerald-600 hover:bg-emerald-700">
+            <Button onClick={postAdjustment} disabled={posting || diff == null || diff === 0 || data.reconciliation?.status === "completed"} className="bg-emerald-600 hover:bg-emerald-700">
               {posting ? <><Loader2 className="mr-2 size-3.5 animate-spin" />Saving…</> : "Write off the difference"}
             </Button>
           </DialogFooter>
@@ -2926,7 +2933,7 @@ function RecLineList({
               "font-mono text-xs font-medium tabular-nums shrink-0",
               isCredit ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
             )}>
-              {isCredit ? "+" : ""}{formatMoney(tx.amount, currencyCode)}
+              {isCredit ? "+" : ""}{bankMoneyDisplay(tx.amount, currencyCode)}
             </span>
           </div>
         );

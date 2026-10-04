@@ -20,11 +20,8 @@
     "formatMoney": 4
   },
   "app/(dashboard)/accounting/banking/[id]/_components.tsx": {
-    "formatMoney": 39,
+    "formatMoney": 32,
     "centsToDecimal": 12
-  },
-  "app/(dashboard)/accounting/banking/[id]/reconcile/page.tsx": {
-    "formatMoney": 7
   },
   "app/(dashboard)/accounting/banking/batches/[id]/page.tsx": {
     "formatMoney": 6

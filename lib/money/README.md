@@ -416,3 +416,16 @@ Statement snapshots/running balances are preserved. See
 [transfer contracts](../../.agentic/registries/BANK_TRANSFER_WIRE_CONTRACTS.md)
 for every boundary, safe ranges, unsupported currencies/FX/history, retry policy
 and the MON-068 undo/session handoff. No schema or IRR gate change.
+
+## Bank reconciliation contracts (MON-068)
+
+Session/list/proof/complete/adjustment/reconcile/unreconcile/exclude REST and MCP
+share atomic scoped services. Signed integer bank minor inputs/outputs add named
+Minor aliases; text SQL sums and bigint arithmetic protect safe numeric bounds.
+Foreign statement/base GL units stay explicit, without unlike-unit subtraction.
+Existing journals/payments detach; bank-created category/cash/expense/transfer
+postings get saved-FX reversals, preserving dimensions and allocation history.
+Affected completed sessions reopen and only proven synthetic movements delete.
+See [reconciliation contracts](../../.agentic/registries/BANK_RECONCILIATION_WIRE_CONTRACTS.md)
+for all envelopes, units, safe ranges, compatibility corrections, retry policy,
+base-currency completion/adjustment limits and remaining MON-021/069 gates.

@@ -663,3 +663,20 @@ matching allows one successful pair; standalone calls remain new economic events
 UI target choices now reflect the same-currency policy. MON-068 owns undo/session;
 MON-069 other bank operations; MON-021 combined integration. No schema, historical
 unit, migration-file, full-int64 or production IRR change.
+
+## MON-068 bank reconciliation adoption
+
+[BANK_RECONCILIATION_WIRE_CONTRACTS](BANK_RECONCILIATION_WIRE_CONTRACTS.md)
+records session/list/proof/complete/adjustment/mark/undo/exclude REST and eight
+strict MCP tools. Signed numeric bank minor units add canonical exact aliases;
+SQL text and bigint sums/differences guard safe coexistence. Foreign proof names
+bank/base units and returns an unavailable comparison; foreign completion/
+adjustment fails explicitly. Atomic organization-scoped writes validate full
+saved money/FX/history, GL/tenant/session/date and cash/noncash identity. Existing
+payments/journals detach without accounting changes; bank-created cash reuses
+MON-057 exact reversal, category/expense/transfer reversals copy saved FX and
+dimensions. Both transfer legs unwind; only audit-proven synthetic rows delete.
+Completed affected sessions reopen with audit. Cached/provider balances and
+retained allocations remain history. UI balances/display/sums are scale-aware
+and exact; sessions prevent bank currency/link reinterpretation. MON-069 and
+MON-021 retain remaining/combined qualification; no schema/full-int64/IRR rollout.

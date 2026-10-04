@@ -1185,3 +1185,48 @@ workflow routing or notifications are performed. MCP counterparts include distin
 `update_purchase_requisition`, `delete_purchase_requisition` and
 `submit_purchase_requisition` tools, with existing list/get/create/approve/reject/
 convert tools. Full-int64 and production currency qualification remain separate.
+
+### Bank statement sessions and undo
+
+| REST operation | MCP equivalent |
+|---|---|
+| GET / POST `/api/v1/bank-accounts/:id/reconciliations` | `list_bank_reconciliations` / `create_bank_reconciliation` |
+| GET `/api/v1/bank-accounts/:id/reconciliation` | `reconciliation_report` |
+| POST same path, action `complete` / `adjustment` | `complete_bank_reconciliation` / `post_bank_reconciliation_adjustment` |
+| POST `/api/v1/bank-transactions/:id/reconcile` | `reconcile_bank_transaction` |
+| POST `/api/v1/bank-transactions/:id/unreconcile` | `unreconcile_bank_transaction` |
+| POST `/api/v1/bank-transactions/:id/exclude` | `exclude_bank_transaction` |
+
+Create requires Gregorian startDate/endDate and signed integer **bank currency
+minor-unit** startBalance/endBalance or exact startBalanceMinor/endBalanceMinor.
+Aliases must agree. USD 1250 is $12.50; JPY/IRR 1250 is 1250, KWD 1250 is 1.250.
+Overlapping inclusive windows reject. Session results add exact aliases and
+currencyCode. Adjustment numeric amount is signed integer minor units;
+amountMinor supplies the agreeing exact string. Safe money/sum/difference range
+is +/-9007199254740991; valid larger exact values fail 422 before commit.
+
+Proof names currencyCode for statements and glCurrencyCode for the base ledger.
+Monetary totals/scalars/transactions add named Minor strings. Foreign currency
+comparison returns difference=null, isBalanced=false and
+comparisonUnavailableReason=different_currency_units. Completion and adjustment
+currently require base-currency banks. Complete requires reconciliationId and
+all accounted nonexcluded window lines, opening-plus-movement closing equality
+and a matching GL closing balance. Optional distinct transactionIds cannot omit
+unattached window lines or silently include invalid IDs. Mark accepts optional
+journalEntryId and reconciliationId, requires an exact matching posted manual
+identity-FX base journal, and posts nothing.
+
+Undo preserves pre-existing matched journals and cash payments by detaching them.
+Bank-created cash payments restore exact document allocations and soft-delete the
+payment; bank-created coding/expense/adjustment/transfer postings get exact saved
+FX reversals. Noncash carriers cannot follow the cash path. Transfer undo handles
+both reciprocal legs and deletes only proven synthetic movements; imported dates,
+amounts and balances stay unchanged. Affected completed sessions reopen. REST
+keeps `{transaction}`; MCP undo adds reversalEntryId/deletedTransaction to its
+existing diagnostics. Synthetic-row removal is explicit in MCP.
+
+All writes and proof require manage:banking; bank expense undo also requires
+manage:expenses. Dates and referenced history must be open and qualified. Writes
+and audit commit together. Repeated mark/complete/undo reject; exclude toggles and
+adjustment calls create new postings, without replay keys. Inspect records after
+an uncertain response before retrying.

@@ -1,6 +1,6 @@
 import { and, desc, eq, isNull, ne, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { bankAccount, bankTransaction, bankStatementImport, chartAccount, journalLine, organization, auditLog, payment } from "@/lib/db/schema";
+import { bankAccount, bankTransaction, bankReconciliation, bankStatementImport, chartAccount, journalLine, organization, auditLog, payment } from "@/lib/db/schema";
 import { legacyMinor, stringifyWire, WireCompatibilityError } from "@/lib/money/wire";
 import { AuthError, type AuthContext } from "./auth-context";
 import { requireRole } from "./require-role";
@@ -77,8 +77,9 @@ async function hasHistory(tx: Tx, row: Account) {
   const [transactions] = await tx.select({ id: bankTransaction.id }).from(bankTransaction).where(eq(bankTransaction.bankAccountId, row.id)).limit(1);
   const [imports] = await tx.select({ id: bankStatementImport.id }).from(bankStatementImport).where(eq(bankStatementImport.bankAccountId, row.id)).limit(1);
   const [payments] = await tx.select({ id: payment.id }).from(payment).where(eq(payment.bankAccountId, row.id)).limit(1);
+  const [reconciliations] = await tx.select({ id: bankReconciliation.id }).from(bankReconciliation).where(eq(bankReconciliation.bankAccountId, row.id)).limit(1);
   const lines = row.chartAccountId ? await tx.select({ id: journalLine.id }).from(journalLine).where(eq(journalLine.accountId, row.chartAccountId)).limit(1) : [];
-  return Boolean(transactions || imports || payments || lines.length);
+  return Boolean(transactions || imports || payments || reconciliations || lines.length);
 }
 export async function updateBankAccount(ctx: AuthContext, id: string, input: unknown, request?: Request) {
   requireRole(ctx, "manage:banking"); bankAccountIdField.parse(id); const parsed = bankAccountUpdateSchema.parse(input);

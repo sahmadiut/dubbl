@@ -16,7 +16,6 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { CurrencyInput } from "@/components/ui/currency-input";
 import { Label } from "@/components/ui/label";
 import { DatePicker } from "@/components/ui/date-picker";
 import {
@@ -26,7 +25,8 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
-import { formatMoney } from "@/lib/money";
+import { bankMoneyDisplay } from "@/lib/money/bank-display";
+import { parseMajor } from "@/lib/money/exact";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { cn } from "@/lib/utils";
@@ -223,8 +223,8 @@ export default function ReconcilePage() {
         body: JSON.stringify({
           startDate: recForm.startDate,
           endDate: recForm.endDate,
-          startBalance: Math.round(parseFloat(recForm.startBalance) * 100) || 0,
-          endBalance: Math.round(parseFloat(recForm.endBalance) * 100) || 0,
+          startBalanceMinor: parseMajor(recForm.startBalance || "0", account?.currencyCode || "USD", "reject").amountMinor.toString(),
+          endBalanceMinor: parseMajor(recForm.endBalance || "0", account?.currencyCode || "USD", "reject").amountMinor.toString(),
         }),
       });
       if (!res.ok) throw new Error((await res.json()).error);
@@ -289,9 +289,11 @@ export default function ReconcilePage() {
 
   const selectedTotal = filteredTransactions
     .filter((t) => selectedIds.has(t.id))
-    .reduce((sum, t) => sum + t.amount, 0);
+    .reduce((sum, t) => sum + BigInt(t.amount), 0n);
 
-  const unreconciledTotal = transactions.reduce((sum, t) => sum + t.amount, 0);
+  const unreconciledTotal = transactions.reduce((sum, t) => sum + BigInt(t.amount), 0n);
+
+  const formatBankAmount = (amount: number | bigint) => bankMoneyDisplay(amount, account?.currencyCode || "USD");
 
   if (loading) return <BrandLoader />;
 
@@ -338,7 +340,7 @@ export default function ReconcilePage() {
           <div className="p-4">
             <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Account balance</p>
             <p className="mt-1 text-xl font-semibold font-mono tabular-nums">
-              {formatMoney(account?.balance || 0)}
+              {formatBankAmount(account?.balance || 0)}
             </p>
           </div>
           <div className="p-4">
@@ -346,7 +348,7 @@ export default function ReconcilePage() {
             <p className="mt-1 text-xl font-semibold font-mono tabular-nums">
               {transactions.length}
               <span className="text-sm font-normal text-muted-foreground ml-1.5">
-                ({formatMoney(unreconciledTotal)})
+                ({formatBankAmount(unreconciledTotal)})
               </span>
             </p>
           </div>
@@ -358,7 +360,7 @@ export default function ReconcilePage() {
                 ? selectedTotal < 0 ? "text-red-600" : "text-emerald-600"
                 : "text-muted-foreground/30"
             )}>
-              {selectedIds.size > 0 ? formatMoney(selectedTotal) : "-"}
+              {selectedIds.size > 0 ? formatBankAmount(selectedTotal) : "-"}
               {selectedIds.size > 0 && (
                 <span className="text-sm font-normal text-muted-foreground ml-1.5">
                   ({selectedIds.size} items)
@@ -383,8 +385,8 @@ export default function ReconcilePage() {
               variant="outline"
               size="sm"
               onClick={() => bulkAction("exclude")}
-              disabled={acting}
-              title="Leave these lines out of your books"
+              disabled={acting || transactions.some((tx) => selectedIds.has(tx.id) && (tx.status === "reconciled" || tx.journalEntryId !== null))}
+              title="Undo accounted lines from the bank account before ignoring them"
             >
               <XCircle className="mr-1.5 size-3.5" />
               Ignore {selectedIds.size}
@@ -530,7 +532,7 @@ export default function ReconcilePage() {
                     "font-mono text-sm font-medium tabular-nums shrink-0",
                     isIncome ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
                   )}>
-                    {isIncome ? "+" : ""}{formatMoney(tx.amount)}
+                    {isIncome ? "+" : ""}{formatBankAmount(tx.amount)}
                   </p>
                 </button>
               );
@@ -552,7 +554,7 @@ export default function ReconcilePage() {
                     {rec.startDate} to {rec.endDate}
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    {formatMoney(rec.startBalance)} to {formatMoney(rec.endBalance)}
+                    {formatBankAmount(rec.startBalance)} to {formatBankAmount(rec.endBalance)}
                   </p>
                 </div>
                 <Badge
@@ -619,23 +621,25 @@ export default function ReconcilePage() {
               </p>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Opening Balance</Label>
-                  <CurrencyInput
-                    prefix="$"
+                  <Label htmlFor="statement-opening">Opening Balance ({account?.currencyCode})</Label>
+                  <Input
+                    inputMode="decimal"
+                    id="statement-opening"
                     value={recForm.startBalance}
-                    onChange={(v) =>
-                      setRecForm({ ...recForm, startBalance: v })
+                    onChange={(event) =>
+                      setRecForm({ ...recForm, startBalance: event.target.value })
                     }
                     placeholder="0.00"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Closing Balance</Label>
-                  <CurrencyInput
-                    prefix="$"
+                  <Label htmlFor="statement-closing">Closing Balance ({account?.currencyCode})</Label>
+                  <Input
+                    inputMode="decimal"
+                    id="statement-closing"
                     value={recForm.endBalance}
-                    onChange={(v) =>
-                      setRecForm({ ...recForm, endBalance: v })
+                    onChange={(event) =>
+                      setRecForm({ ...recForm, endBalance: event.target.value })
                     }
                     placeholder="0.00"
                   />

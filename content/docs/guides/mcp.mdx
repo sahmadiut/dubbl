@@ -468,3 +468,26 @@ Your access token has expired. MCP clients should automatically refresh tokens u
 
 ### "Not a member of this organization"
 Your user account has been removed from the organization. Ask an admin to re-add you.
+
+### Statement reconciliation tools
+
+Use `list_bank_reconciliations`, `create_bank_reconciliation`,
+`reconciliation_report`, `complete_bank_reconciliation`,
+`post_bank_reconciliation_adjustment`, `reconcile_bank_transaction`,
+`unreconcile_bank_transaction` and `exclude_bank_transaction` for statement checks.
+Balances and adjustments use signed integer **bank currency minor units** (USD
+cents), with agreeing canonical *Minor string aliases up to absolute
+9007199254740991. Create requires real inclusive Gregorian dates and opening/
+closing balances. Report includes exact aliases, bank and base GL currencies;
+unlike currency comparison is unavailable, and completion/adjustment require
+base-currency banks. Completion proves both statement movement and ledger totals.
+
+Undo detaches existing cash/manual journals, reverses qualified bank-created
+postings using saved amounts/FX, restores cash document balances, unwinds both
+transfer legs, removes proven synthetic rows and reopens affected sessions.
+Noncash credit/debit/prepayment carriers cannot be unwound as cash. Results include
+reversalEntryId and deletedTransaction; the legacy voidedJournalEntryId field
+identifies the original compensated posting. Safe state/audit updates commit
+atomically. Requires manage:banking, open dates, and additionally manage:expenses
+for bank expense undo. Exclude toggles and adjustments are new events on each
+call; other repeated transitions reject. Inspect state before an uncertain retry.

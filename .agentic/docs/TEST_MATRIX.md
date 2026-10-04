@@ -598,3 +598,17 @@ PostgreSQL 18 synthetic disposable databases only; not clean install/PostgreSQL
 16/provider/production, full-int64, independent financial/security or IRR rollout.
 No build/dev/schema edit/migration of the configured database. MON-021 combined
 acceptance and MON-064..069 writer contracts remain assigned.
+
+## MON-064 bank imports
+
+| Area | Executed coverage | Limits |
+|---|---|---|
+| Pure parser/wire | All twelve formats; safe signed edges, aliases/conflicts, grouping/signs, USD/JPY/KWD/IRR scales, profiles, invalid dates/row widths/quotes, BAI2 minor units, native debit balances | Lightweight text parser, no binary/full ISO validation |
+| Actual REST/MCP | Statement/bulk preview/commit, import detail and profile GET/PUT/DELETE; all twelve formats, API-key expiry/org spoofing/custom roles, missing/foreign/deleted parents and references | PostgreSQL 18 synthetic migrated databases; no browser/session/OAuth |
+| Compatibility | Statement numeric minor money plus aliases; bulk preview preserves legacy major amount/type and adds exact major/minor; stored bank/history/row bounds; exact alias-only input | Safe Number coexistence only; no full-int64 |
+| Atomicity/retry | Within-file/sequential/concurrent duplicates; all-duplicate balance unchanged; overlap with opening balance; locked later account/date and SQL trigger faults roll back rows/history/jobs/audit/balance | Row idempotency, retries add history; legacy writer races separate |
+| Rules/profiles | Owned rule suggestions stay unreconciled without journals; foreign rule references reject; saved separators/date order/debit sign, replacement/delete and invalid profiles | Actual rule posting/auto-reconciliation remains MON-069 |
+| Regression | MON-062/063 bank workers; all 189 pure cases; typecheck and lint | No full build/dev/deployment/production IRR approval |
+
+Broader resumable/object/source imports remain DATA-001/MON-033. MON-021 retains
+combined financial acceptance. No stored rescaling or configured database migration.

@@ -1,15 +1,8 @@
 import { createHash } from "crypto";
-import { and, desc, eq, inArray } from "drizzle-orm";
-import { db } from "@/lib/db";
-import {
-  bankAccount,
-  bankStatementImport,
-  bankTransaction,
-  type bankImportFormatEnum,
-} from "@/lib/db/schema";
-import { decimalToCents } from "@/lib/money";
-import { notDeleted } from "@/lib/db/soft-delete";
-import { applyBankRulesToTransaction, loadActiveBankRules } from "@/lib/api/bank-rules";
+import { z } from "zod";
+import type { bankImportFormatEnum } from "@/lib/db/schema";
+import { legacyMinor } from "@/lib/money/wire";
+import { importMajor, importExactMajor, importAmount, importMoneyDto, invalidImport, type ImportProfile } from "@/lib/api/bank-import-wire";
 
 export type BankImportFormat = typeof bankImportFormatEnum.enumValues[number];
 
@@ -17,6 +10,9 @@ export interface CsvColumnMapping {
   date?: string;
   description?: string;
   amount?: string;
+  amountExact?: string;
+  amountMinor?: string;
+  balanceMinor?: string;
   debit?: string;
   credit?: string;
   balance?: string;
@@ -82,199 +78,6 @@ export interface CommitImportResult extends ImportPreviewResult {
   importId: string;
 }
 
-export async function previewBankStatementImport(
-  bankAccountId: string,
-  request: ImportPreviewRequest
-): Promise<ImportPreviewResult> {
-  const account = await db.query.bankAccount.findFirst({
-    where: and(eq(bankAccount.id, bankAccountId), notDeleted(bankAccount.deletedAt)),
-  });
-
-  if (!account) {
-    throw new Error("Bank account not found");
-  }
-
-  const parsed = parseBankStatement(request);
-  const dedupeMap = await findExistingDuplicates(bankAccountId, parsed.transactions);
-  const duplicates = parsed.transactions
-    .map((tx) => ({
-      dedupeHash: makeTransactionDedupeHash(bankAccountId, tx),
-      description: tx.description,
-      amount: tx.amount,
-      date: tx.date,
-    }))
-    .filter((tx) => dedupeMap.has(tx.dedupeHash));
-
-  return {
-    format: parsed.format,
-    accountIdentifier: parsed.accountIdentifier ?? null,
-    currencyCode: parsed.currencyCode ?? account.currencyCode,
-    statementStartDate: parsed.statementStartDate ?? null,
-    statementEndDate: parsed.statementEndDate ?? null,
-    openingBalance: parsed.openingBalance ?? null,
-    closingBalance: parsed.closingBalance ?? null,
-    warnings: parsed.warnings,
-    metadata: parsed.metadata,
-    rowCount: parsed.transactions.length,
-    transactions: parsed.transactions.slice(0, 100),
-    duplicates,
-  };
-}
-
-export async function commitBankStatementImport(
-  organizationId: string,
-  bankAccountId: string,
-  request: ImportPreviewRequest
-): Promise<CommitImportResult> {
-  const account = await db.query.bankAccount.findFirst({
-    where: and(
-      eq(bankAccount.id, bankAccountId),
-      eq(bankAccount.organizationId, organizationId),
-      notDeleted(bankAccount.deletedAt)
-    ),
-  });
-
-  if (!account) {
-    throw new Error("Bank account not found");
-  }
-
-  const parsed = parseBankStatement(request);
-  const preview = await previewBankStatementImport(bankAccountId, request);
-  const contentHash = createHash("sha256").update(request.content).digest("hex");
-  const existingHashes = await findExistingDuplicates(bankAccountId, parsed.transactions);
-
-  const [importRow] = await db
-    .insert(bankStatementImport)
-    .values({
-      organizationId,
-      bankAccountId,
-      format: parsed.format,
-      fileName: request.fileName || `statement.${parsed.format}`,
-      contentHash,
-      accountIdentifier: parsed.accountIdentifier ?? null,
-      statementCurrency: parsed.currencyCode ?? account.currencyCode,
-      statementStartDate: parsed.statementStartDate ?? null,
-      statementEndDate: parsed.statementEndDate ?? null,
-      openingBalance: parsed.openingBalance ?? null,
-      closingBalance: parsed.closingBalance ?? null,
-      warnings: parsed.warnings,
-      metadata: parsed.metadata,
-      importedCount: 0,
-      duplicateCount: preview.duplicates.length,
-      errorCount: 0,
-    })
-    .returning();
-
-  const rowsToInsert = parsed.transactions
-    .map((tx) => ({
-      tx,
-      dedupeHash: makeTransactionDedupeHash(bankAccountId, tx),
-    }))
-    .filter(({ dedupeHash }) => !existingHashes.has(dedupeHash));
-
-  let runningBalance =
-    parsed.openingBalance ??
-    account.balance - rowsToInsert.reduce((sum, row) => sum + row.tx.amount, 0);
-
-  // Load the org's active bank rules once so newly imported transactions are
-  // auto-categorized as a suggestion (status stays 'unreconciled' unless the
-  // matched rule has autoReconcile=true).
-  const activeRules = await loadActiveBankRules(organizationId);
-
-  const insertedRows = rowsToInsert.map(({ tx, dedupeHash }) => {
-    runningBalance =
-      tx.balance != null
-        ? tx.balance
-        : runningBalance + tx.amount;
-
-    const assignment = activeRules.length
-      ? applyBankRulesToTransaction(activeRules, tx)
-      : null;
-
-    return {
-      bankAccountId,
-      date: tx.date,
-      postedDate: tx.postedDate || null,
-      description: tx.description,
-      reference: tx.reference || null,
-      amount: tx.amount,
-      balance: tx.balance ?? runningBalance,
-      status: (assignment?.reconcile ? "reconciled" : "unreconciled") as
-        | "reconciled"
-        | "unreconciled",
-      importId: importRow.id,
-      sourceType: "statement_import",
-      externalTransactionId: tx.externalTransactionId || null,
-      statementLineRef: tx.statementLineRef || null,
-      payee: tx.payee || null,
-      counterparty: tx.counterparty || null,
-      currencyCode: tx.currencyCode || parsed.currencyCode || account.currencyCode,
-      pending: tx.pending ?? false,
-      rawPayload: tx.raw,
-      dedupeHash,
-      accountId: assignment?.accountId ?? null,
-      contactId: assignment?.contactId ?? null,
-      taxRateId: assignment?.taxRateId ?? null,
-    };
-  });
-
-  if (insertedRows.length > 0) {
-    await db.insert(bankTransaction).values(insertedRows);
-  }
-
-  const finalBalance =
-    parsed.closingBalance ??
-    insertedRows[insertedRows.length - 1]?.balance ??
-    account.balance;
-
-  await db
-    .update(bankAccount)
-    .set({ balance: finalBalance })
-    .where(eq(bankAccount.id, bankAccountId));
-
-  await db
-    .update(bankStatementImport)
-    .set({
-      importedCount: insertedRows.length,
-      duplicateCount: preview.duplicates.length,
-      status:
-        insertedRows.length === 0 && preview.duplicates.length > 0
-          ? "partial"
-          : "completed",
-    })
-    .where(eq(bankStatementImport.id, importRow.id));
-
-  return {
-    ...preview,
-    imported: insertedRows.length,
-    duplicateCount: preview.duplicates.length,
-    importId: importRow.id,
-  };
-}
-
-async function findExistingDuplicates(
-  bankAccountId: string,
-  transactions: NormalizedTransaction[]
-): Promise<Set<string>> {
-  const hashes = Array.from(
-    new Set(transactions.map((tx) => makeTransactionDedupeHash(bankAccountId, tx)))
-  );
-
-  if (hashes.length === 0) {
-    return new Set();
-  }
-
-  const existing = await db.query.bankTransaction.findMany({
-    where: and(
-      eq(bankTransaction.bankAccountId, bankAccountId),
-      inArray(bankTransaction.dedupeHash, hashes)
-    ),
-    columns: { dedupeHash: true },
-  });
-
-  return new Set(existing.map((row) => row.dedupeHash).filter(Boolean) as string[]);
-}
-
 export function makeTransactionDedupeHash(
   bankAccountId: string,
   transaction: NormalizedTransaction
@@ -294,36 +97,50 @@ export function makeTransactionDedupeHash(
     .digest("hex");
 }
 
-export function parseBankStatement(request: ImportPreviewRequest): ParsedStatement {
+export function parseBankStatement(request: ImportPreviewRequest, currency = "USD", profile?: ImportProfile): ParsedStatement {
   const content = request.content.replace(/^\uFEFF/, "").trim();
   if (!content) {
-    throw new Error("Statement content is required");
+    invalidImport("Statement content is required");
   }
 
   const format = detectStatementFormat(request.fileName, content, request.format);
+  let result: ParsedStatement;
   switch (format) {
     case "csv":
-      return parseDelimitedStatement(content, ",", format, request.mapping);
+      result = parseDelimitedStatement(content, profile?.csvDelimiter || ",", format, request.mapping, currency, profile); break;
     case "tsv":
-      return parseDelimitedStatement(content, "\t", format, request.mapping);
+      result = parseDelimitedStatement(content, profile?.csvDelimiter || "\t", format, request.mapping, currency, profile); break;
     case "qif":
-      return parseQifStatement(content);
+      result = parseQifStatement(content, currency); break;
     case "ofx":
     case "qfx":
     case "qbo":
-      return parseOfxStatement(content, format);
+      result = parseOfxStatement(content, format, currency); break;
     case "camt052":
     case "camt053":
     case "camt054":
-      return parseCamtStatement(content, format);
+      result = parseCamtStatement(content, format, currency); break;
     case "mt940":
     case "mt942":
-      return parseMtStatement(content, format);
+      result = parseMtStatement(content, format, currency); break;
     case "bai2":
-      return parseBai2Statement(content);
+      result = parseBai2Statement(content, currency); break;
     default:
-      throw new Error("Unsupported bank statement format");
+      invalidImport("Unsupported bank statement format");
   }
+  if (result.currencyCode && result.currencyCode !== currency) invalidImport("Statement currency disagrees with bank account");
+  result.currencyCode = currency;
+  for (const row of result.transactions) {
+    if (row.currencyCode && row.currencyCode !== currency) invalidImport("Transaction currency disagrees with bank account");
+    row.currencyCode = currency;
+    z.iso.date().parse(row.date);
+    if (row.postedDate) z.iso.date().parse(row.postedDate);
+    importMoneyDto(row, ["amount", "balance"]);
+  }
+  for (const field of ["statementStartDate", "statementEndDate"] as const) if (result[field]) result[field] = z.iso.date().parse(normalizeDate(result[field]));
+  importMoneyDto(result, ["openingBalance", "closingBalance"]);
+  return result;
+
 }
 
 export function detectStatementFormat(
@@ -384,15 +201,17 @@ function parseDelimitedStatement(
   content: string,
   delimiter: string,
   format: BankImportFormat,
-  mapping?: CsvColumnMapping
+  mapping?: CsvColumnMapping,
+  currency = "USD", profile?: ImportProfile
 ): ParsedStatement {
+  const parseLocalizedAmount = (value: string | null | undefined) => importMajor(value || "0", currency, profile);
   const lines = content
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
 
   if (lines.length < 2) {
-    throw new Error("Statement must contain a header row and at least one data row");
+    invalidImport("Statement must contain a header row and at least one data row");
   }
 
   const header = parseDelimitedLine(lines[0], delimiter).map((cell) =>
@@ -417,6 +236,9 @@ function parseDelimitedStatement(
     "particulars",
     "transaction description",
   ]);
+  const exactIdx = findColumnIndex(header, mapping?.amountExact, ["amount exact"]);
+  const minorIdx = findColumnIndex(header, mapping?.amountMinor, ["amount minor"]);
+  const balanceMinorIdx = findColumnIndex(header, mapping?.balanceMinor, ["balance minor"]);
   const amountIdx = findColumnIndex(header, mapping?.amount, ["amount", "value", "sum"]);
   const debitIdx = findColumnIndex(header, mapping?.debit, ["debit", "withdrawal", "withdrawals"]);
   const creditIdx = findColumnIndex(header, mapping?.credit, ["credit", "deposit", "deposits"]);
@@ -430,21 +252,23 @@ function parseDelimitedStatement(
     "cheque number",
   ]);
   const payeeIdx = findColumnIndex(header, mapping?.payee, ["payee", "merchant", "name"]);
+  const currencyIdx = findColumnIndex(header, undefined, ["currency", "currency code"]);
   const counterpartyIdx = findColumnIndex(header, mapping?.counterparty, ["counterparty", "beneficiary"]);
 
   if (dateIdx === -1) {
-    throw new Error("Could not find a date column in the statement header");
+    invalidImport("Could not find a date column in the statement header");
   }
 
-  if (amountIdx === -1 && debitIdx === -1 && creditIdx === -1) {
-    throw new Error("Could not find an amount, debit, or credit column");
+  if (amountIdx === -1 && exactIdx === -1 && minorIdx === -1 && debitIdx === -1 && creditIdx === -1) {
+    invalidImport("Could not find an amount, debit, or credit column");
   }
 
   const transactions: NormalizedTransaction[] = [];
   for (const row of rows) {
     if (row.every((cell) => !cell.trim())) continue;
+    if (row.length !== header.length) invalidImport("CSV row width differs from header; quote grouped amounts");
     const rawDate = row[dateIdx]?.trim();
-    if (!rawDate) continue;
+    if (!rawDate) invalidImport("Statement row is missing a date");
 
     const description =
       row[descIdx]?.trim() ||
@@ -453,24 +277,29 @@ function parseDelimitedStatement(
       "Imported transaction";
 
     let amount = 0;
-    if (amountIdx !== -1) {
-      amount = parseLocalizedAmount(row[amountIdx]);
+    if (amountIdx !== -1 || exactIdx !== -1 || minorIdx !== -1) {
+      const major = amountIdx === -1 ? undefined : row[amountIdx];
+      const exactMajor = exactIdx === -1 ? undefined : row[exactIdx];
+      const exactAmount = exactMajor === undefined ? undefined : importExactMajor(exactMajor, currency);
+      amount = importAmount(major, minorIdx === -1 ? exactAmount === undefined ? undefined : String(exactAmount) : row[minorIdx], currency, profile);
+      if (exactAmount !== undefined && amount !== exactAmount) invalidImport("amountExact disagrees with amount");
     } else {
       const debit = debitIdx !== -1 ? Math.abs(parseLocalizedAmount(row[debitIdx])) : 0;
       const credit = creditIdx !== -1 ? Math.abs(parseLocalizedAmount(row[creditIdx])) : 0;
-      amount = credit - debit;
+      amount = legacyMinor((BigInt(credit) - BigInt(debit)) * (profile?.debitIsNegative === false ? -1n : 1n));
     }
 
     if (!description && amount === 0) continue;
 
     transactions.push({
-      date: normalizeDate(rawDate),
+      date: profile?.dateFormat ? profile.dateFormat === "YYYY-MM-DD" ? z.iso.date().parse(rawDate) : normalizeProfileDate(rawDate, profile.dateFormat) : normalizeDate(rawDate),
       description,
       amount,
-      balance: balanceIdx !== -1 ? parseLocalizedAmount(row[balanceIdx]) : null,
+      balance: (balanceIdx === -1 || !row[balanceIdx]) && (balanceMinorIdx === -1 || !row[balanceMinorIdx]) ? null : importAmount(balanceIdx === -1 || !row[balanceIdx] ? undefined : row[balanceIdx], balanceMinorIdx === -1 || !row[balanceMinorIdx] ? undefined : row[balanceMinorIdx], currency, profile),
       reference: referenceIdx !== -1 ? emptyToNull(row[referenceIdx]) : null,
       payee: payeeIdx !== -1 ? emptyToNull(row[payeeIdx]) : null,
       counterparty: counterpartyIdx !== -1 ? emptyToNull(row[counterpartyIdx]) : null,
+      currencyCode: currencyIdx === -1 ? currency : row[currencyIdx],
       raw: { row },
     });
   }
@@ -487,16 +316,16 @@ function parseDelimitedStatement(
   };
 }
 
-function parseQifStatement(content: string): ParsedStatement {
+function parseQifStatement(content: string, currency: string): ParsedStatement {
   const lines = content.split(/\r?\n/);
   const warnings: string[] = [];
   const transactions: NormalizedTransaction[] = [];
   let current: Record<string, string[]> = {};
 
   for (const line of lines) {
-    if (!line) continue;
+    if (!line) invalidImport("Malformed MT transaction line");
     if (line === "^") {
-      const tx = qifRecordToTransaction(current);
+      const tx = qifRecordToTransaction(current, currency);
       if (tx) transactions.push(tx);
       current = {};
       continue;
@@ -509,7 +338,7 @@ function parseQifStatement(content: string): ParsedStatement {
   }
 
   if (Object.keys(current).length > 0) {
-    const tx = qifRecordToTransaction(current);
+    const tx = qifRecordToTransaction(current, currency);
     if (tx) transactions.push(tx);
   }
 
@@ -525,9 +354,9 @@ function parseQifStatement(content: string): ParsedStatement {
   };
 }
 
-function qifRecordToTransaction(record: Record<string, string[]>): NormalizedTransaction | null {
+function qifRecordToTransaction(record: Record<string, string[]>, currency: string): NormalizedTransaction | null {
   const date = normalizeDate(record.D?.[0] || "");
-  const amount = parseLocalizedAmount(record.T?.[0]);
+  const amount = importMajor(record.T?.[0] || "", currency);
   const payee = record.P?.[0] || null;
   const memo = record.M?.join(" ").trim() || null;
   const description = [payee, memo].filter(Boolean).join(" - ") || "QIF transaction";
@@ -542,15 +371,17 @@ function qifRecordToTransaction(record: Record<string, string[]>): NormalizedTra
   };
 }
 
-function parseOfxStatement(content: string, format: BankImportFormat): ParsedStatement {
+function parseOfxStatement(content: string, format: BankImportFormat, currency: string): ParsedStatement {
   const warnings: string[] = [];
   const segments = splitOfxSegments(content, "STMTTRN");
+  if ((content.match(/<ACCTID>/gi) || []).length > 1) invalidImport("Import one OFX account at a time");
   const accountIdentifier = readOfxField(content, "ACCTID");
   const currencyCode = readOfxField(content, "CURDEF");
+  if (currencyCode && currencyCode !== currency) invalidImport("Statement currency disagrees with bank account");
   const statementStartDate = normalizeDate(readOfxField(content, "DTSTART"));
   const statementEndDate = normalizeDate(readOfxField(content, "DTEND"));
   const openingBalance = null;
-  const closingBalance = parseOptionalAmount(readOfxField(content, "BALAMT"));
+  const closingBalance = parseOptionalAmount(readOfxField(content, "BALAMT"), currency);
 
   const transactions = segments.map((segment) => {
     const name = readOfxField(segment, "NAME");
@@ -560,7 +391,7 @@ function parseOfxStatement(content: string, format: BankImportFormat): ParsedSta
       date: normalizeDate(readOfxField(segment, "DTPOSTED") || readOfxField(segment, "DTUSER")),
       postedDate: normalizeDate(readOfxField(segment, "DTUSER") || readOfxField(segment, "DTPOSTED")),
       description,
-      amount: parseLocalizedAmount(readOfxField(segment, "TRNAMT")),
+      amount: importMajor(readOfxField(segment, "TRNAMT"), currency),
       reference: emptyToNull(readOfxField(segment, "CHECKNUM") || readOfxField(segment, "REFNUM")),
       payee: emptyToNull(name),
       externalTransactionId: emptyToNull(readOfxField(segment, "FITID")),
@@ -571,7 +402,7 @@ function parseOfxStatement(content: string, format: BankImportFormat): ParsedSta
         memo,
       },
     } satisfies NormalizedTransaction;
-  }).filter((tx) => tx.date);
+  });
 
   if (transactions.length === 0) {
     warnings.push("No transaction entries were found in the OFX/QFX/QBO file.");
@@ -591,16 +422,17 @@ function parseOfxStatement(content: string, format: BankImportFormat): ParsedSta
   };
 }
 
-function parseCamtStatement(content: string, format: BankImportFormat): ParsedStatement {
+function parseCamtStatement(content: string, format: BankImportFormat, currency: string): ParsedStatement {
   const warnings: string[] = [];
+  if (["Stmt", "Rpt", "Ntfctn"].some(tag => matchXmlBlocks(content, tag).length > 1)) invalidImport("Import one CAMT statement at a time");
   const entryBlocks = matchXmlBlocks(content, "Ntry");
   const transactions = entryBlocks.map((entry) => {
-    const amount = parseLocalizedAmount(readXmlField(entry, "Amt"));
+    const amount = importMajor(readXmlField(entry, "Amt"), readXmlAttribute(entry, "Amt", "Ccy") || currency);
     const creditDebit = readXmlField(entry, "CdtDbtInd");
+    if (!["DBIT", "CRDT"].includes(creditDebit)) invalidImport("Unknown CAMT credit/debit indicator");
     const sign = creditDebit === "DBIT" ? -1 : 1;
     const bookingDate =
-      normalizeDate(readXmlField(entry, "BookgDt")) ||
-      normalizeDate(readXmlField(entry, "ValDt"));
+      normalizeDate(readXmlField(entry, "BookgDt") || readXmlField(entry, "ValDt"));
     const remittance = joinXmlFields(entry, ["Ustrd", "AddtlNtryInf", "AddtlTxInf"]);
     const payee =
       readXmlField(entry, "Nm", 1) ||
@@ -626,11 +458,11 @@ function parseCamtStatement(content: string, format: BankImportFormat): ParsedSt
         additionalInfo: readXmlField(entry, "AddtlNtryInf"),
       },
     } satisfies NormalizedTransaction;
-  }).filter((tx) => tx.date);
+  });
 
   const balances = matchXmlBlocks(content, "Bal");
-  const openingBalance = findCamtBalance(balances, ["OPBD", "PRCD"]);
-  const closingBalance = findCamtBalance(balances, ["CLBD", "ITBD"]);
+  const openingBalance = findCamtBalance(balances, ["OPBD", "PRCD"], currency);
+  const closingBalance = findCamtBalance(balances, ["CLBD", "ITBD"], currency);
 
   if (transactions.length === 0) {
     warnings.push("No transaction entries were found in the CAMT file.");
@@ -655,19 +487,20 @@ function parseCamtStatement(content: string, format: BankImportFormat): ParsedSt
   };
 }
 
-function parseMtStatement(content: string, format: BankImportFormat): ParsedStatement {
+function parseMtStatement(content: string, format: BankImportFormat, currency: string): ParsedStatement {
   const warnings: string[] = [];
   const tags = parseSwiftTags(content);
+  if (tags.filter(tag => tag.code === "25").length > 1) invalidImport("Import one MT account at a time");
   const transactions: NormalizedTransaction[] = [];
   const refs86 = tags.filter((tag) => tag.code === "86");
   let ref86Index = 0;
 
   for (const tag of tags) {
     if (tag.code !== "61") continue;
-    const line = parseMt61Line(tag.value);
+    const line = parseMt61Line(tag.value, currency);
     const memo = refs86[ref86Index]?.value || "";
     ref86Index += 1;
-    if (!line) continue;
+    if (!line) invalidImport("Malformed MT transaction line");
     transactions.push({
       date: line.date,
       description: memo || line.description || "SWIFT statement line",
@@ -687,15 +520,16 @@ function parseMtStatement(content: string, format: BankImportFormat): ParsedStat
     accountIdentifier: emptyToNull(tags.find((tag) => tag.code === "25")?.value),
     statementStartDate: emptyToNull(parseMtBalanceDate(tags.find((tag) => tag.code === "60F" || tag.code === "60M")?.value)),
     statementEndDate: emptyToNull(parseMtBalanceDate(tags.find((tag) => tag.code === "62F" || tag.code === "62M")?.value)),
-    openingBalance: parseMtBalanceAmount(tags.find((tag) => tag.code === "60F" || tag.code === "60M")?.value),
-    closingBalance: parseMtBalanceAmount(tags.find((tag) => tag.code === "62F" || tag.code === "62M")?.value),
+    currencyCode: tags.find(tag => tag.code === "60F" || tag.code === "60M")?.value.match(/^[DC]\d{6}([A-Z]{3})/)?.[1] || null,
+    openingBalance: parseMtBalanceAmount(tags.find((tag) => tag.code === "60F" || tag.code === "60M")?.value, currency),
+    closingBalance: parseMtBalanceAmount(tags.find((tag) => tag.code === "62F" || tag.code === "62M")?.value, currency),
     warnings,
     metadata: {},
     transactions,
   };
 }
 
-function parseBai2Statement(content: string): ParsedStatement {
+function parseBai2Statement(content: string, currency: string): ParsedStatement {
   const warnings: string[] = [];
   const lines = content
     .split(/\r?\n/)
@@ -715,7 +549,9 @@ function parseBai2Statement(content: string): ParsedStatement {
     }
 
     if (recordType === "03") {
+      if (currentAccount && currentAccount !== parts[1]) invalidImport("Import one BAI2 account at a time");
       currentAccount = parts[1] || null;
+      if (parts[2] && parts[2] !== currency) invalidImport("BAI2 currency disagrees with bank account");
     }
 
     if (recordType === "16") {
@@ -724,7 +560,7 @@ function parseBai2Statement(content: string): ParsedStatement {
       const reference = parts[4] || parts[5] || "";
       const description = parts.slice(6).join(" ").replace(/\/$/, "").trim() || `BAI2 ${typeCode}`;
       transactions.push({
-        date: currentDate || new Date().toISOString().slice(0, 10),
+        date: currentDate || invalidImport("BAI2 requires a statement date"),
         description,
         amount,
         reference: emptyToNull(reference),
@@ -770,6 +606,7 @@ function parseDelimitedLine(line: string, delimiter: string): string[] {
     }
     current += char;
   }
+  if (inQuotes) invalidImport("Unterminated CSV quote");
   result.push(current);
   return result.map((value) => value.trim());
 }
@@ -779,6 +616,7 @@ function findColumnIndex(headers: string[], override: string | undefined, candid
     const overrideHeader = normalizeHeader(override);
     const overrideIdx = headers.indexOf(overrideHeader);
     if (overrideIdx !== -1) return overrideIdx;
+    invalidImport(`Mapped column not found: ${override}`);
   }
 
   for (const candidate of candidates) {
@@ -788,7 +626,7 @@ function findColumnIndex(headers: string[], override: string | undefined, candid
 
   for (const candidate of candidates) {
     const needle = normalizeHeader(candidate);
-    const idx = headers.findIndex((header) => header.includes(needle));
+    const idx = headers.findIndex((header) => !header.endsWith(" minor") && !header.endsWith(" exact") && header.includes(needle));
     if (idx !== -1) return idx;
   }
 
@@ -796,50 +634,19 @@ function findColumnIndex(headers: string[], override: string | undefined, candid
 }
 
 function normalizeHeader(value: string): string {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  return value.replace(/([a-z])([A-Z])/g, "$1 $2").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 }
 
-function parseLocalizedAmount(value: string | null | undefined): number {
-  if (!value) return 0;
-  const trimmed = value.trim();
-  if (!trimmed) return 0;
-
-  let cleaned = trimmed.replace(/[A-Z]{3}\s+/gi, "").replace(/[^\d,.\-()]/g, "");
-  const isNegative = cleaned.includes("(") && cleaned.includes(")");
-  cleaned = cleaned.replace(/[()]/g, "");
-
-  const commaCount = (cleaned.match(/,/g) || []).length;
-  const dotCount = (cleaned.match(/\./g) || []).length;
-
-  if (commaCount > 0 && dotCount > 0) {
-    if (cleaned.lastIndexOf(",") > cleaned.lastIndexOf(".")) {
-      cleaned = cleaned.replace(/\./g, "").replace(",", ".");
-    } else {
-      cleaned = cleaned.replace(/,/g, "");
-    }
-  } else if (commaCount > 0 && dotCount === 0) {
-    const parts = cleaned.split(",");
-    cleaned = parts.length === 2 && parts[1].length <= 2
-      ? `${parts[0]}.${parts[1]}`
-      : cleaned.replace(/,/g, "");
-  } else {
-    cleaned = cleaned.replace(/,/g, "");
-  }
-
-  const cents = decimalToCents(cleaned);
-  return isNegative ? -Math.abs(cents) : cents;
-}
-
-function parseOptionalAmount(value: string | null | undefined): number | null {
-  if (!value) return null;
-  return parseLocalizedAmount(value);
+function parseOptionalAmount(value: string | null | undefined, currency: string): number | null {
+  return value ? importMajor(value, currency) : null;
 }
 
 function normalizeDate(raw: string | null | undefined): string {
   if (!raw) return "";
   const value = raw.trim();
   if (!value) return "";
-  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  if (/^\d{4}-\d{2}-\d{2}(?:T|$)/.test(value)) return value.slice(0, 10);
+  if (/^\d{8}\d{6}(?:[.\[]|$)/.test(value)) return `${value.slice(0, 4)}-${value.slice(4, 6)}-${value.slice(6, 8)}`;
   if (/^\d{8}$/.test(value)) {
     return `${value.slice(0, 4)}-${value.slice(4, 6)}-${value.slice(6, 8)}`;
   }
@@ -855,7 +662,7 @@ function normalizeDate(raw: string | null | undefined): string {
   }
 
   const slash = value.split(/[\/.\-']/);
-  if (slash.length === 3) {
+  if (slash.length === 3 && slash.every(part => /^\d+$/.test(part))) {
     const [a, b, c] = slash;
     const year = c.length === 2 ? String(Number(c) + 2000) : c;
     if (a.length === 4) {
@@ -867,9 +674,11 @@ function normalizeDate(raw: string | null | undefined): string {
     return `${year}-${a.padStart(2, "0")}-${b.padStart(2, "0")}`;
   }
 
-  const parsed = new Date(value);
-  if (!Number.isNaN(parsed.getTime())) {
-    return parsed.toISOString().slice(0, 10);
+  const named = value.match(/^(\d{1,2})[\s-]([A-Za-z]{3})[\s-](\d{4})$/);
+  if (named) {
+    const months = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+    const month = months.indexOf(named[2].toLowerCase()) + 1;
+    if (month) return `${named[3]}-${String(month).padStart(2, "0")}-${named[1].padStart(2, "0")}`;
   }
 
   return value;
@@ -920,12 +729,16 @@ function stripXmlTags(value: string): string {
   return value.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 }
 
-function findCamtBalance(blocks: string[], codes: string[]): number | null {
+function findCamtBalance(blocks: string[], codes: string[], currency: string): number | null {
   for (const block of blocks) {
     const code = readXmlField(block, "Cd");
     if (codes.includes(code)) {
       const amount = readXmlField(block, "Amt");
-      return parseOptionalAmount(amount);
+      const code = readXmlAttribute(block, "Amt", "Ccy");
+      if (code && code !== currency) invalidImport("Balance currency disagrees with bank account");
+      const direction = readXmlField(block, "CdtDbtInd");
+      if (!["DBIT", "CRDT"].includes(direction)) invalidImport("Missing or unknown CAMT balance sign");
+      return (direction === "DBIT" ? -1 : 1) * importMajor(amount, currency);
     }
   }
   return null;
@@ -951,7 +764,7 @@ function parseSwiftTags(content: string): Array<{ code: string; value: string }>
   return tags;
 }
 
-function parseMt61Line(value: string): {
+function parseMt61Line(value: string, currency: string): {
   date: string;
   amount: number;
   reference: string | null;
@@ -960,7 +773,7 @@ function parseMt61Line(value: string): {
   const match = value.match(/^(\d{6})(\d{4})?([RC]?)([DC])([A-Z])?([0-9,]+)N([A-Z0-9]{3})(.*)$/);
   if (!match) return null;
   const [, datePart, , reversal, direction, , amountPart, code, tail] = match;
-  const amount = parseLocalizedAmount(amountPart.replace(",", "."));
+  const amount = importMajor(amountPart.replace(",", "."), currency);
   const sign = direction === "D" ? -1 : 1;
   const reversalSign = reversal === "R" ? -1 : 1;
   const reference = tail.split("//")[1] || tail || null;
@@ -978,14 +791,16 @@ function parseMtBalanceDate(value: string | undefined): string | null {
   return match ? normalizeDate(match[1]) : null;
 }
 
-function parseMtBalanceAmount(value: string | undefined): number | null {
+function parseMtBalanceAmount(value: string | undefined, currency: string): number | null {
   if (!value) return null;
-  const match = value.match(/^[DC]\d{6}[A-Z]{3}([0-9,]+)$/);
-  return match ? parseLocalizedAmount(match[1].replace(",", ".")) : null;
+  const match = value.match(/^[DC]\d{6}([A-Z]{3})([0-9,]+)$/);
+  if (!match || match[1] !== currency) invalidImport("Malformed or incompatible MT balance currency");
+  return (value.startsWith("D") ? -1 : 1) * importMajor(match[2].replace(",", "."), currency);
 }
 
 function parseBai2Amount(value: string | undefined, typeCode: string): number {
-  const cents = parseLocalizedAmount(value || "");
+  if (!value || !/^[+-]?\d+$/.test(value) || value.length > 30) invalidImport("BAI2 amounts must be integer minor units");
+  const cents = legacyMinor(BigInt(value));
   return bai2IsCredit(typeCode) ? Math.abs(cents) : -Math.abs(cents);
 }
 
@@ -1007,10 +822,10 @@ function normalizeText(value: string): string {
   return value.toLowerCase().replace(/\s+/g, " ").trim();
 }
 
-export async function listBankStatementImports(bankAccountId: string) {
-  return db.query.bankStatementImport.findMany({
-    where: eq(bankStatementImport.bankAccountId, bankAccountId),
-    orderBy: desc(bankStatementImport.createdAt),
-    limit: 20,
-  });
+
+function normalizeProfileDate(raw: string, format: string) {
+  const match = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!match) invalidImport("Date does not match import profile");
+  const [, a, b, year] = match;
+  return `${year}-${(format === "DD/MM/YYYY" ? b : a).padStart(2, "0")}-${(format === "DD/MM/YYYY" ? a : b).padStart(2, "0")}`;
 }

@@ -603,3 +603,18 @@ ownership, currency and stable pagination guards reject unsupported reads.
 Opaque history keeps its own units; activity adds aliases only to known money
 and allocation items. No ledger/write/schema/unit/IRR change. Import and other
 bank writers remain MON-064..069; MON-021 retains combined financial gates.
+
+## MON-064 bank import adoption
+
+Statement preview/commit, mapped bulk preview/commit, import detail and parser
+profiles share direct-DB REST/MCP services; see [import contracts](BANK_IMPORT_WIRE_CONTRACTS.md).
+Decimal text conversion uses explicit bank currency scales; BAI2 stays integer
+minor units. Canonical major/minor aliases agree; statement money adds Minor
+strings and bulk preview keeps existing major-unit amount semantics. Bigint sums
+and balances plus safe numeric guards reject unsupported values before commit.
+Atomic rows/history/jobs/audit/balance and org/bank locks protect rollback and
+row-deduplicated retries; repeated requests can add history. Profiles use the
+existing table; native sign/date/currency guards prevent guessing. Import rules
+suggest coding without unposted reconciliation. Other writers, broader parser/
+resumable import behavior, stored-unit repair and full-int64/IRR/financial gates
+remain MON-065..069, DATA-001, MON-033 and MON-021. No schema or rollout change.

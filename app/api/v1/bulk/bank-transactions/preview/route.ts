@@ -1,38 +1,12 @@
-import { NextResponse } from "next/server";
 import { getAuthContext } from "@/lib/api/auth-context";
 import { handleError } from "@/lib/api/response";
-import { preProcessBankTransactions } from "@/lib/import-export/pre-process";
-import type { SourceSystem } from "@/lib/import-export/types";
-import { z } from "zod";
-
-const rowSchema = z.object({
-  date: z.string().min(1),
-  description: z.string().min(1),
-  amount: z.coerce.number(),
-  reference: z.string().optional(),
-  bankAccountCode: z.string().min(1),
-});
+import { jsonResponse } from "@/lib/api/json-response";
+import { previewBulkBankImport } from "@/lib/api/bank-imports";
+import { readBankAccountJson } from "@/lib/api/bank-account-wire";
 
 export async function POST(request: Request) {
   try {
-    await getAuthContext(request);
-    const body = await request.json();
-    const source = (body.source || "custom") as SourceSystem;
-    const rawRows = z.array(z.record(z.string(), z.unknown())).parse(body.rows || []);
-    const rows = preProcessBankTransactions(rawRows, source);
-
-    const preview = rows.map((row, i) => {
-      const result = rowSchema.safeParse(row);
-      return {
-        row: i + 1,
-        data: row,
-        valid: result.success,
-        errors: result.success ? [] : result.error.issues.map(e => e.message),
-      };
-    });
-
-    return NextResponse.json({ preview, validCount: preview.filter(p => p.valid).length, totalCount: rows.length });
-  } catch (err) {
-    return handleError(err);
-  }
+    const ctx = await getAuthContext(request);
+    return jsonResponse(await previewBulkBankImport(ctx, await readBankAccountJson(request)));
+  } catch (error) { return handleError(error); }
 }

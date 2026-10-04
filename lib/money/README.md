@@ -375,3 +375,16 @@ serialization and currency units are guarded. Journal candidates sum complete
 base-currency bank legs exactly; fuzzy amount thresholds use bigint ratios.
 See [read contracts](../../.agentic/registries/BANK_TRANSACTION_READ_WIRE_CONTRACTS.md)
 for envelopes, limits and the separate banking writer/qualification tasks.
+
+## Bank import contracts (MON-064)
+
+Statement and mapped bulk REST/MCP imports share scoped atomic services. Decimal
+major text uses the bank scale; BAI2 uses integer minor units. Canonical
+amountExact/amountMinor and CSV balanceMinor aliases agree before writes; numeric
+statement money adds Minor strings. Bulk preview's existing amount stays in major
+units. Bigint sums/running balances and safe-range guards prevent precision loss.
+Duplicate checks include within-file/concurrent retries; invalid batches and DB
+faults roll back rows/history/job/balance/audit. New scoped parser-profile tools
+operate the existing table. Rules supply suggestions without phantom reconciliation.
+See [bank import contracts](../../.agentic/registries/BANK_IMPORT_WIRE_CONTRACTS.md)
+for parser limits, compatibility corrections and retry/qualification boundaries.

@@ -30,12 +30,12 @@ export async function bankReadTransaction(tx: BankReadTx, ctx: AuthContext, id: 
   bankReadNullableMoney(transaction, ["amount", "balance"]);
   return { transaction, account };
 }
-function importDto(row: typeof bankStatementImport.$inferSelect, ctx: AuthContext, account: { id: string; currencyCode: string }) {
+export function bankReadImportDto(row: typeof bankStatementImport.$inferSelect, ctx: AuthContext, account: { id: string; currencyCode: string }) {
   if (row.organizationId !== ctx.organizationId || row.bankAccountId !== account.id) throw new WireCompatibilityError("Invalid bank import ownership");
   sameBankReadCurrency(row.statementCurrency, account.currencyCode);
   return { ...bankReadNullableMoney(row, ["openingBalance", "closingBalance"]), currencyCode: account.currencyCode };
 }
-async function checkPlainReferences(tx: BankReadTx, ctx: AuthContext, row: typeof bankTransaction.$inferSelect) {
+export async function checkPlainReferences(tx: BankReadTx, ctx: AuthContext, row: typeof bankTransaction.$inferSelect) {
   if (row.costCenterId) {
     const ref = await tx.query.costCenter.findFirst({ where: eq(costCenter.id, row.costCenterId), columns: { organizationId: true } });
     if (!ref || ref.organizationId !== ctx.organizationId) throw new WireCompatibilityError("Invalid bank cost center ownership");
@@ -65,7 +65,7 @@ export async function listBankTransactionReads(ctx: AuthContext, input: unknown)
       if ([journal, contact, taxRate].some(ref => ref && ref.organizationId !== ctx.organizationId) || (reconciliation && reconciliation.bankAccountId !== account.id))
         throw new WireCompatibilityError("Invalid bank transaction reference ownership");
       return { ...bankReadNullableMoney(row, ["amount", "balance"]), currencyCode: sameBankReadCurrency(row.currencyCode, account.currencyCode),
-        import: imp ? importDto(imp, ctx, account) : null, accountCode: gl?.code ?? null, accountName: gl?.name ?? null };
+        import: imp ? bankReadImportDto(imp, ctx, account) : null, accountCode: gl?.code ?? null, accountName: gl?.name ?? null };
     });
     for (const row of rows) await checkPlainReferences(tx, ctx, row);
     const [count] = await tx.select({ total: sql<string>`count(*)::text` }).from(bankTransaction).where(and(...conditions));
@@ -92,7 +92,7 @@ export async function listBankImportReads(ctx: AuthContext, id: string) {
   return bankReadSnapshot(async tx => {
     const account = await bankReadAccount(tx, ctx, id);
     const rows = await tx.query.bankStatementImport.findMany({ where: eq(bankStatementImport.bankAccountId, id), orderBy: [desc(bankStatementImport.createdAt), asc(bankStatementImport.id)], limit: 20 });
-    return { imports: rows.map(row => importDto(row, ctx, account)) };
+    return { imports: rows.map(row => bankReadImportDto(row, ctx, account)) };
   });
 }
 export async function listBankDuplicates(ctx: AuthContext, id: string) {

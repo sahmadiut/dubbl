@@ -2159,8 +2159,8 @@ export function TransferSheet({
   const isCredit = (transaction?.amount ?? 0) > 0;
 
   const targets = useMemo(
-    () => bankAccounts.filter((b) => b.id !== currentBankAccountId),
-    [bankAccounts, currentBankAccountId]
+    () => bankAccounts.filter((b) => b.id !== currentBankAccountId && b.currencyCode === currencyCode),
+    [bankAccounts, currentBankAccountId, currencyCode]
   );
 
   useEffect(() => {

@@ -646,3 +646,24 @@ combined financial acceptance. No stored rescaling or configured database migrat
 - Adjacent payment settlement and bank account/read/import/categorization workers,
   units, types, lint and inventory guards qualify the bounded change. MON-067..069,
   MON-021, full-int64/provider/OAuth/production/independent financial gates remain.
+
+## MON-067 bank transfers
+
+- Pure bank-transfer-wire tests qualify REST decimal major / MCP integer minor
+  inputs, agreeing exact aliases, safe maximum, currency scales/ties and malformed
+  money/date/UUID/unknown-field rejection.
+- Actual exported REST handlers and MCP SDK tools in bank-transfers-worker use
+  migrated disposable PostgreSQL 18, API keys, invalid/expired keys, custom bank/
+  viewer roles and two organizations with spoofed organization headers.
+- Signed incoming/outgoing mirror and existing-counter pairs have one balanced
+  journal, exact historical/base FX, reciprocal IDs/group, correct per-bank GL
+  directions and unchanged cached/existing running balances.
+- SQL-text snapshots prove no financial/audit changes on wrong scope/state/
+  sign/amount/currency/import/history/GL/date/range/FX; injected final audit faults
+  roll back self-linking, numbering, journal/pair creation and existing links.
+- Concurrent same-source/common-counter/opposite-direction/category-vs-transfer
+  fixtures permit one successful exclusive match. Concurrent standalone requests
+  produce distinct transfers; repeat-create semantics are explicitly documented.
+- Read/account/import/categorization/document-match regression suites retain their
+  own qualification. No browser/provider/OAuth/PostgreSQL16/production/human
+  accounting proof; MON-068/069 and MON-021 retain remaining/combined acceptance.

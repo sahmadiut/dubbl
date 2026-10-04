@@ -439,6 +439,25 @@ unqualified legacy history, foreign references and linked/excluded lines fail.
 Repeated or conflicting matches cannot create another posting. Transfer and
 undo/session operations retain separate qualification.
 
+## Bank transfer tools
+
+`record_bank_transfer` moves money between two active own bank/cash accounts in
+the same currency. Supply fromBankAccountId, toBankAccountId and Gregorian date.
+Numeric `amount` remains integer currency minor units (USD 1250 cents = $12.50).
+`amountMinor: "1250"` and decimal-major `amountExact: "12.50"` are exact aliases;
+they must agree. Amounts and converted journal totals must fit 9007199254740991.
+It returns journalEntryId and atomically saves one journal, two signed paired
+movements and audit. Each call creates a new transfer; there is no replay key.
+
+`match_transfer` takes transactionId and targetBankAccountId, with optional
+counterTransactionId. It uses the saved statement amount; the counter must be
+unlinked, unreconciled, equal and opposite in the same currency. Omission/null
+creates a mirror. It returns transactionId, journalEntryId, counterTransactionId
+and mirrorCreated. Repeated/conflicting matches reject rather than post twice.
+Both dates must be open. Both tools require manage:banking, use historical exact
+FX and preserve cached statement/running balances. Undo/session qualification
+remains separate.
+
 ## Troubleshooting
 
 ### "MCP access requires a Pro plan"

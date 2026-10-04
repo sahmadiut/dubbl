@@ -402,3 +402,17 @@ document changes, bank/payment links and audits commit together. See
 [matching contracts](../../.agentic/registries/BANK_DOCUMENT_MATCH_WIRE_CONTRACTS.md)
 for all boundaries, compatible envelopes, explicit partial/mixed-contact limits,
 safe numeric ranges, retry policy and remaining banking/financial gates.
+
+## Bank transfer contracts (MON-067)
+
+Standalone and statement transfer REST/MCP operations share an atomic scoped
+service. REST numeric amount remains decimal major units; MCP remains integer
+currency minor units. Both add decimal amountExact / integer amountMinor aliases
+with exact agreement and currency-scale rounding. One historical exact-FX
+journal and two equal opposite linked movements commit with GL self-linking and
+audit. Organization locks serialize adopted writers; repeated source/counter
+matches reject, while standalone requests intentionally create new transfers.
+Statement snapshots/running balances are preserved. See
+[transfer contracts](../../.agentic/registries/BANK_TRANSFER_WIRE_CONTRACTS.md)
+for every boundary, safe ranges, unsupported currencies/FX/history, retry policy
+and the MON-068 undo/session handoff. No schema or IRR gate change.

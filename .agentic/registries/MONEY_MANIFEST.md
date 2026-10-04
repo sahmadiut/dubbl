@@ -647,3 +647,19 @@ require identity base FX and exact bank net. Full statement coverage, one contac
 owned references and locks reject unexplained partial or ambiguous history.
 Other bank writers/undo, full-range/provider/production/IRR and MON-021 combined
 financial qualification remain separate. No schema or stored-unit change.
+
+## MON-067 bank transfer adoption
+
+Standalone and match-transfer REST/MCP use shared organization-scoped atomic
+services. BANK_TRANSFER_WIRE_CONTRACTS records decimal-major REST vs integer-minor
+MCP numeric inputs and agreeing amountExact/amountMinor. Bigint amount conversion,
+paired signs and historical FX preserve currency scales and safe numeric totals.
+One journal debits the receiver and credits the sender; both linked movements
+and audit/GL self-linking/numbering roll back together. Active same-currency banks,
+exclusive live owned GL, open source/counter dates, unlinked statement/payment/
+expense/import history and safe bounds are enforced before commit. Cached bank
+and existing running balances remain imported statement snapshots. Concurrent
+matching allows one successful pair; standalone calls remain new economic events.
+UI target choices now reflect the same-currency policy. MON-068 owns undo/session;
+MON-069 other bank operations; MON-021 combined integration. No schema, historical
+unit, migration-file, full-int64 or production IRR change.

@@ -98,3 +98,18 @@ and prepayment application records are noncash and cannot substitute for a bank
 cash movement. Qualified base-currency journal entries can also be matched by
 their exact bank ledger amount. Matching retains saved FX and respects locked
 periods. Undo and statement-session reconciliation remain separate workflows.
+
+### Transfers between your accounts
+
+Match an unreconciled movement as a transfer to another active own bank account
+in the same currency. Select an equal, opposite statement line in the other
+account, or let the app create a mirror. One journal debits the receiving bank
+and credits the sending bank; both movements become linked and reconciled.
+Both statement dates must be open. An already linked or excluded line cannot be
+matched again. Cross-currency cash transfers are unsupported.
+
+Transfers keep saved statement and running balances unchanged. New movements
+contribute to transaction totals and the ledger. Standalone API/MCP transfer
+creation also records a linked pair; each call creates a new transfer, so inspect
+the records before retrying after an uncertain result. Undo remains a separate
+workflow.

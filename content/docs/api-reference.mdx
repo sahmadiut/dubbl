@@ -845,6 +845,33 @@ Unknown fields, malformed aliases and mismatched totals fail validation (400).
 The [MCP banking tools](/docs/guides/mcp#bank-categorization-tools) share these
 operations; the new MCP bank-expense numeric input uses integer **minor** units.
 
+#### Transfers between own bank accounts
+
+POST `/api/v1/bank-transfers` requires distinct fromBankAccountId/toBankAccountId,
+Gregorian date, and positive `amount`, `amountExact` or `amountMinor`. Both banks
+must be active and in the same currency. REST numeric `amount` retains decimal
+**major** units (USD 12.50). `amountExact` is an exact decimal-major string
+("12.50"); `amountMinor` is a canonical integer currency-minor string ("1250").
+Aliases agree before/after currency rounding. Optional memo is nullable. Success
+is 201 `{journalEntryId}`. Each call creates a new transfer; no replay key.
+
+POST `/api/v1/bank-transactions/:id/match-transfer` takes targetBankAccountId and
+optional nullable counterTransactionId. The source's saved signed amount drives
+direction; an existing counter must be unlinked, unreconciled, equal and opposite
+in the target bank and same currency. Omission/null creates a mirror. Success is
+201 `{journalEntryId,counterTransactionId,mirrorCreated}`. Both statement dates
+must be open; existing dates, amounts and running balances are retained.
+Repeated/concurrent matching permits one successful posting per source/counter.
+
+Both operations require `manage:banking`, preserve cached statement balances and
+atomically save one historical exact-FX journal, reconciled paired movements,
+GL self-linking and audit. Cross-currency cash transfers, excluded/already linked
+lines, unsafe amounts, unavailable/unsupported FX and locked periods fail.
+Safe numeric support is +/-9007199254740991 for stored/converted money/totals;
+valid larger exact strings fail 422 before committed effects. MCP counterparts
+are `record_bank_transfer` (numeric amount in integer **minor** units) and
+`match_transfer`; undo/session qualification remains separate.
+
 #### Matching bank statements to documents
 
 | Method | Path | MCP equivalent |

@@ -1,5 +1,21 @@
 # Verification matrix
 
+## MON-074 inventory variants and suppliers
+
+- Pure tests qualify canonical/dual price aliases, cents preservation, safe limits,
+  null output history, int32 physical metadata/days and exact editor conversions.
+- Actual migrated PostgreSQL REST/MCP fixtures exercise all eight operations,
+  full unique tool registration/described schemas, two tenants, owner/viewer/
+  custom-manager roles and invalid/expired API keys. Tenant/contact scoping,
+  deleted history, safe-max prices, unsafe raw bigint rows and bad links are covered.
+- Text SQL snapshots prove invalid inputs and unauthorized requests leave catalog,
+  audit, warehouse, stock and ledger unchanged. Duplicate REST/MCP creation races
+  have one winner; audit-trigger failures roll back all six adopted write services.
+  Catalog operations do not create stock/ledger entries.
+- Browser/session/OAuth and independent financial/security review are not claimed.
+  Parent MON-024 retains combined acceptance; MON-075 through MON-078 own the
+  other inventory surfaces. Full-range/IRR and generic opaque/history gates remain.
+
 ## MON-073 approval conditions
 
 - Pure approval-conditions suite: exact six-operator comparison, full-int64

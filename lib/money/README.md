@@ -456,3 +456,15 @@ component replacements, idempotent profile batches/NULL-key upserts and audits.
 See [tax configuration contracts](../../.agentic/registries/TAX_RATE_PROFILE_WIRE_CONTRACTS.md)
 for all operation envelopes/ranges, authorization, compatible corrections and
 separate filing/report/historical-data gates. No rate-policy or currency change.
+
+## Inventory catalog wire adoption (MON-074)
+
+Variants and supplier links accept existing integer cents prices and additive
+purchasePriceMinor/salePriceMinor canonical strings, with exact agreement and
+safe Number bounds. Null historical prices retain null aliases; invalid stored
+money rejects before patching. Physical variant whole units and supplier days
+remain int32. REST/MCP share tenant-scoped transactional services and atomic audit.
+Editors parse and display exact cents. See
+[inventory catalog contracts](../../.agentic/registries/INVENTORY_CATALOG_WIRE_CONTRACTS.md).
+Other inventory/valuation workflows and production/full-range qualification remain
+with MON-024 and its remaining children.

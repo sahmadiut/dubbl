@@ -18,7 +18,8 @@ import {
   SheetTitle,
   SheetFooter,
 } from "@/components/ui/sheet";
-import { formatMoney } from "@/lib/money";
+import { bankMoneyDisplay as exactPriceDisplay } from "@/lib/money/bank-display";
+import { catalogPriceMinor, catalogWholeInput } from "@/lib/money/catalog-input";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { cn } from "@/lib/utils";
 
@@ -44,7 +45,7 @@ export default function InventoryItemVariantsPage() {
       headers: { "x-organization-id": orgId },
     })
       .then((r) => r.json())
-      .then((data) => { if (data.variants) setVariants(data.variants); })
+      .then((data) => { if (data.data) setVariants(data.data); })
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -62,9 +63,9 @@ export default function InventoryItemVariantsPage() {
         body: JSON.stringify({
           name: name.trim(),
           sku: sku || undefined,
-          purchasePrice: purchasePrice ? Math.round(parseFloat(purchasePrice) * 100) : undefined,
-          salePrice: salePrice ? Math.round(parseFloat(salePrice) * 100) : undefined,
-          quantityOnHand: quantity ? parseInt(quantity) : undefined,
+          purchasePriceMinor: catalogPriceMinor(purchasePrice),
+          salePriceMinor: catalogPriceMinor(salePrice),
+          quantityOnHand: catalogWholeInput(quantity, true),
         }),
       });
 
@@ -74,7 +75,7 @@ export default function InventoryItemVariantsPage() {
       }
 
       const data = await res.json();
-      setVariants((prev) => [...prev, data.variant]);
+      setVariants((prev) => [...prev, data.inventoryVariant]);
       setAddOpen(false);
       setName("");
       setSku("");
@@ -133,10 +134,10 @@ export default function InventoryItemVariantsPage() {
                     <span className="text-xs text-muted-foreground">SKU: {v.sku}</span>
                   )}
                   {v.purchasePrice != null && (
-                    <span className="text-xs text-muted-foreground">Cost: {formatMoney(v.purchasePrice)}</span>
+                    <span className="text-xs text-muted-foreground">Cost: {exactPriceDisplay(v.purchasePrice, "USD")}</span>
                   )}
                   {v.salePrice != null && (
-                    <span className="text-xs text-muted-foreground">Sale: {formatMoney(v.salePrice)}</span>
+                    <span className="text-xs text-muted-foreground">Sale: {exactPriceDisplay(v.salePrice, "USD")}</span>
                   )}
                   {v.quantityOnHand != null && (
                     <span className="text-xs text-muted-foreground">Qty: {v.quantityOnHand}</span>

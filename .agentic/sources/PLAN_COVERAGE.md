@@ -47,3 +47,5 @@ MON-020 retains combined payable/procurement acceptance after MON-046 bill reads
 MON-021 retains combined payment/expense/banking acceptance after MON-055 through MON-069. Verified independent read, settlement/reversal, batch/schedule, expense CRUD/lifecycle, bank account/read/import/coding/matching/transfer/reconciliation/rule workflows inherit MON-011 and trace to migration/API compatibility; original parent criteria remain unchanged.
 
 MON-022 retains combined configuration acceptance after MON-070 organization settings, MON-071 tax rates/profiles, MON-072 tax periods and MON-073 approval conditions. Children inherit MON-011 and trace to migration/API compatibility; original parent criteria remain unchanged.
+
+MON-024 retains combined inventory/costing acceptance after MON-074 variants/suppliers, MON-075 master/import, MON-076 movements/warehouses, MON-077 valuation/landed costs and MON-078 BOM/assembly. Verified source domains inherit MON-011 and migration/API source sections; original parent criteria remain unchanged.

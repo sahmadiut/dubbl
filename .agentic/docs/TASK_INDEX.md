@@ -152,3 +152,13 @@ Generated initial scope index; current status always comes from task metadata vi
 | [MON-071](../tasks/MON-071.md) | Adopt bounded tax rate and profile contracts | backend | no |
 | [MON-072](../tasks/MON-072.md) | Adopt exact tax period contracts | backend | no |
 | [MON-073](../tasks/MON-073.md) | Adopt exact approval condition contracts | backend | no |
+
+## Inventory contract slices
+
+| Task | Outcome | Role | Optional |
+|---|---|---|---|
+| [MON-074](../tasks/MON-074.md) | Adopt exact inventory variant and supplier contracts | backend | no |
+| [MON-075](../tasks/MON-075.md) | Adopt exact inventory master and import contracts | backend | no |
+| [MON-076](../tasks/MON-076.md) | Adopt exact inventory movement and warehouse contracts | backend | no |
+| [MON-077](../tasks/MON-077.md) | Adopt exact inventory valuation and landed cost contracts | backend | no |
+| [MON-078](../tasks/MON-078.md) | Adopt exact inventory assembly contracts | backend | no |

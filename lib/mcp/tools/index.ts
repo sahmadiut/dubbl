@@ -40,6 +40,7 @@ import { registerConsolidationTools } from "./consolidation";
 import { registerPayrollTools } from "./payroll";
 import { registerFixedAssetTools } from "./fixed-assets";
 import { registerInventoryTools } from "./inventory";
+import { registerInventoryCatalogTools } from "./inventory-catalog";
 import { registerPricingTools } from "./pricing";
 import { registerPurchasingTools } from "./purchasing";
 import { registerProcurementSettingsTools } from "./procurement-settings";
@@ -112,6 +113,7 @@ export function registerAllTools(server: McpServer, ctx: AuthContext) {
   registerPayrollTools(server, ctx);
   registerFixedAssetTools(server, ctx);
   registerInventoryTools(server, ctx);
+  registerInventoryCatalogTools(server, ctx);
   registerPricingTools(server, ctx);
   registerPurchasingTools(server, ctx);
   registerProcurementSettingsTools(server, ctx);

@@ -20,7 +20,8 @@ import {
   SheetTitle,
   SheetFooter,
 } from "@/components/ui/sheet";
-import { formatMoney } from "@/lib/money";
+import { bankMoneyDisplay as exactPriceDisplay } from "@/lib/money/bank-display";
+import { catalogPriceMinor, catalogWholeInput } from "@/lib/money/catalog-input";
 import { useConfirm } from "@/lib/hooks/use-confirm";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 
@@ -70,8 +71,8 @@ export default function InventoryItemSuppliersPage() {
         body: JSON.stringify({
           contactId: contactId.trim(),
           supplierCode: supplierCode || undefined,
-          leadTimeDays: leadDays ? parseInt(leadDays) : undefined,
-          purchasePrice: price ? Math.round(parseFloat(price) * 100) : undefined,
+          leadTimeDays: catalogWholeInput(leadDays),
+          purchasePriceMinor: catalogPriceMinor(price),
           isPreferred: preferred,
         }),
       });
@@ -158,7 +159,7 @@ export default function InventoryItemSuppliersPage() {
                     <span className="text-xs text-muted-foreground">Lead: {s.leadTimeDays}d</span>
                   )}
                   {s.purchasePrice != null && (
-                    <span className="text-xs text-muted-foreground">Price: {formatMoney(s.purchasePrice)}</span>
+                    <span className="text-xs text-muted-foreground">Price: {exactPriceDisplay(s.purchasePrice, "USD")}</span>
                   )}
                   {s.isPreferred && (
                     <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 text-[10px]">

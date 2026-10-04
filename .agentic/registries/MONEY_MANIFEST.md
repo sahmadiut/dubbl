@@ -1,5 +1,18 @@
 # Money and FX boundary manifest
 
+## MON-074 inventory catalog adoption
+
+Variant and supplier-link REST/MCP operations share described strict schemas and
+direct-DB scoped services. Existing integer cents prices add matching Minor string
+aliases, retaining 0..9007199254740991 safe numeric support and nullable historical
+outputs; no implied currency conversion or value rescale. Physical variant quantity
+and supplier lead days retain int32 units. Shared transaction locks, safe preflight
+and audit prevent partial catalog writes; contact joins/references enforce tenant
+ownership. Editors consume actual response envelopes and use exact price conversion
+and display. Registry: INVENTORY_CATALOG_WIRE_CONTRACTS.md. Parent MON-024 retains
+combined costing/stock acceptance after MON-074 through MON-078; no schema/IRR flag
+change or full-int64 claim.
+
 ## MON-073 approval condition adoption
 
 Approval JSON thresholds now retain legacy string value and add canonical

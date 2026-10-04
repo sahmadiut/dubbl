@@ -388,3 +388,17 @@ faults roll back rows/history/job/balance/audit. New scoped parser-profile tools
 operate the existing table. Rules supply suggestions without phantom reconciliation.
 See [bank import contracts](../../.agentic/registries/BANK_IMPORT_WIRE_CONTRACTS.md)
 for parser limits, compatibility corrections and retry/qualification boundaries.
+
+## Bank document matching (MON-066)
+
+Invoice/bill/split/existing-payment/journal REST and MCP matching share atomic
+scoped DB services and the exact settlement engine. Positive numeric minor-unit
+inputs add amountMinor; results retain numeric money and add exact aliases.
+Full statement coverage, currency/direction, outstanding payable and saved
+carrying/cash FX are checked; noncash credit/debit/prepayment carriers stay separate.
+Existing cash links reuse qualified saved history without a new posting or rate
+lookup. Direct journal links support base-currency identity FX. Numbering, posting,
+document changes, bank/payment links and audits commit together. See
+[matching contracts](../../.agentic/registries/BANK_DOCUMENT_MATCH_WIRE_CONTRACTS.md)
+for all boundaries, compatible envelopes, explicit partial/mixed-contact limits,
+safe numeric ranges, retry policy and remaining banking/financial gates.

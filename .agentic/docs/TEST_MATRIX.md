@@ -629,3 +629,20 @@ combined financial acceptance. No stored rescaling or configured database migrat
   regression coverage. Synthetic PostgreSQL 18 only; browser, session/OAuth,
   provider, PostgreSQL 16, production and independent financial gates remain open.
   MON-066..069 and MON-021 retain other bank and combined acceptance.
+
+## MON-066 bank document matching
+
+- Pure described schemas cover numeric/exact/dual minor aliases, strict targets,
+  canonical syntax, duplicate allocations and exact safe-limit/overflow sums.
+- Migrated PostgreSQL actual authenticated REST handlers and registered SDK tools
+  cover all new matching/read operations, owner/custom banking-only/viewer roles,
+  two organizations, spoofed org headers and invalid/expired keys.
+- Financial snapshots assert unchanged state on rejected money/history/scope,
+  partial/overpayment/direction/currency, inactive/shared GL and period/fiscal locks.
+  Qualified cash/credit/debit/prepayment, reverse-charge payable, USD/JPY/KWD/IRR
+  scales, safe maximum, saved carrying vs later cash FX and absent live quote pass.
+- Forced bank audit failures roll back new settlements/existing-payment/journal
+  links; statement, document, payment and journal races enforce exclusive matching.
+- Adjacent payment settlement and bank account/read/import/categorization workers,
+  units, types, lint and inventory guards qualify the bounded change. MON-067..069,
+  MON-021, full-int64/provider/OAuth/production/independent financial gates remain.

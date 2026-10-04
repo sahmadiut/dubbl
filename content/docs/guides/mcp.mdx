@@ -408,6 +408,37 @@ currency and total must match the bank. It returns `expenseClaim` with numeric
 fails. Supported money and posting totals are bounded by 9007199254740991 minor
 units; larger exact input fails visibly rather than rounding.
 
+## Bank document matching tools
+
+`match_to_invoice` and `match_to_bill` settle a complete incoming/outgoing bank
+statement line. `split_to_documents` allocates it across distinct recognized
+invoices/bills of the same contact/currency. Numeric `amount` means integer
+currency minor units (USD 1250 = $12.50); `amountMinor: "1250"` is its canonical
+exact alias. They must agree and cover the full line; partial coverage, mixed
+contacts/currencies and overpayments fail. Optional date defaults to the statement
+date; method defaults to bank_transfer. Requires `manage:banking`.
+
+Payment, saved carrying/cash FX journal, allocation, document updates, bank links
+and audit commit together. Responses retain transactionId, payment and document
+status; payment adds amount/amountMinor/currencyCode/journalEntryId. Split results
+include allocations with amount/amountMinor/newStatus. Noncash credit/debit/
+prepayment carriers are retained separately from new cash settlement.
+
+`match_to_existing_payment` links posted cash on the same bank/currency/amount/
+direction and returns transactionId/paymentId/journalEntryId. It uses saved FX
+without a current lookup or another posting; noncash carriers fail.
+`match_to_existing_journal` links an owned unreversed posted journal whose net
+bank leg exactly matches the line, returning transactionId/matchType/journalEntryId.
+Direct journal matching supports base-currency identity FX; foreign cash uses
+existing-payment matching. `get_bank_invoice_matches` returns same-currency
+invoice suggestions and open invoices with numeric money and exact minor aliases.
+
+All money/totals must fit safe integers through 9007199254740991; larger exact
+strings fail visibly. Existing money/dates cannot be overridden. Locked periods,
+unqualified legacy history, foreign references and linked/excluded lines fail.
+Repeated or conflicting matches cannot create another posting. Transfer and
+undo/session operations retain separate qualification.
+
 ## Troubleshooting
 
 ### "MCP access requires a Pro plan"

@@ -631,3 +631,19 @@ owned references and period locks guard atomic journal/bank/expense/audit writes
 Corrections reuse saved rates; split/bulk/expense retries cannot double-post.
 Claims created from outgoing movements are paid and journal-linked; generic undo
 coordination stays MON-068/MON-021. No schema, historical repair or IRR enablement.
+
+## MON-066 bank document matching adoption
+
+Match, match-invoice and split REST writers plus six matching/read MCP tools
+share scoped direct-DB services. BANK_DOCUMENT_MATCH_WIRE_CONTRACTS inventories
+units/aliases/ranges/envelopes/history and compatibility corrections. Positive
+numeric minor amounts add amountMinor with agreement; bigint sums and safe
+coexistence guards protect payments/allocations/cash/carrying/FX/GL totals.
+The existing exact settlement engine retains recognition and credit/debit/
+prepayment classifications and reverse-charge outstanding payable. Atomic
+numbering/document/posting/link/audit writes share organization/bank/movement
+locks. Existing cash uses saved history without lookup/reposting; direct journals
+require identity base FX and exact bank net. Full statement coverage, one contact,
+owned references and locks reject unexplained partial or ambiguous history.
+Other bank writers/undo, full-range/provider/production/IRR and MON-021 combined
+financial qualification remain separate. No schema or stored-unit change.

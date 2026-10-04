@@ -32,7 +32,7 @@ export const paymentCreateFields = {
 export const paymentCreateSchema = z.object(paymentCreateFields).strict();
 export const paymentPaySchema = z.object(paymentPayFields).strict();
 
-export function paymentAllocations(input: z.infer<typeof paymentCreateSchema>) {
+export function paymentAllocations(input: Pick<z.infer<typeof paymentCreateSchema>, "amount" | "amountMinor" | "type" | "allocations">) {
   const amount = creditAmount(input);
   const allocations = input.allocations.map(row => ({ documentId: row.documentId, documentType: row.documentType, amount: creditAmount(row) }));
   if (new Set(allocations.map(row => row.documentId)).size !== allocations.length)

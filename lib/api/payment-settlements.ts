@@ -154,8 +154,8 @@ async function nextNumber(tx: Tx, ctx: AuthContext) {
 }
 
 type SettlementInput = Pay & { amount: number; type: "received" | "made"; allocations: Allocation[]; contactId?: string; currencyCode?: string; notes?: string | null };
-async function settle(ctx: AuthContext, input: SettlementInput, operation: string, request?: Request, executor?: Tx): Promise<Record<string, unknown>> {
-  requireRole(ctx, "manage:payments");
+async function settle(ctx: AuthContext, input: SettlementInput, operation: string, request?: Request, executor?: Tx, permission = "manage:payments"): Promise<Record<string, unknown>> {
+  requireRole(ctx, permission);
   const canonical = { operation, type: input.type, contactId: input.contactId ?? null, currencyCode: input.currencyCode ?? null,
     amount: input.amount, date: input.date, method: input.method, reference: input.reference || null, notes: input.notes || null,
     bankAccountId: input.bankAccountId ?? null, allocations: input.allocations };
@@ -279,6 +279,15 @@ export function createSettlementPaymentInTransaction(ctx: AuthContext, input: un
   requireRole(ctx, "manage:payments");
   const parsed = paymentCreateSchema.parse(input), amounts = paymentAllocations(parsed);
   return settle(ctx, { ...parsed, ...amounts }, "create", request, tx);
+}
+
+/** Bank matching derives contact/currency from locked documents and owns all bank links. */
+export function settleBankDocumentsInTransaction(ctx: AuthContext, input: unknown, tx: Tx, request?: Request) {
+  requireRole(ctx, "manage:banking");
+  const schema = paymentCreateSchema.omit({ contactId: true, currencyCode: true, notes: true, idempotencyKey: true });
+  const parsed = schema.parse(input);
+  const amounts = paymentAllocations(parsed);
+  return settle(ctx, { ...parsed, ...amounts }, "create", request, tx, "manage:banking");
 }
 
 export function createSettlementPayment(ctx: AuthContext, input: unknown, request?: Request) {

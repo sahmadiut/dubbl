@@ -82,3 +82,19 @@ to its journal. Its currency and item total must match the bank movement. It doe
 not need another approval or reimbursement. Bank-created expenses cannot be
 recategorized or recreated through these actions; resolving their claim and bank
 reversal together remains a separate workflow.
+
+### Matching invoices, bills and existing cash
+
+Match the entire bank movement to one invoice/bill, or split it across outstanding
+documents of the same contact and currency. Incoming money settles invoices;
+outgoing money settles bills. Allocations must cover the full movement and cannot
+exceed outstanding balances. Partial coverage and mixed contacts/currencies are
+rejected. The payment, saved carrying and cash FX journal, document balances,
+bank links and audit commit together; the statement balance remains unchanged.
+
+An existing posted cash payment can be linked without recording it again when
+its bank, currency, amount and direction agree exactly. Credit-note, debit-note
+and prepayment application records are noncash and cannot substitute for a bank
+cash movement. Qualified base-currency journal entries can also be matched by
+their exact bank ledger amount. Matching retains saved FX and respects locked
+periods. Undo and statement-session reconciliation remain separate workflows.

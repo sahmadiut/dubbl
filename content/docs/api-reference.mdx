@@ -845,6 +845,47 @@ Unknown fields, malformed aliases and mismatched totals fail validation (400).
 The [MCP banking tools](/docs/guides/mcp#bank-categorization-tools) share these
 operations; the new MCP bank-expense numeric input uses integer **minor** units.
 
+#### Matching bank statements to documents
+
+| Method | Path | MCP equivalent |
+|---|---|---|
+| POST | `/api/v1/bank-transactions/:id/match` | `match_to_invoice`, `match_to_bill`, `match_to_existing_payment`, `match_to_existing_journal` |
+| GET / POST | `/api/v1/bank-transactions/:id/match-invoice` | `get_bank_invoice_matches` / `match_to_invoice` |
+| POST | `/api/v1/bank-transactions/:id/split` | `split_to_documents` |
+
+All require `manage:banking`. Match accepts exactly one invoiceId, billId,
+paymentId or journalEntryId, optionally with an agreeing matchType. Invoice/bill
+matching takes positive numeric integer-minor `amount` (USD cents) and/or canonical
+`amountMinor`; aliases agree and must cover the full saved statement magnitude.
+Date defaults to the statement date; method defaults to bank_transfer. Splits
+accept 1..1000 distinct `{documentType,documentId,amount?,amountMinor?}` allocations
+with the same contact/currency and full statement coverage. Overpayments,
+partial coverage, mixed contacts/currencies, excluded or linked lines fail.
+
+New settlements return `payment` with id, paymentNumber, amount, amountMinor,
+currencyCode, journalEntryId and invoiceStatus/billStatus. Splits return payment
+and allocations with amount/amountMinor/newStatus. Outstanding reverse-charge
+payable and qualified noncash credit/debit/prepayment history are retained.
+Saved recognition carrying and payment-date cash FX post atomically with all
+payment/allocation/document/bank links, numbering and audits. The bank balance
+is not changed by matching.
+
+Existing payment links return matchType/paymentId/journalEntryId without a new
+posting. The posted cash must belong to the same bank and match currency/amount/
+direction exactly; noncash carriers cannot match statement cash. Saved qualified
+FX is reused without a current quote. Existing journal links return matchType/
+journalEntryId and require an exact net bank leg with identity base-currency FX;
+foreign cash uses existing-payment matching. Existing money/dates are immutable.
+All values and posting totals are limited to 9007199254740991 minor units during
+numeric coexistence. Unqualified/unsafe history fails 422; input/state mismatches
+fail 400. Period locks and organization scope apply. Repeats fail without another
+posting; concurrent exclusive matches and audit failures preserve atomicity.
+
+GET match-invoice returns transaction, suggestedMatches and openInvoices (up to
+50 same-currency invoices) with numeric money and named exact minor aliases.
+Outgoing lines return empty lists. No client opt-in or historical rescaling is
+needed. Transfer and undo/session workflows retain separate qualification.
+
 ### Expenses
 | Method | Path | CRUD MCP equivalent |
 |--------|------|---------------------|

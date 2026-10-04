@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
-import { bankTransaction } from "@/lib/db/schema";
-import { eq, and, ne, isNotNull, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
+import { bankReadCount } from "@/lib/api/bank-transaction-read-wire";
 
 interface AccountSuggestion {
   accountId: string;
@@ -18,7 +18,8 @@ interface AccountSuggestion {
 export async function suggestAccounts(
   bankAccountId: string,
   description: string,
-  limit = 5
+  limit = 5,
+  connection: Pick<typeof db, "execute"> = db
 ): Promise<AccountSuggestion[]> {
   const normalized = normalizeForMatching(description);
   const words = normalized.split(/\s+/).filter((w) => w.length > 2);
@@ -30,7 +31,7 @@ export async function suggestAccounts(
     .slice(0, 5)
     .map((w) => sql`lower(bt.description) LIKE ${"%" + w + "%"}`);
 
-  const results = await db.execute(sql`
+  const results = await connection.execute(sql`
     SELECT
       ca.id AS account_id,
       ca.name AS account_name,
@@ -39,19 +40,22 @@ export async function suggestAccounts(
       MAX(bt.date) AS recent_date
     FROM bank_transaction bt
     JOIN chart_account ca ON ca.id = bt.account_id
+    JOIN bank_account ba ON ba.id = bt.bank_account_id
     WHERE bt.bank_account_id = ${bankAccountId}
+      AND ba.deleted_at IS NULL
+      AND ca.organization_id = ba.organization_id
+      AND ca.deleted_at IS NULL AND ca.is_active = true
+      AND coalesce(bt.currency_code, ba.currency_code) = ba.currency_code
       AND bt.account_id IS NOT NULL
       AND bt.status != 'excluded'
       AND (${sql.join(wordConditions, sql` OR `)})
     GROUP BY ca.id, ca.name, ca.code
-    ORDER BY match_count DESC
+    ORDER BY match_count DESC, ca.id
     LIMIT ${limit}
   `);
 
-  const totalMatches = results.rows.reduce(
-    (sum, r) => sum + Number(r.match_count),
-    0
-  );
+  const totalMatches = results.rows.reduce((sum, r) => sum + BigInt(r.match_count as string), 0n);
+  bankReadCount(totalMatches.toString());
 
   return results.rows.map((r) => ({
     accountId: r.account_id as string,
@@ -59,9 +63,9 @@ export async function suggestAccounts(
     accountCode: r.account_code as string,
     confidence: Math.min(
       100,
-      Math.round((Number(r.match_count) / Math.max(totalMatches, 1)) * 100)
+      Number((BigInt(r.match_count as string) * 100n * 2n + totalMatches) / ((totalMatches || 1n) * 2n))
     ),
-    matchCount: Number(r.match_count),
+    matchCount: bankReadCount(r.match_count as string),
     recentDate: r.recent_date as string,
   }));
 }

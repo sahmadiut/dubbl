@@ -364,3 +364,14 @@ commit atomically; statement/payment/opening GL history prevents currency or GL
 link changes. Opening GL remains a separate workflow. Scheduled messages format
 full stored int64 with exact saved currency scales. See
 [the boundary registry](../../.agentic/registries/BANK_ACCOUNT_WIRE_CONTRACTS.md).
+
+## Bank transaction reads (MON-063)
+
+Six REST GET operations and MCP tools share scoped read-only snapshots for
+transactions, activity, account/match suggestions, import metadata and duplicate
+diagnostics. Numeric money retains signed currency minor units with matching
+*Minor aliases in the safe coexistence range. Nested references, opaque payload
+serialization and currency units are guarded. Journal candidates sum complete
+base-currency bank legs exactly; fuzzy amount thresholds use bigint ratios.
+See [read contracts](../../.agentic/registries/BANK_TRANSACTION_READ_WIRE_CONTRACTS.md)
+for envelopes, limits and the separate banking writer/qualification tasks.

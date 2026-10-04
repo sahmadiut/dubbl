@@ -581,3 +581,20 @@ OAuth, full-int64, broader financial/security/migration/release and IRR gates re
 | Atomicity/history | Real audit trigger faults roll back create/update/delete/alert in both transports; parallel GL allocation/claim/delete; statement and opening history guards | Other legacy bank writers retain their own tasks |
 | Alerts | Exact USD/JPY/KWD/IRR messages, full int64 historical text, bad currency isolation, inactive/deleted/equal thresholds, org recipients and daily sequential dedupe | No provider email or concurrent-job delivery guarantee |
 | Regression | Payment settlement and reversal integration; full pure suite; typecheck and lint | Existing 155 lint warnings; no full build/dev |
+
+## MON-063 bank transaction reads
+
+| Area | Executed coverage | Limits |
+|---|---|---|
+| Wire | Strict UUID/status/page/limit/offset validation, sign/null/safe-edge aliases, opaque metadata units, audit agreement, exact 1%/5% ratios | Numeric coexistence +/-9007199254740991 |
+| Actual REST/MCP | Six GET handlers and six SDK tools, stable list/pages/empty filters, API-key expiry/org spoofing/custom roles, missing/foreign/deleted parents, unique names and schema descriptions | No browser/OAuth session |
+| Nested scope | Foreign GL/contact/journal/import/transfer references and orphan dimensions reject; foreign audit entity event excluded; users sanitized | Generic reference writers remain separate |
+| Match/units | Incoming invoices/outgoing bills, payment meta, opposite-sign transfers, same-currency filters; exact complete net journal (5-billion gross and net), unsafe combined and mixed-line rejection | Base-currency journal suggestions only; sampled candidate sets |
+| Imports/duplicates/history | Nullable/large/signed import balances, metadata units; safe numeric SQL duplicate aliases/date strings; unsafe stored money/raw JSON/audit aliases reject | At most 20 imports/100 duplicate pairs; opaque history not remediated |
+| Read invariants | Read-only repeatable-read services and accounting DB snapshots for successful/negative reads, USD/JPY/KWD/IRR units unchanged | No posting/import/reconciliation correctness claim |
+| Regression | MON-062 bank account and MON-056 payment settlement integration; all 186 pure cases sequentially; typecheck/lint | Concurrent default pure run hit existing startup timeout; final sequential run passed |
+
+PostgreSQL 18 synthetic disposable databases only; not clean install/PostgreSQL
+16/provider/production, full-int64, independent financial/security or IRR rollout.
+No build/dev/schema edit/migration of the configured database. MON-021 combined
+acceptance and MON-064..069 writer contracts remain assigned.

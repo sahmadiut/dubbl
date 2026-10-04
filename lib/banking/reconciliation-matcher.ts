@@ -3,6 +3,8 @@
  * Matches bank transactions against invoices, bills, and journal entries.
  */
 
+import { bankAmountProximity } from "@/lib/api/bank-transaction-read-wire";
+
 export interface BankTransactionForMatch {
   id: string;
   date: string;
@@ -53,7 +55,7 @@ export function findMatches(
   }
 
   // Sort by confidence descending
-  results.sort((a, b) => b.confidence - a.confidence);
+  results.sort((a, b) => b.confidence - a.confidence || a.candidate.id.localeCompare(b.candidate.id));
 
   // Return top 5 matches
   return results.slice(0, 5);
@@ -67,17 +69,16 @@ function scoreMatch(
   const reasons: string[] = [];
 
   // Exact amount match (most important)
-  if (Math.abs(transaction.amount) === Math.abs(candidate.amount)) {
+  const proximity = bankAmountProximity(transaction.amount, candidate.amount);
+  if (proximity === "exact") {
     score += 40;
     reasons.push("Exact amount match");
   } else {
     // Close amount match (within 1%)
-    const diff = Math.abs(Math.abs(transaction.amount) - Math.abs(candidate.amount));
-    const maxAmt = Math.max(Math.abs(transaction.amount), Math.abs(candidate.amount));
-    if (maxAmt > 0 && diff / maxAmt < 0.01) {
+    if (proximity === "one") {
       score += 25;
       reasons.push("Amount within 1%");
-    } else if (maxAmt > 0 && diff / maxAmt < 0.05) {
+    } else if (proximity === "five") {
       score += 10;
       reasons.push("Amount within 5%");
     }

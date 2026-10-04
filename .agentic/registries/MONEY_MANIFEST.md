@@ -590,3 +590,16 @@ links and history guards prevent currency/relinking of prior statement/payment/
 opening GL history. Statement balance edits do not post opening GL. Scheduled
 alert messages use text-only exact int64 currency-scale formatting. No migration,
 historical rescaling or IRR flag change; other bank writers and MON-021 gates remain.
+
+## MON-063 bank transaction read adoption
+
+Transaction/activity/account and match suggestions/import metadata/duplicate
+REST and MCP reads share scoped read-only snapshots. See
+[bank transaction read contracts](BANK_TRANSACTION_READ_WIRE_CONTRACTS.md).
+Signed numeric money retains saved minor units with nullable exact aliases and
+safe coexistence checks, including nested imports/documents/payment metadata.
+SQL duplicate/count text and bigint net journal/threshold math avoid range loss;
+ownership, currency and stable pagination guards reject unsupported reads.
+Opaque history keeps its own units; activity adds aliases only to known money
+and allocation items. No ledger/write/schema/unit/IRR change. Import and other
+bank writers remain MON-064..069; MON-021 retains combined financial gates.

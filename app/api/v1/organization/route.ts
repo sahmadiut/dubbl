@@ -1,92 +1,47 @@
-import { NextResponse } from "next/server";
+import { jsonResponse } from "@/lib/api/json-response";
 import { db } from "@/lib/db";
-import { organization, member, users, subscription, journalEntry } from "@/lib/db/schema";
+import { organization, member, users, subscription, auditLog } from "@/lib/db/schema";
 import { eq, sql } from "drizzle-orm";
-import { isValidCurrencyCode } from "@/lib/currency/iso4217";
-import { functionalCurrencySchema } from "@/lib/currency/functional-currency";
-import { CurrencyRolloutError } from "@/lib/currency/rollout";
 import { auth } from "@/lib/auth";
-import { getAuthContext, AuthError } from "@/lib/api/auth-context";
-import { requireRole } from "@/lib/api/require-role";
+import { getAuthContext } from "@/lib/api/auth-context";
 import { z } from "zod";
 import { randomUUID } from "crypto";
-import { isValidBusinessType } from "@/lib/data/business-types";
-import { checkOrganizationLimit, LimitExceededError } from "@/lib/api/check-limit";
-import { logAudit, diffChanges } from "@/lib/api/audit";
+import { checkOrganizationLimit } from "@/lib/api/check-limit";
 import { getSiteSetting, isSelfHostedUnlimited } from "@/lib/site-settings";
 import { render } from "@react-email/render";
 import { createElement } from "react";
 import { OrgCreatedEmail } from "@/lib/email/templates/org-created";
 import { sendPlatformEmail } from "@/lib/email/resend-client";
-import { seedDefaultAccounts } from "@/lib/db/default-accounts";
-import { ensureTaxRatesSeeded } from "@/lib/api/tax-profiles";
 import { toAppUrl } from "@/lib/public-url";
 
-const updateSchema = z
-  .object({
-    name: z.string().min(1).optional(),
-    slug: z.string().min(1).optional(),
-    country: z.string().min(1).optional().nullable(),
-    businessType: z.string().min(1).optional().nullable(),
-    defaultCurrency: functionalCurrencySchema.optional(),
-    fiscalYearStartMonth: z.number().min(1).max(12).optional(),
-    countryCode: z.string().max(2).nullable().optional(),
-    taxId: z.string().nullable().optional(),
-    businessRegistrationNumber: z.string().nullable().optional(),
-    legalEntityType: z.string().nullable().optional(),
-    addressStreet: z.string().nullable().optional(),
-    addressCity: z.string().nullable().optional(),
-    addressState: z.string().nullable().optional(),
-    addressPostalCode: z.string().nullable().optional(),
-    addressCountry: z.string().nullable().optional(),
-    contactPhone: z.string().nullable().optional(),
-    contactEmail: z.string().nullable().optional(),
-    contactWebsite: z.string().nullable().optional(),
-    defaultPaymentTerms: z.string().nullable().optional(),
-    industrySector: z.string().nullable().optional(),
-    referralSource: z.string().nullable().optional(),
-    // Getting-started checklist: client sends true to mark onboarding done
-    // (stored as now()), or null to re-open it. Coerced to a Date below.
-    onboardingCompleted: z.boolean().optional(),
-  })
-  .refine(
-    (data) => {
-      if (data.businessType && (data.countryCode || data.country)) {
-        const code = data.countryCode || data.country!;
-        return isValidBusinessType(code, data.businessType);
-      }
-      return true;
-    },
-    { message: "Invalid business type for the selected country", path: ["businessType"] }
-  );
+import { handleError, ok } from "@/lib/api/response";
+import { organizationDto, readOrganizationJson } from "@/lib/api/organization-wire";
+import { getOrganization, updateOrganizationSettings } from "@/lib/api/organization-settings";
 
 const createSchema = z.object({
-  name: z.string().min(1),
-  slug: z.string().min(1).regex(/^[a-z0-9-]+$/),
-});
+  name: z.string().min(1).describe("Organization display name"),
+  slug: z.string().min(1).regex(/^[a-z0-9-]+$/).describe("Unique lowercase alphanumeric and hyphen slug"),
+}).strict();
 
 export async function GET(request: Request) {
   try {
-    // If x-organization-id header present, return single org
+    // A scoped header or API key selects the authenticated organization.
     const orgId = request.headers.get("x-organization-id");
-    if (orgId) {
+    if (orgId || request.headers.get("authorization")?.startsWith("Bearer dk_")) {
       const ctx = await getAuthContext(request);
-      const org = await db.query.organization.findFirst({
-        where: eq(organization.id, ctx.organizationId),
-      });
-      return NextResponse.json({ organization: org });
+      return ok(await getOrganization(ctx));
     }
 
     // Otherwise list all orgs for the session user
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+      return jsonResponse({ error: "Not authenticated" }, { status: 401 });
     }
 
-    const memberships = await db.query.member.findMany({
+    const memberships = (await db.query.member.findMany({
       where: eq(member.userId, session.user.id),
       with: { organization: true },
-    });
+    })).filter(m => m.organization.deletedAt === null);
 
     // Enrich with role and member count
     const orgIds = memberships.map((m) => m.organizationId);
@@ -108,18 +63,15 @@ export async function GET(request: Request) {
       );
     }
 
-    return NextResponse.json({
+    return ok({
       organizations: memberships.map((m) => ({
-        ...m.organization,
+        ...organizationDto(m.organization),
         role: m.role,
         memberCount: memberCounts[m.organizationId] || 1,
       })),
     });
   } catch (err) {
-    if (err instanceof AuthError) {
-      return NextResponse.json({ error: err.message }, { status: err.status });
-    }
-    return NextResponse.json({ error: "Internal error" }, { status: 500 });
+    return handleError(err);
   }
 }
 
@@ -127,10 +79,10 @@ export async function POST(request: Request) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+      return jsonResponse({ error: "Not authenticated" }, { status: 401 });
     }
 
-    const body = await request.json();
+    const body = await readOrganizationJson(request);
     const parsed = createSchema.parse(body);
 
     // Check if user is allowed to create organizations
@@ -148,7 +100,7 @@ export async function POST(request: Request) {
       ]);
 
       if (!user?.isSiteAdmin && existingMembership) {
-        return NextResponse.json(
+        return jsonResponse(
           { error: "Only administrators can create organizations" },
           { status: 403 }
         );
@@ -163,17 +115,17 @@ export async function POST(request: Request) {
       where: eq(organization.slug, parsed.slug),
     });
     if (existing) {
-      return NextResponse.json({ error: "Slug already taken" }, { status: 409 });
+      return jsonResponse({ error: "Slug already taken" }, { status: 409 });
     }
 
     // Create org + owner membership + subscription in a transaction
     const orgId = randomUUID();
-    await db.transaction(async (tx) => {
-      await tx.insert(organization).values({
+    const created = await db.transaction(async (tx) => {
+      const [org] = await tx.insert(organization).values({
         id: orgId,
         name: parsed.name,
         slug: parsed.slug,
-      });
+      }).returning();
       await tx.insert(member).values({
         organizationId: orgId,
         userId: session.user!.id!,
@@ -186,10 +138,12 @@ export async function POST(request: Request) {
         status: "active",
         ...(selfHosted ? { managedBy: "manual" } : {}),
       });
-    });
-
-    const created = await db.query.organization.findFirst({
-      where: eq(organization.id, orgId),
+      const result = organizationDto(org);
+      await tx.insert(auditLog).values({ organizationId: orgId, userId: session.user!.id!, action: "create",
+        entityType: "organization", entityId: orgId,
+        ipAddress: request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || request.headers.get("x-real-ip") || null,
+        userAgent: request.headers.get("user-agent") || null });
+      return result;
     });
 
     // Send org-created email (fire and forget)
@@ -202,110 +156,13 @@ export async function POST(request: Request) {
         .catch(() => {});
     }
 
-    logAudit({ ctx: { organizationId: orgId, userId: session.user!.id!, role: "owner", permissions: [] }, action: "create", entityType: "organization", entityId: orgId, request });
-
-    return NextResponse.json({ organization: created }, { status: 201 });
+    return jsonResponse({ organization: created }, { status: 201 });
   } catch (err) {
-    if (err instanceof AuthError) {
-      return NextResponse.json({ error: err.message }, { status: err.status });
-    }
-    if (err instanceof LimitExceededError) {
-      return NextResponse.json({ error: err.message }, { status: 403 });
-    }
-    if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: err.issues[0].message }, { status: 400 });
-    }
-    const message = err instanceof Error ? err.message : "Internal error";
-    console.error("POST /organization error:", message, err);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return handleError(err);
   }
 }
 
 export async function PATCH(request: Request) {
-  try {
-    const ctx = await getAuthContext(request);
-
-    const body = await request.json();
-    const parsed = updateSchema.parse(body);
-
-    // The getting-started checklist can be dismissed by any member, so a
-    // non-owner isn't dead-ended on it. Only when the PATCH touches another
-    // org-settings field do we require the owner-level manage:billing role.
-    const onlyTogglesOnboarding =
-      Object.keys(parsed).length === 1 && parsed.onboardingCompleted !== undefined;
-    requireRole(ctx, onlyTogglesOnboarding ? "view:data" : "manage:billing");
-
-    const existing = await db.query.organization.findFirst({
-      where: eq(organization.id, ctx.organizationId),
-    });
-
-    // Base (functional) currency is the pivot every report is measured in.
-    // Validate it, and treat it as immutable once the books have activity —
-    // changing it would corrupt all historical functional-currency values.
-    if (parsed.defaultCurrency && parsed.defaultCurrency !== existing?.defaultCurrency) {
-      if (!isValidCurrencyCode(parsed.defaultCurrency)) {
-        return NextResponse.json(
-          { error: `${parsed.defaultCurrency} is not a recognized currency code` },
-          { status: 400 }
-        );
-      }
-      const [activity] = await db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(journalEntry)
-        .where(eq(journalEntry.organizationId, ctx.organizationId));
-      if ((activity?.count ?? 0) > 0) {
-        return NextResponse.json(
-          {
-            error:
-              "Base currency can't be changed once transactions exist — it's the functional currency all reports are measured in.",
-          },
-          { status: 409 }
-        );
-      }
-    }
-
-    // Map the client-friendly `onboardingCompleted` flag onto the real
-    // `onboardingCompletedAt` timestamp column (now() to complete, null to re-open).
-    const { onboardingCompleted, ...rest } = parsed;
-    const onboardingPatch =
-      onboardingCompleted === undefined
-        ? {}
-        : { onboardingCompletedAt: onboardingCompleted ? new Date() : null };
-
-    const [updated] = await db
-      .update(organization)
-      .set({ ...rest, ...onboardingPatch, updatedAt: new Date() })
-      .where(eq(organization.id, ctx.organizationId))
-      .returning();
-
-    // Seed the default chart of accounts AND the country's standard tax rates on
-    // first-time country set (onboarding completion), so a new org can pick a
-    // real VAT/GST rate immediately instead of only "No tax". Both are
-    // idempotent; tax seeding is best-effort so it never blocks onboarding.
-    if (existing?.country === null && updated.country !== null) {
-      await seedDefaultAccounts(ctx.organizationId, updated.defaultCurrency || "USD", updated.countryCode || undefined);
-      try {
-        await ensureTaxRatesSeeded(ctx.organizationId, updated.countryCode || updated.country || undefined);
-      } catch {
-        // non-fatal: rates also self-heal lazily on the tax-rates endpoint
-      }
-    }
-
-    logAudit({ ctx, action: "update", entityType: "organization", entityId: ctx.organizationId, changes: diffChanges(existing as Record<string, unknown>, updated as Record<string, unknown>), request });
-
-    return NextResponse.json({ organization: updated });
-  } catch (err) {
-    if (err instanceof CurrencyRolloutError) {
-      return NextResponse.json({ error: err.message }, { status: 403 });
-    }
-    if (err instanceof AuthError) {
-      return NextResponse.json({ error: err.message }, { status: err.status });
-    }
-    if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: err.issues[0].message }, { status: 400 });
-    }
-    const message = err instanceof Error ? err.message : "Internal error";
-    console.error("PATCH /organization error:", message, err);
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
+  try { return ok(await updateOrganizationSettings(await getAuthContext(request), await readOrganizationJson(request), request)); }
+  catch (err) { return handleError(err); }
 }

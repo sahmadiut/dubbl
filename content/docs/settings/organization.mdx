@@ -17,6 +17,28 @@ Navigate to **Settings** to configure your organization.
 | Financial Year Start | First month of your financial year |
 | Tax ID | Your business tax identification number |
 
+## API and MCP Settings
+
+Organization responses include `mileageRateMinor` and
+`billApprovalThresholdMinor` exact integer strings alongside their existing
+numeric fields. Saved `null` values remain `null`. Amounts retain their currency
+minor units, such as cents for USD; percentages remain numeric basis points.
+
+Use `PATCH /api/v1/organization` or the `update_organization` MCP tool to update
+supplied settings. Omitted fields stay unchanged; `null` clears optional text.
+This includes the PEPPOL participant identifier and scheme from the settings
+page. Unknown fields are rejected. Changing the functional currency requires
+`manage:billing` and is rejected once journal activity exists. IRR selection
+remains disabled pending financial qualification.
+
+Use `GET` or `PUT /api/v1/organization/mileage-rate`, or the
+`get_organization_mileage_rate` and `update_organization_mileage_rate` MCP tools,
+for mileage settings. Writes require `manage:tax-config`. Supply `mileageRate`
+(an integer) or `mileageRateMinor` (an exact string), or matching values for both.
+Rates are **currency minor units per mile**: USD `67` means $0.67 per mile.
+The supported range is 0 through 9007199254740991; values are never rescaled.
+A saved `null` retains the existing mileage endpoint fallback of `67`.
+
 ## Billing
 
 Navigate to **Settings > Billing** to manage your subscription, view invoices, and update payment methods.

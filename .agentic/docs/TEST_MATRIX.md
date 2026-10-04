@@ -712,3 +712,23 @@ combined financial acceptance. No stored rescaling or configured database migrat
   retains existing cash. Eight banking/payment regressions pass separately.
 - No browser/screenshot/provider/OAuth/PostgreSQL16/production/independent human
   accounting/security claim. MON-021 retains combined integration acceptance.
+
+## MON-070 organization settings
+
+- Four pure groups qualify mileage canonical aliases, null/fallback, unchanged
+  USD/JPY/KWD/IRR units, safe bigint/numeric DTOs, malformed/unsafe ranges,
+  partial controls and country/business-type/currency rollout policy.
+- Disposable migrated PostgreSQL actual GET/POST/PATCH and mileage GET/PUT,
+  registered SDK MCP all five operations and registerAllTools exercise numeric,
+  exact and dual clients, maximum safe/above-int32 amounts, member/custom-role
+  permissions, expired/invalid keys and spoofed tenant headers.
+- SQL-text snapshots prove rejection and rollback for malformed JSON/money,
+  unknown aliases/fields, foreign/missing/deleted orgs, unsafe saved money,
+  invalid merged business type, journal-history/IRR guards and actual audit faults.
+  Concurrent partial writes preserve fields; PEPPOL, onboarding, null/fallback,
+  saved thresholds and actual post-commit default account/tax seeds are covered.
+- Session list/create handlers use stubbed session identity and outbound email;
+  actual memberships, plan/slug/provisioning/audit logic remains real. No genuine
+  session/OAuth/email/browser/PostgreSQL16/independent financial/security proof.
+  Expense CRUD/lifecycle regressions cover the adjacent mileage consumers.
+  MON-022 retains combined configuration acceptance after all four children.

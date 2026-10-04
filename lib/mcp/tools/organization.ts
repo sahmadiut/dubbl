@@ -1,52 +1,25 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { db } from "@/lib/db";
-import { organization, journalEntry } from "@/lib/db/schema";
-import { eq, sql } from "drizzle-orm";
-import { wrapTool } from "@/lib/mcp/errors";
-import { AuthError, type AuthContext } from "@/lib/api/auth-context";
-import { requireRole } from "@/lib/api/require-role";
-import { logAudit, diffChanges } from "@/lib/api/audit";
-import { functionalCurrencySchema } from "@/lib/currency/functional-currency";
 import { z } from "zod";
+import { wrapTool } from "@/lib/mcp/errors";
+import type { AuthContext } from "@/lib/api/auth-context";
+import { getOrganization, updateOrganizationSettings, getOrganizationMileageRate, updateOrganizationMileageRate } from "@/lib/api/organization-settings";
+import { organizationUpdateFields, mileageRateSchema } from "@/lib/api/organization-wire";
 
 export function registerOrganizationTools(server: McpServer, ctx: AuthContext) {
-  server.tool(
-    "set_organization_currency",
-    "Set the current organization's functional currency using an ISO 4217 code. Requires manage:billing permission; changes are rejected once journal activity exists. IRR is disabled pending financial qualification. Returns the updated organization; does not convert or rescale amounts.",
-    { currencyCode: z.string().describe("ISO 4217 functional currency code, e.g. USD; IRR remains gated") },
-    ({ currencyCode }) => wrapTool(ctx, async () => {
-      requireRole(ctx, "manage:billing");
-      const code = functionalCurrencySchema.parse(currencyCode);
-      const existing = await db.query.organization.findFirst({
-        where: eq(organization.id, ctx.organizationId),
-      });
-      if (!existing) throw new AuthError("Organization not found", 404);
-      if (code !== existing.defaultCurrency) {
-        const [activity] = await db.select({ count: sql<number>`count(*)::int` })
-          .from(journalEntry).where(eq(journalEntry.organizationId, ctx.organizationId));
-        if ((activity?.count ?? 0) > 0) {
-          throw new AuthError("Base currency can't be changed once transactions exist", 409);
-        }
-      }
-      const [updated] = await db.update(organization)
-        .set({ defaultCurrency: code, updatedAt: new Date() })
-        .where(eq(organization.id, ctx.organizationId)).returning();
-      logAudit({ ctx, action: "update", entityType: "organization", entityId: ctx.organizationId,
-        changes: diffChanges(existing as Record<string, unknown>, updated as Record<string, unknown>) });
-      return { organization: updated };
-    })
-  );
-  server.tool(
-    "get_organization",
-    "Get the current organization's details including name, currency, country, and settings",
-    {},
-    () =>
-      wrapTool(ctx, async () => {
-        const org = await db.query.organization.findFirst({
-          where: eq(organization.id, ctx.organizationId),
-        });
-        if (!org) throw new Error("Organization not found");
-        return { organization: org };
-      })
-  );
+  server.registerTool("get_organization", { description:
+    "Get the current live organization's details and settings. Returns {organization}; mileageRate is minor units per mile and billApprovalThreshold is currency minor units (USD cents), with matching *Minor strings or null. Percentages remain numeric basis points; no rescaling.",
+    inputSchema: z.object({}).strict() }, () => wrapTool(ctx, () => getOrganization(ctx)));
+  server.registerTool("set_organization_currency", { description:
+    "Set the current organization's ISO functional currency. Requires manage:billing, rejected after journal activity; IRR remains gated. Returns {organization} with safe numeric money and exact *Minor aliases. Does not convert or rescale stored amounts.",
+    inputSchema: z.object({ currencyCode: z.string().describe("ISO functional currency code, e.g. USD; IRR remains gated") }).strict() },
+    ({ currencyCode }) => wrapTool(ctx, () => updateOrganizationSettings(ctx, { defaultCurrency: currencyCode })));
+  server.registerTool("update_organization", { description:
+    "Update supplied current organization settings, matching REST PATCH. Requires manage:billing, or view:data for onboardingCompleted alone. Returns {organization} with safe numeric money and exact *Minor aliases; mileage is updated separately. Functional currency cannot change after journal activity; IRR remains gated.",
+    inputSchema: z.object({ ...organizationUpdateFields, defaultCurrency: z.string().optional().describe("ISO functional currency; changes rejected after activity; IRR gated") }).strict() }, params => wrapTool(ctx, () => updateOrganizationSettings(ctx, params)));
+  server.registerTool("get_organization_mileage_rate", { description:
+    "Get the current organization's mileage reimbursement setting. Returns mileageRate (safe integer currency minor units per mile, USD cents), mileageRateMinor (matching canonical string), and currencyCode. A saved null retains the legacy fallback of 67 minor units per mile.",
+    inputSchema: z.object({}).strict() }, () => wrapTool(ctx, () => getOrganizationMileageRate(ctx)));
+  server.registerTool("update_organization_mileage_rate", { description:
+    "Update the current organization's mileage setting; requires manage:tax-config. Provide numeric mileageRate or exact mileageRateMinor, or both agreeing. Nonnegative currency minor units per mile (USD 67 = $0.67/mile), maximum 9007199254740991. Returns mileageRate, mileageRateMinor and currencyCode; no rescaling.",
+    inputSchema: mileageRateSchema }, params => wrapTool(ctx, () => updateOrganizationMileageRate(ctx, params)));
 }

@@ -1,5 +1,20 @@
 # Money and FX boundary manifest
 
+## MON-070 organization settings adoption
+
+[Organization contracts](ORGANIZATION_WIRE_CONTRACTS.md) document member-scoped
+organization and mileage REST/MCP, session list/provisioning response aliases,
+nonnegative safe minor-unit inputs, nullable exact aliases, basis-point/control
+distinctions and unchanged units/fallback. Shared direct DB services serialize
+partial settings and currency changes, preflight response compatibility and
+audit atomically. Strict schemas reject unsupported fields; existing UI PEPPOL
+fields now persist. Journal-history and IRR gates remain; onboarding chart/tax
+seeding retains existing post-commit behavior. Actual REST/SDK/SQL fixtures use
+four currency scales and fixture session/email boundaries. MON-022 retains
+combined acceptance after MON-070 through MON-073; full range, tax/approval,
+global administrative/opaque and historical currency policy stay separately
+assigned. No schema or production flag changes.
+
 ## MON-069 bank rule adoption
 
 [Bank rule contracts](BANK_RULE_WIRE_CONTRACTS.md) document CRUD/suggestions/

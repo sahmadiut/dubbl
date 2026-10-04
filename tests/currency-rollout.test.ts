@@ -75,7 +75,7 @@ test("MCP currency selection surfaces rollout and authorization failures without
     const { registerOrganizationTools } = await import("../lib/mcp/tools/organization");
     const invoke = async (role: "owner" | "member", currencyCode: string) => {
       let handler: ((params: { currencyCode: string }) => Promise<{ isError?: boolean; content: { text: string }[] }>) | undefined;
-      const server = { tool(name: string, _description: string, _schema: unknown, callback: typeof handler) {
+      const server = { registerTool(name: string, _config: unknown, callback: typeof handler) {
         if (name === "set_organization_currency") handler = callback;
       } } as unknown as McpServer;
       registerOrganizationTools(server, { userId: "fixture-user", organizationId: "fixture-org", role });

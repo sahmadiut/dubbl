@@ -148,3 +148,7 @@ Generated initial scope index; current status always comes from task metadata vi
 | [MON-067](../tasks/MON-067.md) | Adopt exact bank transfer contracts | backend | no |
 | [MON-068](../tasks/MON-068.md) | Adopt exact bank reconciliation contracts | backend | no |
 | [MON-069](../tasks/MON-069.md) | Adopt exact bank rule contracts | backend | no |
+| [MON-070](../tasks/MON-070.md) | Adopt exact organization settings contracts | backend | no |
+| [MON-071](../tasks/MON-071.md) | Adopt bounded tax rate and profile contracts | backend | no |
+| [MON-072](../tasks/MON-072.md) | Adopt exact tax period contracts | backend | no |
+| [MON-073](../tasks/MON-073.md) | Adopt exact approval condition contracts | backend | no |

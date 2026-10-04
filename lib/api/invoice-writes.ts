@@ -137,13 +137,13 @@ export async function createInvoice(ctx: AuthContext, input: unknown, transport:
       total: totals.total, amountPaid: 0, amountDue: totals.total, currencyCode: currency,
       invoiceType: parsed.invoiceType, depositPercent: parsed.depositPercent ?? null, createdBy: ctx.userId };
     const requester = parsed.submitForApproval ? await tx.query.member.findFirst({ where: and(eq(member.userId, ctx.userId), eq(member.organizationId, ctx.organizationId)) }) : undefined;
-    const workflow = requester ? await checkApprovalRequired(ctx.organizationId, "invoice", values) : null;
+    const workflow = requester ? await checkApprovalRequired(ctx.organizationId, "invoice", values, tx) : null;
     const pending = requester && workflow && workflow.steps.length > 0;
     const invoiceNumber = await nextNumber(tx, ctx.organizationId);
     const [created] = await tx.insert(invoice).values({ ...values, invoiceNumber, status: pending ? "pending_approval" : "draft" }).returning();
     await tx.insert(invoiceLine).values(totals.processedLines.map(line => ({ ...line, invoiceId: created.id })));
     if (pending) await tx.insert(approvalRequest).values({ organizationId: ctx.organizationId, workflowId: workflow.id,
-      entityType: "invoice", entityId: created.id, requestedById: requester.id, currentStepOrder: 1 });
+      entityType: "invoice", entityId: created.id, requestedById: requester.id, currentStepOrder: workflow.steps[0].stepOrder });
     return { invoice: invoiceWriteDto(created), creditLimitWarning: warning };
   });
   await logAudit({ ctx, action: "create", entityType: "invoice", entityId: result.invoice.id, request });

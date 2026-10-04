@@ -160,7 +160,7 @@ export default function ApprovalWorkflowsPage() {
     setEditingWorkflow(w);
     setName(w.name);
     setEntityType(w.entityType);
-    setConditions([...(w.conditions ?? [])]);
+    setConditions((w.conditions ?? []).map(({ field, operator, value }) => ({ field, operator, value })));
     setSteps(
       w.steps.map((s) => ({
         approverId: s.approverId,
@@ -222,7 +222,7 @@ export default function ApprovalWorkflowsPage() {
         body: JSON.stringify({
           name,
           entityType,
-          conditions: conditions.filter((c) => c.field),
+          conditions,
           steps,
         }),
       });
@@ -442,6 +442,14 @@ export default function ApprovalWorkflowsPage() {
                 <p className="text-xs text-muted-foreground">
                   No conditions - workflow will apply to all{" "}
                   {entityTypeLabel(entityType).toLowerCase()}s.
+                </p>
+              )}
+              {conditions.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Use total for invoices, bills or purchase orders, totalAmount for
+                  expenses, or a text field such as status. Money thresholds are
+                  integer minor units of the document currency. Text fields support
+                  equals and not equals.
                 </p>
               )}
               {conditions.map((c, i) => (

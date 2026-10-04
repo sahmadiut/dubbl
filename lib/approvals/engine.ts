@@ -1,200 +1,87 @@
 import { db } from "@/lib/db";
-import {
-  approvalWorkflow,
-  approvalWorkflowStep,
-  approvalRequest,
-  approvalAction,
-} from "@/lib/db/schema";
-import { eq, and, asc } from "drizzle-orm";
-import { notDeleted } from "@/lib/db/soft-delete";
+import { approvalWorkflow, approvalWorkflowStep, approvalRequest, approvalAction, member, bill, invoice, expenseClaim, journalEntry, purchaseOrder } from "@/lib/db/schema";
+import { eq, and, asc, isNull } from "drizzle-orm";
+import { AuthError, type AuthContext } from "@/lib/api/auth-context";
+import { WireCompatibilityError, stringifyWire } from "@/lib/money/wire";
+import { conditionDto, evaluateConditions, type ApprovalEntity } from "./conditions";
+import { approvalId, actionSchema } from "./wire";
+import { lockApprovalOrganization, auditApproval, approvalMembers, type ApprovalTx } from "./transaction";
 
-interface ApprovalCondition {
-  field: string;
-  operator: "eq" | "neq" | "gt" | "lt" | "gte" | "lte";
-  value: string;
-}
-
-function evaluateCondition(
-  condition: ApprovalCondition,
-  entity: Record<string, unknown>
-): boolean {
-  const fieldValue = String(entity[condition.field] ?? "");
-  const condValue = condition.value;
-
-  switch (condition.operator) {
-    case "eq":
-      return fieldValue === condValue;
-    case "neq":
-      return fieldValue !== condValue;
-    case "gt":
-      return Number(fieldValue) > Number(condValue);
-    case "lt":
-      return Number(fieldValue) < Number(condValue);
-    case "gte":
-      return Number(fieldValue) >= Number(condValue);
-    case "lte":
-      return Number(fieldValue) <= Number(condValue);
-    default:
-      return false;
-  }
-}
-
-/**
- * Check if an entity requires approval by finding an active workflow
- * whose conditions match the entity.
- */
-export async function checkApprovalRequired(
-  orgId: string,
-  entityType: "bill" | "expense" | "invoice" | "journal_entry" | "purchase_order",
-  entity: Record<string, unknown>
-) {
-  const workflows = await db.query.approvalWorkflow.findMany({
-    where: and(
-      eq(approvalWorkflow.organizationId, orgId),
-      eq(approvalWorkflow.entityType, entityType),
-      eq(approvalWorkflow.isActive, true),
-      notDeleted(approvalWorkflow.deletedAt)
-    ),
-    with: {
-      steps: {
-        orderBy: asc(approvalWorkflowStep.stepOrder),
-      },
-    },
+/** Optional transaction keeps selection and submission in the same document transaction. */
+export async function checkApprovalRequired(orgId: string, entityType: ApprovalEntity, entity: Record<string, unknown>, tx: ApprovalTx | typeof db = db) {
+  const workflows = await tx.query.approvalWorkflow.findMany({
+    where: and(eq(approvalWorkflow.organizationId, orgId), eq(approvalWorkflow.entityType, entityType), eq(approvalWorkflow.isActive, true), isNull(approvalWorkflow.deletedAt)),
+    with: { steps: { orderBy: asc(approvalWorkflowStep.stepOrder) } },
   });
-
+  // Fail closed on invalid saved conditions even if an earlier workflow matches.
+  for (const workflow of workflows) conditionDto(entityType, workflow.conditions);
   for (const workflow of workflows) {
-    const conditions = (workflow.conditions ?? []) as ApprovalCondition[];
-
-    // If no conditions, the workflow always matches
-    if (conditions.length === 0) {
-      return workflow;
-    }
-
-    // All conditions must match
-    const allMatch = conditions.every((c) => evaluateCondition(c, entity));
-    if (allMatch) {
-      return workflow;
-    }
+    if (!evaluateConditions(entityType, workflow.conditions, entity)) continue;
+    if (!workflow.steps.length || workflow.steps.some((s, i) => !Number.isInteger(s.stepOrder) || s.stepOrder < 1 || s.stepOrder > 2147483647 || (i > 0 && s.stepOrder <= workflow.steps[i - 1].stepOrder))) throw new WireCompatibilityError("Invalid approval workflow steps");
+    const ids = [...new Set(workflow.steps.map(s => s.approverId))];
+    const members = await tx.query.member.findMany({ where: eq(member.organizationId, orgId) });
+    if (ids.some(id => !members.some(m => m.id === id))) throw new WireCompatibilityError("Approval step belongs to another organization");
+    return workflow;
   }
-
   return null;
 }
 
-/**
- * Create an approval request for a given entity + workflow.
- */
-export async function createApprovalRequest(
-  orgId: string,
-  workflowId: string,
-  entityType: "bill" | "expense" | "invoice" | "journal_entry" | "purchase_order",
-  entityId: string,
-  requestedById: string
-) {
-  const [request] = await db
-    .insert(approvalRequest)
-    .values({
-      organizationId: orgId,
-      workflowId,
-      entityType,
-      entityId,
-      requestedById,
-      currentStepOrder: 1,
-    })
-    .returning();
-
-  return request;
+export async function ownedApprovalEntity(tx: ApprovalTx, orgId: string, entityType: ApprovalEntity, id: string, lock = false) {
+  const table = { bill, invoice, expense: expenseClaim, journal_entry: journalEntry, purchase_order: purchaseOrder }[entityType];
+  // Historical request reads keep soft-deleted document references; new requests/actions require live documents.
+  const query = tx.select({ id: table.id }).from(table).where(and(eq(table.id, id), eq(table.organizationId, orgId), lock ? isNull(table.deletedAt) : undefined));
+  const [row] = await (lock ? query.for("share") : query);
+  if (!row) throw new AuthError("Approval document not found", 404);
 }
 
-/**
- * Process an approval action (approve, reject, or comment).
- * Advances the workflow or finalizes the request status.
- */
-export async function processApprovalAction(
-  requestId: string,
-  memberId: string,
-  action: "approve" | "reject" | "comment",
-  comment?: string
-) {
-  const request = await db.query.approvalRequest.findFirst({
-    where: eq(approvalRequest.id, requestId),
-    with: {
-      workflow: {
-        with: {
-          steps: {
-            orderBy: asc(approvalWorkflowStep.stepOrder),
-          },
-        },
-      },
-    },
-  });
-
-  if (!request) {
-    throw new Error("Approval request not found");
-  }
-
-  if (request.status !== "pending") {
-    throw new Error("Approval request is no longer pending");
-  }
-
-  const currentStep = request.workflow.steps.find(
-    (s) => s.stepOrder === request.currentStepOrder
-  );
-
-  if (!currentStep) {
-    throw new Error("Current workflow step not found");
-  }
-
-  // For approve/reject, verify the member is the approver for the current step
-  if (action !== "comment" && currentStep.approverId !== memberId) {
-    throw new Error("You are not the approver for the current step");
-  }
-
-  // Record the action
-  await db.insert(approvalAction).values({
-    requestId,
-    stepId: currentStep.id,
-    userId: memberId,
-    action,
-    comment: comment ?? null,
-  });
-
-  // Comments don't change request status
-  if (action === "comment") {
+/** Retained internal helper; all references must be organization-owned. */
+export async function createApprovalRequest(orgId: string, workflowId: string, entityType: ApprovalEntity, entityId: string, requestedById: string) {
+  [workflowId, entityId, requestedById].forEach(id => approvalId.parse(id));
+  return db.transaction(async tx => {
+    await lockApprovalOrganization(tx, orgId);
+    const workflow = await tx.query.approvalWorkflow.findFirst({ where: and(eq(approvalWorkflow.id, workflowId), eq(approvalWorkflow.organizationId, orgId),
+      eq(approvalWorkflow.entityType, entityType), eq(approvalWorkflow.isActive, true), isNull(approvalWorkflow.deletedAt)), with: { steps: { orderBy: asc(approvalWorkflowStep.stepOrder) } } });
+    if (!workflow) throw new AuthError("Approval workflow not found", 404);
+    conditionDto(entityType, workflow.conditions);
+    if (!workflow.steps.length || workflow.steps.some((s, i) => !Number.isInteger(s.stepOrder) || s.stepOrder < 1 || s.stepOrder > 2147483647 || (i > 0 && s.stepOrder <= workflow.steps[i - 1].stepOrder))) throw new WireCompatibilityError("Invalid approval steps");
+    await approvalMembers(tx, orgId, [requestedById, ...workflow.steps.map(s => s.approverId)]); await ownedApprovalEntity(tx, orgId, entityType, entityId, true);
+    const [request] = await tx.insert(approvalRequest).values({ organizationId: orgId, workflowId, entityType, entityId, requestedById, currentStepOrder: 1 }).returning();
+    const requester = (await tx.query.member.findFirst({ where: eq(member.id, requestedById) }))!;
+    stringifyWire(request);
+    await auditApproval(tx, { organizationId: orgId, userId: requester.userId, role: requester.role }, "approval_request", request.id, "create", { after: request });
     return request;
-  }
+  });
+}
 
-  if (action === "reject") {
-    // Rejected at any step rejects the entire request
-    const [updated] = await db
-      .update(approvalRequest)
-      .set({ status: "rejected", updatedAt: new Date() })
-      .where(eq(approvalRequest.id, requestId))
-      .returning();
-    return updated;
-  }
-
-  // action === "approve"
-  const maxStep = Math.max(...request.workflow.steps.map((s) => s.stepOrder));
-
-  if (request.currentStepOrder >= maxStep) {
-    // Last step approved - mark fully approved
-    const [updated] = await db
-      .update(approvalRequest)
-      .set({ status: "approved", updatedAt: new Date() })
-      .where(eq(approvalRequest.id, requestId))
-      .returning();
-    return updated;
-  }
-
-  // Advance to next step
-  const [updated] = await db
-    .update(approvalRequest)
-    .set({
-      currentStepOrder: request.currentStepOrder + 1,
-      updatedAt: new Date(),
-    })
-    .where(eq(approvalRequest.id, requestId))
-    .returning();
-
-  return updated;
+/** Generic metadata actions. Bill/invoice callers must use their document lifecycle services. */
+export async function processApprovalAction(ctx: AuthContext, requestId: string, action: "approve" | "reject" | "comment", comment?: string, httpRequest?: Request) {
+  approvalId.parse(requestId); actionSchema.parse({ action, comment });
+  return db.transaction(async tx => {
+    await lockApprovalOrganization(tx, ctx.organizationId);
+    const [request] = await tx.select().from(approvalRequest).where(and(eq(approvalRequest.id, requestId), eq(approvalRequest.organizationId, ctx.organizationId))).for("update");
+    if (!request) throw new AuthError("Approval request not found", 404);
+    if (request.entityType === "bill" || request.entityType === "invoice") throw new AuthError("Document lifecycle approval is required", 422);
+    if (request.status !== "pending") throw new AuthError("Approval request is no longer pending", 422);
+    const workflow = await tx.query.approvalWorkflow.findFirst({ where: and(eq(approvalWorkflow.id, request.workflowId), eq(approvalWorkflow.organizationId, ctx.organizationId)),
+      with: { steps: { orderBy: asc(approvalWorkflowStep.stepOrder) } } });
+    if (!workflow || workflow.entityType !== request.entityType) throw new WireCompatibilityError("Invalid approval workflow reference");
+    conditionDto(workflow.entityType, workflow.conditions);
+    if (!workflow.steps.length || workflow.steps.some((s, i) => !Number.isInteger(s.stepOrder) || s.stepOrder < 1 || s.stepOrder > 2147483647 || (i > 0 && s.stepOrder <= workflow.steps[i - 1].stepOrder))) throw new WireCompatibilityError("Invalid approval steps");
+    await approvalMembers(tx, ctx.organizationId, [request.requestedById, ...workflow.steps.map(s => s.approverId)]);
+    await ownedApprovalEntity(tx, ctx.organizationId, request.entityType, request.entityId, true);
+    const actor = await tx.query.member.findFirst({ where: and(eq(member.organizationId, ctx.organizationId), eq(member.userId, ctx.userId)) });
+    if (!actor) throw new AuthError("Member not found", 403);
+    const step = workflow.steps.find(s => s.stepOrder === request.currentStepOrder);
+    if (!step) throw new WireCompatibilityError("Current workflow step not found");
+    if (action !== "comment" && step.approverId !== actor.id) throw new AuthError("You are not the approver for the current step", 403);
+    await tx.insert(approvalAction).values({ requestId, stepId: step.id, userId: actor.id, action, comment: comment ?? null });
+    let result = request;
+    if (action !== "comment") {
+      const next = workflow.steps.find(s => s.stepOrder > step.stepOrder);
+      [result] = await tx.update(approvalRequest).set({ status: action === "reject" ? "rejected" : next ? "pending" : "approved",
+        currentStepOrder: action === "approve" && next ? next.stepOrder : request.currentStepOrder, updatedAt: new Date() }).where(eq(approvalRequest.id, requestId)).returning();
+    }
+    stringifyWire(result);
+    await auditApproval(tx, ctx, "approval_request", requestId, action, { before: request, after: result, comment: comment ?? null }, httpRequest); return result;
+  });
 }

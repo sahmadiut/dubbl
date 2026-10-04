@@ -1,5 +1,15 @@
 # Exact money core
 
+Approval conditions (MON-073) keep string `value` and add `valueMinor` only for
+monetary document-header thresholds. Both are canonical signed int64 strings
+in the document currency's minor units; both supplied must agree. All six
+integer operators compare bigint, with no Number coercion, FX or rescaling.
+Text fields support literal eq/neq. Real document workflows retain safe numeric
+ORM bounds; thresholds support full int64 independently. See
+[approval contracts](../../.agentic/registries/APPROVAL_WIRE_CONTRACTS.md) for
+supported fields, operations, historical validation and qualification bounds.
+
+
 MON-072 tax period REST/MCP adds exact minor aliases to frozen lines, VAT totals
 and base-currency cash settlement. Shared services freeze, post and audit
 atomically with bigint aggregates and filing locks. See

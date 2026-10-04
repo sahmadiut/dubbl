@@ -1,5 +1,24 @@
 # Verification matrix
 
+## MON-073 approval conditions
+
+- Pure approval-conditions suite: exact six-operator comparison, full-int64
+  thresholds/operands, canonical aliases, USD/IRR/JPY/KWD unscaled units,
+  typed text/integer fields, malformed inputs and query parsing.
+- Actual migrated PostgreSQL approval-contracts suite: every REST operation and
+  all ten registered MCP tools with SDK InMemoryTransport, two tenants and
+  owner/custom-manager/viewer authorization. Saved unsafe conditions and foreign
+  workflow/member/document references reject without writes; atomic audit/step
+  fault rollback, terminal races, non-contiguous steps and soft-delete history.
+- Actual REST/MCP invoice creation: >int32 KWD totals and exact workflow thresholds
+  trigger pending approval; invalid saved conditions/foreign approvers prevent
+  numbering/header/line/request writes. Existing invoice CRUD/lifecycle and bill
+  lifecycle regression suites exercise period locks, posting and rollback.
+- Browser/session UI, network server, PostgreSQL16 and independent accounting/
+  security approval are not claimed. Generic opaque/history MON-034/033 and
+  combined MON-022/full-range/IRR gates remain.
+
+
 ## MON-072 tax periods
 
 - tests/tax-period-wire.test.ts: minor aliases/serializer compatibility, signed

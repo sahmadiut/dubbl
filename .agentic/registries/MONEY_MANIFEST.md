@@ -1,5 +1,18 @@
 # Money and FX boundary manifest
 
+## MON-073 approval condition adoption
+
+Approval JSON thresholds now retain legacy string value and add canonical
+valueMinor for document-currency minor units. Exact bigint operators accept
+full-int64 thresholds without Number coercion; actual document ORM/business
+amounts remain safe numeric. Shared scoped direct-DB workflow/request services
+validate payloads, members and nested relations; generic actions and workflow
+writes have atomic audit/rollback, with bill/invoice lifecycle delegation retained.
+Registry: APPROVAL_WIRE_CONTRACTS.md. Internal invoice workflow selection now
+uses its document transaction. No schema/balance/currency flag change; generic
+opaque/historical qualification MON-034/033 and combined MON-022 remain separate.
+
+
 ## MON-072 tax period adoption
 
 [Tax period contracts](TAX_PERIOD_WIRE_CONTRACTS.md) cover CRUD, both filing names

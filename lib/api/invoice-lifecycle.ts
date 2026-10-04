@@ -340,7 +340,7 @@ export async function submitInvoiceApproval(ctx: AuthContext, id: string, reques
     await assertNotLocked(ctx.organizationId, found.issueDate, ctx);
     const requester = await tx.query.member.findFirst({ where: and(eq(member.userId, ctx.userId), eq(member.organizationId, ctx.organizationId)) });
     if (!requester) throw new AuthError("Member not found", 404);
-    const workflow = await checkApprovalRequired(ctx.organizationId, "invoice", found);
+    const workflow = await checkApprovalRequired(ctx.organizationId, "invoice", found, tx);
     if (!workflow || !workflow.steps.length) fail("No active approval workflow configured for invoices");
     const approvers = await tx.select({ id: member.id }).from(member).where(and(eq(member.organizationId, ctx.organizationId), inArray(member.id, workflow.steps.map(step => step.approverId))));
     if (workflow.steps.some(step => !approvers.some(row => row.id === step.approverId))) fail("Workflow approver belongs to another organization");

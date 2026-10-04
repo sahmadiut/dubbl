@@ -2,18 +2,18 @@ import { createHash } from "crypto";
 import { z } from "zod";
 import { and, eq, isNull, sql, desc } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { bankAccount, bankTransaction, bankStatementImport, bankImportProfile, bankRule, chartAccount, contact, taxRate, journalEntry, bankReconciliation, organization, auditLog, bulkImportJob } from "@/lib/db/schema";
+import { bankAccount, bankTransaction, bankStatementImport, bankImportProfile, chartAccount, contact, taxRate, journalEntry, bankReconciliation, organization, auditLog, bulkImportJob } from "@/lib/db/schema";
 import { parseBankStatement, makeTransactionDedupeHash, type NormalizedTransaction, type ParsedStatement } from "@/lib/banking/importer";
 import { money, toMajorDecimal } from "@/lib/money/exact";
 import { parseDate } from "@/lib/import-export/transformers";
-import { exactMinorSchema, legacyMinor, stringifyWire, WireCompatibilityError } from "@/lib/money/wire";
+import { legacyMinor, stringifyWire, WireCompatibilityError } from "@/lib/money/wire";
 import { AuthError, type AuthContext } from "./auth-context";
 import { requireRole } from "./require-role";
 import { assertNotLocked } from "./period-lock";
 import { bankAccountDto, bankAccountIdField } from "./bank-account-wire";
 import { bankReadImportDto, checkPlainReferences } from "./bank-transaction-reads";
 import { sameBankReadCurrency } from "./bank-transaction-read-wire";
-import { applyBankRulesToTransaction, type ActiveBankRule } from "./bank-rules";
+import { applyBankRulesToTransaction, loadActiveBankRules, type ActiveBankRule } from "./bank-rules";
 import { statementSchema, profileSchema, bulkSchema, importAmount, importMajor, importExactMajor, importMoneyDto, invalidImport } from "./bank-import-wire";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -61,15 +61,7 @@ async function hashes(tx: Tx, id: string) {
   return new Set(rows.map(row => row.hash).filter((hash): hash is string => hash !== null));
 }
 async function ruleRows(tx: Tx, ctx: AuthContext) {
-  const rows = await tx.select().from(bankRule).where(and(eq(bankRule.organizationId, ctx.organizationId), eq(bankRule.isActive, true), isNull(bankRule.deletedAt))).orderBy(desc(bankRule.priority), bankRule.id);
-  stringifyWire(rows);
-  for (const rule of rows) for (const condition of rule.conditions) {
-    if (!["gt", "lt", "between"].includes(condition.op)) continue;
-    const values = condition.op === "between" ? condition.value.split(",") : [condition.value];
-    if (values.length !== (condition.op === "between" ? 2 : 1)) invalidImport("Malformed bank rule amount threshold");
-    for (const value of values) legacyMinor(BigInt(exactMinorSchema.parse(value.trim())));
-  }
-  return rows as ActiveBankRule[];
+  return loadActiveBankRules(ctx.organizationId, tx);
 }
 async function assignment(tx: Tx, ctx: AuthContext, rules: ActiveBankRule[], row: NormalizedTransaction) {
   const assigned = applyBankRulesToTransaction(rules, row);

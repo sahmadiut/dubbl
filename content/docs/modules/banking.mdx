@@ -69,6 +69,25 @@ Reconciliation matches bank transactions to your accounting records.
 
 The fuzzy matcher suggests matches based on amount, date, reference, and description.
 
+Bank rules support text conditions, signed amount comparisons, and fixed or
+percentage category splits. Amount conditions and fixed splits use whole bank
+currency minor units: 1250 means USD cents for a USD bank, or 1250 yen for a JPY
+bank. The rule editor labels these units explicitly. Numeric API split amounts
+retain these units; `amountMinor` accepts the equivalent canonical integer string.
+
+Applying a single-category rule with automatic reconciliation, or any split
+rule, records a balanced journal before marking the movement reconciled.
+Category-only suggestions stay unreconciled. Excluded, pending and already linked
+lines are skipped. Invalid references, locked dates, unsupported amounts or
+missing exchange rates roll back the application call. Rule postings can be
+undone through the existing bank undo action.
+
+Automatic matching links only existing posted cash for the same bank, signed
+amount and currency. Text and dates rank those exact-amount candidates; tied
+matches remain for manual review. Matching an existing payment links its payment
+record too, without settling an invoice or bill again. Rule application and cash
+matching require banking management permission.
+
 ### Categorizing bank movements
 
 Code a movement to a ledger category, or split it across categories whose amounts

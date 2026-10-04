@@ -174,9 +174,9 @@ async function audit(tx: Tx, ctx: AuthContext, id: string, action: string, chang
   await tx.insert(auditLog).values({ organizationId: ctx.organizationId, userId: ctx.userId, entityType: "bank_transaction", entityId: id, action,
     changes: JSON.parse(stringifyWire(changes)), ipAddress: request?.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null, userAgent: request?.headers.get("user-agent") || null });
 }
-export async function categorizeBankTransaction(ctx: AuthContext, id: string, input: unknown, request?: Request, allowCorrection = true) {
+export async function categorizeBankTransaction(ctx: AuthContext, id: string, input: unknown, request?: Request, allowCorrection = true, transaction?: Tx) {
   requireRole(ctx, "manage:banking"); bankCodingId.parse(id); const parsed = bankCodingSchema.parse(input);
-  return db.transaction(async tx => {
+  const run = async (tx: Tx) => {
     const state = await load(tx, ctx, id), { row, currency, base } = state;
     const correction = allowCorrection && row.status === "reconciled";
     const rate = await fx(tx, ctx, row, currency, base, correction);
@@ -192,12 +192,13 @@ export async function categorizeBankTransaction(ctx: AuthContext, id: string, in
     await audit(tx, ctx, id, correction ? "recategorized" : "categorized", { ...result, previousJournalEntryId: rate.previous,
       amount: row.amount, amountMinor: String(row.amount), baseCurrencyCode: base, currencyCode: currency, rateExact: rate.rateExact, allocations: [allocation] }, request);
     return result;
-  });
+  };
+  return transaction ? run(transaction) : db.transaction(run);
 }
-export async function splitBankAccounts(ctx: AuthContext, id: string, input: unknown, request?: Request) {
+export async function splitBankAccounts(ctx: AuthContext, id: string, input: unknown, request?: Request, transaction?: Tx) {
   requireRole(ctx, "manage:banking"); bankCodingId.parse(id); const parsed = bankSplitSchema.parse(input);
   const allocations = parsed.allocations.map(a => ({ ...a, amount: bankAllocationAmount(a) }));
-  return db.transaction(async tx => {
+  const run = async (tx: Tx) => {
     const state = await load(tx, ctx, id), { row, base, currency } = state;
     const sum = allocations.reduce((s,a) => s + BigInt(a.amount), 0n); legacyMinor(sum);
     if (sum !== (row.amount < 0 ? -BigInt(row.amount) : BigInt(row.amount))) fail("Allocations must sum exactly to the absolute bank amount in minor units");
@@ -209,7 +210,8 @@ export async function splitBankAccounts(ctx: AuthContext, id: string, input: unk
     await audit(tx, ctx, id, "split_categorized", { ...result, amount: row.amount, amountMinor: String(row.amount), currencyCode: currency,
       baseCurrencyCode: base, rateExact: rate.rateExact, allocations: allocations.map(a => ({ ...a, amountMinor: String(a.amount) })) }, request);
     return result;
-  });
+  };
+  return transaction ? run(transaction) : db.transaction(run);
 }
 export async function createBankExpense(ctx: AuthContext, id: string, input: unknown, request?: Request, transport: ExpenseTransport = "rest") {
   requireRole(ctx, "manage:expenses"); bankCodingId.parse(id); const parsed = (transport === "mcp" ? bankExpenseMcpSchema : bankExpenseSchema).parse(input);

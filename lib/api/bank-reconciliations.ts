@@ -209,9 +209,9 @@ async function noHiddenHistory(tx: Tx, ctx: AuthContext, row: Movement) {
     .where(and(eq(auditLog.organizationId, ctx.organizationId), eq(auditLog.entityType, "expense"), isNull(expenseClaim.deletedAt), sql`${auditLog.changes}->>'bankTransactionId' = ${row.id}`));
   if (linked || claim) fail("Resolve linked payment or expense history first");
 }
-export async function reconcileBankTransaction(ctx: AuthContext, id: string, input: unknown, request?: Request) {
+export async function reconcileBankTransaction(ctx: AuthContext, id: string, input: unknown, request?: Request, transaction?: Tx) {
   requireRole(ctx, "manage:banking"); const parsed = reconciliationMarkSchema.parse(input);
-  return db.transaction(async tx => {
+  const run = async (tx: Tx) => {
     const base = await lockOrg(tx, ctx), { bank, row } = await loadMovement(tx, ctx, id);
     if (row.status !== "unreconciled" || !row.amount || row.reconciliationId || row.transferTransactionId || row.transferGroupId || row.sourceType === "transfer") fail("Requires an unlinked nonzero unreconciled statement");
     await noHiddenHistory(tx, ctx, row);
@@ -229,7 +229,8 @@ export async function reconcileBankTransaction(ctx: AuthContext, id: string, inp
     const [updated] = await tx.update(bankTransaction).set({ status: "reconciled", journalEntryId: journalId, reconciliationId: parsed.reconciliationId ?? null }).where(eq(bankTransaction.id, id)).returning();
     const result = { transaction: await movementDto(tx, ctx, bank, updated) };
     await audit(tx, ctx, "bank_transaction", id, "reconciled", { journalEntryId: journalId, reconciliationId: updated.reconciliationId, preservesExistingJournal: true }, request); return result;
-  });
+  };
+  return transaction ? run(transaction) : db.transaction(run);
 }
 export async function completeBankReconciliation(ctx: AuthContext, id: string, input: unknown, request?: Request) {
   requireRole(ctx, "manage:banking"); const parsed = reconciliationCompleteSchema.parse(input);

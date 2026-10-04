@@ -1,5 +1,22 @@
 # Money and FX boundary manifest
 
+## MON-069 bank rule adoption
+
+[Bank rule contracts](BANK_RULE_WIRE_CONTRACTS.md) document CRUD/suggestions/
+application/automatic cash matching REST/MCP and scheduled/import consumers.
+Signed conditions and opaque fixed JSON amounts validate canonical minor units;
+amountMinor aliases preserve safe numeric compatibility without rescaling.
+Bigint sequential split allocation retains fixed precedence/caps/remainder and
+decimal-percentage half-up rounding. Shared exact bank services post one split
+journal, qualify tax/FX/locks, retain contact and support audited undo. REST/MCP
+apply share atomic transactions and scoped references; import suggestions remain
+unreconciled. Automatic matching ranks only exact signed same-bank cash, skips
+ties, qualifies saved manual/payment history and maintains existing payment links
+without resettlement. Awaited audits and organization locks guard rollback and
+races. The editor labels bank minor units explicitly. Actual REST/SDK fixtures,
+four pure groups and banking/payment regressions qualify the bounded safe-range
+slice. MON-021 retains combined acceptance; no schema/production/IRR flag change.
+
 Inventory owner: MON-001. Refreshed 2026-10-04 (Asia/Tehran) for MON-058 against entry HEAD `0a52937`; changes remain uncommitted. MON-002 supplies the exact-money core; MON-003 widens monetary storage with a guarded safe-number compatibility adapter; MON-004 expands exact FX storage; MON-011 adds wire foundations; MON-013 adopts the currency FX slice. Rollout flags remain unchanged.
 
 ## MON-058 payment batch adoption (MON-021 child)

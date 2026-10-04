@@ -1,171 +1,69 @@
 import { db } from "@/lib/db";
-import {
-  bankAccount,
-  bankTransaction,
-  journalEntry,
-  journalLine,
-} from "@/lib/db/schema";
-import { eq, and, sql, isNull } from "drizzle-orm";
-import { notDeleted } from "@/lib/db/soft-delete";
-import { findMatches, type BankTransactionForMatch, type MatchCandidate } from "@/lib/banking/reconciliation-matcher";
+import { bankAccount, bankTransaction, journalEntry, journalLine, organization, payment } from "@/lib/db/schema";
+import { eq, and, sql, isNull, asc } from "drizzle-orm";
+import { AuthError, type AuthContext } from "./auth-context";
+import { requireRole } from "./require-role";
+import { ruleAutoSchema } from "./bank-rule-wire";
+import { bankAccountDto } from "./bank-account-wire";
+import { sameBankReadCurrency, bankReadCurrency } from "./bank-transaction-read-wire";
+import { legacyMinor } from "@/lib/money/wire";
+import { findMatches, type MatchCandidate } from "@/lib/banking/reconciliation-matcher";
+import { reconcileBankTransaction } from "./bank-reconciliations";
+import { matchBankDocument } from "./bank-document-matches";
 
-export async function autoReconcileBankTransactions(
-  organizationId: string,
-  options?: { bankAccountId?: string; confidenceThreshold?: number }
-): Promise<{ checked: number; reconciled: number; skipped: number }> {
-  const threshold = options?.confidenceThreshold ?? 85;
-
-  // Get org's bank account IDs
-  const bankAccountConditions = [
-    eq(bankAccount.organizationId, organizationId),
-    notDeleted(bankAccount.deletedAt),
-    eq(bankAccount.isActive, true),
-  ];
-
-  if (options?.bankAccountId) {
-    bankAccountConditions.push(eq(bankAccount.id, options.bankAccountId));
-  }
-
-  const orgAccounts = await db
-    .select({ id: bankAccount.id, chartAccountId: bankAccount.chartAccountId })
-    .from(bankAccount)
-    .where(and(...bankAccountConditions));
-
-  if (orgAccounts.length === 0) return { checked: 0, reconciled: 0, skipped: 0 };
-
-  const accountIds = orgAccounts.map((a) => a.id);
-  // The ledger (chart) accounts these bank accounts post to. We only ever
-  // auto-link a bank line to a posted entry that actually moves one of these
-  // accounts — i.e. a real cash entry (a recorded payment, a manual bank
-  // entry) — never to a revenue/expense recognition entry.
-  const bankGlAccountIds = orgAccounts
-    .map((a) => a.chartAccountId)
-    .filter((x): x is string => !!x);
-
-  // Get unreconciled transactions
-  const unreconciledTxs = await db
-    .select()
-    .from(bankTransaction)
-    .where(
-      and(
-        sql`${bankTransaction.bankAccountId} IN (${sql.join(
-          accountIds.map((id) => sql`${id}`),
-          sql`, `
-        )})`,
-        eq(bankTransaction.status, "unreconciled"),
-        isNull(bankTransaction.journalEntryId)
-      )
-    )
-    .limit(500);
-
-  if (unreconciledTxs.length === 0) return { checked: 0, reconciled: 0, skipped: 0 };
-
-  // Open invoices/bills are NOT auto-reconciled here: reconciling one means
-  // recording a received/made payment (DR Bank / CR AR, or DR AP / CR Bank) and
-  // relieving the document — a money-movement decision that must not happen in
-  // an unattended job. Marking the line "reconciled" against an open document
-  // (as this used to) left the invoice unpaid, recorded no cash, and silently
-  // corrupted AR/AP and the bank. Those are left for the user to match, which
-  // records the payment correctly.
-
-  // The only safe automatic action is linking a bank line to an ALREADY-POSTED
-  // cash entry that hits one of this org's bank ledger accounts and isn't
-  // already linked to another bank line (e.g. a payment posted manually, or a
-  // categorization on a different account). Without a bank ledger account there
-  // is nothing safe to match against.
-  if (bankGlAccountIds.length === 0) {
-    return { checked: 0, reconciled: 0, skipped: unreconciledTxs.length };
-  }
-
-  // Entries already tied to a bank transaction must not be re-linked.
-  const linkedRows = await db
-    .select({ jid: bankTransaction.journalEntryId })
-    .from(bankTransaction)
-    .where(
-      and(
-        sql`${bankTransaction.bankAccountId} IN (${sql.join(
-          accountIds.map((id) => sql`${id}`),
-          sql`, `
-        )})`,
-        sql`${bankTransaction.journalEntryId} is not null`
-      )
-    );
-  const linkedEntryIds = new Set(linkedRows.map((r) => r.jid).filter(Boolean) as string[]);
-
-  // Posted entries that move a bank ledger account (real cash entries), with the
-  // net movement on that bank account as the matchable amount.
-  const cashEntries = await db
-    .select({
-      id: journalEntry.id,
-      date: journalEntry.date,
-      description: journalEntry.description,
-      reference: journalEntry.reference,
-      bankDelta: sql<number>`coalesce(sum(${journalLine.debitAmount} - ${journalLine.creditAmount}), 0)`,
-    })
-    .from(journalEntry)
-    .innerJoin(journalLine, eq(journalLine.journalEntryId, journalEntry.id))
-    .where(
-      and(
-        eq(journalEntry.organizationId, organizationId),
-        eq(journalEntry.status, "posted"),
-        isNull(journalEntry.deletedAt),
-        sql`${journalLine.accountId} IN (${sql.join(
-          bankGlAccountIds.map((id) => sql`${id}`),
-          sql`, `
-        )})`
-      )
-    )
-    .groupBy(journalEntry.id, journalEntry.date, journalEntry.description, journalEntry.reference)
-    .limit(500);
-
-  const entryCandidates: MatchCandidate[] = cashEntries
-    .filter((e) => !linkedEntryIds.has(e.id))
-    .map((e) => ({
-      type: "journal_entry",
-      id: e.id,
-      date: e.date,
-      description: e.description ?? "",
-      // Signed bank movement: +inflow / -outflow, matching the bank line's sign.
-      amount: Number(e.bankDelta),
-      reference: e.reference,
-    }));
-
-  let checked = 0;
-  let reconciled = 0;
-  let skipped = 0;
-
-  for (const tx of unreconciledTxs) {
-    checked++;
-
-    const txForMatch: BankTransactionForMatch = {
-      id: tx.id,
-      date: tx.date,
-      description: tx.description,
-      amount: tx.amount,
-      reference: tx.reference,
-    };
-
-    // No invoice/bill candidates — only safe links to existing cash entries.
-    const matches = findMatches(txForMatch, [], [], entryCandidates);
-
-    if (
-      matches.length > 0 &&
-      matches[0].confidence >= threshold &&
-      matches[0].candidate.type === "journal_entry" &&
-      !linkedEntryIds.has(matches[0].candidate.id)
-    ) {
-      const entryId = matches[0].candidate.id;
-      await db
-        .update(bankTransaction)
-        .set({ journalEntryId: entryId, status: "reconciled" })
-        .where(eq(bankTransaction.id, tx.id));
-      // Don't link the same entry to a second bank line in this pass.
-      linkedEntryIds.add(entryId);
-      reconciled++;
-    } else {
-      skipped++;
+/** Link qualified existing cash only. All selection, validation, links and audits
+ * share the organization lock used by manual matching and settlement writers. */
+export async function autoReconcileBankTransactions(ctx: AuthContext, input: unknown = {}, request?: Request) {
+  requireRole(ctx, "manage:banking"); const options = ruleAutoSchema.parse(input);
+  return db.transaction(async tx => {
+    const [org] = await tx.select().from(organization).where(eq(organization.id, ctx.organizationId)).for("update");
+    if (!org) throw new AuthError("Organization not found", 404);
+    const base = bankReadCurrency(org.defaultCurrency);
+    const banks = await tx.select().from(bankAccount).where(and(eq(bankAccount.organizationId, ctx.organizationId), isNull(bankAccount.deletedAt), eq(bankAccount.isActive, true),
+      options.bankAccountId ? eq(bankAccount.id, options.bankAccountId) : undefined)).orderBy(bankAccount.id);
+    if (options.bankAccountId && !banks.length) throw new AuthError("Bank account not found or inactive", 404);
+    let checked = 0, reconciled = 0, skipped = 0;
+    const used = new Set<string>();
+    for (const bank of banks) {
+      bankAccountDto(bank);
+      const rows = await tx.select().from(bankTransaction).where(and(eq(bankTransaction.bankAccountId, bank.id), eq(bankTransaction.status, "unreconciled"),
+        isNull(bankTransaction.journalEntryId), isNull(bankTransaction.reconciliationId), isNull(bankTransaction.transferGroupId), isNull(bankTransaction.transferTransactionId)))
+        .orderBy(bankTransaction.date, bankTransaction.id).limit(500 - checked);
+      if (!rows.length) continue;
+      if (!bank.chartAccountId) { checked += rows.length; skipped += rows.length; continue; }
+      const entries = await tx.select({ id: journalEntry.id, date: journalEntry.date, description: journalEntry.description, reference: journalEntry.reference,
+        sourceType: journalEntry.sourceType, sourceId: journalEntry.sourceId, delta: sql<string>`sum(${journalLine.debitAmount} - ${journalLine.creditAmount})::text` })
+        .from(journalEntry).innerJoin(journalLine, eq(journalLine.journalEntryId, journalEntry.id))
+        .where(and(eq(journalEntry.organizationId, ctx.organizationId), eq(journalEntry.status, "posted"), isNull(journalEntry.deletedAt), isNull(journalEntry.reversedByEntryId),
+          eq(journalLine.accountId, bank.chartAccountId), sql`not exists (select 1 from bank_transaction bt where bt.journal_entry_id = ${journalEntry.id})`))
+        .groupBy(journalEntry.id).orderBy(asc(journalEntry.date), asc(journalEntry.id)).limit(500);
+      const candidates: (MatchCandidate & { paymentId?: string })[] = [];
+      for (const entry of entries) {
+        const delta = legacyMinor(BigInt(entry.delta));
+        if (!delta || used.has(entry.id)) continue;
+        if (entry.sourceType === "payment") {
+          const [cash] = await tx.select().from(payment).where(and(eq(payment.id, entry.sourceId!), eq(payment.journalEntryId, entry.id), eq(payment.organizationId, ctx.organizationId),
+            eq(payment.bankAccountId, bank.id), eq(payment.currencyCode, bank.currencyCode), isNull(payment.deletedAt), isNull(payment.bankTransactionId)));
+          if (!cash) continue;
+          candidates.push({ type: "journal_entry", ...entry, description: entry.description ?? "", amount: cash.type === "received" ? cash.amount : -cash.amount, paymentId: cash.id });
+        } else if ([null, "manual"].includes(entry.sourceType) && bank.currencyCode === base) {
+          candidates.push({ type: "journal_entry", ...entry, description: entry.description ?? "", amount: delta });
+        }
+      }
+      for (const row of rows) {
+        checked++; sameBankReadCurrency(row.currencyCode, bank.currencyCode);
+        if (!row.amount || row.pending || row.sourceType === "transfer") { skipped++; continue; }
+        // Fuzzy text/date may rank matches; amount and signed bank identity must be exact.
+        const eligible = candidates.filter(c => c.amount === row.amount && !used.has(c.id));
+        const matches = findMatches(row, [], [], eligible);
+        if (!matches.length || matches[0].confidence < options.confidenceThreshold || matches[1]?.confidence === matches[0].confidence) { skipped++; continue; }
+        const best = eligible.find(c => c.id === matches[0].candidate.id)!;
+        if (best.paymentId) await matchBankDocument(ctx, row.id, { paymentId: best.paymentId }, request, tx);
+        else await reconcileBankTransaction(ctx, row.id, { journalEntryId: best.id }, request, tx);
+        used.add(best.id); reconciled++;
+      }
+      if (checked >= 500) break;
     }
-  }
-
-  return { checked, reconciled, skipped };
+    return { checked, reconciled, skipped };
+  });
 }

@@ -70,6 +70,7 @@ interface SplitAllocation {
   accountId: string;
   percent?: number;
   amount?: number;
+  amountMinor?: string;
   taxRateId?: string;
 }
 
@@ -110,7 +111,7 @@ interface TaxRateOption {
 const FIELD_LABELS: Record<ConditionField, string> = {
   description: "Description",
   reference: "Reference",
-  amount: "Amount",
+  amount: "Amount (minor units)",
   payee: "Payee",
   counterparty: "Other party",
 };
@@ -141,19 +142,18 @@ function opsForField(field: ConditionField) {
   return isAmountField(field) ? AMOUNT_OPS : TEXT_OPS;
 }
 
-// Convert a dollars string (what the user types) to integer cents (what the API
-// stores). Returns null if it can't be parsed.
-function dollarsToCents(input: string): number | null {
-  const n = Number(input.replace(/[^0-9.\-]/g, ""));
-  if (!Number.isFinite(n)) return null;
-  return Math.round(n * 100);
+// Rules are shared across banks, so thresholds and fixed splits use bank minor units.
+function parseMinorUnits(input: string): number | null {
+  const text = input.trim();
+  if (!/^(?:0|-?[1-9]\d*)$/.test(text)) return null;
+  const value = Number(text);
+  return Number.isSafeInteger(value) ? value : null;
 }
 
-function centsToDollars(cents: number): string {
-  return (cents / 100).toFixed(2);
+function formatMinorUnits(minor: number): string {
+  return String(minor);
 }
 
-// A short human summary of a saved rule for the list row.
 function summarizeRule(
   rule: BankRule,
   accounts: AccountOption[],
@@ -307,7 +307,7 @@ export default function BankRulesPage() {
               return {
                 field: c.field,
                 op: c.op,
-                value: `${centsToDollars(Number(a) || 0)},${centsToDollars(
+                value: `${formatMinorUnits(Number(a) || 0)},${formatMinorUnits(
                   Number(b) || 0
                 )}`,
               };
@@ -315,7 +315,7 @@ export default function BankRulesPage() {
             return {
               field: c.field,
               op: c.op,
-              value: centsToDollars(Number(c.value) || 0),
+              value: formatMinorUnits(Number(c.value) || 0),
             };
           }
           return c;
@@ -379,19 +379,19 @@ export default function BankRulesPage() {
   const removeSplit = (idx: number) =>
     setSplits((prev) => prev.filter((_, i) => i !== idx));
 
-  // Validate + serialize conditions to the API shape (amounts -> integer cents).
+  // Validate canonical signed bank minor-unit thresholds.
   const buildConditionsPayload = (): RuleCondition[] | null => {
     const out: RuleCondition[] = [];
     for (const c of conditions) {
       if (isAmountField(c.field)) {
         if (c.op === "between") {
           const [aRaw, bRaw] = c.value.split(",");
-          const a = dollarsToCents(aRaw ?? "");
-          const b = dollarsToCents(bRaw ?? "");
-          if (a == null || b == null) return null;
+          const a = parseMinorUnits(aRaw ?? "");
+          const b = parseMinorUnits(bRaw ?? "");
+          if (c.value.split(",").length !== 2 || a == null || b == null || a > b) return null;
           out.push({ field: c.field, op: c.op, value: `${a},${b}` });
         } else {
-          const cents = dollarsToCents(c.value);
+          const cents = parseMinorUnits(c.value);
           if (cents == null || c.value.trim() === "") return null;
           out.push({ field: c.field, op: c.op, value: String(cents) });
         }
@@ -429,10 +429,14 @@ export default function BankRulesPage() {
         toast.error("Add at least one account to split across, or turn off splitting.");
         return;
       }
+      if (cleaned.some(s => s.amountMinor !== undefined && (parseMinorUnits(s.amountMinor) === null || parseMinorUnits(s.amountMinor)! < 0))) {
+        toast.error("Fixed amounts must be nonnegative whole bank minor units within the supported range.");
+        return;
+      }
       splitPayload = cleaned.map((s) => ({
         accountId: s.accountId,
         ...(s.percent != null ? { percent: s.percent } : {}),
-        ...(s.amount != null ? { amount: s.amount } : {}),
+        ...(s.amountMinor !== undefined ? { amountMinor: s.amountMinor } : s.amount != null ? { amount: s.amount, amountMinor: String(s.amount) } : {}),
         ...(s.taxRateId ? { taxRateId: s.taxRateId } : {}),
       }));
     }
@@ -789,7 +793,7 @@ export default function BankRulesPage() {
                             <div className="col-span-2 flex items-center gap-2">
                               <Input
                                 type="number"
-                                step="0.01"
+                                step="1"
                                 value={cond.value.split(",")[0] ?? ""}
                                 onChange={(e) =>
                                   updateCondition(idx, {
@@ -805,7 +809,7 @@ export default function BankRulesPage() {
                               </span>
                               <Input
                                 type="number"
-                                step="0.01"
+                                step="1"
                                 value={cond.value.split(",")[1] ?? ""}
                                 onChange={(e) =>
                                   updateCondition(idx, {
@@ -821,13 +825,13 @@ export default function BankRulesPage() {
                             <Input
                               className="col-span-2"
                               type={isAmount ? "number" : "text"}
-                              step={isAmount ? "0.01" : undefined}
+                              step={isAmount ? "1" : undefined}
                               value={cond.value}
                               onChange={(e) =>
                                 updateCondition(idx, { value: e.target.value })
                               }
                               placeholder={
-                                isAmount ? "Amount (e.g. 12.50)" : "Text to match"
+                                isAmount ? "Minor units (e.g. 1250 USD cents)" : "Text to match"
                               }
                             />
                           )}
@@ -872,7 +876,8 @@ export default function BankRulesPage() {
                   <Label>Split across several categories</Label>
                   <p className="text-xs text-muted-foreground">
                     Divide each matching transaction by percentage or fixed
-                    amount.
+                    bank currency minor units (USD cents). Amount conditions also use
+                    minor units; 1250 always stays 1250 in the matched bank currency.
                   </p>
                 </div>
                 <Switch checked={useSplits} onCheckedChange={setUseSplits} />
@@ -986,30 +991,28 @@ export default function BankRulesPage() {
                                     ? undefined
                                     : Number(e.target.value),
                                 amount: undefined,
+                                amountMinor: undefined,
                               })
                             }
                             placeholder="e.g. 50"
                           />
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-xs">Or fixed amount</Label>
+                          <Label className="text-xs">Or fixed minor units</Label>
                           <Input
                             type="number"
-                            step="0.01"
+                            step="1"
                             value={
-                              s.amount != null ? centsToDollars(s.amount) : ""
+                              s.amountMinor ?? (s.amount != null ? formatMinorUnits(s.amount) : "")
                             }
                             onChange={(e) => {
-                              const cents = dollarsToCents(e.target.value);
                               updateSplit(idx, {
-                                amount:
-                                  e.target.value === "" || cents == null
-                                    ? undefined
-                                    : cents,
+                                amount: undefined,
+                                amountMinor: e.target.value === "" ? undefined : e.target.value,
                                 percent: undefined,
                               });
                             }}
-                            placeholder="e.g. 12.50"
+                            placeholder="e.g. 1250"
                           />
                         </div>
                       </div>

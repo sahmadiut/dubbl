@@ -691,3 +691,24 @@ combined financial acceptance. No stored rescaling or configured database migrat
 - Relevant account/coding/matching/transfer/expense/payment reversal/settlement
   regression suites remain separately qualified. No browser/provider/OAuth,
   PostgreSQL16, independent financial/security, production or IRR gate claim.
+
+## MON-069 bank rules and automatic cash
+
+- Four pure groups cover canonical signed thresholds/equality/ranges/AND/OR,
+  strict partial updates, safe limits, fixed dual aliases, corrupt saved JSON,
+  exact decimal-percent half-up allocation/caps/remainder and signed conservation.
+- Migrated disposable PostgreSQL18 REST/API-key/custom-role/two-tenant/spoofed-org
+  and registered SDK MCP worker exercises all eight operations, REST keyword vs
+  MCP pattern/keyword suggestions, safe maximum and large splits, USD/JPY/KWD/IRR,
+  active scoped top-level/split references, single/split posting, saved FX/tax,
+  undo, dryRun without mutation, pending/excluded/zero/link eligibility and repeats.
+- SQL-text snapshots prove rejection/rollback for malformed/exact-range input,
+  stored JSON/foreign references/unsafe DB money, date locks and mandatory audit
+  failures in CRUD/application and automatic links. Concurrent applications and
+  manual coding create one journal; concurrent auto matching links cash once.
+- Auto fixtures separate per-bank GL, require signed exact equality, skip ties/
+  foreign manual FX/opposite sign/near amounts, reject inconsistent saved FX,
+  and link existing received/made payments without document resettlement; undo
+  retains existing cash. Eight banking/payment regressions pass separately.
+- No browser/screenshot/provider/OAuth/PostgreSQL16/production/independent human
+  accounting/security claim. MON-021 retains combined integration acceptance.

@@ -1,145 +1,18 @@
-import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { bankRule } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
 import { getAuthContext } from "@/lib/api/auth-context";
-import { requireRole } from "@/lib/api/require-role";
-import { handleError, notFound } from "@/lib/api/response";
-import { notDeleted, softDelete } from "@/lib/db/soft-delete";
-import { logAudit, diffChanges } from "@/lib/api/audit";
-import { z } from "zod";
-
-const conditionSchema = z.object({
-  field: z.enum(["description", "reference", "amount", "payee", "counterparty"]),
-  op: z.enum([
-    "contains",
-    "equals",
-    "starts_with",
-    "ends_with",
-    "gt",
-    "lt",
-    "between",
-  ]),
-  value: z.string().min(1),
-});
-
-const splitAllocationSchema = z.object({
-  accountId: z.string().min(1),
-  percent: z.number().min(0).max(100).optional(),
-  amount: z.number().int().optional(),
-  taxRateId: z.string().optional(),
-});
-
-const updateSchema = z.object({
-  name: z.string().min(1).optional(),
-  priority: z.number().int().optional(),
-  matchField: z.string().optional(),
-  matchType: z.enum(["contains", "equals", "starts_with", "ends_with"]).optional(),
-  matchValue: z.string().min(1).optional(),
-  conditions: z.array(conditionSchema).optional(),
-  matchAll: z.boolean().optional(),
-  splitAllocations: z.array(splitAllocationSchema).nullable().optional(),
-  accountId: z.string().nullable().optional(),
-  contactId: z.string().nullable().optional(),
-  taxRateId: z.string().nullable().optional(),
-  autoReconcile: z.boolean().optional(),
-  isActive: z.boolean().optional(),
-});
-
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const ctx = await getAuthContext(request);
-
-    const found = await db.query.bankRule.findFirst({
-      where: and(
-        eq(bankRule.id, id),
-        eq(bankRule.organizationId, ctx.organizationId),
-        notDeleted(bankRule.deletedAt)
-      ),
-    });
-
-    if (!found) return notFound("Bank rule");
-    return NextResponse.json({ bankRule: found });
-  } catch (err) {
-    return handleError(err);
-  }
+import { handleError } from "@/lib/api/response";
+import { jsonResponse } from "@/lib/api/json-response";
+import { getBankRule, updateBankRule, deleteBankRule } from "@/lib/api/bank-rules";
+import { readBankRuleJson } from "@/lib/api/bank-rule-wire";
+type Params = { params: Promise<{ id: string }> };
+export async function GET(request: Request, { params }: Params) {
+  try { return jsonResponse({ bankRule: await getBankRule(await getAuthContext(request), (await params).id) }); }
+  catch (error) { return handleError(error); }
 }
-
-export async function PATCH(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const ctx = await getAuthContext(request);
-    requireRole(ctx, "manage:bank-rules");
-
-    const body = await request.json();
-    const parsed = updateSchema.parse(body);
-
-    const existing = await db.query.bankRule.findFirst({
-      where: and(
-        eq(bankRule.id, id),
-        eq(bankRule.organizationId, ctx.organizationId),
-        notDeleted(bankRule.deletedAt)
-      ),
-    });
-
-    if (!existing) return notFound("Bank rule");
-
-    const [updated] = await db
-      .update(bankRule)
-      .set(parsed)
-      .where(eq(bankRule.id, id))
-      .returning();
-
-    logAudit({ ctx, action: "update", entityType: "bank_rule", entityId: id, changes: diffChanges(existing as Record<string, unknown>, updated as Record<string, unknown>), request });
-
-    return NextResponse.json({ bankRule: updated });
-  } catch (err) {
-    return handleError(err);
-  }
+export async function PATCH(request: Request, { params }: Params) {
+  try { return jsonResponse({ bankRule: await updateBankRule(await getAuthContext(request), (await params).id, await readBankRuleJson(request), request) }); }
+  catch (error) { return handleError(error); }
 }
-
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const ctx = await getAuthContext(request);
-    requireRole(ctx, "manage:bank-rules");
-
-    const existing = await db.query.bankRule.findFirst({
-      where: and(
-        eq(bankRule.id, id),
-        eq(bankRule.organizationId, ctx.organizationId),
-        notDeleted(bankRule.deletedAt)
-      ),
-    });
-
-    if (!existing) return notFound("Bank rule");
-
-    await db
-      .update(bankRule)
-      .set(softDelete())
-      .where(eq(bankRule.id, id));
-
-    logAudit({
-      ctx,
-      action: "delete",
-      entityType: "bank_rule",
-      entityId: id,
-      changes: existing as Record<string, unknown>,
-      request,
-    });
-
-    return NextResponse.json({ success: true });
-  } catch (err) {
-    return handleError(err);
-  }
+export async function DELETE(request: Request, { params }: Params) {
+  try { await deleteBankRule(await getAuthContext(request), (await params).id, request); return jsonResponse({ success: true }); }
+  catch (error) { return handleError(error); }
 }

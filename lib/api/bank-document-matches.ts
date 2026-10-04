@@ -130,16 +130,17 @@ async function audit(tx: Tx, ctx: AuthContext, id: string, action: string, chang
     ipAddress: request?.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null, userAgent: request?.headers.get("user-agent") || null });
 }
 
-export async function matchBankDocument(ctx: AuthContext, id: string, input: unknown, request?: Request) {
+export async function matchBankDocument(ctx: AuthContext, id: string, input: unknown, request?: Request, transaction?: Tx) {
   requireRole(ctx, "manage:banking"); bankMatchId.parse(id);
   const parsed = bankDocumentMatchSchema.parse(input);
   if (parsed.invoiceId || parsed.billId) {
+    if (transaction) fail("Transactional automatic matching only links existing cash history");
     const kind = parsed.invoiceId ? "invoice" : "bill", amount = creditAmount(parsed);
     const result = await splitBankDocuments(ctx, id, { date: parsed.date, method: parsed.method,
       allocations: [{ documentType: kind, documentId: parsed.invoiceId ?? parsed.billId, amount }] }, request);
     return { payment: result.payment, [kind === "invoice" ? "invoiceStatus" : "billStatus"]: result.allocations[0].newStatus };
   }
-  return db.transaction(async tx => {
+  const run = async (tx: Tx) => {
     const state = await load(tx, ctx, id);
     if (parsed.paymentId) {
       const [found] = await tx.select().from(payment).where(and(eq(payment.id, parsed.paymentId), eq(payment.organizationId, ctx.organizationId), isNull(payment.deletedAt))).for("update");
@@ -169,7 +170,8 @@ export async function matchBankDocument(ctx: AuthContext, id: string, input: unk
     await tx.update(bankTransaction).set({ status: "reconciled", journalEntryId: entry.id }).where(eq(bankTransaction.id, id));
     await audit(tx, ctx, id, "matched_existing_journal", { journalEntryId: entry.id }, request);
     return { matchType: "existing_journal", journalEntryId: entry.id };
-  });
+  };
+  return transaction ? run(transaction) : db.transaction(run);
 }
 
 export async function splitBankDocuments(ctx: AuthContext, id: string, input: unknown, request?: Request) {

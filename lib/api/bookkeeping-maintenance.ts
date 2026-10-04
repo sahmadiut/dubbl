@@ -10,6 +10,7 @@ import {
   revenueSchedule,
   revenueEntry,
   organization,
+  member,
 } from "@/lib/db/schema";
 import { eq, and, sql, lte, isNull } from "drizzle-orm";
 import { autoReconcileBankTransactions } from "./bank-auto-reconcile";
@@ -398,7 +399,9 @@ export async function processBookkeepingMaintenance(): Promise<{
 
   for (const org of orgs) {
     try {
-      const result = await autoReconcileBankTransactions(org.id);
+      const [actor] = await db.select().from(member).where(and(eq(member.organizationId, org.id), eq(member.role, "owner"), isNull(member.customRoleId))).orderBy(member.id).limit(1);
+      if (!actor) continue;
+      const result = await autoReconcileBankTransactions({ organizationId: org.id, userId: actor.userId, role: actor.role });
       totalChecked += result.checked;
       totalReconciled += result.reconciled;
       totalSkipped += result.skipped;

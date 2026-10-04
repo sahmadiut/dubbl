@@ -46,6 +46,7 @@ import { registerLoanTools } from "./loans";
 import { registerOpeningBalanceTools } from "./opening-balances";
 import { registerAccrualScheduleTools } from "./accrual-schedules";
 import { registerRevenueScheduleTools } from "./revenue-schedules";
+import { registerExpenseCrudTools } from "./expense-crud";
 import { registerExpenseTools } from "./expenses";
 import { registerCreditNoteTools } from "./credit-notes";
 import { registerCustomerCreditTools } from "./customer-credits";
@@ -110,6 +111,7 @@ export function registerAllTools(server: McpServer, ctx: AuthContext) {
   registerOpeningBalanceTools(server, ctx);
   registerAccrualScheduleTools(server, ctx);
   registerRevenueScheduleTools(server, ctx);
+  registerExpenseCrudTools(server, ctx);
   registerExpenseTools(server, ctx);
   registerCreditNoteTools(server, ctx);
   registerCustomerCreditTools(server, ctx);

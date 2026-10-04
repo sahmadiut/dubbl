@@ -323,3 +323,18 @@ unsupported partial/GRNI/tracked stock, specialized expense taxes and differing
 carrying-FX settlement reject before commit. See [debit-note contracts](../../.agentic/registries/DEBIT_NOTE_WIRE_CONTRACTS.md)
 for envelopes, ranges, legacy history and MON-021 coordination. Full-range,
 production migration, independent financial/security and IRR gates remain separate.
+
+## Expense CRUD contracts (MON-060)
+
+Expense list/detail/counts/create/edit/delete REST and six strict MCP tools share
+scoped DB services. REST numeric amounts retain decimal major units; MCP implements
+its documented integer minor input, correcting the former double conversion.
+amountExact/amountMinor agree explicitly; bigint ratios and sums guard safe numeric
+coexistence. Header/item/mileage results add *Minor aliases, and status sums reject
+mixed currencies/unsafe values. Atomic header/lines/audit writes validate dates,
+roles and organization-owned references. Existing line IDs retain omitted metadata;
+the edit form submits exact major strings, and summary cards use exact fractions
+and explicit currencies. See [expense CRUD contracts](../../.agentic/registries/EXPENSE_CRUD_WIRE_CONTRACTS.md)
+for boundary units, compatibility corrections, limits and remaining lifecycle/
+generic create-drawer/locale/provider/full-range/financial qualification. Stored
+history, schema and production IRR enablement are unchanged.

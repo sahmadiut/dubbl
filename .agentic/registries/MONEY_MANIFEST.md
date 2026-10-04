@@ -550,3 +550,16 @@ includes status/completion/numbering/ledger/bill/audit, retains saved date/curre
 and carrying/FX, and prevents duplicate concurrent/retry cash. Failed attempts
 remain pending with classified response failures; legacy failed/processing is not
 automatically retried. No schema/unit/IRR changes; broader MON-021 gates remain.
+
+## MON-060 expense CRUD adoption
+
+Expense REST list/detail/counts/CRUD and six strict MCP tools share exact scoped
+services; see [expense contracts](EXPENSE_CRUD_WIRE_CONTRACTS.md). REST numeric
+decimal major and documented MCP integer-minor inputs remain explicit, correcting
+MCP's former second conversion. Exact major/minor aliases agree; bigint rounding
+and sums guard safe coexistence. Atomic header/line/audit writes enforce dates,
+roles, state and owned references. Reads add *Minor aliases, sanitize users and
+validate saved lines; status totals use SQL text and reject mixed currency/range.
+Editor IDs retain omitted metadata and exact amounts; summary display preserves
+fractions and currency. Historical values/schema/IRR flags are unchanged; lifecycle,
+old create-drawer math, generic writers and MON-021 qualification remain separate.

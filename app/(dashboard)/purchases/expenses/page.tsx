@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatMoney } from "@/lib/money";
+import { expenseSummaryDisplay } from "@/lib/money/expense-display";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { motion, MotionConfig } from "motion/react";
@@ -103,7 +104,9 @@ export default function ExpensesPage() {
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
   const [claims, setClaims] = useState<ExpenseClaim[]>([]);
-  const [countsData, setCountsData] = useState<{ counts: Record<string, { count: number; amount: number }>; total: number } | null>(null);
+  const [countsData, setCountsData] = useState<{ counts: Record<string, { count: number; amount: number; amountMinor: string; currencyCode: string }>; total: number } | null>(null);
+  const [countsError, setCountsError] = useState<string | null>(null);
+  const [claimsError, setClaimsError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refetching, setRefetching] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
@@ -145,10 +148,11 @@ export default function ExpensesPage() {
     fetch(`/api/v1/expenses/counts`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then(async (r) => { const data = await r.json(); if (!r.ok) throw new Error(data.error || "Unable to load expense totals"); return data; })
       .then((data) => {
-        if (!cancelled && data.counts) setCountsData(data);
-      });
+        if (!cancelled) { setCountsData(data); setCountsError(null); }
+      })
+      .catch((err) => { if (!cancelled) { setCountsData(null); setCountsError(err instanceof Error ? err.message : "Unable to load expense totals"); } });
     return () => { cancelled = true; };
   }, [orgId]);
 
@@ -165,15 +169,17 @@ export default function ExpensesPage() {
     fetch(`/api/v1/expenses?${buildParams(1)}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then(async (r) => { const data = await r.json(); if (!r.ok) throw new Error(data.error || "Unable to load expense claims"); return data; })
       .then((data) => {
         if (cancelled) return;
+        setClaimsError(null);
         if (data.data) setClaims(data.data);
         if (data.pagination) {
 
           setHasMore(data.pagination.page < data.pagination.totalPages);
         }
       })
+      .catch((err) => { if (!cancelled) { setClaims([]); setClaimsError(err instanceof Error ? err.message : "Unable to load expense claims"); setHasMore(false); } })
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
@@ -195,8 +201,9 @@ export default function ExpensesPage() {
     fetch(`/api/v1/expenses?${buildParams(nextPage)}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then(async (r) => { const data = await r.json(); if (!r.ok) throw new Error(data.error || "Unable to load more expense claims"); return data; })
       .then((data) => {
+        setClaimsError(null);
         if (data.data) setClaims((prev) => [...prev, ...data.data]);
         if (data.pagination) {
           setPage(data.pagination.page);
@@ -204,6 +211,7 @@ export default function ExpensesPage() {
           setHasMore(data.pagination.page < data.pagination.totalPages);
         }
       })
+      .catch((err) => { setClaimsError(err instanceof Error ? err.message : "Unable to load more expense claims"); setHasMore(false); })
       .finally(() => setLoadingMore(false));
   }, [loadingMore, hasMore, orgId, page, buildParams]);
 
@@ -242,16 +250,15 @@ export default function ExpensesPage() {
     return c;
   }, [countsData]);
 
-  const totalAmount = useMemo(() => {
-    if (!countsData) return 0;
-    return Object.values(countsData.counts).reduce((s, d) => s + d.amount, 0);
-  }, [countsData]);
-  const pendingAmount = countsData?.counts.submitted?.amount || 0;
-  const approvedAmount = countsData?.counts.approved?.amount || 0;
+  const totalAmount = countsData ? expenseSummaryDisplay(Object.values(countsData.counts)) : "\u2014";
+  const pending = countsData?.counts.submitted;
+  const approved = countsData?.counts.approved;
+  const pendingAmount = countsData ? expenseSummaryDisplay(pending ? [pending] : []) : "\u2014";
+  const approvedAmount = countsData ? expenseSummaryDisplay(approved ? [approved] : []) : "\u2014";
 
   if (loading) return <BrandLoader />;
 
-  if (!loading && (countsData?.total || 0) === 0 && statusFilter === "all" && !debouncedSearch && !hasFilters) {
+  if (!loading && !countsError && !claimsError && countsData?.total === 0 && statusFilter === "all" && !debouncedSearch && !hasFilters) {
     return (
       <ContentReveal>
         <div>
@@ -346,12 +353,13 @@ export default function ExpensesPage() {
           </Button>
         </PageHeader>
 
+        {(countsError || claimsError) && <p role="alert" className="text-sm text-destructive">{countsError || claimsError}</p>}
         {/* Stats strip */}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground">Total</p>
             <p className="text-lg sm:text-2xl font-bold font-mono tabular-nums tracking-tight">
-              {formatMoney(totalAmount)}
+              {totalAmount}
             </p>
           </div>
           <div className="space-y-1">
@@ -360,7 +368,7 @@ export default function ExpensesPage() {
               Pending
             </p>
             <p className="text-lg sm:text-2xl font-bold font-mono tabular-nums tracking-tight text-blue-600 dark:text-blue-400">
-              {formatMoney(pendingAmount)}
+              {pendingAmount}
             </p>
           </div>
           <div className="space-y-1">
@@ -369,7 +377,7 @@ export default function ExpensesPage() {
               Approved
             </p>
             <p className="text-lg sm:text-2xl font-bold font-mono tabular-nums tracking-tight text-emerald-600 dark:text-emerald-400">
-              {formatMoney(approvedAmount)}
+              {approvedAmount}
             </p>
           </div>
           <div className="space-y-1">

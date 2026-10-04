@@ -46,7 +46,9 @@ import { ContentReveal } from "@/components/ui/content-reveal";
 import { useConfirm } from "@/lib/hooks/use-confirm";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { useEntityTitle } from "@/lib/hooks/use-entity-title";
-import { formatMoney, minorUnitsToDecimal, decimalToCents } from "@/lib/money";
+import { formatMoney } from "@/lib/money";
+import { fromLegacyNumber, toMajorDecimal, parseMajor } from "@/lib/money/exact";
+import { expenseMoneyDisplay } from "@/lib/money/expense-display";
 import Link from "next/link";
 
 interface ExpenseDetail {
@@ -69,6 +71,7 @@ interface ExpenseDetail {
     date: string;
     description: string;
     amount: number;
+    accountId: string | null;
     category: string | null;
     receiptFileKey: string | null;
     receiptFileName: string | null;
@@ -77,6 +80,7 @@ interface ExpenseDetail {
 }
 
 interface EditItem {
+  id?: string;
   date: string;
   description: string;
   amount: string;
@@ -257,11 +261,12 @@ function EditExpenseDrawer({
       setEditDescription(claim.description || "");
       setEditItems(
         claim.items.map((item) => ({
+          id: item.id,
           date: item.date,
           description: item.description,
-          amount: minorUnitsToDecimal(item.amount, claim.currencyCode),
+          amount: toMajorDecimal(fromLegacyNumber(item.amount, claim.currencyCode)),
           category: item.category || "",
-          accountId: "",
+          accountId: item.accountId || "",
           receiptFileKey: item.receiptFileKey || "",
           receiptFileName: item.receiptFileName || "",
         }))
@@ -285,7 +290,10 @@ function EditExpenseDrawer({
     setEditItems((prev) => prev.filter((_, i) => i !== index));
   }
 
-  const editTotal = editItems.reduce((sum, item) => sum + decimalToCents(parseFloat(item.amount) || 0), 0);
+  let editTotal = "\u2014";
+  try {
+    editTotal = expenseMoneyDisplay(editItems.reduce((sum, item) => sum + parseMajor(item.amount || "0", claim.currencyCode, "half-away-from-zero").amountMinor, 0n), claim.currencyCode);
+  } catch { /* Incomplete or invalid input has no monetary preview. */ }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -309,9 +317,10 @@ function EditExpenseDrawer({
           title: editTitle,
           description: editDescription || null,
           items: editItems.map((item) => ({
+            id: item.id,
             date: item.date,
             description: item.description,
-            amount: parseFloat(item.amount) || 0,
+            amountExact: item.amount,
             category: item.category || null,
             accountId: item.accountId || null,
             receiptFileKey: item.receiptFileKey || null,
@@ -392,7 +401,7 @@ function EditExpenseDrawer({
                       </div>
                       <div className="space-y-2">
                         <Label className="text-xs">Amount *</Label>
-                        <CurrencyInput prefix="$" value={item.amount} onChange={(v) => updateEditItem(index, { amount: v })} />
+                        <CurrencyInput prefix={claim.currencyCode} value={item.amount} onChange={(v) => updateEditItem(index, { amount: v })} />
                       </div>
                       <div className="space-y-2">
                         <Label className="text-xs">Category</Label>
@@ -426,7 +435,7 @@ function EditExpenseDrawer({
 
             <div className="flex items-center justify-between rounded-lg border bg-muted/50 px-4 py-3">
               <span className="text-sm font-medium">Total</span>
-              <span className="text-lg font-bold font-mono tabular-nums">{formatMoney(editTotal)}</span>
+              <span className="text-lg font-bold font-mono tabular-nums">{editTotal}</span>
             </div>
           </div>
           <DrawerFooter onClose={onClose} saving={saving} label="Save Changes" />

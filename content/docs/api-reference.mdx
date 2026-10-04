@@ -814,14 +814,41 @@ committed if a later one fails; runs are not atomic across all templates.
 | POST | `/api/v1/bank-transactions/:id/exclude` | Exclude |
 
 ### Expenses
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/v1/expenses` | List claims |
-| POST | `/api/v1/expenses` | Create claim |
+| Method | Path | CRUD MCP equivalent |
+|--------|------|---------------------|
+| GET / POST | `/api/v1/expenses` | `list_expense_claims` / `create_expense_claim` |
+| GET / PATCH / DELETE | `/api/v1/expenses/:id` | `get_expense_claim` / `update_expense_claim` / `delete_expense_claim` |
+| GET | `/api/v1/expenses/counts` | `get_expense_claim_counts` |
 | POST | `/api/v1/expenses/:id/submit` | Submit |
 | POST | `/api/v1/expenses/:id/approve` | Approve |
 | POST | `/api/v1/expenses/:id/reject` | Reject |
 | POST | `/api/v1/expenses/:id/pay` | Mark paid |
+
+CRUD numeric input units differ: REST item `amount: 12.50` is decimal major
+currency units; MCP item `amount: 1250` is integer minor units (USD cents).
+Both accept `amountExact: "12.50"` and `amountMinor: "1250"`; aliases must agree.
+Create currency defaults to the organization currency; edit retains it.
+Amounts and total must fit 0..9007199254740991; invalid syntax/conflicts fail 400,
+unsupported ranges or history fail 422 with `LEGACY_NUMERIC_RANGE`.
+The old MCP cents input was incorrectly converted a second time; it now follows
+its documented minor-unit meaning. Stored historical values are not rescaled.
+
+Responses preserve numeric header/line minor units and add `totalAmountMinor`,
+`amountMinor` and nullable `mileageRateMinor`. Mileage distance is hundredths of
+miles; mileage rate is minor units per mile. Mileage amount is explicitly supplied;
+CRUD performs no tax split, currency conversion or posting. Count buckets include
+`amountMinor` and `currencyCode`; mixed currencies within a status reject instead
+of being summed. REST list retains `{data,pagination}`, MCP `{expenseClaims,total}`;
+detail `{expenseClaim}` includes lines/accounts and public user profiles.
+
+Writes require `manage:expenses` and open old/new line dates. Only unposted drafts
+and rejected claims may edit/delete. Header/line/audit writes are atomic. Replacement
+items can carry existing line `id` to retain omitted tax/mileage/cost-center/receipt
+metadata; IDs must be unique lines of this claim. Replacement regenerates IDs, so
+reread before another edit. Missing ID creates a new line. Receipt keys must match
+an uploaded attachment in the same organization. Contact/project inputs are not
+supported by the actual expense schema. Approval/payment/reversal, receipt signing
+and recurring expenses retain separate qualification.
 
 ### Reports
 | Method | Path | Description |

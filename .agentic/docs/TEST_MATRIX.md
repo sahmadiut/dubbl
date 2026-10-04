@@ -523,3 +523,24 @@ formatting and escaped HTML are checked; no real email is sent. Four currency
 scales retain stored minor units. Payment settlement/read/reversal, credit,
 debit-note and bill-lifecycle regressions apply. Provider, actual HTTP/session/
 OAuth, full-int64, broader financial/security/migration/release and IRR gates remain.
+
+## MON-060 expense CRUD contracts
+
+- Pure schemas/amount ratios: REST major versus MCP minor, alias agreement,
+  canonical syntax, positive ties, safe max, USD/JPY/KWD/IRR units and mileage
+  metadata. Exact editor prefill and summary fractions, sums above numeric range,
+  differing-currency summaries and currency scale presentation.
+- Disposable migrated PostgreSQL: real REST/API-key and MCP SDK list/detail/counts/
+  create/update/delete; legacy/exact/dual clients, invalid/expired keys, custom
+  permissions, tenant override/foreign claims and every stored reference.
+- Invalid/unsafe header/line/mileage/sum, tax/receipt/reference/date/state/mass
+  assignment fail without committed effects. Old/new locks, two-tier bypass and
+  closed years apply. Final audit and line-insert faults roll back all writes;
+  concurrent edit/delete serialize without orphaned lines. Existing IDs retain
+  metadata, rejected edits and soft deletion work, repeated delete is 404.
+- SQL text count bounds/mixed currencies; safe-max numeric/string JSON; public
+  user profiles omit authentication secrets; foreign users/approver/journal fail.
+- Adjacent payment/read/reversal/batch/schedule/bill lifecycle/credit/debit-note
+  regressions, typecheck/lint and lexical/legacy inventories. Broader lifecycle,
+  bank/restore writers, old create-drawer mileage math, performance, browser/locale/
+  provider/session/OAuth/financial/security/migration/full-int64/IRR remain assigned.

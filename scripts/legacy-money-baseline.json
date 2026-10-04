@@ -218,12 +218,10 @@
     "formatMoney": 6
   },
   "app/(dashboard)/purchases/expenses/[id]/page.tsx": {
-    "formatMoney": 6,
-    "minorUnitsToDecimal": 2,
-    "decimalToCents": 2
+    "formatMoney": 5
   },
   "app/(dashboard)/purchases/expenses/page.tsx": {
-    "formatMoney": 5
+    "formatMoney": 2
   },
   "app/(dashboard)/purchases/goods-receipts/[id]/page.tsx": {
     "formatMoney": 5
@@ -427,12 +425,6 @@
   "app/api/v1/entries/route.ts": {
     "centsToDecimal": 2
   },
-  "app/api/v1/expenses/[id]/route.ts": {
-    "decimalToMinorUnits": 2
-  },
-  "app/api/v1/expenses/route.ts": {
-    "decimalToMinorUnits": 2
-  },
   "app/api/v1/invoices/[id]/charge-interest/route.ts": {
     "decimalToMinorUnits": 2
   },
@@ -503,9 +495,6 @@
   },
   "lib/mcp/tools/email.ts": {
     "formatMoney": 2
-  },
-  "lib/mcp/tools/expenses.ts": {
-    "decimalToMinorUnits": 2
   },
   "lib/mcp/tools/invoices.ts": {
     "decimalToMinorUnits": 3

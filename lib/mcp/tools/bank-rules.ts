@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { bankRule, bankTransaction, bankAccount } from "@/lib/db/schema";
+import { bankRule, bankTransaction } from "@/lib/db/schema";
 import { eq, and, sql, desc, isNull, isNotNull } from "drizzle-orm";
 import { notDeleted } from "@/lib/db/soft-delete";
 import { softDelete } from "@/lib/db/soft-delete";
@@ -460,45 +460,4 @@ export function registerBankRuleTools(server: McpServer, ctx: AuthContext) {
       })
   );
 
-  server.tool(
-    "set_bank_balance_alert",
-    "Set or clear a low balance alert threshold for a bank account. When the account balance drops below the threshold, a notification is sent to org admins. Amount in cents.",
-    {
-      bankAccountId: z
-        .string()
-        .describe("UUID of the bank account"),
-      threshold: z
-        .number()
-        .int()
-        .nullable()
-        .describe("Low balance threshold in cents (e.g. 100000 = $1000.00). Set to null to clear the alert."),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        requireRole(ctx, "manage:bank-rules");
-
-        const account = await db.query.bankAccount.findFirst({
-          where: and(
-            eq(bankAccount.id, params.bankAccountId),
-            eq(bankAccount.organizationId, ctx.organizationId),
-            notDeleted(bankAccount.deletedAt)
-          ),
-        });
-
-        if (!account) throw new Error("Bank account not found");
-
-        const [updated] = await db
-          .update(bankAccount)
-          .set({ lowBalanceThreshold: params.threshold })
-          .where(eq(bankAccount.id, params.bankAccountId))
-          .returning();
-
-        return {
-          bankAccountId: updated.id,
-          accountName: updated.accountName,
-          lowBalanceThreshold: updated.lowBalanceThreshold,
-          currentBalance: updated.balance,
-        };
-      })
-  );
 }

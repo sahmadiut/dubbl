@@ -570,3 +570,14 @@ OAuth, full-int64, broader financial/security/migration/release and IRR gates re
   install, browser/OAuth/session, generic reference/configuration writer races,
   compound-tax or old history remediation, full-int64 or production/independent
   financial/security/provider/IRR qualification. No build or dev server.
+
+## MON-062 bank accounts
+
+| Area | Executed coverage | Limits |
+|---|---|---|
+| Wire | Signed safe edges, canonical aliases/conflicts/nulls, strict metadata, omission/defaults, no currency rescaling | Safe numeric coexistence, no full-int64 CRUD |
+| Actual REST/MCP | Live PostgreSQL routes and SDK tools, API-key/custom-role/org/deleted isolation, GL ownership/type/currency/claims | No browser/session HTTP or production proof |
+| Diagnostics | 5-billion sum, unsafe sums/individual cancellation/differences, foreign import/GL, mixed currency, nullable balances | Statement comparison only; no GL reconciliation claim |
+| Atomicity/history | Real audit trigger faults roll back create/update/delete/alert in both transports; parallel GL allocation/claim/delete; statement and opening history guards | Other legacy bank writers retain their own tasks |
+| Alerts | Exact USD/JPY/KWD/IRR messages, full int64 historical text, bad currency isolation, inactive/deleted/equal thresholds, org recipients and daily sequential dedupe | No provider email or concurrent-job delivery guarantee |
+| Regression | Payment settlement and reversal integration; full pure suite; typecheck and lint | Existing 155 lint warnings; no full build/dev |

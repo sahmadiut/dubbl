@@ -56,6 +56,9 @@ export async function ensureBankLedgerAccount(
     where: and(
       eq(chartAccount.organizationId, organizationId),
       eq(chartAccount.code, String(band.preferred)),
+      eq(chartAccount.currencyCode, currencyCode),
+      eq(chartAccount.type, band.type),
+      eq(chartAccount.isActive, true),
       isNull(chartAccount.deletedAt)
     ),
     columns: { id: true },

@@ -353,3 +353,14 @@ See [expense lifecycle contracts](../../.agentic/registries/EXPENSE_LIFECYCLE_WI
 for units, ranges, correction/compatibility policy, concurrency and qualification
 limits. Full-int64, historical remediation, compound tax and combined MON-021/
 independent financial/provider/production/IRR gates remain separate.
+
+## Bank account contracts
+
+MON-062 adopts bank account CRUD, statement balance diagnostics and low-balance
+settings in REST and MCP. Signed numeric minor-unit balances/thresholds coexist
+with canonical exact aliases within +/-9007199254740991. SQL text and bigint
+diagnostics avoid int32 casts and lossy differences. Bank/GL-link/audit writes
+commit atomically; statement/payment/opening GL history prevents currency or GL
+link changes. Opening GL remains a separate workflow. Scheduled messages format
+full stored int64 with exact saved currency scales. See
+[the boundary registry](../../.agentic/registries/BANK_ACCOUNT_WIRE_CONTRACTS.md).

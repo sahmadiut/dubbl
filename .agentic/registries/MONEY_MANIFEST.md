@@ -577,3 +577,16 @@ atomic audit supplies base/history provenance; unqualified/ambiguous legacy,
 compound tax, unsafe money and changed base currency fail without committed effects.
 State locks prevent duplicate posting and serialize adopted CRUD. No migration,
 stored-unit or IRR changes; generic writers and MON-021/financial gates remain.
+
+## MON-062 bank account adoption
+
+Bank account CRUD, statement validation and low-balance settings share direct DB
+REST/MCP services; see [bank account contracts](BANK_ACCOUNT_WIRE_CONTRACTS.md).
+Signed balance/threshold numeric values retain saved units with canonical *Minor
+aliases and safe coexistence guards. SQL text sums and bigint diagnostics reject
+unsafe operands/sums/differences and foreign/mixed-currency references. Atomic
+bank/GL-link/audit writes serialize creation/claims; owned active matching GL
+links and history guards prevent currency/relinking of prior statement/payment/
+opening GL history. Statement balance edits do not post opening GL. Scheduled
+alert messages use text-only exact int64 currency-scale formatting. No migration,
+historical rescaling or IRR flag change; other bank writers and MON-021 gates remain.

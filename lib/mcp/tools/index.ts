@@ -1,3 +1,4 @@
+import { registerBankAccountTools } from "./bank-accounts";
 import { registerGoodsReceiptTools } from "./goods-receipts";
 import { registerPaymentBatchTools } from "./payment-batches";
 import { registerScheduledPaymentTools } from "./scheduled-payments";
@@ -81,6 +82,7 @@ export function registerAllTools(server: McpServer, ctx: AuthContext) {
   registerWebhookTools(server, ctx);
   registerReportScheduleTools(server, ctx);
   registerApprovalTools(server, ctx);
+  registerBankAccountTools(server, ctx);
   registerBankRuleTools(server, ctx);
   registerBankTransactionTools(server, ctx);
   registerDocumentTools(server, ctx);

@@ -2,19 +2,13 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import {
-  bankTransaction,
-  bankAccount,
-  chartAccount,
   contact,
   auditLog,
 } from "@/lib/db/schema";
 import { eq, and, inArray } from "drizzle-orm";
-import { notDeleted, softDelete } from "@/lib/db/soft-delete";
+import { softDelete } from "@/lib/db/soft-delete";
 import { requireRole } from "@/lib/api/require-role";
 import { wrapTool } from "@/lib/mcp/errors";
-import { createCategorizationJournalEntry, resolveBaseRate } from "@/lib/api/journal-automation";
-import { ensureBankLedgerAccount } from "@/lib/api/bank-ledger";
-import { MissingExchangeRateError } from "@/lib/currency/converter";
 import type { AuthContext } from "@/lib/api/auth-context";
 
 /**
@@ -23,7 +17,6 @@ import type { AuthContext } from "@/lib/api/auth-context";
  * processing many records at once.
  *
  * Mirrors these REST routes exactly:
- *   - POST /api/v1/bulk/bank-transactions/categorize  (per-item cash coding)
  *   - POST /api/v1/bulk/contacts/tag                  (sets customer/supplier/both)
  *   - POST /api/v1/bulk/contacts/delete
  *
@@ -37,228 +30,6 @@ import type { AuthContext } from "@/lib/api/auth-context";
  * IP/user-agent from.
  */
 export function registerBulkTools(server: McpServer, ctx: AuthContext) {
-  // -------------------------------------------------------------------------
-  // bulk_categorize_bank_transactions — per-item "cash coding".
-  // Mirrors POST /api/v1/bulk/bank-transactions/categorize. Unlike
-  // bulk_cash_code (one account for ALL lines), each item here codes to its OWN
-  // account/contact/tax/cost-center/project.
-  // -------------------------------------------------------------------------
-  server.tool(
-    "bulk_categorize_bank_transactions",
-    "Bulk-categorize many bank transactions in one call, where EACH transaction codes to its OWN chart-of-accounts account (and optional contact, tax rate, cost center, project, memo). This is the per-item batch of the single Categorize action; use bulk_cash_code instead when every line goes to the SAME account. Each item is posted in its own DB transaction (DR bank / CR account for money in; DR account / CR bank for money out), marked reconciled, and audited. Every transaction must belong to a bank account in THIS org and be unreconciled. Per-item failures (not found, not this org's, already reconciled, missing FX rate, target account not in org) are isolated and reported; the rest still commit. Amounts are integer cents.",
-    {
-      items: z
-        .array(
-          z.object({
-            transactionId: z.string().min(1).describe("UUID of the bank transaction to code"),
-            accountId: z
-              .string()
-              .min(1)
-              .describe("UUID of the chart-of-accounts account to post the other side of this line to"),
-            contactId: z
-              .string()
-              .nullable()
-              .optional()
-              .describe("Optional UUID of a contact to attribute this transaction to"),
-            taxRateId: z
-              .string()
-              .nullable()
-              .optional()
-              .describe("Optional UUID of a tax rate to split the (tax-inclusive) amount into net + tax"),
-            memo: z
-              .string()
-              .nullable()
-              .optional()
-              .describe("Optional memo for this line; defaults to the transaction description"),
-            costCenterId: z
-              .string()
-              .nullable()
-              .optional()
-              .describe("Optional UUID of a cost center to tag this transaction with"),
-            projectId: z
-              .string()
-              .nullable()
-              .optional()
-              .describe("Optional UUID of a project to tag this transaction with"),
-          })
-        )
-        .min(1)
-        .max(200)
-        .describe("Bank transactions to categorize, each to its own account (max 200)"),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        requireRole(ctx, "manage:banking");
-
-        const items = params.items;
-
-        type ItemResult = {
-          transactionId: string;
-          success: boolean;
-          journalEntryId?: string | null;
-          error?: string;
-        };
-        const results: ItemResult[] = [];
-
-        // Cache org-scoped bank-account + chart-account lookups across the batch.
-        const bankAccountCache = new Map<
-          string,
-          {
-            id: string;
-            accountName: string;
-            accountType: string;
-            currencyCode: string;
-            chartAccountId: string | null;
-          } | null
-        >();
-        const targetAccountCache = new Map<string, boolean>();
-
-        for (const item of items) {
-          try {
-            // Load the bank transaction (not yet org-scoped — scoped via its
-            // owning bank account below).
-            const transaction = await db.query.bankTransaction.findFirst({
-              where: eq(bankTransaction.id, item.transactionId),
-            });
-            if (!transaction) {
-              results.push({ transactionId: item.transactionId, success: false, error: "Bank transaction not found" });
-              continue;
-            }
-
-            // Resolve + org-scope the owning bank account (cached). A transaction
-            // that isn't this org's resolves to null -> reported as not found, so
-            // we never touch another org's data.
-            let bankAcct = bankAccountCache.get(transaction.bankAccountId);
-            if (bankAcct === undefined) {
-              const found = await db.query.bankAccount.findFirst({
-                where: and(
-                  eq(bankAccount.id, transaction.bankAccountId),
-                  eq(bankAccount.organizationId, ctx.organizationId),
-                  notDeleted(bankAccount.deletedAt)
-                ),
-                columns: {
-                  id: true,
-                  accountName: true,
-                  accountType: true,
-                  currencyCode: true,
-                  chartAccountId: true,
-                },
-              });
-              bankAcct = found ?? null;
-              bankAccountCache.set(transaction.bankAccountId, bankAcct);
-            }
-            if (!bankAcct) {
-              results.push({ transactionId: item.transactionId, success: false, error: "Bank transaction not found" });
-              continue;
-            }
-
-            if (transaction.status === "reconciled") {
-              results.push({ transactionId: item.transactionId, success: false, error: "Transaction already reconciled" });
-              continue;
-            }
-
-            // Connect the bank account to its ledger account automatically
-            // (older accounts self-heal on first use).
-            if (!bankAcct.chartAccountId) {
-              bankAcct.chartAccountId = await ensureBankLedgerAccount(ctx.organizationId, bankAcct);
-            }
-
-            // Verify the chosen target account belongs to this org (cached).
-            let targetOk = targetAccountCache.get(item.accountId);
-            if (targetOk === undefined) {
-              const target = await db.query.chartAccount.findFirst({
-                where: and(
-                  eq(chartAccount.id, item.accountId),
-                  eq(chartAccount.organizationId, ctx.organizationId)
-                ),
-                columns: { id: true },
-              });
-              targetOk = !!target;
-              targetAccountCache.set(item.accountId, targetOk);
-            }
-            if (!targetOk) {
-              results.push({ transactionId: item.transactionId, success: false, error: "Account not found" });
-              continue;
-            }
-
-            const currencyCode = transaction.currencyCode || bankAcct.currencyCode || undefined;
-
-            // Pre-flight the FX rate so a missing rate fails THIS item cleanly
-            // (without opening a transaction) while the rest of the batch
-            // continues.
-            await resolveBaseRate(ctx.organizationId, currencyCode, transaction.date);
-
-            // Post + mark this single item inside its OWN db.transaction so a
-            // DB-level error rolls back ONLY this item.
-            const bankGlAccountId = bankAcct.chartAccountId!;
-            const entry = await db.transaction(async (tx) => {
-              const posted = await createCategorizationJournalEntry(
-                { organizationId: ctx.organizationId, userId: ctx.userId },
-                {
-                  bankGlAccountId,
-                  otherAccountId: item.accountId,
-                  amount: transaction.amount,
-                  date: transaction.date,
-                  reference: transaction.reference || transaction.description,
-                  description: item.memo?.trim() || transaction.description,
-                  currencyCode,
-                  taxRateId: item.taxRateId || null,
-                },
-                tx
-              );
-
-              await tx
-                .update(bankTransaction)
-                .set({
-                  status: "reconciled",
-                  accountId: item.accountId,
-                  contactId: item.contactId || null,
-                  taxRateId: item.taxRateId || null,
-                  costCenterId: item.costCenterId || null,
-                  projectId: item.projectId || null,
-                  journalEntryId: posted?.id || null,
-                })
-                .where(eq(bankTransaction.id, item.transactionId));
-
-              return posted;
-            });
-
-            results.push({
-              transactionId: item.transactionId,
-              success: true,
-              journalEntryId: entry?.id || null,
-            });
-          } catch (err) {
-            const message =
-              err instanceof MissingExchangeRateError
-                ? err.message
-                : err instanceof Error
-                ? err.message
-                : "Failed to categorize transaction";
-            results.push({ transactionId: item.transactionId, success: false, error: message });
-          }
-        }
-
-        // Audit only the items that actually posted.
-        for (const r of results) {
-          if (!r.success) continue;
-          await db.insert(auditLog).values({
-            organizationId: ctx.organizationId,
-            userId: ctx.userId,
-            action: "categorized",
-            entityType: "bank_transaction",
-            entityId: r.transactionId,
-            changes: { journalEntryId: r.journalEntryId ?? null, bulk: true },
-          });
-        }
-
-        const succeeded = results.filter((r) => r.success).length;
-        const failed = results.length - succeeded;
-
-        return { results, summary: { total: results.length, succeeded, failed } };
-      })
-  );
-
   // -------------------------------------------------------------------------
   // bulk_set_contacts_type — set customer/supplier/both on many contacts.
   // Mirrors POST /api/v1/bulk/contacts/tag (the route's "tag" is really the

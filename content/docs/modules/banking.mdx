@@ -68,3 +68,17 @@ Reconciliation matches bank transactions to your accounting records.
 5. Mark as reconciled or excluded
 
 The fuzzy matcher suggests matches based on amount, date, reference, and description.
+
+### Categorizing bank movements
+
+Code a movement to a ledger category, or split it across categories whose amounts
+sum exactly to the bank amount. Tax and transaction-date FX are included in the
+balanced journal. Locked periods and excluded movements cannot be coded.
+Correcting a plain categorization replaces its journal while retaining saved FX.
+Bulk coding reports each success or failure separately.
+
+Recording an outgoing movement as an expense creates an already-paid claim linked
+to its journal. Its currency and item total must match the bank movement. It does
+not need another approval or reimbursement. Bank-created expenses cannot be
+recategorized or recreated through these actions; resolving their claim and bank
+reversal together remains a separate workflow.

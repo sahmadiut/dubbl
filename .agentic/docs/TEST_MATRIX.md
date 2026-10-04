@@ -612,3 +612,20 @@ acceptance and MON-064..069 writer contracts remain assigned.
 
 Broader resumable/object/source imports remain DATA-001/MON-033. MON-021 retains
 combined financial acceptance. No stored rescaling or configured database migration.
+
+## MON-065 bank categorization
+
+- `tests/bank-categorization-wire.test.ts`: strict allocation aliases, safe bounds,
+  malformed/conflicting values and expense major/minor rounding/currency scales.
+- `tests/integration/bank-categorization.test.ts` and worker: actual exported
+  REST and five MCP SDK operations on migrated disposable PostgreSQL, duplicate
+  registration checks, legacy/exact inputs, API keys/custom permissions/header
+  spoofing, foreign/missing/deleted references, split/tax sums, compound rejection,
+  FX/amount overflow, JPY/KWD/IRR scale conversion, saved-FX corrections without
+  live quotes, corrupted-history rejection, period/fiscal locks, paid claim linkage,
+  duplicate-approval/creation guards, partial bulk results, failed-write snapshots
+  (including self-link/control/journal/expense/audits) and concurrent adopted writers.
+- Adjacent bank account/read/import and expense CRUD/lifecycle suites provide
+  regression coverage. Synthetic PostgreSQL 18 only; browser, session/OAuth,
+  provider, PostgreSQL 16, production and independent financial gates remain open.
+  MON-066..069 and MON-021 retain other bank and combined acceptance.

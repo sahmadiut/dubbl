@@ -386,6 +386,28 @@ creates new bills. Preview writes nothing and returns per-line validation with
 numeric stored minor amounts plus named `*Minor` strings. No ledger/payment
 posting occurs; full-int64/production currency qualification remains separate.
 
+## Bank categorization tools
+
+Use `categorize_bank_transaction` for one category or `split_bank_transaction`
+for exact allocations. Split `amount` is an integer in bank-currency minor units
+(USD cents); `amountMinor` is its exact integer-string alias. Both must agree.
+The allocations must total the absolute saved bank movement. A repeated plain
+categorization corrects its journal with saved FX; split repeats fail.
+
+`bulk_cash_code` codes up to 200 movements to one account;
+`bulk_categorize_bank_transactions` accepts per-item accounts and dimensions.
+Each item commits independently, with reported failures and no duplicate posting
+on retries. These tools require `manage:banking`.
+
+`create_expense_from_bank_transaction` requires `manage:expenses` and records an
+outgoing movement as an already-paid, journal-linked claim. Numeric item `amount`
+uses integer minor units (USD 1250 = $12.50), `amountMinor` an integer string and
+`amountExact` a decimal major-unit string ("12.50"). All aliases must agree;
+currency and total must match the bank. It returns `expenseClaim` with numeric
+`totalAmount`, exact `totalAmountMinor`, and `journalEntryId`. Repeated creation
+fails. Supported money and posting totals are bounded by 9007199254740991 minor
+units; larger exact input fails visibly rather than rounding.
+
 ## Troubleshooting
 
 ### "MCP access requires a Pro plan"

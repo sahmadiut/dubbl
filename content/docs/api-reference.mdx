@@ -812,6 +812,38 @@ committed if a later one fails; runs are not atomic across all templates.
 | GET | `/api/v1/bank-imports/:id` | Get statement import details |
 | POST | `/api/v1/bank-transactions/:id/reconcile` | Reconcile |
 | POST | `/api/v1/bank-transactions/:id/exclude` | Exclude |
+| POST | `/api/v1/bank-transactions/:id/categorize` | Code or correct a plain categorization |
+| POST | `/api/v1/bank-transactions/:id/split-account` | Split one movement across ledger categories |
+| POST | `/api/v1/bank-transactions/:id/create-expense` | Record an outgoing movement as a paid expense |
+| POST | `/api/v1/bulk/bank-transactions/categorize` | Per-item bulk coding with separate success/failure results |
+
+Categorize accepts `accountId` and optional contact/tax/cost-center/project UUIDs
+and memo. The signed saved bank amount drives the journal; no amount override.
+Split takes 1..1000 `allocations` with positive integer-minor `amount` and/or
+canonical string `amountMinor`, account and optional tax/tracking/memo. Aliases
+must agree and allocations must sum exactly to the absolute bank amount. Both
+operations return `{journalEntryId}`. Plain categorization corrections retain
+saved FX and atomically void the prior journal; split repeats fail.
+
+Create-expense accepts title, optional description/currency/dimensions and
+1..1000 items with date, description, optional category/account and amount.
+Its REST numeric item `amount` retains decimal **major** units (USD 12.50);
+`amountExact` is a decimal-major string and `amountMinor` an integer-minor string.
+Currency defaults to the bank currency and must match; item totals must equal
+the outgoing bank magnitude. Returns `{expenseClaim,journalEntryId}` with a paid,
+journal-linked claim and numeric `totalAmount` plus exact `totalAmountMinor`.
+Repeated creation and later ordinary approval/reimbursement cannot repost it.
+
+Bulk takes 1..200 `items`, each with transactionId and categorize fields, and
+returns `{results,summary}`. Each item commits independently; failed/repeated
+items remain unchanged. All coding validates owned live references and period
+locks; journal, bank, expense and audit writes roll back together per movement.
+Numeric/exact money, tax/base totals and persisted amounts must fit safe integers
+through 9007199254740991 minor units; unsupported values fail visibly (422).
+Unknown fields, malformed aliases and mismatched totals fail validation (400).
+`manage:banking` is required except create-expense uses `manage:expenses`.
+The [MCP banking tools](/docs/guides/mcp#bank-categorization-tools) share these
+operations; the new MCP bank-expense numeric input uses integer **minor** units.
 
 ### Expenses
 | Method | Path | CRUD MCP equivalent |

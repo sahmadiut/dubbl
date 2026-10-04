@@ -618,3 +618,16 @@ existing table; native sign/date/currency guards prevent guessing. Import rules
 suggest coding without unposted reconciliation. Other writers, broader parser/
 resumable import behavior, stored-unit repair and full-int64/IRR/financial gates
 remain MON-065..069, DATA-001, MON-033 and MON-021. No schema or rollout change.
+
+## MON-065 bank categorization adoption
+
+Four existing REST writers and five MCP operations (including new bank-expense
+creation tool) share direct-DB bank-categorization services and strict schemas.
+BANK_CATEGORIZATION_WIRE_CONTRACTS documents units, aliases, supported ranges,
+per-item bulk behavior and corrected claim/FX/tax semantics. Split amounts retain
+numeric minor units plus amountMinor; REST expense lines retain numeric major units,
+while the new MCP tool uses numeric minor units; both have amountExact/amountMinor. Bigint split/tax/base totals, currency-scale FX,
+owned references and period locks guard atomic journal/bank/expense/audit writes.
+Corrections reuse saved rates; split/bulk/expense retries cannot double-post.
+Claims created from outgoing movements are paid and journal-linked; generic undo
+coordination stays MON-068/MON-021. No schema, historical repair or IRR enablement.

@@ -1,3 +1,4 @@
+import { registerBankCategorizationTools } from "./bank-categorization";
 import { registerBankImportTools } from "./bank-imports";
 import { registerBankAccountTools } from "./bank-accounts";
 import { registerBankTransactionReadTools } from "./bank-transaction-reads";
@@ -89,6 +90,7 @@ export function registerAllTools(server: McpServer, ctx: AuthContext) {
   registerBankTransactionReadTools(server, ctx);
   registerBankRuleTools(server, ctx);
   registerBankTransactionTools(server, ctx);
+  registerBankCategorizationTools(server, ctx);
   registerDocumentTools(server, ctx);
   registerIntegrationTools(server, ctx);
   registerEmailTools(server, ctx);

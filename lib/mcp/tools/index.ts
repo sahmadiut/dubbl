@@ -1,3 +1,4 @@
+import { registerPayrollRunTools } from "./payroll-runs";
 import { registerPayrollTimeTools } from "./payroll-time";
 import { registerPayrollConfigTools } from "./payroll-config";
 import { registerPayrollMasterTools } from "./payroll-master";
@@ -118,6 +119,7 @@ export function registerAllTools(server: McpServer, ctx: AuthContext) {
   registerTaxTools(server, ctx);
   registerConsolidationTools(server, ctx);
   registerPayrollTools(server, ctx);
+  registerPayrollRunTools(server, ctx);
   registerPayrollMasterTools(server, ctx);
   registerPayrollConfigTools(server, ctx);
   registerPayrollTimeTools(server, ctx);

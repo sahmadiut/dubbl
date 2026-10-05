@@ -147,7 +147,8 @@ test("MON-004 exact column storage admits 20/18 extremes and rejects excess scal
     // Disable on this synthetic fixture to isolate CHECK precision from legacy coexistence.
     for (const table of tables) {
       await pool.query(`ALTER TABLE ${table} DISABLE TRIGGER ${table}_exact_sync`);
-      await pool.query(`ALTER TABLE ${table} DISABLE TRIGGER ${table}_exact_input_guard`);
+      // MON-082 payroll sync includes the input guard; other consumers retain two triggers.
+      if (table !== "payroll_item") await pool.query(`ALTER TABLE ${table} DISABLE TRIGGER ${table}_exact_input_guard`);
       for (const value of ["1500000", "0.000000666666666667", "0.000000000000000001", "99999999999999999999.999999999999999999"]) {
         await pool.query(`UPDATE ${table} SET rate_exact = $1`, [value]);
         assert.equal((await pool.query(`SELECT rate_exact::text AS value FROM ${table} LIMIT 1`)).rows[0].value, value);
@@ -166,10 +167,11 @@ test("MON-004 batched backfill resumes after a committed batch and skips locks w
     // Simulate interrupted expansion data on a disposable fixture, preserving all legacy fields.
     for (const table of tables) {
       await pool.query(`ALTER TABLE ${table} DISABLE TRIGGER ${table}_exact_sync`);
-      await pool.query(`ALTER TABLE ${table} DISABLE TRIGGER ${table}_exact_input_guard`);
+      // MON-082 payroll sync includes the input guard; other consumers retain two triggers.
+      if (table !== "payroll_item") await pool.query(`ALTER TABLE ${table} DISABLE TRIGGER ${table}_exact_input_guard`);
       await pool.query(`UPDATE ${table} SET rate_exact = NULL, rate_migration_status = 'pending', rate_provenance = NULL`);
       await pool.query(`ALTER TABLE ${table} ENABLE TRIGGER ${table}_exact_sync`);
-      await pool.query(`ALTER TABLE ${table} ENABLE TRIGGER ${table}_exact_input_guard`);
+      if (table !== "payroll_item") await pool.query(`ALTER TABLE ${table} ENABLE TRIGGER ${table}_exact_input_guard`);
     }
     const blocker = new pg.Client({ connectionString: url }); await blocker.connect();
     try {

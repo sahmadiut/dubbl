@@ -1,8 +1,17 @@
+import { roundRatio } from "@/lib/money/exact";
+import { WireCompatibilityError } from "@/lib/money/wire";
+import { payrollInteger, payrollNumber, payrollSum } from "@/lib/payroll/exact";
+const max = (a: bigint, b: bigint) => a > b ? a : b;
+const min = (a: bigint, b: bigint) => a < b ? a : b;
+function nonnegative(value: number) { const n = payrollInteger(value); if (n < 0n) throw new WireCompatibilityError("Payroll tax inputs must be nonnegative"); return n; }
+function basisPoints(value: number) { const n = nonnegative(value); if (n > 10000n) throw new WireCompatibilityError("Payroll basis points must be 0..10000"); return n; }
+const tax = (wage: bigint, rate: number) => payrollNumber(roundRatio(wage * basisPoints(rate), 10000n, "half-away-from-zero"));
+
 /**
  * Pure payroll-tax math — no DB access, so it is fully unit-testable.
  *
  * All monetary amounts are integer cents. Rates are basis points
- * (10000 bp = 100%). Every result is rounded to whole cents with Math.round
+ * (10000 bp = 100%). Every result is rounded to whole cents with explicit half-away-from-zero rounding
  * and guarded against divide-by-zero / negative inputs.
  *
  * The progressive engine implements the IRS Pub 15-T "Percentage Method":
@@ -65,91 +74,37 @@ export interface PeriodWithholdingResult {
   taxableAfterDeductions: number;
 }
 
-/**
- * Sort brackets by floor and back-fill each bracket's cumulative base
- * (Pub 15-T col C) when the caller did not supply it, so callers can pass a
- * bare floor+rate schedule.
- */
-interface NormalizedBracket {
-  minIncome: number;
-  maxIncome: number | null;
-  rate: number;
-  baseAmountCents: number;
-}
-
-function normalizeBrackets(brackets: MarginalBracket[]): NormalizedBracket[] {
-  const sorted = [...brackets]
-    .filter((b) => Number.isFinite(b.minIncome) && b.rate >= 0)
-    .sort((a, b) => a.minIncome - b.minIncome);
-
-  const out: NormalizedBracket[] = [];
-
-  let derivedBase = 0;
-  let prevFloor = 0;
-  let prevRate = 0;
+/** Annual intermediates stay bigint even when annualization exceeds the safe wire range. */
+export function computeExactPeriodWithholding(input: Omit<ComputePeriodWithholdingInput, "annualTaxableWage"> & { annualTaxableWage: bigint }) {
+  const periods = nonnegative(input.payPeriodsPerYear);
+  if (periods === 0n) throw new WireCompatibilityError("Pay periods must be positive");
+  const reduction = nonnegative(input.standardDeductionCents ?? 0) + nonnegative(input.allowances ?? 0) * nonnegative(input.allowanceValueCents ?? 0);
+  const taxableAfterDeductions = max(0n, input.annualTaxableWage - reduction);
+  const additional = nonnegative(input.additionalWithholding ?? 0);
+  const sorted = [...input.brackets].sort((a, b) => a.minIncome < b.minIncome ? -1 : a.minIncome > b.minIncome ? 1 : 0);
+  let derived = 0n, annualTax = 0n;
   for (let i = 0; i < sorted.length; i++) {
-    const b = sorted[i];
+    const bracket = sorted[i], floor = nonnegative(bracket.minIncome), rate = basisPoints(bracket.rate);
+    const ceiling = bracket.maxIncome == null ? null : nonnegative(bracket.maxIncome);
+    if (ceiling !== null && ceiling <= floor) throw new WireCompatibilityError("Payroll bracket ceiling must exceed floor");
     if (i > 0) {
-      // Tax accrued across the previous bracket band up to this floor.
-      derivedBase += Math.round(((b.minIncome - prevFloor) * prevRate) / 10000);
+      const previous = sorted[i - 1], previousFloor = nonnegative(previous.minIncome);
+      if (floor <= previousFloor || (previous.maxIncome != null && nonnegative(previous.maxIncome) !== floor))
+        throw new WireCompatibilityError("Payroll bracket schedule has duplicate, overlapping or missing bands");
+      derived += roundRatio((floor - previousFloor) * basisPoints(previous.rate), 10000n, "half-away-from-zero");
     }
-    out.push({
-      minIncome: b.minIncome,
-      maxIncome: b.maxIncome ?? null,
-      rate: b.rate,
-      baseAmountCents: b.baseAmountCents ?? derivedBase,
-    });
-    prevFloor = b.minIncome;
-    prevRate = b.rate;
+    const base = bracket.baseAmountCents == null ? derived : nonnegative(bracket.baseAmountCents);
+    if (taxableAfterDeductions >= floor) {
+      if (i === sorted.length - 1 && ceiling !== null && taxableAfterDeductions >= ceiling)
+        throw new WireCompatibilityError("Payroll wage exceeds configured bracket schedule");
+      annualTax = base + roundRatio((taxableAfterDeductions - floor) * rate, 10000n, "half-away-from-zero");
+    }
   }
-  return out;
+  return { periodWithholding: payrollNumber(roundRatio(annualTax, periods, "half-away-from-zero") + additional), annualTax, taxableAfterDeductions };
 }
-
-/**
- * Compute the per-period income-tax withholding using marginal brackets.
- * Returns zeros (not negatives) when there is no taxable wage or no brackets.
- */
-export function computePeriodWithholding(
-  input: ComputePeriodWithholdingInput
-): PeriodWithholdingResult {
-  const periods =
-    input.payPeriodsPerYear > 0 ? input.payPeriodsPerYear : 1; // guard /0
-  const allowances = Math.max(0, input.allowances ?? 0);
-  const allowanceValue = Math.max(0, input.allowanceValueCents ?? 0);
-  const stdDeduction = Math.max(0, input.standardDeductionCents ?? 0);
-  const additional = Math.max(0, input.additionalWithholding ?? 0);
-
-  const annualWage = Math.max(0, input.annualTaxableWage);
-  const taxableAfterDeductions = Math.max(
-    0,
-    annualWage - stdDeduction - allowances * allowanceValue
-  );
-
-  const brackets = normalizeBrackets(input.brackets);
-  if (brackets.length === 0 || taxableAfterDeductions === 0) {
-    return {
-      periodWithholding: additional,
-      annualTax: 0,
-      taxableAfterDeductions,
-    };
-  }
-
-  // Find the highest bracket whose floor the wage reaches.
-  let chosen = brackets[0];
-  for (const b of brackets) {
-    if (taxableAfterDeductions >= b.minIncome) chosen = b;
-    else break;
-  }
-
-  const annualTax = Math.max(
-    0,
-    chosen.baseAmountCents +
-      Math.round(((taxableAfterDeductions - chosen.minIncome) * chosen.rate) / 10000)
-  );
-
-  const periodWithholding = Math.round(annualTax / periods) + additional;
-
-  return { periodWithholding, annualTax, taxableAfterDeductions };
+export function computePeriodWithholding(input: ComputePeriodWithholdingInput): PeriodWithholdingResult {
+  const result = computeExactPeriodWithholding({ ...input, annualTaxableWage: nonnegative(input.annualTaxableWage) });
+  return { ...result, annualTax: payrollNumber(result.annualTax), taxableAfterDeductions: payrollNumber(result.taxableAfterDeductions) };
 }
 
 export interface ComputeFicaInput {
@@ -190,30 +145,11 @@ export interface FicaResult {
  *     the threshold that falls in THIS period.
  */
 export function computeFica(input: ComputeFicaInput): FicaResult {
-  const periodWage = Math.max(0, input.periodWage);
-  const ytdWage = Math.max(0, input.ytdWage);
-
-  // Social Security: only the slice of this period's wage that is still below
-  // the annual wage base is taxed.
-  const ssBase = Math.max(0, input.ssWageBaseCents);
-  const remainingSsRoom = Math.max(0, ssBase - ytdWage);
-  const ssTaxable = Math.min(periodWage, remainingSsRoom);
-  const socialSecurity = Math.round((ssTaxable * Math.max(0, input.ssRateBp)) / 10000);
-
-  // Medicare: uncapped on the full period wage.
-  const medicare = Math.round((periodWage * Math.max(0, input.medicareRateBp)) / 10000);
-
-  // Additional Medicare: the part of THIS period's wage that pushes cumulative
-  // wages above the threshold.
-  const threshold = Math.max(0, input.addlMedicareThresholdCents);
-  const newYtd = ytdWage + periodWage;
-  const addlTaxable = Math.max(0, newYtd - Math.max(ytdWage, threshold));
-  const additionalMedicare = Math.round(
-    (addlTaxable * Math.max(0, input.addlMedicareRateBp)) / 10000
-  );
-
-  const total = socialSecurity + medicare + additionalMedicare;
-  return { socialSecurity, medicare, additionalMedicare, total };
+  const wage = nonnegative(input.periodWage), ytd = nonnegative(input.ytdWage);
+  const capped = min(wage, max(0n, nonnegative(input.ssWageBaseCents) - ytd));
+  const socialSecurity = tax(capped, input.ssRateBp), medicare = tax(wage, input.medicareRateBp);
+  const additionalMedicare = tax(max(0n, ytd + wage - max(ytd, nonnegative(input.addlMedicareThresholdCents))), input.addlMedicareRateBp);
+  return { socialSecurity, medicare, additionalMedicare, total: payrollSum([socialSecurity, medicare, additionalMedicare]) };
 }
 
 export interface ComputeEmployerTaxesInput {
@@ -263,32 +199,13 @@ export interface EmployerTaxResult {
  * Every component taxes only the portion of the period wage that remains below
  * its cap given YTD wages, mirroring computeFica's straddle handling.
  */
-export function computeEmployerTaxes(
-  input: ComputeEmployerTaxesInput
-): EmployerTaxResult {
-  const periodWage = Math.max(0, input.periodWage);
-  const ytdWage = Math.max(0, input.ytdWage);
-
-  const cappedTax = (wageBaseCents: number, rateBp: number): number => {
-    const base = Math.max(0, wageBaseCents);
-    const room = Math.max(0, base - ytdWage);
-    const taxable = Math.min(periodWage, room);
-    return Math.round((taxable * Math.max(0, rateBp)) / 10000);
-  };
-
-  let socialSecurity = 0;
-  let medicare = 0;
-  if (input.employerFicaEnabled) {
-    socialSecurity = cappedTax(input.ssWageBaseCents, input.ssRateBp);
-    // Medicare is uncapped.
-    medicare = Math.round((periodWage * Math.max(0, input.medicareRateBp)) / 10000);
-  }
-
-  const futa = cappedTax(input.futaWageBaseCents, input.futaRateBp);
-  const suta = cappedTax(input.sutaWageBaseCents, input.sutaRateBp);
-
-  const total = socialSecurity + medicare + futa + suta;
-  return { socialSecurity, medicare, futa, suta, total };
+export function computeEmployerTaxes(input: ComputeEmployerTaxesInput): EmployerTaxResult {
+  const wage = nonnegative(input.periodWage), ytd = nonnegative(input.ytdWage);
+  const capped = (base: number, rate: number) => tax(min(wage, max(0n, nonnegative(base) - ytd)), rate);
+  const socialSecurity = input.employerFicaEnabled ? capped(input.ssWageBaseCents, input.ssRateBp) : 0;
+  const medicare = input.employerFicaEnabled ? tax(wage, input.medicareRateBp) : 0;
+  const futa = capped(input.futaWageBaseCents, input.futaRateBp), suta = capped(input.sutaWageBaseCents, input.sutaRateBp);
+  return { socialSecurity, medicare, futa, suta, total: payrollSum([socialSecurity, medicare, futa, suta]) };
 }
 
 /** Map a payFrequency enum value to the number of pay periods per year. */

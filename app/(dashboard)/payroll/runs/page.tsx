@@ -46,6 +46,7 @@ import { ContentReveal } from "@/components/ui/content-reveal";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { formatMoney } from "@/lib/money";
+import { OffCycleDialog, type OffCycleType } from "./off-cycle-dialog";
 import { cn } from "@/lib/utils";
 
 interface PayrollRun {
@@ -53,6 +54,7 @@ interface PayrollRun {
   payPeriodStart: string;
   payPeriodEnd: string;
   status: string;
+  baseCurrency: string | null;
   totalGross: number;
   totalDeductions: number;
   totalNet: number;
@@ -121,6 +123,7 @@ export default function PayrollRunsPage() {
 
   // New run dialog
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [offCycleType, setOffCycleType] = useState<OffCycleType | null>(null);
   const [creating, setCreating] = useState(false);
   const [payPeriodStart, setPayPeriodStart] = useState(() => {
     const d = new Date();
@@ -231,52 +234,13 @@ export default function PayrollRunsPage() {
     }
   }
 
-  async function handleCreateOffCycleRun(type: "termination" | "bonus-only" | "correction") {
-    const orgId = localStorage.getItem("activeOrgId");
-    if (!orgId) return;
-
-    const endpoints: Record<string, string> = {
-      termination: "/api/v1/payroll/runs/termination",
-      "bonus-only": "/api/v1/payroll/runs/bonus-only",
-      correction: "/api/v1/payroll/runs/correction",
-    };
-
-    const bodies: Record<string, object> = {
-      termination: { employeeId: "", payPeriodEnd },
-      "bonus-only": { payPeriodStart, payPeriodEnd, items: [] },
-      correction: { parentRunId: "", payPeriodStart, payPeriodEnd },
-    };
-
-    try {
-      const res = await fetch(endpoints[type], {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-organization-id": orgId,
-        },
-        body: JSON.stringify(bodies[type]),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || `Failed to create ${type} run`);
-      }
-
-      const data = await res.json();
-      toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} run created`);
-      router.push(`/payroll/runs/${data.run.id}`);
-    } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : `Failed to create ${type} run`
-      );
-    }
-  }
 
   if (loading) return <BrandLoader />;
 
   if (runs.length === 0) {
     return (
       <ContentReveal className="space-y-6">
+      <OffCycleDialog type={offCycleType} onClose={() => setOffCycleType(null)} start={payPeriodStart} end={payPeriodEnd} />
         {/* Visual empty state */}
         <div className="relative overflow-hidden rounded-2xl border border-dashed border-emerald-200 dark:border-emerald-900/50">
           <div className="relative flex flex-col items-center py-16 px-6">
@@ -288,7 +252,7 @@ export default function PayrollRunsPage() {
                   { icon: FileText, label: "Set up", delay: 0.15, active: true },
                   { icon: Search, label: "Review", delay: 0.25, active: false },
                   { icon: ArrowUpDown, label: "Finish & record", delay: 0.35, active: false },
-                ].map((step, i) => (
+                ].map((step) => (
                   <motion.div
                     key={step.label}
                     initial={{ opacity: 0, scale: 0.5 }}
@@ -401,6 +365,7 @@ export default function PayrollRunsPage() {
 
   return (
     <ContentReveal className="space-y-6">
+      <OffCycleDialog type={offCycleType} onClose={() => setOffCycleType(null)} start={payPeriodStart} end={payPeriodEnd} />
       {/* Toolbar */}
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -432,13 +397,13 @@ export default function PayrollRunsPage() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => handleCreateOffCycleRun("termination")} title="A final pay for someone leaving">
+                <DropdownMenuItem onClick={() => setOffCycleType("termination")} title="A final pay for someone leaving">
                   Final pay (someone leaving)
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleCreateOffCycleRun("bonus-only")} title="A one-off bonus payment">
+                <DropdownMenuItem onClick={() => setOffCycleType("bonus-only")} title="A one-off bonus payment">
                   Bonus only
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleCreateOffCycleRun("correction")} title="Fix a mistake in a past payroll">
+                <DropdownMenuItem onClick={() => setOffCycleType("correction")} title="Fix a mistake in a past payroll">
                   Fix a past payroll
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -555,15 +520,15 @@ export default function PayrollRunsPage() {
                   <div className="flex items-center gap-4 shrink-0">
                     <div className="hidden sm:block text-right">
                       <p className="text-xs text-muted-foreground">Before deductions</p>
-                      <p className="text-sm font-mono tabular-nums">{formatMoney(run.totalGross)}</p>
+                      <p className="text-sm font-mono tabular-nums">{formatMoney(run.totalGross, run.baseCurrency ?? "USD")}</p>
                     </div>
                     <div className="hidden sm:block text-right">
                       <p className="text-xs text-muted-foreground">Taxes &amp; deductions</p>
-                      <p className="text-sm font-mono tabular-nums text-red-600 dark:text-red-400">{formatMoney(run.totalDeductions)}</p>
+                      <p className="text-sm font-mono tabular-nums text-red-600 dark:text-red-400">{formatMoney(run.totalDeductions, run.baseCurrency ?? "USD")}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-xs text-muted-foreground">Take-home</p>
-                      <p className="text-sm font-mono tabular-nums font-medium">{formatMoney(run.totalNet)}</p>
+                      <p className="text-sm font-mono tabular-nums font-medium">{formatMoney(run.totalNet, run.baseCurrency ?? "USD")}</p>
                     </div>
                   </div>
                 </button>

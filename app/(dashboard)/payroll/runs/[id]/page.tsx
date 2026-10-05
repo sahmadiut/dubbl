@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/select";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
+import { payrollCentsInput } from "@/lib/money/payroll-input";
 import { formatMoney } from "@/lib/money";
 import { useConfirm } from "@/lib/hooks/use-confirm";
 import { useDebounce } from "@/lib/hooks/use-debounce";
@@ -42,6 +43,7 @@ interface PayrollRunDetail {
   status: string;
   approvalStatus: string | null;
   runType: string;
+  baseCurrency: string | null;
   totalGross: number;
   totalDeductions: number;
   totalNet: number;
@@ -52,6 +54,10 @@ interface PayrollRunDetail {
 
 interface PayrollItemRow {
   id: string;
+  employeeId: string;
+  rateExact: string;
+  preTaxDeductions: number | null;
+  postTaxDeductions: number | null;
   grossAmount: number;
   taxAmount: number;
   deductions: number;
@@ -69,7 +75,7 @@ interface Bonus {
   bonusType: string;
   amount: number;
   description: string | null;
-  employee?: { name: string };
+  employee?: { name: string; currency: string | null };
 }
 
 const statusColors: Record<string, string> = {
@@ -312,7 +318,7 @@ export default function PayrollRunDetailPage() {
         body: JSON.stringify({
           employeeId: bonusForm.employeeId,
           bonusType: bonusForm.bonusType,
-          amount: parseFloat(bonusForm.amount),
+          amountMinor: payrollCentsInput(bonusForm.amount),
           description: bonusForm.description || null,
         }),
       });
@@ -322,7 +328,13 @@ export default function PayrollRunDetailPage() {
       }
       const data = await res.json();
       if (data.bonus) {
-        setBonuses((prev) => [...prev, data.bonus]);
+        const [runResponse, bonusResponse] = await Promise.all([
+          fetch(`/api/v1/payroll/runs/${id}`, { headers: { "x-organization-id": orgId } }),
+          fetch(`/api/v1/payroll/runs/${id}/bonuses`, { headers: { "x-organization-id": orgId } }),
+        ]);
+        const [updated, listed] = await Promise.all([runResponse.json(), bonusResponse.json()]);
+        if (!runResponse.ok || !bonusResponse.ok) throw new Error(updated.error || listed.error || "Could not refresh payroll");
+        setRun(updated.run); setBonuses(listed.bonuses);
       }
       toast.success("Bonus added");
       setBonusDialogOpen(false);
@@ -467,15 +479,15 @@ export default function PayrollRunDetailPage() {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <motion.div {...anim(0)} className="rounded-xl border bg-card p-4">
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Pay before deductions</p>
-          <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate">{formatMoney(run.totalGross)}</p>
+          <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate">{formatMoney(run.totalGross, run.baseCurrency ?? "USD")}</p>
         </motion.div>
         <motion.div {...anim(0.05)} className="rounded-xl border bg-card p-4">
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Taxes &amp; deductions</p>
-          <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate text-red-600 dark:text-red-400">{formatMoney(run.totalDeductions)}</p>
+          <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate text-red-600 dark:text-red-400">{formatMoney(run.totalDeductions, run.baseCurrency ?? "USD")}</p>
         </motion.div>
         <motion.div {...anim(0.09)} className="rounded-xl border bg-card p-4">
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Take-home pay</p>
-          <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate text-emerald-600 dark:text-emerald-400">{formatMoney(run.totalNet)}</p>
+          <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate text-emerald-600 dark:text-emerald-400">{formatMoney(run.totalNet, run.baseCurrency ?? "USD")}</p>
         </motion.div>
       </div>
 
@@ -493,7 +505,7 @@ export default function PayrollRunDetailPage() {
             <div className="min-w-0">
               <p className="text-sm font-medium">View accounting entry</p>
               <p className="text-xs text-muted-foreground truncate">
-                Wages {formatMoney(run.totalGross)} · Taxes &amp; deductions {formatMoney(run.totalDeductions)} · Net paid {formatMoney(run.totalNet)}
+                Wages {formatMoney(run.totalGross, run.baseCurrency ?? "USD")} · Taxes &amp; deductions {formatMoney(run.totalDeductions, run.baseCurrency ?? "USD")} · Net paid {formatMoney(run.totalNet, run.baseCurrency ?? "USD")}
               </p>
             </div>
           </div>
@@ -569,7 +581,7 @@ export default function PayrollRunDetailPage() {
                     <Badge variant="outline" className="text-[9px] h-4 font-mono shrink-0">
                       {item.currency}
                       {item.fxRate && item.fxRate !== 1 && (
-                        <span className="ml-0.5 text-muted-foreground">@ {item.fxRate.toFixed(4)}</span>
+                        <span className="ml-0.5 text-muted-foreground">@ {item.rateExact}</span>
                       )}
                     </Badge>
                   )}
@@ -583,7 +595,7 @@ export default function PayrollRunDetailPage() {
                   </div>
                   <div className="hidden sm:block text-right">
                     <p className="text-xs text-muted-foreground">Other deductions</p>
-                    <p className="text-sm font-mono tabular-nums">{formatMoney(item.deductions, item.currency ?? "USD")}</p>
+                    <p className="text-sm font-mono tabular-nums">{formatMoney((item.preTaxDeductions ?? 0) + (item.postTaxDeductions ?? 0), item.currency ?? "USD")}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-xs text-muted-foreground">Take-home</p>
@@ -605,7 +617,7 @@ export default function PayrollRunDetailPage() {
           </h3>
           <Dialog open={bonusDialogOpen} onOpenChange={setBonusDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" disabled={run.status !== "draft" || run.approvalStatus === "approved" || !["regular", "off_cycle", "bonus_only"].includes(run.runType)}>
                 <Plus className="mr-1.5 size-3.5" />
                 Add Bonus
               </Button>
@@ -628,9 +640,9 @@ export default function PayrollRunDetailPage() {
                       <SelectValue placeholder="Select employee" />
                     </SelectTrigger>
                     <SelectContent>
-                      {(run.items || []).map((item) =>
+                      {(run.items || []).filter((item, index, items) => items.findIndex(i => i.employeeId === item.employeeId) === index).map((item) =>
                         item.employee ? (
-                          <SelectItem key={item.id} value={item.id}>
+                          <SelectItem key={item.employeeId} value={item.employeeId}>
                             {item.employee.name} ({item.employee.employeeNumber})
                           </SelectItem>
                         ) : null
@@ -659,7 +671,7 @@ export default function PayrollRunDetailPage() {
                 <div className="space-y-2">
                   <Label>Amount</Label>
                   <CurrencyInput
-                    prefix="$"
+                    prefix={run.items.find(i => i.employeeId === bonusForm.employeeId)?.currency ?? "USD"}
                     value={bonusForm.amount}
                     onChange={(v) => setBonusForm((f) => ({ ...f, amount: v }))}
                   />
@@ -713,7 +725,7 @@ export default function PayrollRunDetailPage() {
                   </div>
                 </div>
                 <p className="text-sm font-mono tabular-nums font-medium shrink-0">
-                  {formatMoney(bonus.amount)}
+                  {formatMoney(bonus.amount, bonus.employee?.currency ?? "USD")}
                 </p>
               </div>
             ))}

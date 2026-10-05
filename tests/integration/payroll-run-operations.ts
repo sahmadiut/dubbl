@@ -1,0 +1,18 @@
+export const runOperations = [
+  { name: "list_payroll_runs", path: "runs", verb: "GET", args: [], query: true, route: await import("../../app/api/v1/payroll/runs/route") },
+  { name: "create_payroll_run", path: "runs", verb: "POST", args: [], query: false, route: await import("../../app/api/v1/payroll/runs/route") },
+  { name: "get_payroll_run", path: "runs/[id]", verb: "GET", args: ["id"], query: false, route: await import("../../app/api/v1/payroll/runs/[id]/route") },
+  { name: "update_payroll_run", path: "runs/[id]", verb: "PATCH", args: ["id"], query: false, route: await import("../../app/api/v1/payroll/runs/[id]/route") },
+  { name: "delete_payroll_run", path: "runs/[id]", verb: "DELETE", args: ["id"], query: false, route: await import("../../app/api/v1/payroll/runs/[id]/route") },
+  { name: "process_payroll_run", path: "runs/[id]/process", verb: "POST", args: ["id"], query: false, route: await import("../../app/api/v1/payroll/runs/[id]/process/route") },
+  { name: "submit_payroll_run_for_approval", path: "runs/[id]/submit-for-approval", verb: "POST", args: ["id"], query: false, route: await import("../../app/api/v1/payroll/runs/[id]/submit-for-approval/route") },
+  { name: "approve_payroll_run", path: "runs/[id]/approve", verb: "POST", args: ["id"], query: false, route: await import("../../app/api/v1/payroll/runs/[id]/approve/route") },
+  { name: "reject_payroll_run", path: "runs/[id]/reject", verb: "POST", args: ["id"], query: false, route: await import("../../app/api/v1/payroll/runs/[id]/reject/route") },
+  { name: "create_bonus_payroll_run", path: "runs/bonus-only", verb: "POST", args: [], query: false, route: await import("../../app/api/v1/payroll/runs/bonus-only/route") },
+  { name: "create_termination_payroll_run", path: "runs/termination", verb: "POST", args: [], query: false, route: await import("../../app/api/v1/payroll/runs/termination/route") },
+  { name: "create_correction_payroll_run", path: "runs/correction", verb: "POST", args: [], query: false, route: await import("../../app/api/v1/payroll/runs/correction/route") },
+  { name: "list_payroll_run_bonuses", path: "runs/[id]/bonuses", verb: "GET", args: ["id"], query: false, route: await import("../../app/api/v1/payroll/runs/[id]/bonuses/route") },
+  { name: "create_payroll_run_bonus", path: "runs/[id]/bonuses", verb: "POST", args: ["id"], query: false, route: await import("../../app/api/v1/payroll/runs/[id]/bonuses/route") },
+  { name: "delete_payroll_run_bonus", path: "runs/[id]/bonuses/[bonusId]", verb: "DELETE", args: ["id", "bonusId"], query: false, route: await import("../../app/api/v1/payroll/runs/[id]/bonuses/[bonusId]/route") },
+  { name: "list_payroll_run_items", path: "runs/[id]/items", verb: "GET", args: ["id"], query: false, route: await import("../../app/api/v1/payroll/runs/[id]/items/route") },
+];

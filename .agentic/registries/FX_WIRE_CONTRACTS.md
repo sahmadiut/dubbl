@@ -36,10 +36,10 @@ and `wrapTool` guard serialization without a bigint prototype patch.
 | Boundary | Input and returned envelope | Scope/policy and support |
 |---|---|---|
 | GET `/api/v1/exchange-rates` | Validated currency/date filters and existing pagination; `{data: storedRate[], pagination}` | AuthContext organization filters both rows and count; numeric rate plus exact metadata |
-| POST `/api/v1/exchange-rates` | `{rates: [{baseCurrency,targetCurrency,date,rate?,rateExact?,rateDirection?,source?}]}`, 1–500 rows; 201 `{exchangeRates: storedRate[]}` | `manage:tax-config`; validates entire batch before insert/upsert; conflict key contains organization/pair/day; manual source and cleared provider metadata; existing audit helper per saved row |
+| POST `/api/v1/exchange-rates` | `{rates: [{baseCurrency,targetCurrency,date,rate?,rateExact?,rateDirection?,source?}]}`, 1â€“500 rows; 201 `{exchangeRates: storedRate[]}` | `manage:tax-config`; validates entire batch before insert/upsert; conflict key contains organization/pair/day; manual source and cleared provider metadata; existing audit helper per saved row |
 | PUT `/api/v1/exchange-rates/[id]` | `{rate?,rateExact?,rateDirection?}`; `{exchangeRate: storedRate}` | `manage:tax-config`; organization on lookup **and mutation**; validates stored same-currency pair before update; manual source, cleared provider metadata, update audit; foreign/missing ID 404 |
 | DELETE `/api/v1/exchange-rates/[id]` | ID; `{success:true}` | `manage:tax-config`; organization on lookup/mutation; deletion audit; foreign/missing ID 404 |
-| MCP `list_exchange_rates` | Optional pair/date/limit filters; `{rates: storedRateWithDecimal[]}` | Context organization scoped; valid date filters; 1–200 limit |
+| MCP `list_exchange_rates` | Optional pair/date/limit filters; `{rates: storedRateWithDecimal[]}` | Context organization scoped; valid date filters; 1â€“200 limit |
 | MCP `set_exchange_rate` | Pair/day plus `rateDecimal?`, `rateExact?`, `rateDirection?`; `{exchangeRate: storedRateWithDecimal}` | Same coexistence range, role, manual provenance and org/pair/day upsert as REST; direct Drizzle, create/upsert audit |
 | MCP `delete_exchange_rate` | ID; `{success:true}` | Role, organization on lookup/mutation, deletion audit; foreign/missing ID error; preserves existing generic MCP not-found error behavior |
 | MCP `get_exchange_rate` | Pair/as-of day; requested pair/day, nullable `rate`, `rateDecimal`, `rateExact`, direction and resolved source/date/provider metadata | Organization-scoped historical resolver; no future rates; direct quotes unchanged; inverse numeric rate half-up at six places and exact string half-up at 18 places, so inverse aliases intentionally differ in precision; missing/quarantined/unrepresentable quotes return null aliases |
@@ -63,3 +63,7 @@ quotes retain MON-005 policy. Full direct-JSON/opaque/public inventory remains
 MON-016 and parent integration. Legacy compatibility has no approved sunset date;
 retain ADR-006's qualification/owner-window gates. No schema/migration or
 production flag changes are part of this slice.
+
+## Payroll consumer cutover (MON-082)
+
+[PAYROLL_RUN_WIRE_CONTRACTS](PAYROLL_RUN_WIRE_CONTRACTS.md) adopts payroll-item decimal snapshots for run creation/processing/corrections. Migration 0009 replaces only payroll_item sync/input guards with one combined payroll-aware trigger. New payroll_exact_v1 provenance allows authoritative decimal rateExact with an explicitly approximate float4 fxRate; the currency pair and approximation must agree and adopted rates/provenance are immutable. Unadopted payroll writers/backfill preserve reconstruction/quarantine behavior; exchange, journal and consolidation guards are unchanged. Migration does not update historical rows. MON-014/015 and payroll output qualification remain otherwise bounded to their documented scopes.

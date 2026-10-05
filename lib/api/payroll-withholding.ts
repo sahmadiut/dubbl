@@ -23,12 +23,14 @@ import {
 } from "@/lib/db/schema";
 import { eq, and, lt, gte, inArray, isNull } from "drizzle-orm";
 import {
-  computePeriodWithholding,
+  computeExactPeriodWithholding,
   computeFica,
   computeEmployerTaxes,
   payPeriodsPerYear,
   type MarginalBracket,
 } from "@/lib/api/payroll-tax";
+import { payrollInteger, payrollNumber, payrollSum, payrollRatio } from "@/lib/payroll/exact";
+import { payrollConfigDto, employeeTaxUpdateSchema, payrollSettingsUpdateSchema, taxBracketCreateSchema, taxAllowanceCreateSchema } from "./payroll-config-wire";
 
 type DbOrTx = typeof db | Parameters<Parameters<(typeof db)["transaction"]>[0]>[0];
 
@@ -82,6 +84,7 @@ export async function getEmployeeYtdWage(
     .where(
       and(
         eq(payrollRun.organizationId, organizationId),
+        isNull(payrollRun.deletedAt),
         inArray(payrollRun.status, ["completed", "processing"]),
         gte(payrollRun.payPeriodEnd, yearStart),
         lt(payrollRun.payPeriodEnd, periodStart)
@@ -104,10 +107,10 @@ export async function getEmployeeYtdWage(
       )
     );
 
-  return items.reduce(
-    (sum, it) => sum + Math.max(0, it.grossAmount - (it.preTaxDeductions ?? 0)),
-    0
-  );
+  return payrollNumber(items.reduce((sum, it) => {
+    const wage = payrollInteger(it.grossAmount) - payrollInteger(it.preTaxDeductions ?? 0);
+    return sum + wage;
+  }, 0n));
 }
 
 /**
@@ -129,6 +132,7 @@ async function loadBrackets(
       maxIncome: taxBracket.maxIncome,
       rate: taxBracket.rate,
       baseAmountCents: taxBracket.baseAmountCents,
+      jurisdiction: taxBracket.jurisdiction,
       filingStatus: taxBracket.filingStatus,
       taxYear: taxBracket.taxYear,
     })
@@ -138,13 +142,13 @@ async function loadBrackets(
         eq(taxBracket.organizationId, organizationId),
         isNull(taxBracket.deletedAt),
         eq(taxBracket.jurisdictionLevel, jurisdictionLevel),
+        jurisdiction === null ? isNull(taxBracket.jurisdiction) : eq(taxBracket.jurisdiction, jurisdiction),
         eq(taxBracket.isActive, true)
       )
     );
 
   // Filter in memory: filing status (null = applies to all statuses), then
   // prefer the requested tax year, else fall back to year-agnostic rows.
-  void jurisdiction;
   const byStatus = rows.filter(
     (r) => r.filingStatus == null || r.filingStatus === filingStatus
   );
@@ -152,12 +156,12 @@ async function loadBrackets(
   const yearMatch = byStatus.filter((r) => r.taxYear === taxYear);
   const chosen = yearMatch.length > 0 ? yearMatch : byStatus.filter((r) => r.taxYear == null);
 
-  return chosen.map((r) => ({
-    minIncome: r.minIncome,
-    maxIncome: r.maxIncome,
-    rate: r.rate,
-    baseAmountCents: r.baseAmountCents,
-  }));
+  // Prefer a status-specific schedule as a whole; do not mix it with defaults.
+  const specific = chosen.filter(r => r.filingStatus === filingStatus);
+  return (specific.length ? specific : chosen.filter(r => r.filingStatus === null)).map((r) => {
+    payrollConfigDto(r, taxBracketCreateSchema.partial(), ["minIncome", "maxIncome", "baseAmountCents"]);
+    return { minIncome: r.minIncome, maxIncome: r.maxIncome, rate: r.rate, baseAmountCents: r.baseAmountCents };
+  });
 }
 
 /** Load the allowance/standard-deduction config for a jurisdiction + year. */
@@ -178,10 +182,12 @@ async function loadAllowanceConfig(
       and(
         eq(taxAllowanceConfig.organizationId, organizationId),
         isNull(taxAllowanceConfig.deletedAt),
-        eq(taxAllowanceConfig.jurisdictionLevel, jurisdictionLevel)
+        eq(taxAllowanceConfig.jurisdictionLevel, jurisdictionLevel),
+        isNull(taxAllowanceConfig.jurisdiction), eq(taxAllowanceConfig.taxYear, taxYear)
       )
     );
-  const exact = rows.find((r) => r.taxYear === taxYear) ?? rows[0];
+  const exact = rows[0];
+  if (exact) payrollConfigDto(exact, taxAllowanceCreateSchema.partial(), ["allowanceValueCents", "standardDeductionCents"]);
   return {
     allowanceValueCents: exact?.allowanceValueCents ?? 0,
     standardDeductionCents: exact?.standardDeductionCents ?? 0,
@@ -207,6 +213,7 @@ export async function computeEmployeeWithholding(
   periodStart: string,
   exec: DbOrTx = db
 ): Promise<EmployeeWithholding> {
+  if (settings) payrollConfigDto(settings, payrollSettingsUpdateSchema, ["ssWageBaseCents", "addlMedicareThresholdCents", "futaWageBaseCents", "sutaWageBaseCents"]);
   const breakdown: TaxBreakdownLine[] = [];
   const employerBreakdown: EmployerTaxLine[] = [];
 
@@ -218,6 +225,7 @@ export async function computeEmployeeWithholding(
   const taxCfg = await exec.query.employeeTaxConfig.findFirst({
     where: eq(employeeTaxConfig.employeeId, emp.id),
   });
+  if (taxCfg) payrollConfigDto(taxCfg, employeeTaxUpdateSchema, ["additionalWithholding"]);
   const filingStatus = taxCfg?.filingStatus ?? "single";
   const exempt = taxCfg?.exempt ?? false;
 
@@ -240,8 +248,8 @@ export async function computeEmployeeWithholding(
         year,
         exec
       );
-      const fed = computePeriodWithholding({
-        annualTaxableWage: taxableIncome * periods,
+      const fed = computeExactPeriodWithholding({
+        annualTaxableWage: payrollInteger(taxableIncome) * BigInt(periods),
         brackets,
         filingStatus,
         payPeriodsPerYear: periods,
@@ -254,7 +262,7 @@ export async function computeEmployeeWithholding(
     } else {
       // No bracket schedule loaded yet → keep the legacy flat-rate behavior so
       // we never silently withhold zero income tax for un-migrated orgs.
-      incomeTax = Math.round((taxableIncome * emp.taxRate) / 10000);
+      incomeTax = payrollSum([payrollRatio(taxableIncome, payrollInteger(emp.taxRate), 10000n), taxCfg?.additionalWithholding ?? 0]);
     }
   }
 
@@ -310,7 +318,7 @@ export async function computeEmployeeWithholding(
       employerBreakdown.push({ jurisdictionLevel: "state", jurisdiction: null, taxKind: "suta", amount: employer.suta });
   }
 
-  const totalTax = breakdown.reduce((s, b) => s + b.amount, 0);
+  const totalTax = payrollSum(breakdown.map(b => b.amount));
 
   return { totalTax, breakdown, employerBreakdown };
 }

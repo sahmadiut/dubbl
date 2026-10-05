@@ -1,6 +1,6 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { organization, journalEntry, auditLog } from "@/lib/db/schema";
+import { organization, journalEntry, payrollRun, auditLog } from "@/lib/db/schema";
 import { AuthError, type AuthContext } from "./auth-context";
 import { requireRole } from "./require-role";
 import { diffChanges } from "./audit";
@@ -49,6 +49,8 @@ export async function updateOrganizationSettings(ctx: AuthContext, input: unknow
       const [activity] = await tx.select({ id: journalEntry.id }).from(journalEntry)
         .where(eq(journalEntry.organizationId, ctx.organizationId)).limit(1);
       if (activity) throw new AuthError("Base currency can't be changed once transactions exist", 409);
+      const [payroll] = await tx.select({ id: payrollRun.id }).from(payrollRun).where(eq(payrollRun.organizationId, ctx.organizationId)).limit(1);
+      if (payroll) throw new AuthError("Base currency can't be changed with payroll-run history", 409);
     }
     const { onboardingCompleted, ...fields } = parsed;
     const patch = { ...fields, ...(onboardingCompleted === undefined ? {} : { onboardingCompletedAt: onboardingCompleted ? new Date() : null }), updatedAt: new Date() };

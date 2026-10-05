@@ -1,6 +1,14 @@
+import type { AuthContext } from "./auth-context";
+import { AuthError } from "./auth-context";
+import { payrollSum, payrollConvert } from "@/lib/payroll/exact";
+import { WireCompatibilityError } from "@/lib/money/wire";
+import { runItemDto } from "./payroll-run-wire";
+import { assertNotLocked } from "./period-lock";
+import { payrollItem } from "@/lib/db/schema";
 import { db } from "@/lib/db";
 import {
   payrollRun,
+  organization, chartAccount,
   payrollItemDeduction,
   payrollItemTaxBreakdown,
   payrollItemEmployerTax,
@@ -9,12 +17,11 @@ import {
   journalEntry,
   journalLine,
 } from "@/lib/db/schema";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import {
   getNextEntryNumber,
   findAccountByCode,
   ensureAccountByCode,
-  resolveBaseRate,
 } from "@/lib/api/journal-automation";
 
 /**
@@ -24,10 +31,7 @@ import {
  */
 type Tx = Parameters<Parameters<(typeof db)["transaction"]>[0]>[0];
 
-interface PayrollPostingContext {
-  organizationId: string;
-  userId: string;
-}
+type PayrollPostingContext = AuthContext;
 
 // ─── GL account codes for the payroll posting ───────────────────────
 // NOTE: payrollSettings.taxPayableAccountCode defaults to 2200 (the OUTPUT VAT
@@ -45,6 +49,7 @@ const WAGES_PAYABLE_CODE = "2310"; // net pay accrued-not-paid (CR)
 const BANK_FALLBACK_CODE = "1100"; // default bank/cash for net pay (CR)
 
 const ACCOUNT_DEFS = {
+  [BANK_FALLBACK_CODE]: { name: "Bank", type: "asset" as const, subType: "current" },
   [SALARY_EXPENSE_CODE]: { name: "Wages & Salaries Expense", type: "expense" as const, subType: "operating" },
   [EMPLOYER_TAX_EXPENSE_CODE]: { name: "Employer Payroll Taxes", type: "expense" as const, subType: "operating" },
   [INCOME_TAX_PAYABLE_CODE]: { name: "Income Tax Payable", type: "liability" as const, subType: "current" },
@@ -83,7 +88,7 @@ function classifyTaxKind(taxKind: string): string {
  * pre_tax deductions are typically pension/benefit/HSA style → 2245;
  * post_tax statutory items (garnishments) → 2236; payroll-tax-shaped names → 2235.
  */
-function classifyDeduction(name: string | null, category: string): string {
+export function classifyPayrollDeduction(name: string | null, category: string): string {
   const n = (name ?? "").toLowerCase();
   if (
     n.includes("social security") ||
@@ -133,24 +138,21 @@ async function resolveAccount(
   organizationId: string,
   code: string,
   baseCurrency: string,
-  tx: Tx
+  tx: Tx,
+  expectedType: "asset" | "expense" | "liability" = "liability"
 ) {
-  const existing = await findAccountByCode(organizationId, code, tx);
-  if (existing) return existing;
   const def = ACCOUNT_DEFS[code as keyof typeof ACCOUNT_DEFS];
-  return ensureAccountByCode(
-    organizationId,
-    def
-      ? { code, name: def.name, type: def.type, subType: def.subType }
-      : { code, name: `Account ${code}`, type: "liability", subType: "current" },
-    baseCurrency,
-    tx
-  );
+  const account = (await findAccountByCode(organizationId, code, tx)) ?? await ensureAccountByCode(organizationId,
+    def ? { code, name: def.name, type: def.type, subType: def.subType } : { code, name: `Account ${code}`, type: expectedType, subType: "current" }, baseCurrency, tx);
+  if (!account) throw new AuthError("Could not resolve payroll account", 422);
+  const [valid] = await tx.select().from(chartAccount).where(and(eq(chartAccount.id, account.id), eq(chartAccount.organizationId, organizationId), eq(chartAccount.isActive, true), isNull(chartAccount.deletedAt))).for("share");
+  if (!valid || valid.type !== expectedType || valid.currencyCode !== baseCurrency) throw new AuthError("Payroll account must be active, owned, in base currency and of the correct type", 422);
+  return valid;
 }
 
 /** The per-run figures the journal needs, all in the org BASE currency. */
 interface RunBuckets {
-  /** Gross wages, base cents (sum of each item's gross at its own fxRate). */
+  /** Gross wages, base cents (sum of each item's gross at rateExact). */
   grossWages: number;
   /** Employer-side payroll-tax expense, base cents (DR 5120). */
   employerTax: number;
@@ -158,85 +160,51 @@ interface RunBuckets {
   liabilityByCode: Map<string, number>;
 }
 
-/**
- * Read a run's per-item withholding/employer-tax/deduction detail and roll it up
- * into BASE-currency buckets, converting every local-currency amount once at that
- * item's own fxRate. Splits each withholding to its proper liability account via
- * classifyTaxKind / classifyDeduction. Used both for the run being posted and —
- * for corrections — for the PARENT run, so a clawback reverses the parent's real
- * per-bucket split (FICA, pension, income tax) in the same proportions.
- */
-async function accumulateBaseBuckets(
-  tx: Tx,
-  items: { id: string; grossAmount: number; fxRate: number | null }[]
-): Promise<RunBuckets> {
-  const itemIds = items.map((i) => i.id);
-  const itemRate = new Map<string, number>(items.map((i) => [i.id, i.fxRate ?? 1]));
-  const toBase = (itemId: string, localAmount: number): number =>
-    Math.round(localAmount * (itemRate.get(itemId) ?? 1));
-
+/** Convert saved per-item withholding, deductions and employer taxes at rateExact.
+ * Correction items already carry the parent's per-employee signed snapshots. */
+async function accumulateBaseBuckets(tx: Tx, items: (typeof payrollItem.$inferSelect)[], organizationId: string): Promise<RunBuckets> {
   const liabilityByCode = new Map<string, number>();
-  const addLiability = (code: string, amount: number) => {
-    if (amount === 0) return;
-    liabilityByCode.set(code, (liabilityByCode.get(code) ?? 0) + amount);
-  };
-
-  if (itemIds.length === 0) {
-    return { grossWages: 0, employerTax: 0, liabilityByCode };
-  }
-
-  const taxBreakdowns = await tx.query.payrollItemTaxBreakdown.findMany({
-    where: inArray(payrollItemTaxBreakdown.payrollItemId, itemIds),
-  });
-  const employerTaxRows = await tx.query.payrollItemEmployerTax.findMany({
-    where: inArray(payrollItemEmployerTax.payrollItemId, itemIds),
-  });
-  const deductionRows = await tx
-    .select({
-      payrollItemId: payrollItemDeduction.payrollItemId,
-      amount: payrollItemDeduction.amount,
-      category: payrollItemDeduction.category,
-      name: deductionType.name,
-    })
-    .from(payrollItemDeduction)
-    .innerJoin(
-      deductionType,
-      eq(payrollItemDeduction.deductionTypeId, deductionType.id)
-    )
-    .where(inArray(payrollItemDeduction.payrollItemId, itemIds));
-
-  let employerTax = 0;
-
-  // Employee withholdings → matching liability (FICA/SS/Medicare → 2235, income
-  // tax → 2220). Legacy employer-flagged rows in this table also feed 5120.
-  for (const tb of taxBreakdowns) {
-    const amount = toBase(tb.payrollItemId, tb.amount);
-    const kind = tb.taxKind.toLowerCase();
-    if (
-      kind.startsWith("employer") ||
-      kind.includes("employer_") ||
-      kind.includes("company_")
-    ) {
-      employerTax += amount;
+  const add = (code: string, amount: number) => liabilityByCode.set(code, payrollSum([liabilityByCode.get(code) ?? 0, amount]));
+  let grossWages = 0, employerTax = 0;
+  for (const raw of items) {
+    const item = runItemDto(raw), rate = item.rateExact;
+    const convert = (amount: number) => payrollConvert(amount, rate);
+    const taxRows = await tx.select().from(payrollItemTaxBreakdown).where(eq(payrollItemTaxBreakdown.payrollItemId, item.id));
+    const employerRows = await tx.select().from(payrollItemEmployerTax).where(eq(payrollItemEmployerTax.payrollItemId, item.id));
+    const deductionRows = await tx.select({ row: payrollItemDeduction, name: deductionType.name, organizationId: deductionType.organizationId })
+      .from(payrollItemDeduction).innerJoin(deductionType, eq(payrollItemDeduction.deductionTypeId, deductionType.id))
+      .where(eq(payrollItemDeduction.payrollItemId, item.id));
+    const local = new Map<string, number>();
+    const part = (code: string, amount: number) => local.set(code, payrollSum([local.get(code) ?? 0, amount]));
+    if (taxRows.some(t => t.taxKind.toLowerCase().startsWith("employer"))) throw new WireCompatibilityError("Legacy employee/employer tax split is ambiguous");
+    if (taxRows.length) {
+      if (payrollSum(taxRows.map(t => t.amount)) !== item.taxAmount) throw new WireCompatibilityError("Payroll tax breakdown differs from item withholding");
+      for (const line of taxRows) part(classifyTaxKind(line.taxKind), convert(line.amount));
+    } else part(INCOME_TAX_PAYABLE_CODE, convert(item.taxAmount));
+    const pre = payrollSum(deductionRows.filter(d => d.row.category === "pre_tax").map(d => d.row.amount));
+    const post = payrollSum(deductionRows.filter(d => d.row.category === "post_tax").map(d => d.row.amount));
+    if (pre !== (item.preTaxDeductions ?? 0) || post !== (item.postTaxDeductions ?? 0))
+      throw new WireCompatibilityError("Payroll deduction breakdown is unavailable or inconsistent");
+    if (payrollSum([item.taxAmount, pre, post]) !== item.deductions || payrollSum([item.grossAmount, -item.deductions]) !== item.netAmount)
+      throw new WireCompatibilityError("Payroll item wages, deductions and net do not reconcile");
+    for (const d of deductionRows) {
+      if (d.organizationId !== organizationId) throw new AuthError("Deduction type belongs to another organization", 404);
+      const code = d.row.liabilityAccountCode ?? classifyPayrollDeduction(d.name, d.row.category);
+      if (code === "2200") throw new WireCompatibilityError("Payroll deductions cannot post to VAT control");
+      part(code, convert(d.row.amount));
     }
-    addLiability(classifyTaxKind(tb.taxKind), amount);
+    // Absorb per-component FX rounding into the largest employee liability bucket.
+    const residual = payrollSum([convert(item.deductions), -payrollSum([...local.values()])]);
+    if (residual) {
+      const largest = [...local.entries()].sort((a, b) => Math.abs(a[1]) > Math.abs(b[1]) ? -1 : Math.abs(a[1]) < Math.abs(b[1]) ? 1 : a[0].localeCompare(b[0]))[0];
+      if (!largest) throw new WireCompatibilityError("No payroll liability can absorb FX residual");
+      part(largest[0], residual);
+    }
+    for (const [code, amount] of local) add(code, amount);
+    for (const line of employerRows) { const amount = convert(line.amount); employerTax = payrollSum([employerTax, amount]); add(classifyTaxKind(line.taxKind), amount); }
+    grossWages = payrollSum([grossWages, convert(item.grossAmount)]);
   }
-
-  // Employer taxes (DR 5120 expense + CR the matching liability).
-  for (const et of employerTaxRows) {
-    const amount = toBase(et.payrollItemId, et.amount);
-    employerTax += amount;
-    addLiability(classifyTaxKind(et.taxKind), amount);
-  }
-
-  // Post-tax / benefit deductions split by kind (pension/benefits → 2245,
-  // statutory FICA-shaped → 2235, income tax → 2220, garnishments/other → 2236).
-  for (const d of deductionRows) {
-    addLiability(classifyDeduction(d.name, d.category), toBase(d.payrollItemId, d.amount));
-  }
-
-  const grossWages = items.reduce((sum, it) => sum + toBase(it.id, it.grossAmount), 0);
-
+  for (const [code, amount] of liabilityByCode) if (amount === 0) liabilityByCode.delete(code);
   return { grossWages, employerTax, liabilityByCode };
 }
 
@@ -256,20 +224,15 @@ async function accumulateBaseBuckets(
  *      — OR —
  *   CR Wages Payable (2310) ...................... net pay   [accrued-not-paid]
  *
- * The employee withholding split is driven from payrollItemTaxBreakdown when
- * populated, else from payrollItemDeduction rows mapped by kind. As a last resort
- * the run's lumped totalDeductions is credited to Income Tax Payable (2220) —
- * NEVER to the VAT control account (2200). Employer-side taxes are read from
- * payrollItemEmployerTax and posted as an expense (DR 5120) plus a liability (CR
- * the matching account). For correction runs (parentRunId set) every amount is
- * signed so the entry self-reverses the parent's posting.
+ * Employee tax and deduction snapshots must reconcile before posting. Missing
+ * legacy tax detail falls back only to the item's validated taxAmount; ambiguous
+ * deductions fail. Employer tax snapshots add expense and matching liabilities.
+ * Signed correction amounts reverse the appropriate individual accounts.
  *
- * MULTI-CURRENCY: gross, withholdings, employer taxes and deductions all start
- * life in each employee's LOCAL currency (payrollItem.currency). Every amount is
- * converted to the org BASE currency exactly once, using that item's own stored
- * fxRate (local→base decimal multiplier). All legs are then built and posted in
- * base currency at 1:1 — there is no second conversion pass, so a mixed-currency
- * run posts a single balanced base-currency entry.
+ * Convert each employee-currency component once using its decimal rateExact.
+ * Absorb component rounding residuals into the largest employee liability bucket.
+ * Run net is converted gross less converted deductions. Journal legs use the
+ * saved run base currency and exact 1:1 FX.
  *
  * Must be called inside a db.transaction; pass that tx so the journal and the
  * run update commit together.
@@ -283,14 +246,10 @@ export async function postPayrollRun(
   tx: Tx,
   opts: { accrued?: boolean } = {}
 ): Promise<string | null> {
-  const run = await tx.query.payrollRun.findFirst({
-    where: and(
-      eq(payrollRun.id, runId),
-      eq(payrollRun.organizationId, ctx.organizationId)
-    ),
-    with: { items: true },
-  });
+  const [run] = await tx.select().from(payrollRun).where(and(eq(payrollRun.id, runId), eq(payrollRun.organizationId, ctx.organizationId), isNull(payrollRun.deletedAt))).for("update");
   if (!run) throw new Error(`Payroll run ${runId} not found`);
+  // Flat selects keep PostgreSQL numeric as decimal strings; relational JSON would coerce nested rates to Number.
+  const items = await tx.select().from(payrollItem).where(eq(payrollItem.payrollRunId, runId)).orderBy(payrollItem.id);
 
   // Correction runs (parentRunId set) carry SIGNED delta amounts: a positive
   // gross adjustment pays more, a negative one claws back. We post those deltas
@@ -303,58 +262,15 @@ export async function postPayrollRun(
 
   // The org base currency every leg is posted in. All per-item local amounts are
   // converted into this currency by accumulateBaseBuckets, using each item's own
-  // fxRate exactly once — there is no second conversion at insert time.
-  const { base } = await resolveBaseRate(
-    ctx.organizationId,
-    undefined,
-    run.payPeriodEnd
-  );
-
-  // Roll this run's per-item detail up into base-currency buckets.
-  const own = await accumulateBaseBuckets(tx, run.items);
-  const grossWages = own.grossWages;
-  let employerTax = own.employerTax;
-  let liabilityByCode = own.liabilityByCode;
-
-  // ── Correction: reverse the PARENT's actual per-bucket split ──────────
-  // A correction posts a SIGNED gross delta. Rather than recompute withholdings
-  // on the delta (which would dump everything to income tax), scale the PARENT
-  // run's real liability split (2220 income tax, 2235 FICA, 2245 pension, …) by
-  // the gross-correction proportion, so each parent liability nets back in the
-  // same proportion it was originally credited. Falls back to the correction
-  // run's own breakdown if the parent has no posted gross/breakdown.
-  if (isCorrection && run.parentRunId) {
-    const parent = await tx.query.payrollRun.findFirst({
-      where: and(
-        eq(payrollRun.id, run.parentRunId),
-        eq(payrollRun.organizationId, ctx.organizationId)
-      ),
-      with: { items: true },
-    });
-    const parentBuckets = parent
-      ? await accumulateBaseBuckets(tx, parent.items)
-      : null;
-
-    if (parentBuckets && parentBuckets.grossWages !== 0) {
-      // Proportion of the parent's gross this correction adjusts (signed).
-      const ratio = grossWages / parentBuckets.grossWages;
-      employerTax = Math.round(parentBuckets.employerTax * ratio);
-      const scaled = new Map<string, number>();
-      for (const [code, amount] of parentBuckets.liabilityByCode.entries()) {
-        const v = Math.round(amount * ratio);
-        if (v !== 0) scaled.set(code, v);
-      }
-      liabilityByCode = scaled;
-    }
-  }
-
-  // Last-resort fallback: nothing itemized, but the run reports deductions. Credit
-  // them to Income Tax Payable (2220) — explicitly NOT the VAT account (2200).
-  // The run's totalDeductions is already stored in base currency, so it is NOT
-  // re-converted here.
-  if (liabilityByCode.size === 0 && run.totalDeductions !== 0) {
-    liabilityByCode.set(INCOME_TAX_PAYABLE_CODE, run.totalDeductions);
-  }
+  // rateExact exactly once — there is no second conversion at insert time.
+  const [org] = await tx.select({ currency: organization.defaultCurrency }).from(organization).where(and(eq(organization.id, ctx.organizationId), isNull(organization.deletedAt)));
+  if (!org) throw new AuthError("Organization not found", 404);
+  const base = run.baseCurrency ?? org.currency;
+  if (base !== org.currency) throw new WireCompatibilityError("Payroll base currency differs from organization");
+  await assertNotLocked(ctx.organizationId, run.payPeriodEnd, ctx);
+  const own = await accumulateBaseBuckets(tx, items, ctx.organizationId);
+  const grossWages = own.grossWages, employerTax = own.employerTax;
+  const liabilityByCode = own.liabilityByCode;
 
   // Net pay must balance the entry against the actual debits/credits we post.
   // DR side total = gross + employerTax. CR side = withholdings + employerTax-liability
@@ -363,11 +279,10 @@ export async function postPayrollRun(
   //   credits = sum(liabilityByCode) + netPay
   // → netPay = grossWages + employerTax − sum(liabilityByCode)
   // Everything here is already in base currency.
-  const totalLiabilityCredits = [...liabilityByCode.values()].reduce(
-    (a, b) => a + b,
-    0
-  );
-  const netPay = grossWages + employerTax - totalLiabilityCredits;
+  const totalLiabilityCredits = payrollSum([...liabilityByCode.values()]);
+  const netPay = payrollSum([grossWages, employerTax, -totalLiabilityCredits]);
+  if (grossWages !== run.totalGross || netPay !== run.totalNet || payrollSum([totalLiabilityCredits, -employerTax]) !== run.totalDeductions)
+    throw new WireCompatibilityError("Payroll journal does not reconcile to saved run totals");
 
   // Nothing to post.
   if (grossWages === 0 && totalLiabilityCredits === 0 && netPay === 0) {
@@ -392,12 +307,12 @@ export async function postPayrollRun(
   if (incomeTaxCode !== INCOME_TAX_PAYABLE_CODE && liabilityByCode.has(INCOME_TAX_PAYABLE_CODE)) {
     const moved = liabilityByCode.get(INCOME_TAX_PAYABLE_CODE)!;
     liabilityByCode.delete(INCOME_TAX_PAYABLE_CODE);
-    liabilityByCode.set(incomeTaxCode, (liabilityByCode.get(incomeTaxCode) ?? 0) + moved);
+    liabilityByCode.set(incomeTaxCode, payrollSum([liabilityByCode.get(incomeTaxCode) ?? 0, moved]));
   }
 
-  const salaryAccount = await resolveAccount(ctx.organizationId, salaryCode, base, tx);
+  const salaryAccount = await resolveAccount(ctx.organizationId, salaryCode, base, tx, "expense");
   const netPayCode = opts.accrued ? WAGES_PAYABLE_CODE : bankCode;
-  const netPayAccount = await resolveAccount(ctx.organizationId, netPayCode, base, tx);
+  const netPayAccount = await resolveAccount(ctx.organizationId, netPayCode, base, tx, opts.accrued ? "liability" : "asset");
 
   if (!salaryAccount || !netPayAccount) {
     throw new Error("Could not resolve payroll GL accounts");
@@ -413,7 +328,7 @@ export async function postPayrollRun(
 
   let employerTaxAccountId: string | null = null;
   if (employerTax !== 0) {
-    const acct = await resolveAccount(ctx.organizationId, EMPLOYER_TAX_EXPENSE_CODE, base, tx);
+    const acct = await resolveAccount(ctx.organizationId, EMPLOYER_TAX_EXPENSE_CODE, base, tx, "expense");
     if (!acct) throw new Error("Could not resolve employer payroll tax account");
     employerTaxAccountId = acct.id;
   }
@@ -457,11 +372,11 @@ export async function postPayrollRun(
     let d = debit;
     let c = credit;
     if (d < 0) {
-      c += -d;
+      c = payrollSum([c, -d]);
       d = 0;
     }
     if (c < 0) {
-      d += -c;
+      d = payrollSum([d, -c]);
       c = 0;
     }
     if (d === 0 && c === 0) return;
@@ -474,6 +389,7 @@ export async function postPayrollRun(
       debitAmount: d,
       creditAmount: c,
       currencyCode: base,
+      exchangeRate: 1000000, rateExact: "1", rateDirection: "quote_per_base", rateFormatVersion: 1, rateMigrationStatus: "exact", rateProvenance: "payroll_base_snapshot",
     });
   };
 
@@ -500,7 +416,8 @@ export async function postPayrollRun(
   );
 
   if (lines.length > 0) {
-    // Lines are already base-currency; insert as-is (exchangeRate defaults 1:1).
+    if (payrollSum(lines.map(l => l.debitAmount ?? 0)) !== payrollSum(lines.map(l => l.creditAmount ?? 0))) throw new WireCompatibilityError("Payroll journal is unbalanced");
+    // All lines are exact base-currency snapshots.
     await tx.insert(journalLine).values(lines);
   }
 

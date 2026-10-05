@@ -255,6 +255,10 @@ export const payrollRun = pgTable("payroll_run", {
   status: payrollRunStatusEnum("status").notNull().default("draft"),
   runType: runTypeEnum("run_type").notNull().default("regular"),
   parentRunId: uuid("parent_run_id"),
+  // Nullable expand fields: never guess the currency or termination intent of old runs.
+  baseCurrency: text("base_currency"),
+  terminationEmployeeId: uuid("termination_employee_id"),
+  terminationPtoHours: real("termination_pto_hours"),
   notes: text("notes"),
   approvalStatus: approvalStatusEnum("approval_status"),
   approvedBy: uuid("approved_by").references(() => member.id, { onDelete: "set null" }),
@@ -344,6 +348,8 @@ export const payrollItemDeduction = pgTable("payroll_item_deduction", {
   deductionTypeId: uuid("deduction_type_id")
     .notNull()
     .references(() => deductionType.id),
+  employeeDeductionId: uuid("employee_deduction_id").references(() => employeeDeduction.id),
+  liabilityAccountCode: text("liability_account_code"), // posting snapshot, not a live deduction-name lookup
   amount: moneyInteger("amount").notNull(), // cents
   category: deductionCategoryEnum("category").notNull(),
 });

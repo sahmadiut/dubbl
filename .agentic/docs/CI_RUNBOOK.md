@@ -68,3 +68,5 @@ Open baseline findings remain release blockers:
 - The 167 existing lint warnings remain visible; no errors or additional warnings were introduced by this task. Later affected-surface work should address them as appropriate.
 
 CI success does not qualify these report/API defects, exact-money migration, IRR production enablement, localization, providers, deployment or financial release gates. No runtime feature, REST/MCP contract or Drizzle schema changed in CI-001.
+
+MON-082 adds `tests/integration/payroll-runs.test.ts` to the existing integration discovery. Reproduce locally with an explicitly supplied loopback TEST_DATABASE_URL and `node --import tsx --test tests/integration/payroll-runs.test.ts`; each case creates/drops a random database and uses synthetic data. The worker invokes actual REST handlers and MCP SDK transport without a dev server, live providers or production credentials. A second case qualifies legacy payroll preservation through 0009. The existing FX storage/backfill fixture accounts for payroll's single combined guard after the bounded consumer cutover. Deployment migration authorization/opt-in and production currency flags remain unchanged.

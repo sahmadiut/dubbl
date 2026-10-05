@@ -128,7 +128,7 @@ PARENTS = {
     "inventoryVariant": "inventoryItem -> organization", "inventoryMovement": "inventoryItem -> organization",
     "stockTakeLine": "stockTake -> organization", "inventoryCostLayer": "inventoryItem -> organization",
     "inventoryLayerConsumption": "inventoryCostLayer -> inventoryItem -> organization",
-    "payrollRun": "payrollSettings.defaultCurrency; items can have distinct currencies",
+    "payrollRun": "payrollRun.baseCurrency snapshot; legacy null uses organization.defaultCurrency bridge; items have distinct currencies",
     "payrollItemDeduction": "payrollItem.currency", "payrollItemOvertime": "payrollItem.currency",
     "payrollItemTaxBreakdown": "payrollItem.currency", "payrollItemEmployerTax": "payrollItem.currency",
     "employeeDeduction": "payrollEmployee.currency", "payrollBonus": "payrollEmployee.currency",

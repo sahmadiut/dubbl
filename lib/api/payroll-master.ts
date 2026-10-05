@@ -3,8 +3,10 @@ import { db } from "@/lib/db";
 import { payrollEmployee, payrollItem, contractor, contractorPayment, member, users, auditLog } from "@/lib/db/schema";
 import { AuthError, type AuthContext } from "./auth-context";
 import { requireRole } from "./require-role";
-import { payrollMasterId, payrollMasterListSchema, payrollMasterAmounts, payrollMasterDto, payrollPaymentReadDto,
+import { payrollMasterId, payrollMasterListSchema, payrollMasterAmounts, payrollMasterDto,
   employeeCreateSchema, employeeUpdateSchema, contractorCreateSchema, contractorUpdateSchema } from "./payroll-master-wire";
+import { lockTaxOrganization } from "./tax-config-transaction";
+import { payrollPaymentDto } from "./payroll-payment-wire";
 import { legacyMinor, stringifyWire } from "@/lib/money/wire";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -100,12 +102,13 @@ export async function getPayrollContractor(ctx: AuthContext, id: string) {
     const [row] = await tx.select().from(contractor).where(contractorScope(ctx, id));
     if (!row) throw new AuthError("Contractor not found", 404);
     const payments = await tx.select().from(contractorPayment).where(eq(contractorPayment.contractorId, id)).orderBy(contractorPayment.createdAt, contractorPayment.id);
-    return { ...payrollMasterDto(row), payments: payments.map(payrollPaymentReadDto) };
+    return { ...payrollMasterDto(row), payments: payments.map(payrollPaymentDto) };
   }, { isolationLevel: "repeatable read", accessMode: "read only" });
 }
 export async function createPayrollContractor(ctx: AuthContext, input: unknown, request?: Request) {
   requireRole(ctx, "manage:contractors"); const values = payrollMasterAmounts(contractorCreateSchema.parse(input));
   return db.transaction(async tx => {
+    await lockTaxOrganization(tx, ctx.organizationId);
     const [row] = await tx.insert(contractor).values({ ...values, organizationId: ctx.organizationId, currency: values.currency ?? "USD" }).returning();
     const result = payrollMasterDto(row); await audit(tx, ctx, "contractor", row.id, "create", result, request); return result;
   });
@@ -113,6 +116,7 @@ export async function createPayrollContractor(ctx: AuthContext, input: unknown, 
 export async function updatePayrollContractor(ctx: AuthContext, id: string, input: unknown, request?: Request) {
   requireRole(ctx, "manage:contractors"); payrollMasterId.parse(id); const values = payrollMasterAmounts(contractorUpdateSchema.parse(input));
   return db.transaction(async tx => {
+    await lockTaxOrganization(tx, ctx.organizationId);
     const [before] = await tx.select().from(contractor).where(contractorScope(ctx, id)).for("update");
     if (!before) throw new AuthError("Contractor not found", 404);
     const old = payrollMasterDto(before);
@@ -127,6 +131,7 @@ export async function updatePayrollContractor(ctx: AuthContext, id: string, inpu
 export async function deletePayrollContractor(ctx: AuthContext, id: string, request?: Request) {
   requireRole(ctx, "manage:contractors"); payrollMasterId.parse(id);
   return db.transaction(async tx => {
+    await lockTaxOrganization(tx, ctx.organizationId);
     const [row] = await tx.select().from(contractor).where(contractorScope(ctx, id)).for("update");
     if (!row) throw new AuthError("Contractor not found", 404);
     const before = payrollMasterDto(row);

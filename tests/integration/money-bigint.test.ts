@@ -18,6 +18,7 @@ const coverage = JSON.parse(await readFile(".agentic/registries/MONEY_BIGINT_MIG
 const money = coverage.columns.filter(c => c.before !== c.after);
 const tables = [...new Set(money.map(c => c.table))];
 const payrollSnapshotColumns: Record<string, string[]> = {
+  contractor_payment: ["base_amount", "base_currency", "rate_exact", "payment_date"],
   payroll_run: ["base_currency", "termination_employee_id", "termination_pto_hours"],
   payroll_item_deduction: ["employee_deduction_id", "liability_account_code"],
 };
@@ -106,7 +107,7 @@ async function checksums(pool: pg.Pool) {
   const result: Record<string, unknown> = {};
   // Hash historical row values, including non-money columns, dates and org IDs.
   for (const table of tables) {
-    // MON-077/082 add nullable fields; compare every original column and separately
+    // MON-077/082/083 add nullable fields; compare every original column and separately
     // assert the new payroll snapshots stay null in assertTypes after upgrading.
     const addedColumns = table === "inventory_cost_layer" ? ["remaining_value"]
       : table === "inventory_layer_consumption" ? ["value"] : payrollSnapshotColumns[table] ?? [];

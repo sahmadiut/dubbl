@@ -488,8 +488,13 @@ export const contractorPayment = pgTable("contractor_payment", {
   status: contractorPaymentStatusEnum("status").notNull().default("pending"),
   paidAt: timestamp("paid_at", { mode: "date" }),
   journalEntryId: uuid("journal_entry_id").references(() => journalEntry.id),
+  // Nullable expansion: legacy payments are preserved without invented FX.
+  baseAmount: moneyInteger("base_amount"),
+  baseCurrency: text("base_currency"),
+  rateExact: exactFxNumeric("rate_exact"),
+  paymentDate: date("payment_date"),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
-});
+}, (table) => [fxRateCheck("contractor_payment_rate_exact_check", table.rateExact)]);
 
 // ─── Leave / PTO ────────────────────────────────────────────────────
 export const leavePolicy = pgTable("leave_policy", {

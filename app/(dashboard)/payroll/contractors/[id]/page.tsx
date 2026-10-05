@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/select";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
-import { formatMoney } from "@/lib/money";
+import { bankMoneyDisplay as formatMoney } from "@/lib/money/bank-display";
 import { CurrencySelect } from "@/components/ui/currency-select";
 import { useConfirm } from "@/lib/hooks/use-confirm";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
@@ -43,6 +43,7 @@ interface ContractorDetail {
 interface Payment {
   id: string;
   amount: number;
+  currency: string | null;
   description: string | null;
   invoiceNumber: string | null;
   status: string;
@@ -134,21 +135,23 @@ export default function ContractorDetailPage() {
 
   async function handleAddPayment() {
     if (!orgId || !paymentAmount) return;
-    const res = await fetch(`/api/v1/payroll/contractors/${id}/payments`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-organization-id": orgId },
-      body: JSON.stringify({
-        amount: Math.round(parseFloat(paymentAmount) * 100),
-        currency: paymentCurrency || contractor?.currency || "USD",
-        description: paymentDesc || undefined,
-        invoiceNumber: paymentInvoice || undefined,
-      }),
-    });
-    if (res.ok) {
-      toast.success("Payment added");
-      setPaymentAmount(""); setPaymentDesc(""); setPaymentInvoice("");
-      fetchContractor();
-    }
+    try {
+      const res = await fetch(`/api/v1/payroll/contractors/${id}/payments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-organization-id": orgId },
+        body: JSON.stringify({
+          amountMinor: payrollCentsInput(paymentAmount),
+          currency: paymentCurrency || contractor?.currency || "USD",
+          description: paymentDesc || undefined,
+          invoiceNumber: paymentInvoice || undefined,
+        }),
+      });
+      if (res.ok) {
+        toast.success("Payment added");
+        setPaymentAmount(""); setPaymentDesc(""); setPaymentInvoice("");
+        fetchContractor();
+      } else { const data = await res.json(); toast.error(data.error || "Failed to add payment"); }
+    } catch (error) { toast.error(error instanceof Error ? error.message : "Failed to add payment"); }
   }
 
   async function handleProcessPayment(paymentId: string) {
@@ -168,7 +171,7 @@ export default function ContractorDetailPage() {
       toast.success("Payment processed");
       fetchContractor();
     } else {
-      toast.error("Failed to process payment");
+      const data = await res.json(); toast.error(data.error || "Failed to process payment");
     }
   }
 
@@ -293,7 +296,7 @@ export default function ContractorDetailPage() {
                 {(contractor.payments || []).map((p) => (
                   <div key={p.id} className="flex items-center justify-between px-4 py-2.5">
                     <div>
-                      <p className="text-sm font-medium font-mono tabular-nums">{formatMoney(p.amount, contractor.currency || "USD")}</p>
+                      <p className="text-sm font-medium font-mono tabular-nums">{formatMoney(p.amount, p.currency || contractor.currency || "USD")}</p>
                       <p className="text-xs text-muted-foreground">{p.description || p.invoiceNumber || "-"}</p>
                     </div>
                     <div className="flex items-center gap-2">

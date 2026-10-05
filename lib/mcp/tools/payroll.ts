@@ -5,28 +5,18 @@ import {
   payrollEmployee,
   payrollRun,
   payrollItem,
-  payrollSettings,
   payslip,
+  auditLog,
+  member,
   taxFormGeneration,
   taxForm,
-  payrollTaxPayment,
   contractor,
   contractorPayment,
-  chartAccount,
-  journalEntry,
-  journalLine,
-  member,
-  auditLog,
 } from "@/lib/db/schema";
 import { eq, and, sql, gte, lte, lt } from "drizzle-orm";
 import { notDeleted } from "@/lib/db/soft-delete";
 import { requireRole } from "@/lib/api/require-role";
 import { wrapTool } from "@/lib/mcp/errors";
-import {
-  getNextEntryNumber,
-  findAccountByCode,
-  ensureAccountByCode,
-} from "@/lib/api/journal-automation";
 import type { AuthContext } from "@/lib/api/auth-context";
 
 export function registerPayrollTools(server: McpServer, ctx: AuthContext) {
@@ -285,160 +275,5 @@ export function registerPayrollTools(server: McpServer, ctx: AuthContext) {
       })
   );
 
-  // ─── Tax Remittance ───────────────────────────────────────────────
-  server.tool(
-    "record_payroll_tax_remittance",
-    "Record a remittance of withheld + employer payroll taxes to a tax authority for a period, posting a balanced journal entry that DEBITS the payroll-tax liability account (e.g. income-tax-payable 2220 for income tax, payroll-taxes-payable 2235 for FICA/FUTA/SUTA) and CREDITS the bank account, then marks the remittance 'paid'. 'amount' is the total cash remitted in integer cents. Provide the bankAccountId (a chart-of-accounts account id). Returns the remittance record and the posted journalEntryId.",
-    {
-      periodStart: z.string().min(1).describe("Start of the period this remittance covers (YYYY-MM-DD)"),
-      periodEnd: z.string().min(1).describe("End of the period this remittance covers (YYYY-MM-DD)"),
-      amount: z.number().int().min(1).describe("Total cash remitted, in integer cents"),
-      bankAccountId: z.string().describe("UUID of the chart-of-accounts bank/cash account the remittance is paid from"),
-      taxKind: z
-        .string()
-        .optional()
-        .describe("What this covers, e.g. '941' (FIT+FICA), '940' (FUTA), 'state_income'. Determines the liability account debited."),
-      jurisdictionLevel: z
-        .enum(["federal", "state", "local"])
-        .optional()
-        .default("federal")
-        .describe("Tax jurisdiction level"),
-      jurisdiction: z.string().optional().describe("Jurisdiction code (e.g. 'CA', 'NY'); omit for federal"),
-      reference: z.string().optional().describe("Confirmation / EFTPS number"),
-      notes: z.string().optional().describe("Optional notes"),
-      date: z.string().optional().describe("Posting/payment date (YYYY-MM-DD); defaults to periodEnd"),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        requireRole(ctx, "manage:payroll");
-
-        const bank = await db.query.chartAccount.findFirst({
-          where: and(
-            eq(chartAccount.id, params.bankAccountId),
-            eq(chartAccount.organizationId, ctx.organizationId),
-            notDeleted(chartAccount.deletedAt)
-          ),
-        });
-        if (!bank) throw new Error("Bank account not found");
-
-        // Decide which liability account to debit based on what the remittance
-        // covers. Income-tax style → 2220; FICA / unemployment style → 2235.
-        const kind = (params.taxKind ?? "").toLowerCase();
-        const isPayrollTax =
-          kind.includes("fica") ||
-          kind.includes("social") ||
-          kind.includes("medicare") ||
-          kind.includes("futa") ||
-          kind.includes("suta") ||
-          kind.includes("940") ||
-          kind.includes("unemployment");
-        const liabilityCode = isPayrollTax ? "2235" : "2220";
-
-        // Connect the payroll liability account on demand — an org that hasn't
-        // run a payroll yet won't have it — so a remittance never dead-ends. The
-        // REST sibling (payroll/tax-payments) does the same; names match the chart.
-        const PAYROLL_LIABILITY_NAMES: Record<string, string> = {
-          "2220": "Income Tax Payable",
-          "2235": "Payroll Taxes Payable",
-          "2245": "Pension & Benefits Payable",
-        };
-        const remittanceSettings = await db.query.payrollSettings.findFirst({
-          where: eq(payrollSettings.organizationId, ctx.organizationId),
-        });
-        const baseCurrency = remittanceSettings?.defaultCurrency ?? "USD";
-        const liabilityAccount =
-          (await findAccountByCode(ctx.organizationId, liabilityCode)) ??
-          (await ensureAccountByCode(
-            ctx.organizationId,
-            {
-              code: liabilityCode,
-              name: PAYROLL_LIABILITY_NAMES[liabilityCode] ?? `Account ${liabilityCode}`,
-              type: "liability",
-              subType: "current",
-            },
-            baseCurrency
-          ));
-        if (!liabilityAccount) {
-          throw new Error(`Could not resolve payroll liability account ${liabilityCode}`);
-        }
-
-        const postingDate = params.date || params.periodEnd;
-
-        const mem = await db.query.member.findFirst({
-          where: and(
-            eq(member.organizationId, ctx.organizationId),
-            eq(member.userId, ctx.userId)
-          ),
-        });
-
-        const result = await db.transaction(async (tx) => {
-          const entryNumber = await getNextEntryNumber(ctx.organizationId, tx);
-          const [entry] = await tx
-            .insert(journalEntry)
-            .values({
-              organizationId: ctx.organizationId,
-              entryNumber,
-              date: postingDate,
-              description: `Payroll tax remittance${params.taxKind ? ` (${params.taxKind})` : ""} ${params.periodStart} to ${params.periodEnd}`,
-              reference: params.reference || null,
-              status: "posted",
-              sourceType: "payroll_tax_payment",
-              postedAt: new Date(),
-              createdBy: ctx.userId,
-            })
-            .returning();
-
-          await tx.insert(journalLine).values([
-            {
-              journalEntryId: entry.id,
-              accountId: liabilityAccount.id,
-              description: "Payroll tax liability settled",
-              debitAmount: params.amount,
-              creditAmount: 0,
-            },
-            {
-              journalEntryId: entry.id,
-              accountId: bank.id,
-              description: "Payroll tax remittance",
-              debitAmount: 0,
-              creditAmount: params.amount,
-            },
-          ]);
-
-          const [payment] = await tx
-            .insert(payrollTaxPayment)
-            .values({
-              organizationId: ctx.organizationId,
-              periodStart: params.periodStart,
-              periodEnd: params.periodEnd,
-              jurisdictionLevel: params.jurisdictionLevel,
-              jurisdiction: params.jurisdiction || null,
-              taxKind: params.taxKind || null,
-              amount: params.amount,
-              currency: bank.currencyCode,
-              bankAccountId: bank.id,
-              reference: params.reference || null,
-              notes: params.notes || null,
-              status: "paid",
-              paidAt: new Date(),
-              journalEntryId: entry.id,
-              createdBy: mem?.id || null,
-            })
-            .returning();
-
-          return { payment, journalEntryId: entry.id };
-        });
-
-        await db.insert(auditLog).values({
-          organizationId: ctx.organizationId,
-          userId: ctx.userId,
-          action: "record_payroll_tax_remittance",
-          entityType: "payroll_tax_payment",
-          entityId: result.payment.id,
-          changes: { amount: params.amount, journalEntryId: result.journalEntryId },
-        });
-
-        return { payment: result.payment, journalEntryId: result.journalEntryId };
-      })
-  );
+  // Tax remittances are registered in payroll-payments.ts.
 }

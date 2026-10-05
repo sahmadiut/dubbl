@@ -95,7 +95,7 @@ MONEY = {
     "payrollBonus": "amount",
     "payrollItemOvertime": "regularAmount overtimeAmount",
     "contractor": "hourlyRate",
-    "contractorPayment": "amount",
+    "contractorPayment": "amount baseAmount",
     "compensationBand": "minSalary midSalary maxSalary",
     "compensationReview": "totalBudget",
     "compensationReviewEntry": "currentSalary proposedSalary",
@@ -108,7 +108,7 @@ MONEY = {
     "payslip": "grossAmount netAmount taxAmount ytdGross ytdNet ytdTax",
 }
 MONEY = {t: set(fields.split()) for t, fields in MONEY.items()}
-FX = {"journalLine.exchangeRate", "exchangeRate.rate", "consolidationRate.rate", "payrollItem.fxRate", "journalLine.rateExact", "exchangeRate.rateExact", "consolidationRate.rateExact", "payrollItem.rateExact"}
+FX = {"journalLine.exchangeRate", "exchangeRate.rate", "consolidationRate.rate", "payrollItem.fxRate", "journalLine.rateExact", "exchangeRate.rateExact", "consolidationRate.rateExact", "payrollItem.rateExact", "contractorPayment.rateExact"}
 PARENTS = {
     "invoiceLine": "invoice", "quoteLine": "quote", "creditNoteLine": "creditNote",
     "salesReceiptLine": "salesReceipt", "billLine": "bill", "purchaseOrderLine": "purchaseOrder",
@@ -164,6 +164,8 @@ PATTERNS = {
 
 
 def currency_source(table, block):
+    if table == "contractorPayment":
+        return "contractorPayment.currency for amount; baseCurrency snapshot for baseAmount; legacy snapshots null"
     if table == "journalLine":
         return "organization.defaultCurrency for posted debit/credit; currencyCode tags original document; manual entry semantics need MON-007 review"
     if table == "exchangeRate":

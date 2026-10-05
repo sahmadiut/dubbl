@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { payrollCentsInput } from "@/lib/money/payroll-input";
+
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import {
   Landmark,
@@ -37,6 +39,7 @@ import { DataTable, type Column } from "@/components/dashboard/data-table";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { formatMoney } from "@/lib/money";
+import { bankMoneyDisplay } from "@/lib/money/bank-display";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 
 // ─── What payroll taxes look like by who you pay ────────────────────────────
@@ -118,6 +121,8 @@ export default function TaxLiabilitiesPage() {
 
   // ── Record-payment sheet state ──
   const [sheetOpen, setSheetOpen] = useState(false);
+  const remittanceKey = useRef<string | null>(null);
+  const remittanceInput = useRef<string>("");
   const [submitting, setSubmitting] = useState(false);
   const [formBucket, setFormBucket] = useState<string>(AGENCY_BUCKETS[0].bucket);
   const [formAmount, setFormAmount] = useState(""); // decimal string
@@ -177,8 +182,11 @@ export default function TaxLiabilitiesPage() {
 
   const handleSubmit = useCallback(async () => {
     if (!orgId) return;
-    const cents = Math.round(parseFloat(formAmount || "0") * 100);
-    if (!cents || cents <= 0) {
+    let cents: string;
+    try { cents = payrollCentsInput(formAmount || "0"); } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Invalid amount"); return;
+    }
+    if (cents === "0") {
       toast.error("Enter an amount greater than zero");
       return;
     }
@@ -189,6 +197,9 @@ export default function TaxLiabilitiesPage() {
 
     const selected = AGENCY_BUCKETS.find((b) => b.bucket === formBucket);
 
+    const inputKey = JSON.stringify([formPeriodStart, formPeriodEnd, formJurisdiction, formBucket, cents, formPaymentDate, formReference, formNotes]);
+    if (remittanceInput.current !== inputKey) { remittanceKey.current = null; remittanceInput.current = inputKey; }
+    remittanceKey.current ??= crypto.randomUUID();
     setSubmitting(true);
     try {
       const res = await fetch(`/api/v1/payroll/tax-payments`, {
@@ -198,11 +209,12 @@ export default function TaxLiabilitiesPage() {
           "x-organization-id": orgId,
         },
         body: JSON.stringify({
+          idempotencyKey: remittanceKey.current,
           periodStart: formPeriodStart,
           periodEnd: formPeriodEnd,
           jurisdictionLevel: formJurisdiction,
           taxKind: selected?.taxKind ?? null,
-          allocations: [{ bucket: formBucket, amount: cents }],
+          allocations: [{ bucket: formBucket, amountMinor: cents }],
           paymentDate: formPaymentDate || undefined,
           reference: formReference || undefined,
           notes: formNotes || undefined,
@@ -212,6 +224,7 @@ export default function TaxLiabilitiesPage() {
       if (!res.ok) {
         throw new Error(data?.error || "Could not record payment");
       }
+      remittanceKey.current = null;
       toast.success("Payment recorded");
       setSheetOpen(false);
       setRefreshKey((k) => k + 1);
@@ -306,7 +319,7 @@ export default function TaxLiabilitiesPage() {
         className: "w-28 text-right",
         render: (r) => (
           <span className="font-mono text-sm tabular-nums">
-            {formatMoney(r.amount, r.currency || undefined)}
+            {bankMoneyDisplay(r.amount, r.currency || "USD")}
           </span>
         ),
       },

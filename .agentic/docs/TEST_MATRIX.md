@@ -906,3 +906,11 @@ combined financial acceptance. No stored rescaling or configured database migrat
 - State assertions cover bonus recalculation, approval decisions and retry, accrued payable mode, concurrent processing, one-time reservation/consumption and termination/PTO completion. Negative snapshots compare all financial/state tables for unsafe requests/history, auth/scope, locks, missing/quarantined FX and every mutation's audit fault, including response corruption before commit. API-key last-used metadata is excluded from financial rollback comparisons.
 - Separate historical 0008 upgrade compares complete legacy payroll rows, completed history, old exact/quarantined FX and new nullable columns; fx-exact physical/backfill tests disable the new combined payroll guard explicitly.
 - No screenshots/build/dev server/production or financial sign-off; MON-083..085 and MON-025 retain downstream/integrated qualification.
+
+
+## MON-083 payroll contractor and tax payments
+
+- Pure payment contracts reject malformed/conflicting/unsafe aliases and saved snapshots; bigint allocation/FX math preserves cents and safe bounds.
+- Migrated PostgreSQL actual REST/API-key and MCP SDK fixtures cover 8 REST operations and 9 tools, described strict schemas, legacy/exact clients, permissions/tenant/sibling/bank isolation, paid/void rules, period/fiscal locks, concurrent retries, master currency/create races, FX preservation and audit-fault rollback.
+- Separate 0009-to-current full-row checksum fixture preserves legacy contractor/tax payments, nullable snapshots and migration idempotency; all-money historical tests include the new contractor fields in explicit expansion exclusions and check original values.
+- No builds/dev server/production/IRR change, screenshots or financial sign-off; MON-025/084/085 retain combined/downstream qualification.

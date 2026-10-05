@@ -71,6 +71,13 @@
       "when": 1791212246997,
       "tag": "0009_melodic_bullseye",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791234477445,
+      "tag": "0010_slippery_skreet",
+      "breakpoints": true
     }
   ]
 }

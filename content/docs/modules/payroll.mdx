@@ -121,3 +121,11 @@ Configure payroll defaults at **Payroll > Settings**, including default tax rate
 ## Employee Self-Service
 
 Navigate to **Payroll > Self-Service** for the employee portal where team members can view their payslips, submit leave requests, and update personal details.
+
+## Configuration API money contracts
+
+Payroll settings, deduction types and employee deductions, employee tax elections, tax brackets and tax allowances retain integer cents fields and add matching `Minor` strings (for example `defaultAmountMinor`, `additionalWithholdingMinor` and `ssWageBaseCentsMinor`). Numeric and string inputs must agree, with a supported range of 0 through 9007199254740991. Nullable fields can be cleared with null; omitted update fields retain their values. Tax thresholds/brackets/allowances are annual cents; fixed deductions and extra withholding are per pay period.
+
+Rates ending in `Bp`, default tax rate and bracket rate are integer basis points (100 = 1%). Deduction percentages use decimal percent; existing PostgreSQL real controls require values exactly representable in binary32, such as 2.5. Unsupported percentages such as 2.9 reject instead of silently rounding. Allowance counts remain nonnegative int32. Employee elections use `additionalWithholding`, a single extra per-period amount, rather than separate federal/state fields.
+
+The allowance configuration API is available at `/api/v1/payroll/tax/allowances` with list/create and individual get/edit/delete operations. It stores annual allowance/standard deduction settings, requiring `manage:tax-config`, and rejects duplicate live jurisdiction/year configurations. Configuration editing does not certify jurisdiction-specific payroll calculations or current statutory tax rules.

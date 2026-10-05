@@ -1,3 +1,4 @@
+import { registerPayrollConfigTools } from "./payroll-config";
 import { registerPayrollMasterTools } from "./payroll-master";
 import { registerInventoryValuationTools } from "./inventory-valuation";
 import { registerInventoryMasterTools } from "./inventory-master";
@@ -117,6 +118,7 @@ export function registerAllTools(server: McpServer, ctx: AuthContext) {
   registerConsolidationTools(server, ctx);
   registerPayrollTools(server, ctx);
   registerPayrollMasterTools(server, ctx);
+  registerPayrollConfigTools(server, ctx);
   registerFixedAssetTools(server, ctx);
   registerInventoryTools(server, ctx);
   registerInventoryAssemblyTools(server, ctx);

@@ -514,3 +514,16 @@ Value-only FIFO/standard adjustments reject pending layer qualification. See
 for REST target versus MCP delta semantics, offsets, envelopes, ranges and
 metadata-only serial/lot behavior. General tracked workflows/valuation/assembly,
 full-int64 and production IRR remain separate inventory/qualification gates.
+
+## Payroll configuration contracts (MON-080)
+
+Settings/deduction/tax-election/bracket/allowance REST and 23 MCP tools share
+scoped atomic services. Nonnegative safe integer cents add matching Minor strings;
+annual thresholds and per-period amounts stay explicit. Basis points, decimal
+binary32 percent/hours and int32 counts retain their units. Invalid references,
+unsafe history and output/audit faults reject or roll back. Scoped lazy defaults
+and allowance uniqueness serialize; deleted tax configurations stay out of the
+existing withholding loader. Editors use actual fields and exact cents. See
+[configuration contracts](../../.agentic/registries/PAYROLL_CONFIG_WIRE_CONTRACTS.md)
+for envelopes, all fields/ranges, strict-input compatibility corrections and
+remaining run/jurisdiction/full-range/IRR qualification.

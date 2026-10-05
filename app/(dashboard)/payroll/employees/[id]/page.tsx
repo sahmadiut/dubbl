@@ -52,9 +52,10 @@ interface EmployeeDetail {
 
 interface EmployeeDeduction {
   id: string;
-  deductionType: { name: string; category: string; timing: string };
-  amount: number;
-  isPercentage: boolean;
+  deductionType: { name: string; category: string; defaultAmount: number | null; defaultPercent: number | null };
+  timing: string;
+  amount: number | null;
+  percent: number | null;
   isActive: boolean;
 }
 
@@ -63,8 +64,7 @@ interface TaxConfig {
   filingStatus: string;
   federalAllowances: number;
   stateAllowances: number;
-  additionalFederalWithholding: number;
-  additionalStateWithholding: number;
+  additionalWithholding: number | null;
 }
 
 interface LeaveBalance {
@@ -110,7 +110,6 @@ export default function EmployeeDetailPage() {
   const [tcFederalAllowances, setTcFederalAllowances] = useState("0");
   const [tcStateAllowances, setTcStateAllowances] = useState("0");
   const [tcAddlFederal, setTcAddlFederal] = useState("0");
-  const [tcAddlState, setTcAddlState] = useState("0");
 
   // Edit form state
   const [name, setName] = useState("");
@@ -171,7 +170,7 @@ export default function EmployeeDetailPage() {
     fetch(`/api/v1/payroll/employees/${id}/deductions`, { headers })
       .then((r) => r.json())
       .then((data) => {
-        if (data.deductions) setDeductions(data.deductions);
+        if (data.data) setDeductions(data.data);
       })
       .catch(() => {});
 
@@ -184,8 +183,7 @@ export default function EmployeeDetailPage() {
           setTcFilingStatus(tc.filingStatus || "");
           setTcFederalAllowances(String(tc.federalAllowances ?? 0));
           setTcStateAllowances(String(tc.stateAllowances ?? 0));
-          setTcAddlFederal(String(tc.additionalFederalWithholding ?? 0));
-          setTcAddlState(String(tc.additionalStateWithholding ?? 0));
+          setTcAddlFederal(payrollCentsDecimal(tc.additionalWithholding ?? 0));
         }
       })
       .catch(() => {});
@@ -223,10 +221,9 @@ export default function EmployeeDetailPage() {
         },
         body: JSON.stringify({
           filingStatus: tcFilingStatus,
-          federalAllowances: parseInt(tcFederalAllowances) || 0,
-          stateAllowances: parseInt(tcStateAllowances) || 0,
-          additionalFederalWithholding: parseFloat(tcAddlFederal) || 0,
-          additionalStateWithholding: parseFloat(tcAddlState) || 0,
+          federalAllowances: Number(tcFederalAllowances),
+          stateAllowances: Number(tcStateAllowances),
+          additionalWithholdingMinor: payrollCentsInput(tcAddlFederal || "0"),
         }),
       });
       if (res.ok) {
@@ -564,19 +561,19 @@ export default function EmployeeDetailPage() {
                           variant="outline"
                           className={cn(
                             "text-[11px]",
-                            d.deductionType.timing === "pre_tax"
+                            d.deductionType.category === "pre_tax"
                               ? "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-300"
                               : "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300"
                           )}
                         >
-                          {d.deductionType.timing === "pre_tax" ? "Pre-tax" : "Post-tax"}
+                          {d.deductionType.category === "pre_tax" ? "Pre-tax" : "Post-tax"}
                         </Badge>
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-sm font-mono tabular-nums">
-                      {d.isPercentage ? `${d.amount}%` : formatMoney(d.amount, "USD")}
+                      {d.amount != null ? formatMoney(d.amount, "USD") : d.percent != null ? `${d.percent}%` : d.deductionType.defaultAmount != null ? formatMoney(d.deductionType.defaultAmount, "USD") : d.deductionType.defaultPercent != null ? `${d.deductionType.defaultPercent}%` : "No amount configured"}
                     </span>
                     <Badge
                       variant="outline"
@@ -611,8 +608,8 @@ export default function EmployeeDetailPage() {
                     <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="single">Single</SelectItem>
-                      <SelectItem value="married_filing_jointly">Married Filing Jointly</SelectItem>
-                      <SelectItem value="married_filing_separately">Married Filing Separately</SelectItem>
+                      <SelectItem value="married_joint">Married Filing Jointly</SelectItem>
+                      <SelectItem value="married_separate">Married Filing Separately</SelectItem>
                       <SelectItem value="head_of_household">Head of Household</SelectItem>
                     </SelectContent>
                   </Select>
@@ -634,19 +631,11 @@ export default function EmployeeDetailPage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Additional Federal Withholding</Label>
+                  <Label className="text-xs">Additional Withholding per Pay Period</Label>
                   <CurrencyInput
                     prefix="$"
                     value={tcAddlFederal}
                     onChange={setTcAddlFederal}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Additional State Withholding</Label>
-                  <CurrencyInput
-                    prefix="$"
-                    value={tcAddlState}
-                    onChange={setTcAddlState}
                   />
                 </div>
               </div>

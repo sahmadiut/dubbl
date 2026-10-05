@@ -1,36 +1,36 @@
 import { requireRole } from "@/lib/api/require-role";
 import { getAuthContext } from "@/lib/api/auth-context";
 import { handleError, ok } from "@/lib/api/response";
-import { getPayrollDeductionType, updatePayrollDeductionType, deletePayrollDeductionType } from "@/lib/api/payroll-config";
+import { getPayrollTaxAllowance, updatePayrollTaxAllowance, deletePayrollTaxAllowance } from "@/lib/api/payroll-config";
 import { readPayrollMasterJson } from "@/lib/api/payroll-master-wire";
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const ctx = await getAuthContext(request);
-    requireRole(ctx, "manage:payroll");
+    requireRole(ctx, "manage:tax-config");
     const { id } = await params;
-    const result = await getPayrollDeductionType(ctx, id);
-    return ok({ deductionType: result });
+    const result = await getPayrollTaxAllowance(ctx, id);
+    return ok({ allowance: result });
   } catch (err) { return handleError(err); }
 }
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const ctx = await getAuthContext(request);
-    requireRole(ctx, "manage:payroll");
+    requireRole(ctx, "manage:tax-config");
     const { id } = await params;
     const body = await readPayrollMasterJson(request);
-    const result = await updatePayrollDeductionType(ctx, id, body, request);
-    return ok({ deductionType: result });
+    const result = await updatePayrollTaxAllowance(ctx, id, body, request);
+    return ok({ allowance: result });
   } catch (err) { return handleError(err); }
 }
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const ctx = await getAuthContext(request);
-    requireRole(ctx, "manage:payroll");
+    requireRole(ctx, "manage:tax-config");
     const { id } = await params;
-    const result = await deletePayrollDeductionType(ctx, id, request);
+    const result = await deletePayrollTaxAllowance(ctx, id, request);
     return ok(result);
   } catch (err) { return handleError(err); }
 }

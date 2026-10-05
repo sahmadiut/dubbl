@@ -512,3 +512,11 @@ identifies the original compensated posting. Safe state/audit updates commit
 atomically. Requires manage:banking, open dates, and additionally manage:expenses
 for bank expense undo. Exclude toggles and adjustments are new events on each
 call; other repeated transitions reject. Inspect state before an uncertain retry.
+
+### Payroll configuration tools
+
+Use `get_payroll_settings` and `update_payroll_settings` for owned payroll defaults; `list_payroll_deduction_types`, `get_payroll_deduction_type`, `create_payroll_deduction_type`, `update_payroll_deduction_type` and `delete_payroll_deduction_type` for types; and `list_payroll_employee_deductions`, `create_payroll_employee_deduction`, `update_payroll_employee_deduction` and `delete_payroll_employee_deduction` for assignments. Employee tax elections use `get_payroll_employee_tax_config` and `update_payroll_employee_tax_config`. These require `manage:payroll`.
+
+Tax configuration requires `manage:tax-config`: `list_payroll_tax_brackets`, `get_payroll_tax_bracket`, `create_payroll_tax_bracket`, `update_payroll_tax_bracket`, `delete_payroll_tax_bracket`, and the corresponding `list_payroll_tax_allowances`, `get_payroll_tax_allowance`, `create_payroll_tax_allowance`, `update_payroll_tax_allowance`, `delete_payroll_tax_allowance`.
+
+Money remains nonnegative integer cents with agreeing canonical `Minor` string aliases, up to 9007199254740991. Annual threshold/bracket/allowance fields remain annual; deduction overrides and additional withholding remain per period. Rates are basis points, deduction percentages are decimal percent exactly storable in binary32, counts are int32, and dates are Gregorian YYYY-MM-DD. Tools return the named REST-compatible entity/data envelope. Writes and audits commit atomically; employee/type/account references must be owned. Allowance duplicates return 409; soft-deleted history is retained. Configuration operations do not post payroll or certify statutory rules/jurisdiction selection.

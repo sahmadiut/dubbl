@@ -1,5 +1,6 @@
 "use client";
 
+import { payrollCentsInput, payrollCentsDecimal, payrollBasisPointsInput } from "@/lib/money/payroll-input";
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "motion/react";
 import { toast } from "sonner";
@@ -123,6 +124,8 @@ export default function PayrollSettingsPage() {
     autoApprovalEnabled: false,
   });
 
+  const [defaultTaxPercent, setDefaultTaxPercent] = useState("20.00");
+
   // Deduction types
   const [deductionTypes, setDeductionTypes] = useState<DeductionType[]>([]);
   const [deductionDrawer, setDeductionDrawer] = useState(false);
@@ -167,7 +170,7 @@ export default function PayrollSettingsPage() {
       fetch("/api/v1/payroll/compensation/bands", { headers }).then((r) => r.json()),
     ])
       .then(([settingsData, deductionsData, bracketsData, shiftsData, leaveData, chainsData, bandsData]) => {
-        if (settingsData.settings) setSettings(settingsData.settings);
+        if (settingsData.settings) { setSettings(settingsData.settings); setDefaultTaxPercent(payrollCentsDecimal(settingsData.settings.defaultTaxRate)); }
         if (deductionsData.data) setDeductionTypes(deductionsData.data);
         if (bracketsData.data) setTaxBrackets(bracketsData.data);
         if (shiftsData.data) setShifts(shiftsData.data);
@@ -187,10 +190,15 @@ export default function PayrollSettingsPage() {
       const res = await fetch("/api/v1/payroll/settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
-        body: JSON.stringify(settings),
+        body: JSON.stringify({
+          defaultTaxRate: payrollBasisPointsInput(defaultTaxPercent), overtimeThresholdHours: settings.overtimeThresholdHours,
+          overtimeMultiplier: settings.overtimeMultiplier, defaultCurrency: settings.defaultCurrency,
+          salaryExpenseAccountCode: settings.salaryExpenseAccountCode || null, taxPayableAccountCode: settings.taxPayableAccountCode || null,
+          bankAccountCode: settings.bankAccountCode || null, autoApprovalEnabled: settings.autoApprovalEnabled,
+        }),
       });
       if (res.ok) toast.success("Settings saved");
-      else toast.error("Failed to save settings");
+      else toast.error((await res.json()).error || "Failed to save settings");
     } catch {
       toast.error("Failed to save settings");
     } finally {
@@ -207,8 +215,8 @@ export default function PayrollSettingsPage() {
         body: JSON.stringify({
           name: newDeduction.name,
           category: newDeduction.category,
-          defaultAmount: newDeduction.defaultAmount ? Math.round(parseFloat(newDeduction.defaultAmount) * 100) : undefined,
-          defaultPercent: newDeduction.defaultPercent ? parseFloat(newDeduction.defaultPercent) : undefined,
+          defaultAmountMinor: newDeduction.defaultAmount ? payrollCentsInput(newDeduction.defaultAmount) : undefined,
+          defaultPercent: newDeduction.defaultPercent ? Number(newDeduction.defaultPercent) : undefined,
         }),
       });
       if (res.ok) {
@@ -217,6 +225,7 @@ export default function PayrollSettingsPage() {
         setNewDeduction({ name: "", category: "post_tax", defaultAmount: "", defaultPercent: "" });
         fetchAll();
       }
+      else toast.error((await res.json()).error || "Failed to add deduction type");
     } catch {
       toast.error("Failed to add deduction type");
     }
@@ -247,9 +256,9 @@ export default function PayrollSettingsPage() {
         body: JSON.stringify({
           name: newBracket.name,
           jurisdictionLevel: newBracket.jurisdictionLevel,
-          minIncome: Math.round(parseFloat(newBracket.minIncome || "0") * 100),
-          maxIncome: newBracket.maxIncome ? Math.round(parseFloat(newBracket.maxIncome) * 100) : null,
-          rate: Math.round(parseFloat(newBracket.rate || "0") * 100),
+          minIncomeMinor: payrollCentsInput(newBracket.minIncome || "0"),
+          maxIncomeMinor: newBracket.maxIncome ? payrollCentsInput(newBracket.maxIncome) : null,
+          rate: payrollBasisPointsInput(newBracket.rate || "0"),
         }),
       });
       if (res.ok) {
@@ -258,6 +267,7 @@ export default function PayrollSettingsPage() {
         setNewBracket({ name: "", jurisdictionLevel: "federal", minIncome: "", maxIncome: "", rate: "" });
         fetchAll();
       }
+      else toast.error((await res.json()).error || "Failed to add tax bracket");
     } catch {
       toast.error("Failed to add tax bracket");
     }
@@ -368,8 +378,8 @@ export default function PayrollSettingsPage() {
                 <Input
                   type="number"
                   step="0.01"
-                  value={(settings.defaultTaxRate / 100).toFixed(2)}
-                  onChange={(e) => setSettings({ ...settings, defaultTaxRate: Math.round(parseFloat(e.target.value || "0") * 100) })}
+                  value={defaultTaxPercent}
+                  onChange={(e) => setDefaultTaxPercent(e.target.value)}
                 />
               </div>
               <div className="space-y-1.5">
@@ -399,21 +409,21 @@ export default function PayrollSettingsPage() {
               <div className="space-y-1.5">
                 <Label className="text-xs">Salary Expense Account</Label>
                 <Input
-                  value={settings.salaryExpenseAccountCode}
+                  value={settings.salaryExpenseAccountCode ?? ""}
                   onChange={(e) => setSettings({ ...settings, salaryExpenseAccountCode: e.target.value })}
                 />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Tax Payable Account</Label>
                 <Input
-                  value={settings.taxPayableAccountCode}
+                  value={settings.taxPayableAccountCode ?? ""}
                   onChange={(e) => setSettings({ ...settings, taxPayableAccountCode: e.target.value })}
                 />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Bank Account</Label>
                 <Input
-                  value={settings.bankAccountCode}
+                  value={settings.bankAccountCode ?? ""}
                   onChange={(e) => setSettings({ ...settings, bankAccountCode: e.target.value })}
                 />
               </div>
@@ -461,8 +471,8 @@ export default function PayrollSettingsPage() {
                         <p className="text-sm font-medium">{dt.name}</p>
                         <div className="flex items-center gap-2 mt-0.5">
                           <Badge variant="outline" className="text-[10px]">{dt.category === "pre_tax" ? "Pre-tax" : "Post-tax"}</Badge>
-                          {dt.defaultAmount && <span className="text-xs text-muted-foreground">${(dt.defaultAmount / 100).toFixed(2)}</span>}
-                          {dt.defaultPercent && <span className="text-xs text-muted-foreground">{dt.defaultPercent}%</span>}
+                          {dt.defaultAmount != null && <span className="text-xs text-muted-foreground">${payrollCentsDecimal(dt.defaultAmount)}</span>}
+                          {dt.defaultPercent != null && <span className="text-xs text-muted-foreground">{dt.defaultPercent}%</span>}
                         </div>
                       </div>
                       <Button size="icon" variant="ghost" className="size-7" onClick={() => handleDeleteDeduction(dt.id)}>
@@ -497,7 +507,7 @@ export default function PayrollSettingsPage() {
                       <div>
                         <p className="text-sm font-medium">{b.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          {b.jurisdictionLevel}{b.jurisdiction ? ` · ${b.jurisdiction}` : ""} · ${(b.minIncome / 100).toLocaleString()}{b.maxIncome ? ` - $${(b.maxIncome / 100).toLocaleString()}` : "+"} · {(b.rate / 100).toFixed(2)}%
+                          {b.jurisdictionLevel}{b.jurisdiction ? ` · ${b.jurisdiction}` : ""} · ${payrollCentsDecimal(b.minIncome)}{b.maxIncome != null ? ` - $${payrollCentsDecimal(b.maxIncome)}` : "+"} · {payrollCentsDecimal(b.rate)}%
                         </p>
                       </div>
                     </div>

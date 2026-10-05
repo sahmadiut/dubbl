@@ -21,7 +21,7 @@ import {
   employeeTaxConfig,
   type payrollSettings,
 } from "@/lib/db/schema";
-import { eq, and, lt, gte, inArray } from "drizzle-orm";
+import { eq, and, lt, gte, inArray, isNull } from "drizzle-orm";
 import {
   computePeriodWithholding,
   computeFica,
@@ -136,6 +136,7 @@ async function loadBrackets(
     .where(
       and(
         eq(taxBracket.organizationId, organizationId),
+        isNull(taxBracket.deletedAt),
         eq(taxBracket.jurisdictionLevel, jurisdictionLevel),
         eq(taxBracket.isActive, true)
       )
@@ -176,6 +177,7 @@ async function loadAllowanceConfig(
     .where(
       and(
         eq(taxAllowanceConfig.organizationId, organizationId),
+        isNull(taxAllowanceConfig.deletedAt),
         eq(taxAllowanceConfig.jurisdictionLevel, jurisdictionLevel)
       )
     );

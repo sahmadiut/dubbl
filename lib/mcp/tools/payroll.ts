@@ -9,7 +9,6 @@ import {
   payrollItemEmployerTax,
   payrollSettings,
   employeeDeduction,
-  employeeLeaveBalance,
   payslip,
   timesheet,
   taxFormGeneration,
@@ -627,46 +626,7 @@ export function registerPayrollTools(server: McpServer, ctx: AuthContext) {
       })
   );
 
-  // ─── Leave ────────────────────────────────────────────────────────
-  server.tool(
-    "get_employee_leave_balances",
-    "Get an employee's leave/PTO balances by policy. Balances are in hours (balance = available, usedHours = taken) for the policy year. Returns one entry per leave policy the employee accrues against.",
-    {
-      employeeId: z.string().describe("UUID of the payroll employee"),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        requireRole(ctx, "manage:leave");
-
-        const emp = await db.query.payrollEmployee.findFirst({
-          where: and(
-            eq(payrollEmployee.id, params.employeeId),
-            eq(payrollEmployee.organizationId, ctx.organizationId),
-            notDeleted(payrollEmployee.deletedAt)
-          ),
-        });
-        if (!emp) throw new Error("Employee not found");
-
-        const balances = await db.query.employeeLeaveBalance.findMany({
-          where: eq(employeeLeaveBalance.employeeId, params.employeeId),
-          with: { policy: true },
-        });
-
-        return {
-          balances: balances.map((b) => ({
-            id: b.id,
-            policyId: b.policyId,
-            policyName: b.policy?.name ?? null,
-            leaveType: b.policy?.leaveType ?? null,
-            year: b.year,
-            balance: b.balance,
-            usedHours: b.usedHours,
-          })),
-        };
-      })
-  );
-
-  // ─── Tax Forms ────────────────────────────────────────────────────
+  // ─── Tax Forms ────────────────────────────────────────────────────────
   server.tool(
     "generate_tax_forms",
     "Generate year-end tax forms for a tax year. formType 'w2' produces one W-2 per employee from completed payroll runs (wages/tax in integer cents). formType '1099_nec' produces a 1099-NEC for each contractor paid at least $600 (60000 cents) of 'paid' payments in the year. Creates a tax-form-generation batch plus the individual forms. Returns the generation record and the count of forms generated.",

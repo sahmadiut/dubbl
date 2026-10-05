@@ -113,7 +113,8 @@ export default function TimesheetDetailPage() {
       setNewDate(""); setNewHours(""); setNewDesc("");
       fetchTimesheet();
     } else {
-      toast.error("Failed to add entry");
+      const data = await res.json();
+      toast.error(typeof data.error === "string" ? data.error : "Failed to add entry");
     }
   }
 
@@ -126,10 +127,14 @@ export default function TimesheetDetailPage() {
       destructive: true,
     });
     if (!confirmed) return;
-    await fetch(`/api/v1/payroll/timesheets/${id}/entries?entryId=${entryId}`, {
+    const res = await fetch(`/api/v1/payroll/timesheets/${id}/entries?entryId=${entryId}`, {
       method: "DELETE",
       headers: { "x-organization-id": orgId },
     });
+    if (!res.ok) {
+      const data = await res.json();
+      toast.error(typeof data.error === "string" ? data.error : "Failed to delete entry");
+    }
     fetchTimesheet();
   }
 

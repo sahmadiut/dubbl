@@ -129,3 +129,9 @@ Payroll settings, deduction types and employee deductions, employee tax election
 Rates ending in `Bp`, default tax rate and bracket rate are integer basis points (100 = 1%). Deduction percentages use decimal percent; existing PostgreSQL real controls require values exactly representable in binary32, such as 2.5. Unsupported percentages such as 2.9 reject instead of silently rounding. Allowance counts remain nonnegative int32. Employee elections use `additionalWithholding`, a single extra per-period amount, rather than separate federal/state fields.
 
 The allowance configuration API is available at `/api/v1/payroll/tax/allowances` with list/create and individual get/edit/delete operations. It stores annual allowance/standard deduction settings, requiring `manage:tax-config`, and rejects duplicate live jurisdiction/year configurations. Configuration editing does not certify jurisdiction-specific payroll calculations or current statutory tax rules.
+
+## Time, leave and shift API contracts
+
+Timesheet and leave amounts stay **hours**, and shift premiums stay decimal **percent** (25 means +25%, not 2500 basis points). Existing storage accepts values that save unchanged, such as 7.5 or 0.25. Unsupported values such as 0.1 reject with an error instead of silently rounding. No `Minor` alias applies to physical hours or premiums.
+
+Timesheet entries can be added or deleted only while the sheet is draft, and their Gregorian dates must fall within its period. Approval/rejection requires a submitted sheet. Leave requests use ordered Gregorian dates within one year; split requests at the year boundary. Approval requires a single sufficient leave balance for that request year and updates it atomically. Approved leave cannot be changed through the generic request editor. Self-service resolves your employee profile from organization membership.

@@ -292,6 +292,9 @@ export default function PayrollSettingsPage() {
         setShiftDrawer(false);
         setNewShift({ name: "", shiftType: "regular", startTime: "09:00", endTime: "17:00", premiumPercent: "0" });
         fetchAll();
+      } else {
+        const data = await res.json();
+        toast.error(typeof data.error === "string" ? data.error : "Failed to add shift");
       }
     } catch {
       toast.error("Failed to add shift");
@@ -317,6 +320,9 @@ export default function PayrollSettingsPage() {
         setLeaveDrawer(false);
         setNewLeave({ name: "", leaveType: "vacation", accrualMethod: "per_pay_period", accrualRate: "0", maxBalance: "" });
         fetchAll();
+      } else {
+        const data = await res.json();
+        toast.error(typeof data.error === "string" ? data.error : "Failed to add leave policy");
       }
     } catch {
       toast.error("Failed to add leave policy");
@@ -801,7 +807,7 @@ export default function PayrollSettingsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Premium (%)</Label>
-                  <Input type="number" step="0.1" value={newShift.premiumPercent} onChange={(e) => setNewShift({ ...newShift, premiumPercent: e.target.value })} />
+                  <Input type="number" step="0.25" min={0} value={newShift.premiumPercent} onChange={(e) => setNewShift({ ...newShift, premiumPercent: e.target.value })} />
                 </div>
                 <div className="space-y-2">
                   <Label>Start Time</Label>

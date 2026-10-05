@@ -604,6 +604,9 @@ export default function TimeLeavePage() {
             setLeaveRefetching(false);
             setLeaveFetchKey((k) => k + 1);
           });
+      } else {
+        const data = await res.json();
+        toast.error(typeof data.error === "string" ? data.error : "Failed to create leave request");
       }
     } catch {
       toast.error("Failed to create leave request");

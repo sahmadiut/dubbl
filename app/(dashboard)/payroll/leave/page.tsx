@@ -104,6 +104,9 @@ export default function LeavePage() {
         toast.success("Leave request created");
         setDialogOpen(false);
         fetchData();
+      } else {
+        const data = await res.json();
+        toast.error(typeof data.error === "string" ? data.error : "Failed to create request");
       }
     } catch {
       toast.error("Failed to create request");
@@ -119,6 +122,7 @@ export default function LeavePage() {
       headers: { "x-organization-id": orgId },
     });
     if (res.ok) { toast.success("Request approved"); fetchData(); }
+    else { const data = await res.json(); toast.error(typeof data.error === "string" ? data.error : "Request could not be approved"); }
   }
 
   async function handleReject(id: string) {
@@ -129,6 +133,7 @@ export default function LeavePage() {
       body: JSON.stringify({}),
     });
     if (res.ok) { toast.success("Request rejected"); fetchData(); }
+    else { const data = await res.json(); toast.error(typeof data.error === "string" ? data.error : "Request could not be rejected"); }
   }
 
   if (loading) return <BrandLoader />;

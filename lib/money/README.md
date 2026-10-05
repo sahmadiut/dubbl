@@ -527,3 +527,14 @@ existing withholding loader. Editors use actual fields and exact cents. See
 [configuration contracts](../../.agentic/registries/PAYROLL_CONFIG_WIRE_CONTRACTS.md)
 for envelopes, all fields/ranges, strict-input compatibility corrections and
 remaining run/jurisdiction/full-range/IRR qualification.
+
+## Payroll time and leave contracts (MON-081)
+
+32 REST/MCP operation pairs share scoped atomic services. Hours and premium
+percentages stay numeric physical quantities, with no money aliases/coercion.
+Binary32 inputs and bigint-scaled physical sums must persist unchanged; unsupported
+rounding/history rejects before commit. Nested employee/project cents gain safe
+Minor strings; project minutes remain minutes. Draft-only entry edits, correct
+entry paths, scoped membership and once-only year-specific leave balance deduction
+are enforced. See [time contracts](../../.agentic/registries/PAYROLL_TIME_WIRE_CONTRACTS.md).
+Run/accrual calculations, financial outputs and production IRR remain separate.

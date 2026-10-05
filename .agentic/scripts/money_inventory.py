@@ -133,7 +133,8 @@ PARENTS = {
     "payrollItemTaxBreakdown": "payrollItem.currency", "payrollItemEmployerTax": "payrollItem.currency",
     "employeeDeduction": "payrollEmployee.currency", "payrollBonus": "payrollEmployee.currency",
     "employeeTaxConfig": "payrollEmployee.currency", "payslip": "payrollItem.currency",
-    "compensationReviewEntry": "payrollEmployee.currency (no currency snapshot)",
+    "compensationReview": "compensationReview.currency snapshot; legacy null uses organization.defaultCurrency bridge",
+    "compensationReviewEntry": "compensationReview.currency snapshot; must match payrollEmployee.currency; legacy null uses organization base",
     "bankReconciliation": "bankAccount.currencyCode",
 }
 JSON_MONEY = {

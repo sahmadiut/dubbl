@@ -1,0 +1,1 @@
+ALTER TABLE "compensation_review" ADD COLUMN "currency" text;

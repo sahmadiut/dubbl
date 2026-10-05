@@ -18,6 +18,7 @@ const coverage = JSON.parse(await readFile(".agentic/registries/MONEY_BIGINT_MIG
 const money = coverage.columns.filter(c => c.before !== c.after);
 const tables = [...new Set(money.map(c => c.table))];
 const payrollSnapshotColumns: Record<string, string[]> = {
+  compensation_review: ["currency"],
   contractor_payment: ["base_amount", "base_currency", "rate_exact", "payment_date"],
   payroll_run: ["base_currency", "termination_employee_id", "termination_pto_hours"],
   payroll_item_deduction: ["employee_deduction_id", "liability_account_code"],

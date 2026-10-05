@@ -12,7 +12,8 @@ import { Label } from "@/components/ui/label";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
-import { formatMoney } from "@/lib/money";
+import { bankMoneyDisplay as formatMoney } from "@/lib/money/bank-display";
+import { parseMajor } from "@/lib/money/exact";
 
 interface Projection {
   month: string;
@@ -23,6 +24,7 @@ interface Projection {
 }
 
 interface WhatIfResult {
+  currency: string;
   current: { monthlyGross: number; projectedTotal: number; headcount: number };
   projected: { monthlyGross: number; projectedTotal: number; headcount: number };
   difference: { monthlyGross: number; projectedTotal: number };
@@ -37,6 +39,9 @@ const anim = (delay: number) => ({
 export default function ForecastingPage() {
   const [projection, setProjection] = useState<Projection[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currency, setCurrency] = useState("USD");
+  const [totals, setTotals] = useState({ gross: 0, net: 0 });
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [whatIf, setWhatIf] = useState<WhatIfResult | null>(null);
   const [whatIfLoading, setWhatIfLoading] = useState(false);
 
@@ -55,7 +60,11 @@ export default function ForecastingPage() {
       headers: { "x-organization-id": orgId },
     })
       .then((r) => r.json())
-      .then((data) => { if (data.data) setProjection(data.data); })
+      .then((data) => {
+        if (data.error) { setLoadError(data.error); return; }
+        setLoadError(null); setCurrency(data.currency); setTotals(data.totals); setProjection(data.data);
+      })
+      .catch(() => setLoadError("Unable to load payroll projection"))
       .finally(() => setLoading(false));
   }, [orgId]);
 
@@ -67,26 +76,27 @@ export default function ForecastingPage() {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify({
-          salaryAdjustmentPercent: parseFloat(salaryAdj),
-          newHires: parseInt(newHires),
-          avgNewHireSalary: Math.round(parseFloat(avgHireSalary) * 100),
-          terminations: parseInt(terminations),
+          salaryAdjustmentPercent: Number(salaryAdj),
+          newHires: Number(newHires),
+          avgNewHireSalaryMinor: parseMajor(avgHireSalary, currency, "reject").amountMinor.toString(),
+          terminations: Number(terminations),
           months: 12,
         }),
       });
       if (res.ok) {
         const data = await res.json();
         setWhatIf(data);
-      }
-    } finally {
+      } else { setWhatIf(null); toast.error((await res.json()).error); }
+    } catch (error) { toast.error(error instanceof Error ? error.message : "Unable to calculate scenario"); } finally {
       setWhatIfLoading(false);
     }
   }
 
   if (loading) return <BrandLoader />;
 
-  const totalGross = projection.reduce((s, p) => s + p.gross, 0);
-  const totalNet = projection.reduce((s, p) => s + p.net, 0);
+  if (loadError) return <ContentReveal><p role="alert">{loadError}</p></ContentReveal>;
+  const totalGross = totals.gross;
+  const totalNet = totals.net;
 
   return (
     <ContentReveal className="space-y-6">
@@ -96,11 +106,11 @@ export default function ForecastingPage() {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <motion.div {...anim(0)} className="rounded-xl border bg-card p-4">
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">12-Month Gross</p>
-          <p className="mt-1 text-2xl font-bold font-mono tabular-nums">{formatMoney(totalGross)}</p>
+          <p className="mt-1 text-2xl font-bold font-mono tabular-nums">{formatMoney(totalGross, currency)}</p>
         </motion.div>
         <motion.div {...anim(0.05)} className="rounded-xl border bg-card p-4">
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">12-Month Net</p>
-          <p className="mt-1 text-2xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{formatMoney(totalNet)}</p>
+          <p className="mt-1 text-2xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{formatMoney(totalNet, currency)}</p>
         </motion.div>
         <motion.div {...anim(0.1)} className="rounded-xl border bg-card p-4">
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Headcount</p>
@@ -122,8 +132,8 @@ export default function ForecastingPage() {
             <div key={p.month} className="px-4 py-2 flex items-center justify-between">
               <span className="text-sm font-mono">{p.month}</span>
               <div className="flex gap-6">
-                <span className="text-sm font-mono tabular-nums w-24 text-right">{formatMoney(p.gross)}</span>
-                <span className="text-sm font-mono tabular-nums w-24 text-right">{formatMoney(p.net)}</span>
+                <span className="text-sm font-mono tabular-nums w-24 text-right">{formatMoney(p.gross, currency)}</span>
+                <span className="text-sm font-mono tabular-nums w-24 text-right">{formatMoney(p.net, currency)}</span>
               </div>
             </div>
           ))}
@@ -145,7 +155,7 @@ export default function ForecastingPage() {
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Avg New Hire Salary</Label>
-              <CurrencyInput prefix="$" size="sm" value={avgHireSalary} onChange={setAvgHireSalary} />
+              <CurrencyInput prefix={currency} size="sm" value={avgHireSalary} onChange={setAvgHireSalary} />
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Terminations</Label>
@@ -161,18 +171,18 @@ export default function ForecastingPage() {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="rounded-xl border bg-card p-4">
               <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Current Monthly</p>
-              <p className="mt-1 text-xl font-bold font-mono tabular-nums">{formatMoney(whatIf.current.monthlyGross)}</p>
+              <p className="mt-1 text-xl font-bold font-mono tabular-nums">{formatMoney(whatIf.current.monthlyGross, whatIf.currency)}</p>
               <p className="text-xs text-muted-foreground">{whatIf.current.headcount} employees</p>
             </div>
             <div className="rounded-xl border bg-card p-4">
               <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Projected Monthly</p>
-              <p className="mt-1 text-xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{formatMoney(whatIf.projected.monthlyGross)}</p>
+              <p className="mt-1 text-xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{formatMoney(whatIf.projected.monthlyGross, whatIf.currency)}</p>
               <p className="text-xs text-muted-foreground">{whatIf.projected.headcount} employees</p>
             </div>
             <div className="rounded-xl border bg-card p-4">
               <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Difference</p>
               <p className={`mt-1 text-xl font-bold font-mono tabular-nums ${whatIf.difference.monthlyGross >= 0 ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"}`}>
-                {whatIf.difference.monthlyGross >= 0 ? "+" : ""}{formatMoney(whatIf.difference.monthlyGross)}
+                {whatIf.difference.monthlyGross >= 0 ? "+" : ""}{formatMoney(whatIf.difference.monthlyGross, whatIf.currency)}
               </p>
               <p className="text-xs text-muted-foreground">per month</p>
             </div>

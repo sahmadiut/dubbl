@@ -575,6 +575,7 @@ export const compensationReview = pgTable("compensation_review", {
   effectiveDate: date("effective_date").notNull(),
   status: compensationReviewStatusEnum("status").notNull().default("draft"),
   totalBudget: moneyInteger("total_budget"), // cents
+  currency: text("currency"), // Creation-time base currency; null preserves legacy unsnapshotted reviews
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
   deletedAt: timestamp("deleted_at", { mode: "date" }),

@@ -1,0 +1,56 @@
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { AuthContext } from "@/lib/api/auth-context";
+import { wrapTool } from "@/lib/mcp/errors";
+import { listCompensationBands, createCompensationBand, getCompensationBand, updateCompensationBand, deleteCompensationBand, listCompensationReviews, createCompensationReview, getCompensationReview, updateCompensationReview, listCompensationEntries, createCompensationEntry, compensationEquity, payrollProjection, payrollWhatIf, payrollBudgetActual } from "@/lib/api/payroll-compensation";
+import { bandCreateSchema, bandUpdateSchema, reviewCreateSchema, reviewUpdateSchema, entryCreateSchema, projectionSchema, whatIfSchema, budgetActualSchema, emptyCompensationSchema, compensationId } from "@/lib/api/payroll-compensation-wire";
+
+export function registerPayrollCompensationTools(server: McpServer, ctx: AuthContext) {
+  server.registerTool("list_compensation_bands", { description: "List compensation bands; returns data. Amounts are safe integer cents with matching canonical Minor string aliases (max 9007199254740991); counts and plain percentages stay numeric. No rescaling. Requires manage:compensation. Forecasts/reviews require organization base currency; salary/hourly forecasts use 173 hours monthly. Review status does not apply salaries. Exact intermediates round half away from zero.", inputSchema: emptyCompensationSchema }, () => wrapTool(ctx, async () => {
+    const result = await listCompensationBands(ctx); return { data: result };
+  }));
+  server.registerTool("create_compensation_band", { description: "Create compensation band; returns band. Amounts are safe integer cents with matching canonical Minor string aliases (max 9007199254740991); counts and plain percentages stay numeric. No rescaling. Requires manage:compensation. Forecasts/reviews require organization base currency; salary/hourly forecasts use 173 hours monthly. Review status does not apply salaries. Exact intermediates round half away from zero.", inputSchema: bandCreateSchema }, args => wrapTool(ctx, async () => {
+    const result = await createCompensationBand(ctx, args); return { band: result };
+  }));
+  server.registerTool("get_compensation_band", { description: "Get compensation band; returns band. Amounts are safe integer cents with matching canonical Minor string aliases (max 9007199254740991); counts and plain percentages stay numeric. No rescaling. Requires manage:compensation. Forecasts/reviews require organization base currency; salary/hourly forecasts use 173 hours monthly. Review status does not apply salaries. Exact intermediates round half away from zero.", inputSchema: emptyCompensationSchema.extend({ id: compensationId.describe("Live owned band or review UUID") }) }, args => wrapTool(ctx, async () => {
+    const result = await getCompensationBand(ctx, args.id); return { band: result };
+  }));
+  server.registerTool("update_compensation_band", { description: "Update compensation band; returns band. Amounts are safe integer cents with matching canonical Minor string aliases (max 9007199254740991); counts and plain percentages stay numeric. No rescaling. Requires manage:compensation. Forecasts/reviews require organization base currency; salary/hourly forecasts use 173 hours monthly. Review status does not apply salaries. Exact intermediates round half away from zero.", inputSchema: bandUpdateSchema.extend({ id: compensationId.describe("Live owned band or review UUID") }) }, args => wrapTool(ctx, async () => {
+    const { id, ...body } = args; void id;
+    const result = await updateCompensationBand(ctx, args.id, body); return { band: result };
+  }));
+  server.registerTool("delete_compensation_band", { description: "Delete compensation band; returns the result. Amounts are safe integer cents with matching canonical Minor string aliases (max 9007199254740991); counts and plain percentages stay numeric. No rescaling. Requires manage:compensation. Forecasts/reviews require organization base currency; salary/hourly forecasts use 173 hours monthly. Review status does not apply salaries. Exact intermediates round half away from zero.", inputSchema: emptyCompensationSchema.extend({ id: compensationId.describe("Live owned band or review UUID") }) }, args => wrapTool(ctx, async () => {
+    const result = await deleteCompensationBand(ctx, args.id); return result;
+  }));
+  server.registerTool("list_compensation_reviews", { description: "List compensation reviews; returns data. Amounts are safe integer cents with matching canonical Minor string aliases (max 9007199254740991); counts and plain percentages stay numeric. No rescaling. Requires manage:compensation. Forecasts/reviews require organization base currency; salary/hourly forecasts use 173 hours monthly. Review status does not apply salaries. Exact intermediates round half away from zero.", inputSchema: emptyCompensationSchema }, () => wrapTool(ctx, async () => {
+    const result = await listCompensationReviews(ctx); return result;
+  }));
+  server.registerTool("create_compensation_review", { description: "Create compensation review; returns review. Amounts are safe integer cents with matching canonical Minor string aliases (max 9007199254740991); counts and plain percentages stay numeric. No rescaling. Requires manage:compensation. Forecasts/reviews require organization base currency; salary/hourly forecasts use 173 hours monthly. Review status does not apply salaries. Exact intermediates round half away from zero.", inputSchema: reviewCreateSchema }, args => wrapTool(ctx, async () => {
+    const result = await createCompensationReview(ctx, args); return { review: result };
+  }));
+  server.registerTool("get_compensation_review", { description: "Get compensation review; returns review. Amounts are safe integer cents with matching canonical Minor string aliases (max 9007199254740991); counts and plain percentages stay numeric. No rescaling. Requires manage:compensation. Forecasts/reviews require organization base currency; salary/hourly forecasts use 173 hours monthly. Review status does not apply salaries. Exact intermediates round half away from zero.", inputSchema: emptyCompensationSchema.extend({ id: compensationId.describe("Live owned band or review UUID") }) }, args => wrapTool(ctx, async () => {
+    const result = await getCompensationReview(ctx, args.id); return { review: result };
+  }));
+  server.registerTool("update_compensation_review", { description: "Update compensation review; returns review. Amounts are safe integer cents with matching canonical Minor string aliases (max 9007199254740991); counts and plain percentages stay numeric. No rescaling. Requires manage:compensation. Forecasts/reviews require organization base currency; salary/hourly forecasts use 173 hours monthly. Review status does not apply salaries. Exact intermediates round half away from zero.", inputSchema: reviewUpdateSchema.extend({ id: compensationId.describe("Live owned band or review UUID") }) }, args => wrapTool(ctx, async () => {
+    const { id, ...body } = args; void id;
+    const result = await updateCompensationReview(ctx, args.id, body); return { review: result };
+  }));
+  server.registerTool("list_compensation_entries", { description: "List compensation entries; returns data. Amounts are safe integer cents with matching canonical Minor string aliases (max 9007199254740991); counts and plain percentages stay numeric. No rescaling. Requires manage:compensation. Forecasts/reviews require organization base currency; salary/hourly forecasts use 173 hours monthly. Review status does not apply salaries. Exact intermediates round half away from zero.", inputSchema: emptyCompensationSchema.extend({ id: compensationId.describe("Live owned band or review UUID") }) }, args => wrapTool(ctx, async () => {
+    const result = await listCompensationEntries(ctx, args.id); return { data: result };
+  }));
+  server.registerTool("create_compensation_entry", { description: "Create compensation entry; returns entry. Amounts are safe integer cents with matching canonical Minor string aliases (max 9007199254740991); counts and plain percentages stay numeric. No rescaling. Requires manage:compensation. Forecasts/reviews require organization base currency; salary/hourly forecasts use 173 hours monthly. Review status does not apply salaries. Exact intermediates round half away from zero.", inputSchema: entryCreateSchema.extend({ id: compensationId.describe("Live owned band or review UUID") }) }, args => wrapTool(ctx, async () => {
+    const { id, ...body } = args; void id;
+    const result = await createCompensationEntry(ctx, args.id, body); return { entry: result };
+  }));
+  server.registerTool("analyze_compensation_equity", { description: "Compensation equity; returns data. Amounts are safe integer cents with matching canonical Minor string aliases (max 9007199254740991); counts and plain percentages stay numeric. No rescaling. Requires manage:compensation. Forecasts/reviews require organization base currency; salary/hourly forecasts use 173 hours monthly. Review status does not apply salaries. Exact intermediates round half away from zero.", inputSchema: emptyCompensationSchema }, () => wrapTool(ctx, async () => {
+    const result = await compensationEquity(ctx); return { data: result };
+  }));
+  server.registerTool("project_payroll_costs", { description: "Payroll projection; returns the result. Amounts are safe integer cents with matching canonical Minor string aliases (max 9007199254740991); counts and plain percentages stay numeric. No rescaling. Requires view:payroll-reports. Forecasts/reviews require organization base currency; salary/hourly forecasts use 173 hours monthly. Review status does not apply salaries. Exact intermediates round half away from zero.", inputSchema: projectionSchema }, args => wrapTool(ctx, async () => {
+    const result = await payrollProjection(ctx, args); return result;
+  }));
+  server.registerTool("forecast_payroll_what_if", { description: "Payroll what if; returns the result. Amounts are safe integer cents with matching canonical Minor string aliases (max 9007199254740991); counts and plain percentages stay numeric. No rescaling. Requires view:payroll-reports. Forecasts/reviews require organization base currency; salary/hourly forecasts use 173 hours monthly. Review status does not apply salaries. Exact intermediates round half away from zero.", inputSchema: whatIfSchema }, args => wrapTool(ctx, async () => {
+    const result = await payrollWhatIf(ctx, args); return result;
+  }));
+  server.registerTool("get_payroll_budget_vs_actual", { description: "Payroll budget actual; returns the result. Amounts are safe integer cents with matching canonical Minor string aliases (max 9007199254740991); counts and plain percentages stay numeric. No rescaling. Requires view:payroll-reports. Forecasts/reviews require organization base currency; salary/hourly forecasts use 173 hours monthly. Review status does not apply salaries. Exact intermediates round half away from zero.", inputSchema: budgetActualSchema }, args => wrapTool(ctx, async () => {
+    const result = await payrollBudgetActual(ctx, args); return result;
+  }));
+}

@@ -41,7 +41,8 @@ import { ContentReveal } from "@/components/ui/content-reveal";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { useConfirm } from "@/lib/hooks/use-confirm";
-import { formatMoney } from "@/lib/money";
+import { bankMoneyDisplay as formatMoney } from "@/lib/money/bank-display";
+import { parseMajor, roundRatio } from "@/lib/money/exact";
 import { CurrencySelect } from "@/components/ui/currency-select";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { cn } from "@/lib/utils";
@@ -50,6 +51,7 @@ interface Band {
   id: string;
   name: string;
   level: string | null;
+  currency: string;
   minSalary: number;
   midSalary: number;
   maxSalary: number;
@@ -61,6 +63,7 @@ interface Review {
   effectiveDate: string;
   status: string;
   totalBudget: number | null;
+  currency: string;
   _count?: { entries: number };
 }
 
@@ -121,7 +124,7 @@ export default function CompensationPage() {
 
   const [reviewSheet, setReviewSheet] = useState(false);
   const [reviewSaving, setReviewSaving] = useState(false);
-  const [newReview, setNewReview] = useState({ name: "", effectiveDate: "", totalBudget: "" });
+  const [newReview, setNewReview] = useState({ name: "", effectiveDate: "", totalBudget: "", currency: "USD" });
 
   const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
   useDocumentTitle("Payroll · Compensation");
@@ -135,7 +138,10 @@ export default function CompensationPage() {
     ])
       .then(([bandsData, reviewsData]) => {
         if (bandsData.data) setBands(bandsData.data);
+        if (reviewsData.error) toast.error(reviewsData.error);
+        if (bandsData.error) toast.error(bandsData.error);
         if (reviewsData.data) setReviews(reviewsData.data);
+        if (reviewsData.currency) setNewReview(r => ({ ...r, currency: reviewsData.currency }));
       })
       .finally(() => setLoading(false));
   }, [orgId]);
@@ -204,9 +210,9 @@ export default function CompensationPage() {
         body: JSON.stringify({
           name: newBand.name,
           level: newBand.level || undefined,
-          minSalary: Math.round(parseFloat(newBand.minSalary || "0") * 100),
-          midSalary: Math.round(parseFloat(newBand.midSalary || "0") * 100),
-          maxSalary: Math.round(parseFloat(newBand.maxSalary || "0") * 100),
+          minSalaryMinor: parseMajor(newBand.minSalary || "0", newBand.currency, "reject").amountMinor.toString(),
+          midSalaryMinor: parseMajor(newBand.midSalary || "0", newBand.currency, "reject").amountMinor.toString(),
+          maxSalaryMinor: parseMajor(newBand.maxSalary || "0", newBand.currency, "reject").amountMinor.toString(),
           currency: newBand.currency,
         }),
       });
@@ -215,9 +221,9 @@ export default function CompensationPage() {
         setBandSheet(false);
         setNewBand({ name: "", level: "", minSalary: "", midSalary: "", maxSalary: "", currency: "USD" });
         fetchData();
-      }
-    } catch {
-      toast.error("Failed to create band");
+      } else { toast.error((await res.json()).error); }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to create band");
     } finally {
       setBandSaving(false);
     }
@@ -234,17 +240,17 @@ export default function CompensationPage() {
         body: JSON.stringify({
           name: newReview.name,
           effectiveDate: newReview.effectiveDate,
-          totalBudget: newReview.totalBudget ? Math.round(parseFloat(newReview.totalBudget) * 100) : undefined,
+          totalBudgetMinor: newReview.totalBudget ? parseMajor(newReview.totalBudget, newReview.currency, "reject").amountMinor.toString() : undefined,
         }),
       });
       if (res.ok) {
         toast.success("Review created");
         setReviewSheet(false);
-        setNewReview({ name: "", effectiveDate: "", totalBudget: "" });
+        setNewReview({ name: "", effectiveDate: "", totalBudget: "", currency: newReview.currency });
         fetchData();
-      }
-    } catch {
-      toast.error("Failed to create review");
+      } else { toast.error((await res.json()).error); }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to create review");
     } finally {
       setReviewSaving(false);
     }
@@ -270,9 +276,11 @@ export default function CompensationPage() {
 
   const hasData = bands.length > 0 || reviews.length > 0;
   const activeReviews = reviews.filter((r) => r.status === "in_progress" || r.status === "draft");
+  const bandCurrency = bands[0]?.currency ?? "USD";
+  const mixedBands = bands.some(b => b.currency !== bandCurrency);
   const avgBandWidth = bands.length > 0
-    ? bands.reduce((sum, b) => sum + (b.maxSalary - b.minSalary), 0) / bands.length
-    : 0;
+    ? roundRatio(bands.reduce((sum, b) => sum + BigInt(b.maxSalary) - BigInt(b.minSalary), 0n), BigInt(bands.length), "half-away-from-zero")
+    : 0n;
   const totalEntries = reviews.reduce((sum, r) => sum + (r._count?.entries ?? 0), 0);
 
   if (!hasData) {
@@ -444,7 +452,7 @@ export default function CompensationPage() {
             <span className="text-[11px] font-medium uppercase tracking-wide">Avg Band Width</span>
           </div>
           <p className="mt-2 text-2xl font-bold font-mono tabular-nums truncate">
-            {formatMoney(Math.round(avgBandWidth))}
+            {mixedBands ? "Multiple currencies" : formatMoney(avgBandWidth, bandCurrency)}
           </p>
         </motion.div>
 
@@ -514,10 +522,10 @@ export default function CompensationPage() {
                   <div>
                     <p className="text-sm font-medium">{b.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {b.level ? `${b.level} · ` : ""}{formatMoney(b.minSalary)} - {formatMoney(b.maxSalary)}
+                      {b.level ? `${b.level} · ` : ""}{formatMoney(b.minSalary, b.currency)} - {formatMoney(b.maxSalary, b.currency)}
                     </p>
                   </div>
-                  <p className="text-sm font-mono tabular-nums text-muted-foreground">Mid: {formatMoney(b.midSalary)}</p>
+                  <p className="text-sm font-mono tabular-nums text-muted-foreground">Mid: {formatMoney(b.midSalary, b.currency)}</p>
                 </div>
               ))}
             </div>
@@ -597,7 +605,7 @@ export default function CompensationPage() {
                     <p className="text-xs text-muted-foreground">Effective: {r.effectiveDate}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    {r.totalBudget && <span className="text-sm font-mono tabular-nums">{formatMoney(r.totalBudget)}</span>}
+                    {r.totalBudget !== null && <span className="text-sm font-mono tabular-nums">{formatMoney(r.totalBudget, r.currency)}</span>}
                     <Badge variant="outline" className={cn("text-[10px]", statusColors[r.status] || "")}>
                       {r.status.replace(/_/g, " ")}
                     </Badge>
@@ -667,15 +675,15 @@ function BandSheet({
               <div className="grid gap-4 sm:grid-cols-3">
                 <div className="space-y-2">
                   <Label>Min Salary</Label>
-                  <CurrencyInput prefix="$" value={newBand.minSalary} onChange={(v) => setNewBand({ ...newBand, minSalary: v })} />
+                  <CurrencyInput prefix={newBand.currency} value={newBand.minSalary} onChange={(v) => setNewBand({ ...newBand, minSalary: v })} />
                 </div>
                 <div className="space-y-2">
                   <Label>Mid Salary</Label>
-                  <CurrencyInput prefix="$" value={newBand.midSalary} onChange={(v) => setNewBand({ ...newBand, midSalary: v })} />
+                  <CurrencyInput prefix={newBand.currency} value={newBand.midSalary} onChange={(v) => setNewBand({ ...newBand, midSalary: v })} />
                 </div>
                 <div className="space-y-2">
                   <Label>Max Salary</Label>
-                  <CurrencyInput prefix="$" value={newBand.maxSalary} onChange={(v) => setNewBand({ ...newBand, maxSalary: v })} />
+                  <CurrencyInput prefix={newBand.currency} value={newBand.maxSalary} onChange={(v) => setNewBand({ ...newBand, maxSalary: v })} />
                 </div>
               </div>
             </div>
@@ -708,8 +716,8 @@ function ReviewSheet({
   open: boolean;
   onOpenChange: (v: boolean) => void;
   saving: boolean;
-  newReview: { name: string; effectiveDate: string; totalBudget: string };
-  setNewReview: (v: { name: string; effectiveDate: string; totalBudget: string }) => void;
+  newReview: { name: string; effectiveDate: string; totalBudget: string; currency: string };
+  setNewReview: (v: { name: string; effectiveDate: string; totalBudget: string; currency: string }) => void;
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
 }) {
   return (
@@ -739,7 +747,7 @@ function ReviewSheet({
               </div>
               <div className="space-y-2">
                 <Label>Budget</Label>
-                <CurrencyInput prefix="$" value={newReview.totalBudget} onChange={(v) => setNewReview({ ...newReview, totalBudget: v })} placeholder="Optional" />
+                <CurrencyInput prefix={newReview.currency} value={newReview.totalBudget} onChange={(v) => setNewReview({ ...newReview, totalBudget: v })} placeholder="Optional" />
               </div>
             </div>
           </div>

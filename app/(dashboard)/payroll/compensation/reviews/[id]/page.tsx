@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
-import { formatMoney } from "@/lib/money";
+import { bankMoneyDisplay as formatMoney } from "@/lib/money/bank-display";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { cn } from "@/lib/utils";
 
@@ -22,6 +22,8 @@ interface ReviewDetail {
   status: string;
   totalBudget: number | null;
   entries: ReviewEntry[];
+  currency: string;
+  totals: { currentSalary: number; proposedSalary: number; difference: number };
 }
 
 interface ReviewEntry {
@@ -55,7 +57,7 @@ export default function ReviewDetailPage() {
       headers: { "x-organization-id": orgId },
     })
       .then((r) => r.json())
-      .then((data) => { if (data.review) setReview(data.review); })
+      .then((data) => { if (data.error) toast.error(data.error); if (data.review) setReview(data.review); })
       .finally(() => setLoading(false));
   }, [id, orgId]);
 
@@ -71,8 +73,8 @@ export default function ReviewDetailPage() {
     );
   }
 
-  const totalCurrent = review.entries.reduce((s, e) => s + e.currentSalary, 0);
-  const totalProposed = review.entries.reduce((s, e) => s + e.proposedSalary, 0);
+  const totalCurrent = review.totals.currentSalary;
+  const totalProposed = review.totals.proposedSalary;
 
   return (
     <ContentReveal className="space-y-6">
@@ -96,15 +98,15 @@ export default function ReviewDetailPage() {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="rounded-xl border bg-card p-4">
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Current Total</p>
-          <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate">{formatMoney(totalCurrent)}</p>
+          <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate">{formatMoney(totalCurrent, review.currency)}</p>
         </div>
         <div className="rounded-xl border bg-card p-4">
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Proposed Total</p>
-          <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate text-emerald-600 dark:text-emerald-400">{formatMoney(totalProposed)}</p>
+          <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate text-emerald-600 dark:text-emerald-400">{formatMoney(totalProposed, review.currency)}</p>
         </div>
         <div className="rounded-xl border bg-card p-4">
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Total Increase</p>
-          <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate">{formatMoney(totalProposed - totalCurrent)}</p>
+          <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate">{formatMoney(review.totals.difference, review.currency)}</p>
         </div>
       </div>
 
@@ -124,11 +126,11 @@ export default function ReviewDetailPage() {
                 <div className="flex items-center gap-4 shrink-0">
                   <div className="text-right">
                     <p className="text-xs text-muted-foreground">Current</p>
-                    <p className="text-sm font-mono tabular-nums">{formatMoney(e.currentSalary)}</p>
+                    <p className="text-sm font-mono tabular-nums">{formatMoney(e.currentSalary, review.currency)}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-xs text-muted-foreground">Proposed</p>
-                    <p className="text-sm font-mono tabular-nums font-medium text-emerald-600 dark:text-emerald-400">{formatMoney(e.proposedSalary)}</p>
+                    <p className="text-sm font-mono tabular-nums font-medium text-emerald-600 dark:text-emerald-400">{formatMoney(e.proposedSalary, review.currency)}</p>
                   </div>
                   {e.adjustmentPercent !== null && (
                     <Badge variant="outline" className="text-[10px]">+{e.adjustmentPercent?.toFixed(1)}%</Badge>

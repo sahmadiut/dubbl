@@ -89,13 +89,16 @@ async function seedEveryMoneyTable(pool: pg.Pool) {
 
 async function checksums(pool: pg.Pool) {
   const result: Record<string, unknown> = {};
-  // Hash every complete row, including non-money columns, dates and org IDs.
+  // Hash historical row values, including non-money columns, dates and org IDs.
   for (const table of tables) {
+    // MON-077 adds nullable carrying-value fields without changing historical rows.
+    const addedColumns = table === "inventory_cost_layer" ? ["remaining_value"]
+      : table === "inventory_layer_consumption" ? ["value"] : [];
     result[table] = (await pool.query(`SELECT count(*)::text AS count,
-      md5(string_agg((to_jsonb(t) - ARRAY['rate_exact','rate_format_version','rate_direction','rate_provenance','rate_migration_status',
-        'provider','provider_base','provider_quote','provider_observed_at','imported_at','provider_rounding'])::text,
-        ',' ORDER BY to_jsonb(t)::text)) AS checksum
-      FROM ${quote(table)} t`)).rows[0];
+      md5(string_agg(row_data::text, ',' ORDER BY row_data::text)) AS checksum
+      FROM (SELECT to_jsonb(t) - ARRAY['rate_exact','rate_format_version','rate_direction','rate_provenance','rate_migration_status',
+        'provider','provider_base','provider_quote','provider_observed_at','imported_at','provider_rounding'] - $1::text[] AS row_data
+        FROM ${quote(table)} t) historical_rows`, [addedColumns])).rows[0];
     for (const column of money.filter(c => c.table === table)) {
       result[`${table}.${column.column}`] = (await pool.query(`SELECT
         count(${quote(column.column)})::text AS nonnull,

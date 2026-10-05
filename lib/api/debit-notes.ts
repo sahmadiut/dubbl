@@ -318,7 +318,8 @@ export async function voidDebitNote(ctx: AuthContext, id: string, request?: Requ
           const layer = originalLayers.find(layer => layer.remainingQuantity === 0 && layer.originalQuantity === -movement.quantity && safeInvoiceMinor(BigInt(layer.unitCost) * BigInt(layer.originalQuantity)) === -movement.value);
           if (!layer || layer.organizationId !== ctx.organizationId) unsupported("Original FIFO receipt layer cannot be restored");
           await tx.delete(inventoryCostLayer).where(inArray(inventoryCostLayer.id, createdLayers.map(layer => layer.id)));
-          await tx.update(inventoryCostLayer).set({ remainingQuantity: layer.originalQuantity }).where(eq(inventoryCostLayer.id, layer.id));
+          await tx.update(inventoryCostLayer).set({ remainingQuantity: layer.originalQuantity,
+            remainingValue: safeInvoiceMinor(-BigInt(movement.value)) }).where(eq(inventoryCostLayer.id, layer.id));
         }
       }
     }

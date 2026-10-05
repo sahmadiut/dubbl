@@ -1,6 +1,7 @@
 // Only executed by goods-receipts.test.ts in a migrated disposable database.
 import assert from "node:assert/strict";
 import { createHash, randomUUID } from "node:crypto";
+import { mock } from "node:test";
 import { and, eq, sql } from "drizzle-orm";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -30,6 +31,7 @@ async function mcp(ctx: AuthContext) {
   }, async close() { await client.close(); await server.close(); } };
 }
 async function run() {
+  mock.timers.enable({ apis: ["Date"], now: new Date("2026-10-04T12:00:00Z") });
   const [a, b] = await db.insert(organization).values([{ name: "GRN A", slug: "grn-a" }, { name: "GRN B", slug: "grn-b" }]).returning();
   const [owner, viewer] = await db.insert(users).values([{ email: "grn-owner@example.test" }, { email: "grn-viewer@example.test" }]).returning();
   const [role] = await db.insert(customRole).values({ organizationId: a.id, name: "Read only", permissions: [] }).returning();
@@ -258,7 +260,9 @@ async function run() {
       assert.equal((await converted(fr.goodsReceipt.id)).status, 422); });
     // Period locks and injected audit/stock errors roll back numbering, control accounts and writes.
     const locked = await po();
-    await db.insert(periodLock).values({ organizationId: a.id, lockDate: "2026-10-04", lockedBy: owner.id });
+    // Conversion dates its bill today; exercise a UTC day change after receipt.
+    mock.timers.setTime(Date.parse("2026-10-05T12:00:00Z"));
+    await db.insert(periodLock).values({ organizationId: a.id, lockDate: "2026-10-05", lockedBy: owner.id });
     await unchanged(async () => { assert.equal((await post(locked.input)).status, 422); assert.equal((await ma.call("receive_goods_receipt", locked.input)).body.status, 422);
       assert.equal((await converted(zr.goodsReceipt.id)).status, 422); });
     await db.delete(periodLock).where(eq(periodLock.organizationId, a.id));
@@ -282,6 +286,6 @@ async function run() {
       assert.equal((await receive(new Request("http://fixture.test/api/v1/goods-receipts", { method: "POST",
         headers: { authorization: `Bearer ${keys.a}` }, body: "{" }))).status, 400); });
     console.log("REST and MCP goods receipts verified");
-  } finally { await ma.close(); await mb.close(); await ro.close(); }
+  } finally { mock.timers.reset(); await ma.close(); await mb.close(); await ro.close(); }
 }
 try { await run(); process.exit(0); } catch (error) { console.error(error); process.exit(1); }

@@ -17,6 +17,10 @@ const coverage = JSON.parse(await readFile(".agentic/registries/MONEY_BIGINT_MIG
 };
 const money = coverage.columns.filter(c => c.before !== c.after);
 const tables = [...new Set(money.map(c => c.table))];
+const payrollSnapshotColumns: Record<string, string[]> = {
+  payroll_run: ["base_currency", "termination_employee_id", "termination_pto_hours"],
+  payroll_item_deduction: ["employee_deduction_id", "liability_account_code"],
+};
 const quote = (name: string) => {
   assert.match(name, /^[a-z_]+$/);
   return `"${name}"`;
@@ -35,6 +39,17 @@ async function assertTypes(pool: pg.Pool, upgraded: boolean) {
     assert.ok(match, `${column.table}.${column.column}`);
     const type = upgraded ? column.after : column.before;
     assert.equal(match.udt_name, ({ integer: "int4", bigint: "int8", real: "float4" } as Record<string, string>)[type] ?? type);
+  }
+  if (upgraded) for (const [table, columns] of Object.entries(payrollSnapshotColumns)) {
+    for (const column of columns) {
+      const match = actual.find(c => c.table_name === table && c.column_name === column);
+      assert.ok(match, `${table}.${column}`);
+      assert.equal(match.is_nullable, "YES");
+      assert.equal(match.column_default, null);
+    }
+    const { rows: [row] } = await pool.query(`SELECT count(*)::int AS populated FROM ${quote(table)}
+      WHERE ${columns.map(column => `${quote(column)} IS NOT NULL`).join(" OR ")}`);
+    assert.equal(row.populated, 0, `${table} historical snapshot fields must remain null`);
   }
 }
 
@@ -91,9 +106,10 @@ async function checksums(pool: pg.Pool) {
   const result: Record<string, unknown> = {};
   // Hash historical row values, including non-money columns, dates and org IDs.
   for (const table of tables) {
-    // MON-077 adds nullable carrying-value fields without changing historical rows.
+    // MON-077/082 add nullable fields; compare every original column and separately
+    // assert the new payroll snapshots stay null in assertTypes after upgrading.
     const addedColumns = table === "inventory_cost_layer" ? ["remaining_value"]
-      : table === "inventory_layer_consumption" ? ["value"] : [];
+      : table === "inventory_layer_consumption" ? ["value"] : payrollSnapshotColumns[table] ?? [];
     result[table] = (await pool.query(`SELECT count(*)::text AS count,
       md5(string_agg(row_data::text, ',' ORDER BY row_data::text)) AS checksum
       FROM (SELECT to_jsonb(t) - ARRAY['rate_exact','rate_format_version','rate_direction','rate_provenance','rate_migration_status',

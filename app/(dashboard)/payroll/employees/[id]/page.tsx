@@ -1,5 +1,6 @@
 "use client";
 
+import { payrollCentsInput, payrollCentsDecimal, payrollBasisPointsInput, payrollCentsPreview, payrollPeriodPreview } from "@/lib/money/payroll-input";
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "motion/react";
@@ -20,7 +21,7 @@ import {
 } from "@/components/ui/select";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
-import { formatMoney } from "@/lib/money";
+import { bankMoneyDisplay as formatMoney } from "@/lib/money/bank-display";
 import { useConfirm } from "@/lib/hooks/use-confirm";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { CurrencySelect } from "@/components/ui/currency-select";
@@ -87,14 +88,7 @@ const anim = (delay: number) => ({
   transition: { duration: 0.3, delay } as const,
 });
 
-function getPerPeriodPay(salary: number, frequency: string): number {
-  switch (frequency) {
-    case "weekly": return Math.round(salary / 52);
-    case "biweekly": return Math.round(salary / 26);
-    case "monthly": return Math.round(salary / 12);
-    default: return Math.round(salary / 12);
-  }
-}
+const getPerPeriodPay = payrollPeriodPreview;
 
 export default function EmployeeDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -154,7 +148,7 @@ export default function EmployeeDetailPage() {
           setEmail(e.email || "");
           setEmployeeNumber(e.employeeNumber);
           setPosition(e.position || "");
-          setSalary((e.salary / 100).toFixed(2));
+          setSalary(payrollCentsDecimal(e.salary));
           setPayFrequency(e.payFrequency);
           setTaxRate((e.taxRate / 100).toFixed(2));
           setBankAccountNumber(e.bankAccountNumber || "");
@@ -162,7 +156,7 @@ export default function EmployeeDetailPage() {
           setEndDate(e.endDate || "");
           setIsActive(e.isActive);
           setCompensationType(e.compensationType || "salary");
-          setHourlyRate(e.hourlyRate ? (e.hourlyRate / 100).toFixed(2) : "");
+          setHourlyRate(e.hourlyRate !== null ? payrollCentsDecimal(e.hourlyRate) : "");
           setCurrency(e.currency || "USD");
         }
       })
@@ -264,13 +258,13 @@ export default function EmployeeDetailPage() {
           name,
           email: email || null,
           position: position || null,
-          salary: Math.round(parseFloat(salary) * 100),
+          salaryMinor: payrollCentsInput(salary),
           payFrequency,
-          taxRate: Math.round(parseFloat(taxRate) * 100),
+          taxRate: payrollBasisPointsInput(taxRate),
           bankAccountNumber: bankAccountNumber || null,
           isActive,
           compensationType,
-          hourlyRate: hourlyRate ? Math.round(parseFloat(hourlyRate) * 100) : null,
+          hourlyRateMinor: hourlyRate ? payrollCentsInput(hourlyRate) : null,
           currency,
         }),
       });
@@ -283,8 +277,8 @@ export default function EmployeeDetailPage() {
         const data = await res.json();
         toast.error(typeof data.error === "string" ? data.error : "Failed to update");
       }
-    } catch {
-      toast.error("Failed to update employee");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to update employee");
     } finally {
       setSaving(false);
     }
@@ -328,7 +322,7 @@ export default function EmployeeDetailPage() {
     );
   }
 
-  const salaryInCents = Math.round(parseFloat(salary || "0") * 100);
+  const salaryInCents = payrollCentsPreview(salary);
   const taxRateNum = parseFloat(taxRate || "0");
 
   return (
@@ -398,15 +392,15 @@ export default function EmployeeDetailPage() {
           </p>
           <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate">
             {compensationType === "salary"
-              ? formatMoney(salaryInCents)
+              ? formatMoney(salaryInCents, "USD")
               : compensationType === "hourly"
-                ? formatMoney(Math.round(parseFloat(hourlyRate || "0") * 100))
+                ? formatMoney(payrollCentsPreview(hourlyRate), "USD")
                 : "-"}
           </p>
         </motion.div>
         <motion.div {...anim(0.05)} className="rounded-xl border bg-card p-4">
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Per-Period Pay</p>
-          <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate">{formatMoney(getPerPeriodPay(salaryInCents, payFrequency))}</p>
+          <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate">{formatMoney(getPerPeriodPay(salaryInCents, payFrequency), "USD")}</p>
         </motion.div>
         <motion.div {...anim(0.09)} className="rounded-xl border bg-card p-4">
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Tax Rate</p>
@@ -582,7 +576,7 @@ export default function EmployeeDetailPage() {
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-sm font-mono tabular-nums">
-                      {d.isPercentage ? `${d.amount}%` : formatMoney(d.amount)}
+                      {d.isPercentage ? `${d.amount}%` : formatMoney(d.amount, "USD")}
                     </span>
                     <Badge
                       variant="outline"
@@ -724,15 +718,15 @@ export default function EmployeeDetailPage() {
                   </div>
                   <div className="space-y-1">
                     <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Min Salary</p>
-                    <p className="text-sm font-mono tabular-nums">{formatMoney(compensationBand.minSalary)}</p>
+                    <p className="text-sm font-mono tabular-nums">{formatMoney(compensationBand.minSalary, "USD")}</p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Mid Salary</p>
-                    <p className="text-sm font-mono tabular-nums">{formatMoney(compensationBand.midSalary)}</p>
+                    <p className="text-sm font-mono tabular-nums">{formatMoney(compensationBand.midSalary, "USD")}</p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Max Salary</p>
-                    <p className="text-sm font-mono tabular-nums">{formatMoney(compensationBand.maxSalary)}</p>
+                    <p className="text-sm font-mono tabular-nums">{formatMoney(compensationBand.maxSalary, "USD")}</p>
                   </div>
                 </div>
                 {compensationBand.maxSalary > compensationBand.minSalary && (

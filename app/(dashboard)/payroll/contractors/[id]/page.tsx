@@ -1,5 +1,6 @@
 "use client";
 
+import { payrollCentsInput, payrollCentsDecimal } from "@/lib/money/payroll-input";
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "motion/react";
@@ -97,7 +98,7 @@ export default function ContractorDetailPage() {
           setName(c.name);
           setEmail(c.email || "");
           setCompany(c.company || "");
-          setHourlyRate(c.hourlyRate ? (c.hourlyRate / 100).toFixed(2) : "");
+          setHourlyRate(c.hourlyRate !== null ? payrollCentsDecimal(c.hourlyRate) : "");
           setBankAccount(c.bankAccountNumber || "");
           setPaymentCurrency(c.currency || "USD");
         }
@@ -118,12 +119,14 @@ export default function ContractorDetailPage() {
           name,
           email: email || null,
           company: company || null,
-          hourlyRate: hourlyRate ? Math.round(parseFloat(hourlyRate) * 100) : null,
+          hourlyRateMinor: hourlyRate ? payrollCentsInput(hourlyRate) : null,
           bankAccountNumber: bankAccount || null,
         }),
       });
       if (res.ok) toast.success("Contractor updated");
-      else toast.error("Failed to update");
+      else { const data = await res.json(); toast.error(data.error || "Failed to update"); }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to update");
     } finally {
       setSaving(false);
     }

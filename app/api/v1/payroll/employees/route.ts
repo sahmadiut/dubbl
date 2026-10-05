@@ -1,109 +1,22 @@
-import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { payrollEmployee } from "@/lib/db/schema";
-import { eq, and, desc, sql } from "drizzle-orm";
-import { getAuthContext } from "@/lib/api/auth-context";
 import { requireRole } from "@/lib/api/require-role";
-import { handleError } from "@/lib/api/response";
-import { notDeleted } from "@/lib/db/soft-delete";
-import { parsePagination, paginatedResponse } from "@/lib/api/pagination";
-import { z } from "zod";
-import { currencyCodeSchema } from "@/lib/currency/zod";
-
-const createSchema = z.object({
-  name: z.string().min(1),
-  email: z.string().email().nullable().optional(),
-  employeeNumber: z.string().min(1),
-  position: z.string().nullable().optional(),
-  salary: z.number().int().min(0),
-  payFrequency: z.enum(["weekly", "biweekly", "monthly"]).default("monthly"),
-  taxRate: z.number().int().min(0).default(2000),
-  bankAccountNumber: z.string().nullable().optional(),
-  startDate: z.string().min(1),
-  endDate: z.string().nullable().optional(),
-  memberId: z.string().uuid().nullable().optional(),
-  compensationType: z.enum(["salary", "hourly", "milestone", "commission"]).default("salary"),
-  hourlyRate: z.number().int().min(0).nullable().optional(),
-  currency: currencyCodeSchema.default("USD"),
-});
+import { getAuthContext } from "@/lib/api/auth-context";
+import { handleError, ok, created } from "@/lib/api/response";
+import { listPayrollEmployees, createPayrollEmployee } from "@/lib/api/payroll-master";
+import { readPayrollMasterJson, payrollMasterQuery } from "@/lib/api/payroll-master-wire";
+import { paginatedResponse } from "@/lib/api/pagination";
 
 export async function GET(request: Request) {
   try {
     const ctx = await getAuthContext(request);
     requireRole(ctx, "manage:payroll");
-
-    const url = new URL(request.url);
-    const { page, limit, offset } = parsePagination(url);
-    const active = url.searchParams.get("active");
-
-    const conditions = [
-      eq(payrollEmployee.organizationId, ctx.organizationId),
-      notDeleted(payrollEmployee.deletedAt),
-    ];
-
-    if (active === "true") {
-      conditions.push(eq(payrollEmployee.isActive, true));
-    } else if (active === "false") {
-      conditions.push(eq(payrollEmployee.isActive, false));
-    }
-
-    const employees = await db.query.payrollEmployee.findMany({
-      where: and(...conditions),
-      orderBy: desc(payrollEmployee.createdAt),
-      with: { member: { with: { user: true } } },
-      limit,
-      offset,
-    });
-
-    const [countResult] = await db
-      .select({ count: sql<number>`count(*)`.mapWith(Number) })
-      .from(payrollEmployee)
-      .where(and(...conditions));
-
-    return NextResponse.json(
-      paginatedResponse(
-        employees,
-        Number(countResult?.count || 0),
-        page,
-        limit
-      )
-    );
-  } catch (err) {
-    return handleError(err);
-  }
+    const result = await listPayrollEmployees(ctx, payrollMasterQuery(new URL(request.url), false));
+    return ok(paginatedResponse(result.employees, result.total, result.page, result.limit));
+  } catch (error) { return handleError(error); }
 }
-
 export async function POST(request: Request) {
   try {
     const ctx = await getAuthContext(request);
     requireRole(ctx, "manage:payroll");
-
-    const body = await request.json();
-    const parsed = createSchema.parse(body);
-
-    const [created] = await db
-      .insert(payrollEmployee)
-      .values({
-        organizationId: ctx.organizationId,
-        name: parsed.name,
-        email: parsed.email || null,
-        employeeNumber: parsed.employeeNumber,
-        position: parsed.position || null,
-        salary: parsed.salary,
-        payFrequency: parsed.payFrequency,
-        taxRate: parsed.taxRate,
-        bankAccountNumber: parsed.bankAccountNumber || null,
-        startDate: parsed.startDate,
-        endDate: parsed.endDate || null,
-        memberId: parsed.memberId || null,
-        compensationType: parsed.compensationType,
-        hourlyRate: parsed.hourlyRate ?? null,
-        currency: parsed.currency,
-      })
-      .returning();
-
-    return NextResponse.json({ employee: created }, { status: 201 });
-  } catch (err) {
-    return handleError(err);
-  }
+    return created({ employee: await createPayrollEmployee(ctx, await readPayrollMasterJson(request), request) });
+  } catch (error) { return handleError(error); }
 }

@@ -824,3 +824,7 @@ Completed affected sessions reopen with audit. Cached/provider balances and
 retained allocations remain history. UI balances/display/sums are scale-aware
 and exact; sessions prevent bank currency/link reinterpretation. MON-069 and
 MON-021 retain remaining/combined qualification; no schema/full-int64/IRR rollout.
+
+## MON-079 payroll master adoption
+
+[PAYROLL_MASTER_WIRE_CONTRACTS](PAYROLL_MASTER_WIRE_CONTRACTS.md) documents employee/contractor root REST and ten MCP operations. Annual salary/per-hour cents add salaryMinor/hourlyRateMinor strings; nested contractor payment reads add amountMinor. Safe numeric coexistence, nullable history, explicit basis points/dates, scoped credential-free member joins and atomic preflight/audit preserve existing data. Root editors parse exact cents and contractor creation uses the actual hourly-rate field. MON-080 through MON-085 and parent MON-025 retain remaining/integrated payroll, calculations/FX and output qualification; no schema or production rollout change.

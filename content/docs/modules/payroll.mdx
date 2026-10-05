@@ -22,6 +22,14 @@ Register employees with their compensation details. Navigate to **Payroll > Empl
 | Tax Rate | Tax rate in basis points (2200 = 22%) |
 | Start Date | Employment start date |
 
+Employee and contractor master APIs accept legacy numeric cents and additive
+`salaryMinor` / `hourlyRateMinor` integer strings. Salary is annual; hourly rate
+is per hour. Aliases must agree and support values up to 9007199254740991 cents.
+Hourly rates can be cleared with null. Tax rate remains basis points, dates are
+Gregorian, and stored amounts never rescale when a currency is selected. Currency
+changes require no existing pay items or contractor payments. Editing a master
+record preserves historical payroll and payment amounts.
+
 ## Contractors
 
 Manage contractors separately from employees. Navigate to **Payroll > Contractors**. Contractors have different tax treatment and are typically paid per invoice rather than through payroll runs.

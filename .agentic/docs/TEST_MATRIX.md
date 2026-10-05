@@ -880,3 +880,9 @@ combined financial acceptance. No stored rescaling or configured database migrat
   No browser/session/OAuth/PostgreSQL16 or independent financial/security proof.
   MON-076/077/078 and parent MON-024 retain combined inventory qualification;
   MON-033 retains generic import/export surfaces.
+
+## MON-079 payroll master contracts
+
+- Six pure groups in tests/payroll-master-wire.test.ts cover legacy/exact/dual aliases, safe/int64 bounds, nullable clearing, cents/currency identity, dates, basis points, query parsing and maximum-safe editor round-trip.
+- tests/integration/payroll-master.test.ts invokes ten actual REST/MCP pairs on migrated isolated PostgreSQL. Full registry uniqueness/descriptions, two tenants, API/custom-role auth, header override, malformed/unsafe saved data and credential-free scoped member joins are asserted.
+- Database snapshots cover denied inputs/writes, six audit-trigger rollback operations, DTO failure after insert, one-success concurrent delete/one audit, retained item/payment history and no ledger changes. Related catalog/assembly fixtures qualify shared MCP registration regressions. No browser/session/OAuth, full-int64 or independent financial/security qualification is claimed.

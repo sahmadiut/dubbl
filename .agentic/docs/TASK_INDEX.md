@@ -162,3 +162,15 @@ Generated initial scope index; current status always comes from task metadata vi
 | [MON-076](../tasks/MON-076.md) | Adopt exact inventory movement and warehouse contracts | backend | no |
 | [MON-077](../tasks/MON-077.md) | Adopt exact inventory valuation and landed cost contracts | backend | no |
 | [MON-078](../tasks/MON-078.md) | Adopt exact inventory assembly contracts | backend | no |
+
+## Payroll contract children
+
+| Task | Outcome | Role | Optional |
+|---|---|---|---|
+| [MON-079](../tasks/MON-079.md) | Exact payroll employee and contractor master contracts | backend | no |
+| [MON-080](../tasks/MON-080.md) | Exact payroll settings, deduction and tax configuration contracts | backend | no |
+| [MON-081](../tasks/MON-081.md) | Exact payroll time, leave and shift contracts | backend | no |
+| [MON-082](../tasks/MON-082.md) | Exact payroll pay run and lifecycle contracts | backend | no |
+| [MON-083](../tasks/MON-083.md) | Exact payroll contractor and tax payment contracts | backend | no |
+| [MON-084](../tasks/MON-084.md) | Exact payroll compensation and forecasting contracts | backend | no |
+| [MON-085](../tasks/MON-085.md) | Exact payroll report, payslip and tax form contracts | backend | no |

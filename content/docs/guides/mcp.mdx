@@ -124,6 +124,27 @@ dubbl uses OAuth 2.1 with PKCE for MCP authentication:
 ### Organization
 - `get_organization` -- Get current organization details
 
+### Payroll Employees and Contractors
+
+- `list_payroll_employees` -- List and filter live employees
+- `get_payroll_employee` -- Read an employee and safe linked member profile
+- `create_payroll_employee` -- Create an employee with annual salary
+- `update_payroll_employee` -- Edit an employee while retaining payroll history
+- `delete_payroll_employee` -- Soft-delete an employee
+- `list_contractors` -- List and filter live contractors
+- `get_contractor` -- Read a contractor and historical payments
+- `create_contractor` -- Create a contractor with an optional hourly rate
+- `update_contractor` -- Edit a contractor while retaining payment history
+- `delete_contractor` -- Soft-delete a contractor
+
+Employee operations require `manage:payroll`; contractor operations require
+`manage:contractors`. Salary is annual integer cents, hourly rate is cents per
+hour. Numeric fields and matching `salaryMinor` / `hourlyRateMinor` strings are
+supported up to 9007199254740991; null clears an hourly rate. Contractor detail
+payments add `amountMinor` in each payment's currency. Tax rate is basis points,
+PTO is hours, and dates are Gregorian. Currency changes require no existing pay
+items/payments; these tools do not post payroll or convert currencies.
+
 ### Chart of Accounts
 - `list_accounts` -- List all accounts with optional type filter
 - `get_account` -- Get account with calculated balance

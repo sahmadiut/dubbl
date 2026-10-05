@@ -60,6 +60,7 @@ import { InventoryItemPicker } from "@/components/dashboard/inventory-item-picke
 import { WarehousePicker } from "@/components/dashboard/warehouse-picker";
 import { CategoryPicker } from "@/components/dashboard/category-picker";
 import { CurrencyInput } from "@/components/ui/currency-input";
+import { payrollCentsInput, payrollBasisPointsInput } from "@/lib/money/payroll-input";
 import { catalogPriceMinor, catalogWholeInput } from "@/lib/money/catalog-input";
 import { formatMoney, decimalToCents, decimalToMinorUnits } from "@/lib/money";
 
@@ -2408,9 +2409,9 @@ function EmployeeDrawer({ open, onClose }: { open: boolean; onClose: () => void 
           email: email || null,
           employeeNumber,
           position: position || null,
-          salary: Math.round(parseFloat(salary) * 100),
+          salaryMinor: payrollCentsInput(salary),
           payFrequency,
-          taxRate: Math.round(parseFloat(taxRate) * 100),
+          taxRate: payrollBasisPointsInput(taxRate),
           bankAccountNumber: bankAccountNumber || null,
           startDate: empStartDate,
           currency: empCurrency,
@@ -3660,7 +3661,7 @@ function ContractorDrawer({ open, onClose }: { open: boolean; onClose: () => voi
           name: cName,
           email: cEmail || null,
           company: cCompany || null,
-          defaultRate: cRate ? Math.round(parseFloat(cRate) * 100) : null,
+          hourlyRateMinor: cRate ? payrollCentsInput(cRate) : null,
           currency: cCurrency,
         }),
       });

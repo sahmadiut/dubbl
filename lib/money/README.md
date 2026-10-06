@@ -585,3 +585,8 @@ Issued invoice/base-currency/two-decimal guards reject conversion without an FX
 snapshot. Dashboard input and bigint presentation preserve fixed cents. No new
 invoice-total cap/original-deferral policy or schema/IRR/full-int64 enablement.
 See [revenue contracts](../../.agentic/registries/REVENUE_WIRE_CONTRACTS.md).
+
+
+### Cumulative financial statements
+
+Trial balance and balance sheet now share exact GL aggregation and REST/MCP wire projection. Existing fixed two-place decimal strings coexist with exact signed integer-cent Minor aliases, bounded by the legacy safe numeric range. Currency-scaled PDF/XLSX exports preserve their existing scale; numeric spreadsheet cells reject non-round-trippable or over-15-significant-digit amounts. See [.agentic/registries/CUMULATIVE_STATEMENT_WIRE_CONTRACTS.md](../../.agentic/registries/CUMULATIVE_STATEMENT_WIRE_CONTRACTS.md) for all fields, dates, auth, ranges, export distinctions and the retained baseline trial-balance defect. Other statements remain separate MON-101 children.

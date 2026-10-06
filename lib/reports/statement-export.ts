@@ -7,8 +7,9 @@
  * shares one rendering path.
  *
  * Monetary amounts on `StatementRow.amount` / `subtotal` / `grandTotal` are
- * ALWAYS integer minor units (cents). We divide by 100 exactly once, at the
- * cell, so XLSX cells stay numeric (sortable / summable) instead of strings.
+ * ALWAYS integer minor units. Export display retains the currency scale used by
+ * existing exports. XLSX numeric cells reject amounts beyond exact round-trip
+ * or Excel precision; PDF formats bigint whole and fractional parts separately.
  *
  * MULTI-COLUMN statements: a Statement may carry several amount columns (e.g.
  * current vs prior period, or budget vs actual). Set `Statement.columns` to the
@@ -18,6 +19,8 @@
  * are fully supported.
  */
 import React from "react";
+import { statementCellNumber, statementMoneyText } from "./statement-money";
+import { currencyMetadata } from "@/lib/money/exact";
 import {
   Document,
   Page,
@@ -130,19 +133,7 @@ function currencyNumberFormat(currency: string): string {
 }
 
 function getMinorUnits(currency: string): number {
-  try {
-    return (
-      new Intl.NumberFormat("en", { style: "currency", currency })
-        .resolvedOptions().maximumFractionDigits ?? 2
-    );
-  } catch {
-    return 2;
-  }
-}
-
-/** Scale integer minor units to a real number for a numeric spreadsheet cell. */
-function centsToNumber(cents: number, currency: string): number {
-  return cents / Math.pow(10, getMinorUnits(currency));
+  return currencyMetadata(currency).minorUnits;
 }
 
 /**
@@ -193,7 +184,7 @@ export async function toXlsx(statement: Statement): Promise<Buffer> {
     amounts: (number | null)[]
   ) => {
     amounts.forEach((a, i) => {
-      rowValues[amountKeys[i]] = a === null ? null : centsToNumber(a, statement.currency);
+      rowValues[amountKeys[i]] = a === null ? null : statementCellNumber(a, statement.currency);
     });
   };
   const formatAmountCells = (
@@ -305,20 +296,6 @@ const styles = StyleSheet.create({
   bold: { fontFamily: "Helvetica-Bold" },
 });
 
-function fmtMoneyPdf(cents: number, currency: string): string {
-  const minorUnits = getMinorUnits(currency);
-  try {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency,
-      minimumFractionDigits: minorUnits,
-      maximumFractionDigits: minorUnits,
-    }).format(cents / Math.pow(10, minorUnits));
-  } catch {
-    return (cents / Math.pow(10, minorUnits)).toFixed(minorUnits);
-  }
-}
-
 function StatementDocument(statement: Statement): React.ReactElement {
   const h = React.createElement;
   const columnHeaders = resolveColumns(statement);
@@ -336,7 +313,7 @@ function StatementDocument(statement: Statement): React.ReactElement {
       h(
         Text,
         { key: `a-${ci}`, style },
-        a === null ? "" : fmtMoneyPdf(a, statement.currency)
+        a === null ? "" : statementMoneyText(a, statement.currency)
       )
     );
   };

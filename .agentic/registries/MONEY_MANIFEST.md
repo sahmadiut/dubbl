@@ -972,3 +972,8 @@ MON-021 retain remaining/combined qualification; no schema/full-int64/IRR rollou
 ## MON-027 combined project, CRM and pricing adoption
 
 [PROJECT_CRM_PRICING_INTEGRATION](PROJECT_CRM_PRICING_INTEGRATION.md) consolidates the four child maps (81 REST/MCP pairs plus the singular cost adapter) and qualifies actual cross-transport saved rates, time/milestone allocations, tiered document snapshots, currency isolation, audit rollback and cross-writer races. Fixed project-price edits now use the billing history calculation under the same locks, rejecting prices below invoiced fixed allocations while excluding recharged costs. Safe fixed cents, exact aliases and physical/percent units remain unchanged. Full-int64, historical remediation, FX/migration, performance and independent accounting/production IRR/release gates remain separate.
+
+
+## MON-106 cumulative statements (MON-101 child)
+
+[CUMULATIVE_STATEMENT_WIRE_CONTRACTS](CUMULATIVE_STATEMENT_WIRE_CONTRACTS.md) maps the trial-balance and balance-sheet REST/MCP pairs, exact fixed-decimal/Minor aliases, safe outputs and currency-scaled export compatibility. A shared scoped read-only snapshot service and SQL-text/bigint GL functions preserve exact sums and earnings; legacy numeric GL adapters and XLSX cells fail visibly on unsupported precision. Actual auth/MCP/disposable PostgreSQL fixtures verify natural signs, comparison dates, isolation, exact cancellation, output limits and read-only state. Trial-balance presentation defect remains PAR-008/QA-001; MON-107..110 and MON-101/MON-029 retain the other report and combined acceptance. No schema, historical rescale or IRR flag change.

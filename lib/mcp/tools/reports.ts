@@ -17,7 +17,8 @@ import {
   paymentAllocation,
 } from "@/lib/db/schema";
 import { eq, and, sql, isNull, ne, gte, lte, inArray, asc } from "drizzle-orm";
-import { centsToDecimal } from "@/lib/money";
+import { getCumulativeStatement } from "@/lib/reports/cumulative-statement";
+import { cumulativeReportSchema } from "@/lib/reports/statement-wire";
 import { wrapTool } from "@/lib/mcp/errors";
 import type { AuthContext } from "@/lib/api/auth-context";
 import type { Statement } from "@/lib/reports/statement-export";
@@ -63,205 +64,16 @@ function resolveDimensionFilter(args: {
 }
 
 export function registerReportTools(server: McpServer, ctx: AuthContext) {
-  server.tool(
-    "trial_balance",
-    "Generate a trial balance report showing all accounts with their cumulative debit and credit balances from posted entries as at a date. Balances are returned as decimal strings. Pass asAt to choose the point in time (defaults to today) and compareDates to add prior-date comparative columns.",
-    {
-      asAt: z
-        .string()
-        .optional()
-        .describe(
-          "Cumulative balance date (YYYY-MM-DD). Includes all posted history up to and including this date. Defaults to today."
-        ),
-      compareDates: z
-        .array(z.string())
-        .optional()
-        .describe(
-          "Optional prior dates (YYYY-MM-DD) to add as comparative columns. Each produces an extra per-account balance aligned to `dates`."
-        ),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        const asAt = params.asAt ?? new Date().toISOString().slice(0, 10);
-        const seen = new Set<string>([asAt]);
-        const compareDates = (params.compareDates ?? []).filter((d) => {
-          if (seen.has(d)) return false;
-          seen.add(d);
-          return true;
-        });
-        const allDates = [asAt, ...compareDates];
-        const hasComparatives = compareDates.length > 0;
-
-        const perDate = await Promise.all(
-          allDates.map((date) =>
-            aggregateAsAt(ctx.organizationId, date, {
-              includeEmptyAccounts: true,
-            })
-          )
-        );
-        const byDate = perDate.map((accounts) => {
-          const m = new Map<string, AccountAggregate>();
-          for (const a of accounts) m.set(a.accountId, a);
-          return m;
-        });
-        const primary = perDate[0];
-
-        const splitDebitCredit = (cents: number) => ({
-          debitBalance: cents > 0 ? centsToDecimal(cents) : "0.00",
-          creditBalance: cents < 0 ? centsToDecimal(Math.abs(cents)) : "0.00",
-          balance: centsToDecimal(cents),
-        });
-
-        const accounts = primary.map((a) => {
-          const balances = byDate.map((m) => m.get(a.accountId)?.balance ?? 0);
-          return {
-            accountId: a.accountId,
-            code: a.code,
-            name: a.name,
-            type: a.type,
-            ...splitDebitCredit(balances[0]),
-            ...(hasComparatives
-              ? { balances: balances.map((b) => splitDebitCredit(b)) }
-              : {}),
-          };
-        });
-
-        return {
-          asAt,
-          ...(hasComparatives ? { dates: allDates, compareDates } : {}),
-          accounts,
-        };
-      })
-  );
-
-  server.tool(
-    "balance_sheet",
-    "Generate a balance sheet report showing assets, liabilities, and equity with totals (cumulative balances as at a date). Only includes posted entries. Balances are decimal strings. Pass asAt to choose the point in time (defaults to today) and compareDates to add prior-date comparative columns.",
-    {
-      asAt: z
-        .string()
-        .optional()
-        .describe(
-          "Cumulative balance date (YYYY-MM-DD). Includes all posted history up to and including this date. Defaults to today."
-        ),
-      compareDates: z
-        .array(z.string())
-        .optional()
-        .describe(
-          "Optional prior dates (YYYY-MM-DD) to add as comparative columns. Each adds per-account `balances`/`totals` aligned to `dates`."
-        ),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        const asAt = params.asAt ?? new Date().toISOString().slice(0, 10);
-        const seen = new Set<string>([asAt]);
-        const compareDates = (params.compareDates ?? []).filter((d) => {
-          if (seen.has(d)) return false;
-          seen.add(d);
-          return true;
-        });
-        const allDates = [asAt, ...compareDates];
-        const hasComparatives = compareDates.length > 0;
-
-        const perDate = await Promise.all(
-          allDates.map((date) =>
-            aggregateAsAt(ctx.organizationId, date, {
-              accountTypes: ["asset", "liability", "equity"],
-              includeEmptyAccounts: true,
-            })
-          )
-        );
-        const byDate = perDate.map((accounts) => {
-          const m = new Map<string, AccountAggregate>();
-          for (const a of accounts) m.set(a.accountId, a);
-          return m;
-        });
-        const primary = perDate[0];
-
-        // Current-year (un-closed) earnings as at each date, so the sheet
-        // balances (Assets = Liabilities + Equity) inside the open year.
-        const plPerDate = await Promise.all(
-          allDates.map((date) =>
-            aggregateAsAt(ctx.organizationId, date, {
-              accountTypes: ["revenue", "expense"],
-            })
-          )
-        );
-        const earningsByDate = plPerDate.map((accts) =>
-          accts.reduce(
-            (s, a) => s + (a.type === "revenue" ? a.balance : -a.balance),
-            0
-          )
-        );
-
-        function buildSection(type: AccountAggregate["type"]) {
-          const accountsOfType = primary.filter((a) => a.type === type);
-          const accts = accountsOfType.map((a) => {
-            const balances = byDate.map(
-              (m) => m.get(a.accountId)?.balance ?? 0
-            );
-            return {
-              accountId: a.accountId,
-              code: a.code,
-              name: a.name,
-              balance: centsToDecimal(balances[0]),
-              ...(hasComparatives
-                ? { balances: balances.map((b) => centsToDecimal(b)) }
-                : {}),
-            };
-          });
-          const totals = allDates.map((_, i) =>
-            accountsOfType.reduce(
-              (s, a) => s + (byDate[i].get(a.accountId)?.balance ?? 0),
-              0
-            )
-          );
-          return {
-            type,
-            accounts: accts,
-            total: centsToDecimal(totals[0]),
-            ...(hasComparatives
-              ? { totals: totals.map((t) => centsToDecimal(t)) }
-              : {}),
-          };
-        }
-
-        const equity = buildSection("equity");
-        // Add Current Year Earnings to equity (accounts + totals).
-        if (earningsByDate.some((v) => v !== 0)) {
-          equity.accounts.push({
-            accountId: "current-year-earnings",
-            code: "",
-            name: "Current Year Earnings",
-            balance: centsToDecimal(earningsByDate[0]),
-            ...(hasComparatives
-              ? { balances: earningsByDate.map((b) => centsToDecimal(b)) }
-              : {}),
-          });
-          const newTotals = allDates.map(
-            (_, i) =>
-              earningsByDate[i] +
-              (byDate[i]
-                ? primary
-                    .filter((a) => a.type === "equity")
-                    .reduce((s, a) => s + (byDate[i].get(a.accountId)?.balance ?? 0), 0)
-                : 0)
-          );
-          equity.total = centsToDecimal(newTotals[0]);
-          if (hasComparatives) {
-            equity.totals = newTotals.map((t) => centsToDecimal(t));
-          }
-        }
-
-        return {
-          asAt,
-          ...(hasComparatives ? { dates: allDates, compareDates } : {}),
-          assets: buildSection("asset"),
-          liabilities: buildSection("liability"),
-          equity,
-        };
-      })
-  );
+  for (const [name, kind, label] of [
+    ["trial_balance", "trial-balance", "Trial balance"],
+    ["balance_sheet", "balance-sheet", "Balance sheet"],
+  ] as const) {
+    server.tool(name,
+      `${label} from posted, non-deleted organization-base GL through inclusive Gregorian asAt (UTC today by default). Optional compareDates add cumulative columns. Legacy fixed two-place decimal strings retain their units; additive Minor strings contain exact signed integer cents within +/-9007199254740991. Returns accounts/sections and currencyCode. No input amounts or FX; requires view:data. Trial balance retains the existing natural-sign presentation.`,
+      cumulativeReportSchema.shape,
+      params => wrapTool(ctx, async () => (await getCumulativeStatement(ctx, kind, params)).data),
+    );
+  }
 
   server.tool(
     "profit_and_loss",

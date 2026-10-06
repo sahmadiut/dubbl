@@ -18,6 +18,7 @@
  * statement shapes (balance sheet sections, P&L, TB rows, etc.).
  */
 import { db } from "@/lib/db";
+import { reportMinor } from "./statement-wire";
 import {
   chartAccount,
   journalEntry,
@@ -78,8 +79,21 @@ export interface AccountAggregate {
   balance: number;
 }
 
+/** Exact aggregates retain SQL numeric sums as bigint until final wire projection. */
+export type ExactAccountAggregate = Omit<AccountAggregate, "debit" | "credit" | "balance"> & {
+  debit: bigint;
+  credit: bigint;
+  balance: bigint;
+};
+
+function legacyAggregate(row: ExactAccountAggregate): AccountAggregate {
+  return { ...row, debit: reportMinor(row.debit), credit: reportMinor(row.credit), balance: reportMinor(row.balance) };
+}
+
 /** Shared options accepted by the aggregation functions. */
 export interface GLQueryOptions {
+  /** Use a caller-owned read snapshot; defaults to the shared DB. */
+  database?: Pick<typeof db, "select">;
   /** Reporting basis. Defaults to 'accrual' (current behavior). */
   basis?: ReportBasis;
   /**
@@ -127,6 +141,7 @@ function buildWhere(
 ): SQL {
   const clauses: (SQL | undefined)[] = [
     eq(journalEntry.organizationId, organizationId),
+    eq(chartAccount.organizationId, organizationId),
     eq(journalEntry.status, "posted"),
     isNull(journalEntry.deletedAt),
     dateClause,
@@ -166,6 +181,7 @@ function buildWhere(
         select 1 from ${journalLine} cash_jl
         join ${chartAccount} cash_acct on cash_acct.id = cash_jl.account_id
         where cash_jl.journal_entry_id = ${journalEntry.id}
+          and cash_acct.organization_id = ${organizationId}
           and cash_acct.sub_type in (${sql.join(
             CASH_ACCOUNT_SUBTYPES.map((s) => sql`${s}`),
             sql`, `
@@ -194,15 +210,15 @@ type JoinDate =
  * (LEFT JOIN) so accounts with no activity still appear; otherwise we drive
  * from `journalLine` (INNER JOIN) so only accounts with activity are returned.
  */
-async function aggregate(
+async function aggregateExact(
   organizationId: string,
   dateClause: SQL | undefined,
   joinDate: JoinDate,
   opts: GLQueryOptions
-): Promise<AccountAggregate[]> {
+): Promise<ExactAccountAggregate[]> {
   const includeEmpty = opts.includeEmptyAccounts ?? false;
-  const debitSum = sql<number>`coalesce(sum(${journalLine.debitAmount}), 0)`;
-  const creditSum = sql<number>`coalesce(sum(${journalLine.creditAmount}), 0)`;
+  const debitSum = sql<string>`coalesce(sum(${journalLine.debitAmount}), 0)::text`;
+  const creditSum = sql<string>`coalesce(sum(${journalLine.creditAmount}), 0)::text`;
 
   let rows: Array<{
     accountId: string;
@@ -210,8 +226,8 @@ async function aggregate(
     name: string;
     type: AccountAggregate["type"];
     subType: string | null;
-    debit: number;
-    credit: number;
+    debit: string;
+    credit: string;
   }>;
 
   if (includeEmpty) {
@@ -232,7 +248,7 @@ async function aggregate(
 
     const lineJoin = buildEntryJoinPredicate(organizationId, joinDate, opts);
 
-    rows = (await db
+    rows = (await (opts.database ?? db)
       .select({
         accountId: chartAccount.id,
         code: chartAccount.code,
@@ -259,7 +275,7 @@ async function aggregate(
       .orderBy(chartAccount.code)) as typeof rows;
   } else {
     const where = buildWhere(organizationId, dateClause, opts);
-    rows = (await db
+    rows = (await (opts.database ?? db)
       .select({
         accountId: journalLine.accountId,
         code: chartAccount.code,
@@ -284,8 +300,8 @@ async function aggregate(
   }
 
   return rows.map((r) => {
-    const debit = Number(r.debit);
-    const credit = Number(r.credit);
+    const debit = BigInt(r.debit);
+    const credit = BigInt(r.credit);
     const balance = isDebitNormal(r.type) ? debit - credit : credit - debit;
     return {
       accountId: r.accountId,
@@ -351,7 +367,8 @@ function buildEntryJoinPredicate(
           select 1 from ${journalLine} cash_jl
           join ${chartAccount} cash_acct on cash_acct.id = cash_jl.account_id
           where cash_jl.journal_entry_id = je.id
-            and cash_acct.sub_type in (${sql.join(
+            and cash_acct.organization_id = ${organizationId}
+          and cash_acct.sub_type in (${sql.join(
               CASH_ACCOUNT_SUBTYPES.map((s) => sql`${s}`),
               sql`, `
             )})
@@ -376,16 +393,16 @@ function buildEntryJoinPredicate(
  * Use for P&L and any period report. `balance` is the natural-sign movement
  * for the period. Pass `accountTypes: ['revenue','expense']` for a P&L.
  */
-export async function aggregateByDateRange(
+export async function aggregateByDateRangeExact(
   organizationId: string,
   range: DateRange,
   opts: GLQueryOptions = {}
-): Promise<AccountAggregate[]> {
+): Promise<ExactAccountAggregate[]> {
   const dateClause = and(
     gte(journalEntry.date, range.startDate),
     lte(journalEntry.date, range.endDate)
   );
-  return aggregate(
+  return aggregateExact(
     organizationId,
     dateClause,
     { kind: "range", startDate: range.startDate, endDate: range.endDate },
@@ -401,13 +418,13 @@ export async function aggregateByDateRange(
  * all history (opening balances, prior years) — matching balance-sheet
  * semantics. Pass `includeEmptyAccounts: true` to list every account.
  */
-export async function aggregateAsAt(
+export async function aggregateAsAtExact(
   organizationId: string,
   asAt: string,
   opts: GLQueryOptions = {}
-): Promise<AccountAggregate[]> {
+): Promise<ExactAccountAggregate[]> {
   const dateClause = lte(journalEntry.date, asAt);
-  return aggregate(organizationId, dateClause, { kind: "asAt", asAt }, opts);
+  return aggregateExact(organizationId, dateClause, { kind: "asAt", asAt }, opts);
 }
 
 /**
@@ -423,14 +440,14 @@ export interface DimensionGroup {
   accounts: AccountAggregate[];
 }
 
-export async function aggregateByDimension(
+export async function aggregateByDimensionExact(
   organizationId: string,
   range: DateRange,
   dimension: Dimension,
   opts: Omit<GLQueryOptions, "dimension" | "dimensionValue"> = {}
-): Promise<DimensionGroup[]> {
-  const debitSum = sql<number>`coalesce(sum(${journalLine.debitAmount}), 0)`;
-  const creditSum = sql<number>`coalesce(sum(${journalLine.creditAmount}), 0)`;
+): Promise<ExactDimensionGroup[]> {
+  const debitSum = sql<string>`coalesce(sum(${journalLine.debitAmount}), 0)::text`;
+  const creditSum = sql<string>`coalesce(sum(${journalLine.creditAmount}), 0)::text`;
   const dimCol =
     dimension === "costCenterId"
       ? journalLine.costCenterId
@@ -442,7 +459,7 @@ export async function aggregateByDimension(
   );
   const where = buildWhere(organizationId, dateClause, opts);
 
-  const rows = (await db
+  const rows = (await (opts.database ?? db)
     .select({
       dimensionValue: dimCol,
       accountId: journalLine.accountId,
@@ -472,20 +489,20 @@ export async function aggregateByDimension(
     name: string;
     type: AccountAggregate["type"];
     subType: string | null;
-    debit: number;
-    credit: number;
+    debit: string;
+    credit: string;
   }>;
 
-  const buckets = new Map<string, DimensionGroup>();
+  const buckets = new Map<string, ExactDimensionGroup>();
   for (const r of rows) {
-    const key = r.dimensionValue ?? " null";
+    const key = r.dimensionValue ?? "\0null";
     let bucket = buckets.get(key);
     if (!bucket) {
       bucket = { dimensionValue: r.dimensionValue ?? null, accounts: [] };
       buckets.set(key, bucket);
     }
-    const debit = Number(r.debit);
-    const credit = Number(r.credit);
+    const debit = BigInt(r.debit);
+    const credit = BigInt(r.credit);
     bucket.accounts.push({
       accountId: r.accountId,
       code: r.code,
@@ -499,4 +516,19 @@ export async function aggregateByDimension(
   }
 
   return Array.from(buckets.values());
+}
+
+export type ExactDimensionGroup = { dimensionValue: string | null; accounts: ExactAccountAggregate[] };
+
+/** Compatibility adapters reject unsafe final aggregates rather than coercing SQL strings. */
+export async function aggregateByDateRange(organizationId: string, range: DateRange, opts: GLQueryOptions = {}): Promise<AccountAggregate[]> {
+  return (await aggregateByDateRangeExact(organizationId, range, opts)).map(legacyAggregate);
+}
+export async function aggregateAsAt(organizationId: string, asAt: string, opts: GLQueryOptions = {}): Promise<AccountAggregate[]> {
+  return (await aggregateAsAtExact(organizationId, asAt, opts)).map(legacyAggregate);
+}
+export async function aggregateByDimension(organizationId: string, range: DateRange, dimension: Dimension, opts: Omit<GLQueryOptions, "dimension" | "dimensionValue"> = {}): Promise<DimensionGroup[]> {
+  return (await aggregateByDimensionExact(organizationId, range, dimension, opts)).map(group => ({
+    ...group, accounts: group.accounts.map(legacyAggregate),
+  }));
 }

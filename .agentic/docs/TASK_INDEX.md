@@ -206,3 +206,14 @@ MON-028 retains combined acceptance with unchanged criteria; all children inheri
 | [MON-103](../tasks/MON-103.md) | 02 | Adopt exact tax and regulatory reports | backend | no |
 | [MON-104](../tasks/MON-104.md) | 02 | Adopt exact operational analytics reports | backend | no |
 | [MON-105](../tasks/MON-105.md) | 02 | Adopt exact dashboard and saved report contracts | backend | no |
+
+
+## MON-101 bounded financial report children
+
+MON-101 retains all original acceptance after the five children; all trace to migration/API compatibility.
+
+- [MON-106](../tasks/MON-106.md): Adopt exact cumulative financial statement contracts.
+- [MON-107](../tasks/MON-107.md): Adopt exact period financial statement contracts.
+- [MON-108](../tasks/MON-108.md): Adopt exact ledger detail report contracts.
+- [MON-109](../tasks/MON-109.md): Adopt exact cash flow report contracts.
+- [MON-110](../tasks/MON-110.md): Adopt exact compound financial report contracts.

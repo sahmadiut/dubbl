@@ -6,30 +6,21 @@
  * (e.g. balance sheet + P&L + trial balance) into one downloadable file.
  *
  * Cell rules mirror lib/reports/statement-export.ts: amounts are integer minor
- * units (cents), divided by 100 exactly once at the numeric cell, and text
+ * units, scaled exactly once by currency at guarded numeric cells, and text
  * cells are guarded against CSV/formula injection.
  */
 import type { Statement } from "@/lib/reports/statement-export";
+import { statementCellNumber } from "./statement-money";
+import { currencyMetadata } from "@/lib/money/exact";
 
 function getMinorUnits(currency: string): number {
-  try {
-    return (
-      new Intl.NumberFormat("en", { style: "currency", currency })
-        .resolvedOptions().maximumFractionDigits ?? 2
-    );
-  } catch {
-    return 2;
-  }
+  return currencyMetadata(currency).minorUnits;
 }
 
 function currencyNumberFormat(currency: string): string {
   const minorUnits = getMinorUnits(currency);
   const decimals = minorUnits > 0 ? "." + "0".repeat(minorUnits) : "";
   return `#,##0${decimals};(#,##0${decimals})`;
-}
-
-function centsToNumber(cents: number, currency: string): number {
-  return cents / Math.pow(10, getMinorUnits(currency));
 }
 
 function sanitizeText(value: string): string {
@@ -126,7 +117,7 @@ export async function toWorkbookXlsx(statements: Statement[]): Promise<Buffer> {
       amounts: (number | null)[]
     ) => {
       amounts.forEach((a, i) => {
-        rowValues[amountKeys[i]] = a === null ? null : centsToNumber(a, statement.currency);
+        rowValues[amountKeys[i]] = a === null ? null : statementCellNumber(a, statement.currency);
       });
     };
     const formatAmountCells = (dataRow: ReturnType<typeof ws.addRow>) => {

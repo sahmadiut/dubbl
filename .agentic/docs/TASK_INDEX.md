@@ -174,3 +174,5 @@ Generated initial scope index; current status always comes from task metadata vi
 | [MON-083](../tasks/MON-083.md) | Exact payroll contractor and tax payment contracts | backend | no |
 | [MON-084](../tasks/MON-084.md) | Exact payroll compensation and forecasting contracts | backend | no |
 | [MON-085](../tasks/MON-085.md) | Exact payroll report, payslip and tax form contracts | backend | no |
+
+MON-026 retains integrated asset/loan acceptance after MON-086 masters, MON-087 depreciation, MON-088 valuation/disposal, MON-089 CWIP and MON-090 loans/schedules/payment. All children inherit MON-011 and migration/API source sections; original parent criteria remain unchanged.

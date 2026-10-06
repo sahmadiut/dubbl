@@ -1,5 +1,7 @@
 "use client";
 
+import { assetCentsInput, assetLifeInput } from "@/lib/money/asset-display";
+
 import { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -1884,9 +1886,9 @@ function FixedAssetDrawer({ open, onClose }: { open: boolean; onClose: () => voi
           description: description || null,
           assetNumber,
           purchaseDate,
-          purchasePrice: Math.round(parseFloat(purchasePrice) * 100),
-          residualValue: residualValue ? Math.round(parseFloat(residualValue) * 100) : 0,
-          usefulLifeMonths: parseInt(usefulLifeMonths) || 60,
+          purchasePriceMinor: assetCentsInput(purchasePrice),
+          residualValueMinor: assetCentsInput(residualValue || "0"),
+          usefulLifeMonths: assetLifeInput(usefulLifeMonths || "60"),
           depreciationMethod,
           assetAccountId: assetAccountId || null,
           depreciationAccountId: depreciationAccountId || null,

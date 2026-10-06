@@ -51,3 +51,5 @@ MON-022 retains combined configuration acceptance after MON-070 organization set
 MON-024 retains combined inventory/costing acceptance after MON-074 variants/suppliers, MON-075 master/import, MON-076 movements/warehouses, MON-077 valuation/landed costs and MON-078 BOM/assembly. Verified source domains inherit MON-011 and migration/API source sections; original parent criteria remain unchanged.
 
 MON-025 retains combined payroll acceptance after MON-079 master records, MON-080 settings/deductions/tax, MON-081 time/leave/shifts, MON-082 pay runs/lifecycle, MON-083 contractor/tax payments, MON-084 compensation/forecasts and MON-085 reports/payslips/tax forms/self-service outputs. Children inherit MON-011 and migration/API source sections; original parent criteria remain unchanged.
+
+MON-026 retains integrated asset/loan acceptance after MON-086 masters, MON-087 depreciation, MON-088 valuation/disposal, MON-089 CWIP and MON-090 loans/schedules/payment. All children inherit MON-011 and migration/API source sections; original parent criteria remain unchanged.

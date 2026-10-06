@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { AccountPicker } from "@/components/dashboard/account-picker";
 import { DataTable, type Column } from "@/components/dashboard/data-table";
-import { formatMoney, parseMoney } from "@/lib/money";
+import { assetMoneyDisplay as formatMoney, assetCentsInput, assetCentsDecimal, assetLifeInput, assetRateInput } from "@/lib/money/asset-display";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
@@ -113,7 +113,7 @@ function categoryToForm(c: AssetCategory): FormState {
     defaultConvention: c.defaultConvention,
     usefulLifeMonths:
       c.defaultUsefulLifeMonths != null ? String(c.defaultUsefulLifeMonths) : "",
-    residualValue: c.defaultResidualValue ? String(c.defaultResidualValue / 100) : "",
+    residualValue: c.defaultResidualValue ? assetCentsDecimal(c.defaultResidualValue) : "",
     depreciationRatePct:
       c.defaultDepreciationRateBp != null
         ? String(c.defaultDepreciationRateBp / 100)
@@ -187,39 +187,23 @@ export default function AssetCategoriesPage() {
     setSaving(true);
     setError(null);
 
-    const usefulLife = form.usefulLifeMonths.trim()
-      ? parseInt(form.usefulLifeMonths, 10)
-      : null;
-    const ratePct = form.depreciationRatePct.trim()
-      ? parseFloat(form.depreciationRatePct)
-      : null;
-
-    const payload: Record<string, unknown> = {
-      name: form.name.trim(),
-      defaultDepreciationMethod: form.defaultDepreciationMethod,
-      defaultConvention: form.defaultConvention,
-      defaultUsefulLifeMonths:
-        usefulLife != null && !Number.isNaN(usefulLife) ? usefulLife : null,
-      defaultResidualValue: form.residualValue.trim()
-        ? parseMoney(form.residualValue)
-        : 0,
-      defaultDepreciationRateBp:
-        ratePct != null && !Number.isNaN(ratePct)
-          ? Math.round(ratePct * 100)
-          : null,
-      assetAccountId: form.assetAccountId || null,
-      depreciationAccountId: form.depreciationAccountId || null,
-      accumulatedDepAccountId: form.accumulatedDepAccountId || null,
-      cwipAccountId: form.cwipAccountId || null,
-      isActive: form.isActive,
-    };
-
-    const url = editingId
-      ? `/api/v1/asset-categories/${editingId}`
-      : `/api/v1/asset-categories`;
-    const method = editingId ? "PATCH" : "POST";
-
     try {
+      const payload: Record<string, unknown> = {
+        name: form.name.trim(),
+        defaultDepreciationMethod: form.defaultDepreciationMethod,
+        defaultConvention: form.defaultConvention,
+        defaultUsefulLifeMonths: form.usefulLifeMonths.trim() ? assetLifeInput(form.usefulLifeMonths.trim()) : null,
+        defaultResidualValueMinor: assetCentsInput(form.residualValue.trim() || "0"),
+        defaultDepreciationRateBp: form.depreciationRatePct.trim() ? assetRateInput(form.depreciationRatePct.trim()) : null,
+        assetAccountId: form.assetAccountId || null,
+        depreciationAccountId: form.depreciationAccountId || null,
+        accumulatedDepAccountId: form.accumulatedDepAccountId || null,
+        cwipAccountId: form.cwipAccountId || null,
+        isActive: form.isActive,
+      };
+      const url = editingId ? `/api/v1/asset-categories/${editingId}` : `/api/v1/asset-categories`;
+      const method = editingId ? "PATCH" : "POST";
+
       const res = await fetch(url, {
         method,
         headers: {
@@ -235,8 +219,8 @@ export default function AssetCategoriesPage() {
       }
       setDialogOpen(false);
       load();
-    } catch {
-      setError("Could not save the template. Please try again.");
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Could not save the template. Please try again.");
     } finally {
       setSaving(false);
     }

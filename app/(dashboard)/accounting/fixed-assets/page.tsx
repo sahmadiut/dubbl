@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { formatMoney } from "@/lib/money";
+import { assetMoneyDisplay as formatMoney, assetPercent } from "@/lib/money/asset-display";
 import { devDelay } from "@/lib/dev-delay";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
@@ -71,7 +71,7 @@ function DepreciationBar({
   className?: string;
 }) {
   if (cost === 0) return null;
-  const depPct = Math.min(((cost - nbv) / cost) * 100, 100);
+  const depPct = assetPercent(BigInt(cost) - BigInt(nbv), cost);
   const nbvPct = 100 - depPct;
   return (
     <div
@@ -147,7 +147,7 @@ function buildColumns(): Column<FixedAsset>[] {
         const pct =
           r.purchasePrice > 0
             ? Math.round(
-                ((r.purchasePrice - r.netBookValue) / r.purchasePrice) * 100
+                assetPercent(BigInt(r.purchasePrice) - BigInt(r.netBookValue), r.purchasePrice)
               )
             : 0;
         return (
@@ -297,14 +297,14 @@ export default function FixedAssetsPage() {
   }, [debouncedSearch]);
 
   // Stats from all assets (not filtered)
-  const totalCost = allAssets.reduce((sum, a) => sum + a.purchasePrice, 0);
-  const totalNBV = allAssets.reduce((sum, a) => sum + a.netBookValue, 0);
+  const totalCost = allAssets.reduce((sum, a) => sum + BigInt(a.purchasePrice), 0n);
+  const totalNBV = allAssets.reduce((sum, a) => sum + BigInt(a.netBookValue), 0n);
   const totalAccDep = allAssets.reduce(
-    (sum, a) => sum + a.accumulatedDepreciation,
-    0
+    (sum, a) => sum + BigInt(a.accumulatedDepreciation),
+    0n
   );
-  const nbvPct = totalCost > 0 ? Math.round((totalNBV / totalCost) * 100) : 0;
-  const depPct = totalCost > 0 ? Math.round((totalAccDep / totalCost) * 100) : 0;
+  const nbvPct = Math.round(assetPercent(totalNBV, totalCost));
+  const depPct = Math.round(assetPercent(totalAccDep, totalCost));
 
   // Tab counts from all assets
   const countByStatus = useMemo(() => {

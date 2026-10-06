@@ -158,6 +158,8 @@ export async function updateFixedAsset(ctx: AuthContext, id: string, input: unkn
     if (!before) throw new AuthError("Fixed asset not found", 404);
     const old = assetDto(before); const merged = { ...before, ...values, residualValue: values.residualValue ?? before.residualValue }; validateAsset(merged);
     if (values.isCwip !== undefined && values.isCwip !== before.isCwip) throw new AuthError("Use the CWIP capitalization workflow to change state", 409);
+    if (before.isCwip && before.purchasePrice > 0 && merged.cwipAccountId !== before.cwipAccountId)
+      throw new AuthError("Cannot redirect an existing CWIP carrying balance through master editing", 409);
     const economic = ["residualValue", "usefulLifeMonths", "depreciationMethod", "convention", "inServiceDate", "totalExpectedUnits", ...accountFields] as const;
     if (economic.some(field => merged[field] !== before[field])) {
       const [dep] = await tx.select({ id: depreciationEntry.id }).from(depreciationEntry).where(eq(depreciationEntry.fixedAssetId, id)).limit(1);

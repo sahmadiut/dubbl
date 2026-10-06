@@ -49,7 +49,7 @@ import { registerPayrollOutputTools } from "./payroll-outputs";
 import { registerAssetValuationTools } from "./asset-valuation";
 import { registerAssetDepreciationTools } from "./asset-depreciation";
 import { registerAssetMasterTools } from "./asset-master";
-import { registerFixedAssetTools } from "./fixed-assets";
+import { registerAssetCwipTools } from "./asset-cwip";
 import { registerInventoryTools } from "./inventory";
 import { registerInventoryAssemblyTools } from "./inventory-assembly";
 import { registerInventoryCatalogTools } from "./inventory-catalog";
@@ -133,7 +133,7 @@ export function registerAllTools(server: McpServer, ctx: AuthContext) {
   registerAssetMasterTools(server, ctx);
   registerAssetDepreciationTools(server, ctx);
   registerAssetValuationTools(server, ctx);
-  registerFixedAssetTools(server, ctx);
+  registerAssetCwipTools(server, ctx);
   registerInventoryTools(server, ctx);
   registerInventoryAssemblyTools(server, ctx);
   registerInventoryMasterTools(server, ctx);

@@ -344,9 +344,12 @@ export default function FixedAssetDetailPage() {
 
   async function handleAddCost() {
     if (!orgId) return;
-    const amount = Math.round(parseFloat(costAmount || "0") * 100);
-    if (amount <= 0) {
-      toast.error("Enter an amount greater than zero");
+    let amountMinor: string;
+    try {
+      amountMinor = assetCentsInput(costAmount);
+      if (amountMinor === "0") throw new RangeError("Enter an amount greater than zero");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Enter a valid construction cost");
       return;
     }
     if (!costSourceAccountId) {
@@ -362,7 +365,7 @@ export default function FixedAssetDetailPage() {
           "x-organization-id": orgId,
         },
         body: JSON.stringify({
-          amount,
+          amountMinor,
           date: costDate,
           description: costDescription || undefined,
           sourceAccountId: costSourceAccountId,
@@ -941,7 +944,7 @@ export default function FixedAssetDetailPage() {
               <span className="text-sm font-mono text-muted-foreground">
                 Total:{" "}
                 {formatMoney(
-                  cwipCosts.reduce((s, c) => s + c.amount, 0)
+                  cwipCosts.reduce((s, c) => s + BigInt(c.amount), 0n)
                 )}
               </span>
             )}

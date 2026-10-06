@@ -866,3 +866,8 @@ MON-021 retain remaining/combined qualification; no schema/full-int64/IRR rollou
 ## MON-088 asset valuation and disposal
 
 [ASSET_VALUATION_WIRE_CONTRACTS](ASSET_VALUATION_WIRE_CONTRACTS.md) maps all three REST/MCP pairs. Shared scoped transactions add safe cents/Minor aliases and exact signed surplus/P&L splits, validate carrying/history/journal/account/date/currency consistency, apply period locks and serialize lifecycle writers. Disposal removes valuation-adjusted gross cost, uses current carrying gain/loss, transfers surplus and books at most one unbooked month. Cross-transport audit-key replay and transactional output/audit checks prevent duplicate or partial posting. Legacy positive MCP impairment history fails closed; no historical rewrite. Post-valuation depreciation schedules and implicit currency history remain parent MON-026. No schema/migration, full-int64 or production/IRR enablement.
+
+
+## MON-089 asset CWIP
+
+[ASSET_CWIP_WIRE_CONTRACTS](ASSET_CWIP_WIRE_CONTRACTS.md) documents three shared REST/MCP operations, including cost read/add parity. Positive safe integer cents add canonical Minor strings; bigint accumulation retains opening CWIP basis and rejects derived overflow. Scoped base-currency accounts/categories/history, organization-first lifecycle locks, transactional period checks, exact GL/audit/output preflight and retry snapshots prevent partial/duplicate posting. Nonzero balances retain their holding account, including master edits; opening funding is a precondition, not guessed/rebuilt. No schema/migration, history rewrite, IRR or full-int64 enablement; MON-026 retains combined and independent qualification.

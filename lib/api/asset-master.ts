@@ -55,7 +55,7 @@ async function assetRead(tx: TaxTx, ctx: AuthContext, row: typeof fixedAsset.$in
     depreciationAccount: await accountRead(tx, ctx, row.depreciationAccountId), accumulatedDepAccount: await accountRead(tx, ctx, row.accumulatedDepAccountId),
     cwipAccount: await accountRead(tx, ctx, row.cwipAccountId),
     depreciationEntries: await Promise.all(depreciation.map(async r => ({ ...assetMoneyDto(r, ["amount"]), journalEntry: await journalRead(tx, ctx, r.journalEntryId) }))),
-    revaluations: await Promise.all(revaluations.map(async r => ({ ...assetMoneyDto(r, ["previousCarryingAmount", "revaluedAmount", "changeAmount", "surplusAmount", "impairmentAmount"], ["changeAmount", "surplusAmount"]), journalEntry: await journalRead(tx, ctx, r.journalEntryId) }))),
+    revaluations: await Promise.all(revaluations.map(async r => ({ ...assetMoneyDto(r, ["previousCarryingAmount", "revaluedAmount", "changeAmount", "surplusAmount", "impairmentAmount"], ["changeAmount", "surplusAmount", "impairmentAmount"]), journalEntry: await journalRead(tx, ctx, r.journalEntryId) }))),
     cwipCosts: await Promise.all(costs.map(async r => ({ ...assetMoneyDto(r, ["amount"]), journalEntry: await journalRead(tx, ctx, r.journalEntryId) }))),
   };
 }

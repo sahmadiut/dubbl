@@ -36,7 +36,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { assetMoneyDisplay as formatMoney } from "@/lib/money/asset-display";
+import { assetMoneyDisplay as formatMoney, assetCentsInput } from "@/lib/money/asset-display";
 import { useConfirm } from "@/lib/hooks/use-confirm";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import Link from "next/link";
@@ -238,7 +238,9 @@ export default function FixedAssetDetailPage() {
 
   async function handleRevalue() {
     if (!orgId) return;
-    const amount = Math.round(parseFloat(revalueAmount || "0") * 100);
+    let amount: string;
+    try { amount = assetCentsInput(revalueAmount || "0"); }
+    catch (error) { toast.error((error as Error).message); return; }
     setBusy(true);
     try {
       const res = await fetch(`/api/v1/fixed-assets/${id}/revalue`, {
@@ -248,7 +250,7 @@ export default function FixedAssetDetailPage() {
           "x-organization-id": orgId,
         },
         body: JSON.stringify({
-          revaluedAmount: amount,
+          revaluedAmountMinor: amount,
           date: revalueDate,
           notes: revalueNotes || undefined,
         }),
@@ -274,7 +276,9 @@ export default function FixedAssetDetailPage() {
 
   async function handleImpair() {
     if (!orgId) return;
-    const amount = Math.round(parseFloat(impairAmount || "0") * 100);
+    let amount: string;
+    try { amount = assetCentsInput(impairAmount || "0"); }
+    catch (error) { toast.error((error as Error).message); return; }
     setBusy(true);
     try {
       const res = await fetch(`/api/v1/fixed-assets/${id}/impair`, {
@@ -284,7 +288,7 @@ export default function FixedAssetDetailPage() {
           "x-organization-id": orgId,
         },
         body: JSON.stringify({
-          revaluedAmount: amount,
+          revaluedAmountMinor: amount,
           date: impairDate,
           notes: impairNotes || undefined,
         }),
@@ -387,7 +391,9 @@ export default function FixedAssetDetailPage() {
 
   async function handleDispose() {
     if (!orgId) return;
-    const amount = Math.round(parseFloat(disposeAmount || "0") * 100);
+    let amount: string;
+    try { amount = assetCentsInput(disposeAmount || "0"); }
+    catch (error) { toast.error((error as Error).message); return; }
 
     const res = await fetch(`/api/v1/fixed-assets/${id}/dispose`, {
       method: "POST",
@@ -395,7 +401,7 @@ export default function FixedAssetDetailPage() {
         "Content-Type": "application/json",
         "x-organization-id": orgId,
       },
-      body: JSON.stringify({ disposalAmount: amount, date: disposeDate }),
+      body: JSON.stringify({ disposalAmountMinor: amount, date: disposeDate }),
     });
 
     if (res.ok) {

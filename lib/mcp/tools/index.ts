@@ -46,6 +46,7 @@ import { registerTaxLookupTools } from "./tax-lookup";
 import { registerTaxTools } from "./tax";
 import { registerConsolidationTools } from "./consolidation";
 import { registerPayrollOutputTools } from "./payroll-outputs";
+import { registerAssetValuationTools } from "./asset-valuation";
 import { registerAssetDepreciationTools } from "./asset-depreciation";
 import { registerAssetMasterTools } from "./asset-master";
 import { registerFixedAssetTools } from "./fixed-assets";
@@ -131,6 +132,7 @@ export function registerAllTools(server: McpServer, ctx: AuthContext) {
   registerPayrollTimeTools(server, ctx);
   registerAssetMasterTools(server, ctx);
   registerAssetDepreciationTools(server, ctx);
+  registerAssetValuationTools(server, ctx);
   registerFixedAssetTools(server, ctx);
   registerInventoryTools(server, ctx);
   registerInventoryAssemblyTools(server, ctx);

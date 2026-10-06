@@ -987,3 +987,7 @@ MON-021 retain remaining/combined qualification; no schema/full-int64/IRR rollou
 ## MON-103 tax and regulatory reports
 
 [TAX_REPORT_WIRE_CONTRACTS](TAX_REPORT_WIRE_CONTRACTS.md) maps all seven REST/MCP pairs. Shared read-only snapshots, SQL-text/bigint aggregates, exact flat-rate rounding and numeric cents with additive Minor strings preserve legacy report units and existing jurisdiction heuristics. Strict dates/threshold aliases, supported currency guards, scoped metadata/ledger joins and final safe-range validation prevent silent loss or tenant leakage. Live VAT drill-down versus reverse-charge/flat-rate differences remain explicit. No schema/history/IRR gate change; MON-029 retains independent integration acceptance.
+
+## MON-114 spend and sales analytics
+
+[DOCUMENT_ANALYTICS_WIRE_CONTRACTS](DOCUMENT_ANALYTICS_WIRE_CONTRACTS.md) maps vendor-spend, sales-by-customer and sales-by-item REST/MCP pairs and existing sales PDF/XLSX. Shared scoped read-only snapshots use SQL-text/bigint source sums, averages and percentages; numeric fixed cents coexist with explicit Minor strings. Strict dates, currency filters, scoped labels, safe source/result bounds and existing export precision guards reject unsupported values. Actual fixtures verify both writer contracts, tenant/permission isolation, distinct counts, top-five trends, signed cancellation and currency/export units. MON-104 retains independent integration after MON-115..118; no schema, history rescale or IRR rollout change.

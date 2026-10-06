@@ -1,3 +1,5 @@
+import { getDocumentAnalytics } from "@/lib/reports/document-analytics";
+import { documentAnalyticsSchema } from "@/lib/reports/document-analytics-wire";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { db } from "@/lib/db";
@@ -6,9 +8,6 @@ import {
   journalLine,
   journalEntry,
   invoice,
-  invoiceLine,
-  contact,
-  inventoryItem,
   costCenter,
   project,
   bill,
@@ -1413,157 +1412,18 @@ export function registerReportTools(server: McpServer, ctx: AuthContext) {
       })
   );
 
-  server.tool(
-    "sales_by_customer",
-    "Aggregate issued invoice lines by customer over a date range, returning net (pre-tax line amount), tax, gross, and invoice count per customer. Excludes draft and void invoices. Amounts are integer cents. Sorted by net descending; includes a grand totals object.",
-    {
-      startDate: z
-        .string()
-        .optional()
-        .describe("Start date (YYYY-MM-DD, defaults to Jan 1 of current year)"),
-      endDate: z
-        .string()
-        .optional()
-        .describe("End date (YYYY-MM-DD, defaults to today)"),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        const startDate =
-          params.startDate ?? `${new Date().getFullYear()}-01-01`;
-        const endDate = params.endDate ?? new Date().toISOString().slice(0, 10);
-
-        const rows = await db
-          .select({
-            contactId: invoice.contactId,
-            contactName: contact.name,
-            net: sql<number>`coalesce(sum(${invoiceLine.amount}), 0)`,
-            tax: sql<number>`coalesce(sum(${invoiceLine.taxAmount}), 0)`,
-            invoiceCount: sql<number>`count(distinct ${invoice.id})`,
-          })
-          .from(invoiceLine)
-          .innerJoin(invoice, eq(invoiceLine.invoiceId, invoice.id))
-          .leftJoin(contact, eq(invoice.contactId, contact.id))
-          .where(
-            and(
-              eq(invoice.organizationId, ctx.organizationId),
-              isNull(invoice.deletedAt),
-              ne(invoice.status, "void"),
-              ne(invoice.status, "draft"),
-              gte(invoice.issueDate, startDate),
-              lte(invoice.issueDate, endDate)
-            )
-          )
-          .groupBy(invoice.contactId, contact.name)
-          .orderBy(sql`coalesce(sum(${invoiceLine.amount}), 0) desc`);
-
-        const customers = rows.map((r) => {
-          const net = Number(r.net);
-          const tax = Number(r.tax);
-          return {
-            contactId: r.contactId,
-            contactName: r.contactName || "Unknown",
-            net,
-            tax,
-            gross: net + tax,
-            invoiceCount: Number(r.invoiceCount),
-          };
-        });
-
-        const totals = customers.reduce(
-          (acc, c) => {
-            acc.net += c.net;
-            acc.tax += c.tax;
-            acc.gross += c.gross;
-            acc.invoiceCount += c.invoiceCount;
-            return acc;
-          },
-          { net: 0, tax: 0, gross: 0, invoiceCount: 0 }
-        );
-
-        return { startDate, endDate, customers, totals };
-      })
-  );
-
-  server.tool(
-    "sales_by_item",
-    "Aggregate issued invoice lines by inventory item over a date range, returning quantity sold, net (pre-tax line amount), tax, gross, and line count per item. Lines not linked to an item are grouped as 'Uncategorized' (itemId null). Excludes draft and void invoices. Monetary amounts are integer cents; quantity is the schema's 2-decimal integer (1.00 = 100) summed. Sorted by net descending; includes a grand totals object.",
-    {
-      startDate: z
-        .string()
-        .optional()
-        .describe("Start date (YYYY-MM-DD, defaults to Jan 1 of current year)"),
-      endDate: z
-        .string()
-        .optional()
-        .describe("End date (YYYY-MM-DD, defaults to today)"),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        const startDate =
-          params.startDate ?? `${new Date().getFullYear()}-01-01`;
-        const endDate = params.endDate ?? new Date().toISOString().slice(0, 10);
-
-        const rows = await db
-          .select({
-            itemId: invoiceLine.inventoryItemId,
-            itemCode: inventoryItem.code,
-            itemName: inventoryItem.name,
-            quantity: sql<number>`coalesce(sum(${invoiceLine.quantity}), 0)`,
-            net: sql<number>`coalesce(sum(${invoiceLine.amount}), 0)`,
-            tax: sql<number>`coalesce(sum(${invoiceLine.taxAmount}), 0)`,
-            lineCount: sql<number>`count(${invoiceLine.id})`,
-          })
-          .from(invoiceLine)
-          .innerJoin(invoice, eq(invoiceLine.invoiceId, invoice.id))
-          .leftJoin(
-            inventoryItem,
-            eq(invoiceLine.inventoryItemId, inventoryItem.id)
-          )
-          .where(
-            and(
-              eq(invoice.organizationId, ctx.organizationId),
-              isNull(invoice.deletedAt),
-              ne(invoice.status, "void"),
-              ne(invoice.status, "draft"),
-              gte(invoice.issueDate, startDate),
-              lte(invoice.issueDate, endDate)
-            )
-          )
-          .groupBy(
-            invoiceLine.inventoryItemId,
-            inventoryItem.code,
-            inventoryItem.name
-          )
-          .orderBy(sql`coalesce(sum(${invoiceLine.amount}), 0) desc`);
-
-        const items = rows.map((r) => {
-          const net = Number(r.net);
-          const tax = Number(r.tax);
-          return {
-            itemId: r.itemId,
-            itemCode: r.itemCode || null,
-            itemName: r.itemId ? r.itemName || "Unknown item" : "Uncategorized",
-            quantity: Number(r.quantity),
-            net,
-            tax,
-            gross: net + tax,
-            lineCount: Number(r.lineCount),
-          };
-        });
-
-        const totals = items.reduce(
-          (acc, i) => {
-            acc.quantity += i.quantity;
-            acc.net += i.net;
-            acc.tax += i.tax;
-            acc.gross += i.gross;
-            acc.lineCount += i.lineCount;
-            return acc;
-          },
-          { quantity: 0, net: 0, tax: 0, gross: 0, lineCount: 0 }
-        );
-
-        return { startDate, endDate, items, totals };
-      })
-  );
+  for (const [name, kind, label] of [
+    ["sales_by_customer", "sales-by-customer", "Sales by customer"],
+    ["sales_by_item", "sales-by-item", "Sales by item"],
+    ["vendor_spend", "vendor-spend", "Vendor spend"],
+  ] as const) {
+    const outputs = kind === "vendor-spend"
+      ? "Returns vendors ordered by spend, bill counts, rounded averages, percentages, root totalSpend and top-five monthlyTrend. Money adds totalSpendMinor, avgBillAmountMinor and monthly totalMinor."
+      : `Returns ${kind === "sales-by-item" ? "items, line counts and summed quantity (100 = 1.00 physical unit)" : "customers and distinct invoice counts"}, ordered by net, plus totals. Money adds netMinor, taxMinor and grossMinor.`;
+    server.tool(name,
+      `${label} over inclusive Gregorian startDate/endDate (UTC year-to-date by default). No amount inputs. Documents exclude draft, void and deleted. ${outputs} Numeric integer cents and matching exact strings stay within +/-9007199254740991. Counts and quantities remain numbers. Optional currencyCode selects one document currency; mixed currencies reject without it. No FX or currency rescaling. Requires view:data; organization-scoped direct DB reads.`,
+      documentAnalyticsSchema.shape,
+      params => wrapTool(ctx, async () => (await getDocumentAnalytics(ctx, kind, params)).data),
+    );
+  }
 }

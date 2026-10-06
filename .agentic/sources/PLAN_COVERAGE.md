@@ -97,3 +97,14 @@ MON-102 retains every original integration criterion and depends on these childr
 
 
 MON-103 maps tax/regulatory report migration/API compatibility boundaries in [TAX_REPORT_WIRE_CONTRACTS](../registries/TAX_REPORT_WIRE_CONTRACTS.md); MON-029 retains independent combined report acceptance.
+
+
+## MON-104 bounded operational report children
+
+MON-104 retains every original criterion and inventory valuation integration. All children inherit MON-011 and trace to migration/API compatibility.
+
+- [MON-114](../tasks/MON-114.md): Adopt exact spend and sales analytics.
+- [MON-115](../tasks/MON-115.md): Adopt exact expense and KPI analytics.
+- [MON-116](../tasks/MON-116.md): Adopt exact cash forecasts and unrealized FX reports.
+- [MON-117](../tasks/MON-117.md): Adopt exact bank analytics reports.
+- [MON-118](../tasks/MON-118.md): Adopt exact recurring calendar and duplicate reports.

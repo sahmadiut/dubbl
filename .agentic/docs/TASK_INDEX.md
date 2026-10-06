@@ -226,3 +226,14 @@ MON-102 retains every original integration criterion and depends on these childr
 - [MON-111](../tasks/MON-111.md): Adopt exact aged receivable and payable reports.
 - [MON-112](../tasks/MON-112.md): Adopt exact contact statements and delivery.
 - [MON-113](../tasks/MON-113.md): Adopt exact payment-performance analytics.
+
+
+## MON-104 bounded operational report children
+
+MON-104 retains every original criterion and inventory valuation integration. All children inherit MON-011 and trace to migration/API compatibility.
+
+- [MON-114](../tasks/MON-114.md): Adopt exact spend and sales analytics.
+- [MON-115](../tasks/MON-115.md): Adopt exact expense and KPI analytics.
+- [MON-116](../tasks/MON-116.md): Adopt exact cash forecasts and unrealized FX reports.
+- [MON-117](../tasks/MON-117.md): Adopt exact bank analytics reports.
+- [MON-118](../tasks/MON-118.md): Adopt exact recurring calendar and duplicate reports.

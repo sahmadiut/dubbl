@@ -25,6 +25,9 @@ async function load(tx: TaxTx, ctx: AuthContext, id: string) {
   const [row] = await tx.select().from(fixedAsset).where(scope(ctx, id)).for("update");
   if (!row) throw new AuthError("Fixed asset not found", 404);
   assetDto(row);
+  // Disposal clears book value while retaining cost and depreciation history.
+  // Reject its lifecycle state before validating totals for a live asset.
+  if (row.status === "disposed") throw new AuthError("Disposed assets cannot be depreciated or rolled back", 400);
   if (row.inServiceDate && row.inServiceDate < row.purchaseDate) throw new AuthError("Saved service date precedes purchase", 422);
   if (BigInt(row.residualValue) + BigInt(row.accumulatedDepreciation) > BigInt(row.purchasePrice) ||
       BigInt(row.netBookValue) !== BigInt(row.purchasePrice) - BigInt(row.accumulatedDepreciation))

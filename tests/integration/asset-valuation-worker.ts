@@ -11,6 +11,7 @@ import { POST as revalue } from "../../app/api/v1/fixed-assets/[id]/revalue/rout
 import { POST as impair } from "../../app/api/v1/fixed-assets/[id]/impair/route";
 import { POST as dispose } from "../../app/api/v1/fixed-assets/[id]/dispose/route";
 import { POST as depreciate } from "../../app/api/v1/fixed-assets/[id]/depreciate/route";
+import { POST as rollbackDepreciation } from "../../app/api/v1/fixed-assets/[id]/rollback-depreciation/route";
 import { GET as get } from "../../app/api/v1/fixed-assets/[id]/route";
 import { PATCH as patch } from "../../app/api/v1/fixed-assets/[id]/route";
 import { registerAllTools } from "../../lib/mcp/tools";
@@ -107,8 +108,17 @@ async function run() {
     assert.equal(ordinarySale.catchUpAmountMinor, "2067"); assert.equal(ordinarySale.gainOrLossMinor, "-22936");
     await balanced(ordinarySale.catchUpJournalEntryId, 2067n); await balanced(ordinarySale.journalEntryId, 125003n);
     assert.equal((await db.select().from(depreciationEntry).where(eq(depreciationEntry.fixedAssetId, ordinary.id))).length, 1);
+    // Disposal-first must reject depreciation and rollback as lifecycle errors,
+    // including a replay of the catch-up month, without changing the ledger.
+    for (const date of ["2024-02-29", "2024-03-01"]) {
+      await denied(() => depreciate(req({ date }), p(ordinary.id)), 400);
+      await denied(() => rollbackDepreciation(req({ date }), p(ordinary.id)), 400);
+      await mdenied("run_asset_depreciation", { assetId: ordinary.id, date }, ma, 400);
+      await mdenied("rollback_asset_depreciation", { assetId: ordinary.id, date }, ma, 400);
+    }
     const monthly = await asset(); await data(await depreciate(req({ date: "2024-02-01" }), p(monthly.id)));
     assert.equal((await data(await dispose(req({ date: "2024-02-29", disposalAmount: 122936 }), p(monthly.id)))).catchUpAmount, 0);
+    assert.equal((await db.select().from(depreciationEntry).where(eq(depreciationEntry.fixedAssetId, monthly.id))).length, 1);
     const usage = await asset({ depreciationMethod: "units_of_production", totalExpectedUnits: 100 });
     assert.equal((await ma.call("dispose_fixed_asset", { assetId: usage.id, date: "2024-02-29", disposalAmount: 0 })).body.catchUpAmount, 0);
     const track = await asset({ assetAccountId: null, depreciationAccountId: null, accumulatedDepAccountId: null });
@@ -191,7 +201,8 @@ async function run() {
     assert.deepEqual(await data(sales[0]), sales[1].body); assert.equal(sales[1].isError, false);
     const raceDep = await asset();
     const depRace = await Promise.all([depreciate(req({ date: "2024-07-01" }), p(raceDep.id)), dispose(req({ date: "2024-07-01", disposalAmount: 100000 }), p(raceDep.id))]);
-    assert.ok([200, 400].includes(depRace[0].status)); await data(depRace[1]);
+    const depRaceBody = await depRace[0].json();
+    assert.ok([200, 400].includes(depRace[0].status), JSON.stringify({ status: depRace[0].status, body: depRaceBody })); await data(depRace[1]);
     assert.equal((await db.select().from(depreciationEntry).where(eq(depreciationEntry.fixedAssetId, raceDep.id))).length, 1);
     const stale = await asset(); const original = { ...stale };
     await data(await impair(req({ date: "2024-02-01", revaluedAmount: 100000 }), p(stale.id)));

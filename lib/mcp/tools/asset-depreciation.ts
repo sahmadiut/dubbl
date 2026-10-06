@@ -6,7 +6,7 @@ import { assetDepreciationSchema, assetDepreciationBatchSchema, assetDepreciatio
 import { depreciateAsset, depreciateAssets, rollbackAssetDepreciation } from "@/lib/api/asset-depreciation";
 
 export function registerAssetDepreciationTools(server: McpServer, ctx: AuthContext) {
-  const money = "Integer cents and matching canonical Minor strings, max 9007199254740991. Requires manage:assets. Atomic with audit and period checks. Dates default to UTC today. Revalued assets require a separate contract and fail closed.";
+  const money = "Integer cents and matching canonical Minor strings, max 9007199254740991. Requires manage:assets. Atomic with audit and period checks. Dates default to UTC today. Revalued assets require a separate contract and fail closed. Single-asset depreciation and rollback reject disposed assets with status 400.";
   server.registerTool("run_asset_depreciation", {
     description: "Post one monthly depreciation charge for a capitalized active asset. Positive physical units are required only for units_of_production. Same month/units replays without posting twice; conflicting units reject. Returns depreciationEntry, journalEntryId and asset totals. " + money,
     inputSchema: assetDepreciationSchema.extend({ assetId: assetMasterId }).strict(),

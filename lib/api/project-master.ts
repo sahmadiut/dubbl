@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { project, projectMember, projectTask, projectTeam, projectTeamMember, projectTeamAssignment,
   projectMilestone, milestoneAssignment, timeEntry, runningTimer, taskChecklist, taskComment,
   projectLabel, projectNote, member, users, contact, team, teamMember, payrollEmployee, invoice,
-  invoiceLine, billLine, journalLine, payrollItem, payrollRun } from "@/lib/db/schema";
+  invoiceLine, billLine, journalLine, projectBillableItem, payrollItem, payrollRun } from "@/lib/db/schema";
 import { AuthError, type AuthContext } from "./auth-context";
 import { requireRole } from "./require-role";
 import { checkResourceLimit } from "./check-limit";
@@ -164,7 +164,7 @@ async function totalMinutes(tx: TaxTx, ctx: AuthContext, p: typeof project.$infe
 }
 async function guardCurrency(tx: TaxTx, p: typeof project.$inferSelect) {
   if (p.totalBilled || p.totalHours) conflict("Cannot change project currency with financial/time history");
-  for (const table of [timeEntry, projectMilestone, projectMember, invoiceLine, billLine, journalLine]) {
+  for (const table of [timeEntry, projectMilestone, projectMember, projectBillableItem, invoiceLine, billLine, journalLine]) {
     const [existing] = await tx.select({ id: table.id }).from(table).where(eq(table.projectId, p.id)).limit(1);
     if (existing) conflict("Cannot change project currency with financial references");
   }

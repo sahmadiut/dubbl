@@ -895,3 +895,8 @@ MON-021 retain remaining/combined qualification; no schema/full-int64/IRR rollou
 ## MON-093 project master/time adoption
 
 [PROJECT_MASTER_WIRE_CONTRACTS](PROJECT_MASTER_WIRE_CONTRACTS.md) maps 48 shared REST/MCP operations. Existing safe numeric fixed cents add explicit Minor aliases; minutes/seconds/percent retain physical units. Scoped public joins, child references and organization/project locks guard atomic rows/time totals/audit/output validation; strict inputs and billed/paid/reference guards reject unsupported history. Exact editors, rational time valuations and bigint loaded-row display preserve cents. No schema/migration, conversion or IRR gate change; MON-094 and MON-027 retain billing, full-range and integrated financial qualification.
+
+
+## MON-094 project billing and profitability adoption
+
+[PROJECT_BILLING_WIRE_CONTRACTS](PROJECT_BILLING_WIRE_CONTRACTS.md) maps seven shared REST/MCP operation pairs plus the existing single-cost adapter. Safe numeric fixed cents coexist with explicit Minor strings; bigint rational markup, time, fixed percentages and report sums/variances preserve exact values. Scoped posted/approved sources, saved currency agreement, public user projections, stable project-ID history, period/reference guards and organization/project locks protect atomic invoice numbering, source allocation, totalBilled, audit and output checks. Keyed retries replay one invoice; unkeyed consumed sources and fixed overbilling reject. Project currency edits now guard expense-only registrations. The UI uses exact preview totals/percent products. No schema, history rewrite or IRR/full-int64/FX-costing enablement; MON-027 retains integration and independent financial gates.

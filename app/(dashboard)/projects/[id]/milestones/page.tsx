@@ -1,5 +1,6 @@
 "use client";
 
+import { projectBillingFixedCents, projectBillingPercent } from "@/lib/money/project-billing-display";
 import { projectCentsInput } from "@/lib/money/project-display";
 
 import { useState, useEffect, useMemo } from "react";
@@ -97,29 +98,29 @@ export default function MilestonesPage() {
     fetch(`/api/v1/projects/${projectId}/progress-invoice`, {
       headers: { "x-organization-id": orgId },
     })
-      .then(r => r.json())
+      .then(async r => { const data = await r.json(); if (!r.ok) throw new Error(data.error || "Failed to load billing preview"); return data; })
       .then(data => setUninvoicedData(data))
+      .catch(error => toast.error(error instanceof Error ? error.message : "Failed to load billing preview"))
       .finally(() => setInvoiceLoading(false));
   }, [invoiceOpen, orgId, projectId]);
 
   // Calculate invoice preview total (must be before early returns)
   const invoicePreviewTotal = useMemo(() => {
-    if (!uninvoicedData || !proj) return 0;
+    if (!uninvoicedData || !proj) return 0n;
     if (uninvoicedData.billingType === "milestone") {
       return (uninvoicedData.milestones || [])
         .filter((m) => selectedMilestoneIds.includes(m.id))
-        .reduce((s: number, m) => s + m.remaining, 0);
+        .reduce((s, m) => s + BigInt(m.remaining), 0n);
     }
     if (uninvoicedData.billingType === "hourly") {
       return (uninvoicedData.timeEntries || [])
         .filter((e) => selectedTimeEntryIds.includes(e.id))
-        .reduce((s: number, e) => s + e.amount, 0);
+        .reduce((s, e) => s + BigInt(e.amount), 0n);
     }
     if (uninvoicedData.billingType === "fixed") {
-      const pctVal = Math.min(100, Math.max(0, parseFloat(fixedPercent) || 0));
-      return Math.round((proj.fixedPrice * pctVal) / 100);
+      try { return projectBillingFixedCents(proj.fixedPrice, fixedPercent); } catch { return 0n; }
     }
-    return 0;
+    return 0n;
   }, [uninvoicedData, selectedMilestoneIds, selectedTimeEntryIds, fixedPercent, proj]);
 
   if (!proj) return null;
@@ -229,7 +230,7 @@ export default function MilestonesPage() {
       } else if (proj.billingType === "hourly") {
         body.timeEntryIds = selectedTimeEntryIds;
       } else if (proj.billingType === "fixed") {
-        body.percentageToInvoice = Math.min(100, Math.max(0, parseFloat(fixedPercent) || 0));
+        body.percentageToInvoice = projectBillingPercent(fixedPercent).percent;
       }
 
       const res = await fetch(`/api/v1/projects/${projectId}/progress-invoice`, {
@@ -651,7 +652,7 @@ export default function MilestonesPage() {
                       </div>
                       {fixedPercent && (
                         <p className="text-[11px] text-muted-foreground">
-                          Amount: {formatMoney(Math.round((proj.fixedPrice * Math.min(100, Math.max(0, parseFloat(fixedPercent) || 0))) / 100))}
+                          Amount: {formatMoney(invoicePreviewTotal)}
                         </p>
                       )}
                     </div>

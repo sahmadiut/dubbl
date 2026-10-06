@@ -195,3 +195,14 @@ MON-028 retains combined acceptance with unchanged criteria; all children inheri
 - [MON-097](../tasks/MON-097.md): Adopt exact accrual schedule and posting contracts.
 - [MON-098](../tasks/MON-098.md): Adopt exact revenue schedule and recognition contracts.
 - [MON-099](../tasks/MON-099.md): Adopt exact recurring payable document contracts.
+
+## MON-029 report contract children
+
+| Task | Phase | Outcome | Role | Human review |
+|---|---|---|---|---|
+| [MON-100](../tasks/MON-100.md) | 02 | Adopt exact budget comparison report contracts | backend | no |
+| [MON-101](../tasks/MON-101.md) | 02 | Adopt exact financial statement and ledger reports | backend | no |
+| [MON-102](../tasks/MON-102.md) | 02 | Adopt exact aging and contact statement reports | backend | no |
+| [MON-103](../tasks/MON-103.md) | 02 | Adopt exact tax and regulatory reports | backend | no |
+| [MON-104](../tasks/MON-104.md) | 02 | Adopt exact operational analytics reports | backend | no |
+| [MON-105](../tasks/MON-105.md) | 02 | Adopt exact dashboard and saved report contracts | backend | no |

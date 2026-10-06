@@ -571,6 +571,10 @@ retaining integration criteria. Public frontend/PDF arithmetic remains MON-008;
 token administration/security remains PAR-007. Schema, migration, immutable history
 and flags are unchanged; aliases do not imply full int64 or production IRR support.
 
+## MON-100 budget comparison report adoption (MON-029 child)
+
+[BUDGET_REPORT_WIRE_CONTRACTS](BUDGET_REPORT_WIRE_CONTRACTS.md) covers the budget-vs-actual REST/MCP pair. A shared scoped read-only repeatable-read service computes SQL text/bigint aggregates, natural signs, exact percentage/projection ratios and signed rounding. Every monetary output retains safe numeric fixed cents with a Minor string alias; current organization currency is explicit without reinterpreting document tags or rescaling USD/IRR/JPY/KWD. Newest non-deleted fallback, scoped nested references, canonical UTC dates, unsupported output/history checks and actual API-key/MCP fixtures preserve compatibility. Budgets lack currency snapshots; full-range/history/performance and MON-029 combined acceptance remain separate. MON-029 retains its criteria after MON-100 through MON-105 domain children. No schema, production migration or IRR flag change.
+
 ## MON-023 budget CRUD adoption (MON-015 child)
 
 The [budget operation inventory](BUDGET_WIRE_CONTRACTS.md) covers five REST and

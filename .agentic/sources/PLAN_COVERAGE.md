@@ -72,3 +72,5 @@ MON-028 retains combined acceptance with unchanged criteria; all children inheri
 - [MON-097](../tasks/MON-097.md): Adopt exact accrual schedule and posting contracts.
 - [MON-098](../tasks/MON-098.md): Adopt exact revenue schedule and recognition contracts.
 - [MON-099](../tasks/MON-099.md): Adopt exact recurring payable document contracts.
+
+MON-029 retains report/dashboard integration after MON-100 budget comparison, MON-101 financial statements/ledger, MON-102 aging/contact statements, MON-103 tax/regulatory, MON-104 operational analytics and MON-105 dashboards/saved reports. All inherit MON-011 and migration/API source sections; all original criteria remain unchanged.

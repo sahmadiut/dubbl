@@ -28,7 +28,7 @@ import { ContentReveal } from "@/components/ui/content-reveal";
 import { SearchInput } from "@/components/ui/search-input";
 import { useCreateDrawer } from "@/components/dashboard/create-drawer";
 import { useDebounce } from "@/lib/hooks/use-debounce";
-import { formatMoney } from "@/lib/money";
+import { payrollMoneyDisplay as formatMoney } from "@/lib/money/payroll-display";
 import {
   Select,
   SelectContent,
@@ -36,6 +36,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { CurrencySelect } from "@/components/ui/currency-select";
 import { cn } from "@/lib/utils";
 
 interface Deal {
@@ -62,6 +63,7 @@ interface Pipeline {
 }
 
 interface Summary {
+  currency: string;
   activeCount: number;
   activeValue: number;
   wonCount: number;
@@ -130,6 +132,7 @@ export default function CRMPage() {
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   // Filters
+  const [currency, setCurrency] = useState("");
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search);
   const [stageFilter, setStageFilter] = useState("all");
@@ -148,6 +151,7 @@ export default function CRMPage() {
     (p: number) => {
       const params = new URLSearchParams();
       params.set("page", String(p));
+      if (currency) params.set("currency", currency);
       params.set("limit", String(PAGE_SIZE));
       params.set("sortBy", sortBy === "date" ? "created" : sortBy);
       params.set("sortOrder", sortOrder);
@@ -158,7 +162,7 @@ export default function CRMPage() {
       if (debouncedSearch) params.set("search", debouncedSearch);
       return params;
     },
-    [activePipeline, stageFilter, sourceFilter, statusFilter, debouncedSearch, sortBy, sortOrder]
+    [activePipeline, stageFilter, sourceFilter, statusFilter, debouncedSearch, sortBy, sortOrder, currency]
   );
 
   // Fetch pipelines on mount
@@ -184,6 +188,7 @@ export default function CRMPage() {
           headers: getHeaders(),
         });
         const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to load deals");
 
         if (replace) {
           setDeals(data.data || []);
@@ -196,8 +201,8 @@ export default function CRMPage() {
         setTotal(t);
         setHasMore(pageNum * PAGE_SIZE < t);
         setError(null);
-      } catch {
-        if (replace) setError("Failed to load deals");
+      } catch (err) {
+        if (replace) { setError(err instanceof Error ? err.message : "Failed to load deals"); setDeals([]); setSummary(null); }
       } finally {
         setInitialLoading(false);
         setFiltering(false);
@@ -297,7 +302,6 @@ export default function CRMPage() {
   }
 
   if (initialLoading) return <BrandLoader />;
-  if (error && deals.length === 0) return <ErrorState message={error} onRetry={() => window.location.reload()} />;
 
   if (pipelines.length === 0 && deals.length === 0) {
     return (
@@ -399,7 +403,7 @@ export default function CRMPage() {
         title="Sales Pipeline"
         description={
           summary
-            ? `${summary.totalDeals} deal${summary.totalDeals !== 1 ? "s" : ""} · ${formatMoney(summary.activeValue)} in pipeline`
+            ? `${summary.totalDeals} deal${summary.totalDeals !== 1 ? "s" : ""} · ${formatMoney(summary.activeValue, summary.currency)} in pipeline`
             : undefined
         }
       >
@@ -408,6 +412,12 @@ export default function CRMPage() {
         </Button>
       </PageHeader>
 
+      <div className="flex items-center gap-3">
+        <span className="text-sm text-muted-foreground">Currency</span>
+        <CurrencySelect value={currency} onValueChange={setCurrency} compact />
+        {currency && <Button size="sm" variant="ghost" onClick={() => setCurrency("")}>All currencies</Button>}
+      </div>
+      {error && <ErrorState message={error} onRetry={() => fetchDeals(1, true)} />}
       {/* Pipeline funnel bar */}
       {summary && summary.activeCount > 0 && (
         <div className="rounded-xl border bg-card p-5">
@@ -420,7 +430,7 @@ export default function CRMPage() {
               <span className="font-mono tabular-nums">{summary.activeCount} active</span>
               {summary.wonCount > 0 && (
                 <span className="font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
-                  {summary.wonCount} won · {formatMoney(summary.wonValue)}
+                  {summary.wonCount} won · {formatMoney(summary.wonValue, summary.currency)}
                 </span>
               )}
             </div>
@@ -450,7 +460,7 @@ export default function CRMPage() {
                 )}
               >
                 <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: stage.color }} />
-                {stage.name} ({stage.count}) · {formatMoney(stage.value)}
+                {stage.name} ({stage.count}) · {formatMoney(stage.value, summary?.currency)}
               </button>
             ))}
           </div>

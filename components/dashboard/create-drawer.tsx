@@ -3820,7 +3820,7 @@ function DealDrawer({ open, onClose, initialData }: { open: boolean; onClose: ()
           stageId: stageId || stages[0]?.id || "lead",
           contactId: contactId || undefined,
           title,
-          valueCents: value ? Math.round(parseFloat(value) * 100) : 0,
+          valueCentsMinor: value ? assetCentsInput(value) : "0",
           currency: "USD",
           probability: probability ? parseInt(probability) : null,
           expectedCloseDate: expectedClose || null,

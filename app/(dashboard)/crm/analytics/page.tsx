@@ -5,10 +5,14 @@ import { BarChart3, Target, TrendingUp, DollarSign } from "lucide-react";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
-import { formatMoney } from "@/lib/money";
+import { payrollMoneyDisplay as formatMoney } from "@/lib/money/payroll-display";
+import { CurrencySelect } from "@/components/ui/currency-select";
+import { Button } from "@/components/ui/button";
+import { ErrorState } from "@/components/dashboard/error-state";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 
 interface Analytics {
+  currency: string;
   totalDeals: number;
   openDeals: number;
   wonDeals: number;
@@ -22,21 +26,25 @@ interface Analytics {
 
 export default function CRMAnalyticsPage() {
   const [data, setData] = useState<Analytics | null>(null);
+  const [currency, setCurrency] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   useDocumentTitle("CRM · Analytics");
 
   useEffect(() => {
     const orgId = localStorage.getItem("activeOrgId") || "";
-    fetch("/api/v1/crm/analytics", {
+    let cancelled = false;
+    fetch(`/api/v1/crm/analytics${currency ? `?currency=${currency}` : ""}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
-      .then(setData)
-      .finally(() => setLoading(false));
-  }, []);
+      .then(async r => { const body = await r.json(); if (!r.ok) throw new Error(body.error || "Failed to load analytics"); return body; })
+      .then(body => { if (!cancelled) { setData(body); setError(null); } })
+      .catch(err => { if (!cancelled) { setData(null); setError(err.message); } })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [currency]);
 
   if (loading) return <BrandLoader />;
-  if (!data) return null;
 
   return (
     <ContentReveal>
@@ -48,15 +56,22 @@ export default function CRMAnalyticsPage() {
           </p>
         </div>
 
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-muted-foreground">Currency</span>
+          <CurrencySelect value={currency} onValueChange={value => { if (value !== currency) { setLoading(true); setCurrency(value); } }} compact />
+          {currency && <Button variant="ghost" size="sm" onClick={() => { setLoading(true); setCurrency(""); }}>All currencies</Button>}
+        </div>
+        {error && <ErrorState message={error} onRetry={() => window.location.reload()} />}
+        {data && <>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Pipeline Value"
-            value={formatMoney(data.totalPipelineValue)}
+            value={formatMoney(data.totalPipelineValue, data.currency)}
             icon={DollarSign}
           />
           <StatCard
             title="Won Revenue"
-            value={formatMoney(data.wonValue)}
+            value={formatMoney(data.wonValue, data.currency)}
             icon={TrendingUp}
             changeType="positive"
           />
@@ -67,7 +82,7 @@ export default function CRMAnalyticsPage() {
           />
           <StatCard
             title="Avg Deal Size"
-            value={formatMoney(data.avgDealValue)}
+            value={formatMoney(data.avgDealValue, data.currency)}
             icon={BarChart3}
           />
         </div>
@@ -103,13 +118,14 @@ export default function CRMAnalyticsPage() {
                   <span className="text-muted-foreground capitalize">{stage.replace("_", " ")}</span>
                   <div className="flex items-center gap-3">
                     <span className="text-xs text-muted-foreground">{info.count} deals</span>
-                    <span className="font-mono text-xs font-medium tabular-nums">{formatMoney(info.value)}</span>
+                    <span className="font-mono text-xs font-medium tabular-nums">{formatMoney(info.value, data.currency)}</span>
                   </div>
                 </div>
               ))}
             </div>
           </div>
         </div>
+        </>}
       </div>
     </ContentReveal>
   );

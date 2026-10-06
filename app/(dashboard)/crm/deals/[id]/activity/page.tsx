@@ -28,7 +28,7 @@ import {
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { SearchInput } from "@/components/ui/search-input";
 import { useDebounce } from "@/lib/hooks/use-debounce";
-import { formatMoney } from "@/lib/money";
+import { payrollMoneyDisplay as formatMoney } from "@/lib/money/payroll-display";
 import { cn } from "@/lib/utils";
 import { useDealContext, getHeaders, timeAgo } from "../layout";
 

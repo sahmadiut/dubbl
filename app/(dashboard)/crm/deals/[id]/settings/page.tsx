@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Section } from "@/components/dashboard/section";
-import { formatMoney } from "@/lib/money";
+import { payrollMoneyDisplay as formatMoney } from "@/lib/money/payroll-display";
 import { useDealContext, getHeaders, SOURCE_LABELS } from "../layout";
 
 export default function DealSettingsPage() {

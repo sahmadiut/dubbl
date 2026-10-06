@@ -1,104 +1,28 @@
-import { db } from "@/lib/db";
-import { pipeline } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
 import { getAuthContext } from "@/lib/api/auth-context";
-import { requireRole } from "@/lib/api/require-role";
-import { notDeleted, softDelete } from "@/lib/db/soft-delete";
-import { ok, notFound, handleError } from "@/lib/api/response";
-import { logAudit, diffChanges } from "@/lib/api/audit";
-import { z } from "zod";
+import { ok, handleError } from "@/lib/api/response";
+import { readCrmJson } from "@/lib/api/crm-wire";
+import { getPipeline, updatePipeline, deletePipeline } from "@/lib/api/crm";
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await params;
     const ctx = await getAuthContext(request);
-
-    const p = await db.query.pipeline.findFirst({
-      where: and(
-        eq(pipeline.id, id),
-        eq(pipeline.organizationId, ctx.organizationId),
-        notDeleted(pipeline.deletedAt)
-      ),
-      with: { deals: true },
-    });
-
-    if (!p) return notFound("Pipeline");
-    return ok({ pipeline: p });
-  } catch (err) {
-    return handleError(err);
-  }
+    const { id } = await params;
+    return ok({ pipeline: await getPipeline(ctx, id) });
+  } catch (err) { return handleError(err); }
 }
 
-const updateSchema = z.object({
-  name: z.string().min(1).optional(),
-  stages: z.array(z.object({ id: z.string(), name: z.string(), color: z.string() })).optional(),
-  isDefault: z.boolean().optional(),
-});
-
-export async function PATCH(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await params;
     const ctx = await getAuthContext(request);
-    requireRole(ctx, "manage:contacts");
-
-    const body = await request.json();
-    const parsed = updateSchema.parse(body);
-
-    const existing = await db.query.pipeline.findFirst({
-      where: and(eq(pipeline.id, id), eq(pipeline.organizationId, ctx.organizationId), notDeleted(pipeline.deletedAt)),
-    });
-    if (!existing) return notFound("Pipeline");
-
-    const [updated] = await db
-      .update(pipeline)
-      .set(parsed)
-      .where(and(eq(pipeline.id, id), eq(pipeline.organizationId, ctx.organizationId)))
-      .returning();
-
-    if (!updated) return notFound("Pipeline");
-
-    logAudit({ ctx, action: "update", entityType: "pipeline", entityId: id, changes: diffChanges(existing as Record<string, unknown>, updated as Record<string, unknown>), request });
-
-    return ok({ pipeline: updated });
-  } catch (err) {
-    return handleError(err);
-  }
+    const { id } = await params;
+    return ok({ pipeline: await updatePipeline(ctx, id, await readCrmJson(request), request) });
+  } catch (err) { return handleError(err); }
 }
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await params;
     const ctx = await getAuthContext(request);
-    requireRole(ctx, "manage:contacts");
-
-    const [deleted] = await db
-      .update(pipeline)
-      .set(softDelete())
-      .where(and(eq(pipeline.id, id), eq(pipeline.organizationId, ctx.organizationId)))
-      .returning();
-
-    if (!deleted) return notFound("Pipeline");
-
-    logAudit({
-      ctx,
-      action: "delete",
-      entityType: "pipeline",
-      entityId: id,
-      changes: deleted as Record<string, unknown>,
-      request,
-    });
-
-    return ok({ success: true });
-  } catch (err) {
-    return handleError(err);
-  }
+    const { id } = await params;
+    return ok(await deletePipeline(ctx, id, request));
+  } catch (err) { return handleError(err); }
 }

@@ -16,7 +16,7 @@ import {
   Check,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { formatMoney } from "@/lib/money";
+import { payrollMoneyDisplay as formatMoney } from "@/lib/money/payroll-display";
 import { cn } from "@/lib/utils";
 import { useDealContext, SOURCE_LABELS, timeAgo } from "./layout";
 
@@ -184,7 +184,7 @@ export default function DealOverviewPage() {
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-bold tabular-nums">{deal.probability}%</p>
                     <p className="text-[10px] text-muted-foreground font-mono tabular-nums">
-                      {formatMoney(Math.round(deal.valueCents * (deal.probability / 100)), deal.currency)}
+                      {formatMoney(((BigInt(deal.valueCents) * BigInt(deal.probability) * 2n + 100n) / 200n), deal.currency)}
                     </p>
                   </div>
                   <div className="h-1.5 rounded-full bg-muted overflow-hidden mt-1">

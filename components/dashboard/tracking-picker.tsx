@@ -39,7 +39,7 @@ export function TrackingPicker({
       .then((r) => r.json())
       .then((d) => setCenters((d.data ?? []).map((c: CostCenterOpt) => ({ id: c.id, code: c.code, name: c.name }))))
       .catch(() => {});
-    fetch("/api/v1/projects?status=active&limit=200", { headers })
+    fetch("/api/v1/projects?status=active&limit=100", { headers })
       .then((r) => r.json())
       .then((d) => setProjects((d.data ?? []).map((p: ProjectOpt) => ({ id: p.id, name: p.name }))))
       .catch(() => {});

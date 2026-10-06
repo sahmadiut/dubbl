@@ -40,7 +40,7 @@ import {
 } from "@/components/ui/sheet";
 import { DataTable, type Column } from "@/components/dashboard/data-table";
 import { cn } from "@/lib/utils";
-import { formatMoney } from "@/lib/money";
+import { projectMoneyDisplay as formatMoney, projectTimeCents, projectHoursInput, projectWholeMinutes } from "@/lib/money/project-display";
 import {
   BarChart,
   Bar,
@@ -318,11 +318,11 @@ export default function TimePage() {
   const entries = proj.timeEntries;
   const tasks = proj.tasks || [];
   const totalMinutes = entries.reduce((sum, e) => sum + e.minutes, 0);
-  const totalAmount = entries.reduce((sum, e) => sum + Math.round((e.minutes / 60) * e.hourlyRate), 0);
+  const totalAmount = entries.reduce((sum, e) => sum + projectTimeCents(e.minutes, e.hourlyRate), 0n);
   const billableMinutes = entries.filter(e => e.isBillable).reduce((sum, e) => sum + e.minutes, 0);
   const billablePct = totalMinutes > 0 ? Math.round((billableMinutes / totalMinutes) * 100) : 0;
   const unbilledMinutes = entries.filter(e => e.isBillable && !e.invoiceId).reduce((sum, e) => sum + e.minutes, 0);
-  const unbilledAmount = entries.filter(e => e.isBillable && !e.invoiceId).reduce((sum, e) => sum + Math.round((e.minutes / 60) * e.hourlyRate), 0);
+  const unbilledAmount = entries.filter(e => e.isBillable && !e.invoiceId).reduce((sum, e) => sum + projectTimeCents(e.minutes, e.hourlyRate), 0n);
 
   // Unique members for filter
   const uniqueMembers = Array.from(
@@ -386,7 +386,7 @@ export default function TimePage() {
       </div>
     )},
     { key: "duration", header: "Duration", className: "w-20 text-right", render: r => <span className="text-[13px] font-mono tabular-nums font-medium">{formatHours(r.minutes)}</span> },
-    { key: "amount", header: "Amount", className: "w-24 text-right", render: r => <span className="text-[13px] font-mono tabular-nums">{formatMoney(Math.round((r.minutes / 60) * r.hourlyRate))}</span> },
+    { key: "amount", header: "Amount", className: "w-24 text-right", render: r => <span className="text-[13px] font-mono tabular-nums">{formatMoney(projectTimeCents(r.minutes, r.hourlyRate))}</span> },
     { key: "status", header: "", className: "w-20", render: r => {
       if (r.invoiceId) return <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700 text-[9px] h-4">Invoiced</Badge>;
       return <Badge variant="outline" className={cn("text-[9px] h-4", r.isBillable ? "border-blue-200 bg-blue-50 text-blue-700" : "border-gray-200 bg-gray-50 text-gray-600")}>{r.isBillable ? "Billable" : "Non-bill."}</Badge>;
@@ -395,7 +395,9 @@ export default function TimePage() {
 
   async function handleAdd() {
     if (!orgId) return;
-    const mins = entryHours ? Math.round(parseFloat(entryHours) * 60) : parseInt(entryMinutes);
+    let mins: number;
+    try { mins = entryHours ? projectHoursInput(entryHours) : projectWholeMinutes(entryMinutes); }
+    catch (error) { toast.error(error instanceof Error ? error.message : "Enter a valid duration"); return; }
     if (!mins || mins <= 0) { toast.error("Enter a valid duration"); return; }
     setSaving(true);
     try {
@@ -420,7 +422,9 @@ export default function TimePage() {
 
   async function handleUpdate() {
     if (!orgId || !editingEntry) return;
-    const mins = entryHours ? Math.round(parseFloat(entryHours) * 60) : parseInt(entryMinutes);
+    let mins: number;
+    try { mins = entryHours ? projectHoursInput(entryHours) : projectWholeMinutes(entryMinutes); }
+    catch (error) { toast.error(error instanceof Error ? error.message : "Enter a valid duration"); return; }
     if (!mins || mins <= 0) { toast.error("Enter a valid duration"); return; }
     setSaving(true);
     try {

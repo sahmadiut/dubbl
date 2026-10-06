@@ -1,5 +1,7 @@
 "use client";
 
+import { projectCentsInput, projectHoursInput } from "@/lib/money/project-display";
+
 import { assetCentsInput, assetLifeInput, assetRateInput } from "@/lib/money/asset-display";
 
 import { createContext, useContext, useState, useCallback, useEffect } from "react";
@@ -338,10 +340,10 @@ function ProjectDrawer({ open, onClose }: { open: boolean; onClose: () => void }
           priority: form.get("priority") || "medium",
           billingType: form.get("billingType") || "hourly",
           color: form.get("color") || "#10b981",
-          budget: Math.round(parseFloat(form.get("budget") as string || "0") * 100),
-          hourlyRate: Math.round(parseFloat(form.get("hourlyRate") as string || "0") * 100),
-          fixedPrice: Math.round(parseFloat(form.get("fixedPrice") as string || "0") * 100),
-          estimatedHours: Math.round(parseFloat(form.get("estimatedHours") as string || "0") * 60),
+          budgetMinor: projectCentsInput(form.get("budget") as string || "0"),
+          hourlyRateMinor: projectCentsInput(form.get("hourlyRate") as string || "0"),
+          fixedPriceMinor: projectCentsInput(form.get("fixedPrice") as string || "0"),
+          estimatedHours: projectHoursInput(form.get("estimatedHours") as string || "0"),
           category: form.get("category") || null,
           tags,
           startDate: startDate || null,

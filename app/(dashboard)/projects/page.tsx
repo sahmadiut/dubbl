@@ -10,7 +10,7 @@ import { StatCard } from "@/components/dashboard/stat-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { formatMoney } from "@/lib/money";
+import { projectMoneyDisplay as formatMoney } from "@/lib/money/project-display";
 import { devDelay } from "@/lib/dev-delay";
 import { useCreateDrawer } from "@/components/dashboard/create-drawer";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
@@ -34,6 +34,7 @@ interface Project {
   priority: string;
   billingType: string;
   color: string;
+  currency: string;
   budget: number;
   hourlyRate: number;
   totalHours: number;
@@ -129,7 +130,7 @@ const columns: Column<Project>[] = [
     className: "w-28 text-right",
     render: (r) => (
       <span className="font-mono text-xs tabular-nums">
-        {r.budget > 0 ? formatMoney(r.budget) : "-"}
+        {r.budget > 0 ? formatMoney(r.budget, r.currency) : "-"}
       </span>
     ),
   },
@@ -138,7 +139,7 @@ const columns: Column<Project>[] = [
     header: "Billed",
     className: "w-28 text-right",
     render: (r) => (
-      <span className="font-mono text-xs tabular-nums">{formatMoney(r.totalBilled)}</span>
+      <span className="font-mono text-xs tabular-nums">{formatMoney(r.totalBilled, r.currency)}</span>
     ),
   },
   {
@@ -192,8 +193,10 @@ export default function ProjectsPage() {
   }, [statusFilter]);
 
   const activeProjects = projects.filter((p) => p.status === "active");
-  const totalBudget = projects.reduce((sum, p) => sum + p.budget, 0);
-  const totalBilled = projects.reduce((sum, p) => sum + p.totalBilled, 0);
+  const currencies = new Set(projects.map(p => p.currency));
+  const totalCurrency = projects[0]?.currency || "USD";
+  const totalBudget = projects.reduce((sum, p) => sum + BigInt(p.budget), 0n);
+  const totalBilled = projects.reduce((sum, p) => sum + BigInt(p.totalBilled), 0n);
   const totalHours = projects.reduce((sum, p) => sum + p.totalHours, 0);
   const totalMembers = new Set(projects.flatMap(p => p.members.map(m => m.member.id))).size;
 
@@ -228,9 +231,9 @@ export default function ProjectsPage() {
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-2 sm:gap-3 sm:grid-cols-2 lg:grid-cols-5">
             <StatCard title="Active" value={activeProjects.length.toString()} icon={FolderKanban} />
-            <StatCard title="Total Budget" value={formatMoney(totalBudget)} icon={DollarSign} />
-            <StatCard title="Total Billed" value={formatMoney(totalBilled)} icon={Target}
-              change={totalBudget > 0 ? `${Math.round((totalBilled / totalBudget) * 100)}% of budget` : undefined}
+            <StatCard title="Total Budget" value={currencies.size > 1 ? "Multiple currencies" : formatMoney(totalBudget, totalCurrency)} icon={DollarSign} />
+            <StatCard title="Total Billed" value={currencies.size > 1 ? "Multiple currencies" : formatMoney(totalBilled, totalCurrency)} icon={Target}
+              change={currencies.size <= 1 && totalBudget > 0 ? `${Number((totalBilled * 200n + totalBudget) / (totalBudget * 2n))}% of budget` : undefined}
             />
             <StatCard title="Hours Logged" value={formatHours(totalHours)} icon={Clock} />
             <StatCard title="Team Members" value={totalMembers.toString()} icon={Users} />

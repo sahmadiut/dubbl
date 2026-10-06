@@ -62,6 +62,7 @@ import { registerQuoteTools } from "./quotes";
 import { registerTaxProfileTools } from "./tax-profiles";
 import { registerRecurringJournalTools } from "./recurring-journals";
 import { registerProjectTools } from "./projects";
+import { registerProjectMasterTools } from "./project-master";
 import { registerDebitNoteTools } from "./debit-notes";
 import { registerLoanTools } from "./loans";
 import { registerOpeningBalanceTools } from "./opening-balances";
@@ -148,6 +149,7 @@ export function registerAllTools(server: McpServer, ctx: AuthContext) {
   registerTaxProfileTools(server, ctx);
   registerRecurringJournalTools(server, ctx);
   registerProjectTools(server, ctx);
+  registerProjectMasterTools(server, ctx);
   registerDebitNoteTools(server, ctx);
   registerLoanTools(server, ctx);
   registerOpeningBalanceTools(server, ctx);

@@ -1,5 +1,7 @@
 "use client";
 
+import { projectCentsInput } from "@/lib/money/project-display";
+
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { Plus, Trash2, Users, Loader2, UsersRound, X } from "lucide-react";
@@ -23,7 +25,7 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import { formatMoney } from "@/lib/money";
+import { projectMoneyDisplay as formatMoney } from "@/lib/money/project-display";
 import { useProject } from "../project-context";
 
 const roleColors: Record<string, string> = {
@@ -155,7 +157,7 @@ export default function MembersPage() {
       const res = await fetch(`/api/v1/projects/${projectId}/members`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
-        body: JSON.stringify({ memberId: selectedMemberId, role: selectedRole, hourlyRate: hourlyRate ? Math.round(parseFloat(hourlyRate) * 100) : undefined }),
+        body: JSON.stringify({ memberId: selectedMemberId, role: selectedRole, hourlyRateMinor: hourlyRate ? projectCentsInput(hourlyRate) : undefined }),
       });
       if (!res.ok) { const data = await res.json(); throw new Error(data.error || "Failed"); }
       toast.success("Member added");

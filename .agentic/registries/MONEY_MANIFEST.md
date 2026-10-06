@@ -890,3 +890,8 @@ MON-021 retain remaining/combined qualification; no schema/full-int64/IRR rollou
 ## MON-092 CRM adoption
 
 [CRM_WIRE_CONTRACTS](CRM_WIRE_CONTRACTS.md) maps sixteen shared REST/MCP operations, including pipeline mutation, deal delete and analytics parity. Numeric fixed cents retain valueCentsMinor aliases; bigint sums/averages and explicit single-currency filters guard safe aggregate bounds. Probability remains nullable integer percent. Scoped contacts and credential-free current-member joins reject unsupported historical references; organization locks serialize lifecycle/default/delete writes, same-state close retries preserve timestamps, and audit/output validation commits atomically. CRM input/display/weighted values are exact fixed cents. No schema/migration or IRR/full-int64 enablement; historical remediation, high-volume and integrated MON-027 qualification remain separate.
+
+
+## MON-093 project master/time adoption
+
+[PROJECT_MASTER_WIRE_CONTRACTS](PROJECT_MASTER_WIRE_CONTRACTS.md) maps 48 shared REST/MCP operations. Existing safe numeric fixed cents add explicit Minor aliases; minutes/seconds/percent retain physical units. Scoped public joins, child references and organization/project locks guard atomic rows/time totals/audit/output validation; strict inputs and billed/paid/reference guards reject unsupported history. Exact editors, rational time valuations and bigint loaded-row display preserve cents. No schema/migration, conversion or IRR gate change; MON-094 and MON-027 retain billing, full-range and integrated financial qualification.

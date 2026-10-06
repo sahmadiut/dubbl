@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
+import { projectPercent } from "@/lib/money/project-display";
 
 // ── Types ──────────────────────────────────────────────────
 export interface ProjectMemberData {
@@ -232,9 +233,7 @@ export function daysUntil(dateStr: string | null): number | null {
   return Math.ceil((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 }
 
-export function pct(a: number, b: number): number {
-  return b > 0 ? Math.round((a / b) * 100) : 0;
-}
+export const pct = projectPercent;
 
 export const statusConfig: Record<string, { label: string; color: string; dot: string }> = {
   active: { label: "Active", color: "border-emerald-200 bg-emerald-50 text-emerald-700", dot: "bg-emerald-500" },

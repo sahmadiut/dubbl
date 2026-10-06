@@ -32,7 +32,7 @@ import {
 } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { formatMoney } from "@/lib/money";
+import { projectMoneyDisplay as formatMoney, projectTimeCents } from "@/lib/money/project-display";
 import {
   useProject,
   priorityConfig,
@@ -54,8 +54,8 @@ export default function ProjectOverviewPage() {
 
   const daysLeft = daysUntil(proj.endDate);
   const unbilledEntries = proj.timeEntries.filter(e => e.isBillable && !e.invoiceId);
-  const unbilledAmount = unbilledEntries.reduce((sum, e) => sum + Math.round((e.minutes / 60) * e.hourlyRate), 0);
-  const totalAmount = proj.timeEntries.reduce((sum, e) => sum + Math.round((e.minutes / 60) * e.hourlyRate), 0);
+  const unbilledAmount = unbilledEntries.reduce((sum, e) => sum + projectTimeCents(e.minutes, e.hourlyRate), 0n);
+  const totalAmount = proj.timeEntries.reduce((sum, e) => sum + projectTimeCents(e.minutes, e.hourlyRate), 0n);
 
   const tasksByStatus = proj.tasks.reduce((acc, t) => {
     acc[t.status] = (acc[t.status] || 0) + 1;
@@ -172,7 +172,7 @@ export default function ProjectOverviewPage() {
                   <>
                     <div className="h-px bg-border my-1" />
                     <Row label="Billable time" value={<span className="font-mono tabular-nums">{formatHours(billableMinutes)}</span>} />
-                    <Row label="Avg rate" value={<span className="font-mono tabular-nums">{billableMinutes > 0 ? formatMoney(Math.round(totalAmount / (billableMinutes / 60))) : "-"}/hr</span>} />
+                    <Row label="Avg rate" value={<span className="font-mono tabular-nums">{billableMinutes > 0 ? formatMoney((totalAmount * 60n + BigInt(billableMinutes) / 2n) / BigInt(billableMinutes)) : "-"}/hr</span>} />
                   </>
                 )}
               </div>
@@ -297,7 +297,7 @@ export default function ProjectOverviewPage() {
                 <span className="text-[11px] text-muted-foreground/60 shrink-0 w-14 truncate">{e.user?.name?.split(" ")[0] || "-"}</span>
                 <span className="truncate flex-1 text-muted-foreground">{e.description || "-"}</span>
                 <span className="font-mono text-xs tabular-nums shrink-0 font-medium">{formatHours(e.minutes)}</span>
-                <span className="font-mono text-[11px] tabular-nums shrink-0 text-muted-foreground">{formatMoney(Math.round((e.minutes / 60) * e.hourlyRate))}</span>
+                <span className="font-mono text-[11px] tabular-nums shrink-0 text-muted-foreground">{formatMoney(projectTimeCents(e.minutes, e.hourlyRate))}</span>
               </div>
             )) : (
               <div className="px-4 py-6 text-center text-[13px] text-muted-foreground">No time entries yet</div>

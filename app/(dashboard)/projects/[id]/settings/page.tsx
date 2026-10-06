@@ -21,7 +21,7 @@ import {
 import { DatePicker } from "@/components/ui/date-picker";
 import { ContactPicker } from "@/components/dashboard/contact-picker";
 import { Section } from "@/components/dashboard/section";
-import { centsToDecimal } from "@/lib/money";
+import { projectCentsDecimal as centsToDecimal, projectCentsInput, projectHoursInput, projectHoursDecimal } from "@/lib/money/project-display";
 import { useProject, PROJECT_COLORS } from "../project-context";
 
 export default function SettingsPage() {
@@ -61,10 +61,10 @@ export default function SettingsPage() {
           priority: form.get("priority"),
           billingType: form.get("billingType"),
           color: form.get("color"),
-          budget: Math.round(parseFloat(projBudget || "0") * 100),
-          hourlyRate: Math.round(parseFloat(projHourlyRate || "0") * 100),
-          fixedPrice: Math.round(parseFloat(projFixedPrice || "0") * 100),
-          estimatedHours: Math.round(parseFloat(form.get("estimatedHours") as string || "0") * 60),
+          budgetMinor: projectCentsInput(projBudget || "0"),
+          hourlyRateMinor: projectCentsInput(projHourlyRate || "0"),
+          fixedPriceMinor: projectCentsInput(projFixedPrice || "0"),
+          estimatedHours: projectHoursInput(form.get("estimatedHours") as string || "0"),
           startDate: projStartDate || null,
           endDate: projEndDate || null,
           category: form.get("category") || null,
@@ -200,7 +200,7 @@ export default function SettingsPage() {
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
           <div className="space-y-1.5"><Label className="text-xs">Start Date</Label><DatePicker value={projStartDate} onChange={setProjStartDate} placeholder="Select start date" /></div>
           <div className="space-y-1.5"><Label className="text-xs">End Date</Label><DatePicker value={projEndDate} onChange={setProjEndDate} placeholder="Select end date" /></div>
-          <div className="space-y-1.5"><Label className="text-xs">Estimated Hours</Label><Input name="estimatedHours" type="number" step="0.5" min={0} defaultValue={proj.estimatedHours > 0 ? (proj.estimatedHours / 60).toFixed(1) : ""} /></div>
+          <div className="space-y-1.5"><Label className="text-xs">Estimated Hours</Label><Input name="estimatedHours" type="number" step="any" min={0} defaultValue={proj.estimatedHours > 0 ? projectHoursDecimal(proj.estimatedHours) : ""} /></div>
         </div>
       </Section>
 

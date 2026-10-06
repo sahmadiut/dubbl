@@ -1,5 +1,7 @@
 "use client";
 
+import { projectCentsInput } from "@/lib/money/project-display";
+
 import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
 import { Plus, Trash2, CheckCircle2, Flag, Target, Loader2, Users, DollarSign, FileText } from "lucide-react";
@@ -26,7 +28,7 @@ import {
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { formatMoney } from "@/lib/money";
+import { projectMoneyDisplay as formatMoney } from "@/lib/money/project-display";
 import { useProject, formatDateShort, pct } from "../project-context";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 
@@ -125,9 +127,9 @@ export default function MilestonesPage() {
   const milestones = proj.milestones;
   const completed = milestones.filter(m => m.status === "completed").length;
   const total = milestones.length;
-  const totalAmount = milestones.reduce((s, m) => s + m.amount, 0);
-  const completedAmount = milestones.filter(m => m.status === "completed").reduce((s, m) => s + m.amount, 0);
-  const totalInvoiced = milestones.reduce((s, m) => s + m.invoicedAmountCents, 0);
+  const totalAmount = milestones.reduce((s, m) => s + BigInt(m.amount), 0n);
+  const completedAmount = milestones.filter(m => m.status === "completed").reduce((s, m) => s + BigInt(m.amount), 0n);
+  const totalInvoiced = milestones.reduce((s, m) => s + BigInt(m.invoicedAmountCents), 0n);
 
   async function handleAdd() {
     if (!orgId || !title.trim()) return;
@@ -136,7 +138,7 @@ export default function MilestonesPage() {
       const res = await fetch(`/api/v1/projects/${projectId}/milestones`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
-        body: JSON.stringify({ title: title.trim(), description: desc || null, dueDate: dueDate || null, amount: Math.round(parseFloat(amount || "0") * 100) }),
+        body: JSON.stringify({ title: title.trim(), description: desc || null, dueDate: dueDate || null, amountMinor: projectCentsInput(amount || "0") }),
       });
       if (!res.ok) throw new Error("Failed");
       toast.success("Milestone created");
@@ -165,9 +167,11 @@ export default function MilestonesPage() {
     if (!orgId || deletingId) return;
     setDeletingId(msId);
     try {
-      await fetch(`/api/v1/projects/${projectId}/milestones/${msId}`, { method: "DELETE", headers: { "x-organization-id": orgId } });
+      const res = await fetch(`/api/v1/projects/${projectId}/milestones/${msId}`, { method: "DELETE", headers: { "x-organization-id": orgId } });
+      if (!res.ok) { const data = await res.json(); throw new Error(data.error || "Failed to delete milestone"); }
       refresh();
-    } finally { setDeletingId(null); }
+    } catch (error) { toast.error(error instanceof Error ? error.message : "Failed to delete milestone"); }
+    finally { setDeletingId(null); }
   }
 
   const members = proj.members;
@@ -181,7 +185,7 @@ export default function MilestonesPage() {
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify({
           memberId: assignMemberId,
-          amount: Math.round(parseFloat(assignAmount || "0") * 100),
+          amountMinor: projectCentsInput(assignAmount || "0"),
           description: assignDesc || null,
         }),
       });
@@ -201,11 +205,11 @@ export default function MilestonesPage() {
   async function markAssignmentPaid(assignmentId: string) {
     if (!orgId || !assignMilestoneId) return;
     try {
-      await fetch(`/api/v1/projects/${projectId}/milestones/${assignMilestoneId}/assignments/${assignmentId}`, {
+      const res = await fetch(`/api/v1/projects/${projectId}/milestones/${assignMilestoneId}/assignments?assignmentId=${assignmentId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
-        body: JSON.stringify({ paid: true }),
       });
+      if (!res.ok) { const data = await res.json(); throw new Error(data.error || "Failed to mark assignment as paid"); }
       toast.success("Marked as paid");
       const r = await fetch(`/api/v1/projects/${projectId}/milestones/${assignMilestoneId}/assignments`, {
         headers: { "x-organization-id": orgId },

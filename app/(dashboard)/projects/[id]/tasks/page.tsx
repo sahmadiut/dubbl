@@ -1,5 +1,7 @@
 "use client";
 
+import { projectWholeMinutes } from "@/lib/money/project-display";
+
 import { useState } from "react";
 import { toast } from "sonner";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
@@ -135,7 +137,7 @@ export default function TasksPage() {
           teamId: teamId === "none" ? null : teamId,
           startDate: startDate || null,
           dueDate: dueDate || null,
-          estimatedMinutes: estimatedMinutes ? parseInt(estimatedMinutes) : null,
+          estimatedMinutes: estimatedMinutes ? projectWholeMinutes(estimatedMinutes) : null,
           labels: selectedLabels,
         }),
       });
@@ -176,13 +178,15 @@ export default function TasksPage() {
     if (!orgId || deletingId) return;
     setDeletingId(taskId);
     try {
-      await fetch(`/api/v1/projects/${projectId}/tasks/${taskId}`, {
+      const res = await fetch(`/api/v1/projects/${projectId}/tasks/${taskId}`, {
         method: "DELETE",
         headers: { "x-organization-id": orgId },
       });
+      if (!res.ok) { const data = await res.json(); throw new Error(data.error || "Failed to delete task"); }
       setViewTask(null);
       refresh();
-    } finally { setDeletingId(null); }
+    } catch (error) { toast.error(error instanceof Error ? error.message : "Failed to delete task"); }
+    finally { setDeletingId(null); }
   }
 
   async function addChecklistItem(taskId: string) {

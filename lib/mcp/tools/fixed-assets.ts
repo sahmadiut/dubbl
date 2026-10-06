@@ -1,3 +1,4 @@
+import { lockAssetSnapshot } from "@/lib/api/asset-depreciation";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { db } from "@/lib/db";
@@ -10,7 +11,7 @@ import {
   journalLine,
   auditLog,
 } from "@/lib/db/schema";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { notDeleted } from "@/lib/db/soft-delete";
 import { requireRole } from "@/lib/api/require-role";
 import { wrapTool } from "@/lib/mcp/errors";
@@ -22,151 +23,7 @@ import {
 import { calculateMonthlyDepreciation } from "@/lib/fixed-assets/depreciation";
 import type { AuthContext } from "@/lib/api/auth-context";
 
-const todayIso = () => new Date().toISOString().split("T")[0];
-
 export function registerFixedAssetTools(server: McpServer, ctx: AuthContext) {
-  server.tool(
-    "run_asset_depreciation",
-    "Post one period's depreciation charge for a single active asset. Computes the charge from the asset's method/convention and the count of periods already booked (safe for declining-balance/SYD/uneven schedules); for units_of_production pass 'unitsThisPeriod'. Posts a balanced journal entry (DR depreciation expense / CR accumulated depreciation) when both accounts are configured, records a depreciationEntry, and updates accumulatedDepreciation / netBookValue (marking the asset 'fully_depreciated' when NBV reaches residual). Atomic. Amounts are integer cents. Returns the depreciation entry, the new asset totals and the journalEntryId.",
-    {
-      assetId: z.string().uuid().describe("UUID of the active fixed asset to depreciate"),
-      date: z.string().optional().describe("Posting date (YYYY-MM-DD); defaults to today"),
-      unitsThisPeriod: z
-        .number()
-        .int()
-        .min(0)
-        .optional()
-        .describe("Units consumed this period (required for units_of_production assets; ignored otherwise)"),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        requireRole(ctx, "manage:assets");
-
-        const asset = await db.query.fixedAsset.findFirst({
-          where: and(
-            eq(fixedAsset.id, params.assetId),
-            eq(fixedAsset.organizationId, ctx.organizationId),
-            notDeleted(fixedAsset.deletedAt)
-          ),
-        });
-        if (!asset) throw new Error("Fixed asset not found");
-        if (asset.status !== "active") throw new Error("Asset is not active");
-
-        const date = params.date || todayIso();
-
-        const [priorCount] = await db
-          .select({ count: sql<number>`count(*)`.mapWith(Number) })
-          .from(depreciationEntry)
-          .where(eq(depreciationEntry.fixedAssetId, asset.id));
-        const periodIndex = Number(priorCount?.count ?? 0);
-
-        const amount = calculateMonthlyDepreciation({
-          purchasePrice: asset.purchasePrice,
-          residualValue: asset.residualValue,
-          usefulLifeMonths: asset.usefulLifeMonths,
-          depreciationMethod: asset.depreciationMethod,
-          accumulatedDepreciation: asset.accumulatedDepreciation,
-          purchaseDate: asset.purchaseDate,
-          periodIndex,
-          convention: asset.convention,
-          inServiceDate: asset.inServiceDate ?? asset.purchaseDate,
-          totalExpectedUnits: asset.totalExpectedUnits,
-          unitsThisPeriod: params.unitsThisPeriod,
-          periodDate: date,
-        });
-
-        if (amount <= 0) throw new Error("No depreciation remaining for this period");
-
-        const newAccumulated = asset.accumulatedDepreciation + amount;
-        const newNetBookValue = asset.purchasePrice - newAccumulated;
-        const newStatus =
-          newNetBookValue <= asset.residualValue ? "fully_depreciated" : "active";
-
-        const result = await db.transaction(async (tx) => {
-          let journalEntryId: string | null = null;
-
-          if (asset.depreciationAccountId && asset.accumulatedDepAccountId) {
-            const entryNumber = await getNextEntryNumber(ctx.organizationId, tx);
-            const [entry] = await tx
-              .insert(journalEntry)
-              .values({
-                organizationId: ctx.organizationId,
-                entryNumber,
-                date,
-                description: `Depreciation - ${asset.name} (${asset.assetNumber})`,
-                reference: asset.assetNumber,
-                status: "posted",
-                sourceType: "depreciation",
-                sourceId: asset.id,
-                postedAt: new Date(),
-                createdBy: ctx.userId,
-              })
-              .returning();
-            journalEntryId = entry.id;
-
-            await tx.insert(journalLine).values([
-              {
-                journalEntryId: entry.id,
-                accountId: asset.depreciationAccountId,
-                description: `Depreciation - ${asset.name}`,
-                debitAmount: amount,
-                creditAmount: 0,
-              },
-              {
-                journalEntryId: entry.id,
-                accountId: asset.accumulatedDepAccountId,
-                description: `Depreciation - ${asset.name}`,
-                debitAmount: 0,
-                creditAmount: amount,
-              },
-            ]);
-          }
-
-          const [depEntry] = await tx
-            .insert(depreciationEntry)
-            .values({
-              fixedAssetId: asset.id,
-              date,
-              amount,
-              unitsThisPeriod: params.unitsThisPeriod ?? null,
-              journalEntryId,
-            })
-            .returning();
-
-          await tx
-            .update(fixedAsset)
-            .set({
-              accumulatedDepreciation: newAccumulated,
-              netBookValue: newNetBookValue,
-              status: newStatus,
-              updatedAt: new Date(),
-            })
-            .where(eq(fixedAsset.id, asset.id));
-
-          return { depEntry, journalEntryId };
-        });
-
-        await db.insert(auditLog).values({
-          organizationId: ctx.organizationId,
-          userId: ctx.userId,
-          action: "depreciate",
-          entityType: "fixed_asset",
-          entityId: asset.id,
-          changes: { amount, journalEntryId: result.journalEntryId },
-        });
-
-        return {
-          depreciationEntry: result.depEntry,
-          journalEntryId: result.journalEntryId,
-          asset: {
-            accumulatedDepreciation: newAccumulated,
-            netBookValue: newNetBookValue,
-            status: newStatus,
-          },
-        };
-      })
-  );
-
   // ─── Dispose ───────────────────────────────────────────────────────
   server.tool(
     "dispose_fixed_asset",
@@ -229,6 +86,7 @@ export function registerFixedAssetTools(server: McpServer, ctx: AuthContext) {
         }
 
         const result = await db.transaction(async (tx) => {
+          await lockAssetSnapshot(tx, ctx, asset);
           let disposalEntryId: string | null = null;
           // Only post when the asset can be balanced.
           if (asset.assetAccountId && asset.accumulatedDepAccountId) {
@@ -523,6 +381,7 @@ export function registerFixedAssetTools(server: McpServer, ctx: AuthContext) {
         const { base: baseCurrency } = await resolveBaseRate(ctx.organizationId, undefined, params.date);
 
         const result = await db.transaction(async (tx) => {
+          await lockAssetSnapshot(tx, ctx, asset);
           const assetAccountId =
             params.assetAccountId ??
             asset.assetAccountId ??
@@ -744,6 +603,7 @@ export function registerFixedAssetTools(server: McpServer, ctx: AuthContext) {
         const { base: baseCurrency } = await resolveBaseRate(ctx.organizationId, undefined, params.date);
 
         const result = await db.transaction(async (tx) => {
+          await lockAssetSnapshot(tx, ctx, asset);
           const assetAccountId =
             params.assetAccountId ??
             asset.assetAccountId ??
@@ -918,6 +778,7 @@ export function registerFixedAssetTools(server: McpServer, ctx: AuthContext) {
         const { base: baseCurrency } = await resolveBaseRate(ctx.organizationId, undefined, params.date);
 
         const result = await db.transaction(async (tx) => {
+          await lockAssetSnapshot(tx, ctx, asset);
           let journalEntryId: string | null = null;
 
           const assetAccountId =
@@ -1011,135 +872,4 @@ export function registerFixedAssetTools(server: McpServer, ctx: AuthContext) {
       })
   );
 
-  // ─── Rollback depreciation ─────────────────────────────────────────
-  server.tool(
-    "rollback_asset_depreciation",
-    "Reverse (roll back) the most recent depreciation entry for an asset — for correcting a mistaken or duplicate depreciation run. Posts a reversing journal entry (DR accumulated depreciation / CR depreciation expense) for the same amount when the original entry was posted to the GL, deletes the depreciationEntry, restores accumulatedDepreciation / netBookValue, and reverts a 'fully_depreciated' asset to 'active'. Atomic. Amounts are integer cents. Returns the reversed amount, the new asset totals and the reversing journalEntryId.",
-    {
-      assetId: z.string().uuid().describe("UUID of the fixed asset whose last depreciation entry to reverse"),
-      depreciationEntryId: z
-        .string()
-        .uuid()
-        .optional()
-        .describe("Optional specific depreciationEntry UUID to reverse; defaults to the asset's most recent entry"),
-      date: z.string().optional().describe("Posting date for the reversing entry (YYYY-MM-DD); defaults to today"),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        requireRole(ctx, "manage:assets");
-
-        const asset = await db.query.fixedAsset.findFirst({
-          where: and(
-            eq(fixedAsset.id, params.assetId),
-            eq(fixedAsset.organizationId, ctx.organizationId),
-            notDeleted(fixedAsset.deletedAt)
-          ),
-        });
-        if (!asset) throw new Error("Fixed asset not found");
-        if (asset.status === "disposed") throw new Error("Cannot roll back depreciation on a disposed asset");
-
-        // Resolve the entry to reverse: explicit id, else the most recent one.
-        let target: typeof depreciationEntry.$inferSelect | undefined;
-        if (params.depreciationEntryId) {
-          target = await db.query.depreciationEntry.findFirst({
-            where: and(
-              eq(depreciationEntry.id, params.depreciationEntryId),
-              eq(depreciationEntry.fixedAssetId, asset.id)
-            ),
-          });
-        } else {
-          target = await db.query.depreciationEntry.findFirst({
-            where: eq(depreciationEntry.fixedAssetId, asset.id),
-            orderBy: [desc(depreciationEntry.date), desc(depreciationEntry.createdAt)],
-          });
-        }
-        if (!target) throw new Error("No depreciation entry found to reverse");
-
-        const amount = target.amount;
-        const date = params.date || todayIso();
-        const newAccumulated = Math.max(0, asset.accumulatedDepreciation - amount);
-        const newNetBookValue = asset.purchasePrice - newAccumulated;
-        const newStatus =
-          asset.status === "fully_depreciated" && newNetBookValue > asset.residualValue
-            ? "active"
-            : asset.status;
-
-        const result = await db.transaction(async (tx) => {
-          let reversalEntryId: string | null = null;
-
-          // Post a reversing GL entry only when the original hit the ledger.
-          if (target!.journalEntryId && asset.depreciationAccountId && asset.accumulatedDepAccountId) {
-            const entryNumber = await getNextEntryNumber(ctx.organizationId, tx);
-            const [entry] = await tx
-              .insert(journalEntry)
-              .values({
-                organizationId: ctx.organizationId,
-                entryNumber,
-                date,
-                description: `Reverse depreciation - ${asset.name} (${asset.assetNumber})`,
-                reference: asset.assetNumber,
-                status: "posted",
-                sourceType: "depreciation_reversal",
-                sourceId: asset.id,
-                postedAt: new Date(),
-                createdBy: ctx.userId,
-              })
-              .returning();
-            reversalEntryId = entry.id;
-
-            await tx.insert(journalLine).values([
-              {
-                journalEntryId: entry.id,
-                accountId: asset.accumulatedDepAccountId,
-                description: `Reverse depreciation - ${asset.name}`,
-                debitAmount: amount,
-                creditAmount: 0,
-              },
-              {
-                journalEntryId: entry.id,
-                accountId: asset.depreciationAccountId,
-                description: `Reverse depreciation - ${asset.name}`,
-                debitAmount: 0,
-                creditAmount: amount,
-              },
-            ]);
-          }
-
-          await tx.delete(depreciationEntry).where(eq(depreciationEntry.id, target!.id));
-
-          const [updated] = await tx
-            .update(fixedAsset)
-            .set({
-              accumulatedDepreciation: newAccumulated,
-              netBookValue: newNetBookValue,
-              status: newStatus,
-              updatedAt: new Date(),
-            })
-            .where(eq(fixedAsset.id, asset.id))
-            .returning();
-
-          return { updated, reversalEntryId };
-        });
-
-        await db.insert(auditLog).values({
-          organizationId: ctx.organizationId,
-          userId: ctx.userId,
-          action: "rollback_depreciation",
-          entityType: "fixed_asset",
-          entityId: asset.id,
-          changes: { reversedAmount: amount, depreciationEntryId: target.id, journalEntryId: result.reversalEntryId },
-        });
-
-        return {
-          reversedAmount: amount,
-          reversedDepreciationEntryId: target.id,
-          journalEntryId: result.reversalEntryId,
-          asset: {
-            accumulatedDepreciation: newAccumulated,
-            netBookValue: newNetBookValue,
-            status: newStatus,
-          },
-        };
-      })
-  );
 }

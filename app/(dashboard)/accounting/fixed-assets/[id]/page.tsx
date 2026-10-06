@@ -217,7 +217,8 @@ export default function FixedAssetDetailPage() {
     try {
       const res = await fetch(
         `/api/v1/fixed-assets/${id}/rollback-depreciation`,
-        { method: "POST", headers: { "x-organization-id": orgId } }
+        { method: "POST", headers: { "x-organization-id": orgId, "content-type": "application/json" },
+          body: JSON.stringify({ depreciationEntryId: asset?.depreciationEntries.at(-1)?.id }) }
       );
       if (res.ok) {
         toast.success("Last value drop undone");

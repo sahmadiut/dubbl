@@ -48,7 +48,7 @@ async function assetRead(tx: TaxTx, ctx: AuthContext, row: typeof fixedAsset.$in
     if (!linked) throw new AuthError("Saved asset category is outside the organization", 422);
     category = assetCategoryDto(linked);
   }
-  const depreciation = await tx.select().from(depreciationEntry).where(eq(depreciationEntry.fixedAssetId, row.id)).orderBy(asc(depreciationEntry.date), asc(depreciationEntry.id));
+  const depreciation = await tx.select().from(depreciationEntry).where(eq(depreciationEntry.fixedAssetId, row.id)).orderBy(asc(depreciationEntry.date), asc(depreciationEntry.createdAt), asc(depreciationEntry.id));
   const revaluations = await tx.select().from(assetRevaluation).where(eq(assetRevaluation.fixedAssetId, row.id)).orderBy(desc(assetRevaluation.date), asc(assetRevaluation.id));
   const costs = await tx.select().from(cwipCost).where(eq(cwipCost.fixedAssetId, row.id)).orderBy(asc(cwipCost.date), asc(cwipCost.id));
   return { ...assetDto(row), category, assetAccount: await accountRead(tx, ctx, row.assetAccountId),

@@ -1,3 +1,4 @@
+import { lockAssetSnapshot } from "@/lib/api/asset-depreciation";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import {
@@ -110,6 +111,7 @@ export async function POST(
     const gainOrLoss = parsed.disposalAmount - netBookValue;
 
     const updated = await db.transaction(async (tx) => {
+      await lockAssetSnapshot(tx, ctx, asset);
       // Only post a GL entry when the asset has its asset + accumulated
       // depreciation accounts configured; otherwise the books can't be balanced.
       if (asset.assetAccountId && asset.accumulatedDepAccountId) {

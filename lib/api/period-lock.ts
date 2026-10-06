@@ -44,9 +44,10 @@ function canBypassPeriodLock(ctx?: AuthContext): boolean {
 export async function assertNotLocked(
   organizationId: string,
   date: string,
-  ctx?: AuthContext
+  ctx?: AuthContext,
+  exec: typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0] = db
 ): Promise<void> {
-  const lock = await db.query.periodLock.findFirst({
+  const lock = await exec.query.periodLock.findFirst({
     where: eq(periodLock.organizationId, organizationId),
   });
 
@@ -66,7 +67,7 @@ export async function assertNotLocked(
   }
 
   // Check if date falls within a closed fiscal year
-  const closedFY = await db.query.fiscalYear.findFirst({
+  const closedFY = await exec.query.fiscalYear.findFirst({
     where: and(
       eq(fiscalYear.organizationId, organizationId),
       eq(fiscalYear.isClosed, true),

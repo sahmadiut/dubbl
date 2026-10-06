@@ -858,3 +858,7 @@ MON-021 retain remaining/combined qualification; no schema/full-int64/IRR rollou
 ## MON-086 asset and category masters
 
 [ASSET_MASTER_WIRE_CONTRACTS](ASSET_MASTER_WIRE_CONTRACTS.md) documents all ten root REST/MCP pairs. Shared organization-scoped services expose safe integer cents plus explicit Minor strings, validate category/account joins and merged residual/life/units/date settings, preserve copied defaults and child history, and preflight/audit in the mutation transaction. Exact master input/display and bigint loaded-row totals replace floating cents arithmetic. MON-087 through MON-090 and parent MON-026 retain lifecycle/loan calculations, period locks, idempotency, cross-writer concurrency and implicit currency-history qualification; no schema, migration, production/IRR or full-int64 promise.
+
+## MON-087 asset depreciation
+
+[ASSET_DEPRECIATION_WIRE_CONTRACTS](ASSET_DEPRECIATION_WIRE_CONTRACTS.md) maps the three REST/MCP pairs, including additive batch MCP parity. Shared scoped transactions preserve numeric cents and explicit Minor aliases, use bigint rational method/convention calculations, close final residuals and expense full-at-purchase. Organization/asset locks coordinate masters and stale legacy lifecycle snapshots; transactional period checks, one-charge-per-month guards, scoped audit replay keys and exact original-line reversals prevent duplicate or partial posting. Saved unsafe/inconsistent/revaluation history fails closed pending MON-088 policy. No schema/migration, currency-history rewrite or IRR/full-int64 enablement.

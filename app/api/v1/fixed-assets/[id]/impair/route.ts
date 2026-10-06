@@ -1,3 +1,4 @@
+import { lockAssetSnapshot } from "@/lib/api/asset-depreciation";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import {
@@ -99,6 +100,7 @@ export async function POST(
     );
 
     const result = await db.transaction(async (tx) => {
+      await lockAssetSnapshot(tx, ctx, asset);
       let journalEntryId: string | null = null;
 
       if (asset.assetAccountId) {

@@ -982,3 +982,8 @@ MON-021 retain remaining/combined qualification; no schema/full-int64/IRR rollou
 ## MON-111 aged receivables and payables
 
 [AGING_REPORT_WIRE_CONTRACTS](AGING_REPORT_WIRE_CONTRACTS.md) maps both REST/MCP aging reports and JSON/PDF/XLSX export paths. Shared scoped read-only snapshot services preserve live versus explicit historical selection, use bigint allocation/sum math and expose numeric cents with amountDueMinor/totalMinor/grandTotalMinor strings. Saved single-currency values and filters prevent mixed/foreign settlement totals; scoped contact projections cannot leak another organization. Actual API-key/MCP/disposable PostgreSQL fixtures verify exact writer inputs, signed/range/currency edges, permission denial, historical carriers and exports. MON-102 retains MON-112 contact statements/delivery, MON-113 payment-performance and integration acceptance; MON-029 and full-range/financial/performance/production IRR gates remain separate. No schema/history rescale or production rollout.
+
+
+## MON-103 tax and regulatory reports
+
+[TAX_REPORT_WIRE_CONTRACTS](TAX_REPORT_WIRE_CONTRACTS.md) maps all seven REST/MCP pairs. Shared read-only snapshots, SQL-text/bigint aggregates, exact flat-rate rounding and numeric cents with additive Minor strings preserve legacy report units and existing jurisdiction heuristics. Strict dates/threshold aliases, supported currency guards, scoped metadata/ledger joins and final safe-range validation prevent silent loss or tenant leakage. Live VAT drill-down versus reverse-charge/flat-rate differences remain explicit. No schema/history/IRR gate change; MON-029 retains independent integration acceptance.

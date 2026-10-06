@@ -59,6 +59,7 @@ import { registerProcurementSettingsTools } from "./procurement-settings";
 import { registerPurchaseOrderTools } from "./purchase-orders";
 import { registerSalesReceiptTools } from "./sales-receipts";
 import { registerQuoteTools } from "./quotes";
+import { registerTaxReportTools } from "./tax-reports";
 import { registerTaxProfileTools } from "./tax-profiles";
 import { registerRecurringJournalTools } from "./recurring-journals";
 import { registerProjectTools } from "./projects";
@@ -147,6 +148,7 @@ export function registerAllTools(server: McpServer, ctx: AuthContext) {
   registerSalesReceiptTools(server, ctx);
   registerQuoteTools(server, ctx);
   registerTaxProfileTools(server, ctx);
+  registerTaxReportTools(server, ctx);
   registerRecurringJournalTools(server, ctx);
   registerProjectTools(server, ctx);
   registerProjectMasterTools(server, ctx);

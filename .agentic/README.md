@@ -46,3 +46,6 @@ The controller selects work and tracks state. The coding assistant reads the con
 - `tasks/`: the single source of truth for task state.
 
 No source repository was supplied when this package was built. The first task is baseline inspection. All 60 implementation tasks start as `todo`; this means unverified, not that the fork contains no working features. No current legal, currency or provider assertion from the source plan has been independently reverified here.
+
+
+MON-103 tax/regulatory report contracts: [boundary registry](registries/TAX_REPORT_WIRE_CONTRACTS.md), seven shared scoped REST/MCP read operations with compatible numeric cents and exact aliases. Existing jurisdiction heuristics retained; no new statutory compliance.

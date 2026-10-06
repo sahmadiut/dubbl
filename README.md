@@ -171,6 +171,8 @@ We welcome contributions of all kinds: bug fixes, features, documentation, and t
 - Help keep tax information accurate by reporting outdated rules
 - See the [Contributing Guide](https://dubbl.dev/docs/contributing) for details
 
+Tax/regulatory report exact contracts are documented in [.agentic/registries/TAX_REPORT_WIRE_CONTRACTS.md](.agentic/registries/TAX_REPORT_WIRE_CONTRACTS.md): numeric cents retain additive Minor string aliases across seven shared REST/MCP operations. Existing jurisdiction heuristics are preserved.
+
 ## License
 
 Licensed under the [Apache License 2.0](/LICENSE).

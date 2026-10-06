@@ -22,6 +22,7 @@
  *     moves through the books (payments + bank-feed categorisations).
  */
 import { db } from "@/lib/db";
+import type { TaxReportDb } from "./tax-reports";
 import {
   chartAccount,
   journalEntry,
@@ -52,8 +53,8 @@ export interface OrgTaxConfig {
  * existing columns on `organization` (see lib/db/schema/auth.ts); we normalise
  * vatScheme to a known basis and default to accrual.
  */
-export async function getOrgTaxConfig(organizationId: string): Promise<OrgTaxConfig> {
-  const org = await db.query.organization.findFirst({
+export async function getOrgTaxConfig(organizationId: string, database: TaxReportDb = db): Promise<OrgTaxConfig> {
+  const org = await database.query.organization.findFirst({
     where: eq(organization.id, organizationId),
     columns: {
       defaultCurrency: true,
@@ -88,9 +89,10 @@ export function resolveBasis(
 /** Resolve a control account's id by code (org-scoped, non-deleted). */
 export async function getControlAccountId(
   organizationId: string,
-  accountCode: string
+  accountCode: string,
+  database: TaxReportDb = db
 ): Promise<string | null> {
-  const account = await db.query.chartAccount.findFirst({
+  const account = await database.query.chartAccount.findFirst({
     where: and(
       eq(chartAccount.organizationId, organizationId),
       eq(chartAccount.code, accountCode),
@@ -107,7 +109,7 @@ export async function getControlAccountId(
  * a bank/cash account (subType = 'bank'). Mirrors lib/reports/gl-query.ts so the
  * tax return and the financial statements agree on what "cash" means.
  */
-function cashEntryPredicate(): SQL {
+function cashEntryPredicate(organizationId: string): SQL {
   return sql`(
     ${journalEntry.sourceType} in (${sql.join(
       CASH_SOURCE_TYPES.map((s) => sql`${s}`),
@@ -118,6 +120,7 @@ function cashEntryPredicate(): SQL {
       join ${chartAccount} cash_acct on cash_acct.id = cash_jl.account_id
       where cash_jl.journal_entry_id = ${journalEntry.id}
         and cash_acct.sub_type = 'bank'
+        and cash_acct.organization_id = ${organizationId}
     )
   )`;
 }
@@ -139,10 +142,11 @@ export async function controlAccountMovement(
   accountCode: string,
   startDate: string,
   endDate: string,
-  basis: TaxBasis = "accrual"
-): Promise<{ debits: number; credits: number }> {
-  const accountId = await getControlAccountId(organizationId, accountCode);
-  if (!accountId) return { debits: 0, credits: 0 };
+  basis: TaxBasis = "accrual",
+  database: TaxReportDb = db
+): Promise<{ debits: bigint; credits: bigint }> {
+  const accountId = await getControlAccountId(organizationId, accountCode, database);
+  if (!accountId) return { debits: 0n, credits: 0n };
 
   const clauses: (SQL | undefined)[] = [
     eq(journalLine.accountId, accountId),
@@ -152,18 +156,18 @@ export async function controlAccountMovement(
     lte(journalEntry.date, endDate),
     isNull(journalEntry.deletedAt),
   ];
-  if (basis === "cash") clauses.push(cashEntryPredicate());
+  if (basis === "cash") clauses.push(cashEntryPredicate(organizationId));
 
-  const [row] = await db
+  const [row] = await database
     .select({
-      debits: sql<number>`COALESCE(SUM(${journalLine.debitAmount}), 0)`.mapWith(Number),
-      credits: sql<number>`COALESCE(SUM(${journalLine.creditAmount}), 0)`.mapWith(Number),
+      debits: sql<string>`COALESCE(SUM(${journalLine.debitAmount}), 0)::text`,
+      credits: sql<string>`COALESCE(SUM(${journalLine.creditAmount}), 0)::text`,
     })
     .from(journalLine)
     .innerJoin(journalEntry, eq(journalLine.journalEntryId, journalEntry.id))
     .where(and(...clauses));
 
-  return { debits: row?.debits || 0, credits: row?.credits || 0 };
+  return { debits: BigInt(row?.debits ?? "0"), credits: BigInt(row?.credits ?? "0") };
 }
 
 /**
@@ -186,8 +190,9 @@ export async function computeEcSales(
   organizationId: string,
   startDate: string,
   endDate: string,
-  orgCountry: string | null
-): Promise<{ ecSalesNet: number; ecAcquisitionsNet: number }> {
+  orgCountry: string | null,
+  database: TaxReportDb = db
+): Promise<{ ecSalesNet: bigint; ecAcquisitionsNet: bigint }> {
   // A counterparty is treated as cross-border when it is VAT-registered
   // (taxNumber present) AND its billing country is set and differs from ours.
   // When the org has no country on file we fall back to "any VAT-registered
@@ -198,13 +203,14 @@ export async function computeEcSales(
     : sql`${billingCountry} is not null and ${billingCountry} <> ''`;
   const vatRegistered = sql`${contact.taxNumber} is not null and ${contact.taxNumber} <> ''`;
 
-  const [sales] = await db
-    .select({ total: sql<number>`COALESCE(SUM(${invoice.subtotal}), 0)`.mapWith(Number) })
+  const [sales] = await database
+    .select({ total: sql<string>`COALESCE(SUM(${invoice.subtotal}), 0)::text` })
     .from(invoice)
     .innerJoin(contact, eq(invoice.contactId, contact.id))
     .where(
       and(
         eq(invoice.organizationId, organizationId),
+        eq(contact.organizationId, organizationId),
         gte(invoice.issueDate, startDate),
         lte(invoice.issueDate, endDate),
         notInArray(invoice.status, ["draft", "void"]),
@@ -214,13 +220,14 @@ export async function computeEcSales(
       )
     );
 
-  const [acqs] = await db
-    .select({ total: sql<number>`COALESCE(SUM(${bill.subtotal}), 0)`.mapWith(Number) })
+  const [acqs] = await database
+    .select({ total: sql<string>`COALESCE(SUM(${bill.subtotal}), 0)::text` })
     .from(bill)
     .innerJoin(contact, eq(bill.contactId, contact.id))
     .where(
       and(
         eq(bill.organizationId, organizationId),
+        eq(contact.organizationId, organizationId),
         gte(bill.issueDate, startDate),
         lte(bill.issueDate, endDate),
         notInArray(bill.status, ["draft", "void"]),
@@ -231,8 +238,8 @@ export async function computeEcSales(
     );
 
   return {
-    ecSalesNet: sales?.total || 0,
-    ecAcquisitionsNet: acqs?.total || 0,
+    ecSalesNet: BigInt(sales?.total ?? "0"),
+    ecAcquisitionsNet: BigInt(acqs?.total ?? "0"),
   };
 }
 
@@ -247,10 +254,10 @@ export interface BoxTransaction {
   sourceType: string | null;
   accountCode: string;
   accountName: string;
-  debit: number;
-  credit: number;
+  debit: bigint;
+  credit: bigint;
   /** Signed contribution to the box on its natural sign (see box mapping). */
-  amount: number;
+  amount: bigint;
 }
 
 /** Box → control-account code + natural sign for drill-down. */
@@ -273,20 +280,22 @@ export function isDrillableBox(box: string): boolean {
  * period — the 2200 (output) or 1500 (input) control-account lines, with each
  * line's entry and account context, respecting the recognition basis.
  *
- * `amount` is the line's contribution on the box's natural sign: for output
+ * `amount` is the line's contribution on the control account's natural sign: for output
  * boxes (credit-normal) it is credit − debit; for input boxes (debit-normal) it
- * is debit − credit. The sum of `amount` equals the box figure.
+ * is debit − credit. Output drill-down includes reverse charge; VAT box 1
+ * excludes that slice, and flat-rate boxes use document turnover instead.
  */
 export async function boxTransactions(
   organizationId: string,
   box: string,
   startDate: string,
   endDate: string,
-  basis: TaxBasis = "accrual"
+  basis: TaxBasis = "accrual",
+  database: TaxReportDb = db
 ): Promise<BoxTransaction[]> {
   const mapping = BOX_ACCOUNT[box];
   if (!mapping) return [];
-  const accountId = await getControlAccountId(organizationId, mapping.code);
+  const accountId = await getControlAccountId(organizationId, mapping.code, database);
   if (!accountId) return [];
 
   const clauses: (SQL | undefined)[] = [
@@ -297,9 +306,9 @@ export async function boxTransactions(
     lte(journalEntry.date, endDate),
     isNull(journalEntry.deletedAt),
   ];
-  if (basis === "cash") clauses.push(cashEntryPredicate());
+  if (basis === "cash") clauses.push(cashEntryPredicate(organizationId));
 
-  const rows = await db
+  const rows = await database
     .select({
       journalLineId: journalLine.id,
       journalEntryId: journalEntry.id,
@@ -311,8 +320,8 @@ export async function boxTransactions(
       sourceType: journalEntry.sourceType,
       accountCode: chartAccount.code,
       accountName: chartAccount.name,
-      debit: journalLine.debitAmount,
-      credit: journalLine.creditAmount,
+      debit: sql<string>`${journalLine.debitAmount}::text`,
+      credit: sql<string>`${journalLine.creditAmount}::text`,
     })
     .from(journalLine)
     .innerJoin(journalEntry, eq(journalLine.journalEntryId, journalEntry.id))
@@ -321,8 +330,8 @@ export async function boxTransactions(
     .orderBy(journalEntry.date, journalEntry.entryNumber);
 
   return rows.map((r) => {
-    const debit = Number(r.debit) || 0;
-    const credit = Number(r.credit) || 0;
+    const debit = BigInt(r.debit);
+    const credit = BigInt(r.credit);
     const amount = mapping.sign === "credit" ? credit - debit : debit - credit;
     return {
       journalLineId: r.journalLineId,

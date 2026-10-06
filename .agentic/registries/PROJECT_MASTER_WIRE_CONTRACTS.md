@@ -145,6 +145,12 @@ cannot delete while time/timer links exist; task labels must be removed from tas
 before deleting a label. Hard deletes validate the original and returned record;
 project deletion remains soft. No posted history is rewritten or rescaled.
 
+MON-027 integration additionally rejects fixedPrice edits below attributed fixed
+invoice allocations (409), under the same organization/project locks. It reuses
+billing history and excludes recharged registered expenses. See
+[combined contracts](PROJECT_CRM_PRICING_INTEGRATION.md) for the qualified
+cross-writer behavior; original child evidence remains unchanged.
+
 ## Retry, compatibility corrections and clients
 
 Creates/time/comment appends have no invented idempotency token; callers must

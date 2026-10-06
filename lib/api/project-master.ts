@@ -11,6 +11,7 @@ import { checkResourceLimit } from "./check-limit";
 import { auditTax, lockTaxOrganization, type TaxTx } from "./tax-config-transaction";
 import { projectOperations } from "./project-master-operations";
 import { projectAmounts, projectMoneyFields, projectRowDto } from "./project-master-wire";
+import { projectFixedInvoiced } from "./project-billing";
 import { legacyMinor, stringifyWire } from "@/lib/money/wire";
 
 type Row = Record<string, unknown>;
@@ -188,6 +189,10 @@ export async function executeProjectOperation(ctx: AuthContext, name: string, in
       const values = projectAmounts(q, ["budget", "hourlyRate", "fixedPrice"], op.action === "create"); delete values.projectId;
       if (op.action === "create") await checkResourceLimit(ctx.organizationId, project, project.organizationId, "projects", project.deletedAt);
       if (p && values.currency && values.currency !== p.currency) await guardCurrency(tx, p);
+      if (p?.billingType === "fixed" && values.fixedPrice !== undefined && values.fixedPrice !== p.fixedPrice) {
+        const invoiced = await projectFixedInvoiced(tx, ctx, p);
+        if (BigInt(values.fixedPrice as number) < BigInt(invoiced)) conflict("Fixed price cannot be below already invoiced project cents");
+      }
       await references(tx, ctx, "project", { ...p, ...values }, projectId, Boolean(values.contactId));
       projectRowDto("project", { ...(p ?? { totalBilled: 0, totalHours: 0, estimatedHours: 0, currency: "USD" }), ...values });
       const [row] = op.action === "create" ? await tx.insert(project).values({ ...values, name: String(values.name), organizationId: ctx.organizationId }).returning() :

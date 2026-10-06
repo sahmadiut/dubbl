@@ -155,6 +155,11 @@ Expenses can still be invoiced after the base price is exhausted. Corrupt negati
 or above-price allocation history rejects. totalBilled retains the legacy running
 generation sum; this task does not redesign invoice lifecycle reversals.
 
+MON-027 integration exports this same calculation as projectFixedInvoiced for
+master fixedPrice edit validation. Prices below the already invoiced fixed
+allocation reject with 409 before mutation; valid expense-excluding reductions
+remain supported. See [combined contracts](PROJECT_CRM_PRICING_INTEGRATION.md).
+
 Re-registration of unbilled sources upserts one existing item; audit records the
 operation. Keyed generation replays the original live invoice without numbering,
 allocation or audit writes when operation/parsed inputs match. A changed operation,

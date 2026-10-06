@@ -102,7 +102,8 @@ async function milestones(tx: TaxTx, p: Project) {
   const rows = await tx.select().from(projectMilestone).where(eq(projectMilestone.projectId, p.id));
   return rows.map(r => { projectRowDto("milestone", r); return billingDto({ ...r, remaining: legacyMinor(integer(r.amount) - integer(r.invoicedAmountCents)) }, ["amount", "invoicedAmountCents", "remaining"]); });
 }
-async function fixedInvoiced(tx: TaxTx, ctx: AuthContext, p: Project) {
+// Writers must hold the organization/project locks; reads use a consistent snapshot.
+export async function projectFixedInvoiced(tx: TaxTx, ctx: AuthContext, p: Project) {
   // Old name-only invoices cannot be attributed safely after rename or name reuse.
   const [untagged] = await tx.select({ id: invoiceLine.id }).from(invoiceLine).innerJoin(invoice, eq(invoiceLine.invoiceId, invoice.id))
     .where(and(eq(invoice.reference, `Project: ${p.name}`), eq(invoice.organizationId, ctx.organizationId), isNull(invoice.deletedAt), notInArray(invoice.status, ["void"]), isNull(invoiceLine.projectId))).limit(1);
@@ -130,7 +131,7 @@ export async function projectBillingPreview(ctx: AuthContext, input: unknown) {
     } else if (p.billingType === "hourly") {
       const time = await entries(tx, ctx, p); result = { ...common, timeEntries: time, ...billingDto({ totalAmount: sum(time.map(t => t.amount)) }, ["totalAmount"]) };
     } else if (p.billingType === "fixed") {
-      const totalInvoiced = await fixedInvoiced(tx, ctx, p);
+      const totalInvoiced = await projectFixedInvoiced(tx, ctx, p);
       result = { ...common, ...billingDto({ fixedPrice: p.fixedPrice, totalInvoiced, remaining: legacyMinor(integer(p.fixedPrice) - integer(totalInvoiced)) }, ["fixedPrice", "totalInvoiced", "remaining"]),
         invoicedPercent: legacyMinor(invoiceRound(integer(totalInvoiced) * 100n, integer(p.fixedPrice) || 1n)) };
     } else result = { ...common, message: "Non-billable project" };
@@ -226,7 +227,7 @@ export async function executeProjectBilling(ctx: AuthContext, op: BillingOperati
       lines.push({ description: `Milestone: ${m.title}`, quantity: 100, unitPrice: m.remaining, amount: m.remaining });
     }
     if (p.billingType === "fixed" && v.percentageToInvoice !== undefined) {
-      const amount = billingPercent(p.fixedPrice, v.percentageToInvoice), used = await fixedInvoiced(tx, ctx, p);
+      const amount = billingPercent(p.fixedPrice, v.percentageToInvoice), used = await projectFixedInvoiced(tx, ctx, p);
       if (amount <= 0 || integer(used) + integer(amount) > integer(p.fixedPrice)) fail("Fixed-price allocation is zero or exceeds remaining price", 409);
       lines.push({ description: `${p.name} - ${v.percentageToInvoice}% of fixed price`, quantity: 100, unitPrice: amount, amount });
     }

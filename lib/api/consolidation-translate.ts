@@ -1,222 +1,81 @@
-import { eq, and, desc, lte } from "drizzle-orm";
+import { and, desc, eq, lte } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { consolidationRate } from "@/lib/db/schema";
-import {
-  getExchangeRate,
-  convertAmount,
-  MissingExchangeRateError,
-} from "@/lib/currency/converter";
-
-/**
- * Currency translation for consolidation worksheets (IAS 21 / ASC 830).
- *
- * This is reporting-layer logic only — nothing here posts to a member entity's
- * general ledger. Each member's per-account balances are translated from its
- * functional currency into the group's presentation currency, applying:
- *   - assets & liabilities at the CLOSING rate,
- *   - revenue & expenses at the AVERAGE rate,
- *   - equity at the HISTORICAL rate.
- * The mixed-rate residual that prevents the balance sheet from footing is the
- * Cumulative Translation Adjustment (CTA), computed in the report route.
- *
- * Rates are resolved per (group, currency, rateType, periodEnd): a manually
- * entered consolidationRate wins; otherwise we fall back to the org-level
- * exchangeRate table via getExchangeRate. A member whose functional currency
- * already equals the presentation currency translates 1:1. A genuinely missing
- * rate throws MissingExchangeRateError — we never silently substitute 1:1.
- */
+import { MissingExchangeRateError } from "@/lib/currency/converter";
+import { createHistoricalRateResolver } from "@/lib/currency/historical-rate";
+import { exactRate, fromLegacyRate } from "@/lib/currency/exact-rate";
+import { roundRatio } from "@/lib/money/exact";
+import { rateDto, WireCompatibilityError } from "@/lib/money/wire";
+import { savedConsolidationCurrency } from "./consolidation-config-wire";
 
 export type RateType = "closing" | "average" | "historical";
-
-const UNIT = 1_000_000; // 6dp fixed-point: 1_000_000 = 1.0
-
-export interface TranslateGroupInfo {
-  id: string;
-  parentOrgId: string;
-  presentationCurrency: string;
-}
-
-/**
- * Map an account type to the IAS 21 rate that should translate its balance.
- */
+export interface TranslateGroupInfo { id: string; parentOrgId: string; presentationCurrency: string }
 export function classifyRate(accountType: string): RateType {
-  switch (accountType) {
-    case "asset":
-    case "liability":
-      return "closing";
-    case "revenue":
-    case "expense":
-      return "average";
-    case "equity":
-      return "historical";
-    default:
-      // Unknown types translate at the closing (spot) rate, the most defensible default.
-      return "closing";
-  }
+  return accountType === "revenue" || accountType === "expense" ? "average" : accountType === "equity" ? "historical" : "closing";
 }
 
-/**
- * Resolve the integer (6dp) rate that converts `currency` into the group's
- * presentation currency for a given rate type and period end.
- *
- * Resolution order:
- *   1. functional currency == presentation currency → 1.0 (1_000_000).
- *   2. a manually entered consolidationRate for (group, currency, rateType,
- *      periodEnd or earlier) → use it.
- *   3. fall back to the org-level exchangeRate table (getExchangeRate).
- * Anything else throws MissingExchangeRateError — never 1:1.
- */
-export async function rateFor(
-  group: TranslateGroupInfo,
-  currency: string,
-  rateType: RateType,
-  periodEnd: string
-): Promise<number> {
-  const presentation = group.presentationCurrency;
-  if (currency === presentation) return UNIT;
-
-  // 1. Group-specific manual/derived consolidation rate (most recent on/before periodEnd).
-  const stored = await db.query.consolidationRate.findFirst({
-    where: and(
-      eq(consolidationRate.groupId, group.id),
-      eq(consolidationRate.currencyCode, currency),
-      eq(consolidationRate.rateType, rateType),
-      lte(consolidationRate.periodEndDate, periodEnd)
-    ),
-    orderBy: desc(consolidationRate.periodEndDate),
-  });
-  if (stored) return stored.rate;
-
-  // 2. Fall back to the parent org's exchange-rate table.
-  const fallback = await getExchangeRate(
-    group.parentOrgId,
-    currency,
-    presentation,
-    periodEnd
-  );
-  if (fallback != null) return fallback;
-
-  throw new MissingExchangeRateError(currency, presentation, periodEnd);
+/** Exact integer v1 Math.round: negative ties toward +infinity.
+ * Fixed cents stay fixed cents, including JPY/KWD/IRR; no currency rescale. */
+export function roundConsolidationRatio(numerator: bigint, denominator: bigint): bigint {
+  return roundRatio(numerator * BigInt(2) + denominator, denominator * BigInt(2), "floor");
+}
+export function translateConsolidationCents(amount: bigint, rate: string): bigint {
+  const [whole, fraction = ""] = exactRate(rate).split(".");
+  return roundConsolidationRatio(amount * BigInt(whole + fraction), BigInt(10) ** BigInt(fraction.length));
 }
 
-/**
- * Translate an amount (cents, in `currency`) into presentation-currency cents
- * using the rate for the given account-type classification.
- */
-export async function translateAmount(
-  group: TranslateGroupInfo,
-  amountCents: number,
-  currency: string,
-  rateType: RateType,
-  periodEnd: string
-): Promise<number> {
-  const rate = await rateFor(group, currency, rateType, periodEnd);
-  return convertAmount(amountCents, rate);
-}
-
-/**
- * Cache of resolved rates per (currency, rateType) for a single report run so a
- * member's many account lines don't re-query the same rate. Caller scopes one
- * cache per report invocation.
- */
 export class RateResolver {
-  private cache = new Map<string, number>();
-
-  constructor(
-    private group: TranslateGroupInfo,
-    private periodEnd: string
-  ) {}
-
-  async rate(currency: string, rateType: RateType): Promise<number> {
+  private cache = new Map<string, Awaited<ReturnType<RateResolver["resolve"]>>>();
+  private fallback;
+  constructor(private group: TranslateGroupInfo, private periodEnd: string, private database: Pick<typeof db, "query"> = db) {
+    this.fallback = createHistoricalRateResolver(group.parentOrgId, database);
+  }
+  private async resolve(currency: string, rateType: RateType) {
+    savedConsolidationCurrency(currency); savedConsolidationCurrency(this.group.presentationCurrency);
+    const common = { baseCurrency: currency, quoteCurrency: this.group.presentationCurrency, rateType };
+    if (currency === this.group.presentationCurrency) return { ...common, ...rateDto("1"), effectiveDate: this.periodEnd, source: "same", inverse: false };
+    const stored = await this.database.query.consolidationRate.findFirst({
+      where: and(eq(consolidationRate.groupId, this.group.id), eq(consolidationRate.currencyCode, currency),
+        eq(consolidationRate.rateType, rateType), lte(consolidationRate.periodEndDate, this.periodEnd)),
+      orderBy: [desc(consolidationRate.periodEndDate), desc(consolidationRate.updatedAt), desc(consolidationRate.id)],
+    });
+    if (stored) {
+      let dto;
+      try {
+        if (stored.rateDirection !== "quote_per_base" || stored.rateFormatVersion !== 1) throw new Error("Unsupported FX format");
+        if (stored.rateMigrationStatus === "pending" && stored.rateExact === null) dto = rateDto(fromLegacyRate(stored.rate));
+        else if (stored.rateMigrationStatus === "exact" && stored.rateExact) {
+          dto = rateDto(stored.rateExact);
+          if (dto.rate !== stored.rate) throw new Error("Conflicting FX aliases");
+        } else throw new Error("Unqualified saved FX rate");
+      } catch { throw new WireCompatibilityError("Saved consolidation rate cannot be represented safely or requires remediation"); }
+      return { ...common, ...dto, effectiveDate: stored.periodEndDate, source: stored.source, inverse: false };
+    }
+    const fallback = await this.fallback(currency, this.group.presentationCurrency, this.periodEnd);
+    if (!fallback) throw new MissingExchangeRateError(currency, this.group.presentationCurrency, this.periodEnd);
+    const dto = rateDto(fallback.rateExact);
+    if (dto.rate !== fallback.rate) throw new WireCompatibilityError("Conflicting saved exchange-rate aliases");
+    return { ...common, ...dto, effectiveDate: fallback.effectiveDate, source: fallback.source, inverse: fallback.inverse };
+  }
+  async rate(currency: string, rateType: RateType) {
     const key = `${currency}:${rateType}`;
-    const hit = this.cache.get(key);
-    if (hit != null) return hit;
-    const r = await rateFor(this.group, currency, rateType, this.periodEnd);
-    this.cache.set(key, r);
-    return r;
+    if (!this.cache.has(key)) this.cache.set(key, await this.resolve(currency, rateType));
+    return this.cache.get(key)!;
   }
-
-  /** Translate `amountCents` of `currency` for the given account type. */
-  async translate(
-    amountCents: number,
-    currency: string,
-    accountType: string
-  ): Promise<number> {
-    const r = await this.rate(currency, classifyRate(accountType));
-    return convertAmount(amountCents, r);
+  async translate(amount: bigint, currency: string, accountType: string) {
+    return this.translateAt(amount, currency, classifyRate(accountType));
   }
-
-  /** Translate `amountCents` of `currency` at an explicit rate type. */
-  async translateAt(
-    amountCents: number,
-    currency: string,
-    rateType: RateType
-  ): Promise<number> {
-    const r = await this.rate(currency, rateType);
-    return convertAmount(amountCents, r);
+  async translateAt(amount: bigint, currency: string, rateType: RateType) {
+    return translateConsolidationCents(amount, (await this.rate(currency, rateType)).rateExact);
   }
+  usedRates() { return [...this.cache.values()].sort((a, b) => a.baseCurrency.localeCompare(b.baseCurrency) || a.rateType.localeCompare(b.rateType)); }
 }
-
-/**
- * Net signed balance of an account, expressed as a positive number for the
- * account type's natural side:
- *   - assets & expenses are debit-natured  → debit − credit
- *   - liabilities, equity & revenue are credit-natured → credit − debit
- * Returned in the same currency/units as the inputs.
- */
-export function naturalBalance(
-  accountType: string,
-  totalDebit: number,
-  totalCredit: number
-): number {
-  switch (accountType) {
-    case "asset":
-    case "expense":
-      return totalDebit - totalCredit;
-    default:
-      // liability, equity, revenue, and any unknown credit-natured type
-      return totalCredit - totalDebit;
-  }
+export function naturalBalance(accountType: string, totalDebit: bigint, totalCredit: bigint): bigint {
+  return accountType === "asset" || accountType === "expense" ? totalDebit - totalCredit : totalCredit - totalDebit;
 }
-
-/**
- * Cumulative Translation Adjustment (CTA): the residual that makes a
- * mixed-rate translated balance sheet foot. Under IAS 21 the balance sheet is
- * translated at closing rates and the income statement at average rates, so the
- * translated equity (historical) plus translated net income (average) will not
- * equal translated net assets (closing). The CTA is the equity plug that
- * absorbs that difference:
- *
- *   CTA = translatedAssets − translatedLiabilities − translatedEquity − translatedNetIncome
- *
- * A positive CTA increases equity (credit); a negative CTA reduces it.
- * All inputs are presentation-currency cents.
- */
-export function computeCta(input: {
-  translatedAssets: number;
-  translatedLiabilities: number;
-  translatedEquity: number;
-  translatedNetIncome: number;
-}): number {
-  return (
-    input.translatedAssets -
-    input.translatedLiabilities -
-    input.translatedEquity -
-    input.translatedNetIncome
-  );
+export function computeCta(input: { translatedAssets: bigint; translatedLiabilities: bigint; translatedEquity: bigint; translatedNetIncome: bigint }): bigint {
+  return input.translatedAssets - input.translatedLiabilities - input.translatedEquity - input.translatedNetIncome;
 }
-
-/**
- * Functional currency for a consolidation member: the explicit
- * `functionalCurrency` override on the membership row, else the member
- * organization's defaultCurrency, else the group presentation currency.
- */
-export function memberFunctionalCurrency(
-  memberFunctionalCurrency: string | null | undefined,
-  orgDefaultCurrency: string | null | undefined,
-  presentationCurrency: string
-): string {
-  return (
-    memberFunctionalCurrency || orgDefaultCurrency || presentationCurrency
-  );
+export function memberFunctionalCurrency(member: string | null | undefined, org: string | null | undefined, presentation: string): string {
+  return savedConsolidationCurrency(member || org || presentation);
 }

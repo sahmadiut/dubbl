@@ -1,5 +1,17 @@
 # CI and migration fixture runbook
 
+MON-096 adds consolidation-report-wire.test.ts to unit discovery and
+consolidation-report.test.ts to integration discovery. Run
+`node --import tsx --test tests/consolidation-report-wire.test.ts
+tests/integration/consolidation-report.test.ts
+tests/integration/consolidation-config.test.ts` with explicit loopback
+TEST_DATABASE_URL and a disposable CREATEDB fixture role. Actual REST/MCP
+fixtures qualify fixed currency units, bigint aggregate/product precision,
+translation/CTA/caps, negative/invalid inputs, current member scope, period
+locks, audit/storage rollback and concurrent persistence/configuration. Saved
+history corruption temporarily disables only consolidation-rate user triggers
+in its random fixture database. No Next dev server or new migration is needed.
+
 MON-095 adds consolidation-config.test.ts to integration discovery. Run
 `node --import tsx --test tests/integration/consolidation-config.test.ts` with
 explicit loopback TEST_DATABASE_URL and a disposable CREATEDB fixture role.

@@ -7,14 +7,17 @@ import {
   invoice,
   bill,
 } from "@/lib/db/schema";
-import { eq, and, isNull, sql, gte, lte, inArray, ne } from "drizzle-orm";
-import { db } from "@/lib/db";
+import { eq, and, asc, isNull, sql, gte, lte, inArray, ne } from "drizzle-orm";
+import type { TaxTx } from "./tax-config-transaction";
+import { consolidationRuleSchema } from "./consolidation-config-wire";
+import { WireCompatibilityError } from "@/lib/money/wire";
 import { notDeleted } from "@/lib/db/soft-delete";
 import {
   RateResolver,
   naturalBalance,
   computeCta,
   memberFunctionalCurrency,
+  roundConsolidationRatio,
 } from "@/lib/api/consolidation-translate";
 
 /**
@@ -30,9 +33,8 @@ import {
  *   3. Computes the per-entity Cumulative Translation Adjustment (CTA) and
  *      INJECTS it as a consolidated equity line (code 3900) so the balance
  *      sheet foots: Assets = Liabilities + Equity(incl. CTA) + NetIncome.
- *   4. Applies intercompany eliminations, CAPPED by the intercompany document
- *      volume attributable to fellow members (so third-party balances on the
- *      same account-code prefixes are never over-eliminated).
+ *   4. Applies prefix eliminations capped by symmetric intercompany document
+ *      volume where available, retaining the legacy matched-min fallback.
  *
  * This function NEVER writes to the database. Persistence of elimination
  * entries is an explicit action handled by the route's POST/recalc handler.
@@ -42,8 +44,8 @@ import {
 // equity. Reporting-only — never posted to a member ledger.
 const CTA_ACCOUNT_CODE = "3900";
 const CTA_ACCOUNT_NAME = "Cumulative Translation Adjustment";
-// Where the unmatched elimination residual is parked so the worksheet still
-// foots when intercompany debits and credits don't perfectly net.
+// Label for the reported unmatched elimination residual. It is informational;
+// this computation does not post a separate variance line.
 const ELIM_VARIANCE_NAME = "Intercompany Elimination Variance";
 
 interface EntityBalance {
@@ -54,16 +56,16 @@ interface EntityBalance {
   accountType: string;
   accountName: string;
   accountCode: string;
-  totalDebit: number;
-  totalCredit: number;
+  totalDebit: bigint;
+  totalCredit: bigint;
 }
 
 interface AccountRow {
   type: string;
   name: string;
   code: string;
-  total: number;
-  byEntity: Record<string, number>;
+  total: bigint;
+  byEntity: Record<string, bigint>;
 }
 
 export interface ConsolidatedReportResult {
@@ -78,46 +80,47 @@ export interface ConsolidatedReportResult {
   endDate: string;
   presentationCurrency: string;
   consolidatedPnL: {
-    totalRevenue: number;
-    totalExpenses: number;
-    netIncome: number;
+    totalRevenue: bigint;
+    totalExpenses: bigint;
+    netIncome: bigint;
     byEntity: {
       orgId: string;
       label: string;
-      revenue: number;
-      expenses: number;
-      netIncome: number;
+      revenue: bigint;
+      expenses: bigint;
+      netIncome: bigint;
     }[];
     accounts: AccountRow[];
   };
   consolidatedBalanceSheet: {
-    totalAssets: number;
-    totalLiabilities: number;
-    totalEquity: number;
-    balanceCheck: number;
+    totalAssets: bigint;
+    totalLiabilities: bigint;
+    totalEquity: bigint;
+    balanceCheck: bigint;
     byEntity: {
       orgId: string;
       label: string;
-      assets: number;
-      liabilities: number;
-      equity: number;
+      assets: bigint;
+      liabilities: bigint;
+      equity: bigint;
     }[];
     accounts: AccountRow[];
   };
   translation: {
+    rates: ReturnType<RateResolver["usedRates"]>;
     presentationCurrency: string;
-    totalCta: number;
+    totalCta: bigint;
     ctaAccount: { code: string; name: string };
     byEntity: {
       orgId: string;
       label: string;
       functionalCurrency: string;
-      cta: number;
+      cta: bigint;
     }[];
   };
   elimination: {
-    totalEliminated: number;
-    totalVariance: number;
+    totalEliminated: bigint;
+    totalVariance: bigint;
     varianceLabel: string;
     entries: EliminationResult[];
   };
@@ -129,8 +132,8 @@ export interface EliminationResult {
   kind: string;
   debitAccountMatch: string | null;
   creditAccountMatch: string | null;
-  eliminated: number;
-  variance: number;
+  eliminated: bigint;
+  variance: bigint;
   /** Set when a misconfigured rule was skipped/flagged (e.g. ar_ap legs that
    * don't map to asset/liability accounts). */
   skipped?: boolean;
@@ -150,6 +153,11 @@ type OwnedGroup = {
   }[];
 };
 
+const absolute = (value: bigint) => value < BigInt(0) ? -value : value;
+const minimum = (a: bigint, b: bigint) => a < b ? a : b;
+const maximum = (a: bigint, b: bigint) => a > b ? a : b;
+const sign = (value: bigint) => value < BigInt(0) ? BigInt(-1) : value > BigInt(0) ? BigInt(1) : BigInt(0);
+
 function emptyReport(
   group: { id: string; name: string; presentationCurrency: string },
   startDate: string,
@@ -163,29 +171,30 @@ function emptyReport(
     endDate,
     presentationCurrency,
     consolidatedPnL: {
-      totalRevenue: 0,
-      totalExpenses: 0,
-      netIncome: 0,
+      totalRevenue: BigInt(0),
+      totalExpenses: BigInt(0),
+      netIncome: BigInt(0),
       byEntity: [],
       accounts: [],
     },
     consolidatedBalanceSheet: {
-      totalAssets: 0,
-      totalLiabilities: 0,
-      totalEquity: 0,
-      balanceCheck: 0,
+      totalAssets: BigInt(0),
+      totalLiabilities: BigInt(0),
+      totalEquity: BigInt(0),
+      balanceCheck: BigInt(0),
       byEntity: [],
       accounts: [],
     },
     translation: {
+      rates: [],
       presentationCurrency,
-      totalCta: 0,
+      totalCta: BigInt(0),
       ctaAccount: { code: CTA_ACCOUNT_CODE, name: CTA_ACCOUNT_NAME },
       byEntity: [],
     },
     elimination: {
-      totalEliminated: 0,
-      totalVariance: 0,
+      totalEliminated: BigInt(0),
+      totalVariance: BigInt(0),
       varianceLabel: ELIM_VARIANCE_NAME,
       entries: [],
     },
@@ -195,12 +204,13 @@ function emptyReport(
 /**
  * Compute the consolidated worksheet for a group over a window. Pure/read-only:
  * the `group` is provided by the caller (already authorized + scoped to the
- * caller's org). Returns a result whose balance sheet FOOTS once CTA is folded
- * into equity and eliminations are applied.
+ * caller's org). CTA adjusts equity; balanceCheck reports any residual after
+ * applying the configured elimination rules.
  */
 export async function computeConsolidatedReport(
   group: OwnedGroup,
-  opts: { startDate: string; endDate: string }
+  opts: { startDate: string; endDate: string },
+  database: TaxTx
 ): Promise<ConsolidatedReportResult> {
   const { startDate, endDate } = opts;
   const presentationCurrency = group.presentationCurrency;
@@ -218,7 +228,8 @@ export async function computeConsolidatedReport(
       parentOrgId: group.parentOrgId,
       presentationCurrency,
     },
-    endDate
+    endDate,
+    database
   );
 
   // Fetch GL balances for all member orgs.
@@ -231,13 +242,13 @@ export async function computeConsolidatedReport(
       presentationCurrency
     );
 
-    const balances = await db
+    const balances = await database
       .select({
         accountType: chartAccount.type,
         accountName: chartAccount.name,
         accountCode: chartAccount.code,
-        totalDebit: sql<number>`COALESCE(SUM(${journalLine.debitAmount}), 0)`,
-        totalCredit: sql<number>`COALESCE(SUM(${journalLine.creditAmount}), 0)`,
+        totalDebit: sql<string>`COALESCE(SUM(${journalLine.debitAmount}), 0)::text`,
+        totalCredit: sql<string>`COALESCE(SUM(${journalLine.creditAmount}), 0)::text`,
       })
       .from(journalLine)
       .innerJoin(journalEntry, eq(journalLine.journalEntryId, journalEntry.id))
@@ -245,13 +256,15 @@ export async function computeConsolidatedReport(
       .where(
         and(
           eq(journalEntry.organizationId, m.orgId),
+          eq(chartAccount.organizationId, m.orgId),
           eq(journalEntry.status, "posted"),
           isNull(journalEntry.deletedAt),
           gte(journalEntry.date, startDate),
           lte(journalEntry.date, endDate)
         )
       )
-      .groupBy(chartAccount.type, chartAccount.name, chartAccount.code);
+      .groupBy(chartAccount.type, chartAccount.name, chartAccount.code)
+      .orderBy(asc(chartAccount.type), asc(chartAccount.code), asc(chartAccount.name));
 
     for (const b of balances) {
       allBalances.push({
@@ -262,8 +275,8 @@ export async function computeConsolidatedReport(
         accountType: b.accountType,
         accountName: b.accountName,
         accountCode: b.accountCode,
-        totalDebit: Number(b.totalDebit),
-        totalCredit: Number(b.totalCredit),
+        totalDebit: BigInt(b.totalDebit),
+        totalCredit: BigInt(b.totalCredit),
       });
     }
   }
@@ -271,12 +284,12 @@ export async function computeConsolidatedReport(
   // --- translation + per-entity / consolidated aggregation -----------------
 
   // P&L
-  const pnlEntityMap = new Map<string, { revenue: number; expenses: number }>();
+  const pnlEntityMap = new Map<string, { revenue: bigint; expenses: bigint }>();
   const pnlAccountMap = new Map<string, AccountRow>();
   // Balance sheet
   const bsEntityMap = new Map<
     string,
-    { assets: number; liabilities: number; equity: number }
+    { assets: bigint; liabilities: bigint; equity: bigint }
   >();
   const bsAccountMap = new Map<string, AccountRow>();
 
@@ -289,7 +302,7 @@ export async function computeConsolidatedReport(
 
     if (b.accountType === "revenue" || b.accountType === "expense") {
       if (!pnlEntityMap.has(b.orgId)) {
-        pnlEntityMap.set(b.orgId, { revenue: 0, expenses: 0 });
+        pnlEntityMap.set(b.orgId, { revenue: BigInt(0), expenses: BigInt(0) });
       }
       const entity = pnlEntityMap.get(b.orgId)!;
       if (!pnlAccountMap.has(accountKey)) {
@@ -297,7 +310,7 @@ export async function computeConsolidatedReport(
           type: b.accountType,
           name: b.accountName,
           code: b.accountCode,
-          total: 0,
+          total: BigInt(0),
           byEntity: {},
         });
       }
@@ -305,10 +318,10 @@ export async function computeConsolidatedReport(
       if (b.accountType === "revenue") entity.revenue += balance;
       else entity.expenses += balance;
       account.total += balance;
-      account.byEntity[b.orgId] = (account.byEntity[b.orgId] || 0) + balance;
+      account.byEntity[b.orgId] = (account.byEntity[b.orgId] || BigInt(0)) + balance;
     } else {
       if (!bsEntityMap.has(b.orgId)) {
-        bsEntityMap.set(b.orgId, { assets: 0, liabilities: 0, equity: 0 });
+        bsEntityMap.set(b.orgId, { assets: BigInt(0), liabilities: BigInt(0), equity: BigInt(0) });
       }
       const entity = bsEntityMap.get(b.orgId)!;
       if (!bsAccountMap.has(accountKey)) {
@@ -316,7 +329,7 @@ export async function computeConsolidatedReport(
           type: b.accountType,
           name: b.accountName,
           code: b.accountCode,
-          total: 0,
+          total: BigInt(0),
           byEntity: {},
         });
       }
@@ -325,7 +338,7 @@ export async function computeConsolidatedReport(
       else if (b.accountType === "liability") entity.liabilities += balance;
       else entity.equity += balance;
       account.total += balance;
-      account.byEntity[b.orgId] = (account.byEntity[b.orgId] || 0) + balance;
+      account.byEntity[b.orgId] = (account.byEntity[b.orgId] || BigInt(0)) + balance;
     }
   }
 
@@ -345,8 +358,8 @@ export async function computeConsolidatedReport(
   // foot once current-period net income is folded into equity. Summing the
   // member CTAs gives the group CTA (translation is linear per member).
   const ctaByEntity = membersInfo.map((m) => {
-    const bs = bsEntityMap.get(m.orgId) || { assets: 0, liabilities: 0, equity: 0 };
-    const pnl = pnlEntityMap.get(m.orgId) || { revenue: 0, expenses: 0 };
+    const bs = bsEntityMap.get(m.orgId) || { assets: BigInt(0), liabilities: BigInt(0), equity: BigInt(0) };
+    const pnl = pnlEntityMap.get(m.orgId) || { revenue: BigInt(0), expenses: BigInt(0) };
     const netIncome = pnl.revenue - pnl.expenses;
     const cta = computeCta({
       translatedAssets: bs.assets,
@@ -361,13 +374,13 @@ export async function computeConsolidatedReport(
       cta,
     };
   });
-  const totalCta = ctaByEntity.reduce((s, e) => s + e.cta, 0);
+  const totalCta = ctaByEntity.reduce((s, e) => s + e.cta, BigInt(0));
 
   // Inject the CTA as a consolidated equity line so the balance sheet foots.
-  if (totalCta !== 0) {
+  if (ctaByEntity.some(e => e.cta !== BigInt(0))) {
     const ctaKey = `equity:${CTA_ACCOUNT_CODE}:${CTA_ACCOUNT_NAME}`;
-    const byEntity: Record<string, number> = {};
-    for (const e of ctaByEntity) if (e.cta !== 0) byEntity[e.orgId] = e.cta;
+    const byEntity: Record<string, bigint> = {};
+    for (const e of ctaByEntity) if (e.cta !== BigInt(0)) byEntity[e.orgId] = e.cta;
     bsAccountMap.set(ctaKey, {
       type: "equity",
       name: CTA_ACCOUNT_NAME,
@@ -376,8 +389,8 @@ export async function computeConsolidatedReport(
       byEntity,
     });
     for (const e of ctaByEntity) {
-      if (e.cta === 0) continue;
-      const ent = bsEntityMap.get(e.orgId) || { assets: 0, liabilities: 0, equity: 0 };
+      if (e.cta === BigInt(0)) continue;
+      const ent = bsEntityMap.get(e.orgId) || { assets: BigInt(0), liabilities: BigInt(0), equity: BigInt(0) };
       ent.equity += e.cta;
       bsEntityMap.set(e.orgId, ent);
     }
@@ -385,11 +398,12 @@ export async function computeConsolidatedReport(
 
   // --- intercompany elimination --------------------------------------------
 
-  const rules = await db.query.consolidationEliminationRule.findMany({
+  const rules = await database.query.consolidationEliminationRule.findMany({
     where: and(
       eq(consolidationEliminationRule.groupId, group.id),
       notDeleted(consolidationEliminationRule.deletedAt)
     ),
+    orderBy: [consolidationEliminationRule.createdAt, consolidationEliminationRule.id],
   });
 
   // Intercompany invoice/bill totals (translated to presentation currency)
@@ -400,20 +414,21 @@ export async function computeConsolidatedReport(
     startDate,
     endDate,
     resolver,
+    database,
   });
 
   // Translated, signed natural balances grouped by account code for matching,
   // carrying the account type so we can validate rule legs.
-  const balanceByCode = new Map<string, { type: string; total: number }>();
+  const balanceByCode = new Map<string, { type: string; total: bigint }>();
   for (const acc of [...bsAccountMap.values(), ...pnlAccountMap.values()]) {
     const cur = balanceByCode.get(acc.code);
     if (cur) cur.total += acc.total;
     else balanceByCode.set(acc.code, { type: acc.type, total: acc.total });
   }
 
-  const matchPrefix = (prefix: string | null): number => {
-    if (!prefix) return 0;
-    let sum = 0;
+  const matchPrefix = (prefix: string | null): bigint => {
+    if (!prefix) return BigInt(0);
+    let sum = BigInt(0);
     for (const [code, v] of balanceByCode) {
       if (code.startsWith(prefix)) sum += v.total;
     }
@@ -425,13 +440,13 @@ export async function computeConsolidatedReport(
   // accounts at all.
   const matchedType = (prefix: string | null): string | null => {
     if (!prefix) return null;
-    const byType = new Map<string, number>();
+    const byType = new Map<string, bigint>();
     for (const [code, v] of balanceByCode) {
       if (!code.startsWith(prefix)) continue;
-      byType.set(v.type, (byType.get(v.type) || 0) + Math.abs(v.total));
+      byType.set(v.type, (byType.get(v.type) || BigInt(0)) + absolute(v.total));
     }
     let best: string | null = null;
-    let bestMag = -1;
+    let bestMag = BigInt(-1);
     for (const [type, mag] of byType) {
       if (mag > bestMag) {
         bestMag = mag;
@@ -444,6 +459,15 @@ export async function computeConsolidatedReport(
   const eliminationResults: EliminationResult[] = [];
 
   for (const rule of rules) {
+    if (!consolidationRuleSchema.safeParse({ name: rule.name, kind: rule.kind,
+      debitAccountMatch: rule.debitAccountMatch, creditAccountMatch: rule.creditAccountMatch, description: rule.description }).success)
+      throw new WireCompatibilityError("Saved consolidation rule is unsupported");
+    if (rule.kind === "investment_equity") {
+      eliminationResults.push({ ruleId: rule.id, name: rule.name, kind: rule.kind, debitAccountMatch: rule.debitAccountMatch,
+        creditAccountMatch: rule.creditAccountMatch, eliminated: BigInt(0), variance: BigInt(0), skipped: true,
+        skipReason: "investment_equity is not supported by this report" });
+      continue;
+    }
     // Best-effort hardening: an ar_ap rule must net an asset (intercompany AR)
     // leg against a liability (intercompany AP) leg. If the matched accounts
     // don't classify that way, the rule is misconfigured — skip it (with a
@@ -460,8 +484,8 @@ export async function computeConsolidatedReport(
           kind: rule.kind,
           debitAccountMatch: rule.debitAccountMatch,
           creditAccountMatch: rule.creditAccountMatch,
-          eliminated: 0,
-          variance: 0,
+          eliminated: BigInt(0),
+          variance: BigInt(0),
           skipped: true,
           skipReason: `ar_ap rule expects debit leg to map to asset accounts and credit leg to liability accounts (got debit=${dType ?? "none"}, credit=${cType ?? "none"})`,
         });
@@ -470,18 +494,18 @@ export async function computeConsolidatedReport(
     }
 
     // Magnitude of each leg available to eliminate, from translated balances.
-    const debitSide = Math.abs(matchPrefix(rule.debitAccountMatch));
-    const creditSide = Math.abs(matchPrefix(rule.creditAccountMatch));
+    const debitSide = absolute(matchPrefix(rule.debitAccountMatch));
+    const creditSide = absolute(matchPrefix(rule.creditAccountMatch));
 
     // Cap the eliminable amount by the intercompany volume we can actually
     // attribute to fellow members (so third-party balances on the same
     // accounts are never wrongly eliminated). When we have no intercompany
     // signal for the kind, fall back to the matched min of the two legs.
     const icCap = intercompanyCapForKind(rule.kind, intercompany);
-    const matched = Math.min(debitSide, creditSide);
-    const eliminated = icCap != null ? Math.min(matched, icCap) : matched;
+    const matched = minimum(debitSide, creditSide);
+    const eliminated = icCap != null ? minimum(matched, icCap) : matched;
     // Residual on the larger leg that couldn't be netted off.
-    const variance = Math.max(debitSide, creditSide) - eliminated;
+    const variance = maximum(debitSide, creditSide) - eliminated;
 
     eliminationResults.push({
       ruleId: rule.id,
@@ -497,26 +521,26 @@ export async function computeConsolidatedReport(
   // Apply eliminations to the consolidated account rows by reducing each
   // matched account-code prefix's contribution. Eliminations are group-level,
   // so per-entity rows are left at their translated (pre-elimination) values.
-  const applyEliminationToMaps = (prefix: string | null, amount: number) => {
-    if (!prefix || amount === 0) return;
+  const applyEliminationToMaps = (prefix: string | null, amount: bigint) => {
+    if (!prefix || amount === BigInt(0)) return;
     // Draw down the natural-side magnitude across all matching accounts until
     // the eliminated amount is exhausted, in both the BS and P&L account maps.
     for (const map of [bsAccountMap, pnlAccountMap]) {
       for (const acc of map.values()) {
         if (!acc.code.startsWith(prefix)) continue;
-        const magnitude = Math.abs(acc.total);
-        if (magnitude === 0) continue;
-        const take = Math.sign(acc.total) * Math.min(magnitude, amount);
+        const magnitude = absolute(acc.total);
+        if (magnitude === BigInt(0)) continue;
+        const take = sign(acc.total) * minimum(magnitude, amount);
         acc.total -= take;
-        amount -= Math.abs(take);
-        if (amount <= 0) break;
+        amount -= absolute(take);
+        if (amount <= BigInt(0)) break;
       }
-      if (amount <= 0) break;
+      if (amount <= BigInt(0)) break;
     }
   };
 
-  let totalEliminated = 0;
-  let totalVariance = 0;
+  let totalEliminated = BigInt(0);
+  let totalVariance = BigInt(0);
   for (const r of eliminationResults) {
     if (r.skipped) continue;
     totalEliminated += r.eliminated;
@@ -526,17 +550,17 @@ export async function computeConsolidatedReport(
   }
 
   // Recompute consolidated totals AFTER CTA + elimination adjustments.
-  let totalRevenue = 0;
-  let totalExpenses = 0;
+  let totalRevenue = BigInt(0);
+  let totalExpenses = BigInt(0);
   for (const acc of pnlAccountMap.values()) {
     if (acc.type === "revenue") totalRevenue += acc.total;
     else if (acc.type === "expense") totalExpenses += acc.total;
   }
   const netIncome = totalRevenue - totalExpenses;
 
-  let totalAssets = 0;
-  let totalLiabilities = 0;
-  let totalEquity = 0;
+  let totalAssets = BigInt(0);
+  let totalLiabilities = BigInt(0);
+  let totalEquity = BigInt(0);
   for (const acc of bsAccountMap.values()) {
     if (acc.type === "asset") totalAssets += acc.total;
     else if (acc.type === "liability") totalLiabilities += acc.total;
@@ -545,7 +569,7 @@ export async function computeConsolidatedReport(
 
   // Per-entity P&L / BS rows (post-CTA; eliminations are group-level).
   const pnlByEntity = membersInfo.map((m) => {
-    const e = pnlEntityMap.get(m.orgId) || { revenue: 0, expenses: 0 };
+    const e = pnlEntityMap.get(m.orgId) || { revenue: BigInt(0), expenses: BigInt(0) };
     return {
       orgId: m.orgId,
       label: m.label,
@@ -556,7 +580,7 @@ export async function computeConsolidatedReport(
   });
 
   const bsByEntity = membersInfo.map((m) => {
-    const e = bsEntityMap.get(m.orgId) || { assets: 0, liabilities: 0, equity: 0 };
+    const e = bsEntityMap.get(m.orgId) || { assets: BigInt(0), liabilities: BigInt(0), equity: BigInt(0) };
     return {
       orgId: m.orgId,
       label: m.label,
@@ -602,6 +626,7 @@ export async function computeConsolidatedReport(
       accounts: bsAccounts,
     },
     translation: {
+      rates: resolver.usedRates(),
       presentationCurrency,
       totalCta,
       ctaAccount: { code: CTA_ACCOUNT_CODE, name: CTA_ACCOUNT_NAME },
@@ -627,12 +652,13 @@ async function loadIntercompanyTotals(args: {
   startDate: string;
   endDate: string;
   resolver: RateResolver;
-}): Promise<{ salesCogs: number; arAp: number }> {
-  const { memberOrgIds, startDate, endDate, resolver } = args;
-  if (memberOrgIds.length === 0) return { salesCogs: 0, arAp: 0 };
+  database: TaxTx;
+}): Promise<{ salesCogs: bigint; arAp: bigint }> {
+  const { memberOrgIds, startDate, endDate, resolver, database } = args;
+  if (memberOrgIds.length === 0) return { salesCogs: BigInt(0), arAp: BigInt(0) };
 
   // Contacts inside any member org that point at another member org.
-  const linkedContacts = await db
+  const linkedContacts = await database
     .select({ id: contact.id })
     .from(contact)
     .where(
@@ -645,22 +671,24 @@ async function loadIntercompanyTotals(args: {
       )
     );
 
-  if (linkedContacts.length === 0) return { salesCogs: 0, arAp: 0 };
+  if (linkedContacts.length === 0) return { salesCogs: BigInt(0), arAp: BigInt(0) };
 
   const contactIds = linkedContacts.map((c) => c.id);
 
   // Intercompany sales = invoices issued to a linked counterparty in-period.
-  const invoices = await db
+  const invoices = await database
     .select({
       contactId: invoice.contactId,
-      subtotal: invoice.subtotal,
-      amountDue: invoice.amountDue,
+      subtotal: sql<string>`${invoice.subtotal}::text`,
+      amountDue: sql<string>`${invoice.amountDue}::text`,
       currencyCode: invoice.currencyCode,
     })
     .from(invoice)
     .where(
       and(
         inArray(invoice.contactId, contactIds),
+        inArray(invoice.organizationId, memberOrgIds),
+        sql`EXISTS (SELECT 1 FROM ${contact} WHERE ${contact.id} = ${invoice.contactId} AND ${contact.organizationId} = ${invoice.organizationId})`,
         ne(invoice.status, "draft"),
         ne(invoice.status, "void"),
         isNull(invoice.deletedAt),
@@ -670,17 +698,19 @@ async function loadIntercompanyTotals(args: {
     );
 
   // Intercompany purchases = bills received from a linked counterparty in-period.
-  const bills = await db
+  const bills = await database
     .select({
       contactId: bill.contactId,
-      subtotal: bill.subtotal,
-      amountDue: bill.amountDue,
+      subtotal: sql<string>`${bill.subtotal}::text`,
+      amountDue: sql<string>`${bill.amountDue}::text`,
       currencyCode: bill.currencyCode,
     })
     .from(bill)
     .where(
       and(
         inArray(bill.contactId, contactIds),
+        inArray(bill.organizationId, memberOrgIds),
+        sql`EXISTS (SELECT 1 FROM ${contact} WHERE ${contact.id} = ${bill.contactId} AND ${contact.organizationId} = ${bill.organizationId})`,
         ne(bill.status, "draft"),
         ne(bill.status, "void"),
         isNull(bill.deletedAt),
@@ -689,16 +719,16 @@ async function loadIntercompanyTotals(args: {
       )
     );
 
-  let salesCogs = 0;
-  let arAp = 0;
+  let salesCogs = BigInt(0);
+  let arAp = BigInt(0);
 
   for (const inv of invoices) {
-    salesCogs += await resolver.translateAt(inv.subtotal, inv.currencyCode, "average");
-    arAp += await resolver.translateAt(inv.amountDue, inv.currencyCode, "closing");
+    salesCogs += await resolver.translateAt(BigInt(inv.subtotal), inv.currencyCode, "average");
+    arAp += await resolver.translateAt(BigInt(inv.amountDue), inv.currencyCode, "closing");
   }
   for (const b of bills) {
-    salesCogs += await resolver.translateAt(b.subtotal, b.currencyCode, "average");
-    arAp += await resolver.translateAt(b.amountDue, b.currencyCode, "closing");
+    salesCogs += await resolver.translateAt(BigInt(b.subtotal), b.currencyCode, "average");
+    arAp += await resolver.translateAt(BigInt(b.amountDue), b.currencyCode, "closing");
   }
 
   // A matched intercompany pair (one member's invoice == the other's bill) is
@@ -708,7 +738,7 @@ async function loadIntercompanyTotals(args: {
   // vice versa) at the same value. If only one side has booked the document
   // (timing/missing entry), the halved cap will under- or over-state the true
   // eliminable intercompany volume.
-  return { salesCogs: Math.round(salesCogs / 2), arAp: Math.round(arAp / 2) };
+  return { salesCogs: roundConsolidationRatio(salesCogs, BigInt(2)), arAp: roundConsolidationRatio(arAp, BigInt(2)) };
 }
 
 /**
@@ -717,15 +747,15 @@ async function loadIntercompanyTotals(args: {
  */
 function intercompanyCapForKind(
   kind: string,
-  ic: { salesCogs: number; arAp: number }
-): number | null {
+  ic: { salesCogs: bigint; arAp: bigint }
+): bigint | null {
   switch (kind) {
     case "ar_ap":
-      return ic.arAp > 0 ? ic.arAp : null;
+      return ic.arAp > BigInt(0) ? ic.arAp : null;
     case "sales_cogs":
-      return ic.salesCogs > 0 ? ic.salesCogs : null;
+      return ic.salesCogs > BigInt(0) ? ic.salesCogs : null;
     default:
-      // custom / investment_equity: rely purely on prefix matching.
+      // Custom rules rely on prefix matching; investment_equity is skipped above.
       return null;
   }
 }

@@ -45,8 +45,11 @@ export async function listConsolidationGroups(ctx: AuthContext) {
     return Promise.all(rows.map(row => joinedGroup(tx, ctx, row)));
   }, readOptions);
 }
+export async function loadConsolidationGroup(tx: TaxTx, ctx: AuthContext, id: string) {
+  consolidationId.parse(id); return joinedGroup(tx, ctx, await groupRow(tx, ctx, id));
+}
 export async function getConsolidationGroup(ctx: AuthContext, id: string) {
-  consolidationId.parse(id); return db.transaction(async tx => joinedGroup(tx, ctx, await groupRow(tx, ctx, id)), readOptions);
+  return db.transaction(tx => loadConsolidationGroup(tx, ctx, id), readOptions);
 }
 export async function createConsolidationGroup(ctx: AuthContext, input: unknown, request?: Request) {
   requireRole(ctx, "manage:reports"); const values = consolidationGroupCreateSchema.parse(input);

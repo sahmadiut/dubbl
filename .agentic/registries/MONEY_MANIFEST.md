@@ -1,5 +1,18 @@
 # Money and FX boundary manifest
 
+## MON-096 consolidation report adoption
+
+[CONSOLIDATION_REPORT_CONTRACTS](CONSOLIDATION_REPORT_CONTRACTS.md) maps actual
+REST/MCP read and recalculation boundaries, fixed presentation cents with safe
+numeric/*Minor aliases, entity maps, exact quote-per-base rates and explicit
+ranges/rounding. Transactional authorized member/config loading, text SQL sums,
+bigint translation/CTA/caps, parent locks, period checks, atomic replacement,
+storage preflight and audit are shared. Persisted recalculation now has MCP
+parity; stale period entries are cleared and cancelling CTAs retain entity
+adjustments. Symmetric cap/prefix/custom-rule accounting limitations remain
+explicit. No schema/rescale/IRR/full-int64 enablement. MON-028 retains integration
+acceptance; other report families remain their assigned tasks.
+
 ## MON-095 consolidation configuration adoption
 
 [CONSOLIDATION_CONFIG_CONTRACTS](CONSOLIDATION_CONFIG_CONTRACTS.md) maps eleven

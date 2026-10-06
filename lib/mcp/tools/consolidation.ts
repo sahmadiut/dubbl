@@ -2,7 +2,8 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { wrapTool } from "@/lib/mcp/errors";
 import type { AuthContext } from "@/lib/api/auth-context";
-import { computeConsolidatedReport } from "@/lib/api/consolidation-report";
+import { getConsolidationReport, persistConsolidationReport } from "@/lib/api/consolidation-report-service";
+import { consolidationWindowSchema } from "@/lib/api/consolidation-report-wire";
 import { listConsolidationGroups, getConsolidationGroup, createConsolidationGroup, updateConsolidationGroup, deleteConsolidationGroup,
   listConsolidationMembers, addConsolidationMember, removeConsolidationMember, listConsolidationRules, createConsolidationRule, deleteConsolidationRule } from "@/lib/api/consolidation-config";
 import { consolidationId, consolidationGroupCreateSchema, consolidationGroupUpdateSchema, consolidationMemberSchema, consolidationRuleSchema } from "@/lib/api/consolidation-config-wire";
@@ -27,39 +28,15 @@ export function registerConsolidationTools(server: McpServer, ctx: AuthContext) 
   server.registerTool("delete_consolidation_group", {
     description: "Soft-delete an owned group; requires manage:reports. Member ledgers and historical configuration are retained. Returns success.", inputSchema: z.object({ groupId }).strict(),
   }, p => wrapTool(ctx, () => deleteConsolidationGroup(ctx, p.groupId)));
-  server.tool(
-    "get_consolidation_report",
-    "Get the consolidated P&L and balance sheet for a consolidation group over a date range. Each member entity's posted GL balances are translated from its functional currency into the group's presentation currency using IAS 21 rates (closing for assets/liabilities, average for revenue/expenses, historical for equity), then summed. The mixed-rate residual that prevents the balance sheet from footing is injected as a Cumulative Translation Adjustment (CTA, code 3900) equity line so the consolidated balance sheet FOOTS (assets = liabilities + equity incl. CTA + net income; see consolidatedBalanceSheet.balanceCheck, which should be ~0). Intercompany balances matched by the group's elimination rules (account-code prefixes) are removed, capped by the intercompany invoice/bill volume attributable to fellow members so third-party balances are never over-eliminated. This tool is READ-ONLY (it does not persist elimination entries). All amounts are in integer cents of the presentation currency.",
-    {
-      groupId: z.string().describe("UUID of the consolidation group to report on"),
-      startDate: z
-        .string()
-        .optional()
-        .describe(
-          "Inclusive start date (YYYY-MM-DD) of the report window. Defaults to Jan 1 of the current year."
-        ),
-      endDate: z
-        .string()
-        .optional()
-        .describe(
-          "Inclusive end date (YYYY-MM-DD); also the period-end used to resolve translation rates. Defaults to today."
-        ),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        const group = await getConsolidationGroup(ctx, params.groupId);
-
-        const startDate =
-          params.startDate || `${new Date().getFullYear()}-01-01`;
-        const endDate = params.endDate || new Date().toISOString().slice(0, 10);
-
-        // Shared computation: identical translation + CTA-as-equity injection +
-        // intercompany-capped eliminations as the REST report route, so the two
-        // paths can never diverge. Read-only.
-        return computeConsolidatedReport(group, { startDate, endDate });
-      })
-  );
-
+  const reportInput = consolidationWindowSchema.in.extend({ groupId });
+  server.registerTool("get_consolidation_report", {
+    description: "Read a consolidated P&L and balance sheet over inclusive Gregorian dates. Accessible members' functional-currency fixed cents are translated to presentation-currency fixed cents at closing/average/historical rates. Returns CTA and eliminations with safe numeric and additive *Minor integer-string aliases, account byEntityMinor maps and rateExact quote_per_base rates. No rescaling by currency. Read-only; investment_equity rules are skipped. Existing symmetric invoice/bill cap assumptions remain.",
+    inputSchema: reportInput,
+  }, p => wrapTool(ctx, async () => { const { groupId: id, ...window } = p; return getConsolidationReport(ctx, id, window); }));
+  server.registerTool("recalculate_consolidation_report", {
+    description: "Recalculate an owned group's report and atomically replace saved elimination entries for the period end, including stale deleted/skipped rules. Requires manage:reports and current access to all members. Returns persisted:true plus the same safe numeric/*Minor cents and rateExact contracts as the read report; no member GL posting. Repeated/concurrent calls replace entries without duplicates; each success is audited.",
+    inputSchema: reportInput,
+  }, p => wrapTool(ctx, async () => { const { groupId: id, ...window } = p; return persistConsolidationReport(ctx, id, window); }));
 
   server.registerTool("list_consolidation_members", {
     description: "List accessible member organizations with labels and ISO functional currencies. Returns groupId, presentationCurrency and members; no monetary fields.", inputSchema: z.object({ groupId }).strict(),

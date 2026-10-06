@@ -1,5 +1,17 @@
 # Money and FX boundary manifest
 
+## MON-097 accrual schedule and posting adoption
+
+[ACCRUAL_WIRE_CONTRACTS](ACCRUAL_WIRE_CONTRACTS.md) maps five shared REST/MCP
+pairs. REST decimal-major/MCP integer-cents totals retain distinct units with
+exact aliases; bigint floor allocation conserves totals through last-period
+remainders and UTC monthly overflow dates. Scoped source/accounts, saved history
+checks, period locks, targeted/keyed retries and atomic journal/status/audit/output
+validation protect posting. Dashboard input/display and loaded sums are exact.
+No currency snapshot exists; unqualified non-two-decimal posting rejects without
+rescaling. No schema/migration/IRR/full-int64/deployment enablement; MON-028 retains
+combined integration qualification.
+
 ## MON-096 consolidation report adoption
 
 [CONSOLIDATION_REPORT_CONTRACTS](CONSOLIDATION_REPORT_CONTRACTS.md) maps actual

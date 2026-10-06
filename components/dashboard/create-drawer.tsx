@@ -4597,6 +4597,7 @@ function AccrualScheduleDrawer({ open, onClose }: { open: boolean; onClose: () =
   const [saving, setSaving] = useState(false);
   const [description, setDescription] = useState("");
   const [totalAmount, setTotalAmount] = useState("0.00");
+  const [retryKey, setRetryKey] = useState(() => crypto.randomUUID());
   const [startDate, setStartDate] = useState(new Date().toISOString().split("T")[0]);
   const [endDate, setEndDate] = useState("");
   const [periods, setPeriods] = useState("");
@@ -4606,6 +4607,7 @@ function AccrualScheduleDrawer({ open, onClose }: { open: boolean; onClose: () =
   useEffect(() => {
     if (!open) {
       setDescription(""); setTotalAmount("0.00"); setEndDate(""); setPeriods("");
+      setRetryKey(crypto.randomUUID());
       setAccountId(""); setReverseAccountId("");
       setStartDate(new Date().toISOString().split("T")[0]);
     }
@@ -4629,8 +4631,8 @@ function AccrualScheduleDrawer({ open, onClose }: { open: boolean; onClose: () =
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify({
           description,
-          // Route expects DOLLARS (it multiplies by 100).
-          totalAmount: parseFloat(totalAmount) || 0,
+          totalAmountExact: totalAmount,
+          idempotencyKey: retryKey,
           startDate,
           endDate,
           periods: parseInt(periods) || 0,

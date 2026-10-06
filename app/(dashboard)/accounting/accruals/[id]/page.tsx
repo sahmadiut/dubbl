@@ -7,7 +7,7 @@ import { ArrowLeft, Ban, CalendarClock, Check } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatMoney } from "@/lib/money";
+import { assetMoneyDisplay as formatMoney } from "@/lib/money/asset-display";
 import { useConfirm } from "@/lib/hooks/use-confirm";
 import { useEntityTitle } from "@/lib/hooks/use-entity-title";
 import Link from "next/link";
@@ -81,11 +81,14 @@ export default function AccrualDetailPage() {
 
   async function handlePostNext() {
     if (!orgId) return;
+    const entryId = acc?.entries.find((e) => !e.posted)?.id;
+    if (!entryId) return;
     setPosting(true);
     try {
       const res = await fetch(`/api/v1/accrual-schedules/${id}/post`, {
         method: "POST",
-        headers: { "x-organization-id": orgId },
+        headers: { "x-organization-id": orgId, "Content-Type": "application/json" },
+        body: JSON.stringify({ entryId }),
       });
       if (res.ok) {
         toast.success("This month's share has been recorded");

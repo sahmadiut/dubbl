@@ -1,5 +1,15 @@
 # CI and migration fixture runbook
 
+MON-097 adds accrual-wire.test.ts and integration/accrual-schedules.test.ts to
+normal discovery. Run `node --import tsx --test tests/accrual-wire.test.ts
+tests/integration/accrual-schedules.test.ts` with an explicit loopback
+TEST_DATABASE_URL on a disposable UTC PostgreSQL cluster. The harness creates,
+migrates and drops a random database; actual API-key REST handlers and registered
+MCP SDK tools exercise all five pairs, allocation/units, auth/scope, period locks,
+retries/concurrency and audit/storage/output rollback. Synthetic fault injections
+and a temporary user-trigger disable for pre-expansion null FX history affect
+only fixture databases. No Next server, schema change or IRR opt-in is required.
+
 MON-096 adds consolidation-report-wire.test.ts to unit discovery and
 consolidation-report.test.ts to integration discovery. Run
 `node --import tsx --test tests/consolidation-report-wire.test.ts

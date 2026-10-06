@@ -62,3 +62,13 @@ Source inspection split projects/CRM/pricing without reducing parent acceptance.
 - [MON-092](../tasks/MON-092.md): Adopt exact CRM deal and analytics contracts.
 - [MON-093](../tasks/MON-093.md): Adopt exact project master and time contracts.
 - [MON-094](../tasks/MON-094.md): Adopt exact project billing and profitability contracts.
+
+## MON-028 bounded contract children
+
+MON-028 retains combined acceptance with unchanged criteria; all children inherit MON-011 and migration/API compatibility source sections.
+
+- [MON-095](../tasks/MON-095.md): Adopt consolidation group, member and elimination rule contracts.
+- [MON-096](../tasks/MON-096.md): Adopt exact consolidation translation and report contracts.
+- [MON-097](../tasks/MON-097.md): Adopt exact accrual schedule and posting contracts.
+- [MON-098](../tasks/MON-098.md): Adopt exact revenue schedule and recognition contracts.
+- [MON-099](../tasks/MON-099.md): Adopt exact recurring payable document contracts.

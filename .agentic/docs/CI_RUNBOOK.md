@@ -1,5 +1,12 @@
 # CI and migration fixture runbook
 
+MON-095 adds consolidation-config.test.ts to integration discovery. Run
+`node --import tsx --test tests/integration/consolidation-config.test.ts` with
+explicit loopback TEST_DATABASE_URL and a disposable CREATEDB fixture role.
+All eleven actual REST/MCP pairs exercise scope, currency/configuration inputs,
+public projections, saved history, audit/output rollback and concurrency in
+random migrated databases. No Next dev server or schema migration is needed.
+
 MON-091 adds `pricing-wire.test.ts` to pure discovery and `pricing.test.ts` to
 integration discovery. Run `node --import tsx --test tests/pricing-wire.test.ts
 tests/integration/pricing.test.ts` with explicit loopback TEST_DATABASE_URL and a

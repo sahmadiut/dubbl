@@ -1,5 +1,17 @@
 # Money and FX boundary manifest
 
+## MON-095 consolidation configuration adoption
+
+[CONSOLIDATION_CONFIG_CONTRACTS](CONSOLIDATION_CONFIG_CONTRACTS.md) maps eleven
+shared REST/MCP configuration pairs. Groups/members/elimination rules have no
+money/FX inputs or exact aliases; currency labels and counts retain explicit
+units. Strict scoped services use public organization projections, current child
+membership, parent locks, duplicate/history guards and atomic audit/output
+preflight. Group CRUD MCP and member/rule REST parity gaps are closed. MON-096
+retains report/rate/elimination money and legacy report-writer concurrency;
+MON-097/098/099 retain accrual, revenue and recurring payables; MON-028 retains
+combined acceptance. No schema/rescale/IRR/full-int64 change.
+
 ## MON-091 price-list adoption
 
 [PRICING_WIRE_CONTRACTS](PRICING_WIRE_CONTRACTS.md) records ten REST/MCP operation

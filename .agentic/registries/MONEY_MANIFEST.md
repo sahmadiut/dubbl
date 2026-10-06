@@ -1,5 +1,19 @@
 # Money and FX boundary manifest
 
+## MON-099 recurring payable adoption
+
+[RECURRING_PAYABLE_WIRE_CONTRACTS](RECURRING_PAYABLE_WIRE_CONTRACTS.md) records
+bill/expense REST/MCP CRUD, preview, summary, manual run and job delegation.
+Numeric/exact major prices and Minor aliases preserve fixed cents across all
+currencies. Bigint products/sums, tenant/reference/creator guards, period checks,
+organization/template locks and atomic whole-template catch-up protect financial
+writes, numbering, schedule and audit. UI submits exact major text. Added payable
+preview/delete and summary tools; existing invoice/journal paths retain their
+services. Auxiliary configuration ownership is mapped to existing domain/opaque
+owners without claiming uncompleted parent/report/public qualification. Draft
+and expense gross-only policies remain explicit. No schema/rescale/IRR/full-int64
+change; MON-028 retains combined acceptance.
+
 ## MON-098 revenue schedule and recognition adoption
 
 [REVENUE_WIRE_CONTRACTS](REVENUE_WIRE_CONTRACTS.md) maps five shared REST/MCP

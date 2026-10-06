@@ -1,5 +1,13 @@
 # Exact money core
 
+MON-099 recurring bill/expense templates accept exact major price text and
+unitPriceMinor aliases alongside numeric major input. Fixed cents are preserved
+for all currencies; invoice currency-scale semantics remain separate. Bigint
+products, discounts/tax and sums plus scoped atomic catch-up/audit/schedule writes
+replace floating generation. See [payable contracts](../../.agentic/registries/RECURRING_PAYABLE_WIRE_CONTRACTS.md)
+for complete ranges, operation pairs and retained draft/expense policies.
+This does not enable full-int64/FX/IRR or complete MON-028 integration acceptance.
+
 ## Inventory assembly adoption (MON-078)
 
 BOM/components and assembly REST/MCP use scoped transactional services with exact

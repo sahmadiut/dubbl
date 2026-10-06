@@ -1,130 +1,46 @@
-import { readRecurringInvoiceJson } from "@/lib/api/recurring-invoice-wire";
-import { getRecurringInvoice, changeRecurringInvoice } from "@/lib/api/recurring-invoice";
-import { jsonResponse } from "@/lib/api/json-response";
-import { NextResponse } from "next/server";
+import { z } from "zod";
 import { db } from "@/lib/db";
 import { recurringTemplate } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
+import { notDeleted } from "@/lib/db/soft-delete";
 import { getAuthContext } from "@/lib/api/auth-context";
 import { requireRole } from "@/lib/api/require-role";
 import { handleError, notFound } from "@/lib/api/response";
-import { logAudit, diffChanges } from "@/lib/api/audit";
-import { notDeleted, softDelete } from "@/lib/db/soft-delete";
-import { z } from "zod";
+import { jsonResponse } from "@/lib/api/json-response";
+import { readRecurringInvoiceJson } from "@/lib/api/recurring-invoice-wire";
+import { getRecurringInvoice, changeRecurringInvoice } from "@/lib/api/recurring-invoice";
+import { getRecurringPayable, changeRecurringPayable } from "@/lib/api/recurring-payable";
 
-const updateSchema = z.object({
-  name: z.string().min(1).optional(),
-  frequency: z.enum(["weekly", "fortnightly", "monthly", "quarterly", "semi_annual", "annual"]).optional(),
-  status: z.enum(["active", "paused", "completed"]).optional(),
-  endDate: z.string().nullable().optional(),
-  maxOccurrences: z.number().int().min(1).nullable().optional(),
-  reference: z.string().nullable().optional(),
-  notes: z.string().nullable().optional(),
-});
-
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const ctx = await getAuthContext(request);
-
-    const found = await db.query.recurringTemplate.findFirst({
-      where: and(
-        eq(recurringTemplate.id, id),
-        eq(recurringTemplate.organizationId, ctx.organizationId),
-        notDeleted(recurringTemplate.deletedAt)
-      ),
-      with: {
-        contact: true,
-        lines: true,
-      },
-    });
-
-    if (!found) return notFound("Recurring template");
-    if (found.type === "invoice") return jsonResponse({ template: await getRecurringInvoice(ctx, id) });
-    return NextResponse.json({ template: found });
-  } catch (err) {
-    return handleError(err);
-  }
+async function target(org: string, id: string) {
+  z.string().uuid().parse(id);
+  return db.query.recurringTemplate.findFirst({ where: and(eq(recurringTemplate.id, id), eq(recurringTemplate.organizationId, org),
+    inArray(recurringTemplate.type, ["invoice", "bill", "expense"]), notDeleted(recurringTemplate.deletedAt)) });
 }
 
-export async function PATCH(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await params;
-    const ctx = await getAuthContext(request);
-    requireRole(ctx, "manage:recurring");
-
-    const body = await readRecurringInvoiceJson(request);
-    const target = await db.query.recurringTemplate.findFirst({ where: and(eq(recurringTemplate.id, id), eq(recurringTemplate.organizationId, ctx.organizationId), notDeleted(recurringTemplate.deletedAt)) });
-    if (target?.type === "invoice") return jsonResponse(await changeRecurringInvoice(ctx, id, body, request, "update", "recurring_template"));
-    const parsed = updateSchema.parse(body);
-
-    const existing = await db.query.recurringTemplate.findFirst({
-      where: and(
-        eq(recurringTemplate.id, id),
-        eq(recurringTemplate.organizationId, ctx.organizationId),
-        notDeleted(recurringTemplate.deletedAt)
-      ),
-    });
-
-    if (!existing) return notFound("Recurring template");
-
-    const [updated] = await db
-      .update(recurringTemplate)
-      .set({ ...parsed, updatedAt: new Date() })
-      .where(eq(recurringTemplate.id, id))
-      .returning();
-
-    logAudit({ ctx, action: "update", entityType: "recurring_template", entityId: id, changes: diffChanges(existing as Record<string, unknown>, updated as Record<string, unknown>), request });
-
-    return NextResponse.json({ template: updated });
-  } catch (err) {
-    return handleError(err);
-  }
+    const { id } = await params; const ctx = await getAuthContext(request);
+    const row = await target(ctx.organizationId, id); if (!row) return notFound("Recurring template");
+    return jsonResponse({ template: row.type === "invoice" ? await getRecurringInvoice(ctx, id) : await getRecurringPayable(ctx, id) });
+  } catch (err) { return handleError(err); }
 }
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await params;
-    const ctx = await getAuthContext(request);
+    const { id } = await params; const ctx = await getAuthContext(request);
     requireRole(ctx, "manage:recurring");
+    const row = await target(ctx.organizationId, id); if (!row) return notFound("Recurring template");
+    const input = await readRecurringInvoiceJson(request);
+    return jsonResponse(row.type === "invoice" ? await changeRecurringInvoice(ctx, id, input, request, "update", "recurring_template") : await changeRecurringPayable(ctx, id, input, request, "update"));
+  } catch (err) { return handleError(err); }
+}
 
-    const existing = await db.query.recurringTemplate.findFirst({
-      where: and(
-        eq(recurringTemplate.id, id),
-        eq(recurringTemplate.organizationId, ctx.organizationId),
-        notDeleted(recurringTemplate.deletedAt)
-      ),
-    });
-
-    if (!existing) return notFound("Recurring template");
-
-    if (existing.type === "invoice") return jsonResponse(await changeRecurringInvoice(ctx, id, {}, request, "delete", "recurring_template"));
-
-    await db
-      .update(recurringTemplate)
-      .set(softDelete())
-      .where(eq(recurringTemplate.id, id));
-
-    logAudit({
-      ctx,
-      action: "delete",
-      entityType: "recurring_template",
-      entityId: id,
-      changes: existing as Record<string, unknown>,
-      request,
-    });
-
-    return NextResponse.json({ success: true });
-  } catch (err) {
-    return handleError(err);
-  }
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params; const ctx = await getAuthContext(request);
+    requireRole(ctx, "manage:recurring");
+    const row = await target(ctx.organizationId, id); if (!row) return notFound("Recurring template");
+    const input = {};
+    return jsonResponse(row.type === "invoice" ? await changeRecurringInvoice(ctx, id, input, request, "delete", "recurring_template") : await changeRecurringPayable(ctx, id, input, request, "delete"));
+  } catch (err) { return handleError(err); }
 }

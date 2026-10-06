@@ -1,9 +1,7 @@
 import { db } from "@/lib/db";
-import { recurringTemplate, recurringTemplateLine, bill, billLine, expenseClaim, expenseItem, contact, journalEntry, journalLine } from "@/lib/db/schema";
+import { recurringTemplate, recurringTemplateLine, journalEntry, journalLine } from "@/lib/db/schema";
 import { eq, and, lte, inArray } from "drizzle-orm";
 import { notDeleted } from "@/lib/db/soft-delete";
-import { getNextNumber } from "@/lib/api/numbering";
-import { preloadTaxRates, calcTax } from "@/lib/api/tax-calculator";
 import { getNextEntryNumber } from "@/lib/api/journal-automation";
 import { assertNotLocked, PeriodLockedError } from "@/lib/api/period-lock";
 import { recurringJournalScope } from "./recurring-journal";
@@ -11,6 +9,7 @@ import { recurringJournalLegs, recurringJournalDto, assertRecurringJournalDates,
 import { assertJournalReferences } from "./journal-references";
 import { WireCompatibilityError } from "@/lib/money/wire";
 import { z } from "zod";
+import { processRecurringPayableTemplate } from "./recurring-payable";
 import { processRecurringInvoiceTemplate } from "./recurring-invoice-generate";
 
 /**
@@ -130,155 +129,7 @@ export async function processRecurringTemplates(
       generated += await processRecurringInvoiceTemplate(organizationId, tmpl.id, today);
       continue;
     }
-    // Generate all missed invoices (if nextRunDate is far in the past, catch up)
-    let nextRun = tmpl.nextRunDate;
-    let occurrences = tmpl.occurrencesGenerated;
-
-    while (nextRun <= today) {
-      // Check max occurrences
-      if (tmpl.maxOccurrences !== null && occurrences >= tmpl.maxOccurrences) {
-        break;
-      }
-      // Check end date
-      if (tmpl.endDate && nextRun > tmpl.endDate) {
-        break;
-      }
-
-      if (tmpl.type === "bill") {
-        // Bill templates always carry a contact (enforced on create). Defensive
-        // skip keeps a malformed contactless bill template from inserting a
-        // NULL contactId (the column is NOT NULL).
-        if (!tmpl.contactId) break;
-        const billNumber = await getNextNumber(organizationId, "bill", "bill_number", "BILL");
-
-        // Use contact payment terms for due date
-        const contactRecord = await db.query.contact.findFirst({
-          where: eq(contact.id, tmpl.contactId),
-          columns: { paymentTermsDays: true },
-        });
-        const termsDays = contactRecord?.paymentTermsDays ?? 30;
-        const dueDateBill = new Date(nextRun + "T00:00:00Z");
-        dueDateBill.setUTCDate(dueDateBill.getUTCDate() + termsDays);
-        const dueDateBillStr = dueDateBill.toISOString().split("T")[0];
-
-        const billTaxRateIds = tmpl.lines.map((l) => l.taxRateId).filter(Boolean) as string[];
-        const billRatesMap = await preloadTaxRates(billTaxRateIds);
-
-        let billSubtotal = 0;
-        const billLines = tmpl.lines.map((l, i) => {
-          const grossAmt = Math.round((l.quantity / 100) * l.unitPrice);
-          const discountAmt = l.discountPercent ? Math.round(grossAmt * l.discountPercent / 10000) : 0;
-          const amt = grossAmt - discountAmt;
-          billSubtotal += amt;
-          const taxAmount = l.taxRateId ? calcTax(amt, billRatesMap.get(l.taxRateId) ?? 0) : 0;
-          return {
-            description: l.description,
-            quantity: l.quantity,
-            unitPrice: l.unitPrice,
-            accountId: l.accountId,
-            taxRateId: l.taxRateId,
-            discountPercent: l.discountPercent,
-            taxAmount,
-            amount: amt,
-            sortOrder: l.sortOrder ?? i,
-          };
-        });
-
-        const billTaxTotal = billLines.reduce((sum, l) => sum + l.taxAmount, 0);
-        const billTotal = billSubtotal + billTaxTotal;
-
-        const [createdBill] = await db
-          .insert(bill)
-          .values({
-            organizationId,
-            contactId: tmpl.contactId,
-            billNumber,
-            issueDate: nextRun,
-            dueDate: dueDateBillStr,
-            reference: tmpl.reference,
-            notes: tmpl.notes,
-            subtotal: billSubtotal,
-            taxTotal: billTaxTotal,
-            total: billTotal,
-            amountPaid: 0,
-            amountDue: billTotal,
-            currencyCode: tmpl.currencyCode,
-            createdBy: tmpl.createdBy,
-          })
-          .returning();
-
-        if (billLines.length > 0) {
-          await db.insert(billLine).values(
-            billLines.map((l) => ({ billId: createdBill.id, ...l }))
-          );
-        }
-
-        occurrences++;
-        generated++;
-        nextRun = advanceDate(nextRun, tmpl.frequency);
-        continue;
-      }
-
-      if (tmpl.type === "expense") {
-        let expenseTotal = 0;
-        const expenseItems = tmpl.lines.map((l, i) => {
-          const amt = Math.round((l.quantity / 100) * l.unitPrice);
-          expenseTotal += amt;
-          return {
-            date: nextRun,
-            description: l.description,
-            amount: amt,
-            accountId: l.accountId,
-            sortOrder: l.sortOrder ?? i,
-          };
-        });
-
-        const [createdClaim] = await db
-          .insert(expenseClaim)
-          .values({
-            organizationId,
-            title: tmpl.name,
-            description: tmpl.notes,
-            submittedBy: tmpl.createdBy!,
-            totalAmount: expenseTotal,
-            currencyCode: tmpl.currencyCode,
-          })
-          .returning();
-
-        if (expenseItems.length > 0) {
-          await db.insert(expenseItem).values(
-            expenseItems.map((item) => ({
-              expenseClaimId: createdClaim.id,
-              ...item,
-            }))
-          );
-        }
-
-        occurrences++;
-        generated++;
-        nextRun = advanceDate(nextRun, tmpl.frequency);
-        continue;
-      }
-
-      break;
-    }
-
-    // Determine new status
-    const reachedMax = tmpl.maxOccurrences !== null && occurrences >= tmpl.maxOccurrences;
-    const pastEnd = tmpl.endDate && nextRun > tmpl.endDate;
-    const newStatus = reachedMax || pastEnd ? "completed" : "active";
-
-    // Update the template
-    await db
-      .update(recurringTemplate)
-      .set({
-        nextRunDate: nextRun,
-        lastRunDate: today,
-        occurrencesGenerated: occurrences,
-        status: newStatus,
-        updatedAt: new Date(),
-      })
-      .where(eq(recurringTemplate.id, tmpl.id));
+    generated += await processRecurringPayableTemplate(organizationId, tmpl.id, today);
   }
 
   return generated;

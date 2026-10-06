@@ -1,38 +1,15 @@
+import { createRecurringPayable, getRecurringPayable } from "@/lib/api/recurring-payable";
 import { readRecurringInvoiceJson } from "@/lib/api/recurring-invoice-wire";
 import { createRecurringInvoice, getRecurringInvoice } from "@/lib/api/recurring-invoice";
 import { jsonResponse } from "@/lib/api/json-response";
-import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { recurringTemplate, recurringTemplateLine } from "@/lib/db/schema";
+import { recurringTemplate } from "@/lib/db/schema";
 import { eq, and, desc, asc, sql } from "drizzle-orm";
 import { getAuthContext } from "@/lib/api/auth-context";
 import { requireRole } from "@/lib/api/require-role";
 import { handleError } from "@/lib/api/response";
-import { logAudit } from "@/lib/api/audit";
 import { notDeleted } from "@/lib/db/soft-delete";
 import { parsePagination, paginatedResponse } from "@/lib/api/pagination";
-import { z } from "zod";
-
-const lineSchema = z.object({
-  description: z.string().min(1),
-  quantity: z.number().default(1),
-  unitPrice: z.number().default(0),
-  accountId: z.string().nullable().optional(),
-  taxRateId: z.string().nullable().optional(),
-});
-
-const createSchema = z.object({
-  name: z.string().min(1),
-  type: z.enum(["invoice", "bill", "expense"]),
-  contactId: z.string().min(1),
-  frequency: z.enum(["weekly", "fortnightly", "monthly", "quarterly", "semi_annual", "annual"]),
-  startDate: z.string().min(1),
-  endDate: z.string().nullable().optional(),
-  maxOccurrences: z.number().int().min(1).nullable().optional(),
-  reference: z.string().nullable().optional(),
-  notes: z.string().nullable().optional(),
-  lines: z.array(lineSchema).min(1),
-});
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const SORT_COLUMNS: Record<string, any> = {
@@ -85,7 +62,7 @@ export async function GET(request: Request) {
       .from(recurringTemplate)
       .where(and(...conditions));
 
-    const safeTemplates = await Promise.all(templates.map(row => row.type === "invoice" ? getRecurringInvoice(ctx, row.id) : row));
+    const safeTemplates = await Promise.all(templates.map(row => row.type === "invoice" ? getRecurringInvoice(ctx, row.id) : ["bill", "expense"].includes(row.type) ? getRecurringPayable(ctx, row.id) : row));
     return jsonResponse(
       paginatedResponse(safeTemplates, Number(countResult?.count || 0), page, limit)
     );
@@ -104,41 +81,7 @@ export async function POST(request: Request) {
       const input = { ...body }; delete input.type;
       return jsonResponse(await createRecurringInvoice(ctx, input, request, "recurring_template"), { status: 201 });
     }
-    const parsed = createSchema.parse(body);
-
-    const [created] = await db
-      .insert(recurringTemplate)
-      .values({
-        organizationId: ctx.organizationId,
-        name: parsed.name,
-        type: parsed.type,
-        contactId: parsed.contactId,
-        frequency: parsed.frequency,
-        startDate: parsed.startDate,
-        endDate: parsed.endDate || null,
-        nextRunDate: parsed.startDate,
-        maxOccurrences: parsed.maxOccurrences || null,
-        reference: parsed.reference || null,
-        notes: parsed.notes || null,
-        createdBy: ctx.userId,
-      })
-      .returning();
-
-    await db.insert(recurringTemplateLine).values(
-      parsed.lines.map((l, i) => ({
-        templateId: created.id,
-        description: l.description,
-        quantity: Math.round(l.quantity * 100),
-        unitPrice: Math.round(l.unitPrice * 100),
-        accountId: l.accountId || null,
-        taxRateId: l.taxRateId || null,
-        sortOrder: i,
-      }))
-    );
-
-    logAudit({ ctx, action: "create", entityType: "recurring_template", entityId: created.id, request });
-
-    return NextResponse.json({ template: created }, { status: 201 });
+    return jsonResponse(await createRecurringPayable(ctx, body, request), { status: 201 });
   } catch (err) {
     return handleError(err);
   }

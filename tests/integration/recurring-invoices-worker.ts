@@ -22,7 +22,7 @@ async function mcp(ctx: AuthContext) {
   const server = new McpServer({ name: "Recurring fixture", version: "1" }); registerRecurringTemplateTools(server, ctx);
   const client = new Client({ name: "Fixture", version: "1" });
   const [ct, st] = InMemoryTransport.createLinkedPair(); await server.connect(st); await client.connect(ct);
-  const tools = (await client.listTools()).tools; assert.equal(tools.length, 8);
+  const tools = (await client.listTools()).tools; assert.equal(tools.length, 11);
   assert.ok(JSON.stringify(tools.find(tool => tool.name === "create_recurring_template")!.inputSchema).includes("unitPriceMinor"));
   return { async call(name: string, args: Record<string, unknown> = {}) {
     const result = await client.callTool({ name, arguments: args }), text = (result.content as { text: string }[])[0].text;

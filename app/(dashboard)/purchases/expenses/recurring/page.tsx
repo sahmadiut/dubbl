@@ -142,7 +142,7 @@ export default function RecurringExpensesPage() {
           lines: validLines.map((l) => ({
             description: l.description,
             quantity: 1,
-            unitPrice: parseFloat(l.amount) || 0,
+            unitPriceExact: l.amount || "0",
             accountId: l.accountId || null,
           })),
         }),

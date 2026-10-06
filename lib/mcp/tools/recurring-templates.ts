@@ -1,10 +1,14 @@
+import { createRecurringPayable, getRecurringPayable, changeRecurringPayable, previewRecurringPayable, recurringTemplateSummary } from "@/lib/api/recurring-payable";
 import { createRecurringInvoice, getRecurringInvoice, changeRecurringInvoice, previewRecurringInvoice } from "@/lib/api/recurring-invoice";
 import { recurringInvoiceLineSchema } from "@/lib/api/recurring-invoice-wire";
-import { WireCompatibilityError } from "@/lib/money/wire";
+const documentLineSchema = recurringInvoiceLineSchema.extend({
+  unitPriceMinor: recurringInvoiceLineSchema.shape.unitPriceMinor.describe("Canonical safe integer price string: invoice currency minor units; bill/expense fixed cents independent of currency"),
+  accountId: recurringInvoiceLineSchema.shape.accountId.describe("Optional organization-owned active line account UUID"),
+});
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { recurringTemplate, recurringTemplateLine } from "@/lib/db/schema";
+import { recurringTemplate } from "@/lib/db/schema";
 import { eq, and, desc, inArray } from "drizzle-orm";
 import { notDeleted } from "@/lib/db/soft-delete";
 import { requireRole } from "@/lib/api/require-role";
@@ -22,8 +26,8 @@ import type { AuthContext } from "@/lib/api/auth-context";
  * expense) per due occurrence and advances the schedule.
  *
  * Invoice prices support numeric/exact decimal major units and canonical minor
- * strings; saved prices follow the currency scale. Bills/expenses retain their
- * numeric major prices and legacy cents. Quantity is stored in hundredths and
+ * strings; saved prices follow the currency scale. Bills/expenses support exact major strings and fixed-cent integer aliases.
+ * Quantity is stored in hundredths and
  * discounts in basis points. Services use direct org-scoped Drizzle access.
  */
 export function registerRecurringTemplateTools(server: McpServer, ctx: AuthContext) {
@@ -42,7 +46,7 @@ export function registerRecurringTemplateTools(server: McpServer, ctx: AuthConte
 
   server.tool(
     "list_recurring_templates",
-    "List recurring DOCUMENT templates (invoice / bill / expense) for the organization, with optional filters and pagination. Each row includes the linked contact. Journal templates are excluded (use the recurring-journal tools for those). Stored invoice unitPrice is in currency minor units with unitPriceMinor aliases (USD cents); other documents retain legacy cents and quantity is the decimal x 100.",
+    "List recurring DOCUMENT templates (invoice / bill / expense) for the organization, with optional filters and pagination. Each row includes the linked contact. Journal templates are excluded (use the recurring-journal tools for those). Stored invoice unitPrice is in currency minor units with unitPriceMinor aliases (USD cents); payables use fixed cents with unitPriceMinor aliases and quantity is the decimal x 100.",
     {
       type: z
         .enum(DOCUMENT_TYPES)
@@ -87,16 +91,16 @@ export function registerRecurringTemplateTools(server: McpServer, ctx: AuthConte
           with: { contact: true, lines: true },
         });
 
-        const safe = await Promise.all(templates.map(row => row.type === "invoice" ? getRecurringInvoice(ctx, row.id) : row));
+        const safe = await Promise.all(templates.map(row => row.type === "invoice" ? getRecurringInvoice(ctx, row.id) : getRecurringPayable(ctx, row.id)));
         return { templates: safe, page: params.page, limit: params.limit };
       })
   );
 
   server.tool(
     "get_recurring_template",
-    "Get a single recurring DOCUMENT template (invoice / bill / expense) by ID, including its contact and line items. Stored invoice unitPrice is in currency minor units with unitPriceMinor aliases (USD cents); other documents retain legacy cents and quantity is the decimal x 100. Journal templates are not returned here.",
+    "Get a single recurring DOCUMENT template (invoice / bill / expense) by ID, including its contact and line items. Stored invoice unitPrice is in currency minor units with unitPriceMinor aliases (USD cents); payables use fixed cents with unitPriceMinor aliases and quantity is the decimal x 100. Journal templates are not returned here.",
     {
-      templateId: z.string().describe("The UUID of the recurring template"),
+      templateId: z.string().uuid().describe("The UUID of the recurring template"),
     },
     (params) =>
       wrapTool(ctx, async () => {
@@ -111,13 +115,13 @@ export function registerRecurringTemplateTools(server: McpServer, ctx: AuthConte
         if (!found || !(DOCUMENT_TYPES as readonly string[]).includes(found.type)) {
           throw new Error("Recurring template not found");
         }
-        return { template: found.type === "invoice" ? await getRecurringInvoice(ctx, params.templateId) : found };
+        return { template: found.type === "invoice" ? await getRecurringInvoice(ctx, params.templateId) : await getRecurringPayable(ctx, params.templateId) };
       })
   );
 
   server.tool(
     "create_recurring_template",
-    "Create a recurring DOCUMENT template (invoice, bill, or expense) with line items and a schedule. The generator materialises one real document per due occurrence starting on startDate. A contactId is required (the customer for invoices, the supplier for bills/expenses). For invoices, unitPrice is a decimal-major number, unitPriceExact an exact decimal-major string, and unitPriceMinor a canonical currency-minor integer string (safe integers only); aliases must agree. Bills/expenses retain numeric major prices; quantity is a decimal (e.g. 1.5); discountPercent is in basis points (1000 = 10%). For type='invoice' you may set autoSend (post the invoice GL and email the customer each occurrence) and/or createAsApproved (post the GL and mark sent WITHOUT emailing); both default false (generate as draft). Returns the created template.",
+    "Create a recurring DOCUMENT template (invoice, bill, or expense) with line items and a schedule. The generator materialises one real document per due occurrence starting on startDate. A contactId is required (the customer for invoices, the supplier for bills/expenses). For invoices, unitPrice is a decimal-major number, unitPriceExact an exact decimal-major string, and unitPriceMinor a canonical currency-minor integer string (safe integers only); aliases must agree. Bills/expenses support the same aliases in fixed cents (major x 100 for every currency); quantity is a decimal (e.g. 1.5); discountPercent is in basis points (1000 = 10%). For type='invoice' you may set autoSend (post the invoice GL and email the customer each occurrence) and/or createAsApproved (post the GL and mark sent WITHOUT emailing); both default false (generate as draft). Returns the created template.",
     {
       name: z.string().min(1).describe("Template name"),
       type: z
@@ -154,9 +158,9 @@ export function registerRecurringTemplateTools(server: McpServer, ctx: AuthConte
         .optional()
         .default("USD")
         .describe("Currency code (defaults to USD)"),
-      rateExact: z.string().optional().describe("Unsupported template FX input; supplied values are rejected for invoices"),
-      exchangeRate: z.number().optional().describe("Unsupported template FX millionths; supplied values are rejected for invoices"),
-      rateDirection: z.string().optional().describe("Unsupported template FX direction; supplied values are rejected for invoices"),
+      rateExact: z.string().optional().describe("Unsupported template FX input; supplied values are rejected for all document kinds"),
+      exchangeRate: z.number().optional().describe("Unsupported template FX millionths; supplied values are rejected for all document kinds"),
+      rateDirection: z.string().optional().describe("Unsupported template FX direction; supplied values are rejected for all document kinds"),
       autoSend: z
         .boolean()
         .optional()
@@ -171,7 +175,7 @@ export function registerRecurringTemplateTools(server: McpServer, ctx: AuthConte
         .describe(
           "Invoice only: post the invoice GL and mark it sent WITHOUT emailing each occurrence"
         ),
-      lines: z.array(recurringInvoiceLineSchema).min(1).max(1000).describe("Template lines; invoices support decimal-major unitPrice/unitPriceExact and currency-minor unitPriceMinor; bills/expenses retain numeric major prices"),
+      lines: z.array(documentLineSchema).min(1).max(1000).describe("Template lines; invoices support decimal-major unitPrice/unitPriceExact and currency-minor unitPriceMinor; bills/expenses use fixed cents (major x 100), with both exact aliases"),
     },
     (params) =>
       wrapTool(ctx, async () => {
@@ -181,51 +185,7 @@ export function registerRecurringTemplateTools(server: McpServer, ctx: AuthConte
           const input = Object.fromEntries(Object.entries(params).filter(([key]) => key !== "type"));
           return createRecurringInvoice(ctx, input, undefined, "recurring_template");
         }
-        if (params.lines.some(line => line.unitPriceExact !== undefined || line.unitPriceMinor !== undefined))
-          throw new WireCompatibilityError("Exact recurring bill/expense prices are not supported by this contract yet");
-
-        const [created] = await db
-          .insert(recurringTemplate)
-          .values({
-            organizationId: ctx.organizationId,
-            name: params.name,
-            type: params.type,
-            contactId: params.contactId,
-            frequency: params.frequency,
-            startDate: params.startDate,
-            endDate: params.endDate || null,
-            nextRunDate: params.startDate,
-            maxOccurrences: params.maxOccurrences || null,
-            reference: params.reference || null,
-            notes: params.notes || null,
-            currencyCode: params.currencyCode ?? "USD",
-            autoSend: params.autoSend,
-            createAsApproved: params.createAsApproved,
-            createdBy: ctx.userId,
-          })
-          .returning();
-
-        await db.insert(recurringTemplateLine).values(
-          params.lines.map((l, i) => ({
-            templateId: created.id,
-            description: l.description,
-            quantity: Math.round(l.quantity * 100),
-            unitPrice: Math.round((l.unitPrice ?? 0) * 100),
-            accountId: l.accountId || null,
-            taxRateId: l.taxRateId || null,
-            discountPercent: l.discountPercent ?? 0,
-            sortOrder: i,
-          }))
-        );
-
-        logAudit({
-          ctx,
-          action: "create",
-          entityType: "recurring_template",
-          entityId: created.id,
-        });
-
-        return { template: created };
+        return createRecurringPayable(ctx, params);
       })
   );
 
@@ -233,7 +193,7 @@ export function registerRecurringTemplateTools(server: McpServer, ctx: AuthConte
     "update_recurring_template",
     "Update a recurring DOCUMENT template's header fields (name, frequency, status, endDate, maxOccurrences, reference, notes, currencyCode, and the invoice-only autoSend / createAsApproved automation flags). Mirrors the PATCH route: line items are NOT edited here. Only provided fields change. Returns the updated template.",
     {
-      templateId: z.string().describe("The UUID of the recurring template to update"),
+      templateId: z.string().uuid().describe("The UUID of the recurring template to update"),
       name: z.string().min(1).optional().describe("New template name"),
       frequency: z
         .enum(FREQUENCIES)
@@ -258,9 +218,9 @@ export function registerRecurringTemplateTools(server: McpServer, ctx: AuthConte
       reference: z.string().nullable().optional().describe("New reference"),
       notes: z.string().nullable().optional().describe("New notes"),
       currencyCode: z.string().optional().describe("New currency code"),
-      rateExact: z.string().optional().describe("Unsupported template FX input; supplied values are rejected for invoices"),
-      exchangeRate: z.number().optional().describe("Unsupported template FX millionths; supplied values are rejected for invoices"),
-      rateDirection: z.string().optional().describe("Unsupported template FX direction; supplied values are rejected for invoices"),
+      rateExact: z.string().optional().describe("Unsupported template FX input; supplied values are rejected for all document kinds"),
+      exchangeRate: z.number().optional().describe("Unsupported template FX millionths; supplied values are rejected for all document kinds"),
+      rateDirection: z.string().optional().describe("Unsupported template FX direction; supplied values are rejected for all document kinds"),
       autoSend: z
         .boolean()
         .optional()
@@ -290,36 +250,8 @@ export function registerRecurringTemplateTools(server: McpServer, ctx: AuthConte
           return changeRecurringInvoice(ctx, templateId, input, undefined, "update", "recurring_template");
         }
 
-        // Only the header fields the PATCH route allows; undefined fields are
-        // omitted so they aren't overwritten to null.
-        const updates: Record<string, unknown> = { updatedAt: new Date() };
-        if (params.name !== undefined) updates.name = params.name;
-        if (params.frequency !== undefined) updates.frequency = params.frequency;
-        if (params.status !== undefined) updates.status = params.status;
-        if (params.endDate !== undefined) updates.endDate = params.endDate;
-        if (params.maxOccurrences !== undefined) updates.maxOccurrences = params.maxOccurrences;
-        if (params.reference !== undefined) updates.reference = params.reference;
-        if (params.notes !== undefined) updates.notes = params.notes;
-        if (params.currencyCode !== undefined) updates.currencyCode = params.currencyCode;
-        if (params.autoSend !== undefined) updates.autoSend = params.autoSend;
-        if (params.createAsApproved !== undefined)
-          updates.createAsApproved = params.createAsApproved;
-
-        const [updated] = await db
-          .update(recurringTemplate)
-          .set(updates)
-          .where(eq(recurringTemplate.id, params.templateId))
-          .returning();
-
-        logAudit({
-          ctx,
-          action: "update",
-          entityType: "recurring_template",
-          entityId: params.templateId,
-          changes: updates,
-        });
-
-        return { template: updated };
+        const { templateId, ...input } = params;
+        return changeRecurringPayable(ctx, templateId, input);
       })
   );
 
@@ -327,7 +259,7 @@ export function registerRecurringTemplateTools(server: McpServer, ctx: AuthConte
     "pause_recurring_template",
     "Toggle a recurring DOCUMENT template between active and paused (mirrors the /pause route). An active template becomes paused (the generator skips it); a paused template becomes active again (resuming catches up from the saved nextRunDate). Fails on a completed template. Returns the updated template.",
     {
-      templateId: z.string().describe("The UUID of the recurring template to pause/resume"),
+      templateId: z.string().uuid().describe("The UUID of the recurring template to pause/resume"),
     },
     (params) =>
       wrapTool(ctx, async () => {
@@ -344,27 +276,7 @@ export function registerRecurringTemplateTools(server: McpServer, ctx: AuthConte
           throw new Error("Recurring template not found");
         }
         if (existing.type === "invoice") return changeRecurringInvoice(ctx, params.templateId, {}, undefined, "pause", "recurring_template");
-        if (existing.status === "completed") {
-          throw new Error("Cannot toggle a completed template");
-        }
-
-        const newStatus = existing.status === "active" ? "paused" : "active";
-
-        const [updated] = await db
-          .update(recurringTemplate)
-          .set({ status: newStatus, updatedAt: new Date() })
-          .where(eq(recurringTemplate.id, params.templateId))
-          .returning();
-
-        logAudit({
-          ctx,
-          action: "update",
-          entityType: "recurring_template",
-          entityId: params.templateId,
-          changes: { status: newStatus },
-        });
-
-        return { template: updated };
+        return changeRecurringPayable(ctx, params.templateId, {}, undefined, "pause");
       })
   );
 
@@ -373,7 +285,7 @@ export function registerRecurringTemplateTools(server: McpServer, ctx: AuthConte
     "Run the recurring-document generator for this organization now, generating real invoices/bills/expenses for every DUE occurrence of every active document template (catching up if a template is behind) and advancing each template's schedule. Use this to materialise a template whose nextRunDate has arrived. NOTE: the generator operates org-wide on due document templates (not journal templates) — it will not pull a future-dated template forward. Provide templateId to confirm the target document template exists and is active before running. Returns the number of documents generated.",
     {
       templateId: z
-        .string()
+        .string().uuid()
         .describe(
           "The UUID of the recurring document template you intend to run (validated as an active document template before the generator runs)"
         ),
@@ -393,6 +305,7 @@ export function registerRecurringTemplateTools(server: McpServer, ctx: AuthConte
           throw new Error("Recurring template not found");
         }
         if (found.type === "invoice") await getRecurringInvoice(ctx, params.templateId);
+        else await getRecurringPayable(ctx, params.templateId);
         if (found.status !== "active") {
           throw new Error("Only an active recurring template can be run");
         }
@@ -420,4 +333,12 @@ export function registerRecurringTemplateTools(server: McpServer, ctx: AuthConte
     { templateId: z.string().uuid().describe("Recurring invoice template UUID"), count: z.number().int().min(1).max(12).default(5).describe("Upcoming occurrences to return, 1 through 12") },
     params => wrapTool(ctx, () => previewRecurringInvoice(ctx, params.templateId, params.count)));
 
+  server.tool("delete_recurring_payable", "Soft-delete an organization-owned recurring bill/expense template; serialized with generation. Returns success.",
+    { templateId: z.string().uuid().describe("Recurring bill/expense template UUID") },
+    params => wrapTool(ctx, () => changeRecurringPayable(ctx, params.templateId, {}, undefined, "delete")));
+  server.tool("preview_recurring_payable", "Preview bill/expense dates and gross lineTotal in fixed cents with lineTotalMinor string, before discount/tax. Returns template and upcoming occurrences.",
+    { templateId: z.string().uuid().describe("Recurring bill/expense template UUID"), count: z.number().int().min(1).max(12).default(5).describe("Upcoming occurrences, 1 through 12") },
+    params => wrapTool(ctx, () => previewRecurringPayable(ctx, params.templateId, params.count)));
+  server.tool("get_recurring_template_summary", "Get organization-scoped recurring counters (total, active, paused, completed and generated), including journals. Numeric counts have no money units. Returns the same fields as GET /recurring/summary.",
+    {}, () => wrapTool(ctx, () => recurringTemplateSummary(ctx)));
 }

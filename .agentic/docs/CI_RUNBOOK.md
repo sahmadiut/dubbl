@@ -1,5 +1,14 @@
 # CI and migration fixture runbook
 
+MON-099 adds recurring-payable-wire.test.ts and integration/recurring-payables.test.ts.
+Run `node --import tsx --test tests/recurring-payable-wire.test.ts
+ tests/integration/recurring-payables.test.ts tests/integration/recurring-invoices.test.ts
+ tests/integration/recurring-journal-wire.test.ts` with explicit loopback
+TEST_DATABASE_URL and a disposable UTC PostgreSQL CREATEDB role. The harness
+creates/migrates/drops random databases; synthetic fault/unsafe-output triggers
+never affect the configured application database. No new schema, dev server or
+provider request is needed. Pure fixture is also discovered by pnpm test.
+
 MON-098 adds revenue-wire.test.ts and integration/revenue-schedules.test.ts to
 normal discovery. Run `node --import tsx --test tests/revenue-wire.test.ts
 tests/integration/revenue-schedules.test.ts` with an explicit loopback

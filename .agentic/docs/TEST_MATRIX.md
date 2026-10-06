@@ -1,5 +1,18 @@
 # Verification matrix
 
+## MON-099 recurring payables
+
+- Pure fixtures: fixed-cent aliases, signed decimal ties, conflicts, safe maximum,
+  exact products/sums and bill discount/tax versus expense gross policy.
+- Isolated migrated PostgreSQL: actual API-key REST and MCP SDK handlers; legacy,
+  exact and dual prices across bill/expense USD/JPY/KWD/IRR, organization isolation,
+  role denial, malformed/unsupported data, foreign references and creator membership.
+- Atomic audit/header/line/item/schedule/output failures, second-occurrence rollback,
+  numbering and generator races/replays; period/fiscal locks, 1000 catch-up bound,
+  pause/delete/future handling, summary parity and safe-max persisted totals.
+- MON-044 invoice and MON-037 journal regression fixtures verify shared dispatch.
+  Wider economic/FX/history/full-int64/IRR and parent acceptance remain separate.
+
 ## MON-098 revenue schedule and recognition
 
 - Pure fixtures: REST major/MCP cents aliases, exact decimal ties, safe maximum,

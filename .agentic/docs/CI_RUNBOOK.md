@@ -76,3 +76,6 @@ MON-083 adds `tests/integration/payroll-payments.test.ts` to normal discovery. I
 
 
 MON-084 adds `tests/integration/payroll-compensation.test.ts` to normal integration discovery. Run with an explicit loopback TEST_DATABASE_URL against a disposable UTC PostgreSQL cluster; cases create/drop random fixture databases. Actual handlers and MCP SDK transports require no Next dev server. Migration 0011 snapshot preservation and all-money checksum exclusions are qualified without updating/rescaling historical compensation rows. No deployment migration opt-in or currency rollout flag changes.
+
+
+MON-085 adds `tests/integration/payroll-outputs.test.ts` to normal integration discovery. It creates a random migrated database and executes all 16 actual payroll output REST/MCP pairs through synthetic API keys and in-memory SDK transport. Use an explicit loopback TEST_DATABASE_URL on a disposable UTC cluster; `node --import tsx --test tests/payroll-output-wire.test.ts tests/integration/payroll-outputs.test.ts` needs no Next dev server. Broad migration/backup qualification still requires matching PG_BIN clients. Outputs add no migration; no current tax-policy or statutory filing approval is inferred.

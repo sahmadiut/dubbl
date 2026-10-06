@@ -45,7 +45,7 @@ import { registerTaxRateTools } from "./tax-rates";
 import { registerTaxLookupTools } from "./tax-lookup";
 import { registerTaxTools } from "./tax";
 import { registerConsolidationTools } from "./consolidation";
-import { registerPayrollTools } from "./payroll";
+import { registerPayrollOutputTools } from "./payroll-outputs";
 import { registerFixedAssetTools } from "./fixed-assets";
 import { registerInventoryTools } from "./inventory";
 import { registerInventoryAssemblyTools } from "./inventory-assembly";
@@ -120,7 +120,7 @@ export function registerAllTools(server: McpServer, ctx: AuthContext) {
   registerTaxLookupTools(server, ctx);
   registerTaxTools(server, ctx);
   registerConsolidationTools(server, ctx);
-  registerPayrollTools(server, ctx);
+  registerPayrollOutputTools(server, ctx);
   registerPayrollRunTools(server, ctx);
   registerPayrollPaymentTools(server, ctx);
   registerPayrollCompensationTools(server, ctx);

@@ -917,3 +917,11 @@ combined financial acceptance. No stored rescaling or configured database migrat
 
 
 MON-084: `tests/payroll-compensation-wire.test.ts` covers canonical money aliases, safe business limits, percentages/counts/query validation and currency-scale input/display. `tests/integration/payroll-compensation.test.ts` plus worker invoke all 15 actual REST/MCP operations on migrated random databases, API keys/permissions/tenant checks, sums/rounding/mixed currencies, saved corrupt links, audit rollback, duplicate-entry concurrency and review currency history. A second fixture upgrades 0010 to 0011 and compares every original review field, null snapshot preservation and idempotent rerun. All-money preservation excludes only the new nullable review currency snapshot. Browser/OAuth/session and full-range/financial review remain parent qualification.
+
+
+## MON-085 payroll outputs
+
+- Six pure groups exercise dates/filter bounds, known/opaque JSON money aliases and safe ranges, strict self-profile input, bigint aggregation/rounding and exact safe-max/signed CSV/display/formula escaping.
+- payroll-outputs.test.ts plus worker invoke all 16 actual REST/API-key and MCP SDK pairs on disposable migrated PostgreSQL; full registry uniqueness, strict schemas and property descriptions are asserted. Known totals, same-year/deleted-run YTD, actual tax/deduction box amounts, saved currencies and payment-date/legacy timestamp years have independent expected assertions.
+- Every operation has denied/invalid/expired REST credentials and denied MCP permissions. Foreign details/joins, self-only and ambiguous membership, malformed requests, mixed currencies, unsafe stored column/JSONB amounts and aggregate overflow reject with financial snapshots unchanged. Cross-transport concurrent generation inserts once. Audit faults roll back form batches, slips, view status and profile edits. Safe-max export remains exact; current employee/base changes do not reprice saved outputs.
+- No schema change or production migration; broad integration preserves existing migrations/checksums. Browser/session/OAuth, true PDFs, independent financial review, full-int64 and parent integration remain separate.

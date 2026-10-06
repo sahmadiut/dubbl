@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, FileText, ChevronDown, ScrollText } from "lucide-react";
@@ -7,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
-import { formatMoney } from "@/lib/money";
+import { payrollMoneyDisplay as formatMoney } from "@/lib/money/payroll-display";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { cn } from "@/lib/utils";
 
@@ -31,6 +32,7 @@ interface DeductionLine {
 }
 
 interface Payslip {
+  currency: string;
   id: string;
   employeeId: string;
   payrollRunId: string;
@@ -52,6 +54,7 @@ const statusLabels: Record<string, string> = {
 };
 
 interface Row {
+  payrollItemId: string;
   employeeId: string;
   name: string;
   employeeNumber: string;
@@ -86,39 +89,23 @@ export default function RunPayslipsPage() {
     }
     setRun(runDetail);
 
-    // 2. There is no per-run payslip endpoint, so fetch each employee's
-    //    payslips and pick the one generated for this run.
-    const built: Row[] = await Promise.all(
-      (runDetail.items || []).map(async (item) => {
-        let slip: Payslip | null = null;
-        if (item.employeeId) {
-          try {
-            const psRes = await fetch(
-              `/api/v1/payroll/employees/${item.employeeId}/payslips`,
-              { headers }
-            );
-            const psData = await psRes.json();
-            const list: Payslip[] = psData.data || [];
-            slip = list.find((p) => p.payrollRunId === runDetail.id) || null;
-          } catch {
-            slip = null;
-          }
-        }
-        return {
-          employeeId: item.employeeId,
-          name: item.employee?.name || "-",
-          employeeNumber: item.employee?.employeeNumber || "",
-          payslip: slip,
-        };
-      })
-    );
+    const psRes = await fetch(`/api/v1/payroll/runs/${id}/payslips`, { headers });
+    const psData = await psRes.json();
+    if (!psRes.ok) { toast.error(psData.error || "Unable to load payslips"); setLoading(false); return; }
+    const slips: (Payslip & { payrollItemId: string })[] = psData.payslips;
+    const built: Row[] = runDetail.items.map(item => ({
+      payrollItemId: item.id,
+      employeeId: item.employeeId,
+      name: item.employee?.name || "-",
+      employeeNumber: item.employee?.employeeNumber || "",
+      payslip: slips.find(p => p.payrollItemId === item.id) || null,
+    }));
     setRows(built);
     setLoading(false);
   }, [id]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    load();
+    void load().catch(error => { toast.error(error.message || "Unable to load payslips"); setLoading(false); });
   }, [load]);
 
   // Opening a payslip detail marks it as viewed on the server. Refresh that
@@ -131,9 +118,10 @@ export default function RunPayslipsPage() {
       const orgId = localStorage.getItem("activeOrgId");
       if (!orgId) return;
       try {
-        await fetch(`/api/v1/payroll/payslips/${row.payslip.id}`, {
+        const response = await fetch(`/api/v1/payroll/payslips/${row.payslip.id}`, {
           headers: { "x-organization-id": orgId },
         });
+        if (!response.ok) { toast.error("Unable to mark payslip viewed"); return; }
         setRows((prev) =>
           prev.map((r) =>
             r.payslip && r.payslip.id === row.payslip!.id
@@ -199,12 +187,12 @@ export default function RunPayslipsPage() {
             const ps = row.payslip;
             const isOpen = ps && expanded === ps.id;
             // Tax + everything else withheld = take-home subtracted from gross.
-            const totalDeductions = ps ? ps.grossAmount - ps.netAmount : 0;
+            const totalDeductions = ps ? BigInt(ps.grossAmount) - BigInt(ps.netAmount) : 0n;
             const otherDeductions = ps
-              ? Math.max(totalDeductions - ps.taxAmount, 0)
-              : 0;
+              ? totalDeductions - BigInt(ps.taxAmount)
+              : 0n;
             return (
-              <div key={row.employeeId}>
+              <div key={row.payrollItemId}>
                 <div className="flex items-center justify-between gap-4 px-4 py-3">
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate">{row.name}</p>
@@ -222,7 +210,7 @@ export default function RunPayslipsPage() {
                             Before deductions
                           </p>
                           <p className="text-sm font-mono tabular-nums">
-                            {formatMoney(ps.grossAmount)}
+                            {formatMoney(ps.grossAmount, ps.currency)}
                           </p>
                         </div>
                         <div className="hidden sm:block text-right">
@@ -230,7 +218,7 @@ export default function RunPayslipsPage() {
                             Taxes &amp; deductions
                           </p>
                           <p className="text-sm font-mono tabular-nums text-red-600 dark:text-red-400">
-                            {formatMoney(totalDeductions)}
+                            {formatMoney(totalDeductions, ps.currency)}
                           </p>
                         </div>
                         <div className="text-right">
@@ -238,7 +226,7 @@ export default function RunPayslipsPage() {
                             Take-home
                           </p>
                           <p className="text-sm font-mono tabular-nums font-medium">
-                            {formatMoney(ps.netAmount)}
+                            {formatMoney(ps.netAmount, ps.currency)}
                           </p>
                         </div>
                         <Badge variant="outline" className="text-[10px]">
@@ -269,10 +257,10 @@ export default function RunPayslipsPage() {
                 {isOpen && ps && (
                   <div className="border-t bg-muted/30 px-4 py-4">
                     <div className="grid grid-cols-2 gap-x-8 gap-y-3 sm:grid-cols-4">
-                      <Detail label="Before deductions" value={formatMoney(ps.grossAmount)} />
-                      <Detail label="Tax withheld" value={formatMoney(ps.taxAmount)} />
-                      <Detail label="Other deductions" value={formatMoney(otherDeductions)} />
-                      <Detail label="Take-home" value={formatMoney(ps.netAmount)} emphasize />
+                      <Detail label="Before deductions" value={formatMoney(ps.grossAmount, ps.currency)} />
+                      <Detail label="Tax withheld" value={formatMoney(ps.taxAmount, ps.currency)} />
+                      <Detail label="Other deductions" value={formatMoney(otherDeductions, ps.currency)} />
+                      <Detail label="Take-home" value={formatMoney(ps.netAmount, ps.currency)} emphasize />
                     </div>
 
                     {ps.deductionsBreakdown && ps.deductionsBreakdown.length > 0 && (
@@ -290,7 +278,7 @@ export default function RunPayslipsPage() {
                                 {d.name || d.category || "Deduction"}
                               </span>
                               <span className="text-xs font-mono tabular-nums">
-                                {formatMoney(d.amount || 0)}
+                                {formatMoney(d.amount || 0, ps.currency)}
                               </span>
                             </div>
                           ))}
@@ -303,9 +291,9 @@ export default function RunPayslipsPage() {
                         This year so far
                       </p>
                       <div className="grid grid-cols-3 gap-x-8 gap-y-2">
-                        <Detail label="Earned" value={formatMoney(ps.ytdGross)} small />
-                        <Detail label="Tax" value={formatMoney(ps.ytdTax)} small />
-                        <Detail label="Take-home" value={formatMoney(ps.ytdNet)} small />
+                        <Detail label="Earned" value={formatMoney(ps.ytdGross, ps.currency)} small />
+                        <Detail label="Tax" value={formatMoney(ps.ytdTax, ps.currency)} small />
+                        <Detail label="Take-home" value={formatMoney(ps.ytdNet, ps.currency)} small />
                       </div>
                     </div>
                   </div>

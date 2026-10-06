@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { motion } from "motion/react";
 import { BarChart3, FileText, DollarSign, TrendingUp, Download } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
@@ -10,11 +11,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
-import { formatMoney } from "@/lib/money";
+import { payrollMoneyDisplay as formatMoney } from "@/lib/money/payroll-display";
+import { downloadPayrollCsv } from "@/lib/payroll/output-client";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { cn } from "@/lib/utils";
 
 interface Summary {
+  currency: string;
   totalRuns: number;
   totalGross: number;
   totalDeductions: number;
@@ -50,13 +53,14 @@ export default function ReportsPage() {
       headers: { "x-organization-id": orgId },
     })
       .then((r) => r.json())
-      .then((data) => { if (data.summary) setSummary(data.summary); })
+      .then((data) => { if (data.error) toast.error(data.error); if (data.summary) setSummary(data.summary); })
+      .catch(() => toast.error("Unable to load payroll summary"))
       .finally(() => setLoading(false));
   }, [orgId]);
 
   function handleExport() {
     if (!orgId) return;
-    window.open(`/api/v1/payroll/reports/export?x-organization-id=${orgId}`, "_blank");
+    void downloadPayrollCsv(orgId).catch(error => toast.error(error.message));
   }
 
   if (loading) return <BrandLoader />;
@@ -78,15 +82,15 @@ export default function ReportsPage() {
           </motion.div>
           <motion.div {...anim(0.05)} className="rounded-xl border bg-card p-4">
             <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Total Gross</p>
-            <p className="mt-1 text-2xl font-bold font-mono tabular-nums">{formatMoney(summary.totalGross)}</p>
+            <p className="mt-1 text-2xl font-bold font-mono tabular-nums">{formatMoney(summary.totalGross, summary.currency)}</p>
           </motion.div>
           <motion.div {...anim(0.1)} className="rounded-xl border bg-card p-4">
             <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Total Net</p>
-            <p className="mt-1 text-2xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{formatMoney(summary.totalNet)}</p>
+            <p className="mt-1 text-2xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{formatMoney(summary.totalNet, summary.currency)}</p>
           </motion.div>
           <motion.div {...anim(0.15)} className="rounded-xl border bg-card p-4">
             <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Avg Cost/Run</p>
-            <p className="mt-1 text-2xl font-bold font-mono tabular-nums">{formatMoney(summary.avgCostPerRun)}</p>
+            <p className="mt-1 text-2xl font-bold font-mono tabular-nums">{formatMoney(summary.avgCostPerRun, summary.currency)}</p>
           </motion.div>
         </div>
       )}

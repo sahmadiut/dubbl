@@ -23,13 +23,15 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
-import { formatMoney } from "@/lib/money";
+import { payrollMoneyDisplay as formatMoney } from "@/lib/money/payroll-display";
+import { downloadPayrollCsv } from "@/lib/payroll/output-client";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { cn } from "@/lib/utils";
 
 /* ---------- types ---------- */
 
 interface Summary {
+  currency: string;
   totalRuns: number;
   totalGross: number;
   totalDeductions: number;
@@ -39,6 +41,7 @@ interface Summary {
 }
 
 interface Projection {
+  currency: string;
   month: string;
   gross: number;
   tax: number;
@@ -47,6 +50,7 @@ interface Projection {
 }
 
 interface WhatIfResult {
+  currency: string;
   current: { monthlyGross: number; projectedTotal: number; headcount: number };
   projected: { monthlyGross: number; projectedTotal: number; headcount: number };
   difference: { monthlyGross: number; projectedTotal: number };
@@ -103,6 +107,7 @@ export default function AnalyticsPage() {
       fetch("/api/v1/payroll/forecasting/projection?months=12", { headers }).then((r) => r.json()),
     ])
       .then(([summaryRes, projRes]) => {
+        if (summaryRes.error) toast.error(summaryRes.error);
         if (summaryRes.summary) setSummary(summaryRes.summary);
         if (projRes.data) setProjection(projRes.data);
       })
@@ -112,7 +117,7 @@ export default function AnalyticsPage() {
 
   const handleExport = useCallback(() => {
     if (!orgId) return;
-    window.open(`/api/v1/payroll/reports/export?x-organization-id=${orgId}`, "_blank");
+    void downloadPayrollCsv(orgId).catch(error => toast.error(error.message));
   }, [orgId]);
 
   async function handleWhatIf() {
@@ -266,12 +271,12 @@ export default function AnalyticsPage() {
           </motion.div>
           <motion.div {...anim(0.05)} className="rounded-xl border bg-card p-4">
             <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Total Gross</p>
-            <p className="mt-1 text-2xl font-bold font-mono tabular-nums">{formatMoney(summary.totalGross)}</p>
+            <p className="mt-1 text-2xl font-bold font-mono tabular-nums">{formatMoney(summary.totalGross, summary.currency)}</p>
           </motion.div>
           <motion.div {...anim(0.1)} className="rounded-xl border bg-card p-4">
             <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Total Net</p>
             <p className="mt-1 text-2xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
-              {formatMoney(summary.totalNet)}
+              {formatMoney(summary.totalNet, summary.currency)}
             </p>
           </motion.div>
           <motion.div {...anim(0.15)} className="rounded-xl border bg-card p-4">
@@ -330,8 +335,8 @@ export default function AnalyticsPage() {
                 <div key={p.month} className="px-4 py-2 flex items-center justify-between">
                   <span className="text-sm font-mono">{p.month}</span>
                   <div className="flex gap-6">
-                    <span className="text-sm font-mono tabular-nums w-24 text-right">{formatMoney(p.gross)}</span>
-                    <span className="text-sm font-mono tabular-nums w-24 text-right">{formatMoney(p.net)}</span>
+                    <span className="text-sm font-mono tabular-nums w-24 text-right">{formatMoney(p.gross, p.currency)}</span>
+                    <span className="text-sm font-mono tabular-nums w-24 text-right">{formatMoney(p.net, p.currency)}</span>
                   </div>
                 </div>
               ))}
@@ -398,13 +403,13 @@ export default function AnalyticsPage() {
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <motion.div {...anim(0)} className="rounded-xl border bg-card p-4">
                 <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Current Monthly</p>
-                <p className="mt-1 text-xl font-bold font-mono tabular-nums">{formatMoney(whatIf.current.monthlyGross)}</p>
+                <p className="mt-1 text-xl font-bold font-mono tabular-nums">{formatMoney(whatIf.current.monthlyGross, whatIf.currency)}</p>
                 <p className="text-xs text-muted-foreground">{whatIf.current.headcount} employees</p>
               </motion.div>
               <motion.div {...anim(0.05)} className="rounded-xl border bg-card p-4">
                 <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Projected Monthly</p>
                 <p className="mt-1 text-xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
-                  {formatMoney(whatIf.projected.monthlyGross)}
+                  {formatMoney(whatIf.projected.monthlyGross, whatIf.currency)}
                 </p>
                 <p className="text-xs text-muted-foreground">{whatIf.projected.headcount} employees</p>
               </motion.div>
@@ -419,7 +424,7 @@ export default function AnalyticsPage() {
                   )}
                 >
                   {whatIf.difference.monthlyGross >= 0 ? "+" : ""}
-                  {formatMoney(whatIf.difference.monthlyGross)}
+                  {formatMoney(whatIf.difference.monthlyGross, whatIf.currency)}
                 </p>
                 <p className="text-xs text-muted-foreground">per month</p>
               </motion.div>

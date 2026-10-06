@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/select";
 import { Download } from "lucide-react";
 import { toast } from "sonner";
+import { payrollMoneyDisplay as formatMoney } from "@/lib/money/payroll-display";
+import { downloadTaxFormData } from "@/lib/payroll/output-client";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 
 interface TaxFormItem {
@@ -43,8 +45,6 @@ interface TaxGeneration {
   forms: TaxFormItem[];
 }
 
-const formatMoney = (cents: number) =>
-  (cents / 100).toLocaleString("en-US", { style: "currency", currency: "USD" });
 
 const statusBadge = (status: string) => {
   switch (status) {
@@ -139,10 +139,10 @@ export default function TaxFormsPage() {
 
   function getKeyAmount(form: TaxFormItem): string {
     const data = form.formData as Record<string, number>;
-    if (form.formType === "1099_nec" && data.box1_nonemployee_compensation) {
+    if (form.formType === "1099_nec" && typeof data.box1_nonemployee_compensation === "number") {
       return formatMoney(data.box1_nonemployee_compensation);
     }
-    if (form.formType === "w2" && data.box1_wages) {
+    if (form.formType === "w2" && typeof data.box1_wages === "number") {
       return formatMoney(data.box1_wages);
     }
     return "-";
@@ -299,12 +299,10 @@ export default function TaxFormsPage() {
                                       <Button
                                         variant="ghost"
                                         size="sm"
+                                        aria-label="Download form data"
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          window.open(
-                                            `/api/v1/payroll/tax-forms/${form.id}/pdf`,
-                                            "_blank"
-                                          );
+                                          void downloadTaxFormData(orgId, form.id).catch(error => toast.error(error.message));
                                         }}
                                       >
                                         <Download className="size-3.5" />

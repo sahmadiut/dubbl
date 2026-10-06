@@ -1,11 +1,14 @@
 "use client";
 
+import { toast } from "sonner";
 import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Download } from "lucide-react";
+import { payrollMoneyDisplay as formatMoney } from "@/lib/money/payroll-display";
+import { downloadTaxFormData } from "@/lib/payroll/output-client";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 
 interface TaxFormDetail {
@@ -23,8 +26,6 @@ interface TaxFormDetail {
   };
 }
 
-const formatMoney = (cents: number) =>
-  (cents / 100).toLocaleString("en-US", { style: "currency", currency: "USD" });
 
 const statusBadge = (status: string) => {
   switch (status) {
@@ -55,6 +56,10 @@ const w2Labels: Record<string, string> = {
   box4_ss_tax: "Box 4 - Social security tax withheld",
   box5_medicare_wages: "Box 5 - Medicare wages and tips",
   box6_medicare_tax: "Box 6 - Medicare tax withheld",
+  box12_retirement_deferrals: "Box 12 - Pre-tax deductions",
+  box14_other: "Box 14 - Other deductions and taxes",
+  box17_state_income_tax: "Box 17 - State income tax",
+  box19_local_income_tax: "Box 19 - Local income tax",
 };
 
 export default function TaxFormDetailPage() {
@@ -75,8 +80,10 @@ export default function TaxFormDetailPage() {
     })
       .then((r) => r.json())
       .then((data) => {
+        if (data.error) toast.error(data.error);
         if (data.id) setForm(data);
       })
+      .catch(() => toast.error("Unable to load tax form"))
       .finally(() => setLoading(false));
   }, [id, orgId]);
 
@@ -138,11 +145,11 @@ export default function TaxFormDetailPage() {
           variant="outline"
           size="sm"
           onClick={() =>
-            window.open(`/api/v1/payroll/tax-forms/${form.id}/pdf`, "_blank")
+            void downloadTaxFormData(orgId, form.id).catch(error => toast.error(error.message))
           }
         >
           <Download className="mr-2 size-3.5" />
-          Download PDF
+          Download form data
         </Button>
       </div>
 

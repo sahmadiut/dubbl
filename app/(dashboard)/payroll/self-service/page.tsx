@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
-import { formatMoney } from "@/lib/money";
+import { payrollMoneyDisplay as formatMoney } from "@/lib/money/payroll-display";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +27,7 @@ interface Profile {
 }
 
 interface Payslip {
+  currency: string;
   id: string;
   grossAmount: number;
   netAmount: number;
@@ -80,6 +81,8 @@ export default function SelfServicePage() {
       fetch("/api/v1/payroll/self-service/timesheets", { headers }).then((r) => r.json()),
     ])
       .then(([profileData, payslipData, leaveData, tsData]) => {
+        if (profileData.error) toast.error(profileData.error);
+        if (payslipData.error) toast.error(payslipData.error);
         if (profileData.employee) {
           const emp = profileData.employee;
           setProfile(emp);
@@ -90,6 +93,7 @@ export default function SelfServicePage() {
         if (leaveData.data) setLeaveBalances(leaveData.data);
         if (tsData.data) setTimesheets(tsData.data);
       })
+      .catch(() => toast.error("Unable to load self-service payroll"))
       .finally(() => setLoading(false));
   }, [orgId]);
 
@@ -184,8 +188,8 @@ export default function SelfServicePage() {
                     <p className="text-xs text-muted-foreground">{new Date(ps.generatedAt).toLocaleDateString()}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-mono tabular-nums">{formatMoney(ps.grossAmount)}</p>
-                    <p className="text-xs text-muted-foreground font-mono">Net: {formatMoney(ps.netAmount)}</p>
+                    <p className="text-sm font-mono tabular-nums">{formatMoney(ps.grossAmount, ps.currency)}</p>
+                    <p className="text-xs text-muted-foreground font-mono">Net: {formatMoney(ps.netAmount, ps.currency)}</p>
                   </div>
                 </div>
               ))}

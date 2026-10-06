@@ -38,7 +38,7 @@ import { StatCard } from "@/components/dashboard/stat-card";
 import { DataTable, type Column } from "@/components/dashboard/data-table";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
-import { formatMoney } from "@/lib/money";
+import { payrollMoneyDisplay as formatMoney } from "@/lib/money/payroll-display";
 import { bankMoneyDisplay } from "@/lib/money/bank-display";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 
@@ -116,6 +116,8 @@ export default function TaxLiabilitiesPage() {
 
   const [initialLoad, setInitialLoad] = useState(true);
   const [accruedTax, setAccruedTax] = useState(0);
+  const [reportCurrency, setReportCurrency] = useState("USD");
+  const [reportError, setReportError] = useState<string | null>(null);
   const [payments, setPayments] = useState<TaxPayment[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -143,30 +145,29 @@ export default function TaxLiabilitiesPage() {
 
     Promise.all([
       fetch(`/api/v1/payroll/reports/tax-liability`, { headers })
-        .then((r) => (r.ok ? r.json() : { totalTax: 0 }))
-        .catch(() => ({ totalTax: 0 })),
+        .then(async r => { const body = await r.json(); if (!r.ok) throw new Error(body.error || "Unable to load tax liability"); return body; }),
       fetch(`/api/v1/payroll/tax-payments`, { headers })
-        .then((r) => (r.ok ? r.json() : { payments: [] }))
-        .catch(() => ({ payments: [] })),
+        .then(async r => { const body = await r.json(); if (!r.ok) throw new Error(body.error || "Unable to load tax payments"); return body; }),
     ]).then(([liability, paymentsRes]) => {
       if (cancelled) return;
-      setAccruedTax(liability?.totalTax || 0);
+      setReportError(null);
+      setReportCurrency(liability.currency);
+      setAccruedTax(liability.totalTax);
       setPayments(paymentsRes?.payments || []);
       setInitialLoad(false);
-    });
+    }).catch(error => { if (!cancelled) { setReportError(error.message); setInitialLoad(false); } });
 
     return () => {
       cancelled = true;
     };
   }, [orgId, refreshKey]);
 
-  const totalPaid = useMemo(
-    () => payments.reduce((s, p) => s + (p.amount || 0), 0),
-    [payments],
-  );
-  // Outstanding is what's been withheld/accrued from payroll runs minus what
-  // you've already remitted. Never show a negative (over-payments read as $0 due).
-  const outstanding = Math.max(0, accruedTax - totalPaid);
+  const paidPayments = payments.filter(p => p.status === "paid");
+  const compatibleCurrency = paidPayments.every(p => p.currency === reportCurrency);
+  const totalPaid = paidPayments.reduce((s, p) => s + BigInt(p.amount), 0n);
+  const difference = BigInt(accruedTax) - totalPaid;
+  const outstanding = difference > 0n ? difference : 0n;
+  const totalsError = reportError || (!compatibleCurrency ? "Tax totals contain multiple currencies." : null);
 
   const openRecordPayment = useCallback((bucket?: string) => {
     if (bucket) setFormBucket(bucket);
@@ -247,14 +248,14 @@ export default function TaxLiabilitiesPage() {
 
   // Per-agency paid totals so each row shows how much has been remitted to it.
   const paidByBucket = useMemo(() => {
-    const map: Record<string, number> = {};
+    const map: Record<string, bigint> = {};
     // taxKind is the only signal we stamp; map it back to a bucket for display.
-    for (const p of payments) {
+    for (const p of payments.filter(p => p.status === "paid")) {
       const matched = AGENCY_BUCKETS.find(
         (b) => b.taxKind === p.taxKind,
       );
       const key = matched?.bucket ?? "income_tax";
-      map[key] = (map[key] || 0) + (p.amount || 0);
+      map[key] = (map[key] || 0n) + BigInt(p.amount);
     }
     return map;
   }, [payments]);
@@ -355,22 +356,24 @@ export default function TaxLiabilitiesPage() {
       <div className="grid gap-3 sm:grid-cols-3">
         <StatCard
           title="Owed from pay runs"
-          value={formatMoney(accruedTax)}
+          value={totalsError ? "Unavailable" : formatMoney(accruedTax, reportCurrency)}
           icon={Receipt}
         />
         <StatCard
           title="Paid so far"
-          value={formatMoney(totalPaid)}
+          value={totalsError ? "Unavailable" : formatMoney(totalPaid, reportCurrency)}
           icon={CheckCircle2}
         />
         <StatCard
           title="Still outstanding"
-          value={formatMoney(outstanding)}
+          value={totalsError ? "Unavailable" : formatMoney(outstanding, reportCurrency)}
           icon={Wallet}
         />
       </div>
 
       <div className="h-px bg-border" />
+
+      {totalsError && <p role="alert" className="text-sm text-destructive">{totalsError}</p>}
 
       {/* Who you owe — by agency / type */}
       <div className="space-y-3">
@@ -380,7 +383,7 @@ export default function TaxLiabilitiesPage() {
         </div>
         <div className="grid gap-3 lg:grid-cols-3">
           {AGENCY_BUCKETS.map((b) => {
-            const paid = paidByBucket[b.bucket] || 0;
+            const paid = paidByBucket[b.bucket] || 0n;
             return (
               <div
                 key={b.bucket}
@@ -394,7 +397,7 @@ export default function TaxLiabilitiesPage() {
                   <div className="text-xs text-muted-foreground">
                     Paid to date
                     <span className="ml-1.5 font-mono tabular-nums text-foreground">
-                      {formatMoney(paid)}
+                      {totalsError ? "Unavailable" : formatMoney(paid, reportCurrency)}
                     </span>
                   </div>
                   <Button
@@ -409,11 +412,11 @@ export default function TaxLiabilitiesPage() {
             );
           })}
         </div>
-        {outstanding > 0 && (
+        {!totalsError && outstanding > 0n && (
           <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
             <AlertCircle className="mt-0.5 size-3.5 shrink-0" />
             <span>
-              {formatMoney(outstanding)} of withheld payroll tax has not been
+              {formatMoney(outstanding, reportCurrency)} of withheld payroll tax has not been
               remitted yet. Record a payment when you pay it so your books match
               what&apos;s actually left to pay.
             </span>

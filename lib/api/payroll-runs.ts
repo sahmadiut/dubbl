@@ -56,7 +56,7 @@ async function employee(tx: TaxTx, ctx: AuthContext, id: string, active = true) 
   if (active && !row.isActive) throw new AuthError("Active employee required", 409);
   return row;
 }
-function headerDto(row: Run) {
+export function headerDto(row: Run) {
   try {
     runCreateSchema.shape.payPeriodStart.parse(row.payPeriodStart); runCreateSchema.shape.payPeriodEnd.parse(row.payPeriodEnd);
     orderedDates(row.payPeriodStart, row.payPeriodEnd);
@@ -73,7 +73,7 @@ async function ownedRun(tx: TaxTx, ctx: AuthContext, id: string, lock = false) {
   const [row] = await (lock ? query.for("update") : query);
   if (!row) throw new AuthError("Payroll run not found", 404); headerDto(row); return row;
 }
-async function readItems(tx: TaxTx, ctx: AuthContext, id: string) {
+export async function readItems(tx: TaxTx, ctx: AuthContext, id: string) {
   const rows = await tx.query.payrollItem.findMany({ where: eq(payrollItem.payrollRunId, id), orderBy: asc(payrollItem.id),
     with: { taxBreakdowns: true, employerTaxBreakdowns: true } });
   return mapSeries(rows, async row => {

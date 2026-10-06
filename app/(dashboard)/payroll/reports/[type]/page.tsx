@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
-import { formatMoney } from "@/lib/money";
+import { payrollMoneyDisplay as formatMoney } from "@/lib/money/payroll-display";
 
 export default function ReportDetailPage() {
   const { type } = useParams<{ type: string }>();
@@ -41,6 +41,7 @@ export default function ReportDetailPage() {
     fetch(url, { headers: { "x-organization-id": orgId } })
       .then((r) => r.json())
       .then((d) => setData(d))
+      .catch(() => setData({ error: "Unable to load payroll report" }))
       .finally(() => setLoading(false));
   }, [type, orgId, startDate, endDate]);
 
@@ -66,6 +67,8 @@ export default function ReportDetailPage() {
         <h1 className="text-lg font-semibold">{titles[type] || "Report"}</h1>
       </div>
 
+      {data?.error && <p role="alert" className="text-sm text-destructive">{data.error}</p>}
+
       <div className="flex flex-wrap gap-3">
         <div className="space-y-1">
           <Label className="text-xs">Start Date</Label>
@@ -87,19 +90,19 @@ export default function ReportDetailPage() {
               <span className="text-xs font-medium text-muted-foreground w-24 text-right">Tax</span>
             </div>
           </div>
-          {data.data.map((row: { employeeId: string; employeeName: string; totalGross: number; totalTax: number }) => (
+          {data.data.map((row: { employeeId: string; employeeName: string; currency: string; totalGross: number; totalTax: number }) => (
             <div key={row.employeeId} className="px-4 py-2.5 flex items-center justify-between">
               <span className="text-sm">{row.employeeName}</span>
               <div className="flex gap-8">
-                <span className="text-sm font-mono tabular-nums w-24 text-right">{formatMoney(row.totalGross)}</span>
-                <span className="text-sm font-mono tabular-nums w-24 text-right text-red-600 dark:text-red-400">{formatMoney(row.totalTax)}</span>
+                <span className="text-sm font-mono tabular-nums w-24 text-right">{formatMoney(row.totalGross, row.currency)}</span>
+                <span className="text-sm font-mono tabular-nums w-24 text-right text-red-600 dark:text-red-400">{formatMoney(row.totalTax, row.currency)}</span>
               </div>
             </div>
           ))}
           {data.totalTax !== undefined && (
             <div className="px-4 py-2.5 flex items-center justify-between font-medium">
               <span className="text-sm">Total</span>
-              <span className="text-sm font-mono tabular-nums text-red-600 dark:text-red-400">{formatMoney(data.totalTax)}</span>
+              <span className="text-sm font-mono tabular-nums text-red-600 dark:text-red-400">{formatMoney(data.totalTax, data.currency)}</span>
             </div>
           )}
         </div>
@@ -115,13 +118,13 @@ export default function ReportDetailPage() {
               <span className="text-xs font-medium text-muted-foreground w-24 text-right">Net</span>
             </div>
           </div>
-          {data.data.map((row: { department: string; employeeCount: number; totalGross: number; totalNet: number }, i: number) => (
+          {data.data.map((row: { department: string; employeeCount: number; currency: string; totalGross: number; totalNet: number }, i: number) => (
             <div key={i} className="px-4 py-2.5 flex items-center justify-between">
               <span className="text-sm">{row.department}</span>
               <div className="flex gap-8">
                 <span className="text-sm font-mono tabular-nums w-16 text-right">{row.employeeCount}</span>
-                <span className="text-sm font-mono tabular-nums w-24 text-right">{formatMoney(row.totalGross)}</span>
-                <span className="text-sm font-mono tabular-nums w-24 text-right">{formatMoney(row.totalNet)}</span>
+                <span className="text-sm font-mono tabular-nums w-24 text-right">{formatMoney(row.totalGross, row.currency)}</span>
+                <span className="text-sm font-mono tabular-nums w-24 text-right">{formatMoney(row.totalNet, row.currency)}</span>
               </div>
             </div>
           ))}
@@ -138,13 +141,13 @@ export default function ReportDetailPage() {
               <span className="text-xs font-medium text-muted-foreground w-24 text-right">Net</span>
             </div>
           </div>
-          {data.data.map((row: { month: string; runCount: number; totalGross: number; totalNet: number }) => (
+          {data.data.map((row: { month: string; runCount: number; currency: string; totalGross: number; totalNet: number }) => (
             <div key={row.month} className="px-4 py-2.5 flex items-center justify-between">
               <span className="text-sm font-mono">{row.month}</span>
               <div className="flex gap-8">
                 <span className="text-sm font-mono tabular-nums w-16 text-right">{row.runCount}</span>
-                <span className="text-sm font-mono tabular-nums w-24 text-right">{formatMoney(row.totalGross)}</span>
-                <span className="text-sm font-mono tabular-nums w-24 text-right">{formatMoney(row.totalNet)}</span>
+                <span className="text-sm font-mono tabular-nums w-24 text-right">{formatMoney(row.totalGross, row.currency)}</span>
+                <span className="text-sm font-mono tabular-nums w-24 text-right">{formatMoney(row.totalNet, row.currency)}</span>
               </div>
             </div>
           ))}
@@ -153,12 +156,12 @@ export default function ReportDetailPage() {
 
       {type === "summary" && data?.summary && (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {Object.entries(data.summary).map(([key, value]) => (
+          {Object.entries(data.summary).filter(([key]) => !key.endsWith("Minor") && key !== "currency").map(([key, value]) => (
             <div key={key} className="rounded-xl border bg-card p-4">
               <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{key.replace(/([A-Z])/g, " $1").trim()}</p>
               <p className="mt-1 text-xl font-bold font-mono tabular-nums">
                 {typeof value === "number" && key !== "totalRuns" && key !== "activeEmployees"
-                  ? formatMoney(value as number)
+                  ? formatMoney(value as number, data.summary.currency)
                   : String(value)}
               </p>
             </div>

@@ -538,3 +538,8 @@ Minor strings; project minutes remain minutes. Draft-only entry edits, correct
 entry paths, scoped membership and once-only year-specific leave balance deduction
 are enforced. See [time contracts](../../.agentic/registries/PAYROLL_TIME_WIRE_CONTRACTS.md).
 Run/accrual calculations, financial outputs and production IRR remain separate.
+
+
+## Payroll output contracts (MON-085)
+
+Reports, CSV, payslips, tax-form JSON and self-service share scoped REST/MCP services. Existing safe numeric cents add canonical Minor strings; bigint aggregates/averages preserve exact values. Saved item/run/form currencies remain explicit, mixed single-total currencies fail, and YTD includes only the same Gregorian year's completed live runs. Generation/view/profile changes and audit commit atomically; concurrent payslip retries fill only missing snapshots. Tax forms use saved withholding/deduction data and USD payment thresholds, with saved paymentDate preferred over legacy UTC paidAt. CSV and dashboards preserve the legacy fixed-cents display contract exactly. The existing /pdf endpoint remains JSON; general PDF/locale/scale and full-range financial qualification stay separate. See [output contracts](../../.agentic/registries/PAYROLL_OUTPUT_WIRE_CONTRACTS.md) for every boundary, limitation and compatibility correction.

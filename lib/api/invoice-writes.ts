@@ -13,6 +13,7 @@ import { logAudit, diffChanges } from "./audit";
 import { publicMoneyDto, publicLineDto } from "./public-money-wire";
 import { stringifyWire, WireCompatibilityError } from "@/lib/money/wire";
 import { currencyCodeSchema } from "@/lib/currency/zod";
+import { priceListDto, priceItemDto } from "./pricing-wire";
 import { rateDateSchema } from "@/lib/currency/rate-policy";
 import { invoiceCreateSchema, invoiceUpdateSchema, invoiceWriteTotals, invoiceWriteDto, invoiceInputError,
   safeInvoiceMinor, hasInvoicePrice, type InvoiceWriteLine } from "./invoice-write-wire";
@@ -54,11 +55,13 @@ export async function prices(tx: Transaction, orgId: string, baseCurrency: strin
   for (const line of lines) {
     const listId = line.priceListId ?? documentListId;
     const [list] = listId ? await tx.select().from(priceList).where(and(eq(priceList.id, listId), eq(priceList.organizationId, orgId))).for("share") : [];
+    if (list) priceListDto(list);
     if (list && list.currencyCode !== currency) throw new WireCompatibilityError("Invoice price list currency must match the invoice; no implicit FX conversion");
     if (hasInvoicePrice(line) || !line.inventoryItemId) { values.push(0); continue; }
     if (list && list.isActive && (!list.effectiveFrom || date >= list.effectiveFrom) && (!list.effectiveTo || date <= list.effectiveTo)) {
       const tiers = await tx.select().from(priceListItem).where(and(eq(priceListItem.priceListId, list.id),
         eq(priceListItem.inventoryItemId, line.inventoryItemId))).for("share");
+      tiers.forEach(priceItemDto);
       const tier = tiers.filter(row => row.minQuantity <= (line.quantity || 1)).sort((a, b) => b.minQuantity - a.minQuantity)[0];
       if (tier) { values.push(tier.unitPrice); continue; }
     }

@@ -176,3 +176,12 @@ Generated initial scope index; current status always comes from task metadata vi
 | [MON-085](../tasks/MON-085.md) | Exact payroll report, payslip and tax form contracts | backend | no |
 
 MON-026 retains integrated asset/loan acceptance after MON-086 masters, MON-087 depreciation, MON-088 valuation/disposal, MON-089 CWIP and MON-090 loans/schedules/payment. All children inherit MON-011 and migration/API source sections; original parent criteria remain unchanged.
+
+## MON-027 bounded contract children
+
+Source inspection split projects/CRM/pricing without reducing parent acceptance.
+
+- [MON-091](../tasks/MON-091.md): Adopt exact price-list and resolution contracts.
+- [MON-092](../tasks/MON-092.md): Adopt exact CRM deal and analytics contracts.
+- [MON-093](../tasks/MON-093.md): Adopt exact project master and time contracts.
+- [MON-094](../tasks/MON-094.md): Adopt exact project billing and profitability contracts.

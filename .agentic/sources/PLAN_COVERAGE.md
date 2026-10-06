@@ -53,3 +53,12 @@ MON-024 retains combined inventory/costing acceptance after MON-074 variants/sup
 MON-025 retains combined payroll acceptance after MON-079 master records, MON-080 settings/deductions/tax, MON-081 time/leave/shifts, MON-082 pay runs/lifecycle, MON-083 contractor/tax payments, MON-084 compensation/forecasts and MON-085 reports/payslips/tax forms/self-service outputs. Children inherit MON-011 and migration/API source sections; original parent criteria remain unchanged.
 
 MON-026 retains integrated asset/loan acceptance after MON-086 masters, MON-087 depreciation, MON-088 valuation/disposal, MON-089 CWIP and MON-090 loans/schedules/payment. All children inherit MON-011 and migration/API source sections; original parent criteria remain unchanged.
+
+## MON-027 bounded contract children
+
+Source inspection split projects/CRM/pricing without reducing parent acceptance.
+
+- [MON-091](../tasks/MON-091.md): Adopt exact price-list and resolution contracts.
+- [MON-092](../tasks/MON-092.md): Adopt exact CRM deal and analytics contracts.
+- [MON-093](../tasks/MON-093.md): Adopt exact project master and time contracts.
+- [MON-094](../tasks/MON-094.md): Adopt exact project billing and profitability contracts.

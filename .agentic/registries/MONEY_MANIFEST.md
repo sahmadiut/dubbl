@@ -1,5 +1,16 @@
 # Money and FX boundary manifest
 
+## MON-091 price-list adoption
+
+[PRICING_WIRE_CONTRACTS](PRICING_WIRE_CONTRACTS.md) records ten REST/MCP operation
+pairs, additive unitPriceMinor cents aliases, safe numeric ranges and whole int32
+quantity tiers. Shared scoped services guard metadata/history, tenant joins and
+concurrent unique writes with atomic audit and response preflight. The missing
+REST resolver and MCP item list now have parity; invoice/quote lookup shares saved
+value guards. Currency changes retain v1 saved integer prices without FX/rescale.
+No schema, IRR or full-int64 rollout changes. MON-027 retains combined project/CRM/
+pricing acceptance through MON-092..094.
+
 ## MON-078 inventory assembly adoption
 
 [INVENTORY_ASSEMBLY_WIRE_CONTRACTS](INVENTORY_ASSEMBLY_WIRE_CONTRACTS.md) records

@@ -1,5 +1,14 @@
 # CI and migration fixture runbook
 
+MON-091 adds `pricing-wire.test.ts` to pure discovery and `pricing.test.ts` to
+integration discovery. Run `node --import tsx --test tests/pricing-wire.test.ts
+tests/integration/pricing.test.ts` with explicit loopback TEST_DATABASE_URL and a
+CREATEDB test role. Actual API-key handlers and full MCP SDK registration run in
+random migrated databases without a Next dev server. Audit/price output faults
+are injected only in those fixtures; the harness drops them afterward. Invoice
+write/quote integration workers cover adopted price-list lookup regressions. No
+new schema/migration or deployment opt-in is introduced.
+
 CI-001, 2026-10-02 (Asia/Tehran). Canonical package manager: `pnpm@10.30.3`, declared in package.json. CI uses Node 22 and frozen pnpm-lock.yaml installs. The legacy package-lock.json is preserved but is not the CI dependency source.
 
 ## Checks

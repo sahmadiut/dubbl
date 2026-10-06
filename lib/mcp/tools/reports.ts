@@ -13,11 +13,11 @@ import {
   project,
   bill,
   organization,
-  payment,
-  paymentAllocation,
 } from "@/lib/db/schema";
 import { eq, and, sql, isNull, ne, gte, lte, inArray, asc } from "drizzle-orm";
 import { getCumulativeStatement } from "@/lib/reports/cumulative-statement";
+import { getAgingReport } from "@/lib/reports/aging";
+import { agingSchema } from "@/lib/reports/aging-wire";
 import { cumulativeReportSchema } from "@/lib/reports/statement-wire";
 import { wrapTool } from "@/lib/mcp/errors";
 import type { AuthContext } from "@/lib/api/auth-context";
@@ -224,215 +224,15 @@ export function registerReportTools(server: McpServer, ctx: AuthContext) {
       })
   );
 
-  server.tool(
-    "aged_receivables",
-    "Generate an aged receivables report showing outstanding invoices grouped by aging buckets (Current, 1-30, 31-60, 61-90, 90+ days). Amounts are in integer cents. Pass asAt (YYYY-MM-DD) for a historical snapshot: aging is measured from that date and each invoice's open balance excludes payments dated after it (defaults to today).",
-    {
-      asAt: z
-        .string()
-        .optional()
-        .describe(
-          "Optional point-in-time date (YYYY-MM-DD). When set, the report is computed as a historical snapshot at that date: aging buckets/daysOverdue are measured from it and open balances exclude payments dated after it. Defaults to today."
-        ),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        const isHistorical = Boolean(params.asAt);
-        const today = params.asAt ? new Date(`${params.asAt}T00:00:00Z`) : new Date();
-        const asAtStr = params.asAt ?? today.toISOString().slice(0, 10);
+  server.registerTool("aged_receivables", {
+    description: "Read outstanding invoices grouped into aging buckets with counts, numeric integer cents and amountDueMinor/totalMinor/grandTotalMinor strings (safe +/-9007199254740991). Optional asAt reconstructs a historical open balance from scoped allocations; omit for current stored balances. Optional currencyCode filters document currency; mixed currencies reject without FX conversion. Requires view:data.",
+    inputSchema: agingSchema,
+  }, params => wrapTool(ctx, async () => (await getAgingReport(ctx, "receivables", params)).data));
 
-        const invoices = await db.query.invoice.findMany({
-          where: and(
-            eq(invoice.organizationId, ctx.organizationId),
-            isNull(invoice.deletedAt),
-            ne(invoice.status, "void"),
-            ...(isHistorical ? [] : [ne(invoice.status, "paid")]),
-            ne(invoice.status, "draft")
-          ),
-          with: { contact: true },
-        });
-
-        // Reconstruct each invoice's open balance as at asAt from payment
-        // allocations dated on or before asAt (historical mode only).
-        const openByInvoice = new Map<string, number>();
-        if (isHistorical && invoices.length > 0) {
-          for (const inv of invoices) openByInvoice.set(inv.id, inv.total);
-          const allocations = await db
-            .select({
-              documentId: paymentAllocation.documentId,
-              amount: paymentAllocation.amount,
-              paymentDate: payment.date,
-            })
-            .from(paymentAllocation)
-            .innerJoin(payment, eq(paymentAllocation.paymentId, payment.id))
-            .where(
-              and(
-                eq(paymentAllocation.documentType, "invoice"),
-                inArray(
-                  paymentAllocation.documentId,
-                  invoices.map((i) => i.id)
-                ),
-                isNull(payment.deletedAt)
-              )
-            );
-          for (const a of allocations) {
-            if (a.paymentDate > asAtStr) continue;
-            openByInvoice.set(
-              a.documentId,
-              (openByInvoice.get(a.documentId) ?? 0) - a.amount
-            );
-          }
-        }
-
-        type InvoiceBucketItem = { id: string; invoiceNumber: string; contactName: string; dueDate: string; amountDue: number; daysOverdue: number };
-        const buckets: { label: string; total: number; count: number; invoices: InvoiceBucketItem[] }[] = [
-          { label: "Current", total: 0, count: 0, invoices: [] },
-          { label: "1-30 days", total: 0, count: 0, invoices: [] },
-          { label: "31-60 days", total: 0, count: 0, invoices: [] },
-          { label: "61-90 days", total: 0, count: 0, invoices: [] },
-          { label: "90+ days", total: 0, count: 0, invoices: [] },
-        ];
-
-        for (const inv of invoices) {
-          if (isHistorical && inv.issueDate > asAtStr) continue;
-          const amountDue = isHistorical
-            ? openByInvoice.get(inv.id) ?? inv.amountDue
-            : inv.amountDue;
-          if (isHistorical && amountDue <= 0) continue;
-
-          const due = new Date(inv.dueDate);
-          const daysOverdue = Math.floor(
-            (today.getTime() - due.getTime()) / (1000 * 60 * 60 * 24)
-          );
-
-          let bucketIdx: number;
-          if (daysOverdue <= 0) bucketIdx = 0;
-          else if (daysOverdue <= 30) bucketIdx = 1;
-          else if (daysOverdue <= 60) bucketIdx = 2;
-          else if (daysOverdue <= 90) bucketIdx = 3;
-          else bucketIdx = 4;
-
-          buckets[bucketIdx].invoices.push({
-            id: inv.id,
-            invoiceNumber: inv.invoiceNumber,
-            contactName: inv.contact?.name ?? "Unknown",
-            dueDate: inv.dueDate,
-            amountDue,
-            daysOverdue: Math.max(0, daysOverdue),
-          });
-          buckets[bucketIdx].total += amountDue;
-          buckets[bucketIdx].count += 1;
-        }
-
-        const grandTotal = buckets.reduce((sum, b) => sum + b.total, 0);
-        return { asAt: asAtStr, buckets, grandTotal };
-      })
-  );
-
-  server.tool(
-    "aged_payables",
-    "Generate an aged payables report showing outstanding bills grouped by aging buckets (Current, 1-30, 31-60, 61-90, 90+ days). Amounts are in integer cents. Pass asAt (YYYY-MM-DD) for a historical snapshot: aging is measured from that date and each bill's open balance excludes payments dated after it (defaults to today).",
-    {
-      asAt: z
-        .string()
-        .optional()
-        .describe(
-          "Optional point-in-time date (YYYY-MM-DD). When set, the report is computed as a historical snapshot at that date: aging buckets/daysOverdue are measured from it and open balances exclude payments dated after it. Defaults to today."
-        ),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        const isHistorical = Boolean(params.asAt);
-        const today = params.asAt ? new Date(`${params.asAt}T00:00:00Z`) : new Date();
-        const asAtStr = params.asAt ?? today.toISOString().slice(0, 10);
-
-        const bills = await db.query.bill.findMany({
-          where: and(
-            eq(bill.organizationId, ctx.organizationId),
-            isNull(bill.deletedAt),
-            ne(bill.status, "void"),
-            ...(isHistorical ? [] : [ne(bill.status, "paid")]),
-            ne(bill.status, "draft")
-          ),
-          with: { contact: true },
-        });
-
-        // Reconstruct each bill's open balance as at asAt from payment
-        // allocations dated on or before asAt (historical mode only).
-        const openByBill = new Map<string, number>();
-        if (isHistorical && bills.length > 0) {
-          for (const b of bills) openByBill.set(b.id, b.total);
-          const allocations = await db
-            .select({
-              documentId: paymentAllocation.documentId,
-              amount: paymentAllocation.amount,
-              paymentDate: payment.date,
-            })
-            .from(paymentAllocation)
-            .innerJoin(payment, eq(paymentAllocation.paymentId, payment.id))
-            .where(
-              and(
-                eq(paymentAllocation.documentType, "bill"),
-                inArray(
-                  paymentAllocation.documentId,
-                  bills.map((b) => b.id)
-                ),
-                isNull(payment.deletedAt)
-              )
-            );
-          for (const a of allocations) {
-            if (a.paymentDate > asAtStr) continue;
-            openByBill.set(
-              a.documentId,
-              (openByBill.get(a.documentId) ?? 0) - a.amount
-            );
-          }
-        }
-
-        type BillBucketItem = { id: string; billNumber: string; contactName: string; dueDate: string; amountDue: number; daysOverdue: number };
-        const buckets: { label: string; total: number; count: number; bills: BillBucketItem[] }[] = [
-          { label: "Current", total: 0, count: 0, bills: [] },
-          { label: "1-30 days", total: 0, count: 0, bills: [] },
-          { label: "31-60 days", total: 0, count: 0, bills: [] },
-          { label: "61-90 days", total: 0, count: 0, bills: [] },
-          { label: "90+ days", total: 0, count: 0, bills: [] },
-        ];
-
-        for (const b of bills) {
-          if (isHistorical && b.issueDate > asAtStr) continue;
-          const amountDue = isHistorical
-            ? openByBill.get(b.id) ?? b.amountDue
-            : b.amountDue;
-          if (isHistorical && amountDue <= 0) continue;
-
-          const due = new Date(b.dueDate);
-          const daysOverdue = Math.floor(
-            (today.getTime() - due.getTime()) / (1000 * 60 * 60 * 24)
-          );
-
-          let bucketIdx: number;
-          if (daysOverdue <= 0) bucketIdx = 0;
-          else if (daysOverdue <= 30) bucketIdx = 1;
-          else if (daysOverdue <= 60) bucketIdx = 2;
-          else if (daysOverdue <= 90) bucketIdx = 3;
-          else bucketIdx = 4;
-
-          buckets[bucketIdx].bills.push({
-            id: b.id,
-            billNumber: b.billNumber,
-            contactName: b.contact?.name ?? "Unknown",
-            dueDate: b.dueDate,
-            amountDue,
-            daysOverdue: Math.max(0, daysOverdue),
-          });
-          buckets[bucketIdx].total += amountDue;
-          buckets[bucketIdx].count += 1;
-        }
-
-        const grandTotal = buckets.reduce((sum, bkt) => sum + bkt.total, 0);
-        return { asAt: asAtStr, buckets, grandTotal };
-      })
-  );
+  server.registerTool("aged_payables", {
+    description: "Read outstanding bills grouped into aging buckets with counts, numeric integer cents and amountDueMinor/totalMinor/grandTotalMinor strings (safe +/-9007199254740991). Optional asAt reconstructs a historical open balance from scoped allocations; omit for current stored balances. Optional currencyCode filters document currency; mixed currencies reject without FX conversion. Requires view:data.",
+    inputSchema: agingSchema,
+  }, params => wrapTool(ctx, async () => (await getAgingReport(ctx, "payables", params)).data));
 
   server.tool(
     "stripe_fee_report",
@@ -710,8 +510,10 @@ export function registerReportTools(server: McpServer, ctx: AuthContext) {
 
   server.tool(
     "export_financial_statement",
-    "Render a financial statement as a downloadable PDF or XLSX (Excel) file. Returns the file base64-encoded along with its filename and MIME type. Only posted journal data is included. Monetary figures are computed in integer cents and scaled by the file renderer. For date-ranged statements (profit_and_loss, general_ledger) provide 'from' and 'to'; balance_sheet, trial_balance, aged_receivables and aged_payables are point-in-time and ignore the dates.",
+    "Render a financial statement as a downloadable PDF or XLSX (Excel) file. Returns the file base64-encoded along with its filename and MIME type. Ledger reports include posted journal data; aging reports include non-draft/non-void documents. Monetary figures are computed in integer cents and scaled by the file renderer. For date-ranged statements (profit_and_loss, general_ledger) provide 'from' and 'to'. Balance_sheet and trial_balance are point-in-time and ignore those dates. Aged_receivables and aged_payables ignore from/to and accept optional asAt/currencyCode, using the same exact totals as their JSON tools.",
     {
+      asAt: agingSchema.shape.asAt.describe("Aging export only: historical cutoff YYYY-MM-DD; omit for current stored balances"),
+      currencyCode: agingSchema.shape.currencyCode.describe("Aging export only: single document currency filter, no FX conversion"),
       statement: z
         .enum([
           "balance_sheet",
@@ -740,6 +542,9 @@ export function registerReportTools(server: McpServer, ctx: AuthContext) {
     },
     (params) =>
       wrapTool(ctx, async () => {
+        if (!["aged_receivables", "aged_payables"].includes(params.statement) && (params.asAt !== undefined || params.currencyCode !== undefined)) {
+          throw new z.ZodError([{ code: "custom", path: [], message: "asAt/currencyCode apply only to aging exports" }]);
+        }
         const startDate = params.from ?? `${new Date().getFullYear()}-01-01`;
         const endDate = params.to ?? new Date().toISOString().slice(0, 10);
         const asAt = new Date().toISOString().slice(0, 10);
@@ -954,87 +759,10 @@ export function registerReportTools(server: McpServer, ctx: AuthContext) {
           };
           baseName = `general-ledger-${startDate}-${endDate}`;
         } else {
-          // aged_receivables | aged_payables
-          const isReceivables = params.statement === "aged_receivables";
-          const today = new Date();
-          const bucketDefs = ["Current", "1-30 days", "31-60 days", "61-90 days", "90+ days"];
-          const sections: Statement["sections"] = bucketDefs.map((label) => ({
-            label,
-            rows: [],
-            subtotal: 0,
-          }));
-
-          const pickBucket = (daysOverdue: number) => {
-            if (daysOverdue <= 0) return 0;
-            if (daysOverdue <= 30) return 1;
-            if (daysOverdue <= 60) return 2;
-            if (daysOverdue <= 90) return 3;
-            return 4;
-          };
-
-          let grandTotal = 0;
-          if (isReceivables) {
-            const invoices = await db.query.invoice.findMany({
-              where: and(
-                eq(invoice.organizationId, ctx.organizationId),
-                isNull(invoice.deletedAt),
-                ne(invoice.status, "void"),
-                ne(invoice.status, "paid"),
-                ne(invoice.status, "draft")
-              ),
-              with: { contact: true },
-            });
-            for (const inv of invoices) {
-              const due = new Date(inv.dueDate);
-              const daysOverdue = Math.floor(
-                (today.getTime() - due.getTime()) / (1000 * 60 * 60 * 24)
-              );
-              const idx = pickBucket(daysOverdue);
-              sections[idx].rows.push({
-                code: inv.invoiceNumber,
-                name: inv.contact?.name ?? "Unknown",
-                amount: inv.amountDue,
-                depth: 1,
-              });
-              sections[idx].subtotal = (sections[idx].subtotal ?? 0) + inv.amountDue;
-              grandTotal += inv.amountDue;
-            }
-          } else {
-            const bills = await db.query.bill.findMany({
-              where: and(
-                eq(bill.organizationId, ctx.organizationId),
-                isNull(bill.deletedAt),
-                ne(bill.status, "void"),
-                ne(bill.status, "paid"),
-                ne(bill.status, "draft")
-              ),
-              with: { contact: true },
-            });
-            for (const b of bills) {
-              const due = new Date(b.dueDate);
-              const daysOverdue = Math.floor(
-                (today.getTime() - due.getTime()) / (1000 * 60 * 60 * 24)
-              );
-              const idx = pickBucket(daysOverdue);
-              sections[idx].rows.push({
-                code: b.billNumber,
-                name: b.contact?.name ?? "Unknown",
-                amount: b.amountDue,
-                depth: 1,
-              });
-              sections[idx].subtotal = (sections[idx].subtotal ?? 0) + b.amountDue;
-              grandTotal += b.amountDue;
-            }
-          }
-
-          statement = {
-            title: isReceivables ? "Aged Receivables" : "Aged Payables",
-            periodLabel: `As at ${asAt}`,
-            currency,
-            sections,
-            grandTotal,
-          };
-          baseName = `${isReceivables ? "aged-receivables" : "aged-payables"}-${asAt}`;
+          const kind = params.statement === "aged_receivables" ? "receivables" : "payables";
+          const report = await getAgingReport(ctx, kind, { asAt: params.asAt, currencyCode: params.currencyCode });
+          statement = report.statement;
+          baseName = `aged-${kind}-${report.data.asAt}`;
         }
 
         const { toPdf, toXlsx } = await import("@/lib/reports/statement-export");

@@ -85,3 +85,12 @@ MON-101 retains all original acceptance after the five children; all trace to mi
 - [MON-108](../tasks/MON-108.md): Adopt exact ledger detail report contracts.
 - [MON-109](../tasks/MON-109.md): Adopt exact cash flow report contracts.
 - [MON-110](../tasks/MON-110.md): Adopt exact compound financial report contracts.
+
+
+## MON-102 bounded report and statement children
+
+MON-102 retains every original integration criterion and depends on these children.
+
+- [MON-111](../tasks/MON-111.md): Adopt exact aged receivable and payable reports.
+- [MON-112](../tasks/MON-112.md): Adopt exact contact statements and delivery.
+- [MON-113](../tasks/MON-113.md): Adopt exact payment-performance analytics.

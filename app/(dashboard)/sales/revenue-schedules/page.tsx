@@ -10,7 +10,7 @@ import { StatCard } from "@/components/dashboard/stat-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { formatMoney } from "@/lib/money";
+import { assetMoneyDisplay as formatMoney } from "@/lib/money/asset-display";
 import { devDelay } from "@/lib/dev-delay";
 import { useCreateDrawer } from "@/components/dashboard/create-drawer";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
@@ -150,7 +150,6 @@ export default function RevenueSchedulesPage() {
   useEffect(() => {
     if (!orgId) return;
     let cancelled = false;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setRefetching(true);
     setPage(1);
 
@@ -228,16 +227,15 @@ export default function RevenueSchedulesPage() {
 
   // Bump searchKey when debounced search or status filter changes to trigger ContentReveal
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSearchKey((k) => k + 1);
   }, [debouncedSearch, statusFilter]);
 
   const totalScheduled = useMemo(
-    () => schedules.reduce((sum, s) => sum + (s.status !== "cancelled" ? s.totalAmount : 0), 0),
+    () => schedules.reduce((sum, s) => sum + (s.status !== "cancelled" ? BigInt(s.totalAmount) : 0n), 0n),
     [schedules]
   );
   const totalRecognized = useMemo(
-    () => schedules.reduce((sum, s) => sum + (s.status !== "cancelled" ? s.recognizedAmount : 0), 0),
+    () => schedules.reduce((sum, s) => sum + (s.status !== "cancelled" ? BigInt(s.recognizedAmount) : 0n), 0n),
     [schedules]
   );
   const totalRemaining = totalScheduled - totalRecognized;

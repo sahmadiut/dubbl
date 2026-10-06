@@ -1,5 +1,22 @@
 # Verification matrix
 
+## MON-098 revenue schedule and recognition
+
+- Pure fixtures: REST major/MCP cents aliases, exact decimal ties, safe maximum,
+  conflicts/malformed syntax, conserved large/zero monthly allocations, valid
+  years/inclusive month bounds and legacy UTC overflow beyond endDate.
+- Migrated PostgreSQL: five actual REST/MCP pairs through API keys and full SDK
+  registration; owner/custom role denial/allowance, foreign invoice/line/account,
+  inactive/deleted/type/currency references, draft preparation/issued recognition,
+  numeric/exact/dual clients and fixed USD/JPY/KWD/IRR cents.
+- Financial/data assertions: recognizedAmount exact sum, posted balanced identity
+  legs, saved account snapshots, null legacy references/FX, malformed/orphan history,
+  period/advisor/fiscal-year gates, targeted/keyed replay, cancellation/completion,
+  create/recognize/cancel races, journal-number retry and atomic audit/output faults.
+- No FX/history rescaling, invoice multi-schedule cap/original-deferral policy,
+  IRR/full-int64 enablement, performance or independent accounting approval.
+  Parent MON-028 and wider accounting gates retain combined qualification.
+
 ## MON-078 inventory BOM and assembly
 
 - Pure tests: canonical money/aliases and safe bounds, exact physical decimal

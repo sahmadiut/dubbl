@@ -1,5 +1,18 @@
 # Money and FX boundary manifest
 
+## MON-098 revenue schedule and recognition adoption
+
+[REVENUE_WIRE_CONTRACTS](REVENUE_WIRE_CONTRACTS.md) maps five shared REST/MCP
+pairs. REST major/MCP cents units retain explicit exact aliases; bigint monthly
+floor allocations and recognized sums conserve safe-range totals. Scoped live
+invoice/line/accounts, saved account UUIDs/history validation, issued/base-currency
+posting guards, period locks, keyed/targeted retries and atomic journals/status/
+audit/output protect recognition. Dashboard input/display and loaded sums are
+exact. Legacy inclusive calendar months and UTC overflow policy remain explicit.
+Non-two-decimal/FX posting fails without inventing absent snapshots; no invoice
+multi-schedule cap or original-deferral policy is introduced. No schema/migration/
+IRR/full-int64/deployment enablement; MON-028 retains combined qualification.
+
 ## MON-097 accrual schedule and posting adoption
 
 [ACCRUAL_WIRE_CONTRACTS](ACCRUAL_WIRE_CONTRACTS.md) maps five shared REST/MCP

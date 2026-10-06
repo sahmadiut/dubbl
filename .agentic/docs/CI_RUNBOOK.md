@@ -1,5 +1,17 @@
 # CI and migration fixture runbook
 
+MON-098 adds revenue-wire.test.ts and integration/revenue-schedules.test.ts to
+normal discovery. Run `node --import tsx --test tests/revenue-wire.test.ts
+tests/integration/revenue-schedules.test.ts` with an explicit loopback
+TEST_DATABASE_URL on a disposable UTC PostgreSQL cluster. The harness creates,
+migrates and drops a random database. Actual API-key REST and full MCP SDK
+registration exercise five pairs, transport units, invoice/line/account scope,
+exact recognized totals, zero/large periods, legacy history, lock tiers, retries,
+concurrency and audit/storage/output rollback. Fault injections and temporary
+user-trigger disable for null legacy FX stay in fixture databases. No dev server,
+application database mutation or new schema/migration is required.
+
+
 MON-097 adds accrual-wire.test.ts and integration/accrual-schedules.test.ts to
 normal discovery. Run `node --import tsx --test tests/accrual-wire.test.ts
 tests/integration/accrual-schedules.test.ts` with an explicit loopback

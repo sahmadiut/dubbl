@@ -565,3 +565,15 @@ MON-094 project billing/profitability retains safe numeric fixed cents and adds 
 
 
 MON-027 qualifies the combined pricing/CRM/project master/billing slice. Cross-transport fixtures cover saved rates, immutable allocations, historical invoice prices, currency-filtered summaries, rollback and writer races. Fixed-price master edits now reject prices below the attributed invoiced fixed amount, excluding recharged costs. See [combined contracts](../../.agentic/registries/PROJECT_CRM_PRICING_INTEGRATION.md) for all 81 operation pairs and retained safe fixed-cents limits. Full-int64, FX, historical repair and independent production qualification remain separate.
+
+
+MON-098 revenue schedules retain REST decimal-major and MCP integer-cents inputs,
+add exact totalAmountExact (REST) and totalAmountMinor aliases, and emit safe
+numeric total/recognized/entry cents with Minor strings. Bigint monthly floor
+allocation and recognized sums preserve exact totals, inclusive calendar months
+and UTC overflow. Five pairs share scoped atomic direct-DB services with saved
+account UUIDs, history/output validation, period locks and targeted/keyed retries.
+Issued invoice/base-currency/two-decimal guards reject conversion without an FX
+snapshot. Dashboard input and bigint presentation preserve fixed cents. No new
+invoice-total cap/original-deferral policy or schema/IRR/full-int64 enablement.
+See [revenue contracts](../../.agentic/registries/REVENUE_WIRE_CONTRACTS.md).

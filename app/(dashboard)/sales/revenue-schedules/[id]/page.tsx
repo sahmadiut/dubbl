@@ -7,7 +7,7 @@ import { ArrowLeft, Ban, TrendingUp, Check } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatMoney } from "@/lib/money";
+import { assetMoneyDisplay as formatMoney } from "@/lib/money/asset-display";
 import { useConfirm } from "@/lib/hooks/use-confirm";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import Link from "next/link";
@@ -87,12 +87,14 @@ export default function RevenueScheduleDetailPage() {
   }, [id, orgId]);
 
   async function handleRecognize() {
-    if (!orgId) return;
+    const target = rs?.entries.find(e => !e.recognized);
+    if (!orgId || !target) return;
     setRecognizing(true);
     try {
       const res = await fetch(`/api/v1/revenue-schedules/${id}/recognize`, {
         method: "POST",
-        headers: { "x-organization-id": orgId },
+        headers: { "x-organization-id": orgId, "Content-Type": "application/json" },
+        body: JSON.stringify({ entryId: target.id }),
       });
       if (res.ok) {
         toast.success("Counted the next period as income");
@@ -132,7 +134,7 @@ export default function RevenueScheduleDetailPage() {
   if (loading) return <div className="space-y-6"><PageHeader title="Loading..." /></div>;
   if (!rs) return <div className="space-y-6"><PageHeader title="Revenue schedule not found" /></div>;
 
-  const sortedEntries = [...rs.entries].sort((a, b) => a.periodDate.localeCompare(b.periodDate));
+  const sortedEntries = rs.entries;
   const nextEntry = sortedEntries.find((e) => !e.recognized);
   const remaining = rs.totalAmount - rs.recognizedAmount;
 

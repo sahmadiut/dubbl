@@ -4,7 +4,7 @@ import { projectCentsInput, projectHoursInput } from "@/lib/money/project-displa
 
 import { assetCentsInput, assetLifeInput, assetRateInput } from "@/lib/money/asset-display";
 
-import { createContext, useContext, useState, useCallback, useEffect } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -4737,9 +4737,11 @@ function RevenueScheduleDrawer({ open, onClose }: { open: boolean; onClose: () =
   const [startDate, setStartDate] = useState(new Date().toISOString().split("T")[0]);
   const [endDate, setEndDate] = useState("");
   const [method, setMethod] = useState("straight_line");
+  const retryRef = useRef<{ fingerprint: string; key: string } | null>(null);
 
   useEffect(() => {
     if (!open) {
+      retryRef.current = null;
       setInvoiceId(""); setTotalAmount("0.00"); setEndDate(""); setMethod("straight_line");
       setStartDate(new Date().toISOString().split("T")[0]);
       return;
@@ -4759,14 +4761,16 @@ function RevenueScheduleDrawer({ open, onClose }: { open: boolean; onClose: () =
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) { setSaving(false); return; }
 
+    const fingerprint = JSON.stringify({ orgId, invoiceId, totalAmount, startDate, endDate, method });
+    if (retryRef.current?.fingerprint !== fingerprint) retryRef.current = { fingerprint, key: crypto.randomUUID() };
     try {
       const res = await fetch("/api/v1/revenue-schedules", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify({
           invoiceId,
-          // Route expects DOLLARS (it multiplies by 100).
-          totalAmount: parseFloat(totalAmount) || 0,
+          totalAmountExact: totalAmount,
+          idempotencyKey: retryRef.current.key,
           startDate,
           endDate,
           method,

@@ -1,6 +1,6 @@
 "use client";
 
-import { assetCentsInput, assetLifeInput } from "@/lib/money/asset-display";
+import { assetCentsInput, assetLifeInput, assetRateInput } from "@/lib/money/asset-display";
 
 import { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -4280,8 +4280,7 @@ function LoanDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
     if (!name.trim()) { toast.error("Please enter a loan name"); return; }
     if (!principalAccountId) { toast.error("Please choose the loan (liability) account"); return; }
     if (!interestAccountId) { toast.error("Please choose the interest (expense) account"); return; }
-    if (!principalAmount || parseFloat(principalAmount) <= 0) { toast.error("Please enter a loan amount greater than zero"); return; }
-    if (!termMonths || parseInt(termMonths) <= 0) { toast.error("Please enter the loan term in months"); return; }
+
     setSaving(true);
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) { setSaving(false); return; }
@@ -4292,11 +4291,9 @@ function LoanDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify({
           name,
-          // Route expects DOLLARS for the principal (it converts to cents).
-          principalAmount: parseFloat(principalAmount) || 0,
-          // User types a percent; the route wants basis points (5% -> 500).
-          interestRate: Math.round((parseFloat(interestPercent) || 0) * 100),
-          termMonths: parseInt(termMonths) || 0,
+          principalAmountMinor: assetCentsInput(principalAmount),
+          interestRate: assetRateInput(interestPercent || "0"),
+          termMonths: assetLifeInput(termMonths),
           startDate,
           bankAccountId: bankAccountId || undefined,
           principalAccountId,

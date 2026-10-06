@@ -54,12 +54,6 @@
   "app/(dashboard)/accounting/fixed-assets/page.tsx": {
     "formatMoney": 9
   },
-  "app/(dashboard)/accounting/loans/[id]/page.tsx": {
-    "formatMoney": 10
-  },
-  "app/(dashboard)/accounting/loans/page.tsx": {
-    "formatMoney": 5
-  },
   "app/(dashboard)/accounting/opening-balances/page.tsx": {
     "formatMoney": 5
   },
@@ -433,9 +427,6 @@
   },
   "app/api/v1/invoices/route.ts": {
     "decimalToMinorUnits": 2
-  },
-  "app/api/v1/loans/route.ts": {
-    "decimalToCents": 2
   },
   "app/api/v1/purchase-orders/[id]/route.ts": {
     "decimalToMinorUnits": 3

@@ -88,3 +88,5 @@ MON-088 adds `asset-valuation-wire.test.ts` to pure discovery and `asset-valuati
 
 
 MON-089 adds asset-cwip.test.ts to integration discovery. Run node --import tsx --test tests/asset-cwip-wire.test.ts tests/integration/asset-cwip.test.ts with an explicit loopback TEST_DATABASE_URL on a disposable UTC PostgreSQL cluster. The worker invokes actual cost-list/add/capitalization REST and MCP SDK tools in random migrated fixture databases; no Next dev server is required. Fault injections affect only those databases. No schema/migration, deployment opt-in or IRR flag change.
+
+MON-090 adds `loans.test.ts` to normal integration discovery. Run `node --import tsx --test tests/loan-wire.test.ts tests/integration/loans.test.ts` with an explicit loopback TEST_DATABASE_URL on a disposable UTC PostgreSQL cluster. The harness creates/migrates/drops a random fixture database and invokes actual API-key REST handlers and full MCP SDK registration without a Next dev server. Synthetic fault injection is confined to fixture databases; no new schema/migration or deployment/IRR opt-in.

@@ -7,7 +7,7 @@ import { ArrowLeft, Wallet, CheckCircle2 } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatMoney } from "@/lib/money";
+import { assetMoneyDisplay as formatMoney } from "@/lib/money/asset-display";
 import { useConfirm } from "@/lib/hooks/use-confirm";
 import { useEntityTitle } from "@/lib/hooks/use-entity-title";
 import Link from "next/link";
@@ -90,7 +90,8 @@ export default function LoanDetailPage() {
         try {
           const res = await fetch(`/api/v1/loans/${id}/post-payment`, {
             method: "POST",
-            headers: { "x-organization-id": orgId },
+            headers: { "x-organization-id": orgId, "Content-Type": "application/json" },
+            body: JSON.stringify({ scheduleEntryId: nextEntry.id }),
           });
           if (res.ok) {
             toast.success("Payment recorded");

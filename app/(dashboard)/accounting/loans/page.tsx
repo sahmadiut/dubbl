@@ -10,7 +10,7 @@ import { StatCard } from "@/components/dashboard/stat-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { formatMoney } from "@/lib/money";
+import { assetMoneyDisplay as formatMoney } from "@/lib/money/asset-display";
 import { devDelay } from "@/lib/dev-delay";
 import { useCreateDrawer } from "@/components/dashboard/create-drawer";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
@@ -126,7 +126,6 @@ export default function LoansPage() {
   useEffect(() => {
     if (!orgId) return;
     let cancelled = false;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setRefetching(true);
     setPage(1);
 
@@ -193,16 +192,15 @@ export default function LoansPage() {
 
   // Bump searchKey when debounced search changes to trigger ContentReveal
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSearchKey((k) => k + 1);
   }, [debouncedSearch]);
 
   const totalBorrowed = useMemo(
-    () => loans.reduce((sum, l) => sum + (l.status === "active" ? l.principalAmount : 0), 0),
+    () => loans.reduce((sum, l) => sum + (l.status === "active" ? BigInt(l.principalAmount) : 0n), 0n),
     [loans]
   );
   const totalMonthly = useMemo(
-    () => loans.reduce((sum, l) => sum + (l.status === "active" ? l.monthlyPayment : 0), 0),
+    () => loans.reduce((sum, l) => sum + (l.status === "active" ? BigInt(l.monthlyPayment) : 0n), 0n),
     [loans]
   );
 

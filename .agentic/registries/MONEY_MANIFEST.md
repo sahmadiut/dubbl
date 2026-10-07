@@ -1014,3 +1014,8 @@ MON-021 retain remaining/combined qualification; no schema/full-int64/IRR rollou
 ## MON-108 ledger detail reports
 
 [LEDGER_DETAIL_WIRE_CONTRACTS](LEDGER_DETAIL_WIRE_CONTRACTS.md) maps general-ledger/account-transactions REST/MCP pairs and complete PDF/XLSX exports. Shared scoped read-only snapshots use SQL numeric/text sums/windows and bigint projection for exact opening, movement, deterministic paginated running and closing balances. Legacy period-only numeric cents retain additive Minor aliases; separate ledgerBalance/closingLedgerBalance include opening history. Strict inputs, owned dimensions/accounts, scoped entry joins and final safe-range/export precision guards reject unsupported queries and outputs. Actual API-key/MCP fixtures verify aliases, tenant/auth failures, stable pages, caps/full exports, historical int64 cancellation and read-only state. MON-101/MON-029 retain combined acceptance; no schema/history/IRR gate change.
+
+
+## MON-109 cash-flow reports
+
+[CASH_FLOW_WIRE_CONTRACTS](CASH_FLOW_WIRE_CONTRACTS.md) maps the cash-flow REST/MCP report and PDF/XLSX exports. One scoped read-only snapshot uses SQL-text/bigint calculations and final guarded numeric cents with exact Minor strings, including flat rows and reconciliation. Strict dates/method/basis/query validation, account/entry organization guards, supported currency and Excel precision checks prevent silent loss. Existing indirect/direct classifications and their reconciliation limits are documented and characterized; independent accounting and MON-101/MON-029 combined acceptance remain open. No schema/history/IRR flag change.

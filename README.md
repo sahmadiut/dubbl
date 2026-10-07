@@ -178,3 +178,5 @@ Ledger detail report contracts are documented in [.agentic/registries/LEDGER_DET
 ## License
 
 Licensed under the [Apache License 2.0](/LICENSE).
+
+Cash-flow exact contracts are documented in [.agentic/registries/CASH_FLOW_WIRE_CONTRACTS.md](.agentic/registries/CASH_FLOW_WIRE_CONTRACTS.md): REST and MCP share numeric cents, exact Minor strings, reconciliation and PDF/XLSX exports. Existing method heuristics and their accounting limits remain explicit.

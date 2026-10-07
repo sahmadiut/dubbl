@@ -3,9 +3,9 @@
  *
  * This is the single shared place that builds a cash-flow statement so the REST
  * route and any other caller produce identical figures. It is layered on top of
- * the shared GL aggregation in {@link file://./gl-query.ts} — it does NOT issue
- * its own raw journal queries — so it inherits org-scoping, posted-only and the
- * natural-sign balance conventions from there.
+ * the shared exact GL aggregation in gl-query.ts and scoped source-type sums.
+ * All queries inherit the caller-owned snapshot, organization and posted-only
+ * filters; balances retain the natural-sign conventions.
  *
  * Two methods are supported:
  *
@@ -15,28 +15,27 @@
  *    inventory deltas). Investing = fixed-asset deltas; financing = loan
  *    movements (`sourceType = 'loan_payment'`) + equity deltas.
  *
- *  - DIRECT: classify the *cash* side of every cash-touching entry. We look at
- *    the movement on bank/cash accounts in the period and split it into
- *    operating / investing / financing using the contra (non-cash) account on
- *    the same entry. This is a pragmatic direct variant that reuses the same GL
- *    aggregation.
+ *  - DIRECT: the existing cash-source/bank-account income heuristic, with
+ *    depreciation removed from expenses paid and the indirect investing and
+ *    financing classification. It is not per-payment cash tracing.
  *
  * Cross-check: regardless of method, the computed net change in cash is
  * reconciled against the movement on the cash/bank accounts themselves
- * (closing − opening). The difference is surfaced as `reconciliation` so callers
+ * (closing - opening). The difference is surfaced as `reconciliation` so callers
  * can flag a statement that does not tie out.
  *
  * All amounts are integer minor units (cents).
  */
 import { db } from "@/lib/db";
-import { journalEntry, journalLine } from "@/lib/db/schema";
+import { chartAccount, journalEntry, journalLine } from "@/lib/db/schema";
 import { and, eq, gte, isNull, lte, sql } from "drizzle-orm";
 import {
-  aggregateAsAt,
-  aggregateByDateRange,
-  type AccountAggregate,
+  aggregateAsAtExact,
+  aggregateByDateRangeExact,
+  type ExactAccountAggregate,
   type DateRange,
   type ReportBasis,
+  type GLQueryOptions,
 } from "./gl-query";
 
 /** Cash-flow presentation method. */
@@ -54,7 +53,7 @@ const INVENTORY_SUBTYPES = ["inventory"] as const;
 const FIXED_ASSET_SUBTYPES = ["fixed_asset", "property_plant_equipment"] as const;
 
 function inSubTypes(
-  agg: Pick<AccountAggregate, "subType">,
+  agg: Pick<ExactAccountAggregate, "subType">,
   subTypes: readonly string[]
 ): boolean {
   return agg.subType != null && subTypes.includes(agg.subType);
@@ -72,47 +71,47 @@ export interface CashFlowLineItem {
   code?: string;
   name: string;
   /** Cash effect in integer cents (positive = inflow, negative = outflow). */
-  amount: number;
+  amount: bigint;
 }
 
 export interface OperatingActivities {
-  netIncome: number;
+  netIncome: bigint;
   /** Non-cash depreciation added back (positive). */
-  depreciation: number;
+  depreciation: bigint;
   workingCapitalChanges: {
     /** Cash effect of AR movement (increase in AR = outflow = negative). */
-    accountsReceivable: number;
+    accountsReceivable: bigint;
     /** Cash effect of AP movement (increase in AP = inflow = positive). */
-    accountsPayable: number;
+    accountsPayable: bigint;
     /** Cash effect of inventory movement (increase = outflow = negative). */
-    inventory: number;
+    inventory: bigint;
   };
   /** Net cash from operating activities. */
-  total: number;
+  total: bigint;
 }
 
 export interface InvestingActivities {
   items: CashFlowLineItem[];
-  total: number;
+  total: bigint;
 }
 
 export interface FinancingActivities {
   /** Cash effect of loan movements (sourceType=loan_payment); outflow negative. */
-  loanPayments: number;
+  loanPayments: bigint;
   /** Cash effect of equity movements (issuance positive, drawings negative). */
-  equityChanges: number;
+  equityChanges: bigint;
   items: CashFlowLineItem[];
-  total: number;
+  total: bigint;
 }
 
 /** Reconciliation of the indirect/direct net change vs. actual cash movement. */
 export interface CashReconciliation {
   /** Net change derived from the activity sections. */
-  computedNetChange: number;
-  /** Actual movement on cash/bank accounts (closing − opening). */
-  cashAccountMovement: number;
-  /** computedNetChange − cashAccountMovement; 0 means the statement ties out. */
-  difference: number;
+  computedNetChange: bigint;
+  /** Actual movement on cash/bank accounts (closing - opening). */
+  cashAccountMovement: bigint;
+  /** computedNetChange - cashAccountMovement; 0 means the statement ties out. */
+  difference: bigint;
   /** Convenience flag: true when |difference| === 0. */
   balanced: boolean;
 }
@@ -122,12 +121,12 @@ export interface CashFlowStatement {
   endDate: string;
   method: CashFlowMethod;
   basis: ReportBasis;
-  openingCashBalance: number;
+  openingCashBalance: bigint;
   operatingActivities: OperatingActivities;
   investingActivities: InvestingActivities;
   financingActivities: FinancingActivities;
-  netCashChange: number;
-  closingCashBalance: number;
+  netCashChange: bigint;
+  closingCashBalance: bigint;
   reconciliation: CashReconciliation;
 }
 
@@ -136,6 +135,8 @@ export interface CashFlowOptions {
   method?: CashFlowMethod;
   /** Reporting basis passed through to gl-query. Defaults to 'accrual'. */
   basis?: ReportBasis;
+  /** Caller-owned read snapshot, shared by every aggregation. */
+  database?: GLQueryOptions["database"];
 }
 
 /**
@@ -147,22 +148,25 @@ async function sumBySourceType(
   organizationId: string,
   range: DateRange,
   sourceType: string,
-  column: "debit" | "credit" | "creditMinusDebit"
-): Promise<number> {
+  column: "debit" | "credit" | "creditMinusDebit",
+  database: GLQueryOptions["database"]
+): Promise<bigint> {
   const expr =
     column === "debit"
-      ? sql<number>`coalesce(sum(${journalLine.debitAmount}), 0)`
+      ? sql<string>`coalesce(sum(${journalLine.debitAmount}), 0)::text`
       : column === "credit"
-        ? sql<number>`coalesce(sum(${journalLine.creditAmount}), 0)`
-        : sql<number>`coalesce(sum(${journalLine.creditAmount}) - sum(${journalLine.debitAmount}), 0)`;
+        ? sql<string>`coalesce(sum(${journalLine.creditAmount}), 0)::text`
+        : sql<string>`coalesce(sum(${journalLine.creditAmount}) - sum(${journalLine.debitAmount}), 0)::text`;
 
-  const [row] = await db
+  const [row] = await (database ?? db)
     .select({ total: expr })
     .from(journalLine)
     .innerJoin(journalEntry, eq(journalLine.journalEntryId, journalEntry.id))
+    .innerJoin(chartAccount, eq(journalLine.accountId, chartAccount.id))
     .where(
       and(
         eq(journalEntry.organizationId, organizationId),
+        eq(chartAccount.organizationId, organizationId),
         eq(journalEntry.status, "posted"),
         isNull(journalEntry.deletedAt),
         eq(journalEntry.sourceType, sourceType),
@@ -170,28 +174,29 @@ async function sumBySourceType(
         lte(journalEntry.date, range.endDate)
       )
     );
-  return Number(row?.total ?? 0);
+  return BigInt(row?.total ?? "0");
 }
 
 /** Cumulative cash/bank balance as at a date (natural debit-positive). */
 async function cashBalanceAsAt(
   organizationId: string,
   asAt: string,
-  basis: ReportBasis
-): Promise<number> {
-  const assets = await aggregateAsAt(organizationId, asAt, {
-    basis,
+  basis: ReportBasis,
+  database: GLQueryOptions["database"]
+): Promise<bigint> {
+  const assets = await aggregateAsAtExact(organizationId, asAt, {
+    basis, database,
     accountTypes: ["asset"],
   });
   return assets
     .filter((a) => inSubTypes(a, CASH_SUBTYPES))
-    .reduce((sum, a) => sum + a.balance, 0);
+    .reduce((sum, a) => sum + a.balance, 0n);
 }
 
 /**
  * Build a cash-flow statement for the period using the shared GL aggregation.
  */
-export async function buildCashFlow(
+export async function buildCashFlowExact(
   organizationId: string,
   range: DateRange,
   opts: CashFlowOptions = {}
@@ -201,17 +206,17 @@ export async function buildCashFlow(
 
   // One aggregation of the period's activity across all account types; we slice
   // it by type/subType below instead of issuing several queries.
-  const periodAccounts = await aggregateByDateRange(organizationId, range, {
-    basis,
+  const periodAccounts = await aggregateByDateRangeExact(organizationId, range, {
+    basis, database: opts.database,
   });
 
   // Opening / closing cash from the cash/bank accounts (cumulative balances).
-  const openingCash = await cashBalanceAsAt(
+  const openingCash = range.startDate === "0001-01-01" ? 0n : await cashBalanceAsAt(
     organizationId,
     dayBefore(range.startDate),
-    basis
+    basis, opts.database
   );
-  const closingCash = await cashBalanceAsAt(organizationId, range.endDate, basis);
+  const closingCash = await cashBalanceAsAt(organizationId, range.endDate, basis, opts.database);
   const cashAccountMovement = closingCash - openingCash;
 
   let operatingActivities: OperatingActivities;
@@ -220,10 +225,10 @@ export async function buildCashFlow(
 
   if (method === "direct") {
     ({ operatingActivities, investingActivities, financingActivities } =
-      await buildDirect(organizationId, range, basis, periodAccounts));
+      await buildDirect(organizationId, range, periodAccounts, opts.database));
   } else {
     ({ operatingActivities, investingActivities, financingActivities } =
-      await buildIndirect(organizationId, range, periodAccounts));
+      await buildIndirect(organizationId, range, periodAccounts, opts.database));
   }
 
   const netCashChange =
@@ -235,7 +240,7 @@ export async function buildCashFlow(
     computedNetChange: netCashChange,
     cashAccountMovement,
     difference: netCashChange - cashAccountMovement,
-    balanced: netCashChange - cashAccountMovement === 0,
+    balanced: netCashChange - cashAccountMovement === 0n,
   };
 
   return {
@@ -255,23 +260,24 @@ export async function buildCashFlow(
   };
 }
 
-/** Indirect method: net income + depreciation add-back ± working capital. */
+/** Indirect method: net income + depreciation add-back - working capital. */
 async function buildIndirect(
   organizationId: string,
   range: DateRange,
-  periodAccounts: AccountAggregate[]
+  periodAccounts: ExactAccountAggregate[],
+  database: GLQueryOptions["database"]
 ): Promise<{
   operatingActivities: OperatingActivities;
   investingActivities: InvestingActivities;
   financingActivities: FinancingActivities;
 }> {
-  // Net income = revenue balance − expense balance (both natural-signed).
+  // Net income = revenue balance - expense balance (both natural-signed).
   const totalRevenue = periodAccounts
     .filter((a) => a.type === "revenue")
-    .reduce((s, a) => s + a.balance, 0);
+    .reduce((s, a) => s + a.balance, 0n);
   const totalExpenses = periodAccounts
     .filter((a) => a.type === "expense")
-    .reduce((s, a) => s + a.balance, 0);
+    .reduce((s, a) => s + a.balance, 0n);
   const netIncome = totalRevenue - totalExpenses;
 
   // Depreciation add-back: debit posted on depreciation-sourced entries.
@@ -279,19 +285,19 @@ async function buildIndirect(
     organizationId,
     range,
     "depreciation",
-    "debit"
+    "debit", database
   );
 
   // Working-capital deltas (natural-signed period movement).
   const arDelta = periodAccounts
     .filter((a) => a.type === "asset" && inSubTypes(a, AR_SUBTYPES))
-    .reduce((s, a) => s + a.balance, 0);
+    .reduce((s, a) => s + a.balance, 0n);
   const apDelta = periodAccounts
     .filter((a) => a.type === "liability" && inSubTypes(a, AP_SUBTYPES))
-    .reduce((s, a) => s + a.balance, 0);
+    .reduce((s, a) => s + a.balance, 0n);
   const inventoryDelta = periodAccounts
     .filter((a) => a.type === "asset" && inSubTypes(a, INVENTORY_SUBTYPES))
-    .reduce((s, a) => s + a.balance, 0);
+    .reduce((s, a) => s + a.balance, 0n);
 
   const operatingActivities: OperatingActivities = {
     netIncome,
@@ -315,7 +321,7 @@ async function buildIndirect(
       name: a.name,
       amount: -a.balance,
     })),
-    total: -fixedAssets.reduce((s, a) => s + a.balance, 0),
+    total: -fixedAssets.reduce((s, a) => s + a.balance, 0n),
   };
 
   // Financing: loan movements (sourceType) + equity deltas.
@@ -323,16 +329,16 @@ async function buildIndirect(
     organizationId,
     range,
     "loan_payment",
-    "creditMinusDebit"
+    "creditMinusDebit", database
   );
   const equityAccounts = periodAccounts.filter((a) => a.type === "equity");
-  const equityChanges = equityAccounts.reduce((s, a) => s + a.balance, 0);
+  const equityChanges = equityAccounts.reduce((s, a) => s + a.balance, 0n);
 
   const financingActivities: FinancingActivities = {
     loanPayments,
     equityChanges,
     items: [
-      ...(loanPayments !== 0
+      ...(loanPayments !== 0n
         ? [{ name: "Loan movements", amount: loanPayments }]
         : []),
       ...equityAccounts.map((a) => ({
@@ -355,15 +361,15 @@ async function buildIndirect(
  * expenses paid, adjusted for non-cash depreciation), while investing and
  * financing reuse the same classification as the indirect method. This keeps a
  * direct-style operating section while still tying out via the reconciliation
- * line. The split is intentionally pragmatic — a true line-by-line direct
+ * line. The split is intentionally pragmatic - a true line-by-line direct
  * statement would require per-payment cash tracing, which the indirect method
  * already approximates with working-capital deltas.
  */
 async function buildDirect(
   organizationId: string,
   range: DateRange,
-  basis: ReportBasis,
-  periodAccounts: AccountAggregate[]
+  periodAccounts: ExactAccountAggregate[],
+  database: GLQueryOptions["database"]
 ): Promise<{
   operatingActivities: OperatingActivities;
   investingActivities: InvestingActivities;
@@ -371,23 +377,23 @@ async function buildDirect(
 }> {
   // Cash actually realised from revenue/expense on a cash basis: re-aggregate
   // the income statement on the cash basis so only cash-moving entries count.
-  const cashAccounts = await aggregateByDateRange(organizationId, range, {
-    basis: "cash",
+  const cashAccounts = await aggregateByDateRangeExact(organizationId, range, {
+    basis: "cash", database,
     accountTypes: ["revenue", "expense"],
   });
   const cashRevenue = cashAccounts
     .filter((a) => a.type === "revenue")
-    .reduce((s, a) => s + a.balance, 0);
+    .reduce((s, a) => s + a.balance, 0n);
   const cashExpenses = cashAccounts
     .filter((a) => a.type === "expense")
-    .reduce((s, a) => s + a.balance, 0);
+    .reduce((s, a) => s + a.balance, 0n);
 
   // Depreciation is non-cash; exclude it from the cash expenses paid.
   const depreciation = await sumBySourceType(
     organizationId,
     range,
     "depreciation",
-    "debit"
+    "debit", database
   );
   const cashExpensesPaid = cashExpenses - depreciation;
 
@@ -395,17 +401,17 @@ async function buildDirect(
     // Reuse the same field shape; for the direct method netIncome carries the
     // cash collected from customers and depreciation stays 0 (already excluded).
     netIncome: cashRevenue,
-    depreciation: 0,
+    depreciation: 0n,
     workingCapitalChanges: {
-      accountsReceivable: 0,
-      accountsPayable: 0,
-      inventory: 0,
+      accountsReceivable: 0n,
+      accountsPayable: 0n,
+      inventory: 0n,
     },
     total: cashRevenue - cashExpensesPaid,
   };
 
   // Investing / financing: identical classification to the indirect method.
-  const indirect = await buildIndirect(organizationId, range, periodAccounts);
+  const indirect = await buildIndirect(organizationId, range, periodAccounts, database);
 
   return {
     operatingActivities,

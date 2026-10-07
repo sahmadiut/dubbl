@@ -1,5 +1,17 @@
 # Money and FX boundary manifest
 
+## MON-115 expense and KPI analytics adoption
+
+[KPI_ANALYTICS_WIRE_CONTRACTS](KPI_ANALYTICS_WIRE_CONTRACTS.md) maps four REST/MCP
+report pairs and executive PDF/XLSX exports. Shared read-only snapshots use scoped
+SQL-text/bigint ledger and document math, safe numeric/Minor aliases, exact rounded
+shares/averages, UTC calendar windows and explicit document/base currency rules.
+Existing project profitability reuses MON-094. Report pages use exact currency
+formatting, show failures and offer contact document currency filtering. Actual
+REST/MCP fixtures cover permissions, tenant references, legacy/exact writers,
+exports, signed edges, overflow/cancellation and read-only financial/audit state.
+MON-104/MON-029 retain integration; no schema/full-int64/rescale/IRR flag change.
+
 ## MON-113 payment-performance adoption
 
 [PAYMENT_PERFORMANCE_WIRE_CONTRACTS](PAYMENT_PERFORMANCE_WIRE_CONTRACTS.md)

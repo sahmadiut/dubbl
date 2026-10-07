@@ -8,7 +8,8 @@ import { ContentReveal } from "@/components/ui/content-reveal";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { DateRangeFilter } from "@/components/dashboard/date-range-filter";
-import { formatMoney } from "@/lib/money";
+import { statementMoneyText } from "@/lib/reports/statement-money";
+import { money, toMajorDecimal } from "@/lib/money/exact";
 import { cn } from "@/lib/utils";
 import {
   AreaChart,
@@ -51,6 +52,8 @@ export default function ExpenseAnalyticsPage() {
   const now = new Date();
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [currencyCode, setCurrencyCode] = useState("USD");
+  const [error, setError] = useState<string | null>(null);
   const [startDate, setStartDate] = useState(`${now.getFullYear()}-01-01`);
   const [endDate, setEndDate] = useState(now.toISOString().slice(0, 10));
   const [categories, setCategories] = useState<Category[]>([]);
@@ -68,13 +71,22 @@ export default function ExpenseAnalyticsPage() {
     fetch(`/api/v1/reports/expense-analytics?${params}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then(async (r) => {
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || "Unable to load expense analytics.");
+        return data;
+      })
       .then((data) => {
         if (cancelled) return;
+        setCurrencyCode(data.currencyCode);
+        setError(null);
         setCategories(data.categories || []);
         setMonthlyTrend(data.monthlyTrend || []);
         setTotalExpenses(data.totalExpenses || 0);
         setMonthlyAverage(data.monthlyAverage || 0);
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : "Unable to load expense analytics.");
       })
       .finally(() => {
         if (!cancelled) {
@@ -87,7 +99,8 @@ export default function ExpenseAnalyticsPage() {
 
   const chartData = monthlyTrend.map((m) => ({
     name: m.month,
-    expenses: m.total / 100,
+    expenses: Number(toMajorDecimal(money(BigInt(m.total), currencyCode))),
+    minorUnits: m.total,
   }));
 
   if (initialLoad) return <BrandLoader />;
@@ -111,18 +124,20 @@ export default function ExpenseAnalyticsPage() {
 
       {loading ? (
         <BrandLoader className="h-48" />
+      ) : error ? (
+        <p role="alert" className="text-sm text-red-600">{error}</p>
       ) : (
         <ContentReveal>
           <div className="grid gap-4 sm:grid-cols-2">
             <StatCard
               title="Total spent"
-              value={formatMoney(totalExpenses)}
+              value={statementMoneyText(totalExpenses, currencyCode)}
               icon={TrendingDown}
               changeType="negative"
             />
             <StatCard
               title="Average per month"
-              value={formatMoney(monthlyAverage)}
+              value={statementMoneyText(monthlyAverage, currencyCode)}
               icon={PieChart}
               changeType="neutral"
             />
@@ -143,10 +158,10 @@ export default function ExpenseAnalyticsPage() {
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                     <XAxis dataKey="name" tick={{ fontSize: 11 }} className="text-muted-foreground" />
-                    <YAxis tick={{ fontSize: 11 }} className="text-muted-foreground" tickFormatter={(v) => `$${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`} />
+                    <YAxis tick={{ fontSize: 11 }} className="text-muted-foreground" tickFormatter={(v) => `${currencyCode} ${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`} />
                     <Tooltip
                       contentStyle={{ fontSize: 12, borderRadius: 8 }}
-                      formatter={(value) => [`$${Number(value).toFixed(2)}`]}
+                      formatter={(_value, _name, item) => [statementMoneyText(item.payload.minorUnits, currencyCode)]}
                     />
                     <Area type="monotone" dataKey="expenses" name="Expenses" stroke="#ef4444" fill="url(#expGrad)" strokeWidth={2} />
                   </AreaChart>
@@ -185,7 +200,7 @@ export default function ExpenseAnalyticsPage() {
                       </div>
                     </div>
                     <div className="text-right shrink-0 ml-4">
-                      <p className="text-sm font-mono font-semibold tabular-nums">{formatMoney(c.total)}</p>
+                      <p className="text-sm font-mono font-semibold tabular-nums">{statementMoneyText(c.total, currencyCode)}</p>
                       <p className="text-xs text-muted-foreground font-mono tabular-nums">{c.percentage}%</p>
                     </div>
                   </div>

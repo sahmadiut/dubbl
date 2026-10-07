@@ -6,7 +6,7 @@ import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { DateRangeFilter } from "@/components/dashboard/date-range-filter";
-import { formatMoney } from "@/lib/money";
+import { statementMoneyText } from "@/lib/reports/statement-money";
 import { cn } from "@/lib/utils";
 import { BackToReports, ReportHelp, BasisToggle } from "../_components";
 
@@ -34,6 +34,8 @@ export default function ExecutiveSummaryPage() {
   const now = new Date();
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [currencyCode, setCurrencyCode] = useState("USD");
+  const [error, setError] = useState<string | null>(null);
   const [startDate, setStartDate] = useState(`${now.getFullYear()}-01-01`);
   const [endDate, setEndDate] = useState(now.toISOString().slice(0, 10));
   const [basis, setBasis] = useState<"accrual" | "cash">("accrual");
@@ -50,11 +52,20 @@ export default function ExecutiveSummaryPage() {
     fetch(`/api/v1/reports/executive-summary?${params}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then(async (r) => {
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || "Unable to load executive summary.");
+        return data;
+      })
       .then((data) => {
         if (cancelled) return;
+        setCurrencyCode(data.currencyCode);
+        setError(null);
         setKpis(data.kpis || []);
         setPriorPeriod(data.priorPeriod || null);
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : "Unable to load executive summary.");
       })
       .finally(() => {
         if (!cancelled) {
@@ -100,6 +111,8 @@ export default function ExecutiveSummaryPage() {
 
       {loading ? (
         <BrandLoader className="h-48" />
+      ) : error ? (
+        <p role="alert" className="text-sm text-red-600">{error}</p>
       ) : (
         <ContentReveal>
           {priorPeriod && (
@@ -118,12 +131,12 @@ export default function ExecutiveSummaryPage() {
                     {FRIENDLY_LABELS[k.key] || k.label}
                   </p>
                   <p className="mt-1.5 text-xl sm:text-2xl font-bold font-mono tabular-nums">
-                    {formatMoney(k.current)}
+                    {statementMoneyText(k.current, currencyCode)}
                   </p>
                   <div className="mt-2 flex items-center gap-1.5 text-xs">
                     <Icon className={cn("size-3.5", up && "text-emerald-600", down && "text-red-600", !up && !down && "text-muted-foreground")} />
                     <span className={cn("font-medium", up && "text-emerald-600", down && "text-red-600", !up && !down && "text-muted-foreground")}>
-                      {k.delta >= 0 ? "+" : "-"}{formatMoney(Math.abs(k.delta))}
+                      {k.delta >= 0 ? "+" : "-"}{statementMoneyText(Math.abs(k.delta), currencyCode)}
                       {k.deltaPercent !== null && ` (${k.deltaPercent >= 0 ? "+" : ""}${k.deltaPercent}%)`}
                     </span>
                     <span className="text-muted-foreground">vs last period</span>

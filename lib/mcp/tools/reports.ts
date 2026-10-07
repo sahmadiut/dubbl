@@ -1,3 +1,5 @@
+import { getKpiAnalytics } from "@/lib/reports/kpi-analytics";
+import { expenseAnalyticsSchema, executiveSummarySchema, executiveExportSchema, monthlyTrendsSchema, contactProfitabilitySchema } from "@/lib/reports/kpi-analytics-wire";
 import { getTrackingReport, getReportPack, getFinancialRatios } from "@/lib/reports/compound";
 import { trackingSchema, packSchema, ratioSchema, trackingExportSchema } from "@/lib/reports/compound-wire";
 import { getCashFlow } from "@/lib/reports/cash-flow-service";
@@ -16,11 +18,9 @@ import {
   chartAccount,
   journalLine,
   journalEntry,
-  invoice,
-  bill,
   organization,
 } from "@/lib/db/schema";
-import { eq, and, sql, isNull, ne, gte, lte, inArray } from "drizzle-orm";
+import { eq, and, sql, isNull, gte, lte, inArray } from "drizzle-orm";
 import { getCumulativeStatement } from "@/lib/reports/cumulative-statement";
 import { getAgingReport } from "@/lib/reports/aging";
 import { agingSchema } from "@/lib/reports/aging-wire";
@@ -29,18 +29,6 @@ import { wrapTool } from "@/lib/mcp/errors";
 import { requireRole } from "@/lib/api/require-role";
 import type { AuthContext } from "@/lib/api/auth-context";
 import type { Statement } from "@/lib/reports/statement-export";
-import {
-  aggregateAsAt,
-  aggregateByDateRange,
-  type AccountAggregate,
-  type ReportBasis,
-} from "@/lib/reports/gl-query";
-
-/** Normalize a basis string to the gl-query ReportBasis ('accrual' default). */
-function parseBasis(value: string | undefined): ReportBasis {
-  return value === "cash" ? "cash" : "accrual";
-}
-
 export function registerReportTools(server: McpServer, ctx: AuthContext) {
   server.registerTool("payment_performance", {
     description: "Read paid invoice/bill performance for an inclusive Gregorian issue-date period (current UTC year through today by default). Returns receivables/payables by contact, integer days, counts, whole percent onTimeRate, count-weighted rounded contact-day summaries, numeric integer cents and exact totalCollectedMinor/totalPaidMinor strings, plus currencyCode; safe +/-9007199254740991. Optional currencyCode selects a single document currency; mixed currencies reject without FX conversion or rescaling. Uses stored paidAt date, requires view:data; no input amounts.",
@@ -411,177 +399,29 @@ export function registerReportTools(server: McpServer, ctx: AuthContext) {
       mimeType: format === "pdf" ? "application/pdf" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" };
   }));
 
-  server.tool(
-    "executive_summary",
-    "Generate a one-page KPI roll-up for a period, comparing it against the immediately preceding period of equal length. KPIs (all integer cents): Revenue, Gross Profit, Operating Expenses, Net Income, Cash on Hand, Accounts Receivable, Accounts Payable. Each KPI returns current, prior, delta (currentâˆ’prior), and deltaPercent (null when prior is 0). Use accrual (default) or cash basis.",
-    {
-      startDate: z
-        .string()
-        .optional()
-        .describe("Start date (YYYY-MM-DD, defaults to Jan 1 of current year)"),
-      endDate: z
-        .string()
-        .optional()
-        .describe("End date (YYYY-MM-DD, defaults to today)"),
-      basis: z
-        .enum(["accrual", "cash"])
-        .optional()
-        .describe(
-          "Reporting basis: 'accrual' (default) or 'cash' (cash/payment-realized movement only)."
-        ),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        const startDate =
-          params.startDate ?? `${new Date().getFullYear()}-01-01`;
-        const endDate = params.endDate ?? new Date().toISOString().slice(0, 10);
-        const basis = parseBasis(params.basis);
-
-        const daysBetween = (start: string, end: string): number => {
-          const ms = new Date(end).getTime() - new Date(start).getTime();
-          return Math.floor(ms / (1000 * 60 * 60 * 24)) + 1;
-        };
-        const addDays = (iso: string, days: number): string => {
-          const d = new Date(iso);
-          d.setDate(d.getDate() + days);
-          return d.toISOString().slice(0, 10);
-        };
-
-        const periodLen = daysBetween(startDate, endDate);
-        const priorEnd = addDays(startDate, -1);
-        const priorStart = addDays(priorEnd, -(periodLen - 1));
-
-        const [currentPL, priorPL, currentBS, priorBS] = await Promise.all([
-          aggregateByDateRange(
-            ctx.organizationId,
-            { startDate, endDate },
-            { basis, accountTypes: ["revenue", "expense"] }
-          ),
-          aggregateByDateRange(
-            ctx.organizationId,
-            { startDate: priorStart, endDate: priorEnd },
-            { basis, accountTypes: ["revenue", "expense"] }
-          ),
-          aggregateAsAt(ctx.organizationId, endDate, {
-            basis,
-            accountTypes: ["asset"],
-          }),
-          aggregateAsAt(ctx.organizationId, priorEnd, {
-            basis,
-            accountTypes: ["asset"],
-          }),
-        ]);
-
-        const sumByType = (
-          aggs: AccountAggregate[],
-          type: AccountAggregate["type"]
-        ) =>
-          aggs.filter((a) => a.type === type).reduce((s, a) => s + a.balance, 0);
-        const sumCogs = (aggs: AccountAggregate[]) =>
-          aggs
-            .filter((a) => a.type === "expense" && a.subType === "cogs")
-            .reduce((s, a) => s + a.balance, 0);
-        const sumCash = (aggs: AccountAggregate[]) =>
-          aggs
-            .filter((a) => a.subType === "bank")
-            .reduce((s, a) => s + a.balance, 0);
-
-        const revenueCurrent = sumByType(currentPL, "revenue");
-        const revenuePrior = sumByType(priorPL, "revenue");
-        const expensesCurrent = sumByType(currentPL, "expense");
-        const expensesPrior = sumByType(priorPL, "expense");
-        const cogsCurrent = sumCogs(currentPL);
-        const cogsPrior = sumCogs(priorPL);
-
-        const netIncomeCurrent = revenueCurrent - expensesCurrent;
-        const netIncomePrior = revenuePrior - expensesPrior;
-        const grossProfitCurrent = revenueCurrent - cogsCurrent;
-        const grossProfitPrior = revenuePrior - cogsPrior;
-        const cashCurrent = sumCash(currentBS);
-        const cashPrior = sumCash(priorBS);
-
-        // Outstanding receivables / payables (open documents at each period end).
-        const [openInvoices, openBills] = await Promise.all([
-          db.query.invoice.findMany({
-            where: and(
-              eq(invoice.organizationId, ctx.organizationId),
-              isNull(invoice.deletedAt),
-              ne(invoice.status, "void"),
-              ne(invoice.status, "draft")
-            ),
-            columns: { issueDate: true, amountDue: true },
-          }),
-          db.query.bill.findMany({
-            where: and(
-              eq(bill.organizationId, ctx.organizationId),
-              isNull(bill.deletedAt),
-              ne(bill.status, "void"),
-              ne(bill.status, "draft")
-            ),
-            columns: { issueDate: true, amountDue: true },
-          }),
-        ]);
-        const arAsOf = (asAt: string) =>
-          openInvoices
-            .filter((i) => i.issueDate <= asAt)
-            .reduce((s, i) => s + i.amountDue, 0);
-        const apAsOf = (asAt: string) =>
-          openBills
-            .filter((b) => b.issueDate <= asAt)
-            .reduce((s, b) => s + b.amountDue, 0);
-
-        const makeKpi = (
-          key: string,
-          label: string,
-          current: number,
-          prior: number
-        ) => {
-          const delta = current - prior;
-          const deltaPercent =
-            prior === 0
-              ? null
-              : Math.round((delta / Math.abs(prior)) * 10000) / 100;
-          return { key, label, current, prior, delta, deltaPercent };
-        };
-
-        const kpis = [
-          makeKpi("revenue", "Revenue", revenueCurrent, revenuePrior),
-          makeKpi(
-            "grossProfit",
-            "Gross Profit",
-            grossProfitCurrent,
-            grossProfitPrior
-          ),
-          makeKpi(
-            "expenses",
-            "Operating Expenses",
-            expensesCurrent,
-            expensesPrior
-          ),
-          makeKpi("netIncome", "Net Income", netIncomeCurrent, netIncomePrior),
-          makeKpi("cash", "Cash on Hand", cashCurrent, cashPrior),
-          makeKpi(
-            "accountsReceivable",
-            "Accounts Receivable",
-            arAsOf(endDate),
-            arAsOf(priorEnd)
-          ),
-          makeKpi(
-            "accountsPayable",
-            "Accounts Payable",
-            apAsOf(endDate),
-            apAsOf(priorEnd)
-          ),
-        ];
-
-        return {
-          period: { startDate, endDate },
-          priorPeriod: { startDate: priorStart, endDate: priorEnd },
-          basis,
-          kpis,
-        };
-      })
-  );
+  for (const [name, kind, schema, description] of [
+    ["expense_analytics", "expense-analytics", expenseAnalyticsSchema, "Returns ranked expense categories, distinct transaction counts, percentage shares, monthlyTrend, totalExpenses and rounded monthlyAverage. Posted non-deleted organization-base ledger, accrual basis; inclusive Gregorian startDate/endDate default to UTC year-to-date."],
+    ["monthly_trends", "monthly-trends", monthlyTrendsSchema, "Returns zero-filled UTC calendar months with revenue, expenses and netIncome plus sparklines and matching Minor string arrays. Integer months 1-24 including the current month (default 6); posted non-deleted organization-base ledger on accrual basis, including scheduled activity through current month-end."],
+    ["executive_summary", "executive-summary", executiveSummarySchema, "Returns seven KPIs with current/prior/delta and matching Minor strings, deltaPercent (null for zero prior), period and equally long immediately preceding priorPeriod. Inclusive Gregorian dates default to UTC year-to-date; cash/accrual basis. Outstanding AR/AP uses current document amountDue for documents issued by cutoff, not historical settlement reconstruction, and requires organization currency."],
+    ["contact_profitability", "profitability", contactProfitabilitySchema, "Returns invoice-driven contacts ranked by profit, revenue/costs/profit and matching Minor strings, margins, invoice/bill counts and root totals. Inclusive Gregorian issue dates default to UTC year-to-date; excludes draft/void/deleted documents. Optional currencyCode selects one document currency; mixed currencies reject. Bill-only contacts are excluded from entries/totals; foreign/deleted contact labels are Unknown."],
+  ] as const) {
+    server.registerTool(name, {
+      description: `${description} All money is numeric integer cents with additive exact Minor strings within +/-9007199254740991; currencyCode identifies units. No amount inputs, FX or rescaling. Requires view:data; organization-scoped direct DB read snapshot.`,
+      inputSchema: schema,
+    }, (params: unknown) => wrapTool(ctx, async () => (await getKpiAnalytics(ctx, kind, params)).data));
+  }
+  server.registerTool("export_executive_summary", {
+    description: "Export executive_summary as PDF/XLSX using the same Gregorian dates and basis. Requires view:data. Amounts display with organization currency scale; returns base64 data, encoding, filename and MIME type. XLSX rejects lossy numeric cells. Outstanding balances use current document snapshot; no FX.",
+    inputSchema: executiveExportSchema,
+  }, params => wrapTool(ctx, async () => {
+    const { format, ...input } = params;
+    const result = await getKpiAnalytics(ctx, "executive-summary", input);
+    if (!("statement" in result) || !result.statement) throw new Error("Missing executive statement");
+    const { toPdf, toXlsx } = await import("@/lib/reports/statement-export");
+    const buffer = format === "pdf" ? await toPdf(result.statement) : await toXlsx(result.statement);
+    return { data: buffer.toString("base64"), encoding: "base64", filename: `executive-summary.${format}`,
+      mimeType: format === "pdf" ? "application/pdf" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" };
+  }));
 
   for (const [name, kind, label] of [
     ["sales_by_customer", "sales-by-customer", "Sales by customer"],

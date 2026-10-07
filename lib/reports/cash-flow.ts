@@ -59,6 +59,11 @@ function inSubTypes(
   return agg.subType != null && subTypes.includes(agg.subType);
 }
 
+export function cashBalanceExact(accounts: ExactAccountAggregate[]) {
+  return accounts.filter(account => account.type === "asset" && inSubTypes(account, CASH_SUBTYPES))
+    .reduce((total, account) => total + account.balance, 0n);
+}
+
 /** Return the calendar day immediately before an ISO YYYY-MM-DD date. */
 function dayBefore(isoDate: string): string {
   const d = new Date(`${isoDate}T00:00:00Z`);
@@ -188,9 +193,7 @@ async function cashBalanceAsAt(
     basis, database,
     accountTypes: ["asset"],
   });
-  return assets
-    .filter((a) => inSubTypes(a, CASH_SUBTYPES))
-    .reduce((sum, a) => sum + a.balance, 0n);
+  return cashBalanceExact(assets);
 }
 
 /**

@@ -1,3 +1,5 @@
+import { getTrackingReport, getReportPack, getFinancialRatios } from "@/lib/reports/compound";
+import { trackingSchema, packSchema, ratioSchema, trackingExportSchema } from "@/lib/reports/compound-wire";
 import { getCashFlow } from "@/lib/reports/cash-flow-service";
 import { cashFlowSchema, cashFlowExportSchema } from "@/lib/reports/cash-flow-wire";
 import { getGeneralLedger, getAccountTransactions } from "@/lib/reports/ledger-detail";
@@ -14,8 +16,6 @@ import {
   journalLine,
   journalEntry,
   invoice,
-  costCenter,
-  project,
   bill,
   organization,
 } from "@/lib/db/schema";
@@ -31,10 +31,7 @@ import type { Statement } from "@/lib/reports/statement-export";
 import {
   aggregateAsAt,
   aggregateByDateRange,
-  aggregateByDimension,
   type AccountAggregate,
-  type Dimension,
-  type DimensionGroup,
   type ReportBasis,
 } from "@/lib/reports/gl-query";
 
@@ -374,455 +371,39 @@ export function registerReportTools(server: McpServer, ctx: AuthContext) {
       })
   );
 
-  server.tool(
-    "tracking_category_report",
-    "Compare activity across a tracking dimension (cost center or project) over a date range, laying out one amount column per dimension value. mode='pnl' (default) returns revenue & expense sections plus per-column net income; mode='balances' returns every account type. Amounts are integer cents (natural-signed). Each row includes accountId for drill-down into general-ledger with the same costCenterId/projectId filter. The `columns` array describes each amount column; its `dimensionValue` is the id to pass to other reports (null = unassigned).",
-    {
-      dimension: z
-        .enum(["costCenterId", "projectId"])
-        .optional()
-        .describe(
-          "Tracking dimension to compare across columns. Defaults to 'costCenterId'."
-        ),
-      mode: z
-        .enum(["pnl", "balances"])
-        .optional()
-        .describe(
-          "'pnl' (default): revenue/expense sections + net income per column. 'balances': all account types with natural-sign balances per column."
-        ),
-      basis: z
-        .enum(["accrual", "cash"])
-        .optional()
-        .describe(
-          "Reporting basis: 'accrual' (default) or 'cash' (cash/payment-realized movement only)."
-        ),
-      startDate: z
-        .string()
-        .optional()
-        .describe("Start date (YYYY-MM-DD, defaults to Jan 1 of current year)"),
-      endDate: z
-        .string()
-        .optional()
-        .describe("End date (YYYY-MM-DD, defaults to today)"),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        const startDate =
-          params.startDate ?? `${new Date().getFullYear()}-01-01`;
-        const endDate = params.endDate ?? new Date().toISOString().slice(0, 10);
-        const dimension: Dimension = params.dimension ?? "costCenterId";
-        const mode = params.mode === "balances" ? "balances" : "pnl";
-        const basis = parseBasis(params.basis);
-
-        const accountTypes: AccountAggregate["type"][] =
-          mode === "pnl"
-            ? ["revenue", "expense"]
-            : ["asset", "liability", "equity", "revenue", "expense"];
-
-        const groups: DimensionGroup[] = await aggregateByDimension(
-          ctx.organizationId,
-          { startDate, endDate },
-          dimension,
-          { basis, accountTypes }
-        );
-
-        // Resolve dimension-value ids -> human labels (cost center "CODE Name",
-        // project "Name"). Only values present in the data are looked up.
-        const UNASSIGNED_KEY = "__none__";
-        const ids = groups
-          .map((g) => g.dimensionValue)
-          .filter((v): v is string => v !== null);
-        const labels = new Map<string, string>();
-        if (ids.length > 0) {
-          const unique = new Set(ids);
-          if (dimension === "costCenterId") {
-            const rows = await db
-              .select({
-                id: costCenter.id,
-                code: costCenter.code,
-                name: costCenter.name,
-              })
-              .from(costCenter)
-              .where(eq(costCenter.organizationId, ctx.organizationId));
-            for (const r of rows) {
-              if (unique.has(r.id)) {
-                labels.set(r.id, r.code ? `${r.code} ${r.name}` : r.name);
-              }
-            }
-          } else {
-            const rows = await db
-              .select({ id: project.id, name: project.name })
-              .from(project)
-              .where(eq(project.organizationId, ctx.organizationId));
-            for (const r of rows) {
-              if (unique.has(r.id)) labels.set(r.id, r.name);
-            }
-          }
-        }
-
-        const realKeys = groups
-          .filter((g) => g.dimensionValue !== null)
-          .map((g) => g.dimensionValue as string)
-          .sort((a, b) =>
-            (labels.get(a) || a).localeCompare(labels.get(b) || b)
-          );
-        const hasUnassigned = groups.some((g) => g.dimensionValue === null);
-        const columnKeys = [
-          ...realKeys,
-          ...(hasUnassigned ? [UNASSIGNED_KEY] : []),
-        ];
-        const columnLabels = columnKeys.map((key) =>
-          key === UNASSIGNED_KEY ? "Unassigned" : labels.get(key) || key
-        );
-
-        const byColumn = new Map<string, Map<string, AccountAggregate>>();
-        for (const g of groups) {
-          const key =
-            g.dimensionValue === null ? UNASSIGNED_KEY : g.dimensionValue;
-          const acctMap =
-            byColumn.get(key) || new Map<string, AccountAggregate>();
-          for (const a of g.accounts) acctMap.set(a.accountId, a);
-          byColumn.set(key, acctMap);
-        }
-
-        const accountMeta = new Map<
-          string,
-          {
-            accountId: string;
-            code: string;
-            name: string;
-            type: AccountAggregate["type"];
-          }
-        >();
-        for (const g of groups) {
-          for (const a of g.accounts) {
-            if (!accountMeta.has(a.accountId)) {
-              accountMeta.set(a.accountId, {
-                accountId: a.accountId,
-                code: a.code,
-                name: a.name,
-                type: a.type,
-              });
-            }
-          }
-        }
-        const orderedAccounts = Array.from(accountMeta.values()).sort((a, b) =>
-          a.code.localeCompare(b.code)
-        );
-
-        const balanceFor = (accountId: string, columnKey: string): number =>
-          byColumn.get(columnKey)?.get(accountId)?.balance ?? 0;
-
-        interface AccountRow {
-          accountId: string;
-          accountCode: string;
-          accountName: string;
-          accountType: AccountAggregate["type"];
-          amounts: number[];
-          total: number;
-        }
-        const buildRows = (types: AccountAggregate["type"][]): AccountRow[] =>
-          orderedAccounts
-            .filter((a) => types.includes(a.type))
-            .map((a) => {
-              const amounts = columnKeys.map((k) =>
-                balanceFor(a.accountId, k)
-              );
-              return {
-                accountId: a.accountId,
-                accountCode: a.code,
-                accountName: a.name,
-                accountType: a.type,
-                amounts,
-                total: amounts.reduce((s, n) => s + n, 0),
-              };
-            });
-        const sumColumns = (rows: AccountRow[]): number[] =>
-          columnKeys.map((_, i) => rows.reduce((s, r) => s + r.amounts[i], 0));
-
-        let sections: Array<{
-          label: string;
-          accounts: AccountRow[];
-          totals: number[];
-          total: number;
-        }>;
-        let netIncome: { byColumn: number[]; total: number } | undefined;
-
-        if (mode === "pnl") {
-          const revenueRows = buildRows(["revenue"]);
-          const expenseRows = buildRows(["expense"]);
-          const revenueTotals = sumColumns(revenueRows);
-          const expenseTotals = sumColumns(expenseRows);
-          const netByColumn = columnKeys.map(
-            (_, i) => revenueTotals[i] - expenseTotals[i]
-          );
-          netIncome = {
-            byColumn: netByColumn,
-            total: netByColumn.reduce((s, n) => s + n, 0),
-          };
-          sections = [
-            {
-              label: "Revenue",
-              accounts: revenueRows,
-              totals: revenueTotals,
-              total: revenueTotals.reduce((s, n) => s + n, 0),
-            },
-            {
-              label: "Expenses",
-              accounts: expenseRows,
-              totals: expenseTotals,
-              total: expenseTotals.reduce((s, n) => s + n, 0),
-            },
-          ];
-        } else {
-          const sectionDefs: Array<{
-            label: string;
-            types: AccountAggregate["type"][];
-          }> = [
-            { label: "Assets", types: ["asset"] },
-            { label: "Liabilities", types: ["liability"] },
-            { label: "Equity", types: ["equity"] },
-            { label: "Revenue", types: ["revenue"] },
-            { label: "Expenses", types: ["expense"] },
-          ];
-          sections = sectionDefs.map((def) => {
-            const rows = buildRows(def.types);
-            const totals = sumColumns(rows);
-            return {
-              label: def.label,
-              accounts: rows,
-              totals,
-              total: totals.reduce((s, n) => s + n, 0),
-            };
-          });
-        }
-
-        return {
-          dimension,
-          mode,
-          basis,
-          startDate,
-          endDate,
-          columns: columnKeys.map((key, i) => ({
-            key,
-            label: columnLabels[i],
-            dimensionValue: key === UNASSIGNED_KEY ? null : key,
-          })),
-          sections,
-          ...(netIncome ? { netIncome } : {}),
-        };
-      })
-  );
-
-  server.tool(
-    "report_pack",
-    "Generate a bundled financial report pack for a period: Balance Sheet (cumulative as at endDate), Profit & Loss (period activity), Trial Balance (cumulative as at endDate), and a Cash Flow Summary (opening/closing cash + net change). Returns each statement's structured sections (rows carry amounts in integer cents) so a client can render or export them. Use accrual (default) or cash basis.",
-    {
-      startDate: z
-        .string()
-        .optional()
-        .describe("Start date (YYYY-MM-DD, defaults to Jan 1 of current year)"),
-      endDate: z
-        .string()
-        .optional()
-        .describe("End date (YYYY-MM-DD, defaults to today)"),
-      basis: z
-        .enum(["accrual", "cash"])
-        .optional()
-        .describe(
-          "Reporting basis: 'accrual' (default) or 'cash' (cash/payment-realized movement only)."
-        ),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        const startDate =
-          params.startDate ?? `${new Date().getFullYear()}-01-01`;
-        const endDate = params.endDate ?? new Date().toISOString().slice(0, 10);
-        const basis = parseBasis(params.basis);
-
-        // Opening cash = day before the period start.
-        const openingAsAt = new Date(startDate);
-        openingAsAt.setDate(openingAsAt.getDate() - 1);
-        const openingAsAtStr = openingAsAt.toISOString().slice(0, 10);
-
-        const [pl, balancesAsAt, openingBalances] = await Promise.all([
-          aggregateByDateRange(
-            ctx.organizationId,
-            { startDate, endDate },
-            { basis, accountTypes: ["revenue", "expense"] }
-          ),
-          aggregateAsAt(ctx.organizationId, endDate, {
-            basis,
-            accountTypes: ["asset", "liability", "equity"],
-            includeEmptyAccounts: true,
-          }),
-          aggregateAsAt(ctx.organizationId, openingAsAtStr, {
-            basis,
-            accountTypes: ["asset"],
-          }),
-        ]);
-
-        const org = await db.query.organization.findFirst({
-          where: eq(organization.id, ctx.organizationId),
-          columns: { defaultCurrency: true },
-        });
-        const currency = org?.defaultCurrency || "USD";
-
-        const CASH_SUBTYPES = ["bank"];
-        const sumCash = (aggs: AccountAggregate[]) =>
-          aggs
-            .filter((a) => a.subType !== null && CASH_SUBTYPES.includes(a.subType))
-            .reduce((s, a) => s + a.balance, 0);
-        const rowsForType = (
-          aggs: AccountAggregate[],
-          type: AccountAggregate["type"]
-        ) =>
-          aggs
-            .filter((a) => a.type === type)
-            .map((a) => ({
-              code: a.code,
-              name: a.name,
-              amount: a.balance,
-              depth: 1,
-            }));
-
-        const totalRevenue = pl
-          .filter((a) => a.type === "revenue")
-          .reduce((s, a) => s + a.balance, 0);
-        const totalExpenses = pl
-          .filter((a) => a.type === "expense")
-          .reduce((s, a) => s + a.balance, 0);
-        const netIncome = totalRevenue - totalExpenses;
-        const closingCash = sumCash(balancesAsAt);
-        const openingCash = sumCash(openingBalances);
-
-        // Balance Sheet (current earnings carried into equity so it balances).
-        const assetRows = rowsForType(balancesAsAt, "asset");
-        const liabilityRows = rowsForType(balancesAsAt, "liability");
-        const equityRows = rowsForType(balancesAsAt, "equity");
-        const totalAssets = assetRows.reduce((s, r) => s + r.amount, 0);
-        const totalLiabilities = liabilityRows.reduce((s, r) => s + r.amount, 0);
-        const totalEquityAccounts = equityRows.reduce((s, r) => s + r.amount, 0);
-        const equityWithEarnings = [
-          ...equityRows,
-          { code: "", name: "Current Earnings", amount: netIncome, depth: 1 },
-        ];
-        const totalEquity = totalEquityAccounts + netIncome;
-
-        const balanceSheet: Statement = {
-          title: "Balance Sheet",
-          periodLabel: `As at ${endDate}`,
-          currency,
-          sections: [
-            { label: "Assets", rows: assetRows, subtotal: totalAssets },
-            {
-              label: "Liabilities",
-              rows: liabilityRows,
-              subtotal: totalLiabilities,
-            },
-            { label: "Equity", rows: equityWithEarnings, subtotal: totalEquity },
-          ],
-          grandTotal: totalLiabilities + totalEquity,
-        };
-
-        const profitAndLoss: Statement = {
-          title: "Profit and Loss",
-          periodLabel: `${startDate} to ${endDate}`,
-          currency,
-          sections: [
-            {
-              label: "Revenue",
-              rows: rowsForType(pl, "revenue"),
-              subtotal: totalRevenue,
-            },
-            {
-              label: "Expenses",
-              rows: rowsForType(pl, "expense"),
-              subtotal: totalExpenses,
-            },
-          ],
-          grandTotal: netIncome,
-        };
-
-        // Trial Balance: re-derive debit/credit columns from natural-sign balance.
-        const tbRows = balancesAsAt
-          .filter((a) => a.balance !== 0)
-          .map((a) => {
-            const debitNormal = a.type === "asset" || a.type === "expense";
-            const debit = debitNormal
-              ? Math.max(a.balance, 0)
-              : Math.max(-a.balance, 0);
-            const credit = debitNormal
-              ? Math.max(-a.balance, 0)
-              : Math.max(a.balance, 0);
-            return { code: a.code, name: a.name, debit, credit };
-          });
-        const tbTotalDebit = tbRows.reduce((s, r) => s + r.debit, 0);
-        const tbTotalCredit = tbRows.reduce((s, r) => s + r.credit, 0);
-        const trialBalance: Statement = {
-          title: "Trial Balance",
-          periodLabel: `As at ${endDate}`,
-          currency,
-          columns: ["Debit", "Credit"],
-          sections: [
-            {
-              label: "Accounts",
-              rows: tbRows.map((r) => ({
-                code: r.code,
-                name: r.name,
-                amounts: [r.debit, r.credit],
-                depth: 1,
-              })),
-              subtotals: [tbTotalDebit, tbTotalCredit],
-            },
-          ],
-          grandTotals: [tbTotalDebit, tbTotalCredit],
-        };
-
-        const netChange = closingCash - openingCash;
-        const cashFlow: Statement = {
-          title: "Cash Flow Summary",
-          periodLabel: `${startDate} to ${endDate}`,
-          currency,
-          sections: [
-            {
-              label: "Cash Movement",
-              rows: [
-                { name: "Opening cash", amount: openingCash, depth: 1 },
-                { name: "Net change in cash", amount: netChange, depth: 1 },
-                {
-                  name: "Closing cash",
-                  amount: closingCash,
-                  depth: 1,
-                  bold: true,
-                },
-              ],
-            },
-            {
-              label: "Reconciliation",
-              rows: [
-                { name: "Net income (period)", amount: netIncome, depth: 1 },
-                {
-                  name: "Net non-cash & working-capital movement",
-                  amount: netChange - netIncome,
-                  depth: 1,
-                },
-              ],
-              subtotal: netChange,
-            },
-          ],
-          grandTotal: closingCash,
-        };
-
-        return {
-          startDate,
-          endDate,
-          basis,
-          currency,
-          statements: [balanceSheet, profitAndLoss, trialBalance, cashFlow],
-        };
-      })
-  );
+  server.registerTool("tracking_category_report", {
+    description: "Compare posted non-deleted organization-base GL activity by owned cost center or project (legacy project alias supported), inclusive Gregorian dates, pnl/balances mode and cash/accrual basis. Returns labeled columns, account drill-down IDs, numeric integer cents and aligned Minor strings for amounts/totals/net income; safe +/-9007199254740991. Defaults to current UTC year through today; requires view:data; no FX or amount inputs.",
+    inputSchema: trackingSchema,
+  }, params => wrapTool(ctx, async () => (await getTrackingReport(ctx, params)).data));
+  server.registerTool("report_pack", {
+    description: "Read four financial statements for inclusive Gregorian dates and cash/accrual basis (current UTC year through today by default). Cumulative balance sheet includes unclosed earnings; P&L uses period income; trial balance includes all account types; cash summary includes bank/cash balances. Returns statements with numeric integer cents and matching scalar/array Minor strings, currency/currencyCode; safe +/-9007199254740991. Requires view:data; no FX or amount inputs.",
+    inputSchema: packSchema,
+  }, params => wrapTool(ctx, async () => (await getReportPack(ctx, params)).data));
+  server.registerTool("financial_ratios", {
+    description: "Read financial ratios for inclusive Gregorian dates (current UTC year through today by default). GL balances are cumulative through endDate, income uses the period, outstanding documents use their current snapshot and must be in organization currency. Returns numeric cent balances with Minor strings, numeric ratios and matching ratiosExact decimal strings (null for zero divisor). Ratio/margin precision is two places, DSO/DPO integer days using max(1, end-start). Gross margin retains the net-income heuristic. Requires view:data; no FX or amount inputs; money safe +/-9007199254740991.",
+    inputSchema: ratioSchema,
+  }, params => wrapTool(ctx, () => getFinancialRatios(ctx, params)));
+  server.registerTool("export_report_pack", {
+    description: "Export report_pack as a four-sheet XLSX workbook. Gregorian dates and cash/accrual basis as report_pack; amounts display with organization currency scale. Returns base64 data, filename, MIME type and encoding; requires view:data and exact Excel numeric-cell compatibility.",
+    inputSchema: packSchema,
+  }, params => wrapTool(ctx, async () => {
+    const result = await getReportPack(ctx, params);
+    const { toWorkbookXlsx } = await import("@/lib/reports/statements-workbook");
+    const buffer = await toWorkbookXlsx(result.statements);
+    return { data: buffer.toString("base64"), encoding: "base64", filename: "report-pack.xlsx",
+      mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" };
+  }));
+  server.registerTool("export_tracking_category_report", {
+    description: "Export tracking_category_report as PDF or XLSX with organization currency display scale. Gregorian dates, dimension, mode and basis match the read tool. Returns base64 data, encoding, filename and MIME type; requires view:data and exact Excel compatibility for XLSX.",
+    inputSchema: trackingExportSchema,
+  }, params => wrapTool(ctx, async () => {
+    const { format, ...input } = params;
+    const result = await getTrackingReport(ctx, input);
+    const { toPdf, toXlsx } = await import("@/lib/reports/statement-export");
+    const buffer = format === "pdf" ? await toPdf(result.statement()) : await toXlsx(result.statement());
+    return { data: buffer.toString("base64"), encoding: "base64", filename: `tracking-category.${format}`,
+      mimeType: format === "pdf" ? "application/pdf" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" };
+  }));
 
   server.tool(
     "executive_summary",

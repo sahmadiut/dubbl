@@ -5,12 +5,17 @@ import { AuthError, type AuthContext } from "@/lib/api/auth-context";
 import { requireRole } from "@/lib/api/require-role";
 import { currencyMetadata } from "@/lib/money/exact";
 import { WireCompatibilityError } from "@/lib/money/wire";
-import { aggregateAsAtExact } from "./gl-query";
+import { aggregateAsAtExact, type ExactAccountAggregate } from "./gl-query";
 import { cumulativeReportSchema, reportDecimal, reportMinor } from "./statement-wire";
 import type { Statement } from "./statement-export";
 
 type ReportKind = "trial-balance" | "balance-sheet";
 const sum = (values: bigint[]) => values.reduce((total, value) => total + value, 0n);
+
+export function cumulativeEarningsExact(accounts: ExactAccountAggregate[]) {
+  return sum(accounts.filter(account => ["revenue", "expense"].includes(account.type))
+    .map(account => account.type === "revenue" ? account.balance : -account.balance));
+}
 
 /** Shared REST/MCP read service: comparisons and earnings use one repeatable-read snapshot. */
 export async function getCumulativeStatement(ctx: AuthContext, kind: ReportKind, input: unknown) {
@@ -62,8 +67,7 @@ export async function getCumulativeStatement(ctx: AuthContext, kind: ReportKind,
       };
       return { data: { ...envelope, accounts }, statement };
     }
-    const earnings = perDate.map(accounts => sum(accounts.filter(account => ["revenue", "expense"].includes(account.type))
-      .map(account => account.type === "revenue" ? account.balance : -account.balance)));
+    const earnings = perDate.map(cumulativeEarningsExact);
     const sections = (["asset", "liability", "equity"] as const).map(type => {
       const accounts = rows.filter(row => row.type === type);
       if (type === "equity" && earnings.some(value => value !== 0n)) accounts.push({

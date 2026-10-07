@@ -180,3 +180,5 @@ Ledger detail report contracts are documented in [.agentic/registries/LEDGER_DET
 Licensed under the [Apache License 2.0](/LICENSE).
 
 Cash-flow exact contracts are documented in [.agentic/registries/CASH_FLOW_WIRE_CONTRACTS.md](.agentic/registries/CASH_FLOW_WIRE_CONTRACTS.md): REST and MCP share numeric cents, exact Minor strings, reconciliation and PDF/XLSX exports. Existing method heuristics and their accounting limits remain explicit.
+
+Compound report contracts are documented in [.agentic/registries/COMPOUND_REPORT_WIRE_CONTRACTS.md](.agentic/registries/COMPOUND_REPORT_WIRE_CONTRACTS.md): tracking categories, report packs and financial ratios share REST/MCP calculations, preserve numeric cents with scalar/array Minor aliases, expose exact ratio decimals, and support guarded PDF/XLSX/workbook exports. Packs distinguish cumulative earnings from period income; ratios enforce the ledger cutoff and organization currency for outstanding documents.

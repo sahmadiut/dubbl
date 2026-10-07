@@ -23,7 +23,7 @@ async function readStatement<T>(ctx: AuthContext, read: (tx: Snapshot, currency:
   }, { isolationLevel: "repeatable read", accessMode: "read only" });
 }
 
-async function period(tx: Snapshot, organizationId: string, startDate: string, endDate: string, options: GLQueryOptions = {}) {
+export async function readExactIncomePeriod(tx: Snapshot, organizationId: string, startDate: string, endDate: string, options: GLQueryOptions = {}) {
   const accounts = await aggregateByDateRangeExact(organizationId, periodRange(startDate, endDate), {
     ...options, database: tx, accountTypes: ["revenue", "expense"],
   });
@@ -31,7 +31,7 @@ async function period(tx: Snapshot, organizationId: string, startDate: string, e
   const totalRevenue = sum(revenue), totalExpenses = sum(expenses);
   return { startDate, endDate, revenue, expenses, totalRevenue, totalExpenses, netIncome: totalRevenue - totalExpenses };
 }
-type ExactPeriod = Awaited<ReturnType<typeof period>>;
+type ExactPeriod = Awaited<ReturnType<typeof readExactIncomePeriod>>;
 function numericPeriod(value: ExactPeriod, codes = true) {
   const row = (account: ExactAccountAggregate) => ({ accountId: account.accountId, accountName: account.name,
     ...(codes ? { accountCode: account.code } : {}), ...amount("balance", account.balance) });
@@ -57,8 +57,8 @@ export async function getProfitLoss(ctx: AuthContext, input: unknown) {
       if (!owned.length) throw new AuthError("Report dimension not found", 404);
     }
     const options: GLQueryOptions = { basis, ...(dimension ? { dimension, dimensionValue } : {}) };
-    const primary = await period(tx, ctx.organizationId, range.startDate, range.endDate, options);
-    const comparison = compare ? await period(tx, ctx.organizationId, compare.startDate, compare.endDate, options) : undefined;
+    const primary = await readExactIncomePeriod(tx, ctx.organizationId, range.startDate, range.endDate, options);
+    const comparison = compare ? await readExactIncomePeriod(tx, ctx.organizationId, compare.startDate, compare.endDate, options) : undefined;
     const statement = (): Statement => {
       const buildRows = (rows: ExactAccountAggregate[], prior: ExactAccountAggregate[] = []): StatementRow[] => {
         const current = new Map(rows.map(row => [row.accountId, row]));
@@ -85,7 +85,7 @@ export async function getIncomeStatement(ctx: AuthContext, input: unknown) {
   const params = incomeStatementSchema.parse(input);
   const range = periodRange(params.from ?? "0001-01-01", params.to ?? "9999-12-31");
   return readStatement(ctx, async (tx, currency) => {
-    const result = await period(tx, ctx.organizationId, range.startDate, range.endDate, { includeEmptyAccounts: true });
+    const result = await readExactIncomePeriod(tx, ctx.organizationId, range.startDate, range.endDate, { includeEmptyAccounts: true });
     const section = (rows: ExactAccountAggregate[], total: bigint) => ({ accounts: rows.map(row => ({ code: row.code, name: row.name,
       ...decimal("balance", row.balance) })), ...decimal("total", total) });
     return { period: { from: params.from ?? null, to: params.to ?? null }, currencyCode: currency,
@@ -98,7 +98,7 @@ export async function getPnlComparison(ctx: AuthContext, input: unknown) {
   const { compareType, windows } = comparisonWindows(input);
   return readStatement(ctx, async (tx, currency) => {
     const results: ExactPeriod[] = [];
-    for (const window of windows) results.push(await period(tx, ctx.organizationId, window.startDate, window.endDate));
+    for (const window of windows) results.push(await readExactIncomePeriod(tx, ctx.organizationId, window.startDate, window.endDate));
     return { compareType, currencyCode: currency, periods: results.map((current, index) => {
       const previous = results[index - 1];
       const changes = Object.assign({}, ...(["totalRevenue", "totalExpenses", "netIncome"] as const).map((key, i) => {

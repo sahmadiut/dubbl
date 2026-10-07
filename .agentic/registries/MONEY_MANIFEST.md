@@ -1004,3 +1004,8 @@ MON-021 retain remaining/combined qualification; no schema/full-int64/IRR rollou
 ## MON-114 spend and sales analytics
 
 [DOCUMENT_ANALYTICS_WIRE_CONTRACTS](DOCUMENT_ANALYTICS_WIRE_CONTRACTS.md) maps vendor-spend, sales-by-customer and sales-by-item REST/MCP pairs and existing sales PDF/XLSX. Shared scoped read-only snapshots use SQL-text/bigint source sums, averages and percentages; numeric fixed cents coexist with explicit Minor strings. Strict dates, currency filters, scoped labels, safe source/result bounds and existing export precision guards reject unsupported values. Actual fixtures verify both writer contracts, tenant/permission isolation, distinct counts, top-five trends, signed cancellation and currency/export units. MON-104 retains independent integration after MON-115..118; no schema, history rescale or IRR rollout change.
+
+
+## MON-107 period financial statements
+
+[PERIOD_STATEMENT_WIRE_CONTRACTS](PERIOD_STATEMENT_WIRE_CONTRACTS.md) maps profit-and-loss, income-statement and pnl-comparison REST/MCP pairs and P&L PDF/XLSX/MCP export. Shared scoped read-only snapshots and exact GL/bigint sums preserve legacy numeric cents or fixed-decimal strings with explicit Minor aliases. Strict inclusive periods, UTC calendar comparison windows, owned dimension filters and safe final totals/changes guard unsupported inputs and outputs. Income-statement range/status/tenant leakage from its former outer join is corrected while retaining empty accounts. Exports retain currency scaling and existing PDF/XLSX precision guards. MON-108..110 and MON-101/MON-029 retain remaining and combined report acceptance; no schema/history rescale or IRR gate change.

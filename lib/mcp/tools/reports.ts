@@ -1,3 +1,5 @@
+import { getProfitLoss, getIncomeStatement, getPnlComparison } from "@/lib/reports/period-statement";
+import { profitLossSchema, incomeStatementSchema, pnlComparisonSchema } from "@/lib/reports/period-statement-wire";
 import { getDocumentAnalytics } from "@/lib/reports/document-analytics";
 import { documentAnalyticsSchema } from "@/lib/reports/document-analytics-wire";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -19,6 +21,7 @@ import { getAgingReport } from "@/lib/reports/aging";
 import { agingSchema } from "@/lib/reports/aging-wire";
 import { cumulativeReportSchema } from "@/lib/reports/statement-wire";
 import { wrapTool } from "@/lib/mcp/errors";
+import { requireRole } from "@/lib/api/require-role";
 import type { AuthContext } from "@/lib/api/auth-context";
 import type { Statement } from "@/lib/reports/statement-export";
 import {
@@ -36,32 +39,6 @@ function parseBasis(value: string | undefined): ReportBasis {
   return value === "cash" ? "cash" : "accrual";
 }
 
-/**
- * Resolve a single optional dimension filter from costCenterId / projectId.
- * costCenterId takes precedence. The literal "none" / "null" / "" matches lines
- * where the dimension is unset (IS NULL). Returns undefined when neither is set.
- */
-function resolveDimensionFilter(args: {
-  costCenterId?: string;
-  projectId?: string;
-}): { dimension: Dimension; dimensionValue: string | null } | undefined {
-  let dimension: Dimension | undefined;
-  let raw: string | undefined;
-  if (args.costCenterId !== undefined) {
-    dimension = "costCenterId";
-    raw = args.costCenterId;
-  } else if (args.projectId !== undefined) {
-    dimension = "projectId";
-    raw = args.projectId;
-  }
-  if (!dimension) return undefined;
-  const dimensionValue =
-    raw === "none" || raw === "null" || raw === "" || raw === undefined
-      ? null
-      : raw;
-  return { dimension, dimensionValue };
-}
-
 export function registerReportTools(server: McpServer, ctx: AuthContext) {
   for (const [name, kind, label] of [
     ["trial_balance", "trial-balance", "Trial balance"],
@@ -74,154 +51,18 @@ export function registerReportTools(server: McpServer, ctx: AuthContext) {
     );
   }
 
-  server.tool(
-    "profit_and_loss",
-    "Generate a profit and loss (income statement) report for a date range. Shows revenue and expense accounts with totals. Amounts are in integer cents. Supports cash vs accrual basis, an optional cost-center or project dimension filter, and an optional comparative period (compareFrom/compareTo).",
-    {
-      startDate: z
-        .string()
-        .optional()
-        .describe("Start date (YYYY-MM-DD, defaults to Jan 1 of current year)"),
-      endDate: z
-        .string()
-        .optional()
-        .describe("End date (YYYY-MM-DD, defaults to today)"),
-      basis: z
-        .enum(["accrual", "cash"])
-        .optional()
-        .describe(
-          "Reporting basis: 'accrual' (default) counts all posted entries; 'cash' counts only cash/payment-realized movement."
-        ),
-      costCenterId: z
-        .string()
-        .optional()
-        .describe(
-          "Filter to lines tagged with this cost center (UUID). Pass 'none' to match lines with no cost center. Takes precedence over projectId."
-        ),
-      projectId: z
-        .string()
-        .optional()
-        .describe(
-          "Filter to lines tagged with this project (UUID). Pass 'none' to match lines with no project. Ignored if costCenterId is set."
-        ),
-      compareFrom: z
-        .string()
-        .optional()
-        .describe(
-          "Comparative period start (YYYY-MM-DD). Both compareFrom and compareTo must be set to add a `comparison` period."
-        ),
-      compareTo: z
-        .string()
-        .optional()
-        .describe(
-          "Comparative period end (YYYY-MM-DD). Both compareFrom and compareTo must be set to add a `comparison` period."
-        ),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        const startDate =
-          params.startDate ?? `${new Date().getFullYear()}-01-01`;
-        const endDate =
-          params.endDate ?? new Date().toISOString().slice(0, 10);
-        const basis = parseBasis(params.basis);
-        const dim = resolveDimensionFilter(params);
-
-        type PLAccount = {
-          accountId: string;
-          accountName: string;
-          accountCode: string;
-          balance: number;
-        };
-        type PLPeriod = {
-          startDate: string;
-          endDate: string;
-          revenue: PLAccount[];
-          totalRevenue: number;
-          expenses: PLAccount[];
-          totalExpenses: number;
-          netIncome: number;
-        };
-
-        const toPeriod = (
-          s: string,
-          e: string,
-          aggs: AccountAggregate[]
-        ): PLPeriod => {
-          const revenue: PLAccount[] = [];
-          const expenses: PLAccount[] = [];
-          for (const a of aggs) {
-            // gl-query natural-signs: revenue = credit−debit, expense = debit−credit.
-            const line: PLAccount = {
-              accountId: a.accountId,
-              accountName: a.name,
-              accountCode: a.code,
-              balance: a.balance,
-            };
-            if (a.type === "revenue") revenue.push(line);
-            else if (a.type === "expense") expenses.push(line);
-          }
-          const totalRevenue = revenue.reduce((sum, r) => sum + r.balance, 0);
-          const totalExpenses = expenses.reduce((sum, x) => sum + x.balance, 0);
-          return {
-            startDate: s,
-            endDate: e,
-            revenue,
-            totalRevenue,
-            expenses,
-            totalExpenses,
-            netIncome: totalRevenue - totalExpenses,
-          };
-        };
-
-        const queryOpts = {
-          basis,
-          accountTypes: ["revenue", "expense"] as AccountAggregate["type"][],
-          ...(dim
-            ? { dimension: dim.dimension, dimensionValue: dim.dimensionValue }
-            : {}),
-        };
-
-        const primaryAggs = await aggregateByDateRange(
-          ctx.organizationId,
-          { startDate, endDate },
-          queryOpts
-        );
-        const primary = toPeriod(startDate, endDate, primaryAggs);
-
-        const hasComparison = Boolean(params.compareFrom && params.compareTo);
-        let comparison: PLPeriod | undefined;
-        if (hasComparison) {
-          const cmpAggs = await aggregateByDateRange(
-            ctx.organizationId,
-            { startDate: params.compareFrom!, endDate: params.compareTo! },
-            queryOpts
-          );
-          comparison = toPeriod(
-            params.compareFrom!,
-            params.compareTo!,
-            cmpAggs
-          );
-        }
-
-        return {
-          startDate,
-          endDate,
-          basis,
-          ...(dim
-            ? {
-                dimension: dim.dimension,
-                dimensionValue: dim.dimensionValue,
-              }
-            : {}),
-          revenue: primary.revenue,
-          totalRevenue: primary.totalRevenue,
-          expenses: primary.expenses,
-          totalExpenses: primary.totalExpenses,
-          netIncome: primary.netIncome,
-          ...(comparison ? { comparison } : {}),
-        };
-      })
-  );
+  server.registerTool("profit_and_loss", {
+    description: "Read posted non-deleted base GL revenue/expenses for an inclusive Gregorian period, cash/accrual basis and owned dimension. Returns numeric integer cents, additive Minor strings, totals, optional comparison and currencyCode; safe +/-9007199254740991. Defaults to current UTC year through today; requires view:data; no FX or input amounts.",
+    inputSchema: profitLossSchema,
+  }, params => wrapTool(ctx, async () => (await getProfitLoss(ctx, params)).data));
+  server.registerTool("income_statement", {
+    description: "Read revenue/expense accounts including empty accounts for optional inclusive Gregorian from/to. Returns fixed two-place decimal strings and exact integer-cent Minor strings, sections, netIncome and currencyCode; safe +/-9007199254740991. Omitted bounds mean all history; posted non-deleted scoped GL only; requires view:data; no FX or input amounts.",
+    inputSchema: incomeStatementSchema,
+  }, params => wrapTool(ctx, () => getIncomeStatement(ctx, params)));
+  server.registerTool("pnl_comparison", {
+    description: "Compare 1-12 full calendar months/quarters/years through the UTC asAt period. Returns numeric integer cents and exact Minor strings for accounts, totals and consecutive changes, two-place numeric percentage changes and currencyCode; safe +/-9007199254740991. Posted non-deleted scoped GL only; requires view:data; no FX or input amounts.",
+    inputSchema: pnlComparisonSchema,
+  }, params => wrapTool(ctx, () => getPnlComparison(ctx, params)));
 
   server.registerTool("aged_receivables", {
     description: "Read outstanding invoices grouped into aging buckets with counts, numeric integer cents and amountDueMinor/totalMinor/grandTotalMinor strings (safe +/-9007199254740991). Optional asAt reconstructs a historical open balance from scoped allocations; omit for current stored balances. Optional currencyCode filters document currency; mixed currencies reject without FX conversion. Requires view:data.",
@@ -544,7 +385,8 @@ export function registerReportTools(server: McpServer, ctx: AuthContext) {
         if (!["aged_receivables", "aged_payables"].includes(params.statement) && (params.asAt !== undefined || params.currencyCode !== undefined)) {
           throw new z.ZodError([{ code: "custom", path: [], message: "asAt/currencyCode apply only to aging exports" }]);
         }
-        const startDate = params.from ?? `${new Date().getFullYear()}-01-01`;
+        if (params.statement === "profit_and_loss") requireRole(ctx, "view:data");
+        const startDate = params.from ?? `${params.statement === "profit_and_loss" ? new Date().getUTCFullYear() : new Date().getFullYear()}-01-01`;
         const endDate = params.to ?? new Date().toISOString().slice(0, 10);
         const asAt = new Date().toISOString().slice(0, 10);
 
@@ -649,57 +491,7 @@ export function registerReportTools(server: McpServer, ctx: AuthContext) {
           };
           baseName = `trial-balance-${asAt}`;
         } else if (params.statement === "profit_and_loss") {
-          const entries = await db
-            .select({
-              accountName: chartAccount.name,
-              accountCode: chartAccount.code,
-              accountType: chartAccount.type,
-              debit: sql<number>`COALESCE(SUM(${journalLine.debitAmount}), 0)`.as("debit"),
-              credit: sql<number>`COALESCE(SUM(${journalLine.creditAmount}), 0)`.as("credit"),
-            })
-            .from(journalLine)
-            .innerJoin(journalEntry, eq(journalLine.journalEntryId, journalEntry.id))
-            .innerJoin(chartAccount, eq(journalLine.accountId, chartAccount.id))
-            .where(
-              and(
-                eq(journalEntry.organizationId, ctx.organizationId),
-                eq(journalEntry.status, "posted"),
-                isNull(journalEntry.deletedAt),
-                gte(journalEntry.date, startDate),
-                lte(journalEntry.date, endDate)
-              )
-            )
-            .groupBy(chartAccount.name, chartAccount.code, chartAccount.type);
-
-          const revenueRows: { code: string; name: string; amount: number; depth: number }[] = [];
-          const expenseRows: typeof revenueRows = [];
-          let totalRevenue = 0;
-          let totalExpenses = 0;
-
-          for (const row of entries) {
-            const debit = Number(row.debit);
-            const credit = Number(row.credit);
-            if (row.accountType === "revenue") {
-              const amount = credit - debit;
-              totalRevenue += amount;
-              revenueRows.push({ code: row.accountCode, name: row.accountName, amount, depth: 1 });
-            } else if (row.accountType === "expense") {
-              const amount = debit - credit;
-              totalExpenses += amount;
-              expenseRows.push({ code: row.accountCode, name: row.accountName, amount, depth: 1 });
-            }
-          }
-
-          statement = {
-            title: "Profit and Loss",
-            periodLabel: `${startDate} to ${endDate}`,
-            currency,
-            sections: [
-              { label: "Revenue", rows: revenueRows, subtotal: totalRevenue },
-              { label: "Expenses", rows: expenseRows, subtotal: totalExpenses },
-            ],
-            grandTotal: totalRevenue - totalExpenses,
-          };
+          statement = (await getProfitLoss(ctx, { startDate, endDate })).statement();
           baseName = `profit-and-loss-${startDate}-${endDate}`;
         } else if (params.statement === "general_ledger") {
           const rows = await db

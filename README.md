@@ -173,6 +173,8 @@ We welcome contributions of all kinds: bug fixes, features, documentation, and t
 
 Tax/regulatory report exact contracts are documented in [.agentic/registries/TAX_REPORT_WIRE_CONTRACTS.md](.agentic/registries/TAX_REPORT_WIRE_CONTRACTS.md): numeric cents retain additive Minor string aliases across seven shared REST/MCP operations. Existing jurisdiction heuristics are preserved.
 
+Ledger detail report contracts are documented in [.agentic/registries/LEDGER_DETAIL_WIRE_CONTRACTS.md](.agentic/registries/LEDGER_DETAIL_WIRE_CONTRACTS.md): general ledger and account transactions share REST/MCP services, preserve numeric cents with exact Minor aliases, and expose opening/history balances separately from legacy period movement. PDF/XLSX exports include the complete period.
+
 ## License
 
 Licensed under the [Apache License 2.0](/LICENSE).

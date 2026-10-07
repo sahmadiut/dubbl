@@ -1,3 +1,5 @@
+import { getGeneralLedger, getAccountTransactions } from "@/lib/reports/ledger-detail";
+import { generalLedgerSchema, accountTransactionsSchema } from "@/lib/reports/ledger-detail-wire";
 import { getProfitLoss, getIncomeStatement, getPnlComparison } from "@/lib/reports/period-statement";
 import { profitLossSchema, incomeStatementSchema, pnlComparisonSchema } from "@/lib/reports/period-statement-wire";
 import { getDocumentAnalytics } from "@/lib/reports/document-analytics";
@@ -15,7 +17,7 @@ import {
   bill,
   organization,
 } from "@/lib/db/schema";
-import { eq, and, sql, isNull, ne, gte, lte, inArray, asc } from "drizzle-orm";
+import { eq, and, sql, isNull, ne, gte, lte, inArray } from "drizzle-orm";
 import { getCumulativeStatement } from "@/lib/reports/cumulative-statement";
 import { getAgingReport } from "@/lib/reports/aging";
 import { agingSchema } from "@/lib/reports/aging-wire";
@@ -40,6 +42,15 @@ function parseBasis(value: string | undefined): ReportBasis {
 }
 
 export function registerReportTools(server: McpServer, ctx: AuthContext) {
+  server.registerTool("general_ledger", {
+    description: "Read posted non-deleted organization-base ledger for an inclusive Gregorian period, owned account and optional owned dimension. Returns account summaries or paginated entries, numeric integer cents and exact Minor strings, opening/period/running/closing balances and currencyCode; safe +/-9007199254740991. Period runningBalance/balance exclude opening history; ledgerBalance/closingLedgerBalance include it. Defaults to current UTC year, today and 50 lines; requires view:data; no FX or input amounts.",
+    inputSchema: generalLedgerSchema,
+  }, params => wrapTool(ctx, async () => (await getGeneralLedger(ctx, params)).data));
+  server.registerTool("account_transactions", {
+    description: "Read every posted non-deleted line for an owned account and inclusive Gregorian period (current UTC year through today by default). Returns account metadata, transactions, numeric integer cents and exact Minor strings, period runningBalance/closingBalance, openingBalance and ledgerBalance/closingLedgerBalance including prior history, plus currencyCode; safe +/-9007199254740991. Requires view:data; no FX or input amounts.",
+    inputSchema: accountTransactionsSchema,
+  }, params => wrapTool(ctx, () => getAccountTransactions(ctx, params)));
+
   for (const [name, kind, label] of [
     ["trial_balance", "trial-balance", "Trial balance"],
     ["balance_sheet", "balance-sheet", "Balance sheet"],
@@ -350,7 +361,7 @@ export function registerReportTools(server: McpServer, ctx: AuthContext) {
 
   server.tool(
     "export_financial_statement",
-    "Render a financial statement as a downloadable PDF or XLSX (Excel) file. Returns the file base64-encoded along with its filename and MIME type. Ledger reports include posted journal data; aging reports include non-draft/non-void documents. Monetary figures are computed in integer cents and scaled by the file renderer. For date-ranged statements (profit_and_loss, general_ledger) provide 'from' and 'to'. Balance_sheet and trial_balance are point-in-time and ignore those dates. Aged_receivables and aged_payables ignore from/to and accept optional asAt/currencyCode, using the same exact totals as their JSON tools.",
+    "Render a financial statement as a downloadable PDF or XLSX (Excel) file. Returns the file base64-encoded along with its filename and MIME type. Ledger reports include posted journal data; aging reports include non-draft/non-void documents. Monetary figures are computed in integer cents and scaled by the file renderer. General ledger exports use the same exact scoped service with all qualifying lines and complete period subtotals. For date-ranged statements (profit_and_loss, general_ledger) provide 'from' and 'to'. Balance_sheet and trial_balance are point-in-time and ignore those dates. Aged_receivables and aged_payables ignore from/to and accept optional asAt/currencyCode, using the same exact totals as their JSON tools.",
     {
       asAt: agingSchema.shape.asAt.describe("Aging export only: historical cutoff YYYY-MM-DD; omit for current stored balances"),
       currencyCode: agingSchema.shape.currencyCode.describe("Aging export only: single document currency filter, no FX conversion"),
@@ -385,8 +396,8 @@ export function registerReportTools(server: McpServer, ctx: AuthContext) {
         if (!["aged_receivables", "aged_payables"].includes(params.statement) && (params.asAt !== undefined || params.currencyCode !== undefined)) {
           throw new z.ZodError([{ code: "custom", path: [], message: "asAt/currencyCode apply only to aging exports" }]);
         }
-        if (params.statement === "profit_and_loss") requireRole(ctx, "view:data");
-        const startDate = params.from ?? `${params.statement === "profit_and_loss" ? new Date().getUTCFullYear() : new Date().getFullYear()}-01-01`;
+        if (["profit_and_loss", "general_ledger"].includes(params.statement)) requireRole(ctx, "view:data");
+        const startDate = params.from ?? `${["profit_and_loss", "general_ledger"].includes(params.statement) ? new Date().getUTCFullYear() : new Date().getFullYear()}-01-01`;
         const endDate = params.to ?? new Date().toISOString().slice(0, 10);
         const asAt = new Date().toISOString().slice(0, 10);
 
@@ -494,60 +505,7 @@ export function registerReportTools(server: McpServer, ctx: AuthContext) {
           statement = (await getProfitLoss(ctx, { startDate, endDate })).statement();
           baseName = `profit-and-loss-${startDate}-${endDate}`;
         } else if (params.statement === "general_ledger") {
-          const rows = await db
-            .select({
-              accountCode: chartAccount.code,
-              accountName: chartAccount.name,
-              accountType: chartAccount.type,
-              date: journalEntry.date,
-              entryNumber: journalEntry.entryNumber,
-              description: journalEntry.description,
-              debit: journalLine.debitAmount,
-              credit: journalLine.creditAmount,
-            })
-            .from(journalLine)
-            .innerJoin(journalEntry, eq(journalLine.journalEntryId, journalEntry.id))
-            .innerJoin(chartAccount, eq(journalLine.accountId, chartAccount.id))
-            .where(
-              and(
-                eq(journalEntry.organizationId, ctx.organizationId),
-                eq(journalEntry.status, "posted"),
-                isNull(journalEntry.deletedAt),
-                gte(journalEntry.date, startDate),
-                lte(journalEntry.date, endDate)
-              )
-            )
-            .orderBy(asc(chartAccount.code), asc(journalEntry.date), asc(journalEntry.entryNumber));
-
-          type GlSection = {
-            label: string;
-            rows: { name: string; amount: number; depth: number }[];
-            subtotal: number;
-          };
-          const sectionMap = new Map<string, GlSection>();
-          for (const r of rows) {
-            const key = `${r.accountCode} ${r.accountName}`;
-            let sec = sectionMap.get(key);
-            if (!sec) {
-              sec = { label: key, rows: [], subtotal: 0 };
-              sectionMap.set(key, sec);
-            }
-            const isDebitNormal = r.accountType === "asset" || r.accountType === "expense";
-            const delta = isDebitNormal ? r.debit - r.credit : r.credit - r.debit;
-            sec.subtotal += delta;
-            sec.rows.push({
-              name: `${r.date} ${r.entryNumber}${r.description ? ` - ${r.description}` : ""}`,
-              amount: r.debit - r.credit,
-              depth: 1,
-            });
-          }
-
-          statement = {
-            title: "General Ledger",
-            periodLabel: `${startDate} to ${endDate}`,
-            currency,
-            sections: Array.from(sectionMap.values()),
-          };
+          statement = (await getGeneralLedger(ctx, { startDate, endDate }, { allLines: true })).statement();
           baseName = `general-ledger-${startDate}-${endDate}`;
         } else {
           const kind = params.statement === "aged_receivables" ? "receivables" : "payables";

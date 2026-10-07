@@ -108,15 +108,22 @@ async function run() {
     assert.equal(transactions.closingLedgerBalanceMinor, "1900"); assert.equal(transactions.totalDebitMinor, "1250");
     assert.equal(transactions.totalCreditMinor, "350"); assert.equal(transactions.transactions.length, 3);
     // Same entry has two lines; stable UUID tie breakers keep adjacent pages identical to the full list.
-    for (let offset = 0; offset < 4; offset++) {
-      const page = await get("general-ledger", `&accountId=${cash.id}&offset=${offset}&limit=1`);
-      assert.deepEqual(page.entries.map((r: { lineId: string }) => r.lineId), transactions.transactions.slice(offset, offset + 1).map((r: { lineId: string }) => r.lineId));
+    for (const { offset, limit } of [0, 1, 2, 3].map(offset => ({ offset, limit: 1 })).concat([
+      { offset: 1, limit: 2 }, { offset: 2, limit: 500 }, { offset: 2147483647, limit: 1 },
+    ])) {
+      const page = await get("general-ledger", `&accountId=${cash.id}&offset=${offset}&limit=${limit}`);
+      const expected = transactions.transactions.slice(offset, offset + limit);
+      assert.equal(page.entries.length, expected.length, `offset=${offset}, limit=${limit} must bound returned lines`);
+      assert.deepEqual(page.entries.map((r: { lineId: string }) => r.lineId), expected.map((r: { lineId: string }) => r.lineId));
       if (page.entries.length) {
         assert.equal(page.entries[0].runningBalanceMinor, transactions.transactions[offset].runningBalanceMinor);
         assert.equal(page.entries[0].ledgerBalanceMinor, transactions.transactions[offset].ledgerBalanceMinor);
       }
-      assert.deepEqual((await ma.call("general_ledger", { ...range, accountId: cash.id, offset, limit: 1 })).body, page);
+      assert.deepEqual((await ma.call("general_ledger", { ...range, accountId: cash.id, offset, limit })).body, page);
     }
+    const summaryPage = await get("general-ledger", "&limit=1");
+    const cashSummary = summaryPage.accounts.find((row: { accountId: string }) => row.accountId === cash.id);
+    assert.equal(cashSummary.entries.length, 1); assert.equal(cashSummary.totalEntries, 3);
     const negative = await entry([{ accountId: expense.id, credit: 150 }]);
     assert.equal((await get("account-transactions", `&accountId=${expense.id}`)).closingBalanceMinor, "-50");
     const filtered = await get("general-ledger", `&costCenterId=${dimension.id}`);

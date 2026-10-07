@@ -58,7 +58,9 @@ async function ledger(tx: Snapshot, ctx: AuthContext, params: ReturnType<typeof 
     sourceType: journalEntry.sourceType, sourceId: journalEntry.sourceId, lineDescription: sql<string | null>`${journalLine.description}`.as("line_description"),
     debit: sql<string>`${journalLine.debitAmount}::text`.as("debit"), credit: sql<string>`${journalLine.creditAmount}::text`.as("credit"),
     movement: sql<string>`sum(${journalLine.debitAmount}::numeric - ${journalLine.creditAmount}::numeric) over (partition by ${chartAccount.id} order by ${order} rows unbounded preceding)::text`.as("movement"),
-    rn: sql<string>`row_number() over (partition by ${chartAccount.id} order by ${order})`.as("rn"),
+    // Keep both window frames identical: PostgreSQL 16 can discard the upper page
+    // predicate when it merges a default RANGE row_number window with a ROWS sum.
+    rn: sql<string>`row_number() over (partition by ${chartAccount.id} order by ${order} rows unbounded preceding)`.as("rn"),
   }).from(journalLine).innerJoin(journalEntry, eq(journalLine.journalEntryId, journalEntry.id))
     .innerJoin(chartAccount, eq(journalLine.accountId, chartAccount.id)).where(and(scope, gte(journalEntry.date, startDate))).as("ledger_lines");
   const rows = await tx.select().from(window).where(allLines ? undefined : and(sql`${window.rn} > ${offset}`, sql`${window.rn} <= ${offset + limit}`))

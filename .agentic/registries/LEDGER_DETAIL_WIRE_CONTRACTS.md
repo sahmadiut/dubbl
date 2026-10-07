@@ -42,6 +42,11 @@ accounts remain reportable. Summary includes accounts with period lines, even
 zero-net activity, and excludes empty/opening-only accounts. Single-account and
 account-transactions responses include opening-only history. Stable detail order:
 date, entryNumber, entry UUID, line UUID; summary order: code, account UUID.
+Running SUM and row_number use the same explicit ROWS UNBOUNDED PRECEDING frame.
+This preserves the upper page bound on PostgreSQL 16 when its planner combines
+window calculations. Regression fixtures cover page lengths, multiple limits,
+maximum offset, same-entry line order and complete running balances on versions
+16 and 18.
 
 ## Outputs, exact aliases and supported range
 

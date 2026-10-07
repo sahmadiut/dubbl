@@ -1010,6 +1010,10 @@ MON-021 retain remaining/combined qualification; no schema/full-int64/IRR rollou
 
 [PERIOD_STATEMENT_WIRE_CONTRACTS](PERIOD_STATEMENT_WIRE_CONTRACTS.md) maps profit-and-loss, income-statement and pnl-comparison REST/MCP pairs and P&L PDF/XLSX/MCP export. Shared scoped read-only snapshots and exact GL/bigint sums preserve legacy numeric cents or fixed-decimal strings with explicit Minor aliases. Strict inclusive periods, UTC calendar comparison windows, owned dimension filters and safe final totals/changes guard unsupported inputs and outputs. Income-statement range/status/tenant leakage from its former outer join is corrected while retaining empty accounts. Exports retain currency scaling and existing PDF/XLSX precision guards. MON-108..110 and MON-101/MON-029 retain remaining and combined report acceptance; no schema/history rescale or IRR gate change.
 
+## MON-112 contact statements and delivery
+
+[CONTACT_STATEMENT_WIRE_CONTRACTS](CONTACT_STATEMENT_WIRE_CONTRACTS.md) maps five REST/MCP pairs for general/supplier statements, activity, print and email. Scoped read-only snapshots and bigint sums retain numeric integer currency minor units with matching Minor strings and guard single-currency totals. Opening balances now use original totals less dated cash movements, preventing today's amountDue and historical payments from double counting. Existing AP signs, carrier exclusions, printable HTML/email layouts and supplier MCP envelope remain. Strict dates/filters/pagination, role/tenant guards, exact currency formatting and HTML escaping preflight before delivery. Actual REST/API-key/MCP/disposable PostgreSQL fixtures assert writers, boundaries, safe/stored/result limits and recorded SMTP delivery without a provider call. MON-102 retains integration, public portal retains its existing owner; full-range/performance/accounting/IRR gates remain separate. No schema/history rescale or rollout.
+
 
 ## MON-108 ledger detail reports
 

@@ -11,7 +11,6 @@ import {
   getProcurementSettings,
   threeWayMatch,
 } from "@/lib/api/procurement";
-import { buildSupplierStatement, NotASupplierError } from "@/lib/api/supplier-statement";
 import { getBatchRemittance, sendBatchRemittance } from "@/lib/api/remittance";
 import { batchIdField, remittanceFields, remittanceSendFields } from "@/lib/api/payment-batch-wire";
 import type { AuthContext } from "@/lib/api/auth-context";
@@ -19,9 +18,9 @@ import type { AuthContext } from "@/lib/api/auth-context";
 /**
  * Accounts-payable / purchasing MCP tools:
  * goods receipts (GRN), three-way match,
- * procurement settings, supplier statements, and remittance advice (data + email).
+ * procurement settings and remittance advice (data + email).
  * Purchase order and receipt contracts live in dedicated tool files. This file retains
- * matching, supplier statement and remittance operations. Settings live in a dedicated tool file.
+ * matching and remittance operations. Settings and supplier statements live in dedicated tool files.
  *
  * CONVENTIONS (matching the rest of the codebase):
  *  • MONETARY AMOUNTS are integer cents (e.g. $12.50 = 1250). Unit prices on
@@ -34,40 +33,6 @@ import type { AuthContext } from "@/lib/api/auth-context";
  *    journal so the GL and perpetual inventory stay in lock-step.
  */
 export function registerPurchasingTools(server: McpServer, ctx: AuthContext) {
-  server.tool(
-    "get_purchasing_supplier_statement",
-    "Get an accounts-payable statement for a supplier contact over a date range: bills (increase what we owe), debit notes (reduce it), and payments made (reduce it), with a running balance of what we owe the supplier (positive = we owe them). Date params are YYYY-MM-DD and default to the last 12 months. All amounts are integer cents. Errors if the contact is not a supplier.",
-    {
-      contactId: z.string().describe("Supplier contact UUID"),
-      startDate: z
-        .string()
-        .optional()
-        .describe("Start of the period (YYYY-MM-DD); defaults to 12 months ago"),
-      endDate: z
-        .string()
-        .optional()
-        .describe("End of the period (YYYY-MM-DD); defaults to today"),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        try {
-          const statement = await buildSupplierStatement(
-            ctx.organizationId,
-            params.contactId,
-            params.startDate,
-            params.endDate
-          );
-          if (!statement) throw new Error("Contact not found");
-          return { statement };
-        } catch (err) {
-          if (err instanceof NotASupplierError) {
-            throw new Error(err.message);
-          }
-          throw err;
-        }
-      })
-  );
-
   // ─── Generate remittance advice for a payment batch ─────────────────
   server.tool(
     "generate_remittance",

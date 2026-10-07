@@ -1,3 +1,4 @@
+import { registerContactStatementTools } from "./contact-statements";
 import { registerDashboardDataTools } from "./dashboard-data";
 import { registerPayrollCompensationTools } from "./payroll-compensation";
 import { registerPayrollPaymentTools } from "./payroll-payments";
@@ -97,6 +98,7 @@ export function registerAllTools(server: McpServer, ctx: AuthContext) {
   registerAccountTools(server, ctx);
   registerEntryTools(server, ctx);
   registerContactTools(server, ctx);
+  registerContactStatementTools(server, ctx);
   registerInvoiceTools(server, ctx);
   registerInvoiceLifecycleTools(server, ctx);
   registerBillTools(server, ctx);

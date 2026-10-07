@@ -1,5 +1,18 @@
 # Money and FX boundary manifest
 
+## MON-119 dashboard data adoption
+
+[DASHBOARD_DATA_WIRE_CONTRACTS](DASHBOARD_DATA_WIRE_CONTRACTS.md) maps five
+widget operations and action alerts across two REST routes and six MCP tools.
+Shared scoped read-only snapshots use text source projections and bigint sums,
+safe numeric/Minor aliases and explicit document currency filters. Document
+totals retain fixed cents; per-account balances retain bank currency minor units.
+Selection/status/date rules, operational counts and narrow field projections are
+explicit. Actual REST and registered MCP fixtures verify roles, tenant isolation,
+legacy/exact consumers, cancellation, overflow and unchanged domain/audit state.
+MON-120..123 and MON-105 retain layout/report/delivery/budget integration; no
+schema/full-int64/rescale/IRR rollout change is claimed.
+
 ## MON-099 recurring payable adoption
 
 [RECURRING_PAYABLE_WIRE_CONTRACTS](RECURRING_PAYABLE_WIRE_CONTRACTS.md) records

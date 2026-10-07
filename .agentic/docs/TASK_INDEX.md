@@ -237,3 +237,13 @@ MON-104 retains every original criterion and inventory valuation integration. Al
 - [MON-116](../tasks/MON-116.md): Adopt exact cash forecasts and unrealized FX reports.
 - [MON-117](../tasks/MON-117.md): Adopt exact bank analytics reports.
 - [MON-118](../tasks/MON-118.md): Adopt exact recurring calendar and duplicate reports.
+
+## MON-105 bounded dashboard and report children
+
+MON-105 retains all original integration criteria. Each child inherits MON-011 and the migration/API compatibility source sections.
+
+- [MON-119](../tasks/MON-119.md): Adopt exact dashboard widget and action alert contracts.
+- [MON-120](../tasks/MON-120.md): Adopt safe dashboard layout contracts.
+- [MON-121](../tasks/MON-121.md): Adopt exact custom and saved report contracts.
+- [MON-122](../tasks/MON-122.md): Adopt exact report schedule and delivery contracts.
+- [MON-123](../tasks/MON-123.md): Adopt exact budget notification contracts.

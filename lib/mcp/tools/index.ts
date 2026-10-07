@@ -1,3 +1,4 @@
+import { registerDashboardDataTools } from "./dashboard-data";
 import { registerPayrollCompensationTools } from "./payroll-compensation";
 import { registerPayrollPaymentTools } from "./payroll-payments";
 import { registerPayrollRunTools } from "./payroll-runs";
@@ -91,6 +92,7 @@ import { registerInventoryMovementTools } from "./inventory-movements";
 import { registerPublicPortalTools } from "./public-portal";
 
 export function registerAllTools(server: McpServer, ctx: AuthContext) {
+  registerDashboardDataTools(server, ctx);
   registerOrganizationTools(server, ctx);
   registerAccountTools(server, ctx);
   registerEntryTools(server, ctx);

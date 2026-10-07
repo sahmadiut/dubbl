@@ -1,5 +1,18 @@
 # Money and FX boundary manifest
 
+## MON-113 payment-performance adoption
+
+[PAYMENT_PERFORMANCE_WIRE_CONTRACTS](PAYMENT_PERFORMANCE_WIRE_CONTRACTS.md)
+documents the REST reader and new payment_performance MCP tool. One scoped
+read-only snapshot uses SQL-text money and bigint sums, numeric/Minor aliases,
+single document currency and exact calendar-day/count/percentage rounding.
+Existing count-weighted rounded contact-day summaries remain compatible.
+Permissions, owned contact labels, invalid saved dates, unsafe totals and mixed
+currencies are guarded. Dashboard money display and CSV consume exact strings;
+currency filtering and report errors are visible. Actual REST/MCP fixtures cover
+timing, compatibility, isolation and unchanged financial/audit snapshots.
+MON-102/MON-029 retain integration acceptance; no schema/rescale/full-int64/IRR change.
+
 ## MON-119 dashboard data adoption
 
 [DASHBOARD_DATA_WIRE_CONTRACTS](DASHBOARD_DATA_WIRE_CONTRACTS.md) maps five

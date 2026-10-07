@@ -8,6 +8,7 @@ import { getProfitLoss, getIncomeStatement, getPnlComparison } from "@/lib/repor
 import { profitLossSchema, incomeStatementSchema, pnlComparisonSchema } from "@/lib/reports/period-statement-wire";
 import { getDocumentAnalytics } from "@/lib/reports/document-analytics";
 import { documentAnalyticsSchema } from "@/lib/reports/document-analytics-wire";
+import { getPaymentPerformance } from "@/lib/reports/payment-performance";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { db } from "@/lib/db";
@@ -41,6 +42,11 @@ function parseBasis(value: string | undefined): ReportBasis {
 }
 
 export function registerReportTools(server: McpServer, ctx: AuthContext) {
+  server.registerTool("payment_performance", {
+    description: "Read paid invoice/bill performance for an inclusive Gregorian issue-date period (current UTC year through today by default). Returns receivables/payables by contact, integer days, counts, whole percent onTimeRate, count-weighted rounded contact-day summaries, numeric integer cents and exact totalCollectedMinor/totalPaidMinor strings, plus currencyCode; safe +/-9007199254740991. Optional currencyCode selects a single document currency; mixed currencies reject without FX conversion or rescaling. Uses stored paidAt date, requires view:data; no input amounts.",
+    inputSchema: documentAnalyticsSchema,
+  }, params => wrapTool(ctx, () => getPaymentPerformance(ctx, params)));
+
   server.registerTool("general_ledger", {
     description: "Read posted non-deleted organization-base ledger for an inclusive Gregorian period, owned account and optional owned dimension. Returns account summaries or paginated entries, numeric integer cents and exact Minor strings, opening/period/running/closing balances and currencyCode; safe +/-9007199254740991. Period runningBalance/balance exclude opening history; ledgerBalance/closingLedgerBalance include it. Defaults to current UTC year, today and 50 lines; requires view:data; no FX or input amounts.",
     inputSchema: generalLedgerSchema,

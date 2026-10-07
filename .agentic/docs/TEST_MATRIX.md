@@ -1,5 +1,20 @@
 # Verification matrix
 
+## MON-113 payment-performance analytics
+
+`tests/integration/payment-performance.test.ts` and its worker invoke the actual
+API-key REST handler and registered MCP SDK tool on migrated disposable PostgreSQL.
+They cover empty/UTC defaults, paid/non-deleted selection, inclusive issue dates
+independent of payment year, on-due versus late timing, negative-day/term ties,
+rounded count-weighted summaries, whole percentages, numeric/Minor compatibility,
+owned labels, tenant/auth/permission isolation, currency scales and cross-side
+mixing, safe signed endpoints, cancellation, unsafe source/group money, invalid
+saved dates, invalid inputs and unchanged financial/audit snapshots. Document
+analytics and aging fixtures guard adjacent report registration/helper behavior.
+Dashboard exact display, CSV, currency filter and errors are reviewed in source;
+live browser/session, full-int64, performance and independent accounting gates
+remain separate. No application DB, builds or dev server are used.
+
 ## MON-099 recurring payables
 
 - Pure fixtures: fixed-cent aliases, signed decimal ties, conflicts, safe maximum,

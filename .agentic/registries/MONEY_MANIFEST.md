@@ -1,5 +1,19 @@
 # Money and FX boundary manifest
 
+## MON-122 report schedules and delivery
+
+[REPORT_SCHEDULE_WIRE_CONTRACTS](REPORT_SCHEDULE_WIRE_CONTRACTS.md) maps schedule
+CRUD/manual trigger, six MCP tools and the existing Trigger consumer. Shared
+strict schemas, scoped saved-report/SMTP references, real runner attachments,
+transactional preflight and row locks prevent unsupported writes, tenant leaks
+and overlapping successful due occurrences. PDF/CSV retain literal integer units;
+XLSX money uses text cells to preserve every safe digit with Minor aliases.
+Actual REST/API-key/MCP/PostgreSQL/recorded SMTP fixtures cover legacy/exact
+writers, signed ranges, formats, stored corruption and unchanged failures.
+Local calendar timing respects timezone/DST. External SMTP retry/partial delivery
+cannot be transactional; no exactly-once network claim. MON-105 retains combined
+integration; no schema/rescale/full-int64/IRR rollout change.
+
 ## MON-121 custom and saved report adoption
 
 [CUSTOM_REPORT_WIRE_CONTRACTS](CUSTOM_REPORT_WIRE_CONTRACTS.md) maps the shared

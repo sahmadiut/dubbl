@@ -12,6 +12,7 @@ import { createSavedReportSchema, updateSavedReportSchema, savedReportIdSchema, 
 const scope = (ctx: AuthContext, id?: string) => and(eq(savedReport.organizationId, ctx.organizationId), isNull(savedReport.deletedAt),
   id === undefined ? undefined : eq(savedReport.id, savedReportIdSchema.parse(id)));
 const savedFields = { ...getTableColumns(savedReport), timestampsFinite: sql<boolean>`isfinite(${savedReport.createdAt}) and isfinite(${savedReport.updatedAt})` };
+export type CustomReportDb = Pick<typeof db, "select">;
 function savedOutput(stored: typeof savedReport.$inferSelect & { timestampsFinite: boolean }) {
   const { timestampsFinite, ...report } = stored;
   try {
@@ -29,9 +30,9 @@ export async function listSavedReports(ctx: AuthContext) {
   requireRole(ctx, "view:data");
   return { reports: (await db.select(savedFields).from(savedReport).where(scope(ctx)).orderBy(savedReport.updatedAt, savedReport.id)).map(savedOutput) };
 }
-export async function getSavedReport(ctx: AuthContext, id: string) {
+export async function getSavedReport(ctx: AuthContext, id: string, reader: CustomReportDb = db) {
   requireRole(ctx, "view:data");
-  const [row] = await db.select(savedFields).from(savedReport).where(scope(ctx, id));
+  const [row] = await reader.select(savedFields).from(savedReport).where(scope(ctx, id));
   if (!row) throw new AuthError("Report not found", 404);
   return { report: savedOutput(row) };
 }
@@ -68,7 +69,7 @@ export async function deleteSavedReport(ctx: AuthContext, id: string, request?: 
   return { success: true };
 }
 
-export async function runCustomReport(ctx: AuthContext, input: unknown) {
+export async function runCustomReport(ctx: AuthContext, input: unknown, reader: CustomReportDb = db) {
   requireRole(ctx, "view:data");
   const config = customConfigSchema.parse(input), source = sources[config.dataSource];
   if (config.dataSource === "payroll") requireRole(ctx, "view:payroll-reports");
@@ -76,25 +77,25 @@ export async function runCustomReport(ctx: AuthContext, input: unknown) {
   let rows: Record<string, unknown>[];
   switch (config.dataSource) {
     case "invoices":
-      rows = await db.select({ id: invoice.id, invoiceNumber: invoice.invoiceNumber, contactName: sql<string>`coalesce(${contact.name}, '-')`, status: invoice.status,
+      rows = await reader.select({ id: invoice.id, invoiceNumber: invoice.invoiceNumber, contactName: sql<string>`coalesce(${contact.name}, '-')`, status: invoice.status,
         issueDate: invoice.issueDate, dueDate: invoice.dueDate, subtotal: invoice.subtotal, taxTotal: invoice.taxTotal, total: invoice.total,
         amountPaid: invoice.amountPaid, amountDue: invoice.amountDue, currencyCode: invoice.currencyCode }).from(invoice)
         .leftJoin(contact, and(eq(contact.id, invoice.contactId), eq(contact.organizationId, ctx.organizationId), isNull(contact.deletedAt)))
         .where(and(eq(invoice.organizationId, ctx.organizationId), isNull(invoice.deletedAt))).orderBy(desc(invoice.createdAt), invoice.id);
       break;
     case "contacts":
-      rows = await db.select({ id: contact.id, name: contact.name, email: contact.email, type: contact.type, phone: contact.phone,
+      rows = await reader.select({ id: contact.id, name: contact.name, email: contact.email, type: contact.type, phone: contact.phone,
         paymentTermsDays: contact.paymentTermsDays, creditLimit: contact.creditLimit, currencyCode: contact.currencyCode }).from(contact)
         .where(and(eq(contact.organizationId, ctx.organizationId), isNull(contact.deletedAt))).orderBy(contact.id);
       break;
     case "inventory":
-      rows = await db.select({ id: inventoryItem.id, code: inventoryItem.code, name: inventoryItem.name, category: inventoryItem.category,
+      rows = await reader.select({ id: inventoryItem.id, code: inventoryItem.code, name: inventoryItem.name, category: inventoryItem.category,
         purchasePrice: inventoryItem.purchasePrice, salePrice: inventoryItem.salePrice, quantityOnHand: inventoryItem.quantityOnHand,
         reorderPoint: inventoryItem.reorderPoint, isActive: inventoryItem.isActive }).from(inventoryItem)
         .where(and(eq(inventoryItem.organizationId, ctx.organizationId), isNull(inventoryItem.deletedAt))).orderBy(inventoryItem.id);
       break;
     case "transactions":
-      rows = await db.select({ id: bankTransaction.id, date: bankTransaction.date, description: bankTransaction.description, amount: bankTransaction.amount,
+      rows = await reader.select({ id: bankTransaction.id, date: bankTransaction.date, description: bankTransaction.description, amount: bankTransaction.amount,
         status: bankTransaction.status, payee: bankTransaction.payee, currencyCode: bankAccount.currencyCode, transactionCurrency: bankTransaction.currencyCode }).from(bankTransaction)
         .innerJoin(bankAccount, and(eq(bankAccount.id, bankTransaction.bankAccountId), eq(bankAccount.organizationId, ctx.organizationId), isNull(bankAccount.deletedAt)))
         .leftJoin(bankStatementImport, eq(bankStatementImport.id, bankTransaction.importId))
@@ -102,13 +103,13 @@ export async function runCustomReport(ctx: AuthContext, input: unknown) {
         .orderBy(desc(bankTransaction.date), bankTransaction.id);
       break;
     case "expenses":
-      rows = await db.select({ id: expenseClaim.id, title: expenseClaim.title, status: expenseClaim.status, totalAmount: expenseClaim.totalAmount,
+      rows = await reader.select({ id: expenseClaim.id, title: expenseClaim.title, status: expenseClaim.status, totalAmount: expenseClaim.totalAmount,
         currencyCode: expenseClaim.currencyCode, submittedAt: expenseClaim.submittedAt, approvedAt: expenseClaim.approvedAt,
         timestampsFinite: sql<boolean>`(${expenseClaim.submittedAt} is null or isfinite(${expenseClaim.submittedAt})) and (${expenseClaim.approvedAt} is null or isfinite(${expenseClaim.approvedAt}))` }).from(expenseClaim)
         .where(and(eq(expenseClaim.organizationId, ctx.organizationId), isNull(expenseClaim.deletedAt))).orderBy(desc(expenseClaim.createdAt), expenseClaim.id);
       break;
     case "payroll":
-      rows = await db.select({ id: payrollItem.id, employeeName: payrollEmployee.name, payPeriodStart: payrollRun.payPeriodStart, payPeriodEnd: payrollRun.payPeriodEnd,
+      rows = await reader.select({ id: payrollItem.id, employeeName: payrollEmployee.name, payPeriodStart: payrollRun.payPeriodStart, payPeriodEnd: payrollRun.payPeriodEnd,
         type: payrollItem.type, grossAmount: payrollItem.grossAmount, taxAmount: payrollItem.taxAmount, deductions: payrollItem.deductions,
         netAmount: payrollItem.netAmount, currencyCode: payrollItem.currency }).from(payrollItem)
         .innerJoin(payrollRun, and(eq(payrollRun.id, payrollItem.payrollRunId), eq(payrollRun.organizationId, ctx.organizationId), isNull(payrollRun.deletedAt)))
@@ -117,7 +118,7 @@ export async function runCustomReport(ctx: AuthContext, input: unknown) {
       break;
   }
   if (config.dataSource === "inventory") {
-    const [org] = await db.select({ currencyCode: organization.defaultCurrency }).from(organization).where(eq(organization.id, ctx.organizationId));
+    const [org] = await reader.select({ currencyCode: organization.defaultCurrency }).from(organization).where(eq(organization.id, ctx.organizationId));
     if (!org) throw new AuthError("Organization not found", 404);
     for (const row of rows) row.currencyCode = org.currencyCode;
   }

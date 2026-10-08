@@ -12,6 +12,20 @@ report suites on PostgreSQL 16. See
 [combined contract](../registries/FINANCIAL_REPORT_INTEGRATION.md). Accounting
 heuristics retain their assigned gates; MON-029 retains broader integration.
 
+## MON-102 combined aging, contact statements and payment performance
+
+`tests/integration/receivable-payable-integration.test.ts` runs migrated disposable
+PostgreSQL with actual legacy/exact REST invoice and MCP bill writers, recognized
+cash settlements, all eight REST/MCP read/delivery pairs and aging exports.
+It reconciles historical AR/AP with general/supplier statements, distinguishes
+future cash and issue-period gross performance, checks aliases/currency scales,
+tenant/custom-role boundaries, strict inputs and stored range errors, and records
+SMTP without sending real mail. Financial/audit/config snapshots prove read/error
+paths unchanged. Run alongside aging, contact-statement and payment-performance
+child suites; shared financial-export changes also use ledger-detail and
+financial-report-integration regressions. See
+[combined boundary map](../registries/RECEIVABLE_PAYABLE_INTEGRATION.md).
+
 ## MON-113 payment-performance analytics
 
 `tests/integration/payment-performance.test.ts` and its worker invoke the actual

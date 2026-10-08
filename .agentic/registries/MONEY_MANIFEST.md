@@ -64,6 +64,18 @@ REST/MCP fixtures cover permissions, tenant references, legacy/exact writers,
 exports, signed edges, overflow/cancellation and read-only financial/audit state.
 MON-104/MON-029 retain integration; no schema/full-int64/rescale/IRR flag change.
 
+## MON-102 combined receivable/payable report acceptance
+
+[RECEIVABLE_PAYABLE_INTEGRATION](RECEIVABLE_PAYABLE_INTEGRATION.md) maps all aging,
+statement/activity/print/email and payment-performance REST/MCP boundaries plus
+aging exports. Combined fixtures reconcile actual legacy/exact document writers
+and cash settlements across reports, preserve timing/cutoff selection differences,
+verify numeric/Minor aliases, currency scales, scope/permissions and delivery
+preflight. Contact/financial-export MCP schemas retain strict objects so unknown
+fields reject before reads or delivery. MON-029 and independent full-range,
+accounting, historical/performance and production gates remain separate; no
+schema/history rescale or IRR enablement.
+
 ## MON-113 payment-performance adoption
 
 [PAYMENT_PERFORMANCE_WIRE_CONTRACTS](PAYMENT_PERFORMANCE_WIRE_CONTRACTS.md)

@@ -183,10 +183,9 @@ export function registerReportTools(server: McpServer, ctx: AuthContext) {
       encoding: "base64", content: buffer.toString("base64") };
   }));
 
-  server.tool(
-    "export_financial_statement",
-    "Render a financial statement as a downloadable PDF or XLSX (Excel) file. Returns the file base64-encoded along with its filename and MIME type. Ledger reports include posted journal data; aging reports include non-draft/non-void documents. Monetary figures are computed in integer cents and scaled by the file renderer. General ledger exports use the same exact scoped service with all qualifying lines and complete period subtotals. For date-ranged statements (profit_and_loss, general_ledger) provide 'from' and 'to'. Balance_sheet and trial_balance are point-in-time and ignore those dates. Aged_receivables and aged_payables ignore from/to and accept optional asAt/currencyCode, using the same exact totals as their JSON tools.",
-    {
+  server.registerTool("export_financial_statement", {
+    description: "Render a financial statement as a downloadable PDF or XLSX (Excel) file. Returns the file base64-encoded along with its filename and MIME type. Ledger reports include posted journal data; aging reports include non-draft/non-void documents. Monetary figures are computed in integer cents and scaled by the file renderer. General ledger exports use the same exact scoped service with all qualifying lines and complete period subtotals. For date-ranged statements (profit_and_loss, general_ledger) provide 'from' and 'to'. Balance_sheet and trial_balance are point-in-time and ignore those dates. Aged_receivables and aged_payables ignore from/to and accept optional asAt/currencyCode, using the same exact totals as their JSON tools.",
+    inputSchema: z.object({
       asAt: agingSchema.shape.asAt.describe("Aging export only: historical cutoff YYYY-MM-DD; omit for current stored balances"),
       currencyCode: agingSchema.shape.currencyCode.describe("Aging export only: single document currency filter, no FX conversion"),
       statement: z
@@ -214,7 +213,8 @@ export function registerReportTools(server: McpServer, ctx: AuthContext) {
         .describe(
           "End date YYYY-MM-DD for date-ranged statements (defaults to today)"
         ),
-    },
+    }).strict(),
+  },
     (params) =>
       wrapTool(ctx, async () => {
         if (!["aged_receivables", "aged_payables"].includes(params.statement) && (params.asAt !== undefined || params.currencyCode !== undefined)) {

@@ -1,5 +1,16 @@
 # Supplier debit-note contracts (MON-051)
 
+## MON-020 integration update, 2026-10-09
+
+[Combined contract](PAYABLE_PROCUREMENT_INTEGRATION.md) qualifies ordinary
+allowances against service-receipt bills. Receipt UUID alone is no stock signal;
+the service verifies receipt organization, supplier and stock/warehouse dimensions.
+Receipt recognition journals may exist on service lines. Actual stock/GRNI return
+restrictions remain. list/create/update/apply debit-note MCP registrations retain
+full strict schemas instead of stripping unknown controls. Combined snapshots
+verify foreign receipts and injected final audit failures cannot commit journals,
+note state or bill/stock effects. Historical child evidence is unchanged.
+
 2026-10-04, Asia/Tehran. Implements one MON-020 child. Evidence:
 MON-051-attempt-1 and implementing-assistant self-review MON-051-review-1.
 No schema, migration generation, build, dev server, deployment or IRR enablement.

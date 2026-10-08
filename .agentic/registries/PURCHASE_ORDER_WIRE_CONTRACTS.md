@@ -1,5 +1,16 @@
 # Purchase order contracts (MON-049)
 
+## MON-020 integration update, 2026-10-09
+
+[Combined contract](PAYABLE_PROCUREMENT_INTEGRATION.md) supersedes the historical
+parent-pending note below. PO conversion rejects active receipt-linked bills for
+selected lines unless they have this PO's qualified exact conversion events.
+GRN-created drafts cannot be bypassed by an unmatched PO bill; void before
+switching conversion paths. Organization locking gives concurrent REST PO/MCP
+GRN conversion one winner. convert_po_to_bill uses a full strict registered
+schema; unknown controls reject before callbacks. Existing cumulative allocation,
+quantity, tax, period and safe-number rules remain.
+
 Source inspected on 2026-10-03 (Asia/Tehran), entry HEAD `7583781`. This is the
 MON-020 child for PO CRUD, reads/counts, send and bill conversion. PDF is MON-034;
 requisitions/receipts/bulk/settings remain MON-050/052/053/054. No schema or

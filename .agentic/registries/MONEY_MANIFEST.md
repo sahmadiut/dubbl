@@ -1,5 +1,16 @@
 # Money and FX boundary manifest
 
+## MON-020 combined payable and procurement integration
+
+[PAYABLE_PROCUREMENT_INTEGRATION](PAYABLE_PROCUREMENT_INTEGRATION.md) consolidates
+all nine child inventories, price/quantity/basis-point distinctions and safe
+numeric/Minor aliases. Actual requisition/PO/GRN/bill/debit/import/settings flows
+verify cross-transport values, reversal, scoped failures and final account balances.
+Mixed conversion paths reject overlapping unqualified receipt bills; service
+receipts support supplier allowances with receipt scope checks. Six strict MCP
+schemas reject unsupported controls. No schema, history or IRR flag change;
+settlement/inventory/export and qualification gates remain separate.
+
 ## MON-019 combined receivable document integration
 
 [RECEIVABLE_DOCUMENT_INTEGRATION](RECEIVABLE_DOCUMENT_INTEGRATION.md) consolidates

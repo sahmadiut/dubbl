@@ -2,7 +2,8 @@ import { z } from "zod";
 import { and, eq, asc, desc, gte, lte, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { debitNote, debitNoteLine, bill, billLine, organization, numberSequence, payment, paymentAllocation,
-  journalEntry, journalLine, chartAccount, inventoryMovement, inventoryCostLayer, auditLog, inventoryItem, warehouse, taxRate } from "@/lib/db/schema";
+  journalEntry, journalLine, chartAccount, inventoryMovement, inventoryCostLayer, auditLog, inventoryItem, warehouse, taxRate,
+  goodsReceipt, goodsReceiptLine } from "@/lib/db/schema";
 import { notDeleted, softDelete } from "@/lib/db/soft-delete";
 import { AuthError, type AuthContext } from "./auth-context";
 import { requireRole } from "./require-role";
@@ -196,7 +197,18 @@ export async function sendDebitNote(ctx: AuthContext, id: string, request?: Requ
     const originalLines = linked ? await tx.select().from(billLine).where(eq(billLine.billId, linked.id)).orderBy(billLine.sortOrder, billLine.id) : [];
     originalLines.forEach(publicLineDto);
     if (linked) await references(tx, ctx.organizationId, row.contactId, originalLines.map(line => invoiceWriteLineSchema.parse({ ...line, quantity: line.quantity / 100 })), true);
-    const stock = originalLines.some(line => line.inventoryItemId || line.goodsReceiptLineId);
+    let stock = originalLines.some(line => line.inventoryItemId);
+    for (const line of originalLines.filter(line => line.goodsReceiptLineId)) {
+      const [receipt] = await tx.select({ line: goodsReceiptLine, header: goodsReceipt }).from(goodsReceiptLine)
+        .innerJoin(goodsReceipt, eq(goodsReceiptLine.goodsReceiptId, goodsReceipt.id))
+        .where(eq(goodsReceiptLine.id, line.goodsReceiptLineId!)).for("share");
+      if (!receipt || receipt.header.organizationId !== ctx.organizationId || receipt.header.contactId !== row.contactId ||
+        receipt.line.inventoryItemId !== line.inventoryItemId || receipt.line.warehouseId !== line.warehouseId)
+        unsupported("Debit-note linked bill receipt is inconsistent or foreign");
+      // A service receipt can point to the bill's recognition journal. Its link
+      // alone does not turn an ordinary supplier allowance into a stock return.
+      if (receipt.line.inventoryItemId) stock = true;
+    }
     let entry;
     if (stock) {
       // Debit-note lines have no stock dimension. Only a complete, unambiguous

@@ -30,9 +30,10 @@ export function registerPurchaseOrderTools(server: McpServer, ctx: AuthContext) 
   server.tool("send_purchase_order",
     "Mark an organization draft purchase order sent with timestamp and audit; requires approve:bills. Returns {purchaseOrder} with numeric minor money (USD cents) and *Minor strings. sendEmail=true requires email, subject and templateProps; delivery follows commit, and a delivery failure returns 502 with sent state retained. No PDF is attached. Locked dates/procurement activity reject.",
     { ...id, ...purchaseOrderSendFields }, ({ purchaseOrderId, ...params }) => wrapTool(ctx, () => sendPurchaseOrder(ctx, purchaseOrderId, params)));
-  server.tool("convert_po_to_bill",
-    "Create a draft bill from an organization sent/partial/received purchase order. Omit lines to bill remaining quantities; partial selections use physical units (stored x100). Saved net/tax amounts allocate exactly with final residuals, including discounts. Received quantities link GRNs once. Atomic numbering, links, billed tallies and audit; requires manage:bills and unlocked issue date. Returns {bill,purchaseOrderStatus}; numeric currency minor money (USD cents) has *Minor strings. Safe-number range only.",
-    { ...id, ...purchaseOrderConvertFields }, ({ purchaseOrderId, ...params }) => wrapTool(ctx, async () => {
+  server.registerTool("convert_po_to_bill", {
+    description: "Create a draft bill from an organization sent/partial/received purchase order. Omit lines to bill remaining quantities; partial selections use physical units (stored x100). Saved net/tax amounts allocate exactly with final residuals, including discounts. Received quantities link GRNs once. Active GRN-created bills for selected PO lines reject; void them before PO conversion. Atomic numbering, links, billed tallies and audit; requires manage:bills and unlocked issue date. Returns {bill,purchaseOrderStatus}; numeric currency minor money (USD cents) has *Minor strings. Safe-number range only.",
+    inputSchema: z.strictObject({ ...id, ...purchaseOrderConvertFields }),
+  }, ({ purchaseOrderId, ...params }) => wrapTool(ctx, async () => {
       const result = await convertPurchaseOrder(ctx, purchaseOrderId, params);
       return { bill: result.bill, purchaseOrderStatus: result.purchaseOrderStatus };
     }));

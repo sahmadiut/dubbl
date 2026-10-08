@@ -1,5 +1,23 @@
 # Verification matrix
 
+## MON-020 combined payable and procurement
+
+`tests/integration/payable-procurement-integration.test.ts`/worker calls actual
+REST/API-key and registered MCP SDK operations on disposable migrated PostgreSQL.
+Requisition submission/approval/conversion feeds PO sending, service receipt,
+bill recognition, supplier allowance application/reversal and bill void/retry.
+Stock PO/GRN conversion in both orders and a mixed-transport race exclude
+overlapping bills; recognition/void never receives stock twice. Exact quantities,
+USD/JPY/KWD price scales, REST-major/MCP-minor debit prices, imported above-int32
+bills and read/edit/count consumers retain units. Six registered strict schemas,
+foreign receipt references, custom-role/tenant denials, unsafe history and invalid
+aliases preserve SQL-text business snapshots. Every journal balances; independent
+expense/AP/inventory/GRNI final sums are asserted. All nine child suites retain
+their detailed lifecycle, period-lock, rollback, FX, approval and concurrency
+checks. No full-int64, production/IRR, live-provider/browser or independent
+accounting qualification is implied. Boundary map:
+[PAYABLE_PROCUREMENT_INTEGRATION](../registries/PAYABLE_PROCUREMENT_INTEGRATION.md).
+
 ## MON-019 combined receivable documents
 
 `tests/integration/receivable-document-integration.test.ts`/worker exercises API-key

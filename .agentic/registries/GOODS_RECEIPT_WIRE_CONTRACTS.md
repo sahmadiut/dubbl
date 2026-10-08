@@ -1,5 +1,15 @@
 # Goods receipt contracts (MON-052)
 
+## MON-020 integration update, 2026-10-09
+
+[Combined contract](PAYABLE_PROCUREMENT_INTEGRATION.md) verifies both bill
+conversion orders and their concurrent REST/MCP exclusion with stock unchanged
+through recognition/void. receive_goods_receipt now retains the full strict
+schema in registration, rejecting unknown controls before callbacks. Service
+receipt-linked bills support ordinary supplier allowances after receipt tenant,
+supplier and dimension checks; stock/GRNI return restrictions remain unchanged.
+The historical child text below retains its original qualification limits.
+
 2026-10-04, Asia/Tehran. Shared implementation in lib/api/goods-receipts.ts and
 goods-receipt-wire.ts. Exact aliases coexist with legacy numeric output. This is
 a bounded contract adoption, with parent MON-020 integration and MON-024 other

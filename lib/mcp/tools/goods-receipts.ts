@@ -1,13 +1,15 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { z } from "zod";
 import type { AuthContext } from "@/lib/api/auth-context";
 import { wrapTool } from "@/lib/mcp/errors";
 import { goodsReceiptCreateFields, goodsReceiptListFields, goodsReceiptIdFields } from "@/lib/api/goods-receipt-wire";
 import { receiveGoodsReceipt, listGoodsReceipts, getGoodsReceipt, createBillFromGoodsReceipt } from "@/lib/api/goods-receipts";
 
 export function registerGoodsReceiptTools(server: McpServer, ctx: AuthContext) {
-  server.tool("receive_goods_receipt",
-    "Receive goods against an organization-owned purchase order atomically. Input quantity/quantityExact is physical units; stock requires whole units. Saved PO costs are integer currency minor units (USD cents). Returns receipt with unitCostMinor and quantityReceivedExact aliases, posted GRNI journal ID (null for zero value), and PO status. Stock valuation uses saved receipt-date FX; unsupported ranges or FIFO rounding reject without writes.",
-    goodsReceiptCreateFields, params => wrapTool(ctx, () => receiveGoodsReceipt(ctx, params)));
+  server.registerTool("receive_goods_receipt", {
+    description: "Receive goods against an organization-owned purchase order atomically. Input quantity/quantityExact is physical units; stock requires whole units. Saved PO costs are integer currency minor units (USD cents). Returns receipt with unitCostMinor and quantityReceivedExact aliases, posted GRNI journal ID (null for zero value), and PO status. Stock valuation uses saved receipt-date FX; unsupported ranges or FIFO rounding reject without writes.",
+    inputSchema: z.strictObject(goodsReceiptCreateFields),
+  }, params => wrapTool(ctx, () => receiveGoodsReceipt(ctx, params)));
   server.tool("list_purchase_goods_receipts",
     "List organization-owned receipts with supplier and lines, filtered by PO/status. Returns goodsReceipts, total, page, limit. Numeric quantities remain hundredths (500 = 5 units); quantityReceivedExact is physical units; unitCost/unitCostMinor are PO currency minor units.",
     goodsReceiptListFields, params => wrapTool(ctx, () => listGoodsReceipts(ctx, params)));

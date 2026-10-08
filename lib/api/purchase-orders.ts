@@ -219,7 +219,7 @@ export async function convertPurchaseOrder(ctx: AuthContext, id: string, input: 
   return db.transaction(async tx => {
     const { found, lines } = await load(tx, ctx, id);
     if (["draft", "void", "closed"].includes(found.status)) fail("Purchase order cannot be converted in its current status");
-    const events = await tx.select({ changes: auditLog.changes }).from(auditLog)
+    const events = await tx.select({ changes: auditLog.changes, billId: bill.id }).from(auditLog)
       .innerJoin(bill, sql`${auditLog.changes}->>'billId' = ${bill.id}::text`)
       .where(and(eq(auditLog.organizationId, ctx.organizationId), eq(auditLog.entityType, "purchase_order"), eq(auditLog.entityId, id),
         eq(auditLog.action, "convert"), eq(bill.organizationId, ctx.organizationId), notDeleted(bill.deletedAt), sql`${bill.status} <> 'void'`));
@@ -235,6 +235,17 @@ export async function convertPurchaseOrder(ctx: AuthContext, id: string, input: 
       }
     }
     const items = purchaseOrderBillItems(lines, parsed, previous);
+    // GRN conversion creates unreserved drafts. They must not be bypassed by
+    // creating an unmatched PO bill for the same quantities. Only this PO's
+    // qualified conversion events can participate in cumulative allocation.
+    const receiptBills = await tx.select({ billId: bill.id, organizationId: bill.organizationId }).from(billLine)
+      .innerJoin(bill, eq(billLine.billId, bill.id))
+      .innerJoin(goodsReceiptLine, eq(billLine.goodsReceiptLineId, goodsReceiptLine.id))
+      .where(and(inArray(goodsReceiptLine.purchaseOrderLineId, items.map(item => item.line.id)),
+        notDeleted(bill.deletedAt), sql`${bill.status} <> 'void'`));
+    const qualifiedBills = new Set(events.map(event => event.billId));
+    if (receiptBills.some(row => row.organizationId !== ctx.organizationId || !qualifiedBills.has(row.billId)))
+      throw new WireCompatibilityError("Active receipt bills lack qualified PO conversion allocations; void them before PO conversion");
     const converted: (Omit<typeof billLine.$inferInsert, "billId">)[] = [];
     for (const item of items) {
       const slices = await receiptSlices(tx, ctx, found, item.line, item.quantity);

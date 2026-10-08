@@ -10,7 +10,7 @@ import { notDeleted } from "@/lib/db/soft-delete";
 import { processRecurringJournals } from "@/lib/api/recurring-generate";
 import { assertJournalReferences } from "@/lib/api/journal-references";
 import { getRecurringJournal, createRecurringJournal, updateRecurringJournal, pauseRecurringJournal, deleteRecurringJournal } from "@/lib/api/recurring-journal";
-import { recurringJournalFields, recurringJournalUpdateSchema, recurringJournalDto } from "@/lib/api/recurring-journal-wire";
+import { recurringJournalCreateSchema, recurringJournalUpdateSchema, recurringJournalDto } from "@/lib/api/recurring-journal-wire";
 import type { AuthContext } from "@/lib/api/auth-context";
 
 const templateId = z.string().uuid().describe("Organization-owned recurring journal template UUID");
@@ -26,10 +26,14 @@ export function registerRecurringJournalTools(server: McpServer, ctx: AuthContex
   }));
   server.tool("get_recurring_journal", "Get an organization recurring journal with schedule, safe numeric minor-unit legs (USD cents), exact *AmountMinor strings and fixed 1:1 FX aliases.",
     { templateId }, params => wrapTool(ctx, async () => ({ template: await getRecurringJournal(ctx, params.templateId) })));
-  server.tool("create_recurring_journal", "Create a balanced recurring journal. Debit/credit inputs are integer minor units (USD cents), or exact *AmountMinor strings with agreeing numeric aliases. Each leg has one positive side; line and summed amounts must fit safe Numbers. Saved currency is a tag, posted verbatim at fixed 1:1; configurable FX is unsupported. Returns the template header.",
-    recurringJournalFields, params => wrapTool(ctx, () => createRecurringJournal(ctx, params)));
-  server.tool("update_recurring_journal", "Edit a recurring journal header or replace all balanced legs atomically. Minor-unit inputs (USD cents) accept safe numbers and exact *AmountMinor strings; aliases must agree, sums must be safe. Fixed 1:1 posting only. Returns the updated template header.",
-    { templateId, ...recurringJournalUpdateSchema.shape }, params => wrapTool(ctx, () => {
+  server.registerTool("create_recurring_journal", {
+    description: "Create a balanced recurring journal. Debit/credit inputs are integer minor units (USD cents), or exact *AmountMinor strings with agreeing numeric aliases. Each leg has one positive side; line and summed amounts must fit safe Numbers. Saved currency is a tag, posted verbatim at fixed 1:1; configurable FX is unsupported. Unknown fields fail validation. Returns the template header.",
+    inputSchema: recurringJournalCreateSchema,
+  }, params => wrapTool(ctx, () => createRecurringJournal(ctx, params)));
+  server.registerTool("update_recurring_journal", {
+    description: "Edit a recurring journal header or replace all balanced legs atomically. Minor-unit inputs (USD cents) accept safe numbers and exact *AmountMinor strings; aliases must agree, sums must be safe. Fixed 1:1 posting only; startDate is immutable and unknown fields fail validation. Returns the updated template header.",
+    inputSchema: recurringJournalUpdateSchema.extend({ templateId }),
+  }, params => wrapTool(ctx, () => {
       const { templateId: id, ...input } = params;
       return updateRecurringJournal(ctx, id, input);
     }));

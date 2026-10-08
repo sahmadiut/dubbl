@@ -1,5 +1,17 @@
 # Money and FX boundary manifest
 
+## MON-018 combined journal integration
+
+[JOURNAL_INTEGRATION](JOURNAL_INTEGRATION.md) consolidates manual CRUD, lifecycle/
+import and recurring template/generation contracts with their distinct legacy
+units, exact Minor/rate aliases and safe workflow bounds. Eighteen actual REST/MCP
+cross-transport flows carry legacy/exact/dual writers through edits, previews,
+generation, scheduling, recoding, posting and reversal. Recurring create/update
+tools now retain full strict schemas so unsupported controls and immutable dates
+fail before mutation. Combined snapshots and all three child regressions cover
+tenant/role/lock/range failures, saved FX, rollback and concurrency. No schema,
+history or IRR flag change; exact domain and production/accounting gates remain.
+
 ## MON-105 dashboard and saved report integration
 
 [DASHBOARD_REPORT_INTEGRATION](DASHBOARD_REPORT_INTEGRATION.md) consolidates all

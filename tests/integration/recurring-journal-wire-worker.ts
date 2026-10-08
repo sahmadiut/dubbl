@@ -141,8 +141,16 @@ async function run() {
       assert.equal((await remove(request(undefined, keys.viewer), params(editable.id))).status, 403);
       assert.equal((await runNow(request(undefined, keys.viewer))).status, 403);
       assert.equal((await list(request(undefined, "dk_invalid", "GET"))).status, 401);
-      for (const name of ["create_recurring_journal", "update_recurring_journal", "pause_recurring_journal", "set_recurring_journal_status", "delete_recurring_journal", "run_recurring_journals"]) {
-        assert.equal((await denied.call(name, { ...body(), templateId: editable.id, status: "paused" })).body.status, 403);
+      // Use valid per-operation inputs so SDK validation cannot mask permission checks.
+      for (const [name, args] of [
+        ["create_recurring_journal", body()],
+        ["update_recurring_journal", { templateId: editable.id, notes: "No" }],
+        ["pause_recurring_journal", { templateId: editable.id }],
+        ["set_recurring_journal_status", { templateId: editable.id, status: "paused" }],
+        ["delete_recurring_journal", { templateId: editable.id }],
+        ["run_recurring_journals", {}],
+      ] as const) {
+        assert.equal((await denied.call(name, args)).body.status, 403);
       }
       assert.equal((await denied.call("get_recurring_journal", { templateId: editable.id })).isError, false);
       assert.deepEqual(await snapshot(), before);

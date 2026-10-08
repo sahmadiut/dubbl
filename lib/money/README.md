@@ -587,6 +587,16 @@ invoice-total cap/original-deferral policy or schema/IRR/full-int64 enablement.
 See [revenue contracts](../../.agentic/registries/REVENUE_WIRE_CONTRACTS.md).
 
 
+### Combined journal boundaries
+
+Manual, imported and recurring journals retain their documented numeric/decimal
+units and add exact Minor strings without rescaling saved money or applying FX
+again. Combined REST/MCP writer/lifecycle fixtures verify safe-limit compatibility;
+recurring create/update tools preserve strict schemas and reject unsupported fields
+and immutable date edits before writes. See
+[combined journal contracts](../../.agentic/registries/JOURNAL_INTEGRATION.md).
+Full-int64 domain, independent accounting and production IRR remain separate gates.
+
 ### Cumulative financial statements
 
 Trial balance and balance sheet now share exact GL aggregation and REST/MCP wire projection. Existing fixed two-place decimal strings coexist with exact signed integer-cent Minor aliases, bounded by the legacy safe numeric range. Currency-scaled PDF/XLSX exports preserve their existing scale; numeric spreadsheet cells reject non-round-trippable or over-15-significant-digit amounts. See [.agentic/registries/CUMULATIVE_STATEMENT_WIRE_CONTRACTS.md](../../.agentic/registries/CUMULATIVE_STATEMENT_WIRE_CONTRACTS.md) for all fields, dates, auth, ranges, export distinctions and the retained baseline trial-balance defect. Other statements remain separate MON-101 children.

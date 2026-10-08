@@ -1,5 +1,22 @@
 # Verification matrix
 
+## MON-018 combined journal contracts
+
+`tests/integration/journal-integration.test.ts`/worker connects all three actual
+MCP tool groups and REST/API-key writers on a disposable migrated PostgreSQL DB.
+Eighteen manual/import/recurring flows cross transports with legacy/exact/dual
+amounts, above-int32 and safe-max values, preview, retained currency, edits,
+pause/resume, generation retries, scheduling, recoding, posting and reversal.
+Readers verify raw numeric/decimal/Minor units, saved manual/identity FX and
+original/mirror links. Whole-slice snapshots assert no financial/template/job/
+audit mutation for unsupported headers/immutable date edits, malformed/range
+inputs, invalid credentials, roles, tenants, foreign dimensions and period locks.
+All three child integration workers add operation-specific rollback, historical
+corruption, partial import, internal maintenance and concurrency coverage. Denied
+recurring calls use valid per-operation inputs to reach authorization checks.
+See [combined inventory](../registries/JOURNAL_INTEGRATION.md); actual handlers/
+SDK are not HTTP/session/OAuth/browser or independent financial qualification.
+
 ## MON-101 combined financial report contracts
 
 `financial-report-integration.test.ts`/worker posts legacy numeric and exact string

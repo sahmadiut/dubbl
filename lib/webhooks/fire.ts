@@ -3,12 +3,14 @@ import { webhook } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { notDeleted } from "@/lib/db/soft-delete";
 import { deliverWebhook } from "./deliver";
+import { webhookBody } from "./payload";
 
 export async function fireWebhookEvent(
   orgId: string,
   event: string,
   payload: Record<string, unknown>,
 ) {
+  webhookBody(payload); // Reject unsupported payloads before queuing any delivery.
   // Query active webhooks for this org that are not soft-deleted
   const webhooks = await db.query.webhook.findMany({
     where: and(

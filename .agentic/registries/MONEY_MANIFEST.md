@@ -1137,3 +1137,19 @@ recipient writes; a shared transaction lock prevents concurrent duplicates.
 Bodies use organization currency scales without rescaling saved amounts. Optional
 email/digest delivery follows commit and is best effort. No schema/history/IRR
 rollout; MON-105/MON-029 retain combined and independent qualification.
+
+
+## MON-031 payment providers and outgoing webhooks
+
+[PROVIDER_WEBHOOK_WIRE_CONTRACTS](PROVIDER_WEBHOOK_WIRE_CONTRACTS.md) inventories
+public/MCP invoice and subscription checkouts, native signed webhook objects,
+Stripe CSV/sync/retry/reconciliation and outgoing delivery. Exact CSV decimals
+and Minor columns preserve currency units; native provider payloads stay native.
+Shared scoped posting transactions and numbering roll back invalid provider
+amounts/fees and referenced entities; settlement verifies paid totals and saved
+invoice balances with concurrent replay protection. Local reconciliation/mapping
+DTOs carry numeric/Minor money plus currency, while outgoing opaque JSON uses
+safe canonical signed bytes for initial/retry delivery. Qualified same-scale
+currencies, conservative checkout limits and explicit no-FX policy are recorded.
+Actual REST/MCP/PostgreSQL fixtures mock all external provider/delivery calls.
+No schema/history/IRR rollout; MON-016 retains combined qualification.

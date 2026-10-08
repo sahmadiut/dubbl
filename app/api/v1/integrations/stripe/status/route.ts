@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { jsonResponse } from "@/lib/api/json-response";
 import { db } from "@/lib/db";
 import { stripeIntegration, stripeSyncLog } from "@/lib/db/schema";
 import { stripe as _stripeClient } from "@/lib/stripe";
@@ -12,7 +12,7 @@ import { notDeleted } from "@/lib/db/soft-delete";
 
 export async function GET(request: Request) {
   if (!_stripeClient) {
-    return NextResponse.json({ error: "Billing not configured" }, { status: 404 });
+    return jsonResponse({ error: "Billing not configured" }, { status: 404 });
   }
 
   try {
@@ -32,7 +32,7 @@ export async function GET(request: Request) {
       });
 
       if (!integration) {
-        return NextResponse.json({ connected: false });
+        return jsonResponse({ connected: false });
       }
 
       let healthy = true;
@@ -50,7 +50,7 @@ export async function GET(request: Request) {
         limit: 20,
       });
 
-      return NextResponse.json({
+      return jsonResponse({
         connected: true,
         healthy,
         healthError,
@@ -81,7 +81,7 @@ export async function GET(request: Request) {
     });
 
     if (integrations.length === 0) {
-      return NextResponse.json({ connected: false, integrations: [] });
+      return jsonResponse({ connected: false, integrations: [] });
     }
 
     const results = await Promise.all(
@@ -117,7 +117,7 @@ export async function GET(request: Request) {
       })
     );
 
-    return NextResponse.json({ connected: true, integrations: results });
+    return jsonResponse({ connected: true, integrations: results });
   } catch (err) {
     return handleError(err);
   }

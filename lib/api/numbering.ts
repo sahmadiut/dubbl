@@ -13,9 +13,10 @@ export async function getNextNumber(
   organizationId: string,
   entityType: string,
   _numberColumn: string, // kept for backward compat, unused
-  prefix: string
+  prefix: string,
+  exec: typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0] = db
 ): Promise<string> {
-  return await db.transaction(async (tx) => {
+  return await exec.transaction(async (tx) => {
     // Try to lock and increment the existing sequence row
     const result = await tx.execute(
       sql`SELECT id, last_number FROM number_sequence WHERE organization_id = ${organizationId} AND entity_type = ${entityType} FOR UPDATE`

@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
-import { headers } from "next/headers";
 import type Stripe from "stripe";
 import { db } from "@/lib/db";
 import { stripe } from "@/lib/stripe";
 import { stripeIntegration, stripeSyncLog } from "@/lib/db/schema";
-import { ensureIntegrationAccountsMapped } from "@/lib/integrations/stripe/accounts";
 import { eq, and } from "drizzle-orm";
 import { notDeleted } from "@/lib/db/soft-delete";
 import { processStripeEvent } from "@/lib/integrations/stripe/sync";
@@ -37,8 +35,7 @@ export async function POST(request: Request) {
   }
 
   const body = await request.text();
-  const headersList = await headers();
-  const sig = headersList.get("stripe-signature");
+  const sig = request.headers.get("stripe-signature");
 
   if (!sig) {
     return NextResponse.json(
@@ -118,9 +115,6 @@ export async function POST(request: Request) {
   let errorMessage: string | null = null;
 
   try {
-    // Connect default account mappings on the fly for older integrations so a
-    // live event never fails on an unmapped account.
-    await ensureIntegrationAccountsMapped(integration);
     const result = await processStripeEvent(event, integration);
     if (result.action === "skipped") {
       status = "skipped";

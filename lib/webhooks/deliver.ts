@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { webhookBody } from "./payload";
 import { tasks } from "@trigger.dev/sdk";
 import { db } from "@/lib/db";
 import { webhook, webhookDelivery } from "@/lib/db/schema";
@@ -13,11 +14,14 @@ export async function deliverWebhook(
   event: string,
   payload: Record<string, unknown>,
 ) {
+  const body = webhookBody(payload);
+  const storedPayload = JSON.parse(body) as Record<string, unknown>;
+
   // 1. Fetch webhook
   const wh = await db.query.webhook.findFirst({
     where: eq(webhook.id, webhookId),
   });
-  if (!wh) return;
+  if (!wh || !wh.isActive || wh.deletedAt) return;
 
   // 2. Create delivery record with status pending
   const [delivery] = await db
@@ -25,13 +29,12 @@ export async function deliverWebhook(
     .values({
       webhookId,
       event,
-      payload,
+      payload: storedPayload,
       status: "pending",
     })
     .returning();
 
   // 3. Sign payload with HMAC-SHA256
-  const body = JSON.stringify(payload);
   const signature = crypto
     .createHmac("sha256", wh.secret)
     .update(body)
@@ -142,7 +145,7 @@ export async function retryWebhookDeliveryById(deliveryId: string) {
     where: eq(webhook.id, delivery.webhookId),
   });
 
-  if (!wh || !wh.isActive) {
+  if (!wh || !wh.isActive || wh.deletedAt) {
     await db
       .update(webhookDelivery)
       .set({ status: "failed", nextRetryAt: null })
@@ -150,7 +153,7 @@ export async function retryWebhookDeliveryById(deliveryId: string) {
     return { deliveryId, skipped: true, reason: "webhook_inactive" };
   }
 
-  const body = JSON.stringify(delivery.payload);
+  const body = webhookBody(delivery.payload);
   const signature = crypto
     .createHmac("sha256", wh.secret)
     .update(body)

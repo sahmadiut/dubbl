@@ -4,14 +4,14 @@ import { db } from "@/lib/db";
 import { stripeIntegration, stripeEntityMap, stripeSyncLog } from "@/lib/db/schema";
 import { eq, and, desc, gte, sql } from "drizzle-orm";
 import { requireRole } from "@/lib/api/require-role";
+import { createBillingCheckout, billingCheckoutSchema } from "@/lib/integrations/stripe/billing";
 import { wrapTool } from "@/lib/mcp/errors";
 import { notDeleted } from "@/lib/db/soft-delete";
 import { runInitialSync } from "@/lib/integrations/stripe/initial-sync";
-import { parseStripePaymentsCsv, parseStripePayoutsCsv } from "@/lib/integrations/stripe/csv-parser";
-import { handleChargeSucceeded, handlePayoutPaid } from "@/lib/integrations/stripe/sync";
+import { importStripeCsv } from "@/lib/integrations/stripe/import";
+import { stripeOperationSchema, stripeMappingMetadata } from "@/lib/integrations/stripe/money";
 import { reconcileStripeBalance } from "@/lib/integrations/stripe/reconcile";
 import type { AuthContext } from "@/lib/api/auth-context";
-import type Stripe from "stripe";
 
 async function findIntegration(ctx: AuthContext, integrationId: string) {
   const integration = await db.query.stripeIntegration.findFirst({
@@ -26,6 +26,8 @@ async function findIntegration(ctx: AuthContext, integrationId: string) {
 }
 
 export function registerIntegrationTools(server: McpServer, ctx: AuthContext) {
+  server.registerTool("create_billing_checkout", { description: "Create or update this organization's Stripe seat/storage subscription checkout. Requires manage:billing. Uses configured provider Price IDs; no money overrides. Seat plan pro; storage starter/growth/scale, monthly or annual. Returns {url} for a new checkout or {updated:true} for an existing subscription.", inputSchema: billingCheckoutSchema },
+    params => wrapTool(ctx, () => createBillingCheckout(ctx, params)));
   server.tool(
     "list_stripe_integrations",
     "List all active Stripe integrations for the organization. Returns id, label, stripeAccountId, and status for each.",
@@ -220,6 +222,7 @@ export function registerIntegrationTools(server: McpServer, ctx: AuthContext) {
     (params) =>
       wrapTool(ctx, async () => {
         requireRole(ctx, "manage:integrations");
+        stripeOperationSchema.parse(params);
 
         const integration = await findIntegration(ctx, params.integrationId);
 
@@ -278,7 +281,7 @@ export function registerIntegrationTools(server: McpServer, ctx: AuthContext) {
 
   server.tool(
     "import_stripe_csv",
-    "Import a Stripe CSV export file for a specific integration. Accepts raw CSV text content and type ('payments' or 'payouts'). Skips already-imported transactions. Returns count of imported, skipped, and errored rows.",
+    "Import a Stripe CSV export file for a specific integration. Accepts raw CSV text content and type ('payments' or 'payouts'). Major-unit ASCII decimals or Amount Minor/Fee Minor/Net Minor integer string columns; coexisting values must agree. No rounding or implicit FX. Skips already-imported transactions. Returns count of imported, skipped, and errored rows.",
     {
       integrationId: z
         .string()
@@ -296,89 +299,13 @@ export function registerIntegrationTools(server: McpServer, ctx: AuthContext) {
 
         const integration = await findIntegration(ctx, params.integrationId);
 
-        let imported = 0;
-        let skipped = 0;
-        const errors: string[] = [];
-
-        if (params.type === "payments") {
-          const rows = parseStripePaymentsCsv(params.csvContent);
-
-          for (const row of rows) {
-            const existing = await db.query.stripeEntityMap.findFirst({
-              where: and(
-                eq(stripeEntityMap.organizationId, ctx.organizationId),
-                eq(stripeEntityMap.stripeEntityType, "charge"),
-                eq(stripeEntityMap.stripeEntityId, row.id)
-              ),
-            });
-
-            if (existing) { skipped++; continue; }
-
-            try {
-              const charge = {
-                id: row.id,
-                amount: row.amount,
-                currency: row.currency.toLowerCase(),
-                created: row.createdUtc
-                  ? Math.floor(new Date(row.createdUtc).getTime() / 1000)
-                  : Math.floor(Date.now() / 1000),
-                balance_transaction: null,
-                payment_intent: null,
-                customer: null,
-                billing_details: {
-                  email: row.customerEmail,
-                  name: row.customerName,
-                  address: null,
-                  phone: null,
-                },
-                refunds: { data: [] },
-              } as unknown as Stripe.Charge;
-
-              await handleChargeSucceeded(integration, charge);
-              imported++;
-            } catch (err) {
-              errors.push(`${row.id}: ${err instanceof Error ? err.message : "Unknown error"}`);
-            }
-          }
-        } else {
-          const rows = parseStripePayoutsCsv(params.csvContent);
-
-          for (const row of rows) {
-            const existing = await db.query.stripeEntityMap.findFirst({
-              where: and(
-                eq(stripeEntityMap.organizationId, ctx.organizationId),
-                eq(stripeEntityMap.stripeEntityType, "payout"),
-                eq(stripeEntityMap.stripeEntityId, row.id)
-              ),
-            });
-
-            if (existing) { skipped++; continue; }
-
-            try {
-              const payout = {
-                id: row.id,
-                amount: row.amount,
-                currency: row.currency.toLowerCase(),
-                arrival_date: row.arrivalDate
-                  ? Math.floor(new Date(row.arrivalDate).getTime() / 1000)
-                  : Math.floor(Date.now() / 1000),
-              } as unknown as Stripe.Payout;
-
-              await handlePayoutPaid(integration, payout);
-              imported++;
-            } catch (err) {
-              errors.push(`${row.id}: ${err instanceof Error ? err.message : "Unknown error"}`);
-            }
-          }
-        }
-
-        return { imported, skipped, errors };
+        return importStripeCsv(integration, params.csvContent, params.type);
       })
   );
 
   server.tool(
     "reconcile_stripe_balance",
-    "Compare Stripe balance transactions against local records to find missed events for a specific integration. Returns matched count and list of missing transactions with their Stripe IDs, types, and amounts in cents.",
+    "Compare Stripe balance transactions against local records to find missed events for a specific integration. Returns matched count and list of missing transactions with their Stripe IDs, types, and amount (safe numeric minor units), amountMinor (canonical integer string), and currencyCode.",
     {
       integrationId: z
         .string()
@@ -410,7 +337,7 @@ export function registerIntegrationTools(server: McpServer, ctx: AuthContext) {
 
   server.tool(
     "list_stripe_entity_mappings",
-    "List Stripe entity mappings for the organization. Shows how Stripe objects (charges, customers, invoices, etc.) map to local records. Useful for debugging sync state. Returns stripeEntityType, stripeEntityId, dubblEntityType, dubblEntityId, and metadata.",
+    "List Stripe entity mappings for the organization. Shows how Stripe objects (charges, customers, invoices, etc.) map to local records. Useful for debugging sync state. Returns stripeEntityType, stripeEntityId, dubblEntityType, dubblEntityId, and metadata with safe numeric amounts and matching Minor strings.",
     {
       stripeEntityType: z
         .string()
@@ -448,7 +375,7 @@ export function registerIntegrationTools(server: McpServer, ctx: AuthContext) {
             stripeEntityId: m.stripeEntityId,
             dubblEntityType: m.dubblEntityType,
             dubblEntityId: m.dubblEntityId,
-            metadata: m.metadata,
+            metadata: stripeMappingMetadata(m.metadata),
             createdAt: m.createdAt,
           })),
           total: mappings.length,

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { jsonResponse } from "@/lib/api/json-response";
 import { db } from "@/lib/db";
 import { webhook, webhookDelivery } from "@/lib/db/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
@@ -42,7 +42,7 @@ export async function GET(
       .from(webhookDelivery)
       .where(and(...conditions));
 
-    return NextResponse.json(
+    return jsonResponse(
       paginatedResponse(
         deliveries,
         Number(countResult?.count || 0),

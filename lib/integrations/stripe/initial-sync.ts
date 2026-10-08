@@ -1,8 +1,8 @@
 import { db } from "@/lib/db";
 import { stripeIntegration, stripeSyncLog } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { stripe } from "@/lib/stripe";
-import { ensureIntegrationAccountsMapped } from "./accounts";
+import { notDeleted } from "@/lib/db/soft-delete";
 import {
   handleChargeSucceeded,
   handleCustomerCreated,
@@ -15,14 +15,11 @@ export async function runInitialSync(integrationId: string) {
   if (!stripe) throw new Error("Stripe is not configured");
 
   const integration = await db.query.stripeIntegration.findFirst({
-    where: eq(stripeIntegration.id, integrationId),
+    where: and(eq(stripeIntegration.id, integrationId), notDeleted(stripeIntegration.deletedAt)),
   });
 
   if (!integration) throw new Error("Integration not found");
 
-  // Connect the default account mappings automatically if they're missing (an
-  // older integration, or one a user cleared) so syncing never dead-ends.
-  await ensureIntegrationAccountsMapped(integration);
 
   const days = integration.initialSyncDays;
   const since = Math.floor(Date.now() / 1000) - days * 86400;

@@ -25,7 +25,8 @@ async function mcp(ctx: AuthContext) {
   await server.connect(serverTransport);
   await client.connect(clientTransport);
   const tools = await client.listTools();
-  assert.equal(tools.tools.length, 7);
+  assert.equal(tools.tools.length, 8);
+  assert.ok(tools.tools.some(tool => tool.name === "create_invoice_checkout"));
   assert.ok(tools.tools.every(tool => tool.inputSchema.additionalProperties === false));
   return {
     async call(name: string, args: Record<string, unknown>) {

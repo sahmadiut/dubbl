@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { db } from "@/lib/db";
 import { stripeIntegration } from "@/lib/db/schema";
 import { getAuthContext } from "@/lib/api/auth-context";
@@ -13,7 +14,7 @@ export async function POST(request: Request) {
     const ctx = await getAuthContext(request);
     requireRole(ctx, "manage:integrations");
 
-    const body = await request.json().catch(() => ({}));
+    const body = z.object({ integrationId: z.string().uuid() }).strict().parse(await request.json());
     const integrationId = body.integrationId;
     if (!integrationId) {
       return NextResponse.json({ error: "integrationId is required" }, { status: 400 });

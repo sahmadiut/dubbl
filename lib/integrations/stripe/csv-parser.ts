@@ -1,11 +1,14 @@
+import { csvMinor, stripeCurrency, validateStripeObject } from "./money";
+import { WireCompatibilityError } from "@/lib/money/wire";
+
 export interface StripeCsvPayment {
   id: string;
   description: string;
   sellerMessage: string;
   createdUtc: string;
-  amount: number; // in cents
-  fee: number; // in cents
-  net: number; // in cents
+  amount: number; // in currency minor units
+  fee: number; // in currency minor units
+  net: number; // in currency minor units
   currency: string;
   status: string;
   customerEmail: string | null;
@@ -15,7 +18,7 @@ export interface StripeCsvPayment {
 export interface StripeCsvPayout {
   id: string;
   arrivalDate: string;
-  amount: number; // in cents
+  amount: number; // in currency minor units
   currency: string;
   status: string;
   description: string;
@@ -67,45 +70,57 @@ function parseCsvLine(line: string): string[] {
       }
     }
   }
+  if (inQuotes) throw new WireCompatibilityError("Unclosed CSV quote");
   result.push(current);
   return result;
 }
 
-function decimalToCents(value: string): number {
-  if (!value || value === "") return 0;
-  const cleaned = value.replace(/[^0-9.\-]/g, "");
-  return Math.round(parseFloat(cleaned) * 100);
+function date(value: string): string {
+  if (value && !Number.isFinite(Date.parse(value))) throw new WireCompatibilityError("Invalid Stripe CSV date");
+  return value;
 }
 
 export function parseStripePaymentsCsv(text: string): StripeCsvPayment[] {
   const rows = parseCsvRows(text);
   return rows
     .filter((r) => r["id"] && r["id"].startsWith("ch_"))
-    .map((r) => ({
+    .map((r) => {
+      const currency = stripeCurrency(r["Currency"]);
+      const result = {
       id: r["id"],
       description: r["Description"] || "",
       sellerMessage: r["Seller Message"] || "",
-      createdUtc: r["Created (UTC)"] || r["Created date (UTC)"] || "",
-      amount: decimalToCents(r["Amount"] || "0"),
-      fee: decimalToCents(r["Fee"] || "0"),
-      net: decimalToCents(r["Net"] || "0"),
-      currency: (r["Currency"] || "usd").toUpperCase(),
+      createdUtc: date(r["Created (UTC)"] || r["Created date (UTC)"] || ""),
+      amount: csvMinor(r["Amount"], r["Amount Minor"], currency),
+      fee: csvMinor(r["Fee"] ?? (r["Fee Minor"] ? undefined : "0"), r["Fee Minor"], currency, true),
+      net: csvMinor(r["Net"] ?? (r["Net Minor"] ? undefined : "0"), r["Net Minor"], currency, true),
+      currency,
       status: r["Status"] || "",
       customerEmail: r["Customer Email"] || r["Customer email"] || null,
       customerName: r["Customer Name"] || r["Customer name"] || null,
-    }));
+      };
+      if ("fee" in result && Number(result.fee) < 0) throw new WireCompatibilityError("Charge CSV fee must be nonnegative");
+      validateStripeObject({ ...result, object: result.id.startsWith("po_") ? "payout" : "charge" });
+      return result;
+    });
 }
 
 export function parseStripePayoutsCsv(text: string): StripeCsvPayout[] {
   const rows = parseCsvRows(text);
   return rows
     .filter((r) => r["id"] && r["id"].startsWith("po_"))
-    .map((r) => ({
+    .map((r) => {
+      const currency = stripeCurrency(r["Currency"]);
+      const result = {
       id: r["id"],
-      arrivalDate: r["Arrival Date"] || r["Arrival date"] || "",
-      amount: decimalToCents(r["Amount"] || "0"),
-      currency: (r["Currency"] || "usd").toUpperCase(),
+      arrivalDate: date(r["Arrival Date"] || r["Arrival date"] || ""),
+      amount: csvMinor(r["Amount"], r["Amount Minor"], currency),
+      currency,
       status: r["Status"] || "",
       description: r["Description"] || "",
-    }));
+      };
+      if ("fee" in result && Number(result.fee) < 0) throw new WireCompatibilityError("Charge CSV fee must be nonnegative");
+      validateStripeObject({ ...result, object: result.id.startsWith("po_") ? "payout" : "charge" });
+      return result;
+    });
 }

@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { jsonResponse } from "@/lib/api/json-response";
+import { stripeOperationSchema } from "@/lib/integrations/stripe/money";
 import { db } from "@/lib/db";
 import { stripeIntegration } from "@/lib/db/schema";
 import { getAuthContext } from "@/lib/api/auth-context";
@@ -13,10 +14,10 @@ export async function POST(request: Request) {
     const ctx = await getAuthContext(request);
     requireRole(ctx, "manage:integrations");
 
-    const body = await request.json();
+    const body = stripeOperationSchema.parse(await request.json());
     const integrationId = body.integrationId;
     if (!integrationId) {
-      return NextResponse.json({ error: "integrationId is required" }, { status: 400 });
+      return jsonResponse({ error: "integrationId is required" }, { status: 400 });
     }
 
     const integration = await db.query.stripeIntegration.findFirst({
@@ -29,7 +30,7 @@ export async function POST(request: Request) {
 
     if (!integration) return notFound("Stripe integration");
 
-    const days = Math.min(Math.max(body.days ?? 30, 1), 90);
+    const days = body.days;
 
     const result = await reconcileStripeBalance(
       integration.id,
@@ -37,7 +38,7 @@ export async function POST(request: Request) {
       days
     );
 
-    return NextResponse.json({ success: true, ...result });
+    return jsonResponse({ success: true, ...result });
   } catch (err) {
     return handleError(err);
   }

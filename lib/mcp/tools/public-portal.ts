@@ -4,6 +4,7 @@ import type { AuthContext } from "@/lib/api/auth-context";
 import { requireRole } from "@/lib/api/require-role";
 import { getPaymentLink, getPortalAccess, portalIdentity, getPortalInvoices, getPortalPayments,
   getPortalQuotes, getPortalStatement, acceptPortalQuote } from "@/lib/api/public-portal";
+import { createInvoiceCheckout } from "@/lib/integrations/stripe/checkout";
 import { wrapTool } from "@/lib/mcp/errors";
 
 const token = z.string().min(1).describe("Existing bearer link token; must belong to the authenticated organization; portal tokens must be active and unexpired");
@@ -16,6 +17,11 @@ export function registerPublicPortalTools(server: McpServer, ctx: AuthContext) {
   }
   server.registerTool("get_payment_link", { description: `Read the invoice summary and lines for an existing payment-link token. Returns the public paid/pending envelope. ${amounts}`,
     inputSchema: tokenInput }, params => read(() => getPaymentLink(params.token, ctx.organizationId)));
+  server.registerTool("create_invoice_checkout", { description: "Create a Stripe card checkout for an existing payment-link token belonging to this organization. Requires manage:invoices. Uses the saved invoice balance and currency, no amount overrides or FX; supports 1 through 99999999 minor units in qualified currencies. Returns {checkoutUrl}.", inputSchema: tokenInput },
+    params => wrapTool(ctx, async () => {
+      requireRole(ctx, "manage:invoices");
+      return createInvoiceCheckout(params.token, process.env.NEXT_PUBLIC_APP_URL!, ctx.organizationId);
+    }));
   server.registerTool("get_portal_identity", { description: "Read the contact and organization names for an existing customer-portal token. Returns contact {id,name,email} and organization {name}.",
     inputSchema: tokenInput }, params => read(async () => portalIdentity(await getPortalAccess(params.token, ctx.organizationId))));
   server.registerTool("list_portal_invoices", { description: `List invoices for the contact granted by a portal token. Returns {data}, with totals and amounts due; records view activity after monetary preflight. ${amounts}`,

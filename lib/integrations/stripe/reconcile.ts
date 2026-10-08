@@ -3,6 +3,7 @@ import { stripeIntegration, stripeEntityMap } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { notDeleted } from "@/lib/db/soft-delete";
 import Stripe from "stripe";
+import { stripeOperationSchema, stripeCurrency, stripeMinor } from "./money";
 import { stripe as _stripeClient } from "@/lib/stripe";
 
 // Non-null wrapper - callers already guard for null stripe
@@ -10,7 +11,7 @@ const stripe = _stripeClient!;
 
 export interface ReconciliationResult {
   matched: number;
-  missingLocal: { id: string; type: string; amount: number; created: number }[];
+  missingLocal: { id: string; type: string; amount: number; amountMinor: string; currencyCode: string; created: number }[];
   totalChecked: number;
 }
 
@@ -19,9 +20,11 @@ export async function reconcileStripeBalance(
   orgId: string,
   days: number
 ): Promise<ReconciliationResult> {
+  stripeOperationSchema.parse({ integrationId, days });
   const integration = await db.query.stripeIntegration.findFirst({
     where: and(
       eq(stripeIntegration.id, integrationId),
+      eq(stripeIntegration.organizationId, orgId),
       notDeleted(stripeIntegration.deletedAt)
     ),
   });
@@ -82,7 +85,9 @@ export async function reconcileStripeBalance(
       missingLocal.push({
         id: stripeEntityId,
         type: stripeEntityType,
-        amount: txn.amount,
+        amount: stripeMinor(txn.amount, true),
+        amountMinor: String(stripeMinor(txn.amount, true)),
+        currencyCode: stripeCurrency(txn.currency),
         created: txn.created,
       });
     }

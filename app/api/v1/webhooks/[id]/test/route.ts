@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { jsonResponse } from "@/lib/api/json-response";
 import { db } from "@/lib/db";
 import { webhook } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
@@ -38,7 +38,7 @@ export async function POST(
 
     const delivery = await deliverWebhook(found.id, "test", testPayload);
 
-    return NextResponse.json({ delivery });
+    return jsonResponse({ delivery });
   } catch (err) {
     return handleError(err);
   }

@@ -4,6 +4,7 @@ import crypto from "crypto";
 import { db } from "@/lib/db";
 import { webhook, webhookDelivery } from "@/lib/db/schema";
 import { eq, and, isNull, desc, sql } from "drizzle-orm";
+import { requireRole } from "@/lib/api/require-role";
 import { wrapTool } from "@/lib/mcp/errors";
 import { softDelete } from "@/lib/db/soft-delete";
 import { deliverWebhook } from "@/lib/webhooks/deliver";
@@ -78,6 +79,7 @@ export function registerWebhookTools(server: McpServer, ctx: AuthContext) {
     },
     (params) =>
       wrapTool(ctx, async () => {
+        requireRole(ctx, "manage:webhooks");
         const secret = crypto.randomBytes(32).toString("hex");
 
         const [created] = await db
@@ -118,6 +120,7 @@ export function registerWebhookTools(server: McpServer, ctx: AuthContext) {
     },
     (params) =>
       wrapTool(ctx, async () => {
+        requireRole(ctx, "manage:webhooks");
         const existing = await db.query.webhook.findFirst({
           where: and(
             eq(webhook.id, params.webhookId),
@@ -155,6 +158,7 @@ export function registerWebhookTools(server: McpServer, ctx: AuthContext) {
     },
     (params) =>
       wrapTool(ctx, async () => {
+        requireRole(ctx, "manage:webhooks");
         const existing = await db.query.webhook.findFirst({
           where: and(
             eq(webhook.id, params.webhookId),
@@ -249,6 +253,7 @@ export function registerWebhookTools(server: McpServer, ctx: AuthContext) {
     },
     (params) =>
       wrapTool(ctx, async () => {
+        requireRole(ctx, "manage:webhooks");
         const existing = await db.query.webhook.findFirst({
           where: and(
             eq(webhook.id, params.webhookId),

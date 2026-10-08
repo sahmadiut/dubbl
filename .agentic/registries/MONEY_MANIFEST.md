@@ -1,5 +1,19 @@
 # Money and FX boundary manifest
 
+## MON-105 dashboard and saved report integration
+
+[DASHBOARD_REPORT_INTEGRATION](DASHBOARD_REPORT_INTEGRATION.md) consolidates all
+25 dashboard/layout/custom-report/schedule/budget-check REST/MCP pairs, threshold
+configuration and internal scheduled consumers. Actual legacy REST/exact MCP
+invoice writers feed opaque saved layouts, widget totals, custom execution,
+CSV export and recorded CSV/XLSX delivery; posted journals feed numeric/exact
+budgets and recipient notifications. Full strict dashboard tool schemas reject
+unknown controls instead of stripping them. Persisted report edits, empty output,
+tenant/permission guards, unsafe history and unchanged failures are verified
+together with all child regressions. Safe numeric/Minor aliases and literal
+opaque strings retain their distinct units. No schema/history/IRR flag change;
+MON-029 and independent production/accounting qualification remain separate.
+
 ## MON-104 operational analytics integration
 
 [OPERATIONAL_REPORT_INTEGRATION](OPERATIONAL_REPORT_INTEGRATION.md) consolidates

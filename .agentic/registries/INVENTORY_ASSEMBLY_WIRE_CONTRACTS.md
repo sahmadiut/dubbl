@@ -117,6 +117,14 @@ and divisibility restrictions. No MON-052 behavior is relaxed.
 One journal posts DR Finished Goods (owned item's inventory account or 1320),
 CR grouped component inventory accounts (owned account or control 1300), and
 CR liability Manufacturing/WIP Clearing 2305 for **actual conversion cost**.
+Builds require untracked components and finished items. Serial/lot allocation is
+unsupported. Components must have zero warehouse stock and no open located FIFO
+layers: this global operation has no warehouse-allocation input and therefore
+rejects located components with 422 before mutation. Existing warehouse receipts,
+transfers and location stock takes retain their supported paths. Finished receipts
+are unassigned; existing finished-item location stock is preserved. MON-024's
+combined fixture verifies REST/MCP denials without stock, layer, GL or audit writes.
+
 No fictitious rounding credit/debit is needed. Accounts must be live active,
 owned, correctly typed and in posting base currency. No foreign-currency
 conversion, warehouse redistribution or negative inventory posting is introduced.

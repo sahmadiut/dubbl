@@ -93,6 +93,14 @@ linking reversesEntryId/reversedByEntryId; it never looks up or reapplies a new 
   exact average-cost shortfall layers. New COGS is reversed from saved journals.
   Legacy unlinked stock retains the prior current-average restock policy; its
   historical reconstruction remains a later accounting/data qualification gate.
+  MON-024 integrates inventory capitalization/assembly with invoice cost flow:
+  FIFO issues consume authoritative remainingValue (historical null derives from
+  quantity times unitCost), persist consumption value, and exhaust the last residual.
+  Void restores both saved consumed quantity and value; historical null consumption
+  value derives from quantity times unitCost. Average final issues consume saved
+  totalValue and partial issues cap at that value; restock averages use restored
+  carrying value, avoiding loss through rounded unit-cost products. Existing FIFO
+  shortfall policy is retained. No history backfill or monetary-unit change.
 - Write-off is restricted to sent/partial/overdue positive outstanding debt;
   paid, draft, pending, rejected, void and previously written-off rows fail.
   Zero legacy amountDue retains the exact total-minus-paid fallback. Direct 6500/

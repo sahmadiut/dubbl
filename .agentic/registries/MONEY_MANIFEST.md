@@ -278,6 +278,15 @@ pricing acceptance through MON-092..094.
 
 ## MON-078 inventory assembly adoption
 
+MON-024 parent integration is documented in
+[INVENTORY_INTEGRATION_CONTRACTS](INVENTORY_INTEGRATION_CONTRACTS.md), covering all
+five inventory slices and receipt/sales bridges with independent combined fixtures.
+Assembly rejects warehouse-assigned components and tracked stock before mutation.
+Invoice FIFO issues/restores now retain authoritative remaining/consumed values,
+including capitalization and assembly residuals; final average issues exhaust saved
+carrying value and restock averages use carrying totals. No schema/history rescale,
+full-int64 support or IRR/production qualification is inferred.
+
 [INVENTORY_ASSEMBLY_WIRE_CONTRACTS](INVENTORY_ASSEMBLY_WIRE_CONTRACTS.md) records
 six REST route files/fifteen operations and fifteen tools. Shared scoped services
 retain minor money and physical quantity units with exact aliases; recipe ratios,

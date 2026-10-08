@@ -1,6 +1,6 @@
 import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { billOfMaterials, bomComponent, assemblyOrder, inventoryItem, inventoryCostLayer, inventoryMovement, chartAccount, journalEntry, journalLine, auditLog } from "@/lib/db/schema";
+import { billOfMaterials, bomComponent, assemblyOrder, inventoryItem, inventoryCostLayer, inventoryMovement, warehouseStock, chartAccount, journalEntry, journalLine, auditLog } from "@/lib/db/schema";
 import { AuthError, type AuthContext } from "./auth-context";
 import { requireRole } from "./require-role";
 import { orgLock, postingAccount } from "./inventory-master";
@@ -185,12 +185,23 @@ export async function buildAssembly(ctx: AuthContext, id: string, input: unknown
       const [item] = await tx.select().from(inventoryItem).where(and(eq(inventoryItem.id, itemId), eq(inventoryItem.organizationId, ctx.organizationId), isNull(inventoryItem.deletedAt))).for("update");
       if (!item || !item.isActive) throw new AuthError("Live active owned inventory required", 404);
       itemDto(item);
+      if (item.trackingMethod !== "none") throw new AuthError("Assembly requires untracked stock; serial/lot allocation is unsupported", 422);
       if (!["average", "fifo"].includes(item.costMethod) || item.quantityOnHand < 0 || item.totalValue < 0 || item.averageCost < 0)
         throw new WireCompatibilityError("Assembly requires nonnegative average/FIFO stock");
+      // Builds have no warehouse-allocation input. A global issue must not leave
+      // received/transfer/count location balances claiming the consumed units.
+      if (needs.has(itemId)) {
+        const located = await tx.select({ id: warehouseStock.id }).from(warehouseStock).where(and(
+          eq(warehouseStock.organizationId, ctx.organizationId), eq(warehouseStock.inventoryItemId, itemId), sql`${warehouseStock.quantity} <> 0`,
+        )).for("update");
+        if (located.length) throw new AuthError("Assembly requires unassigned component stock; warehouse allocation is unsupported", 422);
+      }
       let remaining = needs.get(itemId) ?? 0, cost = 0n;
       if (item.costMethod === "fifo") {
         const layers = await tx.select().from(inventoryCostLayer).where(and(eq(inventoryCostLayer.organizationId, ctx.organizationId), eq(inventoryCostLayer.inventoryItemId, item.id), sql`${inventoryCostLayer.remainingQuantity} > 0`)).orderBy(asc(inventoryCostLayer.receivedAt), asc(inventoryCostLayer.id)).for("update");
         for (const layer of layers) layerDto(layer);
+        if (needs.has(itemId) && layers.some(layer => layer.warehouseId !== null))
+          throw new AuthError("Assembly requires unassigned FIFO component layers; warehouse allocation is unsupported", 422);
         const qty = layers.reduce((s, l) => s + BigInt(catalogQuantity.parse(l.remainingQuantity)), 0n), value = layers.reduce((s, l) => s + BigInt(inventoryLayerValue(l)), 0n);
         if (qty !== BigInt(item.quantityOnHand) || value !== BigInt(item.totalValue)) throw new WireCompatibilityError("FIFO layers do not match saved assembly stock");
         for (const layer of layers) {

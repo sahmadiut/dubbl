@@ -8,11 +8,11 @@ import { interestFields, recoveryFields, writeOffFields, approveFields, rejectFi
 export function registerInvoiceLifecycleTools(server: McpServer, ctx: AuthContext) {
   const invoiceId = z.string().uuid().describe("Organization-owned invoice UUID; deleted or foreign invoices return 404");
   server.registerTool("send_invoice", {
-    description: "Send an unposted draft invoice: atomically recognize AR/revenue/tax, issue stock and post COGS, freeze sender/recipient and mark sent. Requires approve:invoices, unlocked date, complete active accounts and safe numeric money/FX. Returns invoice with numeric minor amounts plus *Minor strings. Email delivery is a separate operation.",
+    description: "Send an unposted draft invoice: atomically recognize AR/revenue/tax, issue stock and post COGS, freeze sender/recipient and mark sent. FIFO issues retain exact capitalized/assembly residual values; average issues exhaust remaining carrying value on final sale. Requires approve:invoices, unlocked date, complete active accounts and safe numeric money/FX. Returns invoice with numeric minor amounts plus *Minor strings. Email delivery is a separate operation.",
     inputSchema: z.strictObject({ invoiceId }),
   }, params => wrapTool(ctx, () => sendInvoice(ctx, params.invoiceId)));
   server.registerTool("void_invoice", {
-    description: "Void an unsettled invoice. Requires approve:invoices and unlocked issue date. Posted invoices reverse saved ledger amounts/FX and restock atomically; drafts do not restock. Cancels pending approval. Returns invoice with numeric minor amounts plus *Minor strings.",
+    description: "Void an unsettled invoice. Requires approve:invoices and unlocked issue date. Posted invoices reverse saved ledger amounts/FX and restock atomically, restoring saved FIFO consumed values and quantities including residual minor units; drafts do not restock. Cancels pending approval. Returns invoice with numeric minor amounts plus *Minor strings.",
     inputSchema: z.strictObject({ invoiceId }),
   }, params => wrapTool(ctx, () => voidInvoice(ctx, params.invoiceId)));
   server.registerTool("write_off_invoice", {

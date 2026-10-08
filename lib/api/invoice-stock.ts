@@ -4,6 +4,7 @@ import { inventoryItem, inventoryMovement, inventoryCostLayer, inventoryLayerCon
 import { AuthError, type AuthContext } from "./auth-context";
 import { safeInvoiceMinor, invoiceRound } from "./invoice-write-wire";
 import { ensureControlAccount } from "./journal-automation";
+import { inventoryLayerValue, roundInventoryRatio } from "@/lib/money/inventory-cost";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 export function stockQuantity(value: bigint) {
@@ -34,7 +35,7 @@ export async function invoiceStock(tx: Tx, ctx: AuthContext, base: string, invoi
     if (!cogs.isActive || cogs.deletedAt || !asset.isActive || asset.deletedAt) throw new AuthError("Invoice inventory accounts must be active", 422);
     const quantity = stockQuantity(BigInt(item.quantityOnHand) + BigInt(reverse ? units : -units));
     let cost = BigInt(item.averageCost) * BigInt(units);
-    const consumptions: { costLayerId: string; quantity: number; unitCost: number }[] = [];
+    const consumptions: { costLayerId: string; quantity: number; unitCost: number; value: number }[] = [];
     if (reverse) {
       // New invoice issues carry the invoice ID. Restore their original values even
       // when average cost changed since the sale. Historical unlinked issues keep
@@ -56,18 +57,21 @@ export async function invoiceStock(tx: Tx, ctx: AuthContext, base: string, invoi
           const [layer] = await tx.select().from(inventoryCostLayer).where(and(eq(inventoryCostLayer.id, use.costLayerId),
             eq(inventoryCostLayer.organizationId, ctx.organizationId), eq(inventoryCostLayer.inventoryItemId, item.id))).for("update");
           if (!layer) throw new AuthError("Invoice FIFO layer belongs to another organization", 422);
-          await tx.update(inventoryCostLayer).set({ remainingQuantity: stockQuantity(BigInt(layer.remainingQuantity) + BigInt(use.quantity)) }).where(eq(inventoryCostLayer.id, layer.id));
+          const restoredValue = use.value ?? safeInvoiceMinor(BigInt(use.quantity) * BigInt(use.unitCost));
+          if (!Number.isSafeInteger(restoredValue) || restoredValue < 0) throw new AuthError("Invalid saved FIFO consumption value", 422);
+          await tx.update(inventoryCostLayer).set({ remainingQuantity: stockQuantity(BigInt(layer.remainingQuantity) + BigInt(use.quantity)),
+            remainingValue: safeInvoiceMinor(BigInt(inventoryLayerValue(layer)) + BigInt(restoredValue)) }).where(eq(inventoryCostLayer.id, layer.id));
         }
         // A FIFO shortfall valued at average cost needs its own return layer.
         const consumed = used.reduce((sum, use) => sum + use.quantity, 0);
         if (item.costMethod === "fifo" && consumed < units) {
           const remainder = BigInt(units - consumed);
-          const layerCost = used.reduce((sum, use) => sum + BigInt(use.quantity) * BigInt(use.unitCost), 0n);
+          const layerCost = used.reduce((sum, use) => sum + (use.value === null ? BigInt(use.quantity) * BigInt(use.unitCost) : BigInt(use.value)), 0n);
           if ((cost - layerCost) % remainder !== 0n) throw new AuthError("Invoice FIFO shortfall cannot be restored exactly", 422);
-          consumptions.push({ costLayerId: "", quantity: Number(remainder), unitCost: safeInvoiceMinor((cost - layerCost) / remainder) });
+          consumptions.push({ costLayerId: "", quantity: Number(remainder), unitCost: safeInvoiceMinor((cost - layerCost) / remainder), value: safeInvoiceMinor(cost - layerCost) });
         }
       } else if (item.costMethod === "fifo") {
-        consumptions.push({ costLayerId: "", quantity: units, unitCost: item.averageCost });
+        consumptions.push({ costLayerId: "", quantity: units, unitCost: item.averageCost, value: safeInvoiceMinor(cost) });
       }
     }
     if (!reverse && item.costMethod === "fifo") {
@@ -78,18 +82,23 @@ export async function invoiceStock(tx: Tx, ctx: AuthContext, base: string, invoi
       for (const layer of layers) {
         if (remaining <= 0) break;
         const take = Math.min(remaining, layer.remainingQuantity);
-        cost += BigInt(take) * BigInt(layer.unitCost); safeInvoiceMinor(cost);
-        consumptions.push({ costLayerId: layer.id, quantity: take, unitCost: layer.unitCost });
-        await tx.update(inventoryCostLayer).set({ remainingQuantity: layer.remainingQuantity - take }).where(eq(inventoryCostLayer.id, layer.id));
+        const carrying = inventoryLayerValue(layer);
+        const consumedValue = take === layer.remainingQuantity ? carrying : Math.min(carrying, roundInventoryRatio(BigInt(carrying) * BigInt(take), BigInt(layer.remainingQuantity)));
+        cost += BigInt(consumedValue); safeInvoiceMinor(cost);
+        consumptions.push({ costLayerId: layer.id, quantity: take, unitCost: layer.unitCost, value: consumedValue });
+        await tx.update(inventoryCostLayer).set({ remainingQuantity: layer.remainingQuantity - take, remainingValue: carrying - consumedValue }).where(eq(inventoryCostLayer.id, layer.id));
         remaining -= take;
       }
       cost += BigInt(remaining) * BigInt(item.averageCost);
     }
+    if (!reverse && item.costMethod === "average" && quantity >= 0)
+      cost = quantity === 0 ? BigInt(item.totalValue) : cost > BigInt(item.totalValue) ? BigInt(item.totalValue) : cost;
     const value = safeInvoiceMinor(cost);
     if (value < 0 || item.averageCost < 0 || item.totalValue < 0) throw new AuthError("Invoice stock costs cannot be negative", 422);
     const rawValue = BigInt(item.totalValue) + (reverse ? cost : -cost);
+    if (!reverse && quantity >= 0 && rawValue < 0n) throw new AuthError("Invoice issue exceeds saved inventory carrying value", 422);
     const totalValue = safeInvoiceMinor(rawValue < 0n ? 0n : rawValue);
-    const averageCost = reverse && quantity > 0 ? safeInvoiceMinor(invoiceRound(BigInt(item.quantityOnHand) * BigInt(item.averageCost) + cost, BigInt(quantity))) : item.averageCost;
+    const averageCost = reverse && quantity > 0 ? safeInvoiceMinor(invoiceRound(BigInt(totalValue), BigInt(quantity))) : item.averageCost;
     const [movement] = await tx.insert(inventoryMovement).values({ organizationId: ctx.organizationId, inventoryItemId: item.id,
       warehouseId: line.warehouseId, type: reverse ? "adjustment" : "sale", quantity: reverse ? units : -units,
       previousQuantity: item.quantityOnHand, newQuantity: quantity,
@@ -101,7 +110,7 @@ export async function invoiceStock(tx: Tx, ctx: AuthContext, base: string, invoi
     if (reverse && item.costMethod === "fifo") {
       for (const remainder of consumptions) await tx.insert(inventoryCostLayer).values({ organizationId: ctx.organizationId,
         inventoryItemId: item.id, warehouseId: line.warehouseId, originalQuantity: remainder.quantity, remainingQuantity: remainder.quantity,
-        unitCost: remainder.unitCost, sourceMovementId: movement.id });
+        unitCost: remainder.unitCost, remainingValue: remainder.value, sourceMovementId: movement.id });
     }
     if (line.warehouseId) {
       const [stock] = await tx.select().from(warehouseStock).where(and(eq(warehouseStock.organizationId, ctx.organizationId),

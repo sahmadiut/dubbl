@@ -1,5 +1,20 @@
 # Verification matrix
 
+## MON-024 combined inventory and costing
+
+`tests/integration/inventory-integration.test.ts`/worker composes actual REST and
+full SDK MCP catalog across catalog metadata, master/CSV, goods receipts, landed
+costs, locations/transfers/live stock takes, BOM/assembly, FIFO/average sales and
+voids, bulk issues and valuation/layer reads. Exact residuals, legacy KWD units,
+balanced base journals, two cross-writer races, audit failure rollback, schema/
+range/auth/tenant/period/lifecycle denials and unchanged SQL snapshots are asserted.
+Assembly rejects located or tracked components before mutation; invoice stock
+consumes/restores authoritative FIFO values and final average carrying residuals.
+Run five child suites plus receipts/bill/invoice/credit regressions with concurrency
+2 against an explicit loopback disposable test server. See
+[combined contracts](../registries/INVENTORY_INTEGRATION_CONTRACTS.md).
+No build/dev/browser/deployment or independent financial qualification is implied.
+
 ## MON-014 combined core accounting
 
 `tests/integration/core-accounting-integration.test.ts`/worker calls actual

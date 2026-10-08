@@ -1071,3 +1071,16 @@ export explicit currency columns and keep reconciliation totals per currency.
 Actual API-key/MCP/disposable PostgreSQL fixtures cover legacy/exact bank writers,
 limits, calendars, isolation and unchanged financial snapshots. No schema/history/
 IRR gate change; MON-104/MON-029 retain combined acceptance.
+
+## MON-118 recurring, calendar and duplicate reports
+
+[OPERATIONAL_REPORT_WIRE_CONTRACTS](OPERATIONAL_REPORT_WIRE_CONTRACTS.md) maps all
+three REST/MCP pairs. Shared scoped read-only snapshots project SQL-text money and
+bigint averages/products into safe numeric integers and matching Minor strings.
+Strict inputs, live bank ownership, independently scoped contacts and separate
+currency groups/events prevent precision, unit and tenant loss. Calendar projects
+the full bounded horizon with saved UTC scheduling and occurrence limits. Pages
+show errors and currency-aware exact formatting. Actual API-key/MCP/PostgreSQL
+fixtures cover legacy/exact writers, signed/source/derived limits and unchanged
+financial state. No schema/history/IRR rollout; MON-104/MON-029 retain combined
+and independent acceptance.

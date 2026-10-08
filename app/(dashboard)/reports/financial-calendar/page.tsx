@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/dashboard/page-header";
 import { Button } from "@/components/ui/button";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
-import { formatMoney } from "@/lib/money";
+import { statementMoneyText as formatMoney } from "@/lib/reports/statement-money";
 import { cn } from "@/lib/utils";
 
 interface CalendarEvent {
@@ -15,6 +15,8 @@ interface CalendarEvent {
   type: "invoice_due" | "bill_due" | "recurring_generation" | "budget_period_start";
   title: string;
   amount?: number;
+  amountMinor?: string;
+  currencyCode: string;
   id?: string;
   status?: string;
 }
@@ -41,6 +43,7 @@ export default function FinancialCalendarPage() {
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
   const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const orgId = localStorage.getItem("activeOrgId");
@@ -49,16 +52,22 @@ export default function FinancialCalendarPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
 
-    const startDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).toISOString().slice(0, 10);
-    const endDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).toISOString().slice(0, 10);
+    const prefix = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, "0")}`;
+    const startDate = `${prefix}-01`;
+    const endDate = `${prefix}-${String(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate()).padStart(2, "0")}`;
 
     fetch(`/api/v1/reports/financial-calendar?startDate=${startDate}&endDate=${endDate}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
-      .then((data) => {
-        if (!cancelled) setEvents(data.events || []);
+      .then(async (r) => {
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || "Unable to load financial calendar.");
+        return data;
       })
+      .then((data) => {
+        if (!cancelled) { setEvents(data.events || []); setError(null); }
+      })
+      .catch((err: Error) => { if (!cancelled) { setEvents([]); setError(err.message); } })
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
@@ -95,6 +104,8 @@ export default function FinancialCalendarPage() {
         title="What's due soon"
         description="Upcoming invoice and bill due dates, repeating items, and budget periods on a calendar."
       />
+
+      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
 
       {loading ? (
         <BrandLoader className="h-48" />
@@ -197,7 +208,7 @@ export default function FinancialCalendarPage() {
                           </div>
                           <p className="text-sm font-medium">{e.title}</p>
                           {e.amount !== undefined && (
-                            <p className="text-sm font-mono tabular-nums">{formatMoney(e.amount)}</p>
+                            <p className="text-sm font-mono tabular-nums">{e.currencyCode} {formatMoney(e.amount, e.currencyCode)}</p>
                           )}
                         </div>
                       ))}
@@ -223,7 +234,7 @@ export default function FinancialCalendarPage() {
                           <span className="truncate">{e.title}</span>
                         </div>
                         {e.amount !== undefined && (
-                          <span className="font-mono tabular-nums shrink-0 ml-2">{formatMoney(e.amount)}</span>
+                          <span className="font-mono tabular-nums shrink-0 ml-2">{e.currencyCode} {formatMoney(e.amount, e.currencyCode)}</span>
                         )}
                       </div>
                     ))}

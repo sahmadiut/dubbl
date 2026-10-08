@@ -1,3 +1,4 @@
+import { registerOperationalReportTools } from "./operational-reports";
 import { registerBankAnalyticsTools } from "./bank-analytics";
 import { registerForecastFxTools } from "./forecast-fx";
 import { registerContactStatementTools } from "./contact-statements";
@@ -95,6 +96,7 @@ import { registerInventoryMovementTools } from "./inventory-movements";
 import { registerPublicPortalTools } from "./public-portal";
 
 export function registerAllTools(server: McpServer, ctx: AuthContext) {
+  registerOperationalReportTools(server, ctx);
   registerBankAnalyticsTools(server, ctx);
   registerForecastFxTools(server, ctx);
   registerDashboardDataTools(server, ctx);

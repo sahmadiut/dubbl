@@ -8,7 +8,7 @@ import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Badge } from "@/components/ui/badge";
-import { formatMoney } from "@/lib/money";
+import { statementMoneyText as formatMoney } from "@/lib/reports/statement-money";
 
 interface DuplicateItem {
   id: string;
@@ -21,6 +21,8 @@ interface DuplicateGroup {
   type: "invoice" | "bill";
   contactName: string;
   amount: number;
+  amountMinor: string;
+  currencyCode: string;
   items: DuplicateItem[];
 }
 
@@ -29,6 +31,7 @@ export default function DuplicateDetectionPage() {
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(true);
   const [groups, setGroups] = useState<DuplicateGroup[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const orgId = localStorage.getItem("activeOrgId");
@@ -39,11 +42,17 @@ export default function DuplicateDetectionPage() {
     fetch("/api/v1/reports/duplicate-detection", {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then(async (r) => {
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || "Unable to load duplicate detection.");
+        return data;
+      })
       .then((data) => {
         if (cancelled) return;
         setGroups(data.duplicateGroups || []);
+        setError(null);
       })
+      .catch((err: Error) => { if (!cancelled) { setGroups([]); setError(err.message); } })
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
@@ -66,7 +75,7 @@ export default function DuplicateDetectionPage() {
         description="Invoices or bills that may have been entered twice (same contact, same amount, within 7 days)."
       />
 
-      {loading ? (
+      {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : loading ? (
         <BrandLoader className="h-48" />
       ) : groups.length === 0 ? (
         <ContentReveal>
@@ -101,7 +110,7 @@ export default function DuplicateDetectionPage() {
                     </Badge>
                     <span className="text-sm font-medium">{group.contactName}</span>
                   </div>
-                  <span className="font-mono text-sm font-semibold tabular-nums">{formatMoney(group.amount)}</span>
+                  <span className="font-mono text-sm font-semibold tabular-nums">{group.currencyCode} {formatMoney(group.amount, group.currencyCode)}</span>
                 </div>
                 <div className="space-y-1">
                   {group.items.map((item) => (

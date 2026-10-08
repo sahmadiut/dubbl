@@ -5,6 +5,7 @@
   "phase": 0,
   "role": "lead",
   "depends_on": [],
+  "split_children": [],
   "source_pages": [],
   "source_sections": [],
   "status": "todo",

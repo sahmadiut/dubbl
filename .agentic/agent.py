@@ -121,6 +121,10 @@ class Project:
             require(type(m[key]) is bool, f'{t.id}: {key} must be boolean')
         require(isinstance(m['depends_on'], list) and all(isinstance(x,str) for x in m['depends_on']), f'{t.id}: invalid dependencies')
         require(len(set(m['depends_on'])) == len(m['depends_on']), f'{t.id}: duplicate dependency')
+        children = m.get('split_children', [])
+        require(isinstance(children, list) and all(isinstance(x, str) for x in children), f'{t.id}: invalid split children')
+        require(len(set(children)) == len(children), f'{t.id}: duplicate split child')
+        require(set(children) <= set(m['depends_on']), f'{t.id}: split children must also be dependencies')
         require(isinstance(m['source_pages'], list) and all(type(x) is int and 1<=x<=37 for x in m['source_pages']), f'{t.id}: invalid source pages')
         require(isinstance(m['evidence'],list) and all(isinstance(x,str) for x in m['evidence']), f'{t.id}: invalid evidence')
         require(m['owner'] is None or isinstance(m['owner'], str), f'{t.id}: invalid owner')
@@ -229,7 +233,8 @@ class Project:
         return sorted(self.tasks.values(),key=lambda t:(t.meta['phase'],t.meta['priority'],t.id))
 
     def ready(self):
-        return [t for t in self.ordered() if t.meta['status']=='todo' and not self.prerequisites(t)]
+        eligible = [t for t in self.ordered() if t.meta['status']=='todo' and not self.prerequisites(t)]
+        return sorted(eligible, key=lambda t:(t.meta['phase'], not bool(t.meta.get('split_children')), t.meta['priority'], t.id))
 
     def next(self):
         active=[t for t in self.ordered() if t.meta['status'] in ACTIVE]
@@ -325,6 +330,21 @@ class Project:
             require(bool(a.reason.strip()),'Block reason is required')
             m.update(status='blocked',block_reason=a.reason,review=None)
             t.event('Blocked: '+a.reason)
+        elif cmd=='split':
+            require(s in {'todo','in_progress'}, 'Split requires todo or in_progress; resolve an existing blocker with queue first')
+            require(bool(a.note.strip()), 'Split note is required')
+            require(len(set(a.children)) == len(a.children), 'Duplicate split child')
+            require(t.id not in a.children, 'A task cannot be its own split child')
+            for child in a.children:self.get(child)
+            m['depends_on']=list(dict.fromkeys(m['depends_on']+a.children))
+            m['split_children']=list(dict.fromkeys(m.get('split_children',[])+a.children))
+            m.update(status='todo',owner=None,block_reason=None,review=None)
+            t.event('Split and queued for integration after '+', '.join(a.children)+'; '+a.note)
+        elif cmd=='queue':
+            require(s=='blocked', 'Queue requires blocked state')
+            require(bool(a.note.strip()), 'Queue resolution note is required')
+            m.update(status='todo',owner=None,block_reason=None,review=None)
+            t.event('Block resolved; queued without claiming the active slot; '+a.note)
         elif cmd=='resume':
             require(s=='blocked','Resume requires blocked state')
             require(not any(x.meta['status'] in ACTIVE for x in self.tasks.values()),'An active task already exists')
@@ -371,6 +391,8 @@ def parser():
     q=sub.add_parser('review');q.add_argument('id');q.add_argument('--result',choices=['approve','reject'],required=True);q.add_argument('--reviewer',required=True);q.add_argument('--kind',choices=['self','peer','human'],required=True);q.add_argument('--evidence',required=True)
     q=sub.add_parser('done');q.add_argument('id')
     q=sub.add_parser('block');q.add_argument('id');q.add_argument('--reason',required=True)
+    q=sub.add_parser('split');q.add_argument('id');q.add_argument('--children',nargs='+',required=True);q.add_argument('--note',required=True)
+    q=sub.add_parser('queue');q.add_argument('id');q.add_argument('--note',required=True)
     q=sub.add_parser('resume');q.add_argument('id');q.add_argument('--owner',required=True);q.add_argument('--note',required=True)
     q=sub.add_parser('note');q.add_argument('id');q.add_argument('--note',required=True)
     q=sub.add_parser('skip');q.add_argument('id');q.add_argument('--reason',required=True);q.add_argument('--reviewer',required=True);q.add_argument('--evidence',required=True)

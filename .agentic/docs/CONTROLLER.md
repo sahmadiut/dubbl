@@ -4,9 +4,9 @@
 
 Python 3.10+ standard library; works offline. Each `tasks/ID.md` contains a strict JSON object between `---` lines, followed by human-readable Markdown. JSON is a deliberate restricted front-matter format: no YAML parser dependency or executable metadata. Task files are the sole status source; all dashboards are computed. `docs/TASK_INDEX.md` is an initial navigation index, not live status.
 
-State path: `todo -> in_progress -> review -> done`. Review rejection returns to `in_progress`. Open work can become `blocked`, then resume. Only optional tasks may become `skipped` with documented owner scope approval. A skipped prerequisite is considered resolved for dependency ordering, not implemented. Mandatory work cannot be skipped. A blocked task does not block unrelated ready work; an active or review task occupies the single work slot.
+State path: `todo -> in_progress -> review -> done`. Review rejection returns to `in_progress`. Open work can become `blocked`, then queue or resume after the blocker is resolved. Split parents wait in `todo` for dependencies. Only optional tasks may become `skipped` with documented owner scope approval. A skipped prerequisite is considered resolved for dependency ordering, not implemented. Mandatory work cannot be skipped. A blocked task does not block unrelated ready work; an active or review task occupies the single work slot.
 
-Selection: active/review first; otherwise eligible todo tasks by phase, priority (0 first), ID. A ready task has all dependencies done or explicitly skipped. Phase labels are planning groups, not hidden barriers; express every hard gate as a dependency. Status reports the earliest unfinished phase and count-based progress, not effort-weighted progress. Maintenance and the delayed contract phase are included in the initial 60 tasks and can remain open after production acceptance.
+Selection: active/review first; otherwise eligible todo tasks by phase, split-parent first, priority (0 first), ID. A ready task has all dependencies done or explicitly skipped. A task with a nonempty `split_children` list is an integration parent; it outranks unrelated ready work within the same phase once all dependencies resolve. Phase labels are planning groups, not hidden barriers; express every hard gate as a dependency. Status reports the earliest unfinished phase and count-based progress, not effort-weighted progress. Maintenance and the delayed contract phase are included in the initial 60 tasks and can remain open after production acceptance.
 
 ## Commands from repository root
 
@@ -52,7 +52,10 @@ New review fingerprints use `digest_version: text-lf-v1`: evidence is decoded as
 python3 .agentic/agent.py note AUD-001 --note "Inspected schema; next inspect API boundary"
 python3 .agentic/agent.py block AUD-001 --reason "Repository source is not available; needs local checkout"
 python3 .agentic/agent.py resume AUD-001 --owner coding-assistant --note "Local checkout is now available"
+python3 .agentic/agent.py queue AUD-001 --note "External blocker resolved; wait for prerequisites without taking the active slot"
 ```
+
+`queue` returns a blocked task to `todo`, clears its blocker/owner/review and records the resolution note without taking the active slot. Use it only after confirming the actual blocker is resolved or was solely dependency waiting. It is permitted while another task is active and while dependencies remain unfinished. Genuine external blockers remain `blocked` until explicitly resolved; the scheduler never infers resolution from prose or completed children.
 
 Before ending any session update Handoff with files changed, checks actually run, unverified items and exact next action. In-progress work stays selected next time. `note` appends history without changing status. `check ... --undo` clears a criterion only while in progress.
 
@@ -68,7 +71,15 @@ python3 .agentic/agent.py skip PAR-006 --reason "Owner deferred multi-branch sco
 
 Copy `templates/TASK.md` to a unique `tasks/ABC-001.md`, edit all metadata and acceptance details, then run validate. Extend the task index and source coverage when scope changes. Never reuse an existing ID. New IDs must be uppercase group plus a numeric suffix of at least three digits.
 
-For a task too broad for one bounded change: return its in-progress status to a documented blocked state, create child tasks with the parent's original prerequisites, then add those child IDs to the parent's dependencies. Keep the parent as a final integration/acceptance task. Children must NOT depend on their parent, which would make a cycle. Once children finish, resume the parent to verify integration. Update the parent's criteria honestly; never silently delete requirements. Structural metadata editing is allowed for this planning operation, followed immediately by validate. Do not edit done tasks without reopening first.
+For a task too broad for one bounded change: create child tasks with the parent's original prerequisites, validate, then split the todo/in-progress parent with the controller:
+
+```bash
+python3 .agentic/agent.py split MON-006 --children MON-011 MON-012 --note "Verified independent slices; parent retains final integration acceptance"
+```
+
+`split` adds the children to `depends_on` and `split_children`, preserves existing dependencies/children and acceptance criteria, queues the parent as `todo`, and releases its active slot atomically. Children must NOT depend on their parent, which would make a cycle; invalid splits are rejected without writing. Once every prerequisite and child is done or explicitly skipped, the parent automatically becomes ready for independent integration acceptance and is prioritized within its phase. Nested splits wait for each intermediate parent's acceptance. Child completion never checks parent criteria or completes the parent.
+
+For legacy blocked split parents, inspect the blocker and handoff, add a `split_children` list of the actual child IDs (all must already be in `depends_on`), validate, then `queue ID --note "Only remaining wait is child/prerequisite completion; parent acceptance remains open"`. Do not requeue a parent with an unresolved external blocker. Optional `split_children` metadata defaults to an empty list for existing ordinary tasks; it must contain unique strings and be a subset of dependencies. Structural metadata editing is allowed for this planning operation, followed immediately by validate. Do not edit done tasks without reopening first.
 
 ## Integrity limits and crash recovery
 

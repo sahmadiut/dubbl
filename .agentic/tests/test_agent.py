@@ -219,6 +219,128 @@ class ControllerTests(unittest.TestCase):
         self.runcli('resume','AUD-001','--owner','test','--note','Fixture input available')
         self.assertEqual(self.runcli('next')['status'],'in_progress')
 
+    def split_fixture(self):
+        # Keep the real graph present, but isolate five synthetic open tasks.
+        for path in (self.root/'tasks').glob('*.md'):
+            t=agent.Task(path)
+            t.meta.update(status='blocked',block_reason='Synthetic external blocker')
+            t.save()
+        for id in ['AUD-001','AUD-002','AUD-003','AUD-004','AUD-005']:
+            self.editmeta(id,status='todo',block_reason=None,depends_on=[],split_children=[],
+                          phase=2,priority=0,human_review=False)
+        self.editmeta('AUD-003',priority=3)
+        self.editmeta('AUD-005',status='blocked',block_reason='Synthetic external blocker')
+
+    def test_split_releases_slot_and_parent_returns_after_child_completion(self):
+        self.split_fixture()
+        self.runcli('start','AUD-003','--owner','synthetic-test')
+        before=agent.Task(self.root/'tasks/AUD-003.md').checks()
+        self.runcli('split','AUD-003','--children','AUD-001','AUD-002','--note','Synthetic split')
+        parent=agent.Project(self.root).get('AUD-003')
+        self.assertEqual(parent.meta['status'],'todo')
+        self.assertIsNone(parent.meta['owner'])
+        self.assertEqual(parent.checks(),before)
+        self.assertNotIn('AUD-003',self.runcli('status')['ready'])
+        self.finish('AUD-001')
+        self.assertNotIn('AUD-003',self.runcli('status')['ready'])
+        self.finish('AUD-002')
+        self.assertEqual(self.runcli('next')['id'],'AUD-003')
+        self.assertEqual(self.runcli('next')['next_action'],'start')
+        self.assertEqual(agent.Project(self.root).get('AUD-003').checks(),before)
+        self.runcli('start','AUD-003','--owner','synthetic-test')
+        self.runcli('submit','AUD-003','--evidence',self.evidence(),ok=False)
+
+    def test_queue_legacy_parent_preserves_original_wait_and_review_slot(self):
+        self.split_fixture()
+        self.editmeta('AUD-003',depends_on=['AUD-001','AUD-002'],split_children=['AUD-002'])
+        self.runcli('block','AUD-003','--reason','Synthetic legacy dependency-only split')
+        self.runcli('queue','AUD-003','--note','Only dependency waiting remains')
+        self.assertNotIn('AUD-003',self.runcli('status')['ready'])
+        # Child completion alone cannot resolve an original prerequisite.
+        self.finish('AUD-002')
+        self.assertNotIn('AUD-003',self.runcli('status')['ready'])
+        self.runcli('block','AUD-003','--reason','Synthetic resolved blocker')
+        e=self.submit('AUD-001')
+        self.runcli('queue','AUD-003','--note','Block resolved while another task is in review')
+        self.assertEqual(self.runcli('next')['id'],'AUD-001')
+        self.runcli('review','AUD-001','--result','approve','--reviewer','synthetic-test','--kind','self','--evidence',e)
+        self.runcli('done','AUD-001')
+        self.assertEqual(self.runcli('next')['id'],'AUD-003')
+
+    def test_parent_priority_respects_phase_and_active_slot(self):
+        self.split_fixture()
+        self.runcli('split','AUD-003','--children','AUD-001','--note','Synthetic split')
+        self.finish('AUD-001')
+        self.editmeta('AUD-002',phase=1)
+        self.assertEqual(self.runcli('next')['id'],'AUD-002')
+        self.runcli('start','AUD-004','--owner','synthetic-test')
+        self.assertEqual(self.runcli('next')['id'],'AUD-004')
+
+    def test_nested_split_requires_each_parents_own_acceptance(self):
+        self.split_fixture()
+        self.runcli('queue','AUD-005','--note','Synthetic blocker resolved')
+        self.runcli('split','AUD-005','--children','AUD-003','--note','Synthetic outer split')
+        self.runcli('split','AUD-003','--children','AUD-001','--note','Synthetic inner split')
+        self.finish('AUD-001')
+        self.assertEqual(self.runcli('next')['id'],'AUD-003')
+        self.assertNotIn('AUD-005',self.runcli('status')['ready'])
+        self.finish('AUD-003')
+        self.assertEqual(self.runcli('next')['id'],'AUD-005')
+
+    def test_completed_children_do_not_clear_external_parent_blocker(self):
+        self.split_fixture()
+        self.runcli('split','AUD-003','--children','AUD-001','--note','Synthetic split')
+        self.runcli('block','AUD-003','--reason','Synthetic missing external input')
+        self.finish('AUD-001')
+        self.assertNotIn('AUD-003',self.runcli('status')['ready'])
+        self.assertEqual(agent.Project(self.root).get('AUD-003').meta['status'],'blocked')
+        before=(self.root/'tasks/AUD-003.md').read_bytes()
+        self.runcli('split','AUD-003','--children','AUD-002','--note','Cannot bypass blocker',ok=False)
+        self.assertEqual((self.root/'tasks/AUD-003.md').read_bytes(),before)
+
+    def test_split_preserves_existing_children_and_original_dependencies(self):
+        self.split_fixture()
+        self.editmeta('AUD-003',depends_on=['AUD-004'])
+        self.runcli('split','AUD-003','--children','AUD-001','--note','First synthetic split')
+        self.runcli('split','AUD-003','--children','AUD-002','--note','Additional synthetic child')
+        parent=agent.Project(self.root).get('AUD-003')
+        self.assertEqual(parent.meta['depends_on'],['AUD-004','AUD-001','AUD-002'])
+        self.assertEqual(parent.meta['split_children'],['AUD-001','AUD-002'])
+
+    def test_invalid_splits_are_rejected_without_writing(self):
+        self.split_fixture()
+        self.editmeta('AUD-002',depends_on=['AUD-003'])
+        before=(self.root/'tasks/AUD-003.md').read_bytes()
+        for children in [('BAD-999',),('AUD-003',),('AUD-001','AUD-001'),('AUD-002',)]:
+            with self.subTest(children=children):
+                self.runcli('split','AUD-003','--children',*children,'--note','Invalid synthetic split',ok=False)
+                self.assertEqual((self.root/'tasks/AUD-003.md').read_bytes(),before)
+        self.runcli('split','AUD-003','--children','AUD-001','--note',' ',ok=False)
+        self.assertEqual((self.root/'tasks/AUD-003.md').read_bytes(),before)
+
+    def test_split_children_schema_rejects_malformed_metadata(self):
+        for children in ['AUD-002',[1],['AUD-002','AUD-002'],['AUD-001']]:
+            with self.subTest(children=children):
+                self.editmeta('AUD-001',depends_on=['AUD-002'],split_children=children)
+                self.runcli('validate',ok=False)
+
+    def test_queue_requires_blocked_state_and_resolution_note(self):
+        before=(self.root/'tasks/AUD-001.md').read_bytes()
+        self.runcli('queue','AUD-001','--note','Invalid todo transition',ok=False)
+        self.assertEqual((self.root/'tasks/AUD-001.md').read_bytes(),before)
+        self.runcli('block','AUD-001','--reason','Synthetic external blocker')
+        before=(self.root/'tasks/AUD-001.md').read_bytes()
+        self.runcli('queue','AUD-001','--note',' ',ok=False)
+        self.assertEqual((self.root/'tasks/AUD-001.md').read_bytes(),before)
+
+    def test_split_child_explicit_deferral_unlocks_parent_without_completing_it(self):
+        self.split_fixture()
+        self.editmeta('AUD-001',optional=True)
+        self.runcli('split','AUD-003','--children','AUD-001','--note','Synthetic split')
+        self.runcli('skip','AUD-001','--reason','Synthetic owner deferral','--reviewer','synthetic-owner','--evidence',self.evidence())
+        self.assertEqual(self.runcli('next')['id'],'AUD-003')
+        self.assertEqual(self.runcli('next')['status'],'todo')
+
     def test_required_task_cannot_be_skipped(self):
         self.runcli('skip','AUD-001','--reason','test','--reviewer','test','--evidence',self.evidence(),ok=False)
 

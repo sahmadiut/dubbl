@@ -48,11 +48,10 @@ export function registerReportTools(server: McpServer, ctx: AuthContext) {
     ["trial_balance", "trial-balance", "Trial balance"],
     ["balance_sheet", "balance-sheet", "Balance sheet"],
   ] as const) {
-    server.tool(name,
-      `${label} from posted, non-deleted organization-base GL through inclusive Gregorian asAt (UTC today by default). Optional compareDates add cumulative columns. Legacy fixed two-place decimal strings retain their units; additive Minor strings contain exact signed integer cents within +/-9007199254740991. Returns accounts/sections and currencyCode. No input amounts or FX; requires view:data. Trial balance retains the existing natural-sign presentation.`,
-      cumulativeReportSchema.shape,
-      params => wrapTool(ctx, async () => (await getCumulativeStatement(ctx, kind, params)).data),
-    );
+    server.registerTool(name, {
+      description: `${label} from posted, non-deleted organization-base GL through inclusive Gregorian asAt (UTC today by default). Optional compareDates add cumulative columns. Legacy fixed two-place decimal strings retain their units; additive Minor strings contain exact signed integer cents within +/-9007199254740991. Returns accounts/sections and currencyCode. No input amounts or FX; requires view:data. Trial balance retains the existing natural-sign presentation.`,
+      inputSchema: cumulativeReportSchema,
+    }, params => wrapTool(ctx, async () => (await getCumulativeStatement(ctx, kind, params)).data));
   }
 
   server.registerTool("profit_and_loss", {

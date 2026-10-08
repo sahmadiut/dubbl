@@ -1,5 +1,17 @@
 # Verification matrix
 
+## MON-101 combined financial report contracts
+
+`financial-report-integration.test.ts`/worker posts legacy numeric and exact string
+journals using actual REST/MCP writers, then compares all eleven report pairs on
+one saved history. Independent values reconcile income, earnings, ledger and cash
+balances, tracking, pack and ratios. USD/IRR/JPY/KWD JSON units and P&L/pack XLSX,
+draft/date exclusion, two tenants, permissions/keys, unknown controls and currency
+failure are checked with preserved financial snapshots. Run with the five child
+report suites on PostgreSQL 16. See
+[combined contract](../registries/FINANCIAL_REPORT_INTEGRATION.md). Accounting
+heuristics retain their assigned gates; MON-029 retains broader integration.
+
 ## MON-113 payment-performance analytics
 
 `tests/integration/payment-performance.test.ts` and its worker invoke the actual

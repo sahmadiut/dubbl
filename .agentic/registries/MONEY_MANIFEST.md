@@ -1,5 +1,16 @@
 # Money and FX boundary manifest
 
+## MON-101 financial report integration
+
+[FINANCIAL_REPORT_INTEGRATION](FINANCIAL_REPORT_INTEGRATION.md) consolidates all
+eleven MON-106..110 REST/MCP report pairs and exports. Actual legacy/exact journal
+writers feed shared report assertions for period/cumulative income, ledger/cash,
+pack/tracking/ratios, four currency contexts and XLSX scales. Full strict cumulative
+MCP schemas now reject unknown fields instead of stripping them. Numeric/fixed
+decimal legacy units, additive Minor aliases and safe/Excel limits remain. No
+schema/history/IRR flag change; trial-balance and cash/ratio accounting limits and
+MON-029 broader acceptance remain separate.
+
 ## MON-122 report schedules and delivery
 
 [REPORT_SCHEDULE_WIRE_CONTRACTS](REPORT_SCHEDULE_WIRE_CONTRACTS.md) maps schedule

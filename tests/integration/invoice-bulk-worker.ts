@@ -85,7 +85,7 @@ async function run() {
     const max = await make({ lines: [{ description: "Max", unitPriceMinor: "9007199254740991" }] }); assert.equal(max.total, Number.MAX_SAFE_INTEGER);
     const flat = { contactId: customer.id, issueDate: "6/1/2026", dueDate: "7/1/2026", invoiceNumber: "External", lineDescription: "CSV", lineQuantity: "1.50", lineUnitPrice: "12.50", lineAccountId: revenue.id };
     const grouped = { ...payload([flat, flat]), source: "quickbooks" };
-    const groupedPreview = await ma.call("preview_invoice_import", grouped); assert.equal(groupedPreview.body.totalCount, 1); assert.equal(groupedPreview.body.preview[0].totalMinor, "3750");
+    const groupedPreview = await ma.call("preview_invoice_import", { source: grouped.source, rows: grouped.rows }); assert.equal(groupedPreview.body.totalCount, 1); assert.equal(groupedPreview.body.preview[0].totalMinor, "3750");
     assert.equal((await (await IMPORT(req(grouped))).json()).job.processedRows, 1);
     assert.equal((await ma.call("import_invoices", grouped)).body.job.totalRows, 1);
     const rounded = await make({ lines: [{ description: "Extended", unitPriceExact: "0.005", quantity: 3 }] }); assert.equal(rounded.total, 2);

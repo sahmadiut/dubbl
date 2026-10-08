@@ -19,51 +19,39 @@ import type { AuthContext } from "@/lib/api/auth-context";
 import { checkInvoiceCompliance } from "@/lib/documents/compliance";
 
 export function registerInvoiceTools(server: McpServer, ctx: AuthContext) {
-  server.tool(
-    "list_invoices",
-    "List organization-scoped invoices. Numeric amounts retain integer minor units (USD cents); additive subtotalMinor/taxTotalMinor/totalMinor/amountPaidMinor/amountDueMinor strings and contact creditLimitMinor preserve stored units. Safe integer range only; mixed-currency pages keep per-invoice currencies.",
-    invoiceListFields,
-    params => wrapTool(ctx, () => listInvoices(ctx, params))
-  );
+  server.registerTool("list_invoices", {
+    description: "List organization-scoped invoices. Numeric amounts retain integer minor units (USD cents); additive subtotalMinor/taxTotalMinor/totalMinor/amountPaidMinor/amountDueMinor strings and contact creditLimitMinor preserve stored units. Safe integer range only; mixed-currency pages keep per-invoice currencies.",
+    inputSchema: z.strictObject(invoiceListFields),
+  }, params => wrapTool(ctx, () => listInvoices(ctx, params)));
 
-  server.tool(
-    "get_invoice",
-    "Get an organization-scoped invoice with contact and line items. Numeric money stays in stored minor units (USD cents), with *Minor strings on headers, unitPrice/amount/taxAmount and contact creditLimit. Quantities stay hundredths, discounts stay basis points. Returns {invoice}; payment history/base display remain REST-only. Unsafe history fails with 422.",
-    { invoiceId: z.string().uuid().describe("Organization-owned invoice UUID") },
-    params => wrapTool(ctx, async () => {
+  server.registerTool("get_invoice", {
+    description: "Get an organization-scoped invoice with contact and line items. Numeric money stays in stored minor units (USD cents), with *Minor strings on headers, unitPrice/amount/taxAmount and contact creditLimit. Quantities stay hundredths, discounts stay basis points. Returns {invoice}; payment history/base display remain REST-only. Unsafe history fails with 422.",
+    inputSchema: z.strictObject({ invoiceId: z.string().uuid().describe("Organization-owned invoice UUID") }),
+  }, params => wrapTool(ctx, async () => {
       const result = await getInvoice(ctx, params.invoiceId);
       if (!result) throw new AuthError("Invoice not found", 404);
       return result;
-    })
-  );
+    }));
 
-  server.tool(
-    "get_invoice_summary",
-    "Get invoice counts, outstanding/overdue totals and four aging buckets for this organization. Returns safe numeric minor units (USD cents) plus outstandingMinor/overdueMinor and aging amountMinor strings; currencyCode is null for no outstanding invoices. Rejects mixed-currency outstanding invoices and unsafe totals with 422. No FX conversion or writes.",
-    {},
-    () => wrapTool(ctx, () => getInvoiceSummary(ctx))
-  );
+  server.registerTool("get_invoice_summary", {
+    description: "Get invoice counts, outstanding/overdue totals and four aging buckets for this organization. Returns safe numeric minor units (USD cents) plus outstandingMinor/overdueMinor and aging amountMinor strings; currencyCode is null for no outstanding invoices. Rejects mixed-currency outstanding invoices and unsafe totals with 422. No FX conversion or writes.",
+    inputSchema: z.strictObject({}),
+  }, () => wrapTool(ctx, () => getInvoiceSummary(ctx)));
 
-  server.tool(
-    "create_invoice",
-    "Create an organization-scoped invoice atomically. unitPrice is decimal major units (USD 12.50); unitPriceExact is an ASCII decimal string; unitPriceMinor is an integer currency minor-unit string. Aliases must agree; safe integer monetary range only. Quantity is decimal, discounts are basis points. Currency defaults USD; omitted prices default zero unless a price list is specified. Returns {invoice, creditLimitWarning} with numeric minor units and *Minor strings; checks roles, references, locks, plan limits, credit limits and optional approval.",
-    invoiceCreateFields,
-    params => wrapTool(ctx, () => createInvoice(ctx, params, "mcp"))
-  );
+  server.registerTool("create_invoice", {
+    description: "Create an organization-scoped invoice atomically. unitPrice is decimal major units (USD 12.50); unitPriceExact is an ASCII decimal string; unitPriceMinor is an integer currency minor-unit string. Aliases must agree; safe integer monetary range only. Quantity is decimal, discounts are basis points. Currency defaults USD; omitted prices default zero unless a price list is specified. Returns {invoice, creditLimitWarning} with numeric minor units and *Minor strings; checks roles, references, locks, plan limits, credit limits and optional approval.",
+    inputSchema: z.strictObject(invoiceCreateFields),
+  }, params => wrapTool(ctx, () => createInvoice(ctx, params, "mcp")));
 
-  server.tool(
-    "update_invoice",
-    "Edit an organization-owned draft invoice atomically. Optional lines replace all lines; omitted prices become zero. unitPrice is decimal major units; unitPriceExact is decimal major text and unitPriceMinor integer currency minor text. Checks alias agreement, safe monetary range, references and old/new issue-date locks. Returns {invoice} with numeric minor-unit totals and *Minor strings; quantity is decimal and discounts basis points.",
-    { invoiceId: z.string().uuid().describe("Organization-owned draft invoice UUID"), ...invoiceUpdateFields },
-    params => wrapTool(ctx, () => updateInvoice(ctx, params.invoiceId, params))
-  );
+  server.registerTool("update_invoice", {
+    description: "Edit an organization-owned draft invoice atomically. Optional lines replace all lines; omitted prices become zero. unitPrice is decimal major units; unitPriceExact is decimal major text and unitPriceMinor integer currency minor text. Checks alias agreement, safe monetary range, references and old/new issue-date locks. Returns {invoice} with numeric minor-unit totals and *Minor strings; quantity is decimal and discounts basis points.",
+    inputSchema: z.strictObject({ invoiceId: z.string().uuid().describe("Organization-owned draft invoice UUID"), ...invoiceUpdateFields }),
+  }, params => wrapTool(ctx, () => updateInvoice(ctx, params.invoiceId, params)));
 
-  server.tool(
-    "delete_invoice",
-    "Soft-delete an organization-owned draft invoice and remove its lines atomically. Checks manage:invoices, issue-date locks, safe history and reference ownership. Returns {success:true}; sent, paid and approval-pending invoices cannot be deleted.",
-    { invoiceId: z.string().uuid().describe("Organization-owned draft invoice UUID") },
-    params => wrapTool(ctx, () => deleteInvoice(ctx, params.invoiceId))
-  );
+  server.registerTool("delete_invoice", {
+    description: "Soft-delete an organization-owned draft invoice and remove its lines atomically. Checks manage:invoices, issue-date locks, safe history and reference ownership. Returns {success:true}; sent, paid and approval-pending invoices cannot be deleted.",
+    inputSchema: z.strictObject({ invoiceId: z.string().uuid().describe("Organization-owned draft invoice UUID") }),
+  }, params => wrapTool(ctx, () => deleteInvoice(ctx, params.invoiceId)));
 
   server.tool(
     "pay_invoice",

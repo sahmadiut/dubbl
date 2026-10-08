@@ -134,8 +134,9 @@ async function run() {
         assert.equal((await handler(req(handler === PATCH ? "PATCH" : handler === DELETE ? "DELETE" : "POST", {}, keys.viewer), params(editable.id))).status, 403);
       }
       for (const name of ["update_credit_note", "delete_credit_note", "send_credit_note", "void_credit_note", "apply_credit_note"]) {
-        assert.equal((await ro.call(name, { creditNoteId: editable.id, invoiceId: inv.id, amountMinor: "1" })).body.status, 403);
-        assert.equal((await mb.call(name, { creditNoteId: editable.id, invoiceId: inv.id, amountMinor: "1" })).body.status, 404);
+        const input = { creditNoteId: editable.id, ...(name === "apply_credit_note" ? { invoiceId: inv.id, amountMinor: "1" } : {}) };
+        assert.equal((await ro.call(name, input)).body.status, 403);
+        assert.equal((await mb.call(name, input)).body.status, 404);
       }
       for (const handler of [GET, DELETE, SEND, VOID]) assert.equal((await handler(req(handler === GET ? "GET" : handler === DELETE ? "DELETE" : "POST", undefined, keys.b), params(editable.id))).status, 404);
       assert.equal((await mb.call("get_credit_note", { creditNoteId: editable.id })).body.status, 404);

@@ -1,5 +1,16 @@
 # Money and FX boundary manifest
 
+## MON-019 combined receivable document integration
+
+[RECEIVABLE_DOCUMENT_INTEGRATION](RECEIVABLE_DOCUMENT_INTEGRATION.md) consolidates
+all eight receivable inventories with distinct price units, exact aliases, safe
+ranges, FX, authorization and atomicity. Actual quote/invoice/credit/customer-cash/
+receipt/recurring/bulk flows verify cross-transport values and balanced final account
+totals. Fifty-nine MCP tools retain full strict schemas; SDK rejection snapshots
+cover documents, journals, allocations, schedules, jobs, numbering and audits.
+Child suites retain detailed operation coverage. No schema/units/history/IRR flag or
+settlement-annotation policy changes; domain/accounting/release gates remain open.
+
 ## MON-018 combined journal integration
 
 [JOURNAL_INTEGRATION](JOURNAL_INTEGRATION.md) consolidates manual CRUD, lifecycle/

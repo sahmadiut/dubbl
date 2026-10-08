@@ -1,5 +1,20 @@
 # Verification matrix
 
+## MON-019 combined receivable documents
+
+`tests/integration/receivable-document-integration.test.ts`/worker exercises API-key
+REST and full registered MCP SDK tools on disposable migrated PostgreSQL. Quote
+partial/remaining conversion feeds invoice posting, note offset/reversal, customer
+cash settlement and reads. Receipt posting/reversal and recurring generation feed
+bulk posting/repeat and summary parity. Checks all 59 adopted unknown-field/JSON
+schemas with unchanged snapshots, role/tenant/reference denials, conflicting/unsafe
+aliases/history, USD/IRR/JPY/KWD units, safe maximum, exact journal balancing and
+final AR/cash/deposit/revenue totals. Run with invoice-reads, invoice-writes,
+invoice-lifecycle, quotes, credits, sales-receipts, recurring-invoices and invoice-bulk
+regressions. Child suites retain detailed locks/FX/stock/approval/concurrency/fault
+coverage. Full-int64, sessions/providers, PDF, independent accounting/migration/IRR
+and production qualification remain separate.
+
 ## MON-018 combined journal contracts
 
 `tests/integration/journal-integration.test.ts`/worker connects all three actual

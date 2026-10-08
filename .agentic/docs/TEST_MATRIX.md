@@ -1,5 +1,22 @@
 # Verification matrix
 
+## MON-022 organization and tax configuration integration
+
+`tests/integration/configuration-integration.test.ts`/worker composes actual
+API-key REST and all-tools SDK MCP configuration with approval, invoice tax,
+recognition, filing and settlement in migrated disposable PostgreSQL. All 33
+configuration tools must register once with strict described schemas. Legacy
+numeric/exact aliases preserve USD/JPY/KWD units; IRR configuration stays readable
+while posting stays gated. Saved tax survives rate edits; frozen boxes reconcile
+with clearing GL and settlements close controls with exact bank movement.
+Foreign IDs, spoofed headers, denied roles, invalid/unsafe aliases and tenant
+controls reject unchanged. Audit faults roll back settings/rates/workflows/
+filing/settlement; refiling rejects. Rerun all four child suites for every
+operation, ranges, actions, locks, concurrency and rollback. See
+[combined inventory](../registries/CONFIGURATION_INTEGRATION_CONTRACTS.md).
+Network/session/provider, browser, PostgreSQL16, independent financial/security,
+historical remediation and production qualification remain separate.
+
 ## MON-020 combined payable and procurement
 
 `tests/integration/payable-procurement-integration.test.ts`/worker calls actual

@@ -1,5 +1,18 @@
 # Money and FX boundary manifest
 
+## MON-022 organization and tax configuration integration acceptance
+
+2026-10-09: [CONFIGURATION_INTEGRATION_CONTRACTS](CONFIGURATION_INTEGRATION_CONTRACTS.md)
+indexes four child slices, 33 registered MCP tools, units, aliases, safe numeric
+and int64-condition ranges, and remaining core configuration ownership. Actual
+migrated-DB REST/MCP flows compose settings, profile/jurisdiction/rates, approval,
+taxed invoice recognition, filing and settlement across USD/JPY/KWD; IRR settings
+retain units while posting stays gated. Saved tax survives rate edits; frozen
+boxes and final control/bank balances reconcile. Strict all-tools schemas,
+tenant/role failures, invalid inputs and audit faults preserve domain snapshots.
+Four child operation suites are reverified independently of tracker status.
+No schema, unit, history, production migration or IRR flag change.
+
 ## MON-021 payment, expense and banking integration acceptance
 
 2026-10-09: [PAYMENT_EXPENSE_BANK_INTEGRATION_CONTRACTS](PAYMENT_EXPENSE_BANK_INTEGRATION_CONTRACTS.md)

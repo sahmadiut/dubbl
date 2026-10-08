@@ -1,3 +1,4 @@
+import { registerDashboardLayoutTools } from "./dashboard-layouts";
 import { registerOperationalReportTools } from "./operational-reports";
 import { registerBankAnalyticsTools } from "./bank-analytics";
 import { registerForecastFxTools } from "./forecast-fx";
@@ -100,6 +101,7 @@ export function registerAllTools(server: McpServer, ctx: AuthContext) {
   registerBankAnalyticsTools(server, ctx);
   registerForecastFxTools(server, ctx);
   registerDashboardDataTools(server, ctx);
+  registerDashboardLayoutTools(server, ctx);
   registerOrganizationTools(server, ctx);
   registerAccountTools(server, ctx);
   registerEntryTools(server, ctx);

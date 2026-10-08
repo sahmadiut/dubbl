@@ -1,5 +1,19 @@
 # Money and FX boundary manifest
 
+## MON-120 dashboard layout adoption
+
+[DASHBOARD_LAYOUT_WIRE_CONTRACTS](DASHBOARD_LAYOUT_WIRE_CONTRACTS.md) maps five
+REST/MCP CRUD pairs. Shared user/organization scoped transactions validate opaque
+JSON inputs, stored layouts and output before commit, with safe numeric ranges
+and bounded complexity. Existing numeric grid/config values and arbitrary exact
+strings round-trip without invented money aliases, unit conversion or precision
+coercion. Row locks and output preflight prevent mutation of corrupt layouts and
+roll back unsupported merged PATCH results. Finite SQL timestamp checks protect
+against adapter misparsing. Actual disposable PostgreSQL fixtures exercise SDK
+registration, CRUD parity, authorization, both ownership boundaries and rejected
+writes. MON-105 retains integration; no schema/rescale/full-int64 financial/IRR
+rollout change.
+
 ## MON-115 expense and KPI analytics adoption
 
 [KPI_ANALYTICS_WIRE_CONTRACTS](KPI_ANALYTICS_WIRE_CONTRACTS.md) maps four REST/MCP

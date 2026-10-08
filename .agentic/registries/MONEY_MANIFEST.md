@@ -1,5 +1,19 @@
 # Money and FX boundary manifest
 
+## MON-021 payment, expense and banking integration acceptance
+
+2026-10-09: [PAYMENT_EXPENSE_BANK_INTEGRATION_CONTRACTS](PAYMENT_EXPENSE_BANK_INTEGRATION_CONTRACTS.md)
+indexes all fifteen child boundaries, monetary units/legacy exceptions, aliases,
+safe numeric coexistence and qualification limits. A combined migrated-DB fixture
+composes noncash credit/debit-note offsets, cash settlement/batches, statement
+imports, existing/new bank matches, reconciliation, expense reimbursement and
+saved reversals across USD/IRR/JPY/KWD. Competing REST/MCP document settlement
+allows one cash allocation. Full strict MCP registration now rejects unknown
+fields on the five payment tools and invoice/bill pay tools before service calls.
+Existing service envelopes/defaults/auth/FX/retry policies remain. Child operation
+fixtures and shared credit/debit/bill regressions retain separate behavior checks.
+No schema, stored-unit, production migration or IRR enablement changes.
+
 ## MON-020 combined payable and procurement integration
 
 [PAYABLE_PROCUREMENT_INTEGRATION](PAYABLE_PROCUREMENT_INTEGRATION.md) consolidates

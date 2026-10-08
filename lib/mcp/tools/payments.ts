@@ -31,42 +31,37 @@ import type { AuthContext } from "@/lib/api/auth-context";
  * access via Drizzle (no HTTP self-calls); org-scoped via the AuthContext.
  */
 export function registerPaymentTools(server: McpServer, ctx: AuthContext) {
-  server.tool(
-    "list_payments",
-    "List organization-scoped payments with optional direction/contact filters and pagination. Returns payments, total count, page and limit. Payment/allocation amount is an integer in existing currency minor units (USD cents); amountMinor is the exact string alias. Includes contact creditLimitMinor. Signed safe-integer history and noncash credit/debit-note carriers retain their units. Unsupported ranges or tenant references fail explicitly.",
-    paymentListFields,
-    params => wrapTool(ctx, async () => listPayments(ctx, params))
+  server.registerTool("list_payments", {
+    description: "List organization-scoped payments with optional direction/contact filters and pagination. Returns payments, total count, page and limit. Payment/allocation amount is an integer in existing currency minor units (USD cents); amountMinor is the exact string alias. Includes contact creditLimitMinor. Signed safe-integer history and noncash credit/debit-note carriers retain their units. Unsupported ranges or tenant references fail explicitly.",
+    inputSchema: z.object(paymentListFields).strict(),
+  }, params => wrapTool(ctx, async () => listPayments(ctx, params))
   );
 
-  server.tool(
-    "get_payment",
-    "Get one organization-scoped payment by UUID with contact, bank account and allocations. Returns {payment}; numeric minor-unit money (USD cents) keeps its type and adds amountMinor, creditLimitMinor, balanceMinor and nullable lowBalanceThresholdMinor. Includes noncash paired allocations without summing or converting them. Missing/deleted payments return 404; unsupported ranges or tenant references fail explicitly.",
-    { paymentId: z.string().uuid().describe("UUID of the payment in the authenticated organization") },
-    params => wrapTool(ctx, async () => {
+  server.registerTool("get_payment", {
+    description: "Get one organization-scoped payment by UUID with contact, bank account and allocations. Returns {payment}; numeric minor-unit money (USD cents) keeps its type and adds amountMinor, creditLimitMinor, balanceMinor and nullable lowBalanceThresholdMinor. Includes noncash paired allocations without summing or converting them. Missing/deleted payments return 404; unsupported ranges or tenant references fail explicitly.",
+    inputSchema: z.object({ paymentId: z.string().uuid().describe("UUID of the payment in the authenticated organization") }).strict(),
+  }, params => wrapTool(ctx, async () => {
       const result = await getPayment(ctx, params.paymentId);
       if (!result) throw new AuthError("Payment not found", 404);
       return result;
     })
   );
 
-  server.tool(
-    "create_payment",
-    "Create one cash payment with fully covering, distinct invoice (received) or bill (made) allocations for one contact/currency. amount is a positive safe integer in document minor units (USD cents); amountMinor is a canonical matching string, also supported on allocations. Checks manage:payments, recognition/carrying FX, bank ownership/currency, period locks and outstanding balances. Atomically posts cash/control/realised FX, updates documents and audits; optional idempotencyKey replays the original result. Returns {payment} with numeric money and amountMinor aliases. Unapplied cash and unqualified historical carrying values fail before commit.",
-    paymentCreateFields,
-    params => wrapTool(ctx, () => createSettlementPayment(ctx, params))
+  server.registerTool("create_payment", {
+    description: "Create one cash payment with fully covering, distinct invoice (received) or bill (made) allocations for one contact/currency. amount is a positive safe integer in document minor units (USD cents); amountMinor is a canonical matching string, also supported on allocations. Checks manage:payments, recognition/carrying FX, bank ownership/currency, period locks and outstanding balances. Atomically posts cash/control/realised FX, updates documents and audits; optional idempotencyKey replays the original result. Returns {payment} with numeric money and amountMinor aliases. Unapplied cash and unqualified historical carrying values fail before commit.",
+    inputSchema: z.object(paymentCreateFields).strict(),
+  }, params => wrapTool(ctx, () => createSettlementPayment(ctx, params))
   );
 
-  server.tool(
-    "record_payment_batch",
-    "Record ONE cash payment settling 1-1000 distinct documents for one contact/currency. Allocation amount is legacy DECIMAL MAJOR units (USD 12.50), amountExact an exact decimal-major string, amountMinor a positive integer minor string; aliases must agree after currency-scale rounding. Total is the safe bigint sum of rounded allocations. Checks manage:payments, recognition/carrying FX, active bank/currency, period locks and overpayment. Payment/allocations/balances/GL/audit commit together. Optional idempotencyKey replays the original result. Returns {payment} with safe numeric minor amounts and amountMinor strings.",
-    immediateBatchFields,
-    params => wrapTool(ctx, () => recordPaymentBatch(ctx, params))
+  server.registerTool("record_payment_batch", {
+    description: "Record ONE cash payment settling 1-1000 distinct documents for one contact/currency. Allocation amount is legacy DECIMAL MAJOR units (USD 12.50), amountExact an exact decimal-major string, amountMinor a positive integer minor string; aliases must agree after currency-scale rounding. Total is the safe bigint sum of rounded allocations. Checks manage:payments, recognition/carrying FX, active bank/currency, period locks and overpayment. Payment/allocations/balances/GL/audit commit together. Optional idempotencyKey replays the original result. Returns {payment} with safe numeric minor amounts and amountMinor strings.",
+    inputSchema: z.object(immediateBatchFields).strict(),
+  }, params => wrapTool(ctx, () => recordPaymentBatch(ctx, params))
   );
 
-  server.tool(
-    "delete_payment",
-    "Reverse one live organization payment by UUID with manage:payments. Restores invoice/bill and paired credit/debit-note/prepayment balances in original currency minor units (USD cents), reverses saved cash/application GL and exact FX verbatim, then soft-deletes and audits atomically. Returns {success:true}; no money input. Safe numeric history adds exact aliases in audit. Locked dates, inconsistent/foreign history and unsupported ranges fail without writes. Bank-matched/provider-backed payments require unmatch/refund first. Repeating deletion returns 404.",
-    paymentDeleteFields,
-    params => wrapTool(ctx, () => deletePayment(ctx, params.paymentId))
+  server.registerTool("delete_payment", {
+    description: "Reverse one live organization payment by UUID with manage:payments. Restores invoice/bill and paired credit/debit-note/prepayment balances in original currency minor units (USD cents), reverses saved cash/application GL and exact FX verbatim, then soft-deletes and audits atomically. Returns {success:true}; no money input. Safe numeric history adds exact aliases in audit. Locked dates, inconsistent/foreign history and unsupported ranges fail without writes. Bank-matched/provider-backed payments require unmatch/refund first. Repeating deletion returns 404.",
+    inputSchema: z.object(paymentDeleteFields).strict(),
+  }, params => wrapTool(ctx, () => deletePayment(ctx, params.paymentId))
   );
 }

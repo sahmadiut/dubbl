@@ -78,11 +78,10 @@ export function registerBillTools(server: McpServer, ctx: AuthContext) {
     ({ billId, ...input }) => wrapTool(ctx, () => actBillApproval(ctx, billId, "reject", input))
   );
 
-  server.tool(
-    "pay_bill",
-    "Settle an organization-owned recognized outstanding bill with new cash. amount is a positive safe integer in document minor units (USD cents); amountMinor is a matching canonical string. Requires manage:payments, open payment date, valid bank and saved recognition FX. Atomically creates payment/allocation/GL cash/control/realised-FX/audit and updates paid/due/status. Date defaults today in UTC. Optional idempotencyKey safely retries. Returns {bill,payment} with numeric money and *Minor aliases. Unsupported history or overpayment fails without mutation.",
-    { billId: z.string().uuid().describe("Organization-owned recognized outstanding bill UUID"), ...paymentMcpPayFields },
-    params => wrapTool(ctx, () => {
+  server.registerTool("pay_bill", {
+    description: "Settle an organization-owned recognized outstanding bill with new cash. amount is a positive safe integer in document minor units (USD cents); amountMinor is a matching canonical string. Requires manage:payments, open payment date, valid bank and saved recognition FX. Atomically creates payment/allocation/GL cash/control/realised-FX/audit and updates paid/due/status. Date defaults today in UTC. Optional idempotencyKey safely retries. Returns {bill,payment} with numeric money and *Minor aliases. Unsupported history or overpayment fails without mutation.",
+    inputSchema: z.object({ billId: z.string().uuid().describe("Organization-owned recognized outstanding bill UUID"), ...paymentMcpPayFields }).strict(),
+  }, params => wrapTool(ctx, () => {
       const { billId, ...input } = params;
       return payDocument(ctx, "bill", billId, { ...input, date: input.date ?? new Date().toISOString().slice(0, 10) });
     })

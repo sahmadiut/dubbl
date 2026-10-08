@@ -53,11 +53,10 @@ export function registerInvoiceTools(server: McpServer, ctx: AuthContext) {
     inputSchema: z.strictObject({ invoiceId: z.string().uuid().describe("Organization-owned draft invoice UUID") }),
   }, params => wrapTool(ctx, () => deleteInvoice(ctx, params.invoiceId)));
 
-  server.tool(
-    "pay_invoice",
-    "Settle an organization-owned recognized outstanding invoice with new cash. amount is a positive safe integer in document minor units (USD cents); amountMinor is a matching canonical string. Requires manage:payments, open payment date, valid bank and saved recognition FX. Atomically creates payment/allocation/GL cash/control/realised-FX/audit and updates paid/due/status. Date defaults today in UTC. Optional idempotencyKey safely retries. Returns {invoice,payment} with numeric money and *Minor aliases. Unsupported history or overpayment fails without mutation.",
-    { invoiceId: z.string().uuid().describe("Organization-owned recognized outstanding invoice UUID"), ...paymentMcpPayFields },
-    params => wrapTool(ctx, () => {
+  server.registerTool("pay_invoice", {
+    description: "Settle an organization-owned recognized outstanding invoice with new cash. amount is a positive safe integer in document minor units (USD cents); amountMinor is a matching canonical string. Requires manage:payments, open payment date, valid bank and saved recognition FX. Atomically creates payment/allocation/GL cash/control/realised-FX/audit and updates paid/due/status. Date defaults today in UTC. Optional idempotencyKey safely retries. Returns {invoice,payment} with numeric money and *Minor aliases. Unsupported history or overpayment fails without mutation.",
+    inputSchema: z.object({ invoiceId: z.string().uuid().describe("Organization-owned recognized outstanding invoice UUID"), ...paymentMcpPayFields }).strict(),
+  }, params => wrapTool(ctx, () => {
       const { invoiceId, ...input } = params;
       return payDocument(ctx, "invoice", invoiceId, { ...input, date: input.date ?? new Date().toISOString().slice(0, 10) });
     })

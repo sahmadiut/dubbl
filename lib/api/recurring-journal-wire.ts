@@ -56,7 +56,8 @@ export function assertRecurringJournalDates(startDate: string, endDate?: string 
 
 export function assertRecurringJournalRate(input: { rateExact?: string; exchangeRate?: number; rateDirection?: "quote_per_base" }) {
   // There is no template FX column. Validate rather than silently discard a rate.
-  const rate = journalLineInput({ accountId: "00000000-0000-4000-8000-000000000000", ...input });
+  const rate = journalLineInput({ accountId: "00000000-0000-4000-8000-000000000000",
+    rateExact: input.rateExact, exchangeRate: input.exchangeRate, rateDirection: input.rateDirection });
   if (rate.exchangeRate !== 1000000) throw new WireCompatibilityError("Recurring journal templates support fixed 1:1 FX only");
 }
 

@@ -1,5 +1,13 @@
 # Combined journal boundary contracts (MON-018)
 
+MON-014 integration update (2026-10-09): shared manual journal legs reject unknown
+fields on REST and MCP create/full replacement. Unsupported debitAmountExact can
+no longer disappear before a committed write. Recurring template rate validation
+passes only its three FX fields to that strict adapter. Header/import whitelist
+policies, documented units, rates and lifecycle behavior remain unchanged. The
+core fixture and current parent/all-three-child regressions cover the repair;
+see [core integration](CORE_ACCOUNTING_INTEGRATION_CONTRACTS.md).
+
 2026-10-08, Asia/Tehran. Parent integration for MON-035 CRUD, MON-036 lifecycle/
 import and MON-037 recurring generation. Actual source and migrated disposable
 PostgreSQL fixtures establish bounded wire compatibility; independent financial

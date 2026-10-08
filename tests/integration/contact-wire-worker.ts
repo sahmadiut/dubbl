@@ -16,8 +16,8 @@ import type { AuthContext } from "../../lib/api/auth-context";
 type Result = { content: { text: string }[]; isError?: boolean };
 function tools(ctx: AuthContext) {
   const registered = new Map<string, { schema: z.ZodObject; handler: (input: unknown) => Promise<Result> }>();
-  const server = { tool(name: string, _description: string, shape: z.ZodRawShape, handler: (input: unknown) => Promise<Result>) {
-    registered.set(name, { schema: z.object(shape), handler });
+  const server = { registerTool(name: string, config: { inputSchema: z.ZodObject }, handler: (input: unknown) => Promise<Result>) {
+    registered.set(name, { schema: config.inputSchema, handler });
   } } as unknown as McpServer;
   registerContactTools(server, ctx);
   assert.equal(registered.size, 6);

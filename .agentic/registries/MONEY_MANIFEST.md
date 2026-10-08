@@ -1,5 +1,18 @@
 # Money and FX boundary manifest
 
+## MON-014 core accounting integration acceptance
+
+2026-10-09: [CORE_ACCOUNTING_INTEGRATION_CONTRACTS](CORE_ACCOUNTING_INTEGRATION_CONTRACTS.md)
+indexes all six domain groups and their complete field/operation inventories.
+Actual REST/all-tools SDK flows compose configuration, contacts, manual GL,
+invoice/bill recognition, cash/replay, expenses, contact merges and cash/manual
+reversals across USD/IRR/JPY/KWD at 1250 and 3000000000 raw units. Invalid aliases,
+tenant/role/key failures and period locks preserve core snapshots. Full strict
+contact schemas and strict shared journal legs prevent unsupported money fields
+being discarded before writes; recurring rate checks project only FX fields.
+Legacy major/minor/fixed-decimal distinctions and safe bounds remain explicit.
+Full-int64, IRR enablement, migration and independent accounting gates remain open.
+
 ## MON-022 organization and tax configuration integration acceptance
 
 2026-10-09: [CONFIGURATION_INTEGRATION_CONTRACTS](CONFIGURATION_INTEGRATION_CONTRACTS.md)

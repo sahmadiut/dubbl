@@ -63,10 +63,10 @@ const CONTACT_FK_TABLES_ORG_SCOPED = [
 ] as const;
 
 export function registerContactTools(server: McpServer, ctx: AuthContext) {
-  server.tool(
-    "list_contacts",
-    "List contacts (customers, suppliers, or both). Supports search by name/email and filtering by type. Returns paginated results with numeric creditLimit and nullable creditLimitMinor string in the contact currency; no balance aggregates.",
-    {
+  server.registerTool(
+    "list_contacts", {
+    description: "List contacts (customers, suppliers, or both). Supports search by name/email and filtering by type. Returns paginated results with numeric creditLimit and nullable creditLimitMinor string in the contact currency; no balance aggregates.",
+    inputSchema: z.object({
       search: z
         .string()
         .optional()
@@ -90,7 +90,8 @@ export function registerContactTools(server: McpServer, ctx: AuthContext) {
         .optional()
         .default(1)
         .describe("Page number"),
-    },
+    }).strict(),
+  },
     (params) =>
       wrapTool(ctx, async () => {
         const conditions = [
@@ -133,12 +134,13 @@ export function registerContactTools(server: McpServer, ctx: AuthContext) {
       })
   );
 
-  server.tool(
-    "get_contact",
-    "Get a single contact by ID with their details, default accounts, and contact people. Includes numeric creditLimit and nullable creditLimitMinor string in the contact currency.",
-    {
+  server.registerTool(
+    "get_contact", {
+    description: "Get a single contact by ID with their details, default accounts, and contact people. Includes numeric creditLimit and nullable creditLimitMinor string in the contact currency.",
+    inputSchema: z.object({
       contactId: z.string().describe("The UUID of the contact"),
-    },
+    }).strict(),
+  },
     (params) =>
       wrapTool(ctx, async () => {
         const found = await db.query.contact.findFirst({
@@ -160,10 +162,10 @@ export function registerContactTools(server: McpServer, ctx: AuthContext) {
       })
   );
 
-  server.tool(
-    "create_contact",
-    "Create a new contact (customer, supplier, or both). Payment terms are in days (default 30). Optional creditLimit/creditLimitMinor are existing minor units (USD cents), must agree, and support 0 through 9007199254740991; null means no limit. Returns the contact with both aliases.",
-    {
+  server.registerTool(
+    "create_contact", {
+    description: "Create a new contact (customer, supplier, or both). Payment terms are in days (default 30). Optional creditLimit/creditLimitMinor are existing minor units (USD cents), must agree, and support 0 through 9007199254740991; null means no limit. Returns the contact with both aliases.",
+    inputSchema: z.object({
       ...contactCreditFields,
       name: z.string().describe("Contact name"),
       email: z.string().optional().describe("Email address"),
@@ -206,7 +208,8 @@ export function registerContactTools(server: McpServer, ctx: AuthContext) {
         .boolean()
         .optional()
         .describe("Whether the vendor is subject to 24% backup withholding (default false)"),
-    },
+    }).strict(),
+  },
     (params) =>
       wrapTool(ctx, async () => {
         requireRole(ctx, "manage:contacts");
@@ -241,10 +244,10 @@ export function registerContactTools(server: McpServer, ctx: AuthContext) {
       })
   );
 
-  server.tool(
-    "update_contact",
-    "Update an existing contact's details. Only provided fields are updated. creditLimit/creditLimitMinor use existing currency minor units (USD cents), must agree, and support 0 through 9007199254740991; null clears the limit. Returns the contact with both aliases.",
-    {
+  server.registerTool(
+    "update_contact", {
+    description: "Update an existing contact's details. Only provided fields are updated. creditLimit/creditLimitMinor use existing currency minor units (USD cents), must agree, and support 0 through 9007199254740991; null clears the limit. Returns the contact with both aliases.",
+    inputSchema: z.object({
       contactId: z.string().describe("The UUID of the contact to update"),
       ...contactCreditFields,
       name: z.string().optional().describe("New name"),
@@ -283,7 +286,8 @@ export function registerContactTools(server: McpServer, ctx: AuthContext) {
         .boolean()
         .optional()
         .describe("Whether the vendor is subject to 24% backup withholding"),
-    },
+    }).strict(),
+  },
     (params) =>
       wrapTool(ctx, async () => {
         requireRole(ctx, "manage:contacts");
@@ -316,17 +320,18 @@ export function registerContactTools(server: McpServer, ctx: AuthContext) {
       })
   );
 
-  server.tool(
-    "merge_contacts",
-    "Merge a duplicate (source) contact into a surviving (target) contact. Every record referencing the source — invoices, bills, payments, credit/debit notes, quotes, sales receipts, customer credits, purchase orders/requisitions, goods receipts, bank transactions, bank rules, deals, projects, recurring templates, scheduled payments, payment batch items, inventory supplier links, portal tokens, documents/attachments and tags — is repointed to the target inside a single transaction, then the source contact is soft-deleted. Requires the manage:contacts permission. This cannot be undone.",
-    {
+  server.registerTool(
+    "merge_contacts", {
+    description: "Merge a duplicate (source) contact into a surviving (target) contact. Every record referencing the source — invoices, bills, payments, credit/debit notes, quotes, sales receipts, customer credits, purchase orders/requisitions, goods receipts, bank transactions, bank rules, deals, projects, recurring templates, scheduled payments, payment batch items, inventory supplier links, portal tokens, documents/attachments and tags — is repointed to the target inside a single transaction, then the source contact is soft-deleted. Requires the manage:contacts permission. This cannot be undone.",
+    inputSchema: z.object({
       sourceContactId: z
         .string()
         .describe("The UUID of the duplicate contact to merge away (will be soft-deleted)"),
       targetContactId: z
         .string()
         .describe("The UUID of the surviving contact that all records are repointed to"),
-    },
+    }).strict(),
+  },
     (params) =>
       wrapTool(ctx, async () => {
         requireRole(ctx, "manage:contacts");
@@ -484,14 +489,15 @@ export function registerContactTools(server: McpServer, ctx: AuthContext) {
       })
   );
 
-  server.tool(
-    "delete_contact",
-    "Soft-delete a contact by ID. The contact is marked deleted (not physically removed) and excluded from future listings. Requires the manage:contacts permission.",
-    {
+  server.registerTool(
+    "delete_contact", {
+    description: "Soft-delete a contact by ID. The contact is marked deleted (not physically removed) and excluded from future listings. Requires the manage:contacts permission.",
+    inputSchema: z.object({
       contactId: z
         .string()
         .describe("The UUID of the contact to delete"),
-    },
+    }).strict(),
+  },
     (params) =>
       wrapTool(ctx, async () => {
         requireRole(ctx, "manage:contacts");

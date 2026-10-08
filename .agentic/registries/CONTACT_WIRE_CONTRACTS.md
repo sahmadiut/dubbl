@@ -1,5 +1,13 @@
 # Contact credit-limit and balance wire contracts
 
+MON-014 integration update (2026-10-09): REST create/update reject unknown fields;
+all six MCP operations use full strict object schemas, so SDK validation cannot
+discard unsupported aliases such as creditLimitExact before a write. Defaults,
+nullable credit aliases and operation-specific metadata stay as documented below.
+The new core fixture exercises all six tools through the real SDK, including
+merged invoice/bill/payment reference ownership and subsequent reversal. See
+[core integration](CORE_ACCOUNTING_INTEGRATION_CONTRACTS.md).
+
 Source-verified MON-017 slice, 2026-10-02, Asia/Tehran. Scope: three REST route
 files under `contacts` (collection, ID, ID/merge) and the six operations in
 `lib/mcp/tools/contacts.ts`. MON-014 retains combined core integration; its other

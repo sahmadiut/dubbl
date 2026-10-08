@@ -1,5 +1,14 @@
 # Exact money core
 
+MON-014 combines the six adopted core accounting groups with actual REST/MCP
+fixtures spanning configuration, contacts, journals, receivables, procurement,
+payments, expenses and banking. Numeric major/minor and legacy fixed-decimal
+contracts remain distinct; exact aliases preserve raw stored units. Contacts and
+journal legs reject unsupported input fields before mutation. See
+[core contracts](../../.agentic/registries/CORE_ACCOUNTING_INTEGRATION_CONTRACTS.md).
+Safe-number coexistence remains bounded; no full-int64, IRR rollout or independent
+production accounting qualification is implied.
+
 MON-099 recurring bill/expense templates accept exact major price text and
 unitPriceMinor aliases alongside numeric major input. Fixed cents are preserved
 for all currencies; invoice currency-scale semantics remain separate. Bigint

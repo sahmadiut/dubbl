@@ -27,7 +27,7 @@ const updateSchema = z.object({
   defaultRevenueAccountId: z.string().uuid().nullable().optional(),
   defaultExpenseAccountId: z.string().uuid().nullable().optional(),
   defaultTaxRateId: z.string().uuid().nullable().optional(),
-});
+}).strict();
 
 export async function GET(
   request: Request,

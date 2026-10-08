@@ -25,7 +25,7 @@ const createSchema = z.object({
   addresses: z.any().optional(),
   notes: z.string().nullable().optional(),
   currencyCode: currencyCodeSchema.default("USD"),
-});
+}).strict();
 
 export async function GET(request: Request) {
   try {

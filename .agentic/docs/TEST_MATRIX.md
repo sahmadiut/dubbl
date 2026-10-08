@@ -1,5 +1,21 @@
 # Verification matrix
 
+## MON-014 combined core accounting
+
+`tests/integration/core-accounting-integration.test.ts`/worker calls actual
+API-key REST exports and registerAllTools through linked SDK clients in a migrated
+disposable database. Eight USD/IRR/JPY/KWD scenarios compose mileage, contacts,
+manual GL, invoice/bill recognition, settlement/replay, expenses, merge and
+cash/manual reversal with legacy 1250 and exact 3000000000 writers. Contact
+balances and GL AR/AP/cash reconcile, all posted journals balance, all six
+contact tools execute, and REST/MCP preserve their distinct price/read units.
+Unsupported contact fields and nested journal aliases, conflicts/ranges, tenant/
+role/key denials and locks preserve SQL-text domain/non-auth audit snapshots.
+All six domain groups and forty child operation suites have current regression
+commands/results in MON-014-attempt-1; no child completion substitutes for parent
+acceptance. Browser/session/OAuth/providers, full-int64 and production financial
+qualification remain separate.
+
 ## MON-022 organization and tax configuration integration
 
 `tests/integration/configuration-integration.test.ts`/worker composes actual

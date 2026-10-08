@@ -19,8 +19,8 @@ export const journalLineFields = {
   projectId: z.string().uuid().nullable().optional().describe("Optional organization-owned project UUID; null clears"),
 };
 
-/** MCP exposes the raw shape; validate conflicts and bridge inside wrapTool before writes. */
-export const journalLineSchema = z.object(journalLineFields);
+/** Keep nested aliases intact through SDK validation; reject unsupported fields before writes. */
+export const journalLineSchema = z.object(journalLineFields).strict();
 export function journalLineInput(input: unknown) {
   const parsed = journalLineSchema.parse(input);
   function amount(numeric: number | undefined, exact: string | undefined, name: string) {

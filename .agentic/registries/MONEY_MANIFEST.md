@@ -1,5 +1,16 @@
 # Money and FX boundary manifest
 
+## MON-104 operational analytics integration
+
+[OPERATIONAL_REPORT_INTEGRATION](OPERATIONAL_REPORT_INTEGRATION.md) consolidates
+all fifteen operational REST/MCP pairs, including adopted inventory valuation.
+Actual legacy/exact document and posted journal writers feed shared cross-report
+assertions in four currency contexts with full MCP registration. Strict sales/
+spend tool schemas reject unknown controls; valuation now requires view:data,
+uses a repeatable-read read-only snapshot, rejects duplicate controls and checks
+saved currency. Numeric/Minor aliases, units and safe limits remain compatible.
+No schema/history/IRR flag change; MON-029 and product qualification remain open.
+
 ## MON-101 financial report integration
 
 [FINANCIAL_REPORT_INTEGRATION](FINANCIAL_REPORT_INTEGRATION.md) consolidates all

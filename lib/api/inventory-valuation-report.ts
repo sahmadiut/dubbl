@@ -2,16 +2,22 @@ import { and, asc, eq, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { inventoryItem, inventoryCostLayer, inventoryLayerConsumption, inventoryMovement, organization, warehouse } from "@/lib/db/schema";
 import { AuthError, type AuthContext } from "./auth-context";
+import { requireRole } from "./require-role";
+import { currencyMetadata } from "@/lib/money/exact";
 import { itemDto } from "./inventory-master-wire";
 import { valuationReportSchema, layerListSchema, layerDto, consumptionDto } from "./inventory-valuation-wire";
 import { publicMoneyDto } from "./public-money-wire";
-import { legacyMinor, stringifyWire } from "@/lib/money/wire";
+import { legacyMinor, stringifyWire, WireCompatibilityError } from "@/lib/money/wire";
 
 export async function inventoryValuationReport(ctx: AuthContext, input: unknown) {
+  requireRole(ctx, "view:data");
   const p = valuationReportSchema.parse(input);
   return db.transaction(async tx => {
     const org = await tx.query.organization.findFirst({ where: eq(organization.id, ctx.organizationId) });
     if (!org) throw new AuthError("Organization not found", 404);
+    const currencyCode = org.defaultCurrency ?? "USD";
+    try { if (currencyMetadata(currencyCode).code !== currencyCode) throw new RangeError(); }
+    catch { throw new WireCompatibilityError("Unsupported inventory valuation currency"); }
     const rows = await tx.select().from(inventoryItem).where(and(eq(inventoryItem.organizationId, ctx.organizationId), eq(inventoryItem.isActive, true), isNull(inventoryItem.deletedAt))).orderBy(asc(inventoryItem.id));
     const items = rows.map(row => {
       itemDto(row);
@@ -22,7 +28,7 @@ export async function inventoryValuationReport(ctx: AuthContext, input: unknown)
       return publicMoneyDto({ id: row.id, code: row.code, name: row.name, category: row.category, quantityOnHand: row.quantityOnHand,
         unitCost: row.purchasePrice, totalCost, salePrice: row.salePrice, totalValue, margin,
         marginPercent: totalCost > 0 ? margin / totalCost * 100 : 0,
-        carryingValue: row.totalValue, averageCost: row.averageCost, costMethod: row.costMethod, currencyCode: org.defaultCurrency ?? "USD" },
+        carryingValue: row.totalValue, averageCost: row.averageCost, costMethod: row.costMethod, currencyCode },
       ["unitCost", "totalCost", "salePrice", "totalValue", "margin", "carryingValue", "averageCost"]);
     });
     const key = p.sortBy === "quantity" ? "quantityOnHand" : p.sortBy;
@@ -35,9 +41,9 @@ export async function inventoryValuationReport(ctx: AuthContext, input: unknown)
     const totalCost = sum("totalCost"), totalValue = sum("totalValue"), carryingValue = sum("carryingValue");
     const result = { items, summary: publicMoneyDto({ totalItems: items.length, totalCost, totalValue,
       totalMargin: totalCost > 0 ? legacyMinor(BigInt(totalValue) - BigInt(totalCost)) / totalCost * 100 : 0, carryingValue,
-      currencyCode: org.defaultCurrency ?? "USD" }, ["totalCost", "totalValue", "carryingValue"]) };
+      currencyCode }, ["totalCost", "totalValue", "carryingValue"]) };
     stringifyWire(result); return result;
-  });
+  }, { isolationLevel: "repeatable read", accessMode: "read only" });
 }
 export async function listInventoryCostLayers(ctx: AuthContext, input: unknown) {
   const p = layerListSchema.parse(input);

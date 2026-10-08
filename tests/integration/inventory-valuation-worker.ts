@@ -126,7 +126,9 @@ async function run() {
     await denied(() => layers(req(), cp(other.id)), 404); await mdenied("list_inventory_cost_layers", { inventoryItemId: other.id }, ma, 404);
     await denied(() => create(req(batch(foreignPo.po.id))), 404); await mdenied("create_landed_cost", batch(po.id, "1", { billId: foreignBill.id }), ma, 404);
     await denied(() => create(req({ ...batch(po.id), components: [{ description: "Foreign", amountMinor: "1", accountId: foreignAccount.id }] })), 404);
-    assert.equal((await good("get_inventory_valuation", {}, mb)).items.length, 1); await data(await report(req({}, keys.viewer)));
+    assert.equal((await good("get_inventory_valuation", {}, mb)).items.length, 1);
+    await denied(() => report(req({}, keys.viewer)), 403);
+    await mdenied("get_inventory_valuation", {}, ro, 403);
     // Malformed/unsafe/unknown inputs and totals never mutate.
     for (const input of [batch(po.id, "01"), batch(po.id, "-1"), batch(po.id, "1", { allocationMethod: "manual" }), batch(po.id, "1", { unknown: 1 }), { ...batch(po.id), components: [{ description: "Mismatch", amount: 0.01, amountMinor: "2" }] }]) await denied(() => create(req(input)), 400);
     await denied(() => create(req(batch(po.id, "9007199254740992"))), 422); await mdenied("create_landed_cost", batch(po.id, "9007199254740992"), ma, 422);

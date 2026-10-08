@@ -430,10 +430,9 @@ export function registerReportTools(server: McpServer, ctx: AuthContext) {
     const outputs = kind === "vendor-spend"
       ? "Returns vendors ordered by spend, bill counts, rounded averages, percentages, root totalSpend and top-five monthlyTrend. Money adds totalSpendMinor, avgBillAmountMinor and monthly totalMinor."
       : `Returns ${kind === "sales-by-item" ? "items, line counts and summed quantity (100 = 1.00 physical unit)" : "customers and distinct invoice counts"}, ordered by net, plus totals. Money adds netMinor, taxMinor and grossMinor.`;
-    server.tool(name,
-      `${label} over inclusive Gregorian startDate/endDate (UTC year-to-date by default). No amount inputs. Documents exclude draft, void and deleted. ${outputs} Numeric integer cents and matching exact strings stay within +/-9007199254740991. Counts and quantities remain numbers. Optional currencyCode selects one document currency; mixed currencies reject without it. No FX or currency rescaling. Requires view:data; organization-scoped direct DB reads.`,
-      documentAnalyticsSchema.shape,
-      params => wrapTool(ctx, async () => (await getDocumentAnalytics(ctx, kind, params)).data),
-    );
+    server.registerTool(name, {
+      description: `${label} over inclusive Gregorian startDate/endDate (UTC year-to-date by default). No amount inputs. Documents exclude draft, void and deleted. ${outputs} Numeric integer cents and matching exact strings stay within +/-9007199254740991. Counts and quantities remain numbers. Optional currencyCode selects one document currency; mixed currencies reject without it. No FX or currency rescaling. Requires view:data; organization-scoped direct DB reads.`,
+      inputSchema: documentAnalyticsSchema,
+    }, params => wrapTool(ctx, async () => (await getDocumentAnalytics(ctx, kind, params)).data));
   }
 }

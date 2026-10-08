@@ -95,8 +95,10 @@ import { registerCrmTools } from "./crm";
 import { registerWarehouseTools } from "./warehouses";
 import { registerInventoryMovementTools } from "./inventory-movements";
 import { registerPublicPortalTools } from "./public-portal";
+import { registerCustomReportTools } from "./custom-reports";
 
 export function registerAllTools(server: McpServer, ctx: AuthContext) {
+  registerCustomReportTools(server, ctx);
   registerOperationalReportTools(server, ctx);
   registerBankAnalyticsTools(server, ctx);
   registerForecastFxTools(server, ctx);

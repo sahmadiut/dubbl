@@ -1,5 +1,18 @@
 # Money and FX boundary manifest
 
+## MON-121 custom and saved report adoption
+
+[CUSTOM_REPORT_WIRE_CONTRACTS](CUSTOM_REPORT_WIRE_CONTRACTS.md) maps the shared
+custom runner, saved-report CRUD and CSV export to seven registered MCP tools.
+Strict scoped configs, monetary bigint filter comparisons, safe numeric/Minor
+projections and pre-commit saved-row guards prevent silent loss and unsafe writes.
+Run/export now share filters, dates, columns and all six data sources. Related
+tenant ownership and payroll report permission are enforced. Actual migrated
+REST/API-key/MCP fixtures cover compatibility, signed ranges, unsupported stored
+configs/timestamps and unchanged failed-operation snapshots. Grouping explicitly
+rejects because it was previously ignored. No schema/rescale/full-int64/IRR change;
+MON-122 retains delivery and MON-105 retains combined integration acceptance.
+
 ## MON-120 dashboard layout adoption
 
 [DASHBOARD_LAYOUT_WIRE_CONTRACTS](DASHBOARD_LAYOUT_WIRE_CONTRACTS.md) maps five

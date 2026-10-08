@@ -1057,3 +1057,17 @@ MON-021 retain remaining/combined qualification; no schema/full-int64/IRR rollou
 ## MON-116 cash forecast and unrealized FX reports
 
 [FORECAST_FX_WIRE_CONTRACTS](FORECAST_FX_WIRE_CONTRACTS.md) maps two actual REST/MCP pairs. Shared scoped read-only repeatable-read snapshots project SQL-text/bigint money into safe numeric integers and matching Minor strings. Forecasts reject mixed currencies without a filter, project the full recurring horizon, and align UTC Sunday buckets with the inclusive period. FX estimates use exact saved quotes, preserve gain/loss signs and nullable missing-rate behavior, and reject lossy legacy or inverse aliases. Strict queries, scoped contact joins, supported currencies, source/result guards and actual PostgreSQL/API-key/MCP fixtures prevent precision/unit/tenant loss. Both pages format exact currency amounts and expose errors; no schema/history/IRR rollout. MON-104/MON-029 retain combined and independent qualification.
+
+
+## MON-117 bank analytics reports
+
+[BANK_ANALYTICS_WIRE_CONTRACTS](BANK_ANALYTICS_WIRE_CONTRACTS.md) maps both REST/MCP
+pairs. Shared scoped read-only snapshots project SQL numeric/text aggregates with
+bigint sums/subtraction into safe numeric currency minor units and matching Minor
+strings. Strict UTC dates/groups/account/currency queries, owned live bank IDs,
+independently scoped imports and explicit single-currency cash-flow selection
+prevent precision/unit/tenant loss. Pages expose errors, format exact currencies,
+export explicit currency columns and keep reconciliation totals per currency.
+Actual API-key/MCP/disposable PostgreSQL fixtures cover legacy/exact bank writers,
+limits, calendars, isolation and unchanged financial snapshots. No schema/history/
+IRR gate change; MON-104/MON-029 retain combined acceptance.

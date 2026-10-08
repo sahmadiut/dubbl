@@ -15,7 +15,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ExportButton } from "@/components/dashboard/export-button";
-import { formatMoney } from "@/lib/money";
+import { statementMoneyText as formatMoney } from "@/lib/reports/statement-money";
+import { money, toMajorDecimal } from "@/lib/money/exact";
+import { bankTotalDecimal } from "@/lib/reports/bank-analytics-display";
 import { BackToReports, ReportHelp } from "../_components";
 
 interface AgingBucket {
@@ -26,6 +28,7 @@ interface AgingBucket {
 interface AccountStatus {
   id: string;
   accountName: string;
+  currencyCode: string;
   balance: number;
   balanceDiscrepancy: number;
   unreconciled: {
@@ -60,22 +63,30 @@ function fmtDate(d: string | null | undefined): string {
 export default function BankReconciliationStatusPage() {
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<StatusData | null>(null);
 
   useEffect(() => {
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
     let cancelled = false;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
 
     fetch(`/api/v1/reports/bank-reconciliation-status`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then(async (r) => {
+        const result = await r.json();
+        if (!r.ok) throw new Error(result.error || "Unable to load bank reconciliation status.");
+        return result;
+      })
       .then((d) => {
         if (cancelled) return;
+        setError(null);
         if (d.accounts) setData(d);
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) { setData(null); setError(err instanceof Error ? err.message : "Unable to load bank reconciliation status."); }
       })
       .finally(() => {
         if (!cancelled) {
@@ -92,20 +103,17 @@ export default function BankReconciliationStatusPage() {
 
   const accounts = data?.accounts ?? [];
 
-  const totals = accounts.reduce(
-    (acc, a) => {
-      acc.unreconciledCount += a.unreconciled.count;
-      acc.unreconciledTotal += a.unreconciled.total;
-      return acc;
-    },
-    { unreconciledCount: 0, unreconciledTotal: 0 }
-  );
+  const totalCount = accounts.reduce((count, a) => count + a.unreconciled.count, 0);
+  const currencyTotals = new Map<string, bigint>();
+  for (const account of accounts) currencyTotals.set(account.currencyCode,
+    (currencyTotals.get(account.currencyCode) ?? 0n) + BigInt(account.unreconciled.total));
 
   const exportRows = accounts.map((a) => ({
     accountName: a.accountName,
-    balance: (a.balance / 100).toFixed(2),
+    currencyCode: a.currencyCode,
+    balance: toMajorDecimal(money(BigInt(a.balance), a.currencyCode)),
     toReviewCount: a.unreconciled.count,
-    toReviewTotal: (a.unreconciled.total / 100).toFixed(2),
+    toReviewTotal: toMajorDecimal(money(BigInt(a.unreconciled.total), a.currencyCode)),
     olderThan60Days: a.unreconciled.aging.older.count,
     lastReviewed: fmtDate(a.lastReconciliation?.endDate),
     lastImport: fmtDate(a.lastImport?.date),
@@ -123,6 +131,7 @@ export default function BankReconciliationStatusPage() {
           data={exportRows}
           columns={[
             "accountName",
+            "currencyCode",
             "balance",
             "toReviewCount",
             "toReviewTotal",
@@ -134,6 +143,8 @@ export default function BankReconciliationStatusPage() {
         />
       </PageHeader>
 
+      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+
       <ReportHelp>
         For each bank account, this shows how many transactions you&apos;ve already
         confirmed and how many are still waiting for you to review. Anything still
@@ -143,7 +154,7 @@ export default function BankReconciliationStatusPage() {
 
       {loading ? (
         <BrandLoader className="h-48" />
-      ) : accounts.length === 0 ? (
+      ) : error ? null : accounts.length === 0 ? (
         <ContentReveal>
           <div className="rounded-lg border bg-muted/20 p-8 text-center text-sm text-muted-foreground">
             No bank accounts yet. Add a bank account to start tracking what&apos;s
@@ -187,14 +198,14 @@ export default function BankReconciliationStatusPage() {
                         )}
                       </TableCell>
                       <TableCell className="text-right font-mono tabular-nums">
-                        {formatMoney(a.balance)}
+                        {formatMoney(a.balance, a.currencyCode)}
                       </TableCell>
                       <TableCell className="text-right font-mono tabular-nums">
                         {a.unreconciled.count}
                       </TableCell>
                       <TableCell className="text-right font-mono tabular-nums">
                         {a.unreconciled.total > 0
-                          ? formatMoney(a.unreconciled.total)
+                          ? formatMoney(a.unreconciled.total, a.currencyCode)
                           : "—"}
                       </TableCell>
                       <TableCell className="text-right font-mono tabular-nums">
@@ -233,12 +244,12 @@ export default function BankReconciliationStatusPage() {
                   <TableCell>Total</TableCell>
                   <TableCell />
                   <TableCell className="text-right font-mono tabular-nums">
-                    {totals.unreconciledCount}
+                    {totalCount}
                   </TableCell>
                   <TableCell className="text-right font-mono tabular-nums">
-                    {totals.unreconciledTotal > 0
-                      ? formatMoney(totals.unreconciledTotal)
-                      : "—"}
+                    {[...currencyTotals].map(([currency, total]) => (
+                      <div key={currency}>{currency} {bankTotalDecimal(total, currency)}</div>
+                    ))}
                   </TableCell>
                   <TableCell colSpan={4} />
                 </TableRow>

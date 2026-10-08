@@ -16,7 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatMoney } from "@/lib/money";
+import { statementMoneyText as formatMoney } from "@/lib/reports/statement-money";
 import { BackToReports, ReportHelp } from "../_components";
 
 interface Period {
@@ -30,6 +30,7 @@ interface Period {
 }
 
 interface BankCashFlowData {
+  currencyCode: string;
   periods: Period[];
   totals: { inflows: number; outflows: number; net: number };
 }
@@ -50,11 +51,12 @@ export default function BankCashFlowPage() {
   const now = new Date();
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(true);
-  const [startDate, setStartDate] = useState(`${now.getFullYear()}-01-01`);
+  const [startDate, setStartDate] = useState(`${now.toISOString().slice(0, 4)}-01-01`);
   const [endDate, setEndDate] = useState(now.toISOString().slice(0, 10));
   const [groupBy, setGroupBy] = useState("month");
   const [bankAccountId, setBankAccountId] = useState("");
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<BankCashFlowData | null>(null);
 
   // Load the org's bank accounts for the account picker.
@@ -86,10 +88,18 @@ export default function BankCashFlowPage() {
     fetch(`/api/v1/reports/bank-cash-flow?${params}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then(async (r) => {
+        const result = await r.json();
+        if (!r.ok) throw new Error(result.error || "Unable to load bank cash flow.");
+        return result;
+      })
       .then((d) => {
         if (cancelled) return;
+        setError(null);
         if (d.periods) setData(d);
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) { setData(null); setError(err instanceof Error ? err.message : "Unable to load bank cash flow."); }
       })
       .finally(() => {
         if (!cancelled) {
@@ -106,9 +116,7 @@ export default function BankCashFlowPage() {
 
   const periods = data?.periods ?? [];
   const totals = data?.totals ?? { inflows: 0, outflows: 0, net: 0 };
-  // Currency of the chosen account, or the first account as a sensible default.
-  const selected = accounts.find((a) => a.id === bankAccountId);
-  const currency = selected?.currencyCode || accounts[0]?.currencyCode || "USD";
+  const currency = data?.currencyCode ?? "USD";
 
   return (
     <ContentReveal className="space-y-6">
@@ -119,11 +127,13 @@ export default function BankCashFlowPage() {
         description="Cash that actually moved through your bank accounts, period by period."
       >
         <ExportButton
-          data={periods}
-          columns={["label", "inflows", "outflows", "net", "balance"]}
+          data={periods.map(p => ({ ...p, currencyCode: currency }))}
+          columns={["label", "currencyCode", "inflows", "outflows", "net", "balance"]}
           filename="bank-cash-flow"
         />
       </PageHeader>
+
+      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
 
       <ReportHelp>
         Every penny that came into and went out of your bank accounts over the
@@ -174,7 +184,7 @@ export default function BankCashFlowPage() {
 
       {loading ? (
         <BrandLoader className="h-48" />
-      ) : (
+      ) : error ? null : (
         <ContentReveal className="space-y-6">
           <div className="grid gap-4 sm:grid-cols-3">
             <StatCard
@@ -202,7 +212,7 @@ export default function BankCashFlowPage() {
                   <TableHead className="w-32 text-right">Money in</TableHead>
                   <TableHead className="w-32 text-right">Money out</TableHead>
                   <TableHead className="w-32 text-right">Net change</TableHead>
-                  <TableHead className="w-36 text-right">Running balance</TableHead>
+                  <TableHead className="w-36 text-right">Cumulative net change</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

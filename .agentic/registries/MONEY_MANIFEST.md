@@ -650,6 +650,21 @@ retaining integration criteria. Public frontend/PDF arithmetic remains MON-008;
 token administration/security remains PAR-007. Schema, migration, immutable history
 and flags are unchanged; aliases do not imply full int64 or production IRR support.
 
+## MON-032 backup snapshot and restore adoption (MON-016 child)
+
+[BACKUP_WIRE_CONTRACTS](BACKUP_WIRE_CONTRACTS.md) documents the version 1/2
+snapshot catalog, six REST route files and eight MCP tools. New snapshots add
+stored-unit Minor strings without currency rescaling; original uploaded and
+downloaded files remain immutable. Shared money/FX, schema, reference and ownership
+preflight rejects malformed/unsafe input before storage or destructive restore.
+Supported root/document-line restoration is atomic with audit and rolls back
+on insertion failure. Locked periods, cyclic/unsupported references and existing
+omitted dependent graphs reject before a safety backup instead of silently
+performing a partial recovery. Actual PostgreSQL/API-key/MCP/S3-command fixtures
+cover both formats, permissions/isolation, bounds, original bytes and rollback.
+QA-005 retains complete recovery rehearsal and MON-016 retains integration;
+no full-int64, schema migration, live S3 or production IRR claim.
+
 ## MON-100 budget comparison report adoption (MON-029 child)
 
 [BUDGET_REPORT_WIRE_CONTRACTS](BUDGET_REPORT_WIRE_CONTRACTS.md) covers the budget-vs-actual REST/MCP pair. A shared scoped read-only repeatable-read service computes SQL text/bigint aggregates, natural signs, exact percentage/projection ratios and signed rounding. Every monetary output retains safe numeric fixed cents with a Minor string alias; current organization currency is explicit without reinterpreting document tags or rescaling USD/IRR/JPY/KWD. Newest non-deleted fallback, scoped nested references, canonical UTC dates, unsupported output/history checks and actual API-key/MCP fixtures preserve compatibility. Budgets lack currency snapshots; full-range/history/performance and MON-029 combined acceptance remain separate. MON-029 retains its criteria after MON-100 through MON-105 domain children. No schema, production migration or IRR flag change.

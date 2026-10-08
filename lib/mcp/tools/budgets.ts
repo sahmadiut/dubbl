@@ -8,6 +8,8 @@ import { budgetCreateSchema, budgetUpdateSchema } from "@/lib/api/budget-wire";
 import { createBudget, updateBudget, deleteBudget, getBudget, assertBudgetReadScope } from "@/lib/api/budget-write";
 import { getBudgetReport } from "@/lib/api/budget-report";
 import { budgetReportSchema } from "@/lib/api/budget-report-wire";
+import { checkBudgetAlerts } from "@/lib/api/budget-alerts";
+import { budgetAlertSchema } from "@/lib/api/budget-alert-wire";
 import { wrapTool } from "@/lib/mcp/errors";
 import type { AuthContext } from "@/lib/api/auth-context";
 
@@ -23,6 +25,10 @@ import type { AuthContext } from "@/lib/api/auth-context";
  */
 
 export function registerBudgetTools(server: McpServer, ctx: AuthContext) {
+  server.registerTool("check_budget_alerts", {
+    description: "Check this organization's active budgets for periods containing today (UTC); requires manage:budgets. Input is an empty object. Returns checked period count, alerted newly created recipient notification count and evaluations with currencyCode, budgeted/actual/threshold numeric cents and agreeing *Minor strings (+/-9007199254740991), thresholdPct and exceedsThreshold. Actual is absolute posted base-GL net activity; threshold is rounded half-up. No FX/rescaling. Notifies owners/admins once per period per user, including concurrent/repeated checks. Unsupported money/history fails with 422 LEGACY_NUMERIC_RANGE before notification writes; optional email delivery is best effort.",
+    inputSchema: budgetAlertSchema,
+  }, params => wrapTool(ctx, () => checkBudgetAlerts(ctx, params)));
   server.tool(
     "list_budgets",
     "List budgets for the organization with pagination, newest first. Each budget includes its fiscal year (when set). Returns the budgets and the total count. Returns headers only, without line totals or period amounts; get_budget returns those with exact cents aliases.",

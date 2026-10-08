@@ -1125,3 +1125,15 @@ show errors and currency-aware exact formatting. Actual API-key/MCP/PostgreSQL
 fixtures cover legacy/exact writers, signed/source/derived limits and unchanged
 financial state. No schema/history/IRR rollout; MON-104/MON-029 retain combined
 and independent acceptance.
+
+## MON-123 budget notification adoption
+
+[BUDGET_ALERT_WIRE_CONTRACTS](BUDGET_ALERT_WIRE_CONTRACTS.md) maps the scoped
+REST/MCP check operation, threshold configuration, internal scheduled consumer and
+notification delivery. SQL-text/bigint absolute net actuals and exact rounded
+threshold products retain numeric compatibility plus agreeing Minor aliases.
+Organization/period/reference guards and full-slice preflight protect atomic
+recipient writes; a shared transaction lock prevents concurrent duplicates.
+Bodies use organization currency scales without rescaling saved amounts. Optional
+email/digest delivery follows commit and is best effort. No schema/history/IRR
+rollout; MON-105/MON-029 retain combined and independent qualification.

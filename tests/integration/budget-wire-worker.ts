@@ -16,9 +16,11 @@ function tools(ctx: AuthContext) {
   const registered = new Map<string, { schema: z.ZodObject; handler: (input: unknown) => Promise<Result> }>();
   const server = { tool(name: string, _description: string, shape: z.ZodRawShape, handler: (input: unknown) => Promise<Result>) {
     registered.set(name, { schema: z.object(shape), handler });
+  }, registerTool(name: string, config: { inputSchema: z.ZodObject }, handler: (input: unknown) => Promise<Result>) {
+    registered.set(name, { schema: config.inputSchema, handler });
   } } as unknown as McpServer;
   registerBudgetTools(server, ctx);
-  assert.equal(registered.size, 6); // report registration is retained, outside this CRUD slice.
+  assert.equal(registered.size, 7); // Report and alert registrations are retained, outside this CRUD slice.
   return async (name: string, input: unknown) => {
     const tool = registered.get(name)!;
     const result = await tool.handler(tool.schema.parse(input));

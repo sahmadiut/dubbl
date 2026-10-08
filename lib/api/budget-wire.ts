@@ -21,6 +21,8 @@ export const budgetLineSchema = z.object({
   totalMinor: exactMinorSchema.optional().describe("Optional signed int64 ASCII integer line-total string in cents; must agree with total"),
   periods: z.array(budgetPeriodSchema).max(10000).optional().describe("Explicit periods; omit or pass an empty array for automatic distribution"),
 });
+export const budgetThresholdSchema = z.number().int().min(0).max(2147483647).nullable()
+  .describe("Nonnegative integer threshold percent (100 means the full budget, maximum 2147483647); null disables notifications");
 const headerFields = {
   name: z.string().min(1).describe("Budget name"),
   fiscalYearId: z.string().uuid().nullable().optional().describe("Fiscal year UUID belonging to this organization, or null"),
@@ -29,6 +31,7 @@ const headerFields = {
   periodType: z.enum(["monthly", "weekly", "daily", "quarterly", "yearly", "custom"]).default("monthly")
     .describe("Automatic period type; custom generates one full-range period"),
   isActive: z.boolean().default(true).describe("Whether the budget is active"),
+  varianceThresholdPct: budgetThresholdSchema.optional().describe("Optional integer threshold percent; omitted uses 100, null disables notifications"),
 };
 export const budgetCreateSchema = z.object({ ...headerFields,
   lines: z.array(budgetLineSchema).min(1).max(500).describe("Budget lines, 1-500; at most 10000 periods across the budget"),
@@ -40,6 +43,7 @@ export const budgetUpdateSchema = z.object({
   endDate: date.optional().describe("Optional new Gregorian end date"),
   periodType: headerFields.periodType.removeDefault().optional().describe("Optional new automatic period type"),
   isActive: z.boolean().optional().describe("Optional active status"),
+  varianceThresholdPct: budgetThresholdSchema.optional().describe("Optional integer threshold percent; omitted preserves it, null disables notifications"),
   lines: z.array(budgetLineSchema).max(500).optional().describe("Replacement lines; omitted leaves lines unchanged, empty removes them"),
 });
 

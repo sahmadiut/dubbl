@@ -10,7 +10,7 @@ import type { InferInsertModel } from "drizzle-orm";
 
 type NotificationType = InferInsertModel<typeof notification>["type"];
 
-interface SendNotificationParams {
+export interface SendNotificationParams {
   orgId: string;
   userId: string;
   type: NotificationType;
@@ -36,6 +36,12 @@ export async function sendNotification(params: SendNotificationParams) {
     })
     .returning();
 
+  await deliverNotificationEmail(params, created);
+  return created;
+}
+
+/** Deliver preferences/digests only after the caller has committed the in-app row. */
+export async function deliverNotificationEmail(params: SendNotificationParams, created: { id: string }) {
   // 2. Check user's email preference for this notification type
   const emailPref = await db.query.notificationPreference.findFirst({
     where: and(
@@ -48,7 +54,7 @@ export async function sendNotification(params: SendNotificationParams) {
 
   // If email is not enabled for this type, we're done
   if (!emailPref || !emailPref.enabled) {
-    return created;
+    return;
   }
 
   // 3. Check digest interval
@@ -95,5 +101,4 @@ export async function sendNotification(params: SendNotificationParams) {
     }
   }
 
-  return created;
 }

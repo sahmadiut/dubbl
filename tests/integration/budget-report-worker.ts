@@ -17,7 +17,7 @@ async function mcp(ctx: AuthContext) {
   const server = new McpServer({ name: "Budget report fixture", version: "1" }); registerBudgetTools(server, ctx);
   const client = new Client({ name: "Fixture", version: "1" });
   const [ct, st] = InMemoryTransport.createLinkedPair(); await server.connect(st); await client.connect(ct);
-  const tools = (await client.listTools()).tools; assert.equal(tools.length, 6);
+  const tools = (await client.listTools()).tools; assert.equal(tools.length, 7);
   assert.match(tools.find(tool => tool.name === "budget_vs_actual")!.description!, /Minor strings/);
   return { async call(args: Record<string, unknown> = {}) {
     const result = await client.callTool({ name: "budget_vs_actual", arguments: args });

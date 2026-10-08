@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { formatMoney } from "@/lib/money";
+import { statementMoneyText } from "@/lib/reports/statement-money";
 import {
   Plus,
   Search,
@@ -69,6 +69,7 @@ interface UnrealizedFxReport {
   items: UnrealizedFxItem[];
   summary: {
     totalItems: number;
+    missingRateItems: number;
     totalUnrealizedGain: number;
     totalUnrealizedLoss: number;
     netUnrealizedGainLoss: number;
@@ -313,6 +314,7 @@ export default function CurrenciesPage() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [currencySheetOpen, setCurrencySheetOpen] = useState(false);
   const [refOpen, setRefOpen] = useState(false);
+  const [fxError, setFxError] = useState<string | null>(null);
   const [fxReport, setFxReport] = useState<UnrealizedFxReport | null>(null);
   useDocumentTitle("Tax · Currencies");
 
@@ -369,11 +371,13 @@ export default function CurrenciesPage() {
       const res = await fetch("/api/v1/reports/unrealized-gains-losses", {
         headers: { "x-organization-id": orgId },
       });
-      if (!res.ok) return;
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Unable to load unrealized FX report.");
+      setFxError(null);
       if (data?.summary) setFxReport(data);
-    } catch {
-      /* ignore */
+    } catch (err: unknown) {
+      setFxReport(null);
+      setFxError(err instanceof Error ? err.message : "Unable to load unrealized FX report.");
     }
   }
 
@@ -488,7 +492,7 @@ export default function CurrenciesPage() {
               Unrealised FX Gains &amp; Losses
             </h3>
             <span className="text-[11px] text-muted-foreground/70">
-              open foreign-currency balances revalued at today&apos;s rate, in{" "}
+              estimate using saved quotes at issue date and today, in{" "}
               {fxReport.defaultCurrency}
             </span>
           </div>
@@ -499,6 +503,11 @@ export default function CurrenciesPage() {
             </div>
           ) : (
             <>
+              {fxReport.summary.missingRateItems > 0 && (
+                <p role="status" className="text-sm text-muted-foreground">
+                  {fxReport.summary.missingRateItems} items have missing exchange rates and are excluded from totals.
+                </p>
+              )}
               <div className="grid grid-cols-3 gap-3">
                 <div className="rounded-lg border bg-card p-4">
                   <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
@@ -511,7 +520,7 @@ export default function CurrenciesPage() {
                         : "text-red-600 dark:text-red-400"
                     }`}
                   >
-                    {formatMoney(
+                    {statementMoneyText(
                       fxReport.summary.netUnrealizedGainLoss,
                       fxReport.defaultCurrency
                     )}
@@ -522,7 +531,7 @@ export default function CurrenciesPage() {
                     Gains
                   </p>
                   <p className="mt-1 text-xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
-                    {formatMoney(
+                    {statementMoneyText(
                       fxReport.summary.totalUnrealizedGain,
                       fxReport.defaultCurrency
                     )}
@@ -533,7 +542,7 @@ export default function CurrenciesPage() {
                     Losses
                   </p>
                   <p className="mt-1 text-xl font-bold tabular-nums text-red-600 dark:text-red-400">
-                    {formatMoney(
+                    {statementMoneyText(
                       fxReport.summary.totalUnrealizedLoss,
                       fxReport.defaultCurrency
                     )}
@@ -555,7 +564,7 @@ export default function CurrenciesPage() {
                         {item.number}
                       </span>
                       <span className="text-sm text-muted-foreground">
-                        {formatMoney(item.amountDue, item.currencyCode)} due
+                        {statementMoneyText(item.amountDue, item.currencyCode)} due
                       </span>
                     </div>
                     <span
@@ -567,7 +576,7 @@ export default function CurrenciesPage() {
                     >
                       {item.unrealizedGainLoss === null
                         ? "—"
-                        : formatMoney(
+                        : statementMoneyText(
                             item.unrealizedGainLoss,
                             fxReport.defaultCurrency
                           )}
@@ -579,6 +588,8 @@ export default function CurrenciesPage() {
           )}
         </div>
       )}
+
+      {fxError && <p role="alert" className="text-sm text-destructive">{fxError}</p>}
 
       {/* Exchange Rates Section */}
       <div className="space-y-3">

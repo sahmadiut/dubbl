@@ -8,7 +8,9 @@ import { StatCard } from "@/components/dashboard/stat-card";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { formatMoney } from "@/lib/money";
+import { statementMoneyText } from "@/lib/reports/statement-money";
+import { money, toMajorDecimal } from "@/lib/money/exact";
+import { CurrencySelect } from "@/components/ui/currency-select";
 import { cn } from "@/lib/utils";
 import {
   AreaChart,
@@ -34,6 +36,9 @@ interface ForecastWeek {
 export default function CashFlowForecastPage() {
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [currencyCode, setCurrencyCode] = useState("USD");
+  const [currencyFilter, setCurrencyFilter] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const [weeksAhead, setWeeksAhead] = useState(12);
   const [weeks, setWeeks] = useState<ForecastWeek[]>([]);
   const [totalInflows, setTotalInflows] = useState(0);
@@ -46,16 +51,27 @@ export default function CashFlowForecastPage() {
     let cancelled = false;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
-    fetch(`/api/v1/reports/cash-flow-forecast?weeks=${weeksAhead}`, {
+    const params = new URLSearchParams({ weeks: String(weeksAhead) });
+    if (currencyFilter) params.set("currencyCode", currencyFilter);
+    fetch(`/api/v1/reports/cash-flow-forecast?${params}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then(async (r) => {
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || "Unable to load cash forecast.");
+        return data;
+      })
       .then((data) => {
         if (cancelled) return;
+        setError(null);
+        setCurrencyCode(data.currencyCode);
         setWeeks(data.weeks || []);
         setTotalInflows(data.totalInflows || 0);
         setTotalOutflows(data.totalOutflows || 0);
         setNetForecast(data.netForecast || 0);
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : "Unable to load cash forecast.");
       })
       .finally(() => {
         if (!cancelled) {
@@ -64,13 +80,14 @@ export default function CashFlowForecastPage() {
         }
       });
     return () => { cancelled = true; };
-  }, [weeksAhead]);
+  }, [weeksAhead, currencyFilter]);
 
   const chartData = weeks.map((w) => ({
     name: w.weekOf,
-    inflows: w.inflows / 100,
-    outflows: w.outflows / 100,
-    cumulative: w.cumulativeNet / 100,
+    inflows: Number(toMajorDecimal(money(BigInt(w.inflows), currencyCode))),
+    outflows: Number(toMajorDecimal(money(BigInt(w.outflows), currencyCode))),
+    minor: w,
+    cumulative: Number(toMajorDecimal(money(BigInt(w.cumulativeNet), currencyCode))),
   }));
 
   if (initialLoad) return <BrandLoader />;
@@ -99,24 +116,30 @@ export default function CashFlowForecastPage() {
             <SelectItem value="52">52 weeks</SelectItem>
           </SelectContent>
         </Select>
+        <CurrencySelect value={currencyFilter} onValueChange={setCurrencyFilter} className="w-[220px]" />
+        {currencyFilter && <button type="button" className="text-sm underline" onClick={() => setCurrencyFilter("")}>Clear filter</button>}
       </div>
+      <p className="text-sm text-muted-foreground">Recurring estimates use line subtotals before tax and discounts. Partial weeks are included.</p>
 
+      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+
+      {!error && <>
       <div className="grid gap-4 sm:grid-cols-3">
         <StatCard
           title="Money expected in"
-          value={formatMoney(totalInflows)}
+          value={statementMoneyText(totalInflows, currencyCode)}
           icon={TrendingUp}
           changeType="positive"
         />
         <StatCard
           title="Money expected out"
-          value={formatMoney(totalOutflows)}
+          value={statementMoneyText(totalOutflows, currencyCode)}
           icon={TrendingDown}
           changeType="negative"
         />
         <StatCard
           title="Expected change in cash"
-          value={formatMoney(netForecast)}
+          value={statementMoneyText(netForecast, currencyCode)}
           icon={DollarSign}
           changeType={netForecast >= 0 ? "positive" : "negative"}
         />
@@ -147,10 +170,14 @@ export default function CashFlowForecastPage() {
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                     <XAxis dataKey="name" tick={{ fontSize: 10 }} className="text-muted-foreground" />
-                    <YAxis tick={{ fontSize: 11 }} className="text-muted-foreground" tickFormatter={(v) => `$${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`} />
+                    <YAxis tick={{ fontSize: 11 }} className="text-muted-foreground" tickFormatter={(v) => `${currencyCode} ${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`} />
                     <Tooltip
                       contentStyle={{ fontSize: 12, borderRadius: 8 }}
-                      formatter={(value) => [`$${Number(value).toFixed(2)}`]}
+                      formatter={(_value, name, item) => {
+                        const minor = item.payload?.minor as ForecastWeek | undefined;
+                        const value = name === "Inflows" ? minor?.inflows : name === "Outflows" ? minor?.outflows : minor?.cumulativeNet;
+                        return [value === undefined ? "" : statementMoneyText(value, currencyCode), name];
+                      }}
                     />
                     <Legend wrapperStyle={{ fontSize: 12 }} />
                     <ReferenceLine y={0} stroke="#94a3b8" strokeDasharray="3 3" />
@@ -181,22 +208,22 @@ export default function CashFlowForecastPage() {
                       <tr key={w.weekOf} className="border-b last:border-b-0">
                         <td className="px-4 py-2">{w.weekOf}</td>
                         <td className="px-4 py-2 text-right font-mono tabular-nums text-emerald-600">
-                          {w.inflows > 0 ? formatMoney(w.inflows) : "-"}
+                          {w.inflows > 0 ? statementMoneyText(w.inflows, currencyCode) : "-"}
                         </td>
                         <td className="px-4 py-2 text-right font-mono tabular-nums text-red-600">
-                          {w.outflows > 0 ? formatMoney(w.outflows) : "-"}
+                          {w.outflows > 0 ? statementMoneyText(w.outflows, currencyCode) : "-"}
                         </td>
                         <td className={cn(
                           "px-4 py-2 text-right font-mono tabular-nums font-medium",
                           w.net >= 0 ? "text-emerald-600" : "text-red-600"
                         )}>
-                          {formatMoney(w.net)}
+                          {statementMoneyText(w.net, currencyCode)}
                         </td>
                         <td className={cn(
                           "px-4 py-2 text-right font-mono tabular-nums",
                           w.cumulativeNet >= 0 ? "text-blue-600" : "text-red-600"
                         )}>
-                          {formatMoney(w.cumulativeNet)}
+                          {statementMoneyText(w.cumulativeNet, currencyCode)}
                         </td>
                       </tr>
                     ))}
@@ -207,6 +234,7 @@ export default function CashFlowForecastPage() {
           </div>
         </ContentReveal>
       )}
+      </>}
     </ContentReveal>
   );
 }

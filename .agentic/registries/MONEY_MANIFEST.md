@@ -1313,3 +1313,17 @@ lock the organization before employee/member work, avoiding a reproduced audit
 foreign-key/run-creation deadlock. Held-lock and concurrent cross-writer fixtures
 verify the order and currency/history guards. No schema or historical rescale;
 full-int64 and independent production qualification remain downstream.
+
+## MON-026 integrated asset and loan acceptance
+
+[ASSET_LOAN_INTEGRATION_CONTRACTS](ASSET_LOAN_INTEGRATION_CONTRACTS.md) joins all
+25 adopted asset/category/lifecycle/loan REST/MCP pairs and the functional-currency
+settings boundary. Combined actual transport fixtures reconcile CWIP cost,
+capitalization, depreciation/reversal, signed valuation/disposal and concurrent
+targeted loan payments with balanced identity-FX journals and safe numeric/Minor
+aliases. Organization locks protect cross-writer races. Public base changes now
+reject unposted/soft-deleted asset/category/loan history; new depreciation GL
+accounts must match posting currency. Unsupported post-valuation charges/rollback
+and batch failures leave the whole slice unchanged. No schema/history rescale,
+IRR flag or deployment change; full-int64, independent accounting, large-history
+performance and new valuation schedules remain separately scoped qualification.

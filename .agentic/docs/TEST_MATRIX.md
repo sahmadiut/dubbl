@@ -1,5 +1,22 @@
 # Verification matrix
 
+## MON-026 asset and loan integration
+
+`tests/integration/asset-loan-integration.test.ts` combines actual asset/category,
+CWIP, capitalization, depreciation/reversal, signed valuation/disposal, loan
+schedule/payment and organization-settings REST/MCP in one disposable migrated
+database. It verifies exact numeric/Minor agreement, unchanged original GL lines,
+balanced identity-FX journals, targeted concurrent payment replay, cross-writer
+races, strict described tool registration, custom-permission/tenant/input denials,
+whole-slice no-mutation snapshots and unposted/soft-deleted currency-history
+guards. Child asset-master/depreciation/valuation/CWIP/loan fixtures and the
+organization-settings fixture retain operation-level faults, ranges, periods and
+authorization coverage. New depreciation posting accounts must use base currency;
+the GBP historical-reversal fixture uses GBP posting accounts. See
+registries/ASSET_LOAN_INTEGRATION_CONTRACTS.md for all 25 pairs and supported limits.
+Post-valuation schedules, independent accounting, full-int64, large-batch
+performance and production qualification remain separate work.
+
 ## MON-024 combined inventory and costing
 
 `tests/integration/inventory-integration.test.ts`/worker composes actual REST and

@@ -94,7 +94,11 @@ async function run() {
     // Posting stamps the current base, while older depreciation blocks repricing.
     await db.update(organization).set({ defaultCurrency: "GBP" }).where(eq(organization.id, a.id));
     await denied(() => post(req({ date: "2024-04-01" }), p(x.id)), 422);
-    const pound = await asset({ usefulLifeMonths: 1 });
+    const [poundExpense, poundAccum] = await db.insert(chartAccount).values([
+      { organizationId: a.id, code: "5901", name: "GBP depreciation", type: "expense", currencyCode: "GBP" },
+      { organizationId: a.id, code: "1591", name: "GBP accumulated", type: "asset", currencyCode: "GBP" },
+    ]).returning();
+    const pound = await asset({ usefulLifeMonths: 1, depreciationAccountId: poundExpense.id, accumulatedDepAccountId: poundAccum.id });
     const poundDep = await data(await post(req({ date: "2024-04-01" }), p(pound.id)));
     assert.equal((await db.select().from(journalLine).where(eq(journalLine.journalEntryId, poundDep.journalEntryId)))[0].currencyCode, "GBP");
     await db.update(organization).set({ defaultCurrency: "USD" }).where(eq(organization.id, a.id));

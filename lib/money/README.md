@@ -606,6 +606,17 @@ and immutable date edits before writes. See
 [combined journal contracts](../../.agentic/registries/JOURNAL_INTEGRATION.md).
 Full-int64 domain, independent accounting and production IRR remain separate gates.
 
+### Integrated assets and loans
+
+The combined asset/loan contract joins 25 existing REST/MCP pairs with numeric
+cents and agreeing Minor strings. CWIP-to-disposal and targeted loan payment
+fixtures verify exact journals, preserved reversals, scope, retries and writer
+races. Base-currency changes reject asset/category/loan history even before GL
+posting or after soft deletion; new depreciation accounts must match posting
+currency. Post-valuation depreciation/rollback still fail explicitly. See
+[combined contracts](../../.agentic/registries/ASSET_LOAN_INTEGRATION_CONTRACTS.md)
+for operation maps, safe ranges and remaining qualification.
+
 ### Cumulative financial statements
 
 Trial balance and balance sheet now share exact GL aggregation and REST/MCP wire projection. Existing fixed two-place decimal strings coexist with exact signed integer-cent Minor aliases, bounded by the legacy safe numeric range. Currency-scaled PDF/XLSX exports preserve their existing scale; numeric spreadsheet cells reject non-round-trippable or over-15-significant-digit amounts. See [.agentic/registries/CUMULATIVE_STATEMENT_WIRE_CONTRACTS.md](../../.agentic/registries/CUMULATIVE_STATEMENT_WIRE_CONTRACTS.md) for all fields, dates, auth, ranges, export distinctions and the retained baseline trial-balance defect. Other statements remain separate MON-101 children.

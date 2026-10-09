@@ -1,6 +1,6 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { organization, journalEntry, payrollRun, auditLog } from "@/lib/db/schema";
+import { organization, journalEntry, payrollRun, auditLog, fixedAsset, assetCategory, loan } from "@/lib/db/schema";
 import { AuthError, type AuthContext } from "./auth-context";
 import { requireRole } from "./require-role";
 import { diffChanges } from "./audit";
@@ -51,6 +51,12 @@ export async function updateOrganizationSettings(ctx: AuthContext, input: unknow
       if (activity) throw new AuthError("Base currency can't be changed once transactions exist", 409);
       const [payroll] = await tx.select({ id: payrollRun.id }).from(payrollRun).where(eq(payrollRun.organizationId, ctx.organizationId)).limit(1);
       if (payroll) throw new AuthError("Base currency can't be changed with payroll-run history", 409);
+      // These records retain implicit base-currency amounts, including before any
+      // GL posting and after soft deletion. Their writers share this org lock.
+      const [asset] = await tx.select({ id: fixedAsset.id }).from(fixedAsset).where(eq(fixedAsset.organizationId, ctx.organizationId)).limit(1);
+      const [category] = await tx.select({ id: assetCategory.id }).from(assetCategory).where(eq(assetCategory.organizationId, ctx.organizationId)).limit(1);
+      const [savedLoan] = await tx.select({ id: loan.id }).from(loan).where(eq(loan.organizationId, ctx.organizationId)).limit(1);
+      if (asset || category || savedLoan) throw new AuthError("Base currency can't be changed with asset, category or loan history", 409);
     }
     const { onboardingCompleted, ...fields } = parsed;
     const patch = { ...fields, ...(onboardingCompleted === undefined ? {} : { onboardingCompletedAt: onboardingCompleted ? new Date() : null }), updatedAt: new Date() };

@@ -12,7 +12,7 @@ MON-070 through MON-073. No schema, stored-unit, currency flag or tax-policy cha
 | GET /organization without header/key | Existing session provisioning UI | `{organizations}` from current user's live memberships, including role/memberCount | Session user |
 | POST /organization | Existing session provisioning UI | Strict `{name,slug}`; 201 `{organization}`; settings defaults and exact aliases | Session user, existing site creation policy and plan limits |
 | PATCH /organization | update_organization | Strict partial settings; `{organization}` | manage:billing; view:data for onboardingCompleted alone |
-| PATCH /organization with defaultCurrency | set_organization_currency | REST defaultCurrency / MCP currencyCode (ISO code); `{organization}` | manage:billing; no journal activity; IRR gate |
+| PATCH /organization with defaultCurrency | set_organization_currency | REST defaultCurrency / MCP currencyCode (ISO code); `{organization}` | manage:billing; no journal/payroll/asset/category/loan history; IRR gate |
 | GET /organization/mileage-rate | get_organization_mileage_rate | `{mileageRate,mileageRateMinor,currencyCode}` | Authenticated context |
 | PUT /organization/mileage-rate | update_organization_mileage_rate | Strict numeric/exact mileage aliases; same envelope as GET | manage:tax-config |
 
@@ -46,7 +46,11 @@ for MON-028/MON-034, outside these member-scoped operations.
   above-safe historical ORM values still require the separate remediation gate.
 - defaultCurrency is an ISO functional currency; input normalization is explicit.
   Existing journal activity (including draft/deleted rows, preserving prior
-  policy) rejects a changed value with 409. IRR selection remains 403 even
+  policy), payroll runs, assets, asset categories or loans reject a changed value
+  with 409. Asset/category/loan history includes unposted and soft-deleted roots
+  because their amounts have no currency snapshots. Their writers serialize on
+  the same organization lock; same-currency metadata edits remain allowed. See
+  [MON-026 integration](ASSET_LOAN_INTEGRATION_CONTRACTS.md). IRR selection remains 403 even
   though synthetic legacy IRR rows are readable. Changing an empty org's
   currency never converts saved settings. Settings have no historical currency
   snapshot; this feature does not infer one or qualify cross-currency claims.

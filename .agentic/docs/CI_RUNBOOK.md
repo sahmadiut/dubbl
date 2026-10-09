@@ -78,6 +78,18 @@ python -m unittest discover -s .agentic/tests -v
 
 ## PostgreSQL fixtures
 
+MON-026 adds `tests/integration/asset-loan-integration.test.ts` to normal
+integration discovery. Run `node --import tsx --test --test-concurrency=1
+tests/integration/asset-loan-integration.test.ts tests/integration/asset-master.test.ts
+tests/integration/asset-depreciation.test.ts tests/integration/asset-valuation.test.ts
+tests/integration/asset-cwip.test.ts tests/integration/loans.test.ts
+tests/integration/organization-settings.test.ts` with an explicit loopback
+TEST_DATABASE_URL on a disposable UTC PostgreSQL cluster. The harness creates,
+migrates and drops random fixture databases; API-key REST handlers and full MCP
+SDK transports need no Next dev server. Serial migration fixtures avoid exhausting
+small clusters' shared lock tables. Parent tests disable IRR and outbound provider
+credentials; no application database, schema, deployment opt-in or rollout changes.
+
 CI provisions PostgreSQL 16 with synthetic service credentials. `pnpm test:integration` requires explicit `TEST_DATABASE_URL`, a local PostgreSQL server and a test role with `CREATEDB`. The MON-003 backup/restore fixture also requires matching `pg_dump` and `pg_restore` clients on PATH; optionally set `PG_BIN` to their directory (useful on Windows). It never falls back to DATABASE_URL or runs migrations on the connection target. No real customer data or provider credentials are needed. See `../../lib/db/MONEY_MIGRATION.md` for monetary expansion, lock and recovery checks.
 
 MON-004 adds five integration cases in `tests/integration/fx-exact.test.ts`: all-four-field legacy preservation/backfill (including exact binary32 and quarantines), clean-install guarded ORM/raw/upsert writes, physical 20/18 decimal capacity and rejection, committed-batch restart/locked pending work, and expansion lock failure/rollback/retry. See `../../lib/db/FX_MIGRATION.md` for coexistence limits and the explicit maintenance runner. The physical-capacity fixture disables only its temporary database's FX triggers to isolate numeric CHECK behavior; live consumers still reject rates the legacy fields cannot represent. MON-003 checksum comparisons now exclude only the five newly added FX metadata columns, while still hashing every original row field and checking original column defaults/nullability.

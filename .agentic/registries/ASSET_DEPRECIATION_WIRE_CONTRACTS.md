@@ -106,7 +106,7 @@ original GL date and reversal date, so deleting the schedule never alters a lock
 period. Already committed retry replay changes no accounting state.
 
 Posting requires both live active owned GL accounts or neither; partial,
-foreign/inactive/deleted or identical accounts fail. Neither retains the existing
+foreign/inactive/deleted, wrong-base-currency or identical accounts fail. Neither retains the existing
 non-GL tracking behavior. Reversals use original scoped GL lines and account IDs,
 even if historical owned accounts are now inactive/deleted. Original journal must
 be posted, unreversed, sourced to this asset, balanced and match the saved charge.
@@ -129,7 +129,10 @@ schema/migration. Unsupported saved amounts return classified 422; validation is
 400, auth 401/403, absent/foreign asset 404, retry/history conflict 409, locked or
 unsupported economic history 422. Injected DB faults return 500 and roll back.
 Asset masters still have implicit organization base currency, without saved
-currency/FX snapshots. Unposted/never-GL master currency history remains unresolved.
+currency/FX snapshots. MON-026 now prevents public functional-currency changes
+with any asset/category/loan history, including unposted and soft-deleted roots;
+see [combined contracts](ASSET_LOAN_INTEGRATION_CONTRACTS.md). Legacy direct edits
+and historical remediation remain unqualified.
 Full-int64 business support, historical currency changes, browser
 session/OAuth, large-batch performance and independent accounting review remain
 MON-026 and release qualification, not enabled by tracker completion.

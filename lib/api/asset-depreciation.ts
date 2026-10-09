@@ -68,11 +68,11 @@ async function history(tx: TaxTx, ctx: AuthContext, asset: Asset) {
   if (sum > BigInt(asset.accumulatedDepreciation)) throw new AuthError("Saved depreciation history exceeds accumulated total", 422);
   return rows;
 }
-async function accounts(tx: TaxTx, ctx: AuthContext, ids: string[], historical = false) {
+async function accounts(tx: TaxTx, ctx: AuthContext, ids: string[], historical = false, base?: string) {
   for (const id of new Set(ids)) {
     const [row] = await tx.select().from(chartAccount).where(and(eq(chartAccount.id, id), eq(chartAccount.organizationId, ctx.organizationId),
       historical ? undefined : isNull(chartAccount.deletedAt), historical ? undefined : eq(chartAccount.isActive, true))).for("share");
-    if (!row) throw new AuthError("Depreciation account must belong to the organization and be usable", 422);
+    if (!row || (base !== undefined && row.currencyCode !== base)) throw new AuthError("Depreciation account must belong to the organization, be usable and use posting currency", 422);
   }
 }
 async function baseCurrency(tx: TaxTx, ctx: AuthContext, id: string) {
@@ -112,9 +112,9 @@ async function post(tx: TaxTx, ctx: AuthContext, asset: Asset, date: string, uni
   if (Boolean(asset.depreciationAccountId) !== Boolean(asset.accumulatedDepAccountId)) throw new AuthError("Configure both depreciation accounts or neither", 422);
   let journalEntryId: string | null = null;
   if (asset.depreciationAccountId && asset.accumulatedDepAccountId) {
-    await accounts(tx, ctx, [asset.depreciationAccountId, asset.accumulatedDepAccountId]);
-    if (asset.depreciationAccountId === asset.accumulatedDepAccountId) throw new AuthError("Depreciation accounts must differ", 422);
     const currencyCode = await baseCurrency(tx, ctx, asset.id);
+    await accounts(tx, ctx, [asset.depreciationAccountId, asset.accumulatedDepAccountId], false, currencyCode);
+    if (asset.depreciationAccountId === asset.accumulatedDepAccountId) throw new AuthError("Depreciation accounts must differ", 422);
     const [entry] = await tx.insert(journalEntry).values({ organizationId: ctx.organizationId,
       entryNumber: await getNextEntryNumber(ctx.organizationId, tx), date, description: `Depreciation - ${asset.name} (${asset.assetNumber})`,
       reference: asset.assetNumber, status: "posted", sourceType: "depreciation", sourceId: asset.id, postedAt: new Date(), createdBy: ctx.userId }).returning();

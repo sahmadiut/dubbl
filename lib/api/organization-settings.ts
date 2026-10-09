@@ -1,6 +1,6 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { organization, journalEntry, payrollRun, auditLog, fixedAsset, assetCategory, loan } from "@/lib/db/schema";
+import { organization, journalEntry, payrollRun, auditLog, fixedAsset, assetCategory, loan, accrualSchedule } from "@/lib/db/schema";
 import { AuthError, type AuthContext } from "./auth-context";
 import { requireRole } from "./require-role";
 import { diffChanges } from "./audit";
@@ -57,6 +57,11 @@ export async function updateOrganizationSettings(ctx: AuthContext, input: unknow
       const [category] = await tx.select({ id: assetCategory.id }).from(assetCategory).where(eq(assetCategory.organizationId, ctx.organizationId)).limit(1);
       const [savedLoan] = await tx.select({ id: loan.id }).from(loan).where(eq(loan.organizationId, ctx.organizationId)).limit(1);
       if (asset || category || savedLoan) throw new AuthError("Base currency can't be changed with asset, category or loan history", 409);
+      // Accruals have no currency snapshot, even while unposted or cancelled.
+      // Creation and cancellation acquire this same organization lock.
+      const [accrual] = await tx.select({ id: accrualSchedule.id }).from(accrualSchedule)
+        .where(eq(accrualSchedule.organizationId, ctx.organizationId)).limit(1);
+      if (accrual) throw new AuthError("Base currency can't be changed with accrual schedule history", 409);
     }
     const { onboardingCompleted, ...fields } = parsed;
     const patch = { ...fields, ...(onboardingCompleted === undefined ? {} : { onboardingCompletedAt: onboardingCompleted ? new Date() : null }), updatedAt: new Date() };

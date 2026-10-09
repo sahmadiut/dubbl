@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { consolidationEliminationEntry } from "@/lib/db/schema";
 import type { AuthContext } from "./auth-context";
@@ -30,6 +30,9 @@ export async function persistConsolidationReport(ctx: AuthContext, id: string, i
   for (let attempt = 0; ; attempt++) {
     try {
       return await db.transaction(async tx => {
+        // Acquire before the first snapshot: legacy lock/year writers may insert
+        // absent rows. Waiting after SELECT would retain a stale serializable view.
+        await tx.execute(sql`lock table period_lock, fiscal_year in share mode`);
         // Same parent lock as group/member/rule writers. Compute and authorize in this snapshot.
         await lockTaxOrganization(tx, ctx.organizationId);
         const group = await loadConsolidationGroup(tx, ctx, id);

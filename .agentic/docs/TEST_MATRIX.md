@@ -1,5 +1,21 @@
 # Verification matrix
 
+## MON-028 consolidation and auxiliary integration
+
+`tests/integration/consolidation-auxiliary-integration.test.ts` combines actual
+API-key REST/full SDK MCP accrual/revenue schedules, recurring bill/expense drafts,
+consolidation configuration/read/recalculation and organization settings in one
+disposable migrated DB. It asserts exact cross-transport creation/post replays,
+conserved residuals and concurrent journal numbering, report net income 1251 and
+balance check zero, draft catch-up races, saved elimination/rule cleanup,
+whole-slice audit rollback and strict/range/permission/tenant denials. Unposted/
+cancelled accrual currency history and currency/create races fail safely. Actual
+in-flight period_lock/fiscal_year insertions force report lock waiting before its
+serializable snapshot, then 422 without mutation. Five child fixtures and settings
+retain complete per-operation coverage. See registries/CONSOLIDATION_AUXILIARY_INTEGRATION_CONTRACTS.md.
+Safe-number bounds, fixed-cent units and existing economic limitations remain;
+no full-int64, independent accounting or production IRR qualification.
+
 ## MON-026 asset and loan integration
 
 `tests/integration/asset-loan-integration.test.ts` combines actual asset/category,

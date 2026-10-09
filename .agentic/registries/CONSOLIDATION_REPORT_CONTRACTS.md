@@ -90,6 +90,11 @@ joins require the document and linked contact to have the same member owner.
 GET uses a repeatable-read read-only snapshot and never audits or persists.
 POST/new MCP recalculation require manage:reports, parent period/fiscal-year
 lock checks and the same parent organization lock as configuration writers.
+MON-028 additionally acquires SHARE locks on period_lock/fiscal_year tables before
+the first serializable snapshot, protecting absent rows and observing in-flight
+lock/year inserts before computation. These locks can delay period/year edits
+across organizations; bounded serialization/deadlock retries remain. See
+[combined contracts](CONSOLIDATION_AUXILIARY_INTEGRATION_CONTRACTS.md).
 They compute/preflight inside a serializable transaction, replace **all** saved
 entries for the group/endDate (including stale deleted/skipped/zero rules),
 validate inserted values, then audit. Other dates and member ledgers are

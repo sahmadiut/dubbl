@@ -34,7 +34,7 @@ export function registerConsolidationTools(server: McpServer, ctx: AuthContext) 
     inputSchema: reportInput,
   }, p => wrapTool(ctx, async () => { const { groupId: id, ...window } = p; return getConsolidationReport(ctx, id, window); }));
   server.registerTool("recalculate_consolidation_report", {
-    description: "Recalculate an owned group's report and atomically replace saved elimination entries for the period end, including stale deleted/skipped rules. Requires manage:reports and current access to all members. Returns persisted:true plus the same safe numeric/*Minor cents and rateExact contracts as the read report; no member GL posting. Repeated/concurrent calls replace entries without duplicates; each success is audited.",
+    description: "Recalculate an owned group's report and atomically replace saved elimination entries for the period end, including stale deleted/skipped rules. Requires manage:reports, an unlocked/open parent period and current access to all members. Serializes with period/fiscal-year edits before taking its report snapshot. Returns persisted:true plus the same safe numeric/*Minor cents and rateExact contracts as the read report; no member GL posting. Repeated/concurrent calls replace entries without duplicates; each success is audited.",
     inputSchema: reportInput,
   }, p => wrapTool(ctx, async () => { const { groupId: id, ...window } = p; return persistConsolidationReport(ctx, id, window); }));
 

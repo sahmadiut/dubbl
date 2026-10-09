@@ -46,11 +46,15 @@ for MON-028/MON-034, outside these member-scoped operations.
   above-safe historical ORM values still require the separate remediation gate.
 - defaultCurrency is an ISO functional currency; input normalization is explicit.
   Existing journal activity (including draft/deleted rows, preserving prior
-  policy), payroll runs, assets, asset categories or loans reject a changed value
+  policy), payroll runs, assets, asset categories, loans or accrual schedules reject a changed value
   with 409. Asset/category/loan history includes unposted and soft-deleted roots
   because their amounts have no currency snapshots. Their writers serialize on
   the same organization lock; same-currency metadata edits remain allowed. See
-  [MON-026 integration](ASSET_LOAN_INTEGRATION_CONTRACTS.md). IRR selection remains 403 even
+  [MON-026 integration](ASSET_LOAN_INTEGRATION_CONTRACTS.md). Accrual schedules also
+  have no currency snapshot; unposted and cancelled history freezes currency
+  under the same organization lock as schedule creation/posting/cancellation.
+  See [MON-028 integration](CONSOLIDATION_AUXILIARY_INTEGRATION_CONTRACTS.md).
+  IRR selection remains 403 even
   though synthetic legacy IRR rows are readable. Changing an empty org's
   currency never converts saved settings. Settings have no historical currency
   snapshot; this feature does not infer one or qualify cross-currency claims.

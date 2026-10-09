@@ -113,5 +113,6 @@ fixed-cents presentation/loaded sums use bigint while retaining English/USD labe
 This slice preserves independent schedules and caller-selected totals: it does
 not impose a new invoice-total cap, aggregate multi-schedule revenue policy or
 retroactively establish original invoice deferral. Economic workflow/FX/history,
-performance and MON-028 combined acceptance remain wider gates. No schema,
+performance remain wider gates. MON-028 now qualifies combined technical
+acceptance; see [combined contracts](CONSOLIDATION_AUXILIARY_INTEGRATION_CONTRACTS.md). No schema,
 migration, IRR enablement, deployment or independent accounting approval is claimed.

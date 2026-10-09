@@ -86,7 +86,7 @@ aliases, report persistence MCP parity, historical currency interpretation and
 concurrency with the old report writer. That writer does not yet take the
 configuration organization lock; this child does not qualify report persistence
 races. MCP reporting now loads public scoped groups; arithmetic is unchanged.
-MON-097/098 own accrual/revenue posting, MON-099 recurring payables. MON-028
-retains combined acceptance with all parent criteria unchanged. No schema,
+MON-097/098 own accrual/revenue posting, MON-099 recurring payables. MON-028 now
+qualifies [combined technical acceptance](CONSOLIDATION_AUXILIARY_INTEGRATION_CONTRACTS.md), retaining all parent criteria. No schema,
 migration, history rewrite, full-int64 adoption, production IRR flag change,
 independent accounting approval or deployment is implied.

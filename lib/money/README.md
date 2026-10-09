@@ -15,7 +15,11 @@ for all currencies; invoice currency-scale semantics remain separate. Bigint
 products, discounts/tax and sums plus scoped atomic catch-up/audit/schedule writes
 replace floating generation. See [payable contracts](../../.agentic/registries/RECURRING_PAYABLE_WIRE_CONTRACTS.md)
 for complete ranges, operation pairs and retained draft/expense policies.
-This does not enable full-int64/FX/IRR or complete MON-028 integration acceptance.
+MON-028 now qualifies combined accrual/revenue journals, recurring drafts and
+consolidation worksheets; unposted/cancelled accrual history freezes currency,
+and report persistence serializes with period/year edits before its snapshot.
+See [combined contracts](../../.agentic/registries/CONSOLIDATION_AUXILIARY_INTEGRATION_CONTRACTS.md).
+This does not enable full-int64/FX/IRR or independent accounting qualification.
 
 ## Inventory assembly adoption (MON-078)
 

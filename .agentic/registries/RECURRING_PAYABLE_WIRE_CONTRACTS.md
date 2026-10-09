@@ -1,7 +1,7 @@
 # Recurring payable wire contracts (MON-099)
 
-2026-10-06, Asia/Tehran. Safe-number additive ADR-006 contracts. MON-028 retains
-combined acceptance; full-int64, FX/history, economic workflow and IRR rollout
+2026-10-06, Asia/Tehran. Safe-number additive ADR-006 contracts. MON-028 now
+qualifies [combined technical acceptance](CONSOLIDATION_AUXILIARY_INTEGRATION_CONTRACTS.md); full-int64, FX/history, economic workflow and IRR rollout
 remain wider gates. No schema, migration or historical rescaling.
 
 ## Boundaries and envelopes

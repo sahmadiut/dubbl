@@ -78,6 +78,17 @@ python -m unittest discover -s .agentic/tests -v
 
 ## PostgreSQL fixtures
 
+MON-028 adds `tests/integration/consolidation-auxiliary-integration.test.ts` to
+normal discovery. Run `node --import tsx --test --test-concurrency=1
+tests/integration/consolidation-auxiliary-integration.test.ts
+tests/integration/consolidation-config.test.ts tests/integration/consolidation-report.test.ts
+tests/integration/accrual-schedules.test.ts tests/integration/revenue-schedules.test.ts
+tests/integration/recurring-payables.test.ts tests/integration/organization-settings.test.ts`
+on an explicit disposable loopback TEST_DATABASE_URL with CREATEDB. Parent fixtures
+use full SDK tools and exported routes, disable outbound providers/IRR, and observe
+actual PostgreSQL lock waiting for period/year insertion races. No Next dev/build
+or application database is needed. Serial migration avoids shared lock exhaustion.
+
 MON-026 adds `tests/integration/asset-loan-integration.test.ts` to normal
 integration discovery. Run `node --import tsx --test --test-concurrency=1
 tests/integration/asset-loan-integration.test.ts tests/integration/asset-master.test.ts

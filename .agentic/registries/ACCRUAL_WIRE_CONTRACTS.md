@@ -67,6 +67,10 @@ Accrual tables have no currency snapshot. Creation/read preserve fixed cents for
 all labels; posting requires a two-decimal current base and matching live
 accounts. JPY/KWD/IRR posting rejects 422 rather than reinterpret cents. Currency
 history/FX qualification remains separate; no existing history is converted.
+MON-028 adds a public organization-currency guard: any accrual schedule, including
+unposted or cancelled history, prevents changing base currency with 409. Creation,
+posting, cancellation and settings share the organization lock. See
+[combined contracts](CONSOLIDATION_AUXILIARY_INTEGRATION_CONTRACTS.md).
 
 Reads/mutations validate complete conserved allocation, UTC dates, state/order,
 contiguous posted periods, distinct org-owned journals and exact balanced saved
@@ -108,5 +112,6 @@ next period UUID when posting. Fixed-cent display and loaded-list sums use bigin
 presentation, retaining English/USD labels.
 
 No schema/migration, IRR/full-int64 enablement, deployment, screenshot or human
-accounting approval is asserted. Historical remediation, performance and
-MON-028 combined accrual/revenue/recurring qualification remain separate gates.
+accounting approval is asserted. MON-028 now qualifies combined technical
+accrual/revenue/recurring/report acceptance; historical remediation, performance
+and independent economic qualification remain separate gates.

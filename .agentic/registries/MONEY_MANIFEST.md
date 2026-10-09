@@ -1,5 +1,18 @@
 # Money and FX boundary manifest
 
+## MON-028 consolidation and auxiliary integration acceptance
+
+2026-10-09: [CONSOLIDATION_AUXILIARY_INTEGRATION_CONTRACTS](CONSOLIDATION_AUXILIARY_INTEGRATION_CONTRACTS.md)
+maps 31 child REST/MCP pairs, recurring manual/job generation and organization
+settings. Actual combined exact-major/cents replays, concurrent accrual/revenue
+posting, draft payable catch-up, report/worksheet persistence, deleted-rule cleanup,
+audit faults and whole-slice rejection snapshots pass. Any accrual history now
+freezes base currency, including unposted/cancelled schedules. Report persistence
+takes SHARE period/year table locks before its first serializable snapshot, so
+in-flight inserts cannot be missed. Fixed cents, safe-number/Minor aliases, FX
+compatibility and economic limitations remain explicit. No schema/rescale,
+full-int64, IRR rollout or independent accounting qualification is implied.
+
 ## MON-014 core accounting integration acceptance
 
 2026-10-09: [CORE_ACCOUNTING_INTEGRATION_CONTRACTS](CORE_ACCOUNTING_INTEGRATION_CONTRACTS.md)

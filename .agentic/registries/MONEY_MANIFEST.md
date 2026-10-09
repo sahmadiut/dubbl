@@ -1385,3 +1385,17 @@ accounts must match posting currency. Unsupported post-valuation charges/rollbac
 and batch failures leave the whole slice unchanged. No schema/history rescale,
 IRR flag or deployment change; full-int64, independent accounting, large-history
 performance and new valuation schedules remain separately scoped qualification.
+
+## MON-124 invoice party snapshots
+
+[INVOICE_SNAPSHOT_WIRE_CONTRACTS](INVOICE_SNAPSHOT_WIRE_CONTRACTS.md) maps the
+snapshot GET/PATCH and MCP read/correction pair. Corrections accept only strict
+party text fields and retain arbitrary historical exact strings without inferring
+money aliases or units. SQL-text JSON token preflight detects decimal precision
+loss before pg decoding, including safe-range high-precision values. Organization,
+invoice and signature locks preserve concurrent merges and signed history;
+correction and literal before/after audit commit together. Full REST/MCP fixtures
+verify tenant/custom-role isolation, invalid inputs, unsupported history, lock
+order, signing contention and audit rollback. MON-034 retains integration after
+MON-125 remaining opaque/admin, MON-126 signing and MON-127 SSR/PDF bridges.
+No schema, historical rewrite, currency rescale or production IRR flag change.

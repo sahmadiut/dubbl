@@ -118,3 +118,12 @@ MON-105 retains all original integration criteria. Each child inherits MON-011 a
 - [MON-121](../tasks/MON-121.md): Adopt exact custom and saved report contracts.
 - [MON-122](../tasks/MON-122.md): Adopt exact report schedule and delivery contracts.
 - [MON-123](../tasks/MON-123.md): Adopt exact budget notification contracts.
+
+## MON-034 bounded opaque and rendering children
+
+MON-034 retains its original integration criteria. Children inherit MON-011 and migration/API compatibility sections.
+
+- [MON-124](../tasks/MON-124.md): Adopt safe invoice snapshot correction contracts.
+- [MON-125](../tasks/MON-125.md): Qualify remaining opaque JSON and administrative forwarding.
+- [MON-126](../tasks/MON-126.md): Adopt safe public invoice signing contracts.
+- [MON-127](../tasks/MON-127.md): Qualify remaining SSR and PDF monetary bridges.

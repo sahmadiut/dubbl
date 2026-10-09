@@ -114,8 +114,11 @@ async function run() {
     assert.equal((await voidEntry(request({ reason: "No" }, keys.viewer), params(draft.id))).status, 403);
     assert.equal((await recode(request({ filter: { sourceType: "manual" }, target: { accountId: target.id } }, keys.viewer))).status, 403);
     for (const name of ["post_entry", "void_entry", "set_auto_reverse_date", "recode_entries", "import_journal_entries"]) {
-      assert.equal((await denied.call(name, { entryId: draft.id, reason: "No", autoReverseDate: null,
-        filter: { sourceType: "manual" }, target: { accountId: target.id }, rows: importRows() })).body.status, 403);
+      // Import now rejects unknown controls at SDK validation; send its actual
+      // valid schema here so this assertion specifically exercises permission.
+      const input = name === "import_journal_entries" ? { rows: importRows() } : { entryId: draft.id, reason: "No", autoReverseDate: null,
+        filter: { sourceType: "manual" }, target: { accountId: target.id }, rows: importRows() };
+      assert.equal((await denied.call(name, input)).body.status, 403);
     }
     assert.deepEqual(await snapshot(), before);
     before = await snapshot();

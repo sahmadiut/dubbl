@@ -26,6 +26,7 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { Upload, CheckCircle2, XCircle, Loader2, FileUp, ArrowRight } from "lucide-react";
+import { parseCSV } from "@/lib/import-export/csv-utils";
 
 interface ColumnMapping {
   csvColumn: string;
@@ -102,18 +103,11 @@ export function BulkImportWizard({
     const reader = new FileReader();
     reader.onload = (ev) => {
       const text = ev.target?.result as string;
-      const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
-      if (lines.length < 2) return;
-
-      const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g, ""));
+      let parsed: ReturnType<typeof parseCSV>;
+      try { parsed = parseCSV(text); }
+      catch (err) { setError(err instanceof Error ? err.message : "Invalid CSV"); return; }
+      const { headers, rows } = parsed;
       setCsvHeaders(headers);
-
-      const rows = lines.slice(1).map(line => {
-        const values = line.split(",").map(v => v.trim().replace(/^"|"$/g, ""));
-        const row: Record<string, string> = {};
-        headers.forEach((h, i) => { row[h] = values[i] || ""; });
-        return row;
-      });
       setCsvData(rows);
 
       const autoMappings: ColumnMapping[] = headers.map(h => {
@@ -164,6 +158,8 @@ export function BulkImportWizard({
     });
 
     try {
+      const targets = mappings.filter(m => m.targetField).map(m => m.targetField);
+      if (new Set(targets).size !== targets.length) throw new Error("Map each target field only once");
       const res = await fetch(previewEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
@@ -195,6 +191,8 @@ export function BulkImportWizard({
     });
 
     try {
+      const targets = mappings.filter(m => m.targetField).map(m => m.targetField);
+      if (new Set(targets).size !== targets.length) throw new Error("Map each target field only once");
       const res = await fetch(importEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },

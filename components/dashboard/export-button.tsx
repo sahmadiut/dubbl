@@ -2,32 +2,19 @@
 
 import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { generateCSV } from "@/lib/import-export/csv-utils";
 
 interface ExportButtonProps {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  data: Record<string, any>[];
+  data: object[];
   columns: string[];
   filename?: string;
-}
-
-function toCsvValue(value: unknown): string {
-  if (value === null || value === undefined) return "";
-  const str = String(value);
-  if (str.includes(",") || str.includes('"') || str.includes("\n")) {
-    return `"${str.replace(/"/g, '""')}"`;
-  }
-  return str;
 }
 
 export function ExportButton({ data, columns, filename = "export" }: ExportButtonProps) {
   const handleExport = () => {
     if (data.length === 0) return;
 
-    const header = columns.join(",");
-    const rows = data.map((row) =>
-      columns.map((col) => toCsvValue(row[col])).join(",")
-    );
-    const csv = [header, ...rows].join("\n");
+    const csv = generateCSV(data.map(row => Object.fromEntries(Object.entries(row))), columns);
 
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);

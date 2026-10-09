@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { reportDateSchema } from "./statement-wire";
+import { generateCSV } from "@/lib/import-export/csv-utils";
 
 export const sources = {
   invoices: { fields: ["id", "invoiceNumber", "contactName", "status", "issueDate", "dueDate", "subtotal", "taxTotal", "total", "amountPaid", "amountDue", "currencyCode"], money: ["subtotal", "taxTotal", "total", "amountPaid", "amountDue"], numbers: [], date: "issueDate" },
@@ -54,9 +55,5 @@ export const createSavedReportSchema = z.object({
 export const updateSavedReportSchema = createSavedReportSchema.partial().refine(value => Object.keys(value).length > 0, "Provide a report field to update");
 
 export function customCsv(columns: string[], rows: Record<string, unknown>[]) {
-  const cell = (value: unknown) => {
-    const text = String(value ?? "");
-    return /[",\r\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
-  };
-  return [columns.map(cell).join(","), ...rows.map(row => columns.map(name => cell(row[name])).join(","))].join("\n");
+  return generateCSV(rows, columns);
 }

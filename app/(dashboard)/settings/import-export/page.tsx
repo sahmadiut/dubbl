@@ -67,6 +67,7 @@ const ENTITIES: {
       { key: "type", label: "Type", required: true },
       { key: "subType", label: "Sub Type" },
       { key: "description", label: "Description" },
+      { key: "isActive", label: "Active (true/false)" },
     ],
   },
   {
@@ -100,9 +101,11 @@ const ENTITIES: {
       { key: "name", label: "Name", required: true },
       { key: "sku", label: "SKU" },
       { key: "description", label: "Description" },
-      { key: "unitPrice", label: "Unit Price" },
-      { key: "costPrice", label: "Cost Price" },
-      { key: "type", label: "Type" },
+      { key: "unitPrice", label: "Unit Price (decimal)" },
+      { key: "costPrice", label: "Cost Price (decimal)" },
+      { key: "unitPriceMinor", label: "Unit Price (minor units)" },
+      { key: "costPriceMinor", label: "Cost Price (minor units)" },
+      { key: "currencyCode", label: "Currency (must match organization)" },
       { key: "quantityOnHand", label: "Quantity On Hand" },
     ],
   },
@@ -166,6 +169,8 @@ const ENTITIES: {
       { key: "lineAccountCode", label: "Account Code", required: true },
       { key: "debit", label: "Debit" },
       { key: "credit", label: "Credit" },
+      { key: "debitAmountMinor", label: "Debit (minor units)" },
+      { key: "creditAmountMinor", label: "Credit (minor units)" },
     ],
   },
   {
@@ -273,8 +278,10 @@ export default function ImportExportPage() {
       } else {
         const key = entities[0];
         const params = new URLSearchParams();
-        if (exportDateFrom) params.set("startDate", exportDateFrom);
-        if (exportDateTo) params.set("endDate", exportDateTo);
+        if (EXPORT_ENTITIES.find(e => e.key === key)?.transactional) {
+          if (exportDateFrom) params.set("startDate", exportDateFrom);
+          if (exportDateTo) params.set("endDate", exportDateTo);
+        }
 
         const res = await fetch(`/api/v1/export/${key}?${params}`, {
           headers: { "x-organization-id": orgId },

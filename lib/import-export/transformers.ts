@@ -1,39 +1,39 @@
 import type { SourceSystem } from "./types";
+import { z } from "zod";
+import { legacyMinor, WireCompatibilityError } from "@/lib/money/wire";
 
 /**
  * Parse a money string to integer cents.
  * Handles "1,234.56", "1234.56", "1.234,56" (European), negative with - or ()
  */
-export function parseMoney(value: string): number {
-  if (!value || value.trim() === "") return 0;
-  let cleaned = value.trim();
-
-  // Handle parentheses for negative
-  const isNeg = cleaned.startsWith("(") && cleaned.endsWith(")");
-  if (isNeg) cleaned = cleaned.slice(1, -1);
-
-  // Remove currency symbols
-  cleaned = cleaned.replace(/[$€£¥]/g, "");
-
-  // Detect European format: "1.234,56" (dot as thousands, comma as decimal)
-  if (/\d+\.\d{3},\d{1,2}$/.test(cleaned)) {
-    cleaned = cleaned.replace(/\./g, "").replace(",", ".");
-  } else {
-    // Standard format: remove commas as thousands separators
-    cleaned = cleaned.replace(/,/g, "");
+export function parseMoney(value: string | number): number {
+  // Decimal Numbers beyond this bound can lose hundredths during JSON decoding.
+  if (typeof value === "number" && (!Number.isFinite(value) || Math.abs(value) > 2 ** 45 - 1)) {
+    throw new WireCompatibilityError("Large decimal import amounts must use text or Minor aliases");
   }
-
-  const num = parseFloat(cleaned);
-  if (isNaN(num)) return 0;
-
-  const cents = Math.round(num * 100);
-  return isNeg ? -cents : cents;
+  let cleaned = String(value).trim();
+  if (cleaned === "") return 0;
+  const parentheses = cleaned.startsWith("(") && cleaned.endsWith(")");
+  if (parentheses) cleaned = cleaned.slice(1, -1);
+  cleaned = cleaned.replace(/^[$€£¥]\s*/, "");
+  const negative = parentheses || cleaned.startsWith("-");
+  if (!parentheses && negative) cleaned = cleaned.slice(1);
+  if (/^\d{1,3}(?:\.\d{3})+,\d{1,2}$/.test(cleaned)) cleaned = cleaned.replaceAll(".", "").replace(",", ".");
+  else if (/^\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?$/.test(cleaned)) cleaned = cleaned.replaceAll(",", "");
+  if (cleaned.length > 40 || !/^\d+(?:\.\d{1,2})?$/.test(cleaned)) {
+    throw new z.ZodError([{ code: "custom", path: ["amount"], message: "Expected decimal money with at most two fractional digits and valid grouping" }]);
+  }
+  const [whole, fraction = ""] = cleaned.split(".");
+  const minor = (BigInt(whole) * 100n + BigInt(fraction.padEnd(2, "0"))) * (negative ? -1n : 1n);
+  if (minor < BigInt(Number.MIN_SAFE_INTEGER) || minor > BigInt(Number.MAX_SAFE_INTEGER)) throw new WireCompatibilityError();
+  return legacyMinor(minor);
 }
 
 /**
  * Normalize date strings to YYYY-MM-DD format.
  */
 export function parseDate(value: string, _source: SourceSystem): string {
+  void _source; // Existing date conventions are shared across source systems.
   if (!value || value.trim() === "") return "";
   const trimmed = value.trim();
 
@@ -124,22 +124,22 @@ export function normalizeAccountType(value: string, source: SourceSystem): strin
   }
 
   if (source === "quickbooks") {
-    return QB_ACCOUNT_TYPE_MAP[lower] || "expense";
+    return QB_ACCOUNT_TYPE_MAP[lower] || lower;
   }
   if (source === "xero") {
-    return XERO_ACCOUNT_TYPE_MAP[lower] || "expense";
+    return XERO_ACCOUNT_TYPE_MAP[lower] || lower;
   }
 
   // FreshBooks and Wave use similar naming to QuickBooks
-  return QB_ACCOUNT_TYPE_MAP[lower] || "expense";
+  return QB_ACCOUNT_TYPE_MAP[lower] || lower;
 }
 
 /**
  * Normalize contact type to Dubbl enum.
  */
-export function normalizeContactType(value: string): "customer" | "supplier" | "both" {
+export function normalizeContactType(value: string): string {
   const lower = value.toLowerCase().trim();
   if (lower === "vendor" || lower === "supplier") return "supplier";
   if (lower === "both" || lower === "customer & vendor") return "both";
-  return "customer";
+  return lower || "customer";
 }

@@ -4,6 +4,7 @@ import { customConfigSchema, customCsv, sources } from "./custom-wire";
 import { runCustomReport, type CustomReportDb } from "./custom";
 import type { AuthContext } from "@/lib/api/auth-context";
 import { stringifyWire } from "@/lib/money/wire";
+import { spreadsheetCell } from "@/lib/import-export/csv-utils";
 
 /** Real saved-report data in literal integer units. XLSX money is text to avoid Excel's 15-digit limit. */
 export async function generateScheduledAttachment(ctx: AuthContext, report: { name: string; config: unknown }, format: "csv" | "xlsx" | "pdf", reader?: CustomReportDb) {
@@ -22,7 +23,7 @@ export async function generateScheduledAttachment(ctx: AuthContext, report: { na
     sheet.addRow(columns);
     for (const row of data) sheet.addRow(columns.map(name => {
       const value = row[name];
-      return value == null ? null : money.includes(name) || name.endsWith("Minor") ? String(value) : value;
+      return spreadsheetCell(value, money.includes(name) || name.endsWith("Minor"));
     }));
     for (const column of sheet.columns) column.width = 24;
     return { filename, content: Buffer.from(await workbook.xlsx.writeBuffer()) };

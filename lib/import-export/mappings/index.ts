@@ -46,15 +46,20 @@ const registry: MappingRegistry = {
 
 /**
  * Get column aliases for a source/entity combination.
- * Bills also expose canonical names and exact money fields for every source.
- * Other custom-source or unknown combinations return an empty array.
+ * All sources include canonical fields; exact aliases retain domain units.
  */
 export function getMapping(source: SourceSystem, entity: ImportEntity): ColumnAlias[] {
   const mapped = registry[`${source}:${entity}`] || [];
-  if (entity !== "bills") return mapped;
-  const canonical = ["billNumber", "contactName", "issueDate", "dueDate", "currencyCode", "lineDescription", "lineQuantity",
-    "lineUnitPrice", "lineUnitPriceExact", "lineUnitPriceMinor", "lineAmount", "lineAmountExact", "lineAmountMinor", "lineAccountCode"];
-  return canonical.map(targetField => ({ targetField,
+  const canonical: Record<ImportEntity, string[]> = {
+    accounts: ["code", "name", "type", "subType", "description", "isActive"],
+    contacts: ["name", "email", "phone", "type", "taxNumber", "billingLine1", "billingCity", "billingState", "billingPostalCode", "billingCountry"],
+    products: ["name", "sku", "description", "unitPrice", "costPrice", "unitPriceMinor", "costPriceMinor", "quantityOnHand", "type", "currencyCode"],
+    invoices: ["invoiceNumber", "contactId", "contactName", "issueDate", "dueDate", "reference", "currencyCode", "lineDescription", "lineQuantity", "lineUnitPrice", "lineUnitPriceMinor", "lineAccountId", "lineAccountCode", "lineAmount"],
+    bills: ["billNumber", "contactName", "issueDate", "dueDate", "currencyCode", "lineDescription", "lineQuantity", "lineUnitPrice", "lineUnitPriceExact", "lineUnitPriceMinor", "lineAmount", "lineAmountExact", "lineAmountMinor", "lineAccountCode"],
+    entries: ["entryNumber", "date", "description", "reference", "lineAccountCode", "debit", "credit", "debitAmountMinor", "creditAmountMinor"],
+    "bank-transactions": ["date", "description", "amount", "amountExact", "amountMinor", "reference", "bankAccountCode", "debit", "credit"],
+  };
+  return [...new Set([...canonical[entity], ...mapped.map(field => field.targetField)])].map(targetField => ({ targetField,
     aliases: [...new Set([targetField, ...(mapped.find(field => field.targetField === targetField)?.aliases ?? [])])] }));
 }
 

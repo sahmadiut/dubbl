@@ -1,5 +1,18 @@
 # Money and FX boundary manifest
 
+## MON-033 generic import and export adoption
+
+[GENERIC_IMPORT_EXPORT_WIRE_CONTRACTS](GENERIC_IMPORT_EXPORT_WIRE_CONTRACTS.md)
+documents source mappings/preprocessing, generic account/contact/product jobs and
+preview, all seven REST/MCP CSV projections, consistent ZIP snapshots, job pagination
+and shared scalar CSV/XLSX forwarding. Fixed-two legacy prices/text retain canonical
+Minor aliases and saved currency metadata; bigint parsing/formatting prevents silent
+rounding. Strict full MCP schemas, batch preflight, scoped references, role/date/range
+guards, row savepoints and transactional audit keep invalid inputs before writes.
+Products reuse the existing inventory opening-stock path. Real handler/full-registry
+fixtures and domain/serialized-XLSX regressions cover the supported contracts;
+full-int64, financial, migration, localization and release gates remain separate.
+
 ## MON-015 auxiliary and reporting integration acceptance
 
 [AUXILIARY_REPORT_INTEGRATION_CONTRACTS](AUXILIARY_REPORT_INTEGRATION_CONTRACTS.md)

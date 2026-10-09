@@ -1,5 +1,7 @@
 import type { SourceSystem } from "./types";
 import { normalizeAccountType, normalizeContactType, parseDate, parseMoney } from "./transformers";
+import { centsToDecimal } from "./csv-utils";
+import { legacyMinor } from "@/lib/money/wire";
 
 type RawRow = Record<string, unknown>;
 
@@ -59,11 +61,11 @@ export function preProcessProducts(rows: RawRow[]): RawRow[] {
     const result = { ...row };
     if (result.unitPrice && typeof result.unitPrice === "string") {
       const cents = parseMoney(result.unitPrice);
-      result.unitPrice = cents / 100;
+      result.unitPrice = centsToDecimal(cents);
     }
     if (result.costPrice && typeof result.costPrice === "string") {
       const cents = parseMoney(result.costPrice);
-      result.costPrice = cents / 100;
+      result.costPrice = centsToDecimal(cents);
     }
     return result;
   });
@@ -79,7 +81,7 @@ export function preProcessBankTransactions(rows: RawRow[], source: SourceSystem)
       const debitVal = parseMoney(str(result.debit));
       const creditVal = parseMoney(str(result.credit));
       // Deposits are positive, payments are negative
-      result.amount = (creditVal - debitVal) / 100;
+      result.amount = centsToDecimal(legacyMinor(BigInt(creditVal) - BigInt(debitVal)));
     }
     // Clean up helper fields
     delete result.debit;

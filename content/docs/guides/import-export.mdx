@@ -70,6 +70,17 @@ Import entities in this order to resolve dependencies correctly:
 7. Preview the data and check for validation errors
 8. Click **Import** to process the data
 
+Account, contact and product batches support up to 1000 rows. CSV files may contain
+quoted commas, escaped quotes and multiline descriptions, up to 5 MB. Map each
+target field once. Skip source columns that have no supported target.
+
+Generic product prices use fixed two-decimal values such as `12.50`, or exact
+`unitPriceMinor` / `costPriceMinor` strings such as `1250`. Matching decimal and
+minor-unit columns must agree. Use text or minor-unit columns for large values;
+extra fractional digits and malformed amounts are rejected. Quantities are whole
+units. Positive opening stock requires a positive cost and uses the inventory
+opening-stock workflow. Source product type metadata has no target here; skip it.
+
 ## Column mapping reference
 
 When you select a source system, Dubbl automatically maps column headers from that system to the correct fields. For example:
@@ -100,8 +111,8 @@ When you select a source system, Dubbl automatically maps column headers from th
 
 ### Export format
 
-- Monetary amounts are exported as decimal strings (e.g. `125.50` not `12550`)
-- Foreign keys are resolved to human-readable names (contact IDs become contact names, account IDs become account codes)
+- Legacy monetary columns retain fixed two-decimal text (e.g. stored `12550` becomes `125.50`), with additional exact `Minor` columns and currency metadata. Use the minor-unit columns for new integrations; the legacy decimal column does not infer a currency display scale.
+- Contact references become contact names. Journal account references become account codes; invoice/bill `lineAccountCode` retains its existing account UUID value.
 - Dates are in `YYYY-MM-DD` format
 - Boolean fields use `true`/`false`
 
@@ -111,7 +122,9 @@ The following MCP tools are available for programmatic import/export:
 
 - `get_import_template` - Get expected columns and aliases for a source/entity combo
 - `import_csv_data` - Import CSV data directly (accounts, contacts, products)
+- `preview_csv_import_rows` - Preview mapped account/contact/product rows without writes
 - `export_csv_data` - Export data as CSV text
+- `export_all_csv_data` - Export all seven CSV files as a base64 ZIP
 - `list_import_jobs` - List past import jobs
 - `preview_invoice_import` - Validate nested invoices or grouped mapped CSV lines and exact totals
 - `import_invoices` - Import draft invoices with per-document job results

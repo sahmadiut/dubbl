@@ -52,7 +52,7 @@ export async function lockedItem(tx: Tx, ctx: AuthContext, id: string) {
   if (!row) throw new AuthError("Inventory item not found", 404); itemDto(row); return row;
 }
 
-async function createItem(tx: Tx, ctx: AuthContext, input: z.infer<typeof itemCreateSchema>, request?: Request) {
+export async function createInventoryItemInTransaction(tx: Tx, ctx: AuthContext, input: z.infer<typeof itemCreateSchema>, request?: Request) {
   const values = catalogPrices(input), value = openingValue(input), today = new Date().toISOString().slice(0, 10);
   await references(tx, ctx, values); await codeAvailable(tx, ctx, values.code);
   if (value > 0) await assertNotLocked(ctx.organizationId, today, ctx);
@@ -81,7 +81,7 @@ async function createItem(tx: Tx, ctx: AuthContext, input: z.infer<typeof itemCr
 }
 export async function createInventoryItem(ctx: AuthContext, input: unknown, request?: Request) {
   requireRole(ctx, "manage:inventory"); const parsed = itemCreateSchema.parse(input); catalogPrices(parsed); openingValue(parsed);
-  return db.transaction(async tx => { await orgLock(tx, ctx); return createItem(tx, ctx, parsed, request); });
+  return db.transaction(async tx => { await orgLock(tx, ctx); return createInventoryItemInTransaction(tx, ctx, parsed, request); });
 }
 export async function getInventoryItem(ctx: AuthContext, id: string) {
   catalogId.parse(id); const row = await db.query.inventoryItem.findFirst({ where: itemScope(ctx, id) });
@@ -243,7 +243,7 @@ export async function importInventoryCsv(ctx: AuthContext, csv: string, request?
       const kind = await db.transaction(async tx => {
         await orgLock(tx, ctx); const input = row.input!, values = catalogPrices(input);
         const existing = await tx.query.inventoryItem.findFirst({ where: and(itemScope(ctx), eq(inventoryItem.code, input.code)) });
-        if (!existing) { await createItem(tx, ctx, input, request); return "created"; }
+        if (!existing) { await createInventoryItemInTransaction(tx, ctx, input, request); return "created"; }
         const before = await lockedItem(tx, ctx, existing.id);
         const { quantityOnHand: _quantity, ...patch } = values; void _quantity;
         itemDto({ ...before, ...patch, purchasePrice: patch.purchasePrice ?? 0, salePrice: patch.salePrice ?? 0, reorderPoint: patch.reorderPoint ?? 0 });

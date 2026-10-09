@@ -1,5 +1,23 @@
 # Verification matrix
 
+## MON-029 report and dashboard integration
+
+`tests/integration/report-dashboard-integration.test.ts` uses actual numeric
+REST/exact MCP invoice/bill creation and shared recognition in a migrated
+disposable database. Seventeen real report/widget reader pairs plus custom
+run/saved export connect all six domain slices. Independent expectations cover
+net revenue/profit, tax, natural-sign budget totals and gross AR/AP/contact/
+forecast values above int32, numeric/decimal/Minor aliases and USD/IRR/JPY/KWD
+units. API-key and full SDK registry exercise strict controls, denied/data-only
+roles, foreign organization/contact scope, stored unsafe document/GL failures
+and whole-slice no-write snapshots. The fixture exposed unknown controls being
+stripped by budget_vs_actual; complete strict registration fixes it. All linked
+financial, receivable/payable, tax, operational, dashboard and budget operation
+suites retain deep bounds, signed cancellation, configuration, delivery and file
+coverage. See registries/REPORT_DASHBOARD_INTEGRATION_CONTRACTS.md. Separate
+report calls are separate snapshots; independent accounting and release gates
+remain open.
+
 ## MON-028 consolidation and auxiliary integration
 
 `tests/integration/consolidation-auxiliary-integration.test.ts` combines actual

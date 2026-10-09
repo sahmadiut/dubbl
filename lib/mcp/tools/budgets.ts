@@ -102,10 +102,10 @@ export function registerBudgetTools(server: McpServer, ctx: AuthContext) {
     params => wrapTool(ctx, async () => { await deleteBudget(ctx, params.budgetId); return { success: true }; }),
   );
 
-  server.tool(
+  server.registerTool(
     "budget_vs_actual",
-    "Compare a budget against posted organization-base GL activity, natural-signed (asset/expense debit minus credit; other types credit minus debit). Monetary outputs retain signed safe integer cents (+/-9007199254740991) and add agreeing Minor strings: budgeted, actual, variance, burnRate, projected, period values and total values. Returns currencyCode, budget, comparisons and UTC elapsed/remaining days. variancePct is an integer percent; burn projections and percentages round nearest with signed ties toward positive infinity. No FX conversion of already-base GL amounts. Omit budgetId for newest non-deleted budget, including inactive budgets; missing/foreign IDs return null budget and zero totals. Requires view:data. Unsupported amounts/history return 422 LEGACY_NUMERIC_RANGE.",
-    budgetReportSchema.shape,
+    { description: "Compare a budget against posted organization-base GL activity, natural-signed (asset/expense debit minus credit; other types credit minus debit). Monetary outputs retain signed safe integer cents (+/-9007199254740991) and add agreeing Minor strings: budgeted, actual, variance, burnRate, projected, period values and total values. Returns currencyCode, budget, comparisons and UTC elapsed/remaining days. variancePct is an integer percent; burn projections and percentages round nearest with signed ties toward positive infinity. No FX conversion of already-base GL amounts. Omit budgetId for newest non-deleted budget, including inactive budgets; missing/foreign IDs return null budget and zero totals. Requires view:data. Unsupported amounts/history return 422 LEGACY_NUMERIC_RANGE.",
+      inputSchema: budgetReportSchema },
     params => wrapTool(ctx, () => getBudgetReport(ctx, params)),
   );
 }

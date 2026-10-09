@@ -1,5 +1,22 @@
 # Money and FX boundary manifest
 
+## MON-029 report and dashboard integration acceptance
+
+[REPORT_DASHBOARD_INTEGRATION_CONTRACTS](REPORT_DASHBOARD_INTEGRATION_CONTRACTS.md)
+joins the six domain inventories and every read/configuration/delivery/export
+boundary with their detailed inputs, units, aliases and safe ranges. Actual
+numeric REST/exact MCP taxed invoices and a bill are recognized into GL and feed
+budget, financial, aging/contact, tax, operational, dashboard and saved custom
+reports. Independent expectations distinguish net revenue/profit, natural-sign
+budget totals, tax and gross obligations/forecast rather than assuming equality.
+Four synthetic currency contexts retain saved units; full-registry SDK/API-key
+fixtures verify strict controls, denied/data-only readers, tenant scope, stored
+int64 failures and unchanged financial/config/audit snapshots. budget_vs_actual
+now registers its complete strict schema to reject unknown controls. All linked
+operation suites are reverified; accounting defects remain PAR-008/QA-001 and
+full-int64, migration, performance, localization and production gates remain.
+No schema/history rescale/IRR flag change.
+
 ## MON-028 consolidation and auxiliary integration acceptance
 
 2026-10-09: [CONSOLIDATION_AUXILIARY_INTEGRATION_CONTRACTS](CONSOLIDATION_AUXILIARY_INTEGRATION_CONTRACTS.md)

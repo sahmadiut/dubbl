@@ -180,6 +180,26 @@ async function run() {
     const freeSale = await posted({ ...basic, lines: [{ ...basic.lines[0], inventoryItemId: zeroCost[0].id }] });
     assert.equal((await VOID(req("POST"), params(freeSale.id))).status, 200);
     assert.equal((await db.query.inventoryItem.findFirst({ where: eq(inventoryItem.id, zeroCost[0].id) }))!.quantityOnHand, 5);
+    // Rounded average cost can exceed remaining carrying value; issues cap at that
+    // value, and REST/MCP voids restore the captured cost rather than unitCost * qty.
+    for (const viaMcp of [false, true]) {
+      const [residual] = await db.insert(inventoryItem).values({ organizationId: a.id, code: `RESIDUAL-${viaMcp}`, name: "Rounded average",
+        quantityOnHand: 4, averageCost: 1, totalValue: 2 }).returning();
+      const receipt = await make({ ...basic, lines: [{ ...basic.lines[0], quantity: 3, inventoryItemId: residual.id }] });
+      if (viaMcp) assert.equal((await ma.call("post_sales_receipt", { salesReceiptId: receipt.id })).isError, false);
+      else assert.equal((await POST_RECEIPT(req("POST"), params(receipt.id))).status, 200);
+      const issued = (await db.query.inventoryItem.findFirst({ where: eq(inventoryItem.id, residual.id) }))!;
+      assert.equal(issued.quantityOnHand, 1); assert.equal(issued.totalValue, 0);
+      const [movement] = await db.select().from(inventoryMovement).where(eq(inventoryMovement.referenceId, receipt.id));
+      assert.equal(movement.value, -2); assert.equal(movement.unitCost, 1);
+      const cogs = await db.select().from(journalLine).where(eq(journalLine.journalEntryId, movement.journalEntryId!));
+      assert.equal(cogs.reduce((sum, line) => sum + line.debitAmount, 0), 2);
+      assert.equal(cogs.reduce((sum, line) => sum + line.creditAmount, 0), 2);
+      if (viaMcp) assert.equal((await ma.call("void_sales_receipt", { salesReceiptId: receipt.id })).isError, false);
+      else assert.equal((await VOID(req("POST"), params(receipt.id))).status, 200);
+      const restored = (await db.query.inventoryItem.findFirst({ where: eq(inventoryItem.id, residual.id) }))!;
+      assert.equal(restored.quantityOnHand, 4); assert.equal(restored.totalValue, 2); assert.equal(restored.averageCost, 1);
+    }
     // Unsafe/corrupt stored rows are rejected and every failed operation preserves snapshots.
     const corrupt = await make(); await db.execute(sql`update sales_receipt set total=9007199254740992 where id=${corrupt.id}`);
     await unchanged(async () => { assert.equal((await GET(req("GET"), params(corrupt.id))).status, 422); assert.equal((await POST_RECEIPT(req("POST"), params(corrupt.id))).status, 422); assert.equal((await ma.call("get_sales_receipt", { salesReceiptId: corrupt.id })).isError, true); });
@@ -200,8 +220,15 @@ async function run() {
     // Historical reversals can still use inactive organization-owned accounts.
     assert.equal((await VOID(req("POST"), params(bankSale.id))).status, 200);
     await db.update(chartAccount).set({ isActive: true }).where(eq(chartAccount.id, revenue.id));
-    const unsafeStock = await make(stockBody); await db.update(inventoryItem).set({ averageCost: Number.MAX_SAFE_INTEGER }).where(eq(inventoryItem.id, stock.id));
-    await unchanged(async () => { assert.equal((await POST_RECEIPT(req("POST"), params(unsafeStock.id))).status, 422); });
+    // MAX_SAFE_INTEGER * quantity is a bigint intermediate that may safely cap at
+    // carrying value. Use a genuinely unsafe stored cost to test numeric rejection.
+    const unsafeStock = await make(stockBody); await db.execute(sql`update inventory_item set average_cost=9007199254740992 where id=${stock.id}`);
+    await unchanged(async () => {
+      const response = await POST_RECEIPT(req("POST"), params(unsafeStock.id));
+      assert.equal(response.status, 422); assert.equal((await response.json()).code, "LEGACY_NUMERIC_RANGE");
+      const result = await ma.call("post_sales_receipt", { salesReceiptId: unsafeStock.id });
+      assert.equal(result.isError, true); assert.equal(result.body.status, 422); assert.equal(result.body.code, "LEGACY_NUMERIC_RANGE");
+    });
     await db.update(inventoryItem).set({ averageCost: 300 }).where(eq(inventoryItem.id, stock.id));
     // Faults after headers/sequence, ledger and stock writes roll everything back.
     await fault("sales_receipt_line", "insert", async () => { assert.equal((await POST(req("POST", basic))).status, 500); assert.equal((await ma.call("create_sales_receipt", basic)).isError, true); });

@@ -55,6 +55,7 @@ export async function createPayrollEmployee(ctx: AuthContext, input: unknown, re
   requireRole(ctx, "manage:payroll"); const values = payrollMasterAmounts(employeeCreateSchema.parse(input), true);
   dates(values.startDate, values.endDate);
   return db.transaction(async tx => {
+    await lockTaxOrganization(tx, ctx.organizationId);
     await ownedMember(tx, ctx, values.memberId);
     const [row] = await tx.insert(payrollEmployee).values({ ...values, salary: values.salary!, organizationId: ctx.organizationId,
       payFrequency: values.payFrequency ?? "monthly", compensationType: values.compensationType ?? "salary", taxRate: values.taxRate ?? 2000,
@@ -65,6 +66,7 @@ export async function createPayrollEmployee(ctx: AuthContext, input: unknown, re
 export async function updatePayrollEmployee(ctx: AuthContext, id: string, input: unknown, request?: Request) {
   requireRole(ctx, "manage:payroll"); payrollMasterId.parse(id); const values = payrollMasterAmounts(employeeUpdateSchema.parse(input));
   return db.transaction(async tx => {
+    await lockTaxOrganization(tx, ctx.organizationId);
     const [before] = await tx.select().from(payrollEmployee).where(employeeScope(ctx, id)).for("update");
     if (!before) throw new AuthError("Employee not found", 404);
     const old = payrollMasterDto(before); dates(before.startDate, values.endDate === undefined ? before.endDate : values.endDate);
@@ -80,6 +82,7 @@ export async function updatePayrollEmployee(ctx: AuthContext, id: string, input:
 export async function deletePayrollEmployee(ctx: AuthContext, id: string, request?: Request) {
   requireRole(ctx, "manage:payroll"); payrollMasterId.parse(id);
   return db.transaction(async tx => {
+    await lockTaxOrganization(tx, ctx.organizationId);
     const [row] = await tx.select().from(payrollEmployee).where(employeeScope(ctx, id)).for("update");
     if (!row) throw new AuthError("Employee not found", 404);
     const before = payrollMasterDto(row);

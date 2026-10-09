@@ -1299,3 +1299,17 @@ safe canonical signed bytes for initial/retry delivery. Qualified same-scale
 currencies, conservative checkout limits and explicit no-FX policy are recorded.
 Actual REST/MCP/PostgreSQL fixtures mock all external provider/delivery calls.
 No schema/history/IRR rollout; MON-016 retains combined qualification.
+
+## MON-025 integrated payroll acceptance
+
+[PAYROLL_INTEGRATION_CONTRACTS](PAYROLL_INTEGRATION_CONTRACTS.md) joins all seven
+payroll boundary registries and actual REST/MCP fixtures. Legacy numeric cents
+and canonical Minor strings retain their documented safe ranges and units;
+physical hours, percentages, basis points and exact FX remain separate.
+Combined configuration/time/master inputs reconcile with one balanced posted
+journal, saved payslips and reports. Future master/config/compensation edits and
+changed live FX preserve posted rows and payment snapshots. Employee writers now
+lock the organization before employee/member work, avoiding a reproduced audit
+foreign-key/run-creation deadlock. Held-lock and concurrent cross-writer fixtures
+verify the order and currency/history guards. No schema or historical rescale;
+full-int64 and independent production qualification remain downstream.

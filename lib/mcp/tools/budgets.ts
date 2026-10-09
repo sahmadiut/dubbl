@@ -29,10 +29,9 @@ export function registerBudgetTools(server: McpServer, ctx: AuthContext) {
     description: "Check this organization's active budgets for periods containing today (UTC); requires manage:budgets. Input is an empty object. Returns checked period count, alerted newly created recipient notification count and evaluations with currencyCode, budgeted/actual/threshold numeric cents and agreeing *Minor strings (+/-9007199254740991), thresholdPct and exceedsThreshold. Actual is absolute posted base-GL net activity; threshold is rounded half-up. No FX/rescaling. Notifies owners/admins once per period per user, including concurrent/repeated checks. Unsupported money/history fails with 422 LEGACY_NUMERIC_RANGE before notification writes; optional email delivery is best effort.",
     inputSchema: budgetAlertSchema,
   }, params => wrapTool(ctx, () => checkBudgetAlerts(ctx, params)));
-  server.tool(
-    "list_budgets",
-    "List budgets for the organization with pagination, newest first. Each budget includes its fiscal year (when set). Returns the budgets and the total count. Returns headers only, without line totals or period amounts; get_budget returns those with exact cents aliases.",
-    {
+  server.registerTool("list_budgets", {
+    description: "List budgets for the organization with pagination, newest first. Each budget includes its fiscal year (when set). Returns the budgets and the total count. Returns headers only, without line totals or period amounts; get_budget returns those with exact cents aliases.",
+    inputSchema: z.strictObject({
       limit: z
         .number()
         .int()
@@ -42,7 +41,8 @@ export function registerBudgetTools(server: McpServer, ctx: AuthContext) {
         .default(50)
         .describe("Number of budgets to return (max 100)"),
       page: z.number().int().min(1).optional().default(1).describe("Page number (1-based)"),
-    },
+    }),
+  },
     (params) =>
       wrapTool(ctx, async () => {
         const conditions = [
@@ -69,36 +69,36 @@ export function registerBudgetTools(server: McpServer, ctx: AuthContext) {
       })
   );
 
-  server.tool(
-    "get_budget",
-    "Get a single budget by ID with its fiscal year and each budget line (with its chart account and the per-period breakdown). Line totals and period amounts retain numeric integer cents and add canonical totalMinor/amountMinor strings. Unsafe stored amounts fail with 422.",
-    {
+  server.registerTool("get_budget", {
+    description: "Get a single budget by ID with its fiscal year and each budget line (with its chart account and the per-period breakdown). Line totals and period amounts retain numeric integer cents and add canonical totalMinor/amountMinor strings. Unsafe stored amounts fail with 422.",
+    inputSchema: z.strictObject({
       budgetId: z.string().describe("The UUID of the budget"),
-    },
+    }),
+  },
     (params) =>
       wrapTool(ctx, async () => {
         return { budget: await getBudget(ctx, params.budgetId) };
       })
   );
 
-  server.tool(
-    "create_budget",
-    "Create a budget, returning its header. Lines accept total (signed safe integer cents) or totalMinor (canonical integer string); periods accept amount or amountMinor with exact agreement. Supported amounts/sums are +/-9007199254740991, at most 500 lines/10000 periods. Omitted amounts default to zero. Omit periods to distribute a total exactly. Explicit total retains precedence over period sum. All lines are validated before a transactional write.",
-    budgetCreateSchema.shape,
+  server.registerTool("create_budget", {
+    description: "Create a budget, returning its header. Lines accept total (signed safe integer cents) or totalMinor (canonical integer string); periods accept amount or amountMinor with exact agreement. Supported amounts/sums are +/-9007199254740991, at most 500 lines/10000 periods. Omitted amounts default to zero. Omit periods to distribute a total exactly. Explicit total retains precedence over period sum. All lines are validated before a transactional write.",
+    inputSchema: budgetCreateSchema,
+  },
     params => wrapTool(ctx, async () => ({ budget: await createBudget(ctx, params) })),
   );
 
-  server.tool(
-    "update_budget",
-    "Update a budget, returning its header. Omitted lines stay unchanged; supplied lines replace all old lines/periods transactionally. total/totalMinor and amount/amountMinor are agreeing signed cents aliases, supported within +/-9007199254740991; max 500 lines/10000 periods. Omitted amounts default to zero. Explicit total retains precedence over period sum. Invalid aliases, sums or organization references fail before writes.",
-    { budgetId: z.string().uuid().describe("UUID of this organization's budget"), ...budgetUpdateSchema.shape },
-    params => wrapTool(ctx, async () => ({ budget: await updateBudget(ctx, params.budgetId, params) })),
+  server.registerTool("update_budget", {
+    description: "Update a budget, returning its header. Omitted lines stay unchanged; supplied lines replace all old lines/periods transactionally. total/totalMinor and amount/amountMinor are agreeing signed cents aliases, supported within +/-9007199254740991; max 500 lines/10000 periods. Omitted amounts default to zero. Explicit total retains precedence over period sum. Invalid aliases, sums or organization references fail before writes.",
+    inputSchema: budgetUpdateSchema.extend({ budgetId: z.string().uuid().describe("UUID of this organization's budget") }),
+  },
+    params => wrapTool(ctx, async () => { const { budgetId, ...input } = params; return { budget: await updateBudget(ctx, budgetId, input) }; }),
   );
 
-  server.tool(
-    "delete_budget",
-    "Soft-delete an organization-scoped budget. Retains its amounts and periods; returns {success:true}. Requires manage:budgets.",
-    { budgetId: z.string().uuid().describe("UUID of this organization's budget to soft-delete") },
+  server.registerTool("delete_budget", {
+    description: "Soft-delete an organization-scoped budget. Retains its amounts and periods; returns {success:true}. Requires manage:budgets.",
+    inputSchema: z.strictObject({ budgetId: z.string().uuid().describe("UUID of this organization's budget to soft-delete") }),
+  },
     params => wrapTool(ctx, async () => { await deleteBudget(ctx, params.budgetId); return { success: true }; }),
   );
 

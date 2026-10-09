@@ -1,5 +1,20 @@
 # Money and FX boundary manifest
 
+## MON-015 auxiliary and reporting integration acceptance
+
+[AUXILIARY_REPORT_INTEGRATION_CONTRACTS](AUXILIARY_REPORT_INTEGRATION_CONTRACTS.md)
+joins all seven complete domain inventories, documenting money/major/minor/FX
+and nonmoney distinctions, envelopes, permissions and supported safe ranges.
+Actual numeric REST and exact full-registry MCP writes/readbacks share one
+organization across budget, inventory, payroll, asset, loan, project and accrual
+masters. Balanced accrual postings reconcile P&L, budget and consolidation above
+int32. Whole-public-database snapshots qualify no-write denials, scope, range,
+alias and replay failures. Budget CRUD raw-shape/control stripping is repaired
+with complete strict SDK registration and shared strict nested/body validation.
+Existing read permissions and valid budget UI payloads are preserved. Domain
+integration regressions retain their deeper economic/transaction coverage;
+full-int64, accounting, migration, localization and release gates remain separate.
+
 ## MON-029 report and dashboard integration acceptance
 
 [REPORT_DASHBOARD_INTEGRATION_CONTRACTS](REPORT_DASHBOARD_INTEGRATION_CONTRACTS.md)

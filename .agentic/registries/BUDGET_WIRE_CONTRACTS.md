@@ -1,5 +1,18 @@
 # Budget CRUD wire contracts
 
+## MON-015 integration amendment (2026-10-10)
+
+All five CRUD tools now use registerTool with complete strict input objects.
+REST/MCP create/update bodies, lines and periods reject unknown fields before
+mutation; routing budgetId is removed before shared update-body parsing.
+Actual full-SDK tests reproduce and prevent organizationId stripping and verify
+valid legacy/exact create/update/list/get/delete and nested no-write failures.
+Authenticated-member master reads and manage:budgets writes retain their policy.
+See [auxiliary/report integration](AUXILIARY_REPORT_INTEGRATION_CONTRACTS.md),
+auxiliary-report-integration.test.ts and MON-015-attempt-1.md. The historical
+MON-023 description below records the original slice; report integration is now
+independently accepted in MON-029 and MON-015 with downstream gates retained.
+
 Source-verified MON-023 slice, 2026-10-02, Asia/Tehran: collection and ID REST
 routes plus MCP list/get/create/update/delete. The sixth registered budget tool,
 `budget_vs_actual`, and its REST report remain MON-029. MON-015 retains final

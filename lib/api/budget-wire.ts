@@ -14,13 +14,13 @@ export const budgetPeriodSchema = z.object({
   amount: legacyMinorSchema.optional().describe("Optional signed safe integer cents; defaults to zero when both aliases are omitted"),
   amountMinor: exactMinorSchema.optional().describe("Optional signed int64 ASCII integer string in the same stored cents; must agree with amount"),
   sortOrder: z.number().int().min(-2147483648).max(2147483647).default(0).describe("Int32 display order, default zero"),
-});
+}).strict();
 export const budgetLineSchema = z.object({
   accountId: z.string().uuid().describe("Chart account UUID belonging to this organization"),
   total: legacyMinorSchema.optional().describe("Optional signed safe integer line total in cents; otherwise sum of periods or zero"),
   totalMinor: exactMinorSchema.optional().describe("Optional signed int64 ASCII integer line-total string in cents; must agree with total"),
   periods: z.array(budgetPeriodSchema).max(10000).optional().describe("Explicit periods; omit or pass an empty array for automatic distribution"),
-});
+}).strict();
 export const budgetThresholdSchema = z.number().int().min(0).max(2147483647).nullable()
   .describe("Nonnegative integer threshold percent (100 means the full budget, maximum 2147483647); null disables notifications");
 const headerFields = {
@@ -35,7 +35,7 @@ const headerFields = {
 };
 export const budgetCreateSchema = z.object({ ...headerFields,
   lines: z.array(budgetLineSchema).min(1).max(500).describe("Budget lines, 1-500; at most 10000 periods across the budget"),
-});
+}).strict();
 export const budgetUpdateSchema = z.object({
   name: headerFields.name.optional().describe("Optional new budget name"),
   fiscalYearId: headerFields.fiscalYearId,
@@ -45,7 +45,7 @@ export const budgetUpdateSchema = z.object({
   isActive: z.boolean().optional().describe("Optional active status"),
   varianceThresholdPct: budgetThresholdSchema.optional().describe("Optional integer threshold percent; omitted preserves it, null disables notifications"),
   lines: z.array(budgetLineSchema).max(500).optional().describe("Replacement lines; omitted leaves lines unchanged, empty removes them"),
-});
+}).strict();
 
 export function safeBudgetMinor(value: bigint): number {
   const limit = BigInt(Number.MAX_SAFE_INTEGER);

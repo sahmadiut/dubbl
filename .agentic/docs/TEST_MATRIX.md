@@ -1,5 +1,20 @@
 # Verification matrix
 
+## MON-015 auxiliary and reporting parent integration
+
+`tests/integration/auxiliary-report-integration.test.ts` runs actual authenticated
+REST/full MCP SDK across seven domain masters in one migrated disposable database.
+Numeric 1250 cents (REST loan/accrual 12.50 major) and exact 2147483750 cents
+read back through both transports; balanced posted accrual expense 2147485000
+reconciles P&L/budget/consolidation. Every public table except API-key usage
+bookkeeping is snapshotted for unknown controls, malformed/unsupported aliases,
+denied writes, preserved read policies, foreign IDs, report/replay failures and
+stored unsafe GL. SDK regressions cover all five strict budget CRUD registrations
+and nested/REST body rejection while valid update/list/delete pass. Current seven
+domain fixtures, budget CRUD/report/alert and dashboard integration regressions
+retain complete operation coverage. See registries/AUXILIARY_REPORT_INTEGRATION_CONTRACTS.md.
+Independent accounting/full-int64/migration/locale/release qualification remains.
+
 ## MON-029 report and dashboard integration
 
 `tests/integration/report-dashboard-integration.test.ts` uses actual numeric

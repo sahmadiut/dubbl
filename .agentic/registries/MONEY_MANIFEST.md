@@ -1452,3 +1452,20 @@ rejection state. Payroll files and signing/report SSR retain their documented
 existing child ownership and are regression-checked; no new payroll PDF claim.
 MON-034 retains combined integration and MON-008 broader/full-int64 cutover.
 No schema/history rescale, IRR flag, visual-fit or deployment qualification.
+
+## MON-034 combined opaque and public boundary integration
+
+[OPAQUE_PUBLIC_INTEGRATION_CONTRACTS](OPAQUE_PUBLIC_INTEGRATION_CONTRACTS.md)
+closes the parent acceptance for invoice snapshots, opaque audit/admin forwarding,
+public signing and document rendering. Its checked inventory assigns every
+persisted JSON declaration to an existing domain/configuration/security owner;
+serialized non-JSONB filters and forwarding retain named ownership and units.
+An independent actual REST/full-MCP-SDK fixture follows legacy and exact USD/IRR/
+KWD invoices through correction, literal audit, signing SSR/public POST and
+authenticated/public HTML/PDF. Signed history stays immutable, full-int64 opaque
+strings remain literal, and unsupported numeric history rejects before mutation.
+Administrative quotas keep count/MB units independently of organization monetary
+aliases. Child regressions retain lock/rollback, SMTP capture, global admin
+session and all document-kind coverage. No production code or schema changes,
+historical rescale, provider/deployment action, full-int64 consumer cutover,
+IRR enablement or independent security/accounting/visual qualification.

@@ -65,7 +65,7 @@ async function run() {
   const body = async (response: Response, status = 200) => { const data = await response.json(); assert.equal(response.status, status, JSON.stringify(data)); return data; };
   const good = async (name: string, args: object) => { const result = await ma.call(name, args); assert.equal(result.error, false, JSON.stringify(result)); return result.body; };
   const state = async () => (await db.execute(sql.raw(["invoice", "invoice_line", "invoice_signature", "audit_log", "subscription", "document_email_log", "portal_activity_log"].map(name =>
-    `select '${name}' as name, coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text), '[]'::jsonb)::text as rows from "${name}" t`).join(" union all ")))).rows;
+    `select '${name}' as name, coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text), '[]'::jsonb)::text as rows from "${name}" t`).join(" union all ") + " order by name"))).rows;
   const unchanged = async (operation: () => Promise<unknown>) => { const before = await state(); await operation(); assert.deepEqual(await state(), before); };
   const signer = { signerName: "Signer", signerEmail: "signer@example.test" };
   const summaries = async (id: string, paymentToken: string, expectedName: string, amount: string, currency: string) => {

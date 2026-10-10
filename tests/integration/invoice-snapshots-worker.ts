@@ -55,7 +55,7 @@ async function run() {
   const body = async (r: Response, status = 200) => { const data = await r.json(); assert.equal(r.status, status, JSON.stringify(data)); return data; };
   const good = async (name: string, args: object) => { const r = await ma.call(name, args); assert.equal(r.error, false, JSON.stringify(r)); return r.body; };
   const snapshot = async () => (await db.execute(sql.raw(["invoice", "invoice_signature", "audit_log"].map(n =>
-    `select '${n}' as name, coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text), '[]'::jsonb)::text as rows from "${n}" t`).join(" union all ")))).rows;
+    `select '${n}' as name, coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text), '[]'::jsonb)::text as rows from "${n}" t`).join(" union all ") + " order by name"))).rows;
   const unchanged = async (fn: () => Promise<unknown>) => { const before = await snapshot(); await fn(); assert.deepEqual(await snapshot(), before); };
   try {
     for (const name of ["get_invoice_snapshot", "update_invoice_snapshot"]) {

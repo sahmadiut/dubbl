@@ -65,8 +65,9 @@ async function scenario(base: string, currency: string, amount: number, exact: b
   const good = async (name: string, args: object = {}) => { const result = await ma.call(name, args); assert.equal(result.error, false, JSON.stringify(result)); return result.body; };
   const names = (await db.execute(sql`select tablename from pg_tables where schemaname='public' and tablename <> 'api_key' order by tablename`)).rows.map(r => String(r.tablename));
   assert.ok(names.every(name => /^[a-z_]+$/.test(name)));
+  // Parallel Append can reorder UNION ALL branches; order tables as well as rows.
   const snapshot = async () => (await db.execute(sql.raw(names.map(name =>
-    `select '${name}' as name, coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text),'[]'::jsonb)::text as rows from "${name}" t`).join(" union all ")))).rows;
+    `select '${name}' as name, coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text),'[]'::jsonb)::text as rows from "${name}" t`).join(" union all ") + " order by name"))).rows;
   const unchanged = async (operation: () => Promise<unknown>) => { const before = await snapshot(); await operation(); assert.deepEqual(await snapshot(), before); };
   const date = "2024-01-01", endDate = "2024-01-31", rateExact = base === currency ? "1" : "0.8";
   // Expected arithmetic is independent of product helpers and Number FX.

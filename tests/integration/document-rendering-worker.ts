@@ -69,7 +69,7 @@ async function run() {
     assert.equal(Buffer.from(await r.arrayBuffer()).subarray(0, 5).toString(), "%PDF-"); };
   const unchanged = async (fn: () => Promise<unknown>) => {
     const snapshot = async () => (await db.execute(sql.raw(["invoice", "quote", "credit_note", "purchase_order", "debit_note", "document_email_log", "portal_activity_log", "audit_log"].map(n =>
-      `select '${n}' as name, coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text), '[]'::jsonb)::text as rows from "${n}" t`).join(" union all ")))).rows;
+      `select '${n}' as name, coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text), '[]'::jsonb)::text as rows from "${n}" t`).join(" union all ") + " order by name"))).rows;
     const before = await snapshot(), count = deliveries.length; await fn(); assert.deepEqual(await snapshot(), before); assert.equal(deliveries.length, count);
   };
   const makeInvoice = async (currencyCode = "USD", value = 1250) => {

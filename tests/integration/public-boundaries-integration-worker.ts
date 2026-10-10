@@ -65,7 +65,7 @@ async function run() {
   const good = async (name: string, args: object = {}) => { const result = await ma.call(name, args); assert.equal(result.error, false, JSON.stringify(result)); return result.body; };
   const state = async () => (await db.execute(sql.raw(["contact", "inventory_item", "invoice", "invoice_line", "invoice_signature", "payment", "payment_allocation", "data_backup",
     "bulk_import_job", "audit_log", "portal_activity_log", "webhook_delivery", "inventory_movement", "inventory_cost_layer", "journal_entry", "journal_line", "number_sequence", "notification", "document_email_log"].map(name =>
-    `select '${name}' as name, coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text), '[]'::jsonb)::text as rows from "${name}" t`).join(" union all ")))).rows;
+    `select '${name}' as name, coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text), '[]'::jsonb)::text as rows from "${name}" t`).join(" union all ") + " order by name"))).rows;
   const objects = new Map<string, string>();
   let checkoutCalls = 0, deliveries = 0;
   const unchanged = async (operation: () => Promise<unknown>) => {

@@ -57,7 +57,7 @@ async function run() {
   const body = async (r: Response, status = 200) => { const value = await r.json(); assert.equal(r.status, status, JSON.stringify(value)); return value; };
   const good = async (name: string, input: object = {}) => { const r = await ma.call(name, input); assert.equal(r.error, false, JSON.stringify(r)); return r.body; };
   const snapshot = async () => (await db.execute(sql.raw(["organization", "subscription", "audit_log"].map(n =>
-    `select '${n}' as name, coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text), '[]'::jsonb)::text as rows from "${n}" t`).join(" union all ")))).rows;
+    `select '${n}' as name, coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text), '[]'::jsonb)::text as rows from "${n}" t`).join(" union all ") + " order by name"))).rows;
   const unchanged = async (check: () => Promise<void>) => { const before = await snapshot(); await check(); assert.deepEqual(await snapshot(), before); };
   try {
     await unchanged(async () => {

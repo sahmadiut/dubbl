@@ -62,7 +62,7 @@ async function run() {
   const body = async (r: Response, status = 200) => { const data = await r.json(); assert.equal(r.status, status, JSON.stringify(data)); return data; };
   const good = async (name: string, args: object = {}) => { const r = await ma.call(name, args); assert.equal(r.error, false, JSON.stringify(r)); return r.body; };
   const tables = ["chart_account", "contact", "inventory_item", "inventory_movement", "inventory_cost_layer", "journal_entry", "journal_line", "bulk_import_job", "audit_log", "invoice", "invoice_line", "bill", "bill_line", "bank_account", "bank_transaction"];
-  const snapshot = async () => (await db.execute(sql.raw(tables.map(n => `select '${n}' as name, coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text), '[]'::jsonb)::text as rows from "${n}" t`).join(" union all ")))).rows;
+  const snapshot = async () => (await db.execute(sql.raw(tables.map(n => `select '${n}' as name, coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text), '[]'::jsonb)::text as rows from "${n}" t`).join(" union all ") + " order by name"))).rows;
   const unchanged = async (fn: () => Promise<unknown>) => { const before = await snapshot(); await fn(); assert.deepEqual(await snapshot(), before); };
   try {
     for (const name of ["get_import_template", "import_csv_data", "preview_csv_import_rows", "export_csv_data", "export_all_csv_data", "list_import_jobs", "import_journal_entries", "preview_journal_entries"]) {

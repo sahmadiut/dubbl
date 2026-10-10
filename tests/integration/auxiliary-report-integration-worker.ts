@@ -85,7 +85,7 @@ async function run() {
   const names = tableRows.rows.map(r => String(r.tablename));
   assert.ok(names.every(n => /^[a-z_]+$/.test(n)));
   const snapshot = async () => (await db.execute(sql.raw(names.map(n =>
-    `select '${n}' as name, coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text), '[]'::jsonb)::text as rows from "${n}" t`).join(" union all ")))).rows;
+    `select '${n}' as name, coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text), '[]'::jsonb)::text as rows from "${n}" t`).join(" union all ") + " order by name"))).rows;
   const unchanged = async (fn: () => Promise<unknown>) => { const before = await snapshot(); await fn(); assert.deepEqual(await snapshot(), before); };
   const [prepaid, expense, liability] = await db.insert(chartAccount).values([
     { organizationId: a.id, code: "1500", name: "Prepaid", type: "asset" as const },

@@ -72,7 +72,7 @@ async function run() {
   const good = async (name: string, args: object) => { const r = await ma.call(name, args); assert.equal(r.error, false, JSON.stringify(r)); return r.body; };
   const signer = { signerName: "Signer <&>", signerEmail: "signer@example.test" };
   const snapshot = async () => (await db.execute(sql.raw(["invoice", "invoice_signature", "audit_log"].map(n =>
-    `select '${n}' as name, coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text), '[]'::jsonb)::text as rows from "${n}" t`).join(" union all ")))).rows;
+    `select '${n}' as name, coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text), '[]'::jsonb)::text as rows from "${n}" t`).join(" union all ") + " order by name"))).rows;
   const unchanged = async (fn: () => Promise<unknown>) => { const before = await snapshot(), count = deliveries.length; await fn();
     assert.deepEqual(await snapshot(), before); assert.equal(deliveries.length, count); };
   const make = async (currencyCode = "USD", amount = 1250) => (await db.insert(invoice).values({ organizationId: a.id, contactId: localContact.id,

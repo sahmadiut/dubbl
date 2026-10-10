@@ -1,5 +1,17 @@
 # Money and FX boundary manifest
 
+## MON-012 combined boundary rollout acceptance
+
+[EXACT_API_BOUNDARY_CONTRACTS](EXACT_API_BOUNDARY_CONTRACTS.md) joins all four
+FX/core/auxiliary/public operation inventories and their supported ranges.
+Independent API-key/full-MCP fixtures reconcile one recognition event through
+GL, account detail, reports/budget, CSV, backup, public reads, HTML and UBL at
+legacy 1250/exact 3000000000 and USD/EUR/IRR/JPY/KWD scales. Missed account detail
+Number sums now use shared SQL text/bigint projections; UBL formats exact saved
+currency units and has a corresponding MCP export. Source closure records all
+remaining direct JSON route families; persisted opaque ownership remains linked.
+Full-int64/domain, MON-006 parent, migration/accounting/IRR/release gates remain.
+
 ## MON-033 generic import and export adoption
 
 [GENERIC_IMPORT_EXPORT_WIRE_CONTRACTS](GENERIC_IMPORT_EXPORT_WIRE_CONTRACTS.md)

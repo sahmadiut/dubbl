@@ -1,3 +1,6 @@
+import { money, toMajorDecimal } from "@/lib/money/exact";
+import { WireCompatibilityError } from "@/lib/money/wire";
+
 interface UblParty {
   name: string;
   taxId?: string | null;
@@ -16,14 +19,14 @@ interface UblLine {
   id: number;
   description: string;
   quantity: number; // already divided by 100
-  unitPrice: number; // already divided by 100 (dollars)
-  lineAmount: number; // cents
-  taxAmount: number; // cents
+  unitPrice: number; // currency minor units
+  lineAmount: number; // currency minor units
+  taxAmount: number; // currency minor units
   taxPercent: number; // e.g. 10.00
   taxName?: string;
 }
 
-interface UblInvoiceData {
+export interface UblInvoiceData {
   invoiceNumber: string;
   issueDate: string;
   dueDate: string;
@@ -31,9 +34,9 @@ interface UblInvoiceData {
   supplier: UblParty;
   customer: UblParty;
   lines: UblLine[];
-  subtotal: number; // cents
-  taxTotal: number; // cents
-  total: number; // cents
+  subtotal: number; // currency minor units
+  taxTotal: number; // currency minor units
+  total: number; // currency minor units
   notes?: string | null;
 }
 
@@ -46,8 +49,9 @@ function escapeXml(str: string): string {
     .replace(/'/g, "&apos;");
 }
 
-function cents(amount: number): string {
-  return (amount / 100).toFixed(2);
+function decimal(amount: number, currency: string): string {
+  if (!Number.isSafeInteger(amount)) throw new WireCompatibilityError();
+  return toMajorDecimal(money(BigInt(amount), currency));
 }
 
 function partyXml(tag: string, party: UblParty): string {
@@ -87,12 +91,18 @@ ${party.email ? `      <cac:Contact>\n        <cbc:ElectronicMail>${escapeXml(pa
 }
 
 export function generateUblXml(data: UblInvoiceData): string {
+  const minor = (amount: number) => decimal(amount, data.currencyCode);
+  // Validate all named money before formatting; never recover a rounded Number.
+  [data.subtotal, data.taxTotal, data.total, ...data.lines.flatMap(line => [line.unitPrice, line.lineAmount, line.taxAmount])].forEach(minor);
+  const percent = data.taxTotal > 0 && data.subtotal > 0
+    ? (BigInt(data.taxTotal) * 10000n * 2n + BigInt(data.subtotal)) / (BigInt(data.subtotal) * 2n) : 0n;
+  const taxPercent = `${percent / 100n}.${String(percent % 100n).padStart(2, "0")}`;
   const linesXml = data.lines
     .map(
       (line) => `  <cac:InvoiceLine>
     <cbc:ID>${line.id}</cbc:ID>
     <cbc:InvoicedQuantity unitCode="EA">${line.quantity.toFixed(2)}</cbc:InvoicedQuantity>
-    <cbc:LineExtensionAmount currencyID="${data.currencyCode}">${cents(line.lineAmount)}</cbc:LineExtensionAmount>
+    <cbc:LineExtensionAmount currencyID="${data.currencyCode}">${minor(line.lineAmount)}</cbc:LineExtensionAmount>
     <cac:Item>
       <cbc:Description>${escapeXml(line.description)}</cbc:Description>
       <cac:ClassifiedTaxCategory>
@@ -104,7 +114,7 @@ export function generateUblXml(data: UblInvoiceData): string {
       </cac:ClassifiedTaxCategory>
     </cac:Item>
     <cac:Price>
-      <cbc:PriceAmount currencyID="${data.currencyCode}">${line.unitPrice.toFixed(2)}</cbc:PriceAmount>
+      <cbc:PriceAmount currencyID="${data.currencyCode}">${minor(line.unitPrice)}</cbc:PriceAmount>
     </cac:Price>
   </cac:InvoiceLine>`
     )
@@ -125,13 +135,13 @@ ${data.notes ? `  <cbc:Note>${escapeXml(data.notes)}</cbc:Note>\n` : ""}  <cbc:D
 ${partyXml("AccountingSupplierParty", data.supplier)}
 ${partyXml("AccountingCustomerParty", data.customer)}
   <cac:TaxTotal>
-    <cbc:TaxAmount currencyID="${data.currencyCode}">${cents(data.taxTotal)}</cbc:TaxAmount>
+    <cbc:TaxAmount currencyID="${data.currencyCode}">${minor(data.taxTotal)}</cbc:TaxAmount>
     <cac:TaxSubtotal>
-      <cbc:TaxableAmount currencyID="${data.currencyCode}">${cents(data.subtotal)}</cbc:TaxableAmount>
-      <cbc:TaxAmount currencyID="${data.currencyCode}">${cents(data.taxTotal)}</cbc:TaxAmount>
+      <cbc:TaxableAmount currencyID="${data.currencyCode}">${minor(data.subtotal)}</cbc:TaxableAmount>
+      <cbc:TaxAmount currencyID="${data.currencyCode}">${minor(data.taxTotal)}</cbc:TaxAmount>
       <cac:TaxCategory>
         <cbc:ID>S</cbc:ID>
-        <cbc:Percent>${data.taxTotal > 0 && data.subtotal > 0 ? ((data.taxTotal / data.subtotal) * 100).toFixed(2) : "0.00"}</cbc:Percent>
+        <cbc:Percent>${taxPercent}</cbc:Percent>
         <cac:TaxScheme>
           <cbc:ID>VAT</cbc:ID>
         </cac:TaxScheme>
@@ -139,10 +149,10 @@ ${partyXml("AccountingCustomerParty", data.customer)}
     </cac:TaxSubtotal>
   </cac:TaxTotal>
   <cac:LegalMonetaryTotal>
-    <cbc:LineExtensionAmount currencyID="${data.currencyCode}">${cents(data.subtotal)}</cbc:LineExtensionAmount>
-    <cbc:TaxExclusiveAmount currencyID="${data.currencyCode}">${cents(data.subtotal)}</cbc:TaxExclusiveAmount>
-    <cbc:TaxInclusiveAmount currencyID="${data.currencyCode}">${cents(data.total)}</cbc:TaxInclusiveAmount>
-    <cbc:PayableAmount currencyID="${data.currencyCode}">${cents(data.total)}</cbc:PayableAmount>
+    <cbc:LineExtensionAmount currencyID="${data.currencyCode}">${minor(data.subtotal)}</cbc:LineExtensionAmount>
+    <cbc:TaxExclusiveAmount currencyID="${data.currencyCode}">${minor(data.subtotal)}</cbc:TaxExclusiveAmount>
+    <cbc:TaxInclusiveAmount currencyID="${data.currencyCode}">${minor(data.total)}</cbc:TaxInclusiveAmount>
+    <cbc:PayableAmount currencyID="${data.currencyCode}">${minor(data.total)}</cbc:PayableAmount>
   </cac:LegalMonetaryTotal>
 ${linesXml}
 </Invoice>`;

@@ -1,0 +1,451 @@
+{
+  "version": 1,
+  "method": "Reviewed remaining direct NextResponse.json route families; path closure regression requires new routes to be reviewed. Not transitive dataflow or domain posting qualification.",
+  "routes": [
+    {
+      "path": "app/api/auth/dev-login/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/auth/providers-config/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/auth/register/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/currencies/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/health/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/integrations/stripe/webhook/route.ts",
+      "policy": "Provider-native or delivery/configuration metadata, URLs, counts, acknowledgments and errors; monetary provider mappings retain the explicit owning service.",
+      "contract": "PROVIDER_WEBHOOK_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/pay/[token]/checkout/route.ts",
+      "policy": "Provider-native or delivery/configuration metadata, URLs, counts, acknowledgments and errors; monetary provider mappings retain the explicit owning service.",
+      "contract": "PROVIDER_WEBHOOK_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/stripe/webhook/route.ts",
+      "policy": "Provider-native or delivery/configuration metadata, URLs, counts, acknowledgments and errors; monetary provider mappings retain the explicit owning service.",
+      "contract": "PROVIDER_WEBHOOK_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/accounts/[id]/merge/route.ts",
+      "policy": "Account GET money uses account-detail SQL text/bigint and guarded JSON; other replies contain account metadata, counts, success or errors.",
+      "contract": "EXACT_API_BOUNDARY_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/accounts/[id]/route.ts",
+      "policy": "Account GET money uses account-detail SQL text/bigint and guarded JSON; other replies contain account metadata, counts, success or errors.",
+      "contract": "EXACT_API_BOUNDARY_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/accounts/route.ts",
+      "policy": "Account GET money uses account-detail SQL text/bigint and guarded JSON; other replies contain account metadata, counts, success or errors.",
+      "contract": "EXACT_API_BOUNDARY_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/admin/check/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/admin/email-preview/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/admin/organizations/[id]/cancel-stripe/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/admin/settings/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/admin/users/[id]/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/advisors/accept/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/advisors/invite/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/advisors/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/api-keys/[id]/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/api-keys/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/attachments/[id]/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/attachments/presign/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/backups/[id]/restore/route.ts",
+      "policy": "Snapshot money uses the versioned guarded backup service; remaining raw replies contain metadata, counts, success or errors.",
+      "contract": "BACKUP_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/backups/[id]/route.ts",
+      "policy": "Snapshot money uses the versioned guarded backup service; remaining raw replies contain metadata, counts, success or errors.",
+      "contract": "BACKUP_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/backups/download-snapshot/route.ts",
+      "policy": "Snapshot money uses the versioned guarded backup service; remaining raw replies contain metadata, counts, success or errors.",
+      "contract": "BACKUP_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/backups/route.ts",
+      "policy": "Snapshot money uses the versioned guarded backup service; remaining raw replies contain metadata, counts, success or errors.",
+      "contract": "BACKUP_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/backups/upload/route.ts",
+      "policy": "Snapshot money uses the versioned guarded backup service; remaining raw replies contain metadata, counts, success or errors.",
+      "contract": "BACKUP_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/billing/portal/route.ts",
+      "policy": "Provider-native or delivery/configuration metadata, URLs, counts, acknowledgments and errors; monetary provider mappings retain the explicit owning service.",
+      "contract": "PROVIDER_WEBHOOK_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/billing/route.ts",
+      "policy": "Provider-native or delivery/configuration metadata, URLs, counts, acknowledgments and errors; monetary provider mappings retain the explicit owning service.",
+      "contract": "PROVIDER_WEBHOOK_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/contacts/[id]/people/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/cost-centers/[id]/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/cost-centers/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/document-emails/route.ts",
+      "policy": "Provider-native or delivery/configuration metadata, URLs, counts, acknowledgments and errors; monetary provider mappings retain the explicit owning service.",
+      "contract": "PROVIDER_WEBHOOK_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/email-config/route.ts",
+      "policy": "Provider-native or delivery/configuration metadata, URLs, counts, acknowledgments and errors; monetary provider mappings retain the explicit owning service.",
+      "contract": "PROVIDER_WEBHOOK_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/email-config/test/route.ts",
+      "policy": "Provider-native or delivery/configuration metadata, URLs, counts, acknowledgments and errors; monetary provider mappings retain the explicit owning service.",
+      "contract": "PROVIDER_WEBHOOK_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/expenses/receipt-url/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/fiscal-years/[id]/close/route.ts",
+      "policy": "Fiscal dates/status metadata only. Internal year-end Number posting remains MON-007/accounting qualification; this is not a newly qualified large-value posting operation.",
+      "contract": "EXACT_API_BOUNDARY_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/fiscal-years/[id]/reopen/route.ts",
+      "policy": "Fiscal dates/status metadata only. Internal year-end Number posting remains MON-007/accounting qualification; this is not a newly qualified large-value posting operation.",
+      "contract": "EXACT_API_BOUNDARY_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/fiscal-years/route.ts",
+      "policy": "Fiscal dates/status metadata only. Internal year-end Number posting remains MON-007/accounting qualification; this is not a newly qualified large-value posting operation.",
+      "contract": "EXACT_API_BOUNDARY_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/integrations/stripe/callback/route.ts",
+      "policy": "Provider-native or delivery/configuration metadata, URLs, counts, acknowledgments and errors; monetary provider mappings retain the explicit owning service.",
+      "contract": "PROVIDER_WEBHOOK_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/integrations/stripe/connect/route.ts",
+      "policy": "Provider-native or delivery/configuration metadata, URLs, counts, acknowledgments and errors; monetary provider mappings retain the explicit owning service.",
+      "contract": "PROVIDER_WEBHOOK_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/integrations/stripe/disconnect/route.ts",
+      "policy": "Provider-native or delivery/configuration metadata, URLs, counts, acknowledgments and errors; monetary provider mappings retain the explicit owning service.",
+      "contract": "PROVIDER_WEBHOOK_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/integrations/stripe/import/route.ts",
+      "policy": "Provider-native or delivery/configuration metadata, URLs, counts, acknowledgments and errors; monetary provider mappings retain the explicit owning service.",
+      "contract": "PROVIDER_WEBHOOK_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/integrations/stripe/settings/route.ts",
+      "policy": "Provider-native or delivery/configuration metadata, URLs, counts, acknowledgments and errors; monetary provider mappings retain the explicit owning service.",
+      "contract": "PROVIDER_WEBHOOK_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/integrations/stripe/sync/route.ts",
+      "policy": "Provider-native or delivery/configuration metadata, URLs, counts, acknowledgments and errors; monetary provider mappings retain the explicit owning service.",
+      "contract": "PROVIDER_WEBHOOK_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/invitations/[id]/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/invitations/accept/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/invitations/info/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/invitations/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/invite-links/[id]/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/invite-links/info/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/invite-links/join/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/invite-links/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/invoices/[id]/compliance/route.ts",
+      "policy": "Existing compliance warning text only; no monetary request/response DTO or new statutory qualification.",
+      "contract": "EXACT_API_BOUNDARY_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/invoices/[id]/payment-link/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/members/[id]/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/members/capacity/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/members/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/period-lock/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/reminder-rules/[id]/route.ts",
+      "policy": "Provider-native or delivery/configuration metadata, URLs, counts, acknowledgments and errors; monetary provider mappings retain the explicit owning service.",
+      "contract": "PROVIDER_WEBHOOK_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/reminder-rules/route.ts",
+      "policy": "Provider-native or delivery/configuration metadata, URLs, counts, acknowledgments and errors; monetary provider mappings retain the explicit owning service.",
+      "contract": "PROVIDER_WEBHOOK_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/reminders/[id]/route.ts",
+      "policy": "Provider-native or delivery/configuration metadata, URLs, counts, acknowledgments and errors; monetary provider mappings retain the explicit owning service.",
+      "contract": "PROVIDER_WEBHOOK_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/reminders/logs/route.ts",
+      "policy": "Provider-native or delivery/configuration metadata, URLs, counts, acknowledgments and errors; monetary provider mappings retain the explicit owning service.",
+      "contract": "PROVIDER_WEBHOOK_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/reminders/process/route.ts",
+      "policy": "Provider-native or delivery/configuration metadata, URLs, counts, acknowledgments and errors; monetary provider mappings retain the explicit owning service.",
+      "contract": "PROVIDER_WEBHOOK_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/reminders/route.ts",
+      "policy": "Provider-native or delivery/configuration metadata, URLs, counts, acknowledgments and errors; monetary provider mappings retain the explicit owning service.",
+      "contract": "PROVIDER_WEBHOOK_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/roles/[id]/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/roles/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/search/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/sessions/revoke-all/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/sessions/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/tags/[id]/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/tags/attach/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/tags/detach/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/tags/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/teams/[id]/members/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/teams/[id]/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/teams/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/trash/[id]/restore/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/trash/[id]/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/trash/empty/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/trash/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/user/accounts/[id]/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/user/accounts/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/user/profile/route.ts",
+      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
+      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/webhooks/[id]/route.ts",
+      "policy": "Provider-native or delivery/configuration metadata, URLs, counts, acknowledgments and errors; monetary provider mappings retain the explicit owning service.",
+      "contract": "PROVIDER_WEBHOOK_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/webhooks/route.ts",
+      "policy": "Provider-native or delivery/configuration metadata, URLs, counts, acknowledgments and errors; monetary provider mappings retain the explicit owning service.",
+      "contract": "PROVIDER_WEBHOOK_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/webhooks/subscribe/route.ts",
+      "policy": "Provider-native or delivery/configuration metadata, URLs, counts, acknowledgments and errors; monetary provider mappings retain the explicit owning service.",
+      "contract": "PROVIDER_WEBHOOK_WIRE_CONTRACTS.md"
+    },
+    {
+      "path": "app/api/v1/webhooks/unsubscribe/route.ts",
+      "policy": "Provider-native or delivery/configuration metadata, URLs, counts, acknowledgments and errors; monetary provider mappings retain the explicit owning service.",
+      "contract": "PROVIDER_WEBHOOK_WIRE_CONTRACTS.md"
+    }
+  ]
+}

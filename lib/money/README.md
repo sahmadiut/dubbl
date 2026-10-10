@@ -1,5 +1,12 @@
 # Exact money core
 
+MON-012 independently joins FX, core, auxiliary/reporting and public/opaque
+REST/MCP boundaries. Account detail now shares SQL-text/bigint sums and safe
+numeric/Minor projections; UBL XML uses saved currency decimals and an MCP
+export. The combined fixture reconciles recognition through reports, CSV,
+backup, public reads and rendering. See [combined boundary contracts](../../.agentic/registries/EXACT_API_BOUNDARY_CONTRACTS.md)
+for units, supported ranges, direct JSON ownership and qualification limits.
+
 MON-014 combines the six adopted core accounting groups with actual REST/MCP
 fixtures spanning configuration, contacts, journals, receivables, procurement,
 payments, expenses and banking. Numeric major/minor and legacy fixed-decimal

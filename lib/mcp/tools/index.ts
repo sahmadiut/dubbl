@@ -98,6 +98,7 @@ import { registerCrmTools } from "./crm";
 import { registerWarehouseTools } from "./warehouses";
 import { registerInventoryMovementTools } from "./inventory-movements";
 import { registerPublicPortalTools } from "./public-portal";
+import { registerInvoiceUblTools } from "./invoice-ubl";
 import { registerCustomReportTools } from "./custom-reports";
 
 export function registerAllTools(server: McpServer, ctx: AuthContext) {
@@ -199,5 +200,6 @@ export function registerAllTools(server: McpServer, ctx: AuthContext) {
   registerWarehouseTools(server, ctx);
   registerInventoryMovementTools(server, ctx);
   registerPublicPortalTools(server, ctx);
+  registerInvoiceUblTools(server, ctx);
   registerDocumentRenderingTools(server, ctx);
 }

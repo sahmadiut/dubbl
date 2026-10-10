@@ -1,5 +1,20 @@
 # Verification matrix
 
+## MON-012 combined exact REST/MCP boundary rollout
+
+`tests/integration/exact-boundary-integration.test.ts` independently composes
+the four rollout groups in migrated disposable PostgreSQL with actual API keys
+and full registered MCP SDK. Eight legacy/exact scenarios reconcile stored
+document units, exact recognition FX, account balances, P&L/budget, CSV, backup,
+public statements, HTML and UBL. Whole-table snapshots qualify range/alias/auth/
+tenant/lock failures. Account fixtures exercise maximum-safe totals, paginated
+history, filters, foreign/deleted/draft exclusion and unsafe aggregates/sources.
+`tests/ubl-money.test.ts` checks currency decimals at the exact safe integer edge
+and the exact tax ratio; `tests/exact-boundary-inventory.test.ts` closes the direct
+JSON route list against source and requires reviewed contract ownership.
+FX/core/auxiliary/public parent regressions retain deeper operation coverage.
+See registries/EXACT_API_BOUNDARY_CONTRACTS.md for boundaries and remaining gates.
+
 ## MON-015 auxiliary and reporting parent integration
 
 `tests/integration/auxiliary-report-integration.test.ts` runs actual authenticated

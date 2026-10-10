@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { chartAccount, journalLine, journalEntry, taxRate } from "@/lib/db/schema";
-import { eq, and, asc } from "drizzle-orm";
+import { chartAccount, journalLine, taxRate } from "@/lib/db/schema";
+import { eq, and } from "drizzle-orm";
 import { getAuthContext, AuthError } from "@/lib/api/auth-context";
 import { requireRole } from "@/lib/api/require-role";
 import { logAudit, diffChanges } from "@/lib/api/audit";
 import { parsePagination, paginatedResponse } from "@/lib/api/pagination";
 import { z } from "zod";
+import { accountDetail } from "@/lib/api/account-detail";
+import { jsonResponse } from "@/lib/api/json-response";
+import { handleError } from "@/lib/api/response";
 
 const updateSchema = z.object({
   code: z.string().min(1).optional(),
@@ -36,53 +39,7 @@ export async function GET(
     const sortBy = url.searchParams.get("sortBy") || "date";
     const sortOrder = url.searchParams.get("sortOrder") || "desc";
 
-    const account = await db.query.chartAccount.findFirst({
-      where: and(
-        eq(chartAccount.id, id),
-        eq(chartAccount.organizationId, ctx.organizationId)
-      ),
-    });
-
-    if (!account) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
-    }
-
-    // Get ALL ledger entries for running balance calculation
-    const allLedger = await db
-      .select({
-        entryId: journalEntry.id,
-        entryNumber: journalEntry.entryNumber,
-        date: journalEntry.date,
-        description: journalEntry.description,
-        debitAmount: journalLine.debitAmount,
-        creditAmount: journalLine.creditAmount,
-      })
-      .from(journalLine)
-      .innerJoin(journalEntry, eq(journalLine.journalEntryId, journalEntry.id))
-      .where(
-        and(
-          eq(journalLine.accountId, id),
-          eq(journalEntry.status, "posted")
-        )
-      )
-      .orderBy(asc(journalEntry.date));
-
-    // Compute running balance and totals on full set
-    let balance = 0;
-    let totalDebits = 0;
-    let totalCredits = 0;
-    const fullLedger = allLedger.map((row) => {
-      const debit = row.debitAmount || 0;
-      const credit = row.creditAmount || 0;
-      totalDebits += debit;
-      totalCredits += credit;
-      if (["asset", "expense"].includes(account.type)) {
-        balance += debit - credit;
-      } else {
-        balance += credit - debit;
-      }
-      return { ...row, balance };
-    });
+    const { account, ledger: fullLedger, entryCount } = await accountDetail(ctx, id, true);
 
     // Apply filters
     let filtered = fullLedger;
@@ -111,9 +68,9 @@ export async function GET(
       if (sortBy === "date") return mul * a.date.localeCompare(b.date);
       if (sortBy === "number") return mul * (a.entryNumber - b.entryNumber);
       if (sortBy === "amount") {
-        const aAmt = (a.debitAmount || 0) + (a.creditAmount || 0);
-        const bAmt = (b.debitAmount || 0) + (b.creditAmount || 0);
-        return mul * (aAmt - bAmt);
+        const aAmt = BigInt(a.debitAmountMinor) + BigInt(a.creditAmountMinor);
+        const bAmt = BigInt(b.debitAmountMinor) + BigInt(b.creditAmountMinor);
+        return mul * (aAmt < bAmt ? -1 : aAmt > bAmt ? 1 : 0);
       }
       return 0;
     });
@@ -121,15 +78,12 @@ export async function GET(
     const total = filtered.length;
     const paged = filtered.slice(offset, offset + limit);
 
-    return NextResponse.json({
-      account: { ...account, balance, totalDebits, totalCredits, entryCount: allLedger.length },
+    return jsonResponse({
+      account: { ...account, entryCount },
       ...paginatedResponse(paged, total, page, limit),
     });
   } catch (err) {
-    if (err instanceof AuthError) {
-      return NextResponse.json({ error: err.message }, { status: err.status });
-    }
-    return NextResponse.json({ error: "Internal error" }, { status: 500 });
+    return handleError(err);
   }
 }
 

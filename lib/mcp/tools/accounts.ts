@@ -4,7 +4,6 @@ import { db } from "@/lib/db";
 import {
   chartAccount,
   journalLine,
-  journalEntry,
   taxRate,
   taxComponent,
   inventoryItem,
@@ -27,7 +26,7 @@ import {
   purchaseOrderLine,
   debitNoteLine,
 } from "@/lib/db/schema";
-import { eq, and, sql, isNull } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { requireRole } from "@/lib/api/require-role";
 import { wrapTool } from "@/lib/mcp/errors";
 import { syncSystemAccounts } from "@/lib/db/system-accounts";
@@ -37,6 +36,7 @@ import {
   SPECIAL_CATEGORY_RESOLUTION,
 } from "@/lib/banking/special-categories";
 import type { AuthContext } from "@/lib/api/auth-context";
+import { accountDetail, accountDetailSchema } from "@/lib/api/account-detail";
 
 export function registerAccountTools(server: McpServer, ctx: AuthContext) {
   server.tool(
@@ -85,49 +85,16 @@ export function registerAccountTools(server: McpServer, ctx: AuthContext) {
       })
   );
 
-  server.tool(
+  server.registerTool(
     "get_account",
-    "Get a single account by ID with its balance calculated from posted journal entries. Returns account details, total debits, total credits, and net balance in cents.",
     {
-      accountId: z.string().describe("The UUID of the account"),
+      description: "Get an organization-owned account UUID with total debits, total credits and natural-sign balance from posted, non-deleted journals. Money is stored base-currency minor units, with safe numeric fields and matching Minor strings. Unsafe source or aggregate values fail with LEGACY_NUMERIC_RANGE; counts and account metadata retain their units.",
+      inputSchema: accountDetailSchema,
     },
     (params) =>
       wrapTool(ctx, async () => {
-        const account = await db.query.chartAccount.findFirst({
-          where: and(
-            eq(chartAccount.id, params.accountId),
-            eq(chartAccount.organizationId, ctx.organizationId)
-          ),
-        });
-
-        if (!account) throw new Error("Account not found");
-
-        // Calculate balance from posted entries
-        const ledger = await db
-          .select({
-            debit: sql<number>`coalesce(sum(${journalLine.debitAmount}), 0)`,
-            credit: sql<number>`coalesce(sum(${journalLine.creditAmount}), 0)`,
-          })
-          .from(journalLine)
-          .innerJoin(
-            journalEntry,
-            and(
-              eq(journalLine.journalEntryId, journalEntry.id),
-              eq(journalEntry.status, "posted")
-            )
-          )
-          .where(eq(journalLine.accountId, params.accountId));
-
-        const totalDebits = Number(ledger[0]?.debit ?? 0);
-        const totalCredits = Number(ledger[0]?.credit ?? 0);
-        const isDebitNormal = ["asset", "expense"].includes(account.type);
-        const balance = isDebitNormal
-          ? totalDebits - totalCredits
-          : totalCredits - totalDebits;
-
-        return {
-          account: { ...account, totalDebits, totalCredits, balance },
-        };
+        const { account } = await accountDetail(ctx, params.accountId);
+        return { account };
       })
   );
 

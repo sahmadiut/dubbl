@@ -263,3 +263,7 @@ MON-007 retains its original acceptance criteria and independent combined verifi
 
 - [MON-128](../tasks/MON-128.md): Cut over shared core posting arithmetic.
 - [MON-129](../tasks/MON-129.md): Cut over core money editors and presentation; split further if verified scope requires it.
+- [MON-130](../tasks/MON-130.md): Manual and recurring journal UI money.
+- [MON-131](../tasks/MON-131.md): Receivable document UI money.
+- [MON-132](../tasks/MON-132.md): Payable and procurement UI money.
+- [MON-133](../tasks/MON-133.md): Core cash, tax, account ledger and opening balance UI money.

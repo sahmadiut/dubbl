@@ -7,7 +7,7 @@ import { ArrowLeft, Pause, Play, Zap, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatMoney } from "@/lib/money";
+import { journalStoredMinor, journalMoney } from "@/lib/money/journal-display";
 import { useConfirm } from "@/lib/hooks/use-confirm";
 import { useEntityTitle } from "@/lib/hooks/use-entity-title";
 import { useRouter } from "next/navigation";
@@ -18,7 +18,9 @@ interface RecurringJournalLine {
   description: string;
   accountId: string | null;
   debitAmount: number;
+  debitAmountMinor: string;
   creditAmount: number;
+  creditAmountMinor: string;
 }
 
 interface RecurringJournalDetail {
@@ -170,8 +172,8 @@ export default function RecurringJournalDetailPage() {
   if (loading) return <div className="space-y-6"><PageHeader title="Loading..." /></div>;
   if (!rj) return <div className="space-y-6"><PageHeader title="Recurring journal not found" /></div>;
 
-  const totalDebit = rj.lines.reduce((s, l) => s + l.debitAmount, 0);
-  const totalCredit = rj.lines.reduce((s, l) => s + l.creditAmount, 0);
+  const totalDebit = rj.lines.reduce((s, l) => s + journalStoredMinor(l.debitAmountMinor), 0n);
+  const totalCredit = rj.lines.reduce((s, l) => s + journalStoredMinor(l.creditAmountMinor), 0n);
 
   return (
     <div className="space-y-6">
@@ -236,7 +238,7 @@ export default function RecurringJournalDetailPage() {
         </div>
         <div className="rounded-lg border p-4">
           <p className="text-xs text-muted-foreground">Each entry</p>
-          <p className="text-sm font-bold font-mono mt-1">{formatMoney(totalDebit, rj.currencyCode)}</p>
+          <p className="text-sm font-bold font-mono mt-1">{journalMoney(totalDebit, rj.currencyCode)}</p>
         </div>
       </div>
 
@@ -252,13 +254,13 @@ export default function RecurringJournalDetailPage() {
           <div key={line.id} className="grid min-w-[500px] grid-cols-[1fr_140px_120px_120px] gap-2 border-b px-4 py-2 last:border-b-0">
             <p className="text-sm">{line.description}</p>
             <span className="text-sm font-mono text-muted-foreground truncate">{line.accountId || "-"}</span>
-            <span className="text-right text-sm font-mono">{line.debitAmount > 0 ? formatMoney(line.debitAmount, rj.currencyCode) : "-"}</span>
-            <span className="text-right text-sm font-mono">{line.creditAmount > 0 ? formatMoney(line.creditAmount, rj.currencyCode) : "-"}</span>
+            <span className="text-right text-sm font-mono">{journalStoredMinor(line.debitAmountMinor) > 0n ? journalMoney(journalStoredMinor(line.debitAmountMinor), rj.currencyCode) : "-"}</span>
+            <span className="text-right text-sm font-mono">{journalStoredMinor(line.creditAmountMinor) > 0n ? journalMoney(journalStoredMinor(line.creditAmountMinor), rj.currencyCode) : "-"}</span>
           </div>
         ))}
         <div className="border-t bg-muted/30 px-4 py-2 text-right flex flex-wrap justify-end gap-x-4 gap-y-1">
-          <span className="text-sm font-medium">Total in: {formatMoney(totalDebit, rj.currencyCode)}</span>
-          <span className="text-sm font-medium">Total out: {formatMoney(totalCredit, rj.currencyCode)}</span>
+          <span className="text-sm font-medium">Total in: {journalMoney(totalDebit, rj.currencyCode)}</span>
+          <span className="text-sm font-medium">Total out: {journalMoney(totalCredit, rj.currencyCode)}</span>
         </div>
       </div>
 

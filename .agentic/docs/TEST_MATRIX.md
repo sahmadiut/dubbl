@@ -1,5 +1,23 @@
 # Verification matrix
 
+## MON-130 journal UI money
+
+`tests/journal-ui-money.test.ts` reconciles strict editor cells/preview totals
+with real journal/recurring wire adapters, four currency scales, safe-edge low
+digits, malformed/conflicting/range failures, explicit fixed-two legacy aliases,
+separate currency totals and retained saved metadata. Manual two-sided lines
+remain supported; recurring rows enforce their existing one-sided policy.
+`tests/journal-ui-components.test.ts` renders the actual EntryForm/CurrencyInput
+to check exact English totals, invalid/orphan/unbalanced disabled saves, text
+values and accessible labels. `tests/integration/journal-ui-money.test.ts` sends
+the same editor payload through authenticated REST and registered MCP SDK tools
+against migrated disposable SQL, then reads/edits/checks independent stored text
+totals, saved currency/FX and cost centers. Existing journal integration supplies
+tenant/role/period/import/lifecycle/recurrence regression coverage. No live
+browser, screenshot, financial approval or production qualification is inferred.
+See registries/CORE_UI_MONEY_CUTOVER.md for explicit compatibility exceptions and
+remaining MON-131..133, MON-129/MON-007 ownership.
+
 ## MON-128 shared core posting arithmetic
 
 `tests/posting-money.test.ts` covers low-digit tax/FX rounding, signed ties,

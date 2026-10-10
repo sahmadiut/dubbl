@@ -27,6 +27,7 @@ import { DataTable, type Column } from "@/components/dashboard/data-table";
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { journalRestMinor, journalMoney } from "@/lib/money/journal-display";
 import { formatMoney } from "@/lib/money";
 import { devDelay } from "@/lib/dev-delay";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
@@ -103,6 +104,7 @@ interface Entry {
   description: string;
   status: "draft" | "posted" | "void";
   totalDebit: string;
+  totalDebitMinor: string;
 }
 
 interface PnLAccount {
@@ -175,7 +177,7 @@ const columns: Column<Entry>[] = [
     className: "w-28 text-right",
     render: (r) => (
       <span className="font-mono text-sm tabular-nums">
-        {formatMoney(Math.round(parseFloat(r.totalDebit) * 100))}
+        {journalMoney(journalRestMinor(r.totalDebit, r.totalDebitMinor))}
       </span>
     ),
   },

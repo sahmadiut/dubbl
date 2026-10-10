@@ -13,6 +13,8 @@ interface CurrencyInputProps {
   disabled?: boolean;
   name?: string;
   id?: string;
+  fractionDigits?: number;
+  "aria-label"?: string;
 }
 
 export function CurrencyInput({
@@ -25,6 +27,8 @@ export function CurrencyInput({
   disabled,
   name,
   id,
+  fractionDigits = 2,
+  "aria-label": ariaLabel,
 }: CurrencyInputProps) {
   const inputRef = React.useRef<HTMLInputElement>(null);
 
@@ -51,12 +55,14 @@ export function CurrencyInput({
       <input
         ref={inputRef}
         id={id}
+        aria-label={ariaLabel}
         type="text"
         inputMode="decimal"
         value={value}
         onChange={(e) => {
           const v = e.target.value;
-          if (v === "" || /^-?\d*\.?\d{0,2}$/.test(v)) {
+          const pattern = fractionDigits === 0 ? /^-?\d*$/ : new RegExp(`^-?\\d*\\.?\\d{0,${fractionDigits}}$`);
+          if (v === "" || pattern.test(v)) {
             onChange(v);
           }
         }}

@@ -1,5 +1,14 @@
 # Money and FX boundary manifest
 
+## MON-130 journal UI and remaining core UI ownership
+
+[CORE_UI_MONEY_CUTOVER](CORE_UI_MONEY_CUTOVER.md) assigns the actual core UI
+consumers to MON-130..133 after controller splitting MON-129. MON-130 journal
+editor/previews/saved manual and recurring detail use exact adapters and Minor
+aliases; REST fixed-two and raw untagged/automated display exceptions are explicit.
+Rendered form and actual REST/MCP/SQL fixtures preserve low digits and metadata.
+Receivable, payable and cash/tax/account closure and both parents remain open.
+
 ## MON-128 shared core posting arithmetic
 
 [CORE_POSTING_CUTOVER_CONTRACTS](CORE_POSTING_CUTOVER_CONTRACTS.md) maps all six

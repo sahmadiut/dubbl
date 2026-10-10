@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/select";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { decimalToCents } from "@/lib/money";
+import { journalEditorPreview, journalDecimal } from "@/lib/money/journal-display";
 
 interface Account {
   id: string;
@@ -36,7 +36,7 @@ interface EntryFormProps {
     date: string;
     description: string;
     reference: string;
-    lines: { accountId: string; description: string; debitAmount: number; creditAmount: number }[];
+    lines: ReturnType<typeof journalEditorPreview>["lines"];
   }) => void;
   loading?: boolean;
   initial?: {
@@ -60,9 +60,8 @@ export function EntryForm({ accounts, onSubmit, loading, initial, onCancel, subm
     ]
   );
 
-  const totalDebit = lines.reduce((sum, l) => sum + (parseFloat(l.debit) || 0), 0);
-  const totalCredit = lines.reduce((sum, l) => sum + (parseFloat(l.credit) || 0), 0);
-  const isBalanced = Math.abs(totalDebit - totalCredit) < 0.0001 && totalDebit > 0;
+  const preview = journalEditorPreview(lines);
+  const { totalDebit, totalCredit, isBalanced } = preview;
 
   function updateLine(index: number, field: keyof Line, value: string) {
     setLines((prev) =>
@@ -89,12 +88,7 @@ export function EntryForm({ accounts, onSubmit, loading, initial, onCancel, subm
       date,
       description,
       reference,
-      lines: lines.map((l) => ({
-        accountId: l.accountId,
-        description: l.description,
-        debitAmount: decimalToCents(l.debit),
-        creditAmount: decimalToCents(l.credit),
-      })),
+      lines: preview.lines,
     });
   }
 
@@ -181,11 +175,13 @@ export function EntryForm({ accounts, onSubmit, loading, initial, onCancel, subm
               />
               <CurrencyInput
                 size="sm"
+                aria-label={`Debit for line ${i + 1}`}
                 value={line.debit}
                 onChange={(v) => updateLine(i, "debit", v)}
               />
               <CurrencyInput
                 size="sm"
+                aria-label={`Credit for line ${i + 1}`}
                 value={line.credit}
                 onChange={(v) => updateLine(i, "credit", v)}
               />
@@ -214,18 +210,19 @@ export function EntryForm({ accounts, onSubmit, loading, initial, onCancel, subm
             </Button>
             <span />
             <span className="text-right text-sm font-mono font-semibold tabular-nums">
-              {totalDebit.toFixed(2)}
+              {journalDecimal(totalDebit)}
             </span>
             <span className="text-right text-sm font-mono font-semibold tabular-nums">
-              {totalCredit.toFixed(2)}
+              {journalDecimal(totalCredit)}
             </span>
             <span />
           </div>
         </div>
-        {!isBalanced && totalDebit + totalCredit > 0 && (
+        {preview.error && <p role="alert" className="text-xs text-red-600">{preview.error}</p>}
+        {!preview.error && !isBalanced && totalDebit + totalCredit > 0n && (
           <p className={cn("text-xs font-medium text-red-600")}>
-            Debits ({totalDebit.toFixed(2)}) must equal credits (
-            {totalCredit.toFixed(2)})
+            Debits ({journalDecimal(totalDebit)}) must equal credits (
+            {journalDecimal(totalCredit)})
           </p>
         )}
       </div>

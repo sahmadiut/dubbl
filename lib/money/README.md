@@ -1,5 +1,11 @@
 # Exact money core
 
+MON-130 adopts manual/recurring journal UI input, previews, Minor writes and
+saved currency-scale display/edit through `journal-display.ts`. Legacy fixed-two
+REST aliases, untagged aggregate and automated-source presentation exceptions
+remain explicit. See [core UI ownership](../../.agentic/registries/CORE_UI_MONEY_CUTOVER.md)
+for MON-131..133 and retained MON-129/MON-007 integration acceptance.
+
 MON-128 closes shared core posting arithmetic through `posting.ts`: explicit
 safe integer input/projection, bigint intermediates/sums and canonical signed
 ratio rounding. Tax-inclusive/recoverable/reverse-charge calculations, scalar FX

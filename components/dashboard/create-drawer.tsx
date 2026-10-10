@@ -56,6 +56,7 @@ import {
 import { DatePicker } from "@/components/ui/date-picker";
 import { ContactPicker } from "@/components/dashboard/contact-picker";
 import { LineItemsEditor, type LineItem } from "@/components/dashboard/line-items-editor";
+import { journalEditorPreview, journalDecimal } from "@/lib/money/journal-display";
 import { EntryForm } from "@/components/dashboard/entry-form";
 import { AccountPicker } from "@/components/dashboard/account-picker";
 import { FileUploader } from "@/components/dashboard/file-uploader";
@@ -948,7 +949,7 @@ function EntryDrawer({ open, onClose }: { open: boolean; onClose: () => void }) 
     date: string;
     description: string;
     reference: string;
-    lines: { accountId: string; description: string; debitAmount: number; creditAmount: number }[];
+    lines: ReturnType<typeof journalEditorPreview>["lines"];
   }) {
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
@@ -964,8 +965,9 @@ function EntryDrawer({ open, onClose }: { open: boolean; onClose: () => void }) 
           lines: data.lines.map((l) => ({
             accountId: l.accountId,
             description: l.description || null,
-            debitAmount: l.debitAmount,
-            creditAmount: l.creditAmount,
+            debitAmountMinor: l.debitAmountMinor,
+            creditAmountMinor: l.creditAmountMinor,
+            currencyCode: l.currencyCode,
           })),
         }),
       });
@@ -4907,9 +4909,8 @@ function RecurringJournalDrawer({ open, onClose }: { open: boolean; onClose: () 
       .catch(() => {});
   }, [open]);
 
-  const totalDebit = rows.reduce((sum, r) => sum + (parseFloat(r.debit) || 0), 0);
-  const totalCredit = rows.reduce((sum, r) => sum + (parseFloat(r.credit) || 0), 0);
-  const isBalanced = Math.abs(totalDebit - totalCredit) < 0.0001 && totalDebit > 0;
+  const preview = journalEditorPreview(rows, { oneSided: true });
+  const { totalDebit, totalCredit, isBalanced } = preview;
 
   function updateRow(index: number, field: keyof RecurringJournalRow, value: string) {
     setRows((prev) => prev.map((r, i) => (i === index ? { ...r, [field]: value } : r)));
@@ -4941,14 +4942,13 @@ function RecurringJournalDrawer({ open, onClose }: { open: boolean; onClose: () 
           endDate: endDate || null,
           reference: reference || null,
           notes: notes || null,
-          lines: rows
-            .filter((r) => r.accountId)
-            .map((r) => ({
-              description: r.description,
-              accountId: r.accountId,
-              debitAmount: decimalToCents(r.debit),
-              creditAmount: decimalToCents(r.credit),
-            })),
+          currencyCode: "USD",
+          lines: preview.lines.map((line) => ({
+            accountId: line.accountId,
+            description: line.description || name.trim(),
+            debitAmountMinor: line.debitAmountMinor,
+            creditAmountMinor: line.creditAmountMinor,
+          })),
         }),
       });
       if (!res.ok) {
@@ -5058,8 +5058,8 @@ function RecurringJournalDrawer({ open, onClose }: { open: boolean; onClose: () 
                       onChange={(e) => updateRow(i, "description", e.target.value)}
                       placeholder="Line memo"
                     />
-                    <CurrencyInput size="sm" value={row.debit} onChange={(v) => updateRow(i, "debit", v)} />
-                    <CurrencyInput size="sm" value={row.credit} onChange={(v) => updateRow(i, "credit", v)} />
+                    <CurrencyInput size="sm" aria-label={`Debit for line ${i + 1}`} value={row.debit} onChange={(v) => updateRow(i, "debit", v)} />
+                    <CurrencyInput size="sm" aria-label={`Credit for line ${i + 1}`} value={row.credit} onChange={(v) => updateRow(i, "credit", v)} />
                     <Button
                       type="button"
                       variant="ghost"
@@ -5078,14 +5078,15 @@ function RecurringJournalDrawer({ open, onClose }: { open: boolean; onClose: () 
                     Add line
                   </Button>
                   <span />
-                  <span className="text-right text-sm font-mono font-semibold tabular-nums">{totalDebit.toFixed(2)}</span>
-                  <span className="text-right text-sm font-mono font-semibold tabular-nums">{totalCredit.toFixed(2)}</span>
+                  <span className="text-right text-sm font-mono font-semibold tabular-nums">{journalDecimal(totalDebit)}</span>
+                  <span className="text-right text-sm font-mono font-semibold tabular-nums">{journalDecimal(totalCredit)}</span>
                   <span />
                 </div>
               </div>
-              {!isBalanced && totalDebit + totalCredit > 0 && (
+              {preview.error && <p role="alert" className="text-xs text-red-600">{preview.error}</p>}
+              {!preview.error && !isBalanced && totalDebit + totalCredit > 0n && (
                 <p className="text-xs font-medium text-red-600">
-                  Debits ({totalDebit.toFixed(2)}) must equal credits ({totalCredit.toFixed(2)})
+                  Debits ({journalDecimal(totalDebit)}) must equal credits ({journalDecimal(totalCredit)})
                 </p>
               )}
             </div>

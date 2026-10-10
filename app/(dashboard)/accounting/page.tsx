@@ -27,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatMoney } from "@/lib/money";
+import { journalRestMinor, journalMoney } from "@/lib/money/journal-display";
 import { devDelay } from "@/lib/dev-delay";
 import { useCreateDrawer } from "@/components/dashboard/create-drawer";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
@@ -43,6 +43,7 @@ interface Entry {
   reference: string | null;
   status: "draft" | "posted" | "void";
   totalDebit: string;
+  totalDebitMinor: string;
   createdAt: string;
 }
 
@@ -105,7 +106,7 @@ const columns: Column<Entry>[] = [
     className: "w-28 text-right",
     render: (r) => (
       <span className="font-mono text-sm tabular-nums">
-        {formatMoney(Math.round(parseFloat(r.totalDebit) * 100))}
+        {journalMoney(journalRestMinor(r.totalDebit, r.totalDebitMinor))}
       </span>
     ),
   },
@@ -144,8 +145,8 @@ export default function TransactionsPage() {
   const drafts = entries.filter((e) => e.status === "draft");
   const voids = entries.filter((e) => e.status === "void");
   const totalPosted = posted.reduce(
-    (sum, e) => sum + Math.round(parseFloat(e.totalDebit) * 100),
-    0
+    (sum, e) => sum + journalRestMinor(e.totalDebit, e.totalDebitMinor),
+    0n
   );
 
   const filtered = useMemo(() => {
@@ -184,7 +185,8 @@ export default function TransactionsPage() {
       } else if (key === "number") {
         cmp = a.entryNumber - b.entryNumber;
       } else if (key === "amount") {
-        cmp = parseFloat(a.totalDebit) - parseFloat(b.totalDebit);
+        const left = journalRestMinor(a.totalDebit, a.totalDebitMinor), right = journalRestMinor(b.totalDebit, b.totalDebitMinor);
+        cmp = left < right ? -1 : left > right ? 1 : 0;
       }
       return order === "asc" ? cmp : -cmp;
     });
@@ -334,7 +336,7 @@ export default function TransactionsPage() {
               Total in your books
             </p>
             <p className="mt-1 font-mono text-lg font-semibold tabular-nums">
-              {formatMoney(totalPosted)}
+              {journalMoney(totalPosted)}
             </p>
           </div>
 

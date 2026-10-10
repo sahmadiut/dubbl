@@ -135,3 +135,4 @@ MON-007 retains all original criteria; backend completion cannot establish UI or
 
 - [MON-128](../tasks/MON-128.md): Shared core posting arithmetic and backend ownership.
 - [MON-129](../tasks/MON-129.md): Core exact money editors, previews and presentation; split further if needed.
+- [MON-130](../tasks/MON-130.md), [MON-131](../tasks/MON-131.md), [MON-132](../tasks/MON-132.md), [MON-133](../tasks/MON-133.md): Source-verified journal, receivable, payable and cash/tax/account UI slices; MON-129 retains combined acceptance.

@@ -41,7 +41,8 @@ import { CurrencyInput } from "@/components/ui/currency-input";
 import { AccountPicker } from "@/components/dashboard/account-picker";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatMoney, decimalToCents } from "@/lib/money";
+import { currencyMetadata } from "@/lib/money/exact";
+import { journalDisplayCurrency, journalRestMinor, journalStoredMinor, journalMoney, journalDecimal, journalEditorPreview, journalSideDisplay } from "@/lib/money/journal-display";
 import { useConfirm } from "@/lib/hooks/use-confirm";
 import { useEntityTitle } from "@/lib/hooks/use-entity-title";
 import { ContentReveal } from "@/components/ui/content-reveal";
@@ -57,6 +58,12 @@ interface Line {
   description: string | null;
   debitAmount: string;
   creditAmount: string;
+  debitAmountMinor: string;
+  creditAmountMinor: string;
+  currencyCode: string;
+  exchangeRate: number;
+  costCenterId: string | null;
+  projectId: string | null;
 }
 
 interface Entry {
@@ -74,6 +81,7 @@ interface Entry {
   voidReason: string | null;
   createdAt: string;
   lines: Line[];
+  fiscalYearId: string | null;
 }
 
 const statusConfig: Record<string, { class: string; label: string; bg: string }> = {
@@ -249,15 +257,14 @@ export default function EntryDetailPage() {
 
   const sc = statusConfig[entry.status] || statusConfig.draft;
 
-  const totalDebit = entry.lines.reduce(
-    (sum, l) => sum + parseFloat(l.debitAmount || "0"),
-    0
-  );
-  const totalCredit = entry.lines.reduce(
-    (sum, l) => sum + parseFloat(l.creditAmount || "0"),
-    0
-  );
-  const isBalanced = Math.abs(totalDebit - totalCredit) < 0.005;
+  const savedLines = entry.lines.map(line => ({ ...line,
+    currencyCode: journalDisplayCurrency(entry.sourceType, line.currencyCode),
+    debitAmountMinor: String(journalRestMinor(line.debitAmount, line.debitAmountMinor)),
+    creditAmountMinor: String(journalRestMinor(line.creditAmount, line.creditAmountMinor)),
+  }));
+  const totalDebit = savedLines.reduce((sum, line) => sum + journalStoredMinor(line.debitAmountMinor), 0n);
+  const totalCredit = savedLines.reduce((sum, line) => sum + journalStoredMinor(line.creditAmountMinor), 0n);
+  const isBalanced = totalDebit === totalCredit;
 
   return (
     <ContentReveal>
@@ -454,8 +461,8 @@ export default function EntryDetailPage() {
               </thead>
               <tbody>
                 {entry.lines.map((line, i) => {
-                  const debit = parseFloat(line.debitAmount);
-                  const credit = parseFloat(line.creditAmount);
+                  const debit = journalRestMinor(line.debitAmount, line.debitAmountMinor);
+                  const credit = journalRestMinor(line.creditAmount, line.creditAmountMinor);
                   return (
                     <tr
                       key={line.id}
@@ -476,15 +483,15 @@ export default function EntryDetailPage() {
                         {line.description || "-"}
                       </td>
                       <td className="px-6 py-3 text-right font-mono tabular-nums">
-                        {debit > 0 ? (
-                          <span className="font-medium">{formatMoney(Math.round(debit * 100))}</span>
+                        {debit > 0n ? (
+                          <span className="font-medium">{journalMoney(debit, journalDisplayCurrency(entry.sourceType, line.currencyCode))}</span>
                         ) : (
                           <span className="text-muted-foreground/30">-</span>
                         )}
                       </td>
                       <td className="px-6 py-3 text-right font-mono tabular-nums">
-                        {credit > 0 ? (
-                          <span className="font-medium">{formatMoney(Math.round(credit * 100))}</span>
+                        {credit > 0n ? (
+                          <span className="font-medium">{journalMoney(credit, journalDisplayCurrency(entry.sourceType, line.currencyCode))}</span>
                         ) : (
                           <span className="text-muted-foreground/30">-</span>
                         )}
@@ -503,13 +510,13 @@ export default function EntryDetailPage() {
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Total Debits</span>
                   <span className="font-mono tabular-nums font-semibold">
-                    {formatMoney(Math.round(totalDebit * 100))}
+                    {journalSideDisplay(savedLines, "debitAmountMinor")}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Total Credits</span>
                   <span className="font-mono tabular-nums font-semibold">
-                    {formatMoney(Math.round(totalCredit * 100))}
+                    {journalSideDisplay(savedLines, "creditAmountMinor")}
                   </span>
                 </div>
                 <div className="h-px bg-border my-1" />
@@ -521,7 +528,7 @@ export default function EntryDetailPage() {
                       ? "text-emerald-600 dark:text-emerald-400"
                       : "text-red-600 dark:text-red-400"
                   )}>
-                    {isBalanced ? "$0.00" : formatMoney(Math.round(Math.abs(totalDebit - totalCredit) * 100))}
+                    {journalSideDisplay(savedLines, "difference")}
                   </span>
                 </div>
               </div>
@@ -588,8 +595,8 @@ export default function EntryDetailPage() {
                 <p className="text-[11px] text-muted-foreground">Lines</p>
                 <p className="text-sm mt-0.5">
                   {entry.lines.length} journal {entry.lines.length === 1 ? "line" : "lines"} ·{" "}
-                  {entry.lines.filter((l) => parseFloat(l.debitAmount) > 0).length} debits,{" "}
-                  {entry.lines.filter((l) => parseFloat(l.creditAmount) > 0).length} credits
+                  {entry.lines.filter((l) => journalRestMinor(l.debitAmount, l.debitAmountMinor) > 0n).length} debits,{" "}
+                  {entry.lines.filter((l) => journalRestMinor(l.creditAmount, l.creditAmountMinor) > 0n).length} credits
                 </p>
               </div>
             </div>
@@ -620,6 +627,10 @@ interface EditLine {
   description: string;
   debit: string;
   credit: string;
+  currencyCode?: string;
+  exchangeRate?: number;
+  costCenterId?: string | null;
+  projectId?: string | null;
 }
 
 function EditEntrySheet({
@@ -650,8 +661,9 @@ function EditEntrySheet({
         entry.lines.map((l) => ({
           accountId: l.accountId,
           description: l.description ?? "",
-          debit: parseFloat(l.debitAmount) > 0 ? l.debitAmount : "",
-          credit: parseFloat(l.creditAmount) > 0 ? l.creditAmount : "",
+          debit: journalRestMinor(l.debitAmount, l.debitAmountMinor) > 0n ? journalDecimal(journalRestMinor(l.debitAmount, l.debitAmountMinor), l.currencyCode) : "",
+          credit: journalRestMinor(l.creditAmount, l.creditAmountMinor) > 0n ? journalDecimal(journalRestMinor(l.creditAmount, l.creditAmountMinor), l.currencyCode) : "",
+          currencyCode: l.currencyCode, exchangeRate: l.exchangeRate, costCenterId: l.costCenterId, projectId: l.projectId,
         }))
       );
     }
@@ -661,24 +673,21 @@ function EditEntrySheet({
     setLines((prev) => prev.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
   }
   function addLine() {
-    setLines((prev) => [...prev, { accountId: "", description: "", debit: "", credit: "" }]);
+    setLines((prev) => [...prev, { accountId: "", description: "", debit: "", credit: "",
+      currencyCode: prev[0]?.currencyCode ?? "USD", exchangeRate: prev[0]?.exchangeRate ?? 1000000 }]);
   }
   function removeLine(i: number) {
     setLines((prev) => (prev.length <= 2 ? prev : prev.filter((_, idx) => idx !== i)));
   }
 
-  const totalDebit = lines.reduce((s, l) => s + (parseFloat(l.debit) || 0), 0);
-  const totalCredit = lines.reduce((s, l) => s + (parseFloat(l.credit) || 0), 0);
-  const balanced = Math.abs(totalDebit - totalCredit) < 0.005 && totalDebit > 0;
+  const preview = journalEditorPreview(lines);
+  const balanced = preview.isBalanced;
 
   async function save() {
     if (!orgId) return;
     if (!description.trim()) { toast.error("Add a description"); return; }
-    const validLines = lines.filter(
-      (l) => l.accountId && (parseFloat(l.debit) > 0 || parseFloat(l.credit) > 0)
-    );
-    if (validLines.length < 2) { toast.error("Add at least two lines with an account and an amount"); return; }
-    if (!balanced) { toast.error("Debits must equal credits"); return; }
+    if (preview.error) { toast.error(preview.error); return; }
+    if (!balanced) { toast.error("Add at least two balanced lines with accounts and amounts"); return; }
     setSaving(true);
     try {
       const res = await fetch(`/api/v1/entries/${entry.id}`, {
@@ -688,12 +697,8 @@ function EditEntrySheet({
           date,
           description: description.trim(),
           reference: reference.trim() || null,
-          lines: validLines.map((l) => ({
-            accountId: l.accountId,
-            description: l.description.trim() || null,
-            debitAmount: decimalToCents(l.debit || 0),
-            creditAmount: decimalToCents(l.credit || 0),
-          })),
+          fiscalYearId: entry.fiscalYearId,
+          lines: preview.lines,
         }),
       });
       if (!res.ok) throw new Error((await res.json()).error);
@@ -738,7 +743,7 @@ function EditEntrySheet({
               </Button>
             </div>
             {lines.map((l, i) => (
-              <div key={i} className="grid grid-cols-[1fr_90px_90px_auto] gap-2 items-start">
+              <div key={i} className="grid grid-cols-[1fr_120px_120px_auto] gap-2 items-start">
                 <div className="space-y-1">
                   <AccountPicker value={l.accountId} onChange={(v) => update(i, { accountId: v })} allowCreate />
                   <Input
@@ -749,13 +754,17 @@ function EditEntrySheet({
                   />
                 </div>
                 <CurrencyInput
-                  prefix="$"
+                  prefix={l.currencyCode ?? "USD"}
+                  fractionDigits={currencyMetadata(l.currencyCode ?? "USD").minorUnits}
+                  aria-label={`Debit for line ${i + 1}`}
                   value={l.debit}
                   onChange={(v) => update(i, { debit: v, credit: v ? "" : l.credit })}
                   placeholder="Debit"
                 />
                 <CurrencyInput
-                  prefix="$"
+                  prefix={l.currencyCode ?? "USD"}
+                  fractionDigits={currencyMetadata(l.currencyCode ?? "USD").minorUnits}
+                  aria-label={`Credit for line ${i + 1}`}
                   value={l.credit}
                   onChange={(v) => update(i, { credit: v, debit: v ? "" : l.debit })}
                   placeholder="Credit"
@@ -774,13 +783,14 @@ function EditEntrySheet({
             ))}
           </div>
 
+          {preview.error && <p role="alert" className="text-xs text-red-600">{preview.error}</p>}
           <div className="rounded-lg border bg-muted/30 p-3 text-sm">
-            <div className="flex justify-between"><span className="text-muted-foreground">Total debits</span><span className="font-mono tabular-nums">{formatMoney(Math.round(totalDebit * 100))}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Total credits</span><span className="font-mono tabular-nums">{formatMoney(Math.round(totalCredit * 100))}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Total debits</span><span className="font-mono tabular-nums">{journalSideDisplay(preview.lines, "debitAmountMinor")}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Total credits</span><span className="font-mono tabular-nums">{journalSideDisplay(preview.lines, "creditAmountMinor")}</span></div>
             <div className="mt-1 flex justify-between border-t pt-1">
               <span className="text-muted-foreground">Difference</span>
               <span className={cn("font-mono tabular-nums font-semibold", balanced ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400")}>
-                {formatMoney(Math.round(Math.abs(totalDebit - totalCredit) * 100))}
+                {journalSideDisplay(preview.lines, "difference")}
               </span>
             </div>
           </div>

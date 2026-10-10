@@ -1,3 +1,4 @@
+import { jsonResponse } from "@/lib/api/json-response";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
@@ -23,7 +24,7 @@ export async function GET() {
       .from(users)
       .orderBy(desc(users.createdAt));
 
-    return NextResponse.json({ users: allUsers });
+    return jsonResponse({ users: allUsers });
   } catch (err) {
     return handleError(err);
   }

@@ -1,3 +1,5 @@
+import { registerAdminOrganizationTools } from "./admin-organization";
+import { registerAuditLogTools } from "./audit-log";
 import { registerDashboardLayoutTools } from "./dashboard-layouts";
 import { registerOperationalReportTools } from "./operational-reports";
 import { registerBankAnalyticsTools } from "./bank-analytics";
@@ -98,6 +100,8 @@ import { registerPublicPortalTools } from "./public-portal";
 import { registerCustomReportTools } from "./custom-reports";
 
 export function registerAllTools(server: McpServer, ctx: AuthContext) {
+  registerAuditLogTools(server, ctx);
+  registerAdminOrganizationTools(server, ctx);
   registerCustomReportTools(server, ctx);
   registerOperationalReportTools(server, ctx);
   registerBankAnalyticsTools(server, ctx);

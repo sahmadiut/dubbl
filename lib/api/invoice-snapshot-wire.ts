@@ -25,30 +25,7 @@ export const invoiceSnapshotSchema = z.strictObject(invoiceSnapshotFields)
 export const invoiceSnapshotMcpSchema = z.strictObject({ invoiceId: invoiceSnapshotId, ...invoiceSnapshotFields })
   .refine(value => value.sender !== undefined || value.recipient !== undefined, "Provide sender or recipient corrections");
 
-function decimalKey(value: string): string {
-  const match = /^(-?)(\d+)(?:\.(\d+))?(?:[eE]([+-]?\d+))?$/.exec(value)!;
-  const digits = (match[2] + (match[3] ?? "")).replace(/^0+/, "");
-  if (!digits) return "0";
-  const significant = digits.replace(/0+$/, "");
-  const exponent = BigInt(match[4] ?? "0") - BigInt((match[3] ?? "").length) + BigInt(digits.length - significant.length);
-  return `${match[1]}${significant}e${exponent}`;
-}
-
-/** Fetch jsonb as SQL text so pg cannot round a numeric token before validation. */
-export function parseInvoiceSnapshotJson(source: string | null): unknown {
-  if (source === null) return null;
-  // JSON strings are matched as complete tokens and skipped, including escapes.
-  for (const match of source.matchAll(/"(?:[^"\\]|\\.)*"|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/g)) {
-    const token = match[0];
-    if (token.startsWith('"')) continue;
-    const numeric = Number(token);
-    if (!Number.isFinite(numeric) || Math.abs(numeric) > Number.MAX_SAFE_INTEGER
-      || decimalKey(token) !== decimalKey(String(numeric))) {
-      throw new WireCompatibilityError("Historical invoice snapshot number cannot round-trip through numeric JSON; preserve exact values as strings");
-    }
-  }
-  return JSON.parse(source);
-}
+export { parseOpaqueJson as parseInvoiceSnapshotJson } from "./opaque-json";
 
 /** Historical JSON is opaque: do not guess money units or generate aliases from names. */
 function snapshot(value: unknown): Record<string, unknown> | null {

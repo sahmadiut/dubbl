@@ -1,3 +1,4 @@
+import { opaqueJsonRecord } from "./opaque-json";
 import { db } from "@/lib/db";
 import { auditLog } from "@/lib/db/schema";
 import type { AuthContext } from "./auth-context";
@@ -40,6 +41,8 @@ export function logAudit({
     null;
   const userAgent = request?.headers.get("user-agent") || null;
 
+  const guardedChanges = changes ? opaqueJsonRecord(changes) : null;
+
   return db
     .insert(auditLog)
     .values({
@@ -48,7 +51,7 @@ export function logAudit({
       action,
       entityType,
       entityId,
-      changes: changes || null,
+      changes: guardedChanges,
       ipAddress,
       userAgent,
     })

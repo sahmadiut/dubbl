@@ -1,3 +1,4 @@
+import { jsonResponse } from "@/lib/api/json-response";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import {
@@ -134,7 +135,7 @@ export async function GET(request: Request) {
       .select({ totalBytes: sql<number>`coalesce(sum(${attachment.fileSize}), 0)` })
       .from(attachment);
 
-    return NextResponse.json({
+    return jsonResponse({
       globalTotals: {
         entries: Number(totalEntries.count),
         invoices: Number(totalInvoices.count),

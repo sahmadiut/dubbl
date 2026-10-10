@@ -1399,3 +1399,21 @@ verify tenant/custom-role isolation, invalid inputs, unsupported history, lock
 order, signing contention and audit rollback. MON-034 retains integration after
 MON-125 remaining opaque/admin, MON-126 signing and MON-127 SSR/PDF bridges.
 No schema, historical rewrite, currency rescale or production IRR flag change.
+
+## MON-125 remaining opaque/admin forwarding
+
+[OPAQUE_ADMIN_WIRE_CONTRACTS](OPAQUE_ADMIN_WIRE_CONTRACTS.md) assigns all 30
+persisted JSON declarations to existing domain/auth/configuration owners.
+Audit reads share SQL-text numeric-token preflight with invoice snapshots;
+exact historical strings and originating units remain intact, while unsupported
+numeric history fails without rewriting it. Generic audit-row serialization
+preflights payloads before insertion. Organization/subscription administration
+shares strict REST/MCP services, explicit safe cents/Minor aliases, int32 quota
+controls and locked partial upserts. Site-admin API/MCP credentials retain
+organization scope; session administrators retain existing global addressing.
+Only known plan Infinity sentinels map to the established unlimited null output.
+Guarded global admin read forwarding retains counts/bytes rather than inferring
+money units. Actual disposable REST/full-SDK fixtures verify two tenants, roles,
+retention, raw token/range/schema failures and concurrent updates. Domain audit
+atomicity and global session/browser/scale qualification are not inferred;
+MON-034 retains combined integration, MON-126 signing and MON-127 rendering.

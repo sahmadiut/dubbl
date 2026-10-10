@@ -1,89 +1,13 @@
-import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { auditLog } from "@/lib/db/schema";
-import { eq, and, desc, gte, lte, sql } from "drizzle-orm";
 import { getAuthContext } from "@/lib/api/auth-context";
-import { requireRole } from "@/lib/api/require-role";
+import { listAuditLog } from "@/lib/api/audit-log";
+import { jsonResponse } from "@/lib/api/json-response";
 import { handleError } from "@/lib/api/response";
-import { parsePagination, paginatedResponse } from "@/lib/api/pagination";
-import { getOrgPlanLimits } from "@/lib/api/check-limit";
 
 export async function GET(request: Request) {
   try {
     const ctx = await getAuthContext(request);
-    requireRole(ctx, "view:audit-log");
-
-    const url = new URL(request.url);
-    const { page, limit, offset } = parsePagination(url);
-
-    const entityType = url.searchParams.get("entityType");
-    const entityId = url.searchParams.get("entityId");
-    const userId = url.searchParams.get("userId");
-    const action = url.searchParams.get("action");
-    const startDate = url.searchParams.get("startDate");
-    const endDate = url.searchParams.get("endDate");
-
-    // Clamp date range based on plan's auditLogDays
-    const { limits } = await getOrgPlanLimits(ctx.organizationId);
-    const minDate = limits.auditLogDays === Infinity
-      ? null
-      : new Date(Date.now() - limits.auditLogDays * 24 * 60 * 60 * 1000);
-
-    const conditions = [eq(auditLog.organizationId, ctx.organizationId)];
-    if (minDate) {
-      conditions.push(gte(auditLog.createdAt, minDate));
-    }
-
-    if (entityType) {
-      conditions.push(eq(auditLog.entityType, entityType));
-    }
-    if (entityId) {
-      conditions.push(eq(auditLog.entityId, entityId));
-    }
-    if (userId) {
-      conditions.push(eq(auditLog.userId, userId));
-    }
-    if (action) {
-      conditions.push(eq(auditLog.action, action));
-    }
-    if (startDate) {
-      conditions.push(gte(auditLog.createdAt, new Date(startDate)));
-    }
-    if (endDate) {
-      conditions.push(lte(auditLog.createdAt, new Date(endDate)));
-    }
-
-    const entries = await db.query.auditLog.findMany({
-      where: and(...conditions),
-      orderBy: desc(auditLog.createdAt),
-      limit,
-      offset,
-      with: {
-        user: true,
-      },
-    });
-
-    const [countResult] = await db
-      .select({ count: sql<number>`count(*)`.mapWith(Number) })
-      .from(auditLog)
-      .where(and(...conditions));
-
-    const data = entries.map((entry) => ({
-      id: entry.id,
-      action: entry.action,
-      entityType: entry.entityType,
-      entityId: entry.entityId,
-      changes: entry.changes,
-      ipAddress: entry.ipAddress,
-      userAgent: entry.userAgent,
-      createdAt: entry.createdAt,
-      userName: entry.user?.name || entry.user?.email || "Unknown",
-    }));
-
-    return NextResponse.json(
-      paginatedResponse(data, Number(countResult?.count || 0), page, limit)
-    );
-  } catch (err) {
-    return handleError(err);
-  }
+    const input: Record<string, unknown> = Object.fromEntries(new URL(request.url).searchParams);
+    for (const key of ["page", "limit"]) if (typeof input[key] === "string" && /^\d+$/.test(input[key])) input[key] = Number(input[key]);
+    return jsonResponse(await listAuditLog(ctx, input));
+  } catch (err) { return handleError(err); }
 }

@@ -1,3 +1,4 @@
+import { jsonResponse } from "@/lib/api/json-response";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { users, organization, member, subscription } from "@/lib/db/schema";
@@ -57,7 +58,7 @@ export async function GET() {
       .from(subscription)
       .where(eq(subscription.managedBy, "manual"));
 
-    return NextResponse.json({
+    return jsonResponse({
       totalUsers: Number(userCount.count),
       totalOrgs: Number(orgCount.count),
       totalMembers: Number(memberCount.count),

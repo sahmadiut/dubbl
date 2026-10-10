@@ -1417,3 +1417,20 @@ money units. Actual disposable REST/full-SDK fixtures verify two tenants, roles,
 retention, raw token/range/schema failures and concurrent updates. Domain audit
 atomicity and global session/browser/scale qualification are not inferred;
 MON-034 retains combined integration, MON-126 signing and MON-127 rendering.
+
+## MON-126 public invoice signing
+
+[INVOICE_SIGNING_WIRE_CONTRACTS](INVOICE_SIGNING_WIRE_CONTRACTS.md) maps public
+POST/SSR and authenticated request/list/resend REST/MCP. Shared scoped projections
+guard all five header minor-unit amounts and SQL-text opaque snapshots before
+signature writes/delivery; exact aliases and currency-scaled text retain safe
+signed history. Organization/invoice/signature lock order serializes signing,
+resend and snapshot corrections, rechecks status/expiry and prevents repeated
+submissions from overwriting proof. Strict schemas, tenant/contact/live-record
+guards, newest active request selection and escaped email retain existing
+signature envelopes. Disposable actual REST/static SSR/full-SDK fixtures cover
+legacy/exact writers, both safe endpoints, currency scales, unchanged failure
+state, SMTP capture/rollback and signature/correction races. No schema, monetary
+posting, history rewrite/rescale, full-int64 or IRR flag change. Real provider/
+identity/browser/security qualification and MON-034 integration remain separate;
+MON-127 owns the other rendering bridges.

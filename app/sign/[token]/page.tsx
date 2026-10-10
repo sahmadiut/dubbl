@@ -1,15 +1,9 @@
-import { db } from "@/lib/db";
-import { invoiceSignature } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { getPublicInvoiceSignature } from "@/lib/api/invoice-signatures";
+import { AuthError } from "@/lib/api/auth-context";
+import { WireCompatibilityError } from "@/lib/money/wire";
+import { z } from "zod";
 import { notFound } from "next/navigation";
 import { SignatureCanvas } from "./signature-canvas";
-
-function fmtMoney(cents: number, currency = "USD") {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency,
-  }).format(cents / 100);
-}
 
 export default async function SignPage({
   params,
@@ -18,18 +12,22 @@ export default async function SignPage({
 }) {
   const { token } = await params;
 
-  const sig = await db.query.invoiceSignature.findFirst({
-    where: eq(invoiceSignature.token, token),
-    with: { invoice: { with: { contact: true } } },
-  });
-
-  if (!sig) return notFound();
-
-  const isExpired = sig.expiresAt && new Date() > sig.expiresAt;
+  let result;
+  try { result = await getPublicInvoiceSignature(token); }
+  catch (err) {
+    if ((err instanceof AuthError && err.status === 404) || err instanceof z.ZodError) return notFound();
+    if (err instanceof WireCompatibilityError) {
+      return <div className="min-h-screen flex items-center justify-center p-4" role="alert">
+        This invoice cannot be displayed safely. Please contact the sender.
+      </div>;
+    }
+    throw err;
+  }
+  const sig = result.signature;
+  const inv = result.invoice;
+  const isExpired = result.isExpired;
   const isSigned = sig.status === "signed";
   const isDeclined = sig.status === "declined";
-  const inv = sig.invoice;
-  const currency = inv.currencyCode || "USD";
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center p-4">
@@ -75,7 +73,7 @@ export default async function SignPage({
           <div className="flex justify-between text-sm">
             <span className="text-gray-500 dark:text-gray-400">Total</span>
             <span className="text-gray-900 dark:text-gray-100 font-semibold">
-              {fmtMoney(inv.total, currency)}
+              {inv.totalFormatted}
             </span>
           </div>
         </div>

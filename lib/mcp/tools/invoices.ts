@@ -1,3 +1,5 @@
+import { requestInvoiceSignature, getInvoiceSignatures, resendInvoiceSignature } from "@/lib/api/invoice-signatures";
+import { signatureInvoiceId, signatureRequestFields } from "@/lib/api/invoice-signature-wire";
 import { getInvoiceSnapshot, updateInvoiceSnapshot } from "@/lib/api/invoice-snapshots";
 import { invoiceSnapshotId, invoiceSnapshotMcpSchema } from "@/lib/api/invoice-snapshot-wire";
 import { payDocument } from "@/lib/api/payment-settlements";
@@ -10,13 +12,10 @@ import { AuthError } from "@/lib/api/auth-context";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { invoice, invoiceSignature, emailConfig, organization } from "@/lib/db/schema";
+import { invoice, organization } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { notDeleted } from "@/lib/db/soft-delete";
-import { requireRole } from "@/lib/api/require-role";
 import { wrapTool } from "@/lib/mcp/errors";
-import { sendEmail } from "@/lib/email/smtp-client";
-import { randomBytes } from "crypto";
 import type { AuthContext } from "@/lib/api/auth-context";
 import { checkInvoiceCompliance } from "@/lib/documents/compliance";
 
@@ -64,166 +63,23 @@ export function registerInvoiceTools(server: McpServer, ctx: AuthContext) {
     })
   );
 
-  server.tool(
-    "request_invoice_signature",
-    "Request an e-signature on an invoice. Sends a signing email to the signer with a unique link. Returns the created signature record.",
-    {
-      invoiceId: z.string().describe("The UUID of the invoice to request a signature for"),
-      signerName: z.string().describe("Full name of the person who should sign"),
-      signerEmail: z.string().email().describe("Email address of the signer"),
-      expiresAt: z
-        .string()
-        .optional()
-        .describe("Optional expiry date for the signing link (ISO 8601 datetime)"),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        requireRole(ctx, "manage:invoices");
+  server.registerTool("request_invoice_signature", {
+    description: "Request a signature for an owned live invoice with manage:invoices. Text signer name/email and optional future ISO expiry only; no money input. Validates saved safe integer currency minor units and opaque snapshots before writing. Returns {signature,emailSent}; emailSent is false when SMTP is absent. Existing signatures remain immutable; unsupported history returns 422.",
+    inputSchema: z.strictObject({ invoiceId: signatureInvoiceId, ...signatureRequestFields }),
+  }, params => {
+    const { invoiceId, ...input } = params;
+    return wrapTool(ctx, () => requestInvoiceSignature(ctx, invoiceId, input));
+  });
 
-        const inv = await db.query.invoice.findFirst({
-          where: and(
-            eq(invoice.id, params.invoiceId),
-            eq(invoice.organizationId, ctx.organizationId),
-            notDeleted(invoice.deletedAt)
-          ),
-        });
+  server.registerTool("get_invoice_signature", {
+    description: "List all signatures of an owned live invoice with view:data, newest requestedAt first. Returns {signatures}, including status, token and UTC timestamps. No monetary inputs/outputs. Saved invoice summary must be in supported safe minor-unit range; foreign/deleted invoices return 404.",
+    inputSchema: z.strictObject({ invoiceId: signatureInvoiceId }),
+  }, params => wrapTool(ctx, () => getInvoiceSignatures(ctx, params.invoiceId)));
 
-        if (!inv) throw new Error("Invoice not found");
-
-        const token = randomBytes(32).toString("base64url");
-
-        const [sig] = await db
-          .insert(invoiceSignature)
-          .values({
-            invoiceId: params.invoiceId,
-            token,
-            signerName: params.signerName,
-            signerEmail: params.signerEmail,
-            expiresAt: params.expiresAt ? new Date(params.expiresAt) : null,
-          })
-          .returning();
-
-        // Send signing email if email is configured
-        const emailCfg = await db.query.emailConfig.findFirst({
-          where: eq(emailConfig.organizationId, ctx.organizationId),
-        });
-
-        let emailSent = false;
-        if (emailCfg) {
-          const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-          const signUrl = `${baseUrl}/sign/${token}`;
-
-          await sendEmail(emailCfg, {
-            to: params.signerEmail,
-            subject: `Signature requested - Invoice ${inv.invoiceNumber}`,
-            html: `
-              <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-                <h2>Signature Request</h2>
-                <p>Hello ${params.signerName},</p>
-                <p>You have been asked to sign invoice <strong>${inv.invoiceNumber}</strong>.</p>
-                <p>
-                  <a href="${signUrl}" style="display: inline-block; background: #2563eb; color: #fff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 500;">
-                    Review & Sign
-                  </a>
-                </p>
-                ${params.expiresAt ? `<p style="color: #6b7280; font-size: 14px;">This link expires on ${new Date(params.expiresAt).toLocaleDateString()}.</p>` : ""}
-                <p style="color: #6b7280; font-size: 14px;">If you did not expect this request, you can safely ignore this email.</p>
-              </div>
-            `,
-          });
-          emailSent = true;
-        }
-
-        return { signature: sig, emailSent };
-      })
-  );
-
-  server.tool(
-    "get_invoice_signature",
-    "Get the e-signature status for an invoice. Returns all signature records associated with the invoice.",
-    {
-      invoiceId: z.string().describe("The UUID of the invoice"),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        const inv = await db.query.invoice.findFirst({
-          where: and(
-            eq(invoice.id, params.invoiceId),
-            eq(invoice.organizationId, ctx.organizationId),
-            notDeleted(invoice.deletedAt)
-          ),
-        });
-
-        if (!inv) throw new Error("Invoice not found");
-
-        const signatures = await db.query.invoiceSignature.findMany({
-          where: eq(invoiceSignature.invoiceId, params.invoiceId),
-        });
-
-        return { signatures };
-      })
-  );
-
-  server.tool(
-    "resend_signature_request",
-    "Resend the signing email for a pending signature request on an invoice. Only resends if there is an active pending request.",
-    {
-      invoiceId: z.string().describe("The UUID of the invoice"),
-    },
-    (params) =>
-      wrapTool(ctx, async () => {
-        requireRole(ctx, "manage:invoices");
-
-        const inv = await db.query.invoice.findFirst({
-          where: and(
-            eq(invoice.id, params.invoiceId),
-            eq(invoice.organizationId, ctx.organizationId),
-            notDeleted(invoice.deletedAt)
-          ),
-        });
-
-        if (!inv) throw new Error("Invoice not found");
-
-        const sig = await db.query.invoiceSignature.findFirst({
-          where: and(
-            eq(invoiceSignature.invoiceId, params.invoiceId),
-            eq(invoiceSignature.status, "pending")
-          ),
-        });
-
-        if (!sig) throw new Error("No pending signature request found for this invoice");
-
-        const emailCfg = await db.query.emailConfig.findFirst({
-          where: eq(emailConfig.organizationId, ctx.organizationId),
-        });
-
-        if (!emailCfg) throw new Error("Email is not configured for this organization");
-
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-        const signUrl = `${baseUrl}/sign/${sig.token}`;
-
-        await sendEmail(emailCfg, {
-          to: sig.signerEmail,
-          subject: `Reminder: Signature requested - Invoice ${inv.invoiceNumber}`,
-          html: `
-            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-              <h2>Signature Reminder</h2>
-              <p>Hello ${sig.signerName},</p>
-              <p>This is a reminder that you have been asked to sign invoice <strong>${inv.invoiceNumber}</strong>.</p>
-              <p>
-                <a href="${signUrl}" style="display: inline-block; background: #2563eb; color: #fff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 500;">
-                  Review & Sign
-                </a>
-              </p>
-              ${sig.expiresAt ? `<p style="color: #6b7280; font-size: 14px;">This link expires on ${new Date(sig.expiresAt).toLocaleDateString()}.</p>` : ""}
-              <p style="color: #6b7280; font-size: 14px;">If you did not expect this request, you can safely ignore this email.</p>
-            </div>
-          `,
-        });
-
-        return { success: true, resentTo: sig.signerEmail };
-      })
-  );
+  server.registerTool("resend_signature_request", {
+    description: "Resend email for the newest active pending signature of an owned live invoice with manage:invoices. Expired/signed/declined requests are excluded. Returns {success,resentTo}; no pending request returns 404, missing SMTP returns 400, unsupported history returns 422 before delivery. No monetary input.",
+    inputSchema: z.strictObject({ invoiceId: signatureInvoiceId }),
+  }, params => wrapTool(ctx, () => resendInvoiceSignature(ctx, params.invoiceId)));
 
   server.tool(
     "check_invoice_compliance",

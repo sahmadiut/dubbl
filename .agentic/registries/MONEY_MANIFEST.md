@@ -1469,3 +1469,18 @@ aliases. Child regressions retain lock/rollback, SMTP capture, global admin
 session and all document-kind coverage. No production code or schema changes,
 historical rescale, provider/deployment action, full-int64 consumer cutover,
 IRR enablement or independent security/accounting/visual qualification.
+
+## MON-016 combined public and opaque boundary integration
+
+[PUBLIC_BOUNDARY_INTEGRATION_CONTRACTS](PUBLIC_BOUNDARY_INTEGRATION_CONTRACTS.md)
+joins the operation inventories and unit/alias/range policies of MON-030..034.
+Independent real REST/full-MCP-SDK acceptance follows legacy/exact generic imports
+and USD/IRR/KWD invoice writers through CSV export, immutable versioned backups,
+supported restore, public tokens, literal snapshots, signing and HTML/PDF render.
+Captured USD checkout and real signed webhook settlement preserve due/paid units
+and replay identity through portal reads, backup aliases and outgoing HMAC delivery.
+Unsupported currencies, alias conflicts, tenant/grant failures, unsafe saved money
+and incomplete dependent recovery graphs reject with table/storage/adapter state
+unchanged. Existing schema JSON ownership closure and domain inventories retain
+their owners. No new runtime/schema/history rescale, full-int64 cutover, live
+provider/deployment, production IRR or independent qualification claim.

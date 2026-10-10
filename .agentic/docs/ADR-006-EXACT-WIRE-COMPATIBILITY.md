@@ -3,6 +3,18 @@
 2026-10-02, Asia/Tehran. MON-011 technical foundation, split from MON-006.
 Self-review only; no endpoint-wide cutover, human accounting or deployment approval.
 
+## Current adoption status (2026-10-10)
+
+The original foundation/adoption discussion below describes the MON-011 checkpoint.
+MON-012 now records the completed bounded rollout in
+[EXACT_API_BOUNDARY_CONTRACTS](../registries/EXACT_API_BOUNDARY_CONTRACTS.md).
+MON-006 independently verifies storage/wire/public-client composition in
+[SERIALIZATION_COMPATIBILITY_CONTRACTS](../registries/SERIALIZATION_COMPATIBILITY_CONTRACTS.md).
+Named exact fields preserve documented units; public workflows retain their
+explicit safe-number and narrower business limits. No generic public exact-mode
+negotiation or numeric sunset has been introduced. MON-007/008 and independent
+migration/accounting/IRR/release qualification remain separate.
+
 ## Representation and units
 
 `lib/money/wire.ts` defines an explicit `legacy` / `exact` representation.

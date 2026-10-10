@@ -1,5 +1,17 @@
 # Verification matrix
 
+## MON-006 final serialization compatibility
+
+`tests/integration/serialization-compatibility.test.ts` independently connects
+scratch SQL bigint/numeric text, input/DTOs, shared REST/MCP adapters and actual
+API-key/full-SDK invoice clients. It covers signed int64 storage/transport edges,
+tiny/maximum rates, unchanged USD/IRR/JPY/KWD units, numeric/dual/exact major/minor
+prices, both signed safe edges, snapshot-verified pre-write failures and genuinely
+unsafe retained rows. The scratch table does not qualify full-int64 business use.
+The MON-012 economic-event integration and FX/journal/core/auxiliary/public
+regressions supplement the parent with policy and deeper operation checks.
+See registries/SERIALIZATION_COMPATIBILITY_CONTRACTS.md for exact boundaries.
+
 ## MON-012 combined exact REST/MCP boundary rollout
 
 `tests/integration/exact-boundary-integration.test.ts` independently composes

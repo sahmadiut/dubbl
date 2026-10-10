@@ -1,5 +1,12 @@
 # Exact money core
 
+MON-006 independently qualifies the final wire/endpoint compatibility composition.
+Signed int64 and exact rate adapters preserve storage text; actual REST/MCP invoice
+clients preserve currency major/minor semantics through both safe integer edges.
+Public full-int64 workflows still fail explicitly until domain cutover. See
+[serialization compatibility](../../.agentic/registries/SERIALIZATION_COMPATIBILITY_CONTRACTS.md)
+for supported numeric clients, exact fields, deprecation and remaining gates.
+
 MON-012 independently joins FX, core, auxiliary/reporting and public/opaque
 REST/MCP boundaries. Account detail now shares SQL-text/bigint sums and safe
 numeric/Minor projections; UBL XML uses saved currency decimals and an MCP

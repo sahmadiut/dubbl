@@ -1,5 +1,16 @@
 # Money and FX boundary manifest
 
+## MON-006 final serialization compatibility acceptance
+
+[SERIALIZATION_COMPATIBILITY_CONTRACTS](SERIALIZATION_COMPATIBILITY_CONTRACTS.md)
+joins explicit wire primitives, transitional ORM safety and all adopted public
+operation inventories. Independent storage/adapter signed int64 and 20/18 rate
+fixtures plus actual REST/full-SDK invoice clients verify unchanged currency units,
+numeric/dual/exact prices, signed safe edges and pre-write/read rejection of
+unsupported large values. Numeric compatibility and the pending authorized
+deprecation window remain; MON-007/008 domain/full-int64, migration/accounting/IRR
+and release qualification are separate.
+
 ## MON-012 combined boundary rollout acceptance
 
 [EXACT_API_BOUNDARY_CONTRACTS](EXACT_API_BOUNDARY_CONTRACTS.md) joins all four
@@ -10,7 +21,8 @@ legacy 1250/exact 3000000000 and USD/EUR/IRR/JPY/KWD scales. Missed account deta
 Number sums now use shared SQL text/bigint projections; UBL formats exact saved
 currency units and has a corresponding MCP export. Source closure records all
 remaining direct JSON route families; persisted opaque ownership remains linked.
-Full-int64/domain, MON-006 parent, migration/accounting/IRR/release gates remain.
+Full-int64/domain and migration/accounting/IRR/release gates remain; MON-006's
+independent final compatibility acceptance is recorded above.
 
 ## MON-033 generic import and export adoption
 

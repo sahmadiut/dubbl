@@ -256,3 +256,10 @@ MON-034 retains its original integration criteria. Children inherit MON-011 and 
 - [MON-125](../tasks/MON-125.md): Qualify remaining opaque JSON and administrative forwarding.
 - [MON-126](../tasks/MON-126.md): Adopt safe public invoice signing contracts.
 - [MON-127](../tasks/MON-127.md): Qualify remaining SSR and PDF monetary bridges.
+
+## MON-007 core consumer cutover children
+
+MON-007 retains its original acceptance criteria and independent combined verification.
+
+- [MON-128](../tasks/MON-128.md): Cut over shared core posting arithmetic.
+- [MON-129](../tasks/MON-129.md): Cut over core money editors and presentation; split further if verified scope requires it.

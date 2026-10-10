@@ -1,5 +1,15 @@
 # Exact money core
 
+MON-128 closes shared core posting arithmetic through `posting.ts`: explicit
+safe integer input/projection, bigint intermediates/sums and canonical signed
+ratio rounding. Tax-inclusive/recoverable/reverse-charge calculations, scalar FX
+and residuals, shared settlement totals and VAT SQL-text aggregation preserve
+low digits. This retains existing safe-number business limits and explicit
+minor/rate/basis-point/physical units. See
+[posting contracts](../../.agentic/registries/CORE_POSTING_CUTOVER_CONTRACTS.md).
+MON-129 owns the remaining core UI editors/presentation; MON-007 remains the
+integration parent. Full-int64/production qualification is separate.
+
 MON-006 independently qualifies the final wire/endpoint compatibility composition.
 Signed int64 and exact rate adapters preserve storage text; actual REST/MCP invoice
 clients preserve currency major/minor semantics through both safe integer edges.

@@ -1,4 +1,6 @@
 import { createHistoricalRateResolver } from "./historical-rate";
+import { postingRatio, postingDifference } from "@/lib/money/posting";
+import { WireCompatibilityError } from "@/lib/money/wire";
 
 /**
  * Thrown when a foreign-currency document must be converted to the base
@@ -39,7 +41,9 @@ export async function getExchangeRate(
  * Returns converted amount in cents.
  */
 export function convertAmount(amountCents: number, rate: number): number {
-  return Math.round((amountCents * rate) / 1000000);
+  if (!Number.isInteger(rate) || rate <= 0 || rate > 2147483647)
+    throw new WireCompatibilityError("Posting FX must fit positive int32 millionths");
+  return postingRatio(amountCents, rate, 1000000);
 }
 
 /**
@@ -53,5 +57,5 @@ export function calculateFxGainLoss(
 ): number {
   const originalConverted = convertAmount(amountCents, originalRate);
   const currentConverted = convertAmount(amountCents, currentRate);
-  return currentConverted - originalConverted;
+  return postingDifference(currentConverted, originalConverted);
 }

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { exactMinorSchema, legacyMinorSchema, legacyMinor, exactRateSchema, WireCompatibilityError } from "@/lib/money/wire";
 import { exactRate, fromLegacyRate, toLegacyRate, FX_DIRECTION } from "@/lib/currency/exact-rate";
 import { currencyCodeSchema } from "@/lib/currency/zod";
+import { postingRatio } from "@/lib/money/posting";
 
 const nonnegativeMinor = exactMinorSchema.refine(value => !value.startsWith("-"), "Journal amounts must be nonnegative");
 export const journalLineFields = {
@@ -59,7 +60,7 @@ export function journalTotals(lines: AmountLine[], allowBaseBalance = false) {
   if (allowBaseBalance && multi) {
     const base = (side: "debitAmount" | "creditAmount") => safeArithmetic(lines.reduce((total, line) => {
       const product = line.exchangeRate === 1000000 ? line[side] : safeArithmetic(BigInt(line[side]) * BigInt(line.exchangeRate));
-      const converted = line.exchangeRate === 1000000 ? product : Math.round(product / 1000000);
+      const converted = line.exchangeRate === 1000000 ? product : postingRatio(product, 1, 1000000);
       return total + BigInt(converted);
     }, BigInt(0)));
     const difference = BigInt(base("debitAmount")) - BigInt(base("creditAmount"));

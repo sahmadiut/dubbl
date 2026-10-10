@@ -5,6 +5,8 @@ import { recordInventoryReceipt, recordInventoryIssue, type ValuedItem } from ".
 import { getExchangeRate, convertAmount, MissingExchangeRateError } from "@/lib/currency/converter";
 import { convertLinesToBase, realizedSettlementLegs } from "@/lib/currency/convert-entry";
 import type { SettlementRole } from "@/lib/currency/convert-entry";
+import { postingInteger, postingRatio, postingSum, postingDifference, postingGrossTax } from "@/lib/money/posting";
+import { legacyMinor } from "@/lib/money/wire";
 
 interface JournalAutomationContext {
   organizationId: string;
@@ -265,12 +267,7 @@ export function splitGrossTax(
   rateBp: number,
   recoverableBp: number
 ): { net: number; tax: number; recoverableTax: number; absorbedTax: number } {
-  if (rateBp <= 0) return { net: gross, tax: 0, recoverableTax: 0, absorbedTax: 0 };
-  const tax = Math.round((gross * rateBp) / (10000 + rateBp));
-  const recoverableTax = Math.round((tax * recoverableBp) / 10000);
-  const absorbedTax = tax - recoverableTax;
-  const net = gross - tax; // residual keeps the entry balanced to the cent
-  return { net, tax, recoverableTax, absorbedTax };
+  return postingGrossTax(gross, rateBp, recoverableBp);
 }
 
 /**
@@ -393,6 +390,12 @@ export async function createInvoiceJournalEntry(
 
   if (!arAccount) return null;
 
+  const taxAccount = invoiceData.taxTotal > 0 ? await findAccountByCode(ctx.organizationId, "2200", exec) : null;
+  const arTotal = postingSum([
+    ...invoiceData.lines.filter(line => line.accountId && line.amount > 0).map(line => line.amount),
+    taxAccount ? invoiceData.taxTotal : 0,
+  ]);
+
   const [entry] = await exec
     .insert(journalEntry)
     .values({
@@ -425,7 +428,6 @@ export async function createInvoiceJournalEntry(
 
   // CR Tax Liability if any
   if (invoiceData.taxTotal > 0) {
-    const taxAccount = await findAccountByCode(ctx.organizationId, "2200", exec);
     if (taxAccount) {
       lines.push({
         journalEntryId: entry.id,
@@ -440,7 +442,6 @@ export async function createInvoiceJournalEntry(
   // DR Accounts Receivable for the sum of the offsetting credit legs, so the
   // entry balances in document currency even if a line lacks an account or the
   // tax account is missing — otherwise FX conversion would scale the imbalance.
-  const arTotal = lines.reduce((s, l) => s + (l.creditAmount ?? 0), 0);
   if (arTotal > 0) {
     lines.unshift({
       journalEntryId: entry.id,
@@ -509,8 +510,31 @@ export async function createBillJournalEntry(
     currencyCode?: string;
   }
 ) {
-  const entryNumber = await getNextEntryNumber(ctx.organizationId);
-  const apAccount = await findAccountByCode(ctx.organizationId, "2100");
+  return db.transaction(tx => createBillPosting(ctx, billData, tx));
+}
+
+async function createBillPosting(
+  ctx: JournalAutomationContext,
+  billData: {
+    billNumber: string;
+    total: number;
+    taxTotal: number;
+    lines: {
+      accountId: string | null;
+      amount: number;
+      taxAmount: number;
+      // Optional per-line tax rate. When supplied, the line's tax is split by
+      // the rate's recoverablePercent (recoverable → 1500, blocked → cost) and
+      // reverse_charge lines self-account output VAT. Omit for legacy behaviour.
+      taxRateId?: string | null;
+    }[];
+    date: string;
+    currencyCode?: string;
+  },
+  exec: Tx
+) {
+  const entryNumber = await getNextEntryNumber(ctx.organizationId, exec);
+  const apAccount = await findAccountByCode(ctx.organizationId, "2100", exec);
 
   if (!apAccount) return null;
 
@@ -521,7 +545,7 @@ export async function createBillJournalEntry(
     billData.date
   );
 
-  const [entry] = await db
+  const [entry] = await exec
     .insert(journalEntry)
     .values({
       organizationId: ctx.organizationId,
@@ -550,13 +574,13 @@ export async function createBillJournalEntry(
   let outputVatAccountId: string | null = null;
   const getInputVat = async () => {
     if (inputVatAccountId) return inputVatAccountId;
-    const a = await ensureControlAccount(ctx.organizationId, "inputVat", base);
+    const a = await ensureControlAccount(ctx.organizationId, "inputVat", base, exec);
     inputVatAccountId = a?.id ?? null;
     return inputVatAccountId;
   };
   const getOutputVat = async () => {
     if (outputVatAccountId) return outputVatAccountId;
-    const a = await ensureControlAccount(ctx.organizationId, "outputVat", base);
+    const a = await ensureControlAccount(ctx.organizationId, "outputVat", base, exec);
     outputVatAccountId = a?.id ?? null;
     return outputVatAccountId;
   };
@@ -571,7 +595,7 @@ export async function createBillJournalEntry(
     let expenseDebit = line.amount;
 
     if (line.taxRateId) {
-      const rateRow = await db.query.taxRate.findFirst({
+      const rateRow = await exec.query.taxRate.findFirst({
         where: eq(taxRate.id, line.taxRateId),
         columns: { rate: true, kind: true, recoverablePercent: true },
       });
@@ -584,28 +608,24 @@ export async function createBillJournalEntry(
           //   input  VAT (DR 1500) = round(outputVat * recoverablePercent / 10000)
           // Net-zero cash: only net (+ any blocked slice) hits AP; the output
           // VAT credit reduces the derived AP leg.
-          const outputVat = Math.round((line.amount * rateRow.rate) / 10000);
-          const recoverableTax = Math.round(
-            (outputVat * rateRow.recoverablePercent) / 10000
-          );
-          const absorbedTax = outputVat - recoverableTax;
-          recoverableToInputVat += recoverableTax;
-          expenseDebit += absorbedTax;
-          reverseChargeOutputVat += outputVat;
-          perLineTaxHandled += line.taxAmount;
+          const outputVat = postingRatio(line.amount, rateRow.rate, 10000);
+          const recoverableTax = postingRatio(outputVat, rateRow.recoverablePercent, 10000);
+          const absorbedTax = postingDifference(outputVat, recoverableTax);
+          recoverableToInputVat = postingSum([recoverableToInputVat, recoverableTax]);
+          expenseDebit = postingSum([expenseDebit, absorbedTax]);
+          reverseChargeOutputVat = postingSum([reverseChargeOutputVat, outputVat]);
+          perLineTaxHandled = postingSum([perLineTaxHandled, line.taxAmount]);
         } else if (line.taxAmount > 0) {
           // Standard/blocked/partial: the per-line tax is ALREADY known as
           // line.taxAmount — split it directly by recoverablePercent. The
           // recoverable slice is posted to Input VAT 1500; the blocked slice is
           // absorbed into this line's expense/cost debit. (Do NOT treat the net
           // line amount as a tax-inclusive gross.)
-          const recoverableTax = Math.round(
-            (line.taxAmount * rateRow.recoverablePercent) / 10000
-          );
-          const absorbedTax = line.taxAmount - recoverableTax;
-          recoverableToInputVat += recoverableTax;
-          expenseDebit += absorbedTax;
-          perLineTaxHandled += line.taxAmount;
+          const recoverableTax = postingRatio(line.taxAmount, rateRow.recoverablePercent, 10000);
+          const absorbedTax = postingDifference(line.taxAmount, recoverableTax);
+          recoverableToInputVat = postingSum([recoverableToInputVat, recoverableTax]);
+          expenseDebit = postingSum([expenseDebit, absorbedTax]);
+          perLineTaxHandled = postingSum([perLineTaxHandled, line.taxAmount]);
         }
       }
     }
@@ -631,9 +651,9 @@ export async function createBillJournalEntry(
   // absorbed into a real cost line (the first posted expense line). The total
   // posted debits are unchanged (the absorbed slice just moves from 1500 to the
   // expense line), so the entry stays balanced to the cent.
-  let legacyTaxRemainder = Math.max(0, billData.taxTotal - perLineTaxHandled);
+  let legacyTaxRemainder = Math.max(0, postingDifference(billData.taxTotal, perLineTaxHandled));
   if (legacyTaxRemainder > 0 && firstExpenseLineIndex !== null) {
-    const defaultRate = await db.query.taxRate.findFirst({
+    const defaultRate = await exec.query.taxRate.findFirst({
       where: and(
         eq(taxRate.organizationId, ctx.organizationId),
         eq(taxRate.isDefault, true),
@@ -649,20 +669,18 @@ export async function createBillJournalEntry(
       defaultRate.kind !== "reverse_charge" &&
       defaultRate.recoverablePercent < 10000
     ) {
-      const recoverableRemainder = Math.round(
-        (legacyTaxRemainder * defaultRate.recoverablePercent) / 10000
-      );
-      const absorbedRemainder = legacyTaxRemainder - recoverableRemainder;
+      const recoverableRemainder = postingRatio(legacyTaxRemainder, defaultRate.recoverablePercent, 10000);
+      const absorbedRemainder = postingDifference(legacyTaxRemainder, recoverableRemainder);
       const expenseLine = lines[firstExpenseLineIndex];
-      expenseLine.debitAmount = (expenseLine.debitAmount ?? 0) + absorbedRemainder;
-      recoverableToInputVat += recoverableRemainder;
+      expenseLine.debitAmount = postingSum([expenseLine.debitAmount ?? 0, absorbedRemainder]);
+      recoverableToInputVat = postingSum([recoverableToInputVat, recoverableRemainder]);
       legacyTaxRemainder = 0; // fully accounted: recoverable slice + absorbed slice
     }
     // If no default rate is determinable (or it is fully recoverable), fall
     // through with the remainder intact — keeping the legacy whole-remainder-to
     // -1500 behaviour rather than guessing recoverability we cannot establish.
   }
-  const inputVatDebit = legacyTaxRemainder + recoverableToInputVat;
+  const inputVatDebit = postingSum([legacyTaxRemainder, recoverableToInputVat]);
   if (inputVatDebit > 0) {
     // Always ensure-on-demand the Input VAT control account (1500). Previously
     // the legacy remainder path looked up 1500 with findAccountByCode and, when
@@ -704,8 +722,8 @@ export async function createBillJournalEntry(
   // document currency even if a line lacks an account or a tax account is
   // missing — otherwise FX conversion would scale the imbalance. Reverse charge
   // is paid net, so its self-accounted output VAT must not inflate AP.
-  const totalDebits = lines.reduce((s, l) => s + (l.debitAmount ?? 0), 0);
-  const apTotal = totalDebits - outputVatCredited;
+  const totalDebits = postingSum(lines.map(l => l.debitAmount ?? 0));
+  const apTotal = postingDifference(totalDebits, outputVatCredited);
   if (apTotal > 0) {
     lines.push({
       journalEntryId: entry.id,
@@ -721,8 +739,8 @@ export async function createBillJournalEntry(
         billData.currencyCode,
         billData.date
       );
-      await db.insert(journalLine).values(toBaseLines(lines, currency, rate));
-    });
+      await exec.insert(journalLine).values(toBaseLines(lines, currency, rate));
+    }, exec);
   }
 
   return entry;
@@ -754,6 +772,12 @@ export async function createCreditNoteJournalEntry(
   const entryNumber = await getNextEntryNumber(ctx.organizationId, exec);
   const arAccount = await findAccountByCode(ctx.organizationId, "1200", exec);
   if (!arAccount) return null;
+
+  const taxAccount = data.taxTotal > 0 ? await findAccountByCode(ctx.organizationId, "2200", exec) : null;
+  const arTotal = postingSum([
+    ...data.lines.filter(line => line.accountId && line.amount > 0).map(line => line.amount),
+    taxAccount ? data.taxTotal : 0,
+  ]);
 
   const [entry] = await exec
     .insert(journalEntry)
@@ -787,7 +811,6 @@ export async function createCreditNoteJournalEntry(
 
   // DR Tax Liability (reverse of invoice CR tax)
   if (data.taxTotal > 0) {
-    const taxAccount = await findAccountByCode(ctx.organizationId, "2200", exec);
     if (taxAccount) {
       lines.push({
         journalEntryId: entry.id,
@@ -803,7 +826,6 @@ export async function createCreditNoteJournalEntry(
   // tax actually posted), so the entry balances in document currency even if a
   // line lacks an account or the tax account is missing — otherwise FX
   // conversion would scale the imbalance. (Mirror of the invoice fix.)
-  const arTotal = lines.reduce((s, l) => s + (l.debitAmount ?? 0), 0);
   if (arTotal > 0) {
     lines.push({
       journalEntryId: entry.id,
@@ -890,7 +912,7 @@ export async function createPaymentJournalEntry(
   // remainder (overpayment / on-account) would understate the bank, so fall
   // back to the legacy entry which posts the full cash amount.
   const allocs = paymentData.allocations ?? [];
-  const allocSum = allocs.reduce((s, a) => s + a.amount, 0);
+  const allocSum = postingSum(allocs.map(a => a.amount));
   if (allocs.length > 0 && allocSum === paymentData.amount) {
     const org = await db.query.organization.findFirst({
       where: eq(organization.id, ctx.organizationId),
@@ -903,8 +925,8 @@ export async function createPaymentJournalEntry(
     for (const a of allocs) {
       const currency = a.currencyCode || base;
       if (currency === base) {
-        bankTotal += a.amount;
-        counterTotal += a.amount;
+        bankTotal = postingSum([bankTotal, a.amount]);
+        counterTotal = postingSum([counterTotal, a.amount]);
         continue;
       }
       // Require a rate to settle a foreign-currency document. The caller runs
@@ -917,8 +939,8 @@ export async function createPaymentJournalEntry(
       const issueRate =
         (await getExchangeRate(ctx.organizationId, currency, base, a.issueDate)) ??
         paymentRate;
-      bankTotal += convertAmount(a.amount, paymentRate);
-      counterTotal += convertAmount(a.amount, issueRate);
+      bankTotal = postingSum([bankTotal, convertAmount(a.amount, paymentRate)]);
+      counterTotal = postingSum([counterTotal, convertAmount(a.amount, issueRate)]);
     }
 
     const legs = realizedSettlementLegs(paymentData.type, bankTotal, counterTotal);
@@ -1092,11 +1114,9 @@ export async function createCategorizationJournalEntry(
     // and only `abs` left the bank. The buyer self-accounts the notional VAT in
     // BOTH boxes — DR Input VAT (recoverable slice) and CR Output VAT (full
     // rate×net) — net-zero cash. Any blocked slice is absorbed into the expense.
-    const notionalVat = Math.round((abs * taxRow!.rate) / 10000);
-    const recoverableVat = Math.round(
-      (notionalVat * taxRow!.recoverablePercent) / 10000
-    );
-    const absorbedVat = notionalVat - recoverableVat;
+    const notionalVat = postingRatio(abs, taxRow!.rate, 10000);
+    const recoverableVat = postingRatio(notionalVat, taxRow!.recoverablePercent, 10000);
+    const absorbedVat = postingDifference(notionalVat, recoverableVat);
     const outputControl = await ensureControlAccount(
       ctx.organizationId,
       "outputVat",
@@ -1117,7 +1137,7 @@ export async function createCategorizationJournalEntry(
       // CR bank (cash actually paid) and CR output VAT (self-accounted).
       lines.push(mk(data.bankGlAccountId, 0, abs));
       // DR expense: net + any blocked VAT absorbed into cost.
-      lines.push(mk(data.otherAccountId, abs + absorbedVat, 0));
+      lines.push(mk(data.otherAccountId, postingSum([abs, absorbedVat]), 0));
       if (inputControl && recoverableVat > 0) {
         lines.push(mk(inputControl.id, recoverableVat, 0));
       }
@@ -1129,8 +1149,7 @@ export async function createCategorizationJournalEntry(
   } else if (moneyIn) {
     // Sale: bank gets gross; revenue gets net; tax collected is a liability
     // (output VAT, or US sales-tax payable). Fold tax into revenue if no control account.
-    const tax = Math.round((abs * taxRow!.rate) / (10000 + taxRow!.rate));
-    const net = abs - tax;
+    const { tax, net } = postingGrossTax(abs, taxRow!.rate, 10000);
     const control = await ensureControlAccount(
       ctx.organizationId,
       isUsSalesTax ? "salesTaxPayable" : "outputVat",
@@ -1158,7 +1177,7 @@ export async function createCategorizationJournalEntry(
         ? await ensureControlAccount(ctx.organizationId, "inputVat", base, tx)
         : null;
     if (inputControl && recoverableTax > 0) {
-      lines.push(mk(data.otherAccountId, net + absorbedTax, 0));
+      lines.push(mk(data.otherAccountId, postingSum([net, absorbedTax]), 0));
       lines.push(mk(inputControl.id, recoverableTax, 0));
     } else {
       lines.push(mk(data.otherAccountId, abs, 0));
@@ -1251,7 +1270,7 @@ export async function createCogsJournalEntry(
         referenceType: "sale_reversal",
         referenceId: null,
       });
-      cost = item.averageCost * units;
+      cost = legacyMinor(postingInteger(item.averageCost) * postingInteger(units));
       movementId = r.movementId;
       legs.push(
         { journalEntryId: id, accountId: invAcct.id, description: "Restock", debitAmount: cost, creditAmount: 0, currencyCode: base },
@@ -1344,7 +1363,7 @@ export async function recordBillStockReceipts(
       where: and(eq(inventoryItem.id, l.inventoryItemId), eq(inventoryItem.organizationId, ctx.organizationId)),
     });
     if (!item) continue;
-    const unitCost = Math.round(l.amount / units); // net cost per unit
+    const unitCost = postingRatio(l.amount, 1, units); // net cost per whole unit
     await recordInventoryReceipt(tx, {
       item: item as ValuedItem,
       quantity: units,
@@ -1386,7 +1405,7 @@ export async function createInventoryAdjustmentJournalEntry(
     movementId = r.movementId;
   } else {
     const r = await recordInventoryReceipt(tx, { item: data.item, quantity: data.qtyDelta, unitCost: data.item.averageCost, type: "adjustment", referenceType: "adjustment", referenceId: null });
-    cost = data.item.averageCost * data.qtyDelta;
+    cost = legacyMinor(postingInteger(data.item.averageCost) * postingInteger(data.qtyDelta));
     movementId = r.movementId;
   }
 
@@ -1500,8 +1519,8 @@ async function sumControlAccountActivity(
 ): Promise<{ debit: number; credit: number }> {
   const [row] = await exec
     .select({
-      debit: sql<number>`coalesce(sum(${journalLine.debitAmount}), 0)`.mapWith(Number),
-      credit: sql<number>`coalesce(sum(${journalLine.creditAmount}), 0)`.mapWith(Number),
+      debit: sql<string>`coalesce(sum(${journalLine.debitAmount}), 0)::text`,
+      credit: sql<string>`coalesce(sum(${journalLine.creditAmount}), 0)::text`,
     })
     .from(journalLine)
     .innerJoin(journalEntry, eq(journalLine.journalEntryId, journalEntry.id))
@@ -1514,7 +1533,7 @@ async function sumControlAccountActivity(
         sql`${journalEntry.date} <= ${endDate}`
       )
     );
-  return { debit: row?.debit ?? 0, credit: row?.credit ?? 0 };
+  return { debit: legacyMinor(BigInt(row?.debit ?? "0")), credit: legacyMinor(BigInt(row?.credit ?? "0")) };
 }
 
 /**
@@ -1594,12 +1613,12 @@ export async function createVatReturnClearingJournalEntry(
       data.periodEndDate
     );
     // Liability balance on output VAT (credit-normal): credits − debits.
-    outputBalance = outputActivity.credit - outputActivity.debit;
+    outputBalance = postingDifference(outputActivity.credit, outputActivity.debit);
     // Asset balance on input VAT (debit-normal): debits − credits.
-    inputBalance = inputActivity.debit - inputActivity.credit;
+    inputBalance = postingDifference(inputActivity.debit, inputActivity.credit);
   }
   // Net owed to the authority (positive) or reclaimable (negative).
-  const net = outputBalance - inputBalance;
+  const net = postingDifference(outputBalance, inputBalance);
 
   const entryNumber = await getNextEntryNumber(ctx.organizationId, tx);
   const reference = data.reference ?? `VAT ${data.periodStartDate}..${data.periodEndDate}`;

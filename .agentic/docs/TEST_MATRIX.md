@@ -1,5 +1,19 @@
 # Verification matrix
 
+## MON-128 shared core posting arithmetic
+
+`tests/posting-money.test.ts` covers low-digit tax/FX rounding, signed ties,
+safe-edge sums/cancellation, unsupported ratios/results, gross-tax conservation
+and balanced FX residuals. `tests/integration/core-money-cutover.test.ts` runs
+actual shared posting exports with independent expectations on migrated disposable
+PostgreSQL: USD/IRR/JPY/KWD gross/partial/reverse-charge VAT, bill/recognition/credit
+legs, unchanged range failures, saved mirror reversals and edited FX references.
+Unsafe SQL control sums reject with unchanged state. Actual core, journal,
+receivable, payable/procurement, cash/expense/bank, configuration, FX history/wire,
+combined economic-event and inventory master regressions cover transitive impact.
+See registries/CORE_POSTING_CUTOVER_CONTRACTS.md for safe ranges and explicit
+units/legacy exceptions. Core UI is MON-129; original MON-007 acceptance remains.
+
 ## MON-006 final serialization compatibility
 
 `tests/integration/serialization-compatibility.test.ts` independently connects

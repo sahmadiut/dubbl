@@ -1,5 +1,19 @@
 # Money and FX boundary manifest
 
+## MON-128 shared core posting arithmetic
+
+[CORE_POSTING_CUTOVER_CONTRACTS](CORE_POSTING_CUTOVER_CONTRACTS.md) maps all six
+adopted core backend groups, retained shared exports and stock-to-GL bridges.
+Canonical bigint ratios/sums close floating tax/FX and Number aggregation gaps,
+preserve signed ties and saved reversals, and guard unsupported inputs/results.
+SQL VAT totals stay text until checked projection. Retained bill posting is
+transactional; invoice/credit sum rejection precedes headers. Low-digit and
+rollback fixtures supplement actual REST/MCP core/allocation/lock regressions.
+Fixed-two compatibility, quantity/basis-point/rate scales and remaining consumers
+have explicit owners. MON-129 retains core UI money editing/presentation;
+MON-007 retains original combined acceptance and MON-008 auxiliary/public closure.
+No full-int64 public expansion, schema/history rescale or IRR flag change.
+
 ## MON-006 final serialization compatibility acceptance
 
 [SERIALIZATION_COMPATIBILITY_CONTRACTS](SERIALIZATION_COMPATIBILITY_CONTRACTS.md)

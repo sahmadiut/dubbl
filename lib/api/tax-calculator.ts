@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { taxRate } from "@/lib/db/schema";
 import { inArray } from "drizzle-orm";
+import { postingRatio } from "@/lib/money/posting";
 
 /**
  * Preload tax rates by their IDs.
@@ -25,5 +26,5 @@ export async function preloadTaxRates(
  * E.g. calcTax(10000, 1000) = 1000 (10% of $100.00 = $10.00)
  */
 export function calcTax(amount: number, rate: number): number {
-  return Math.round((amount * rate) / 10000);
+  return postingRatio(amount, rate, 10000);
 }

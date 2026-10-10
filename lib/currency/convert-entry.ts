@@ -1,4 +1,6 @@
 import { convertAmount } from "@/lib/currency/converter";
+import { postingInteger, postingSum, postingDifference } from "@/lib/money/posting";
+import { legacyMinor } from "@/lib/money/wire";
 
 const RATE_SCALE = 1_000_000;
 
@@ -25,8 +27,8 @@ export function convertLinesToBase<T extends ConvertibleLine>(
 ): T[] {
   if (lines.length === 0) return lines;
 
-  const docDebitTotal = lines.reduce((s, l) => s + l.debitAmount, 0);
-  const docCreditTotal = lines.reduce((s, l) => s + l.creditAmount, 0);
+  const docDebitTotal = postingSum(lines.map(l => l.debitAmount));
+  const docCreditTotal = postingSum(lines.map(l => l.creditAmount));
 
   const targetDebitTotal = convertAmount(docDebitTotal, rate);
   const targetCreditTotal = convertAmount(docCreditTotal, rate);
@@ -48,9 +50,11 @@ function absorbResidual<T extends ConvertibleLine>(
   field: "debitAmount" | "creditAmount",
   target: number
 ) {
-  const sum = lines.reduce((s, l) => s + l[field], 0);
-  const residual = target - sum;
-  if (residual === 0) return;
+  // Rounded line sums may temporarily exceed Number precision before their
+  // residual is absorbed. Project only the final adjusted line.
+  const sum = lines.reduce((s, l) => s + postingInteger(l[field]), 0n);
+  const residual = postingInteger(target) - sum;
+  if (residual === 0n) return;
 
   // Add the residual to the line with the largest magnitude on this side (most
   // material, least distortion). Using absolute magnitude keeps this correct
@@ -64,7 +68,7 @@ function absorbResidual<T extends ConvertibleLine>(
       idx = i;
     }
   }
-  lines[idx][field] += residual;
+  lines[idx][field] = legacyMinor(postingInteger(lines[idx][field]) + residual);
 }
 
 /** Resolve the document->base conversion rate, defaulting to 1:1. */
@@ -99,7 +103,7 @@ export function realizedSettlementLegs(
   amountBaseAtPayment: number,
   amountBaseAtIssue: number
 ): SettlementLeg[] {
-  const fx = amountBaseAtPayment - amountBaseAtIssue;
+  const fx = postingDifference(amountBaseAtPayment, amountBaseAtIssue);
   const legs: SettlementLeg[] = [];
 
   if (type === "invoice") {

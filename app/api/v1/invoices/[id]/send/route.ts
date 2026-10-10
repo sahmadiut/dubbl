@@ -8,6 +8,7 @@ import { sendDocumentEmail } from "@/lib/email/document-sender";
 import { renderDocumentEmailHtml } from "@/lib/email/render-document-email";
 import { randomBytes } from "crypto";
 import { z } from "zod";
+import { renderDocument } from "@/lib/documents/render-service";
 
 const templatePropsSchema = z.object({
   organizationName: z.string(),
@@ -39,6 +40,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     // An explicitly requested email must validate before posting; never silently ignore invalid options.
     const emailParsed = rawBody?.sendEmail === true ? sendBodySchema.safeParse(rawBody) : null;
     if (emailParsed && !emailParsed.success) throw emailParsed.error;
+    // Complete PDF/reference/range preflight before posting or creating a link.
+    const attachment = emailParsed?.success && emailParsed.data.attachPdf
+      ? await renderDocument(ctx, "invoice", id, "pdf") : null;
     const result = await sendInvoice(ctx, id, request);
     const found = (await db.query.invoice.findFirst({ where: and(eq(invoice.id, id), eq(invoice.organizationId, ctx.organizationId)), with: { lines: true, contact: true } }))!;
     // Send email if requested
@@ -63,43 +67,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       // Render the structured email template to HTML
       const html = await renderDocumentEmailHtml(templateProps);
 
-      let pdfBuffer: Buffer | undefined;
-      let pdfFilename: string | undefined;
-
-      if (attachPdf) {
-        try {
-          const { renderInvoicePdf } = await import("@/lib/documents/pdf-renderer");
-          const org = await db.query.organization.findFirst({
-            where: eq(organization.id, ctx.organizationId),
-          });
-          const buf = await renderInvoicePdf(
-            {
-              invoiceNumber: found.invoiceNumber,
-              issueDate: found.issueDate,
-              dueDate: found.dueDate,
-              currencyCode: found.currencyCode,
-              lines: found.lines.map((l) => ({
-                description: l.description,
-                quantity: l.quantity,
-                unitPrice: l.unitPrice,
-                taxAmount: l.taxAmount,
-                amount: l.amount,
-              })),
-              subtotal: found.subtotal,
-              taxTotal: found.taxTotal,
-              total: found.total,
-              notes: found.notes,
-            },
-            { name: org?.name || "" },
-            found.contact ? { name: found.contact.name } : { name: "Unknown" },
-            {}
-          );
-          pdfBuffer = Buffer.from(buf);
-          pdfFilename = `invoice-${found.invoiceNumber}.pdf`;
-        } catch {
-          // PDF generation failed, send without attachment
-        }
-      }
+      const pdfBuffer = attachment ? Buffer.from(attachment.content, "base64") : undefined;
+      const pdfFilename = attachment?.filename;
 
       // Get org contact email for reply-to
       const org = await db.query.organization.findFirst({

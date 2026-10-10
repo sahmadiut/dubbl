@@ -1,25 +1,10 @@
 "use client";
 
+import { documentMoneyText as fmtMoney, documentSum } from "@/lib/documents/render-wire";
+
 import { useState, useEffect, Suspense } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { CheckCircle2, CreditCard, FileText, Loader2, AlertCircle, Download } from "lucide-react";
-
-function getLocaleForCurrency(currency: string): string {
-  const map: Record<string, string> = {
-    USD: "en-US", EUR: "de-DE", GBP: "en-GB", JPY: "ja-JP",
-    AUD: "en-AU", CAD: "en-CA", CHF: "de-CH", SEK: "sv-SE",
-    NOK: "nb-NO", DKK: "da-DK", NZD: "en-NZ", SGD: "en-SG",
-    HKD: "en-HK", INR: "en-IN", BRL: "pt-BR", MXN: "es-MX",
-  };
-  return map[currency] || "en-US";
-}
-
-function fmtMoney(cents: number, currency = "USD") {
-  return new Intl.NumberFormat(getLocaleForCurrency(currency), {
-    style: "currency",
-    currency,
-  }).format(cents / 100);
-}
 
 interface InvoiceLine {
   description: string;
@@ -223,7 +208,7 @@ function PaymentPageContent() {
                     {fmtMoney(line.unitPrice, currency)}
                   </td>
                   <td className="text-right py-1.5">
-                    {fmtMoney(line.amount + line.taxAmount, currency)}
+                    {fmtMoney(documentSum(line.amount, line.taxAmount), currency)}
                   </td>
                 </tr>
               ))}

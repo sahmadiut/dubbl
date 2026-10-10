@@ -1,4 +1,5 @@
 import React from "react";
+import { documentMoneyText as fmtMoney, documentRenderDto, documentHundredths } from "./render-wire";
 import {
   Document,
   Page,
@@ -82,15 +83,6 @@ function getInvoiceTitle(countryCode?: string | null, hasTaxId?: boolean): strin
   const cc = countryCode?.toUpperCase();
   if ((cc === "AU" || cc === "NZ") && hasTaxId) return "Tax Invoice";
   return "Invoice";
-}
-
-function fmtMoney(cents: number, currency: string): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(cents / 100);
 }
 
 function replacePlaceholders(text: string, vars: Record<string, string>): string {
@@ -275,11 +267,11 @@ function InvoiceDocument({ invoice: inv, org, contact, template, labels }: Invoi
           {inv.lines.map((line, i) => (
             <View key={i} style={s.tableRow}>
               <Text style={[s.cellDesc, { fontSize: 10 }]}>{line.description}</Text>
-              <Text style={[s.cellQty, { color: dark }]}>{(line.quantity / 100).toFixed(2)}</Text>
+              <Text style={[s.cellQty, { color: dark }]}>{documentHundredths(line.quantity)}</Text>
               <Text style={[s.cellPrice, { color: dark }]}>{fmtMoney(line.unitPrice, inv.currencyCode)}</Text>
               {hasDiscount && (
                 <Text style={[s.cellDiscount, { color: dark }]}>
-                  {line.discountPercent ? `${(line.discountPercent / 100).toFixed(2)}%` : "-"}
+                  {line.discountPercent ? `${documentHundredths(line.discountPercent)}%` : "-"}
                 </Text>
               )}
               <Text style={[s.cellAmount, { color: dark }]}>{fmtMoney(line.amount, inv.currencyCode)}</Text>
@@ -369,6 +361,7 @@ export async function renderInvoicePdf(
   template: PdfTemplateSettings,
   labels?: PdfDocumentLabels
 ): Promise<ArrayBuffer> {
+  invoice = documentRenderDto(invoice);
   const buffer = await renderToBuffer(
     <InvoiceDocument invoice={invoice} org={org} contact={contact} template={template} labels={labels} />
   );

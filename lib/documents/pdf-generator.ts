@@ -1,4 +1,4 @@
-import { formatMoney } from "@/lib/money";
+import { documentMoneyText as formatMoney, documentRenderDto, documentHundredths } from "./render-wire";
 
 interface TemplateSettings {
   logoUrl?: string | null;
@@ -163,6 +163,7 @@ export function generateDocumentHtml(
   org: OrgInfo,
   template: TemplateSettings
 ): string {
+  doc = documentRenderDto(doc);
   const cfg = DOC_CONFIGS[kind];
   const accent = template.accentColor || "#10b981";
   const taxIdLabel = getTaxIdLabel(org.countryCode);
@@ -205,7 +206,7 @@ export function generateDocumentHtml(
       (line) => `
     <tr>
       <td style="padding:6px 0;font-size:13px;">${escapeHtml(line.description)}</td>
-      <td style="padding:6px 0;text-align:right;font-size:13px;">${(line.quantity / 100).toFixed(2)}</td>
+      <td style="padding:6px 0;text-align:right;font-size:13px;">${documentHundredths(line.quantity)}</td>
       <td style="padding:6px 0;text-align:right;font-size:13px;">${formatMoney(line.unitPrice, doc.currencyCode)}</td>
       <td style="padding:6px 0;text-align:right;font-size:13px;">${formatMoney(line.amount, doc.currencyCode)}</td>
     </tr>`
@@ -411,6 +412,7 @@ export function generateInvoiceHtml(
   org: OrgInfo,
   template: TemplateSettings
 ): string {
+  invoice = documentRenderDto(invoice);
   const accent = template.accentColor || "#10b981";
   const taxIdLabel = getTaxIdLabel(org.countryCode);
   const invoiceTitle = getInvoiceTitle(org.countryCode, !!org.taxId);
@@ -450,7 +452,7 @@ export function generateInvoiceHtml(
       (line) => `
     <tr>
       <td style="padding:6px 0;font-size:13px;">${escapeHtml(line.description)}</td>
-      <td style="padding:6px 0;text-align:right;font-size:13px;">${(line.quantity / 100).toFixed(2)}</td>
+      <td style="padding:6px 0;text-align:right;font-size:13px;">${documentHundredths(line.quantity)}</td>
       <td style="padding:6px 0;text-align:right;font-size:13px;">${formatMoney(line.unitPrice, invoice.currencyCode)}</td>
       <td style="padding:6px 0;text-align:right;font-size:13px;">${formatMoney(line.amount, invoice.currencyCode)}</td>
     </tr>`

@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { FileText, Download, ArrowLeft, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { formatMoney } from "@/lib/money";
+import { documentMoneyText as formatMoney } from "@/lib/documents/render-wire";
 import Link from "next/link";
 
 interface PortalInvoice {

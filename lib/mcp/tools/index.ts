@@ -1,3 +1,4 @@
+import { registerDocumentRenderingTools } from "./document-rendering";
 import { registerAdminOrganizationTools } from "./admin-organization";
 import { registerAuditLogTools } from "./audit-log";
 import { registerDashboardLayoutTools } from "./dashboard-layouts";
@@ -198,4 +199,5 @@ export function registerAllTools(server: McpServer, ctx: AuthContext) {
   registerWarehouseTools(server, ctx);
   registerInventoryMovementTools(server, ctx);
   registerPublicPortalTools(server, ctx);
+  registerDocumentRenderingTools(server, ctx);
 }

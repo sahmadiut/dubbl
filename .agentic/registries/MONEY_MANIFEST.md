@@ -1434,3 +1434,21 @@ state, SMTP capture/rollback and signature/correction races. No schema, monetary
 posting, history rewrite/rescale, full-int64 or IRR flag change. Real provider/
 identity/browser/security qualification and MON-034 integration remain separate;
 MON-127 owns the other rendering bridges.
+
+
+## MON-127 document HTML/PDF and consumer bridges
+
+[DOCUMENT_RENDER_WIRE_CONTRACTS](DOCUMENT_RENDER_WIRE_CONTRACTS.md) inventories
+five document renders, template/email previews, email send/resend attachments,
+public payment/portal invoices and dated portal statements with MCP counterparts.
+Shared scoped read-only services preflight safe money, live tenant references and
+SQL-text saved party snapshots. Exact bigint-part formatting preserves all minor
+digits and USD/IRR/JPY/KWD scales; physical hundredths remain independent. Public
+pay/portal displays use currency-aware exact text and safe derived sums. Render
+failures precede requested attachment delivery/log writes and REST invoice posting;
+existing provider-after-commit limitations remain. Actual REST/full-SDK/mocked-SMTP
+fixtures verify units, aliases, roles, tenant/capability isolation and unchanged
+rejection state. Payroll files and signing/report SSR retain their documented
+existing child ownership and are regression-checked; no new payroll PDF claim.
+MON-034 retains combined integration and MON-008 broader/full-int64 cutover.
+No schema/history rescale, IRR flag, visual-fit or deployment qualification.

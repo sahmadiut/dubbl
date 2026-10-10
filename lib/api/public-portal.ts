@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { invoice, portalAccessToken, portalActivityLog, quote } from "@/lib/db/schema";
 import { AuthError } from "./auth-context";
 import { publicLineDto, publicMoneyDto, publicStatementDto } from "./public-money-wire";
-import { stringifyWire } from "@/lib/money/wire";
+import { legacyMinor, stringifyWire } from "@/lib/money/wire";
 
 /** Tokens grant a single contact in one organization; MCP adds its authenticated organization predicate. */
 export async function getPortalAccess(token: string, organizationId?: string, invalidStatus = 401) {
@@ -12,10 +12,10 @@ export async function getPortalAccess(token: string, organizationId?: string, in
       organizationId ? eq(portalAccessToken.organizationId, organizationId) : undefined),
     with: {
       contact: { columns: { id: true, name: true, email: true, currencyCode: true, organizationId: true, deletedAt: true } },
-      organization: { columns: { name: true, defaultCurrency: true } },
+      organization: { columns: { name: true, defaultCurrency: true, deletedAt: true } },
     },
   });
-  if (!access || access.contact.organizationId !== access.organizationId || access.contact.deletedAt) {
+  if (!access || access.contact.organizationId !== access.organizationId || access.contact.deletedAt || access.organization.deletedAt) {
     throw new AuthError("Invalid or expired token", invalidStatus);
   }
   if (access.expiresAt && access.expiresAt <= new Date()) {
@@ -48,8 +48,14 @@ export async function getPaymentLink(token: string, organizationId?: string) {
     invoice: {
       ...publicMoneyDto({ id: inv.id, invoiceNumber: inv.invoiceNumber, issueDate: inv.issueDate,
         dueDate: inv.dueDate, total: inv.total, amountDue: inv.amountDue, currencyCode: inv.currencyCode }, ["total", "amountDue"]),
-      lines: inv.lines.map(l => publicLineDto({ description: l.description, quantity: l.quantity,
-        unitPrice: l.unitPrice, amount: l.amount, taxAmount: l.taxAmount })),
+      lines: inv.lines.map(l => {
+        const line = publicLineDto({ description: l.description, quantity: l.quantity,
+          unitPrice: l.unitPrice, amount: l.amount, taxAmount: l.taxAmount });
+        // The public payment page displays amount + tax; reject an unsupported
+        // derived display before returning a successful summary.
+        legacyMinor(BigInt(line.amountMinor) + BigInt(line.taxAmountMinor));
+        return line;
+      }),
     },
     organization: { name: inv.organization.name }, contact: { name: inv.contact.name },
   };

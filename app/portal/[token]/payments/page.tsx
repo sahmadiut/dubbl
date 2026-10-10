@@ -1,5 +1,7 @@
 "use client";
 
+import { documentMoneyText as formatMoney } from "@/lib/documents/render-wire";
+
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import {
@@ -22,12 +24,6 @@ interface Payment {
   currencyCode: string;
 }
 
-function formatMoney(cents: number, currency = "USD") {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency,
-  }).format(cents / 100);
-}
 
 export default function PortalPaymentsPage() {
   const { token } = useParams<{ token: string }>();

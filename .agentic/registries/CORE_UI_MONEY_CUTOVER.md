@@ -1,3 +1,34 @@
+## MON-146 customer prepayment UI
+
+CustomerCreditDrawer/CustomerCreditForm and sales/customer-prepayments list/detail
+use customer-prepayment-ui.ts and CustomerPrepaymentMoneyDetails. Create resolves
+explicit/contact/org/USD currency, shows an exact received preview, and sends
+amountMinor with explicit currencyCode. Same-currency paid-in accounts are selected;
+failed currency reads require explicit selection. Decimal text is parsed without
+money Number conversion; positive whole minor units and safe workflow range are
+required. Saved numeric aliases are checked against canonical Minor strings before
+bigint display and original-minus-remaining arithmetic. Loaded, server-filtered
+sample summaries exclude cancelled credits and group by currency; they are not
+all-page or FX-converted totals. Client search preserves the existing sample scope.
+
+Application options adopt amountDueMinor and require the same saved customer and
+currency, outstanding status, and positive due. amountMinor writes cannot exceed
+either balance. Detail/list/drawer remount by organization (detail also by id and
+drawer by open); reads abort or reject obsolete filter generations. Invalid saved
+money suppresses amounts/actions with English alerts. Invoice options retain the
+existing 100-row selection cap. Existing static USD illustrations, counts, pages,
+dates and source/status labels remain; no stored units are rescaled. Shared
+InvoiceAmountInput and credit-note eligibility/application adapters are reused.
+
+Four pure/rendered groups and migrated REST/MCP/SQL fixtures cover USD/JPY/IRR/KWD,
+low digits, malformed/range/alias rejection, preview/saved agreement, default
+currency, recognition journals and one-minor-unit application. Existing credit
+contracts verify lifecycle/security/negative cases. These are synthetic accounting
+fixtures and static React renders, not live browser or production qualification.
+No REST/MCP/schema/IRR flag change. MON-136, MON-131, MON-129 and MON-007 retain
+independent combined acceptance; other consumers remain under their current owners.
+This completed slice supersedes earlier MON-146-pending prose below.
+
 ## MON-137 recurring invoice UI
 
 RecurringDrawer sends explicit currencyCode and unitPriceExact decimal strings;
@@ -259,7 +290,7 @@ original combined criteria; MON-007 retains its original integration acceptance.
 | MON-143 | sales/quotes list/detail; create-drawer.tsx QuoteDrawer; quote-money-details.tsx; lib/money/quote-ui.ts | Explicit USD default/selectable currency, price-first exact preview and unitPriceExact payloads, validated saved Minor aliases and currency-grouped sample summaries |
 | MON-144 | sales/credit-notes list/detail; create-drawer.tsx CreditNoteDrawer; credit-note-money-details.tsx; lib/money/credit-note-ui.ts | Explicit USD/selectable currency, exact extended-price preview/writes, validated saved Minor/summary reads and same-customer/currency amountMinor invoice application |
 | MON-145 | sales/receipts list/detail, SalesReceiptDrawer, sales-receipt-ui.ts and SalesReceiptMoneyDetails | Exact extended-price preview/unitPriceExact writes, selected/contact/org currency, validated saved Minor reads and per-currency paid sample sums; separate post/void domain policy retained |
-| MON-146 | sales/customer-prepayments list/detail and CustomerCreditDrawer | Pending exact amount input, currency, saved balances and invoice application |
+| MON-146 | sales/customer-prepayments list/detail; CustomerCreditDrawer/CustomerCreditForm; customer-prepayment-ui.ts and CustomerPrepaymentMoneyDetails; reused InvoiceAmountInput/credit-note application adapters | Exact amountMinor create/apply writes, resolved currency, checked saved Minor balances, currency-grouped loaded sample summaries and same-customer/currency invoice application |
 | MON-137 | Recurring invoice list/detail, RecurringDrawer; recurring-invoice-ui.ts, RecurringInvoiceMoneyDetails and recurring-specific LineItemsEditor | Exact unitPriceExact writes, explicit USD default/selected currency, stored price/quantity-first preview, validated Minor saved/gross upcoming display and schedule preservation |
 | MON-132 | Integration parent for MON-138..142 payable/procurement consumers; tests/integration/payable-ui-integration* | Independent combined REST/MCP/SQL acceptance of ordinary, recurring, receipt-derived and requisition-derived bill reads, supplier-credit copies, allocation and unwind; see MON-132 evidence |
 | MON-138 | create-drawer.tsx BillDrawer; line-items-editor.tsx bill policy; lib/money/bill-editor.ts | Exact extended-price preview and unitPriceExact writes; explicit supplier/org/selected currency; reverse-charge amount due; approval/duplicate controls |

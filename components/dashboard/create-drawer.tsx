@@ -64,6 +64,8 @@ import { procurementEditorLines } from "@/lib/money/procurement-ui";
 import { debitNoteEditorLines } from "@/lib/money/debit-note-ui";
 import { salesReceiptEditorLines, salesReceiptEditorCurrency } from "@/lib/money/sales-receipt-ui";
 import { recurringInvoiceEditorLines, recurringInvoiceEditorCurrency } from "@/lib/money/recurring-invoice-ui";
+import { customerPrepaymentCurrency, customerPrepaymentAmount, customerPrepaymentMoney } from "@/lib/money/customer-prepayment-ui";
+import { InvoiceAmountInput } from "@/components/dashboard/invoice-amount-input";
 import { creditNoteEditorLines } from "@/lib/money/credit-note-ui";
 import { OpeningBalanceForm } from "@/components/dashboard/opening-balance-form";
 import type { OpeningBalanceWrite } from "@/lib/money/opening-balance-ui";
@@ -77,7 +79,7 @@ import { CategoryPicker } from "@/components/dashboard/category-picker";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { payrollCentsInput, payrollBasisPointsInput } from "@/lib/money/payroll-input";
 import { catalogPriceMinor, catalogWholeInput } from "@/lib/money/catalog-input";
-import { formatMoney, decimalToCents, decimalToMinorUnits } from "@/lib/money";
+import { formatMoney, decimalToCents } from "@/lib/money";
 
 type DrawerType = "contact" | "project" | "invoice" | "bill" | "entry" | "inventory" | "quote" | "salesReceipt" | "purchaseOrder" | "expense" | "fixedAsset" | "budget" | "employee" | "creditNote" | "recurring" | "account" | "bankAccount" | "warehouse" | "stockTake" | "category" | "transfer" | "bankTransfer" | "contractor" | "deal" | "debitNote" | "customerCredit" | "loan" | "openingBalance" | "accrualSchedule" | "revenueSchedule" | "recurringJournal";
 
@@ -4192,39 +4194,64 @@ function DebitNoteDrawer({ open, onClose }: { open: boolean; onClose: () => void
 // Customer Credit Drawer (prepayment — money received in advance)
 // ---------------------------------------------------------------------------
 function CustomerCreditDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
+  return <CustomerCreditForm key={`${orgId}:${open}`} open={open} onClose={onClose} orgId={orgId} />;
+}
+
+function CustomerCreditForm({ open, onClose, orgId }: { open: boolean; onClose: () => void; orgId: string | null }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [contactId, setContactId] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
-  const [amount, setAmount] = useState("0.00");
+  const [amount, setAmount] = useState("");
   const [sourceType, setSourceType] = useState("prepayment");
   const [bankAccountId, setBankAccountId] = useState("");
   const [bankAccounts, setBankAccounts] = useState<BankAccountOption[]>([]);
-  const [currencyCode, setCurrencyCode] = useState("");
+  const [selectedCurrency, setSelectedCurrency] = useState("");
+  const [currencyContext, setCurrencyContext] = useState<{ orgId: string; contactId: string; code?: string; error?: string } | null>(null);
+  const currentContext = currencyContext?.orgId === orgId && currencyContext?.contactId === contactId ? currencyContext : null;
+  const currencyCode = selectedCurrency || currentContext?.code || null;
+  const matchingBanks = bankAccounts.filter(bank => bank.currencyCode === currencyCode);
+  const selectedBank = matchingBanks.find(bank => bank.id === bankAccountId);
+  let exactAmount: { amountMinor: string } | null = null;
+  try { if (currencyCode) exactAmount = customerPrepaymentAmount(amount, currencyCode); } catch {}
   const [notes, setNotes] = useState("");
 
   useEffect(() => {
-    if (!open) {
-      setContactId(""); setDate(new Date().toISOString().split("T")[0]); setAmount("0.00");
-      setSourceType("prepayment"); setBankAccountId(""); setCurrencyCode(""); setNotes("");
-      return;
-    }
-    const orgId = localStorage.getItem("activeOrgId");
-    if (!orgId) return;
-    fetch("/api/v1/bank-accounts", { headers: { "x-organization-id": orgId } })
-      .then((r) => r.json())
-      .then((data) => { if (data.bankAccounts) setBankAccounts(data.bankAccounts); })
-      .catch(() => {});
-  }, [open]);
+    if (!open || !orgId) return;
+    const controller = new AbortController();
+    fetch("/api/v1/bank-accounts", { headers: { "x-organization-id": orgId }, signal: controller.signal })
+      .then(r => { if (!r.ok) throw new Error("Unable to load bank accounts"); return r.json(); })
+      .then(data => { if (!controller.signal.aborted && Array.isArray(data.bankAccounts)) setBankAccounts(data.bankAccounts); })
+      .catch(() => { if (!controller.signal.aborted) setBankAccounts([]); });
+    return () => controller.abort();
+  }, [open, orgId]);
+
+  useEffect(() => {
+    if (!open || !orgId || !contactId) return;
+    const controller = new AbortController();
+    const headers = { "x-organization-id": orgId };
+    Promise.all([
+      fetch(`/api/v1/contacts/${encodeURIComponent(contactId)}`, { headers, signal: controller.signal }),
+      fetch("/api/v1/organization", { headers, signal: controller.signal }),
+    ]).then(async ([customer, org]) => {
+      if (!customer.ok || !org.ok) throw new Error("Unable to load prepayment currency");
+      const [customerData, orgData] = await Promise.all([customer.json(), org.json()]);
+      if (!customerData.contact || !orgData.organization) throw new Error("Unable to load prepayment currency");
+      const code = customerPrepaymentCurrency(null, customerData.contact.currencyCode, orgData.organization.defaultCurrency);
+      if (!controller.signal.aborted) setCurrencyContext({ orgId, contactId, code });
+    }).catch(() => {
+      if (!controller.signal.aborted) setCurrencyContext({ orgId, contactId, error: "Unable to load the customer's currency. Select a currency to continue." });
+    });
+    return () => controller.abort();
+  }, [open, orgId, contactId]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!contactId) { toast.error("Please select a customer"); return; }
     if (!bankAccountId) { toast.error("Please choose where the money was paid in"); return; }
-    const cents = decimalToMinorUnits(amount, currencyCode || "USD");
-    if (cents <= 0) { toast.error("Please enter an amount"); return; }
+    if (!currencyCode || !exactAmount || !selectedBank) { toast.error("Check the amount, currency and paid-in account"); return; }
     setSaving(true);
-    const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) { setSaving(false); return; }
 
     try {
@@ -4234,10 +4261,10 @@ function CustomerCreditDrawer({ open, onClose }: { open: boolean; onClose: () =>
         body: JSON.stringify({
           contactId,
           date,
-          amount: cents,
+          ...exactAmount,
           sourceType,
           bankAccountId,
-          currencyCode: currencyCode || undefined,
+          currencyCode,
           notes: notes || null,
         }),
       });
@@ -4281,8 +4308,10 @@ function CustomerCreditDrawer({ open, onClose }: { open: boolean; onClose: () =>
                   <DatePicker value={date} onChange={setDate} placeholder="Date received" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="drawer-credit-amount">Amount</Label>
-                  <CurrencyInput id="drawer-credit-amount" prefix="$" value={amount} onChange={setAmount} />
+                  <Label>Amount</Label>
+                  {currencyCode ? <InvoiceAmountInput currency={currencyCode} value={amount} onChange={setAmount} /> :
+                    <p className="text-sm text-muted-foreground">Select a customer or currency to enter an amount.</p>}
+                  {exactAmount && currencyCode && <p className="text-xs text-muted-foreground">Received: {customerPrepaymentMoney(BigInt(exactAmount.amountMinor), currencyCode)}</p>}
                 </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
@@ -4298,7 +4327,8 @@ function CustomerCreditDrawer({ open, onClose }: { open: boolean; onClose: () =>
                 </div>
                 <div className="space-y-2">
                   <Label>Currency</Label>
-                  <CurrencySelect value={currencyCode} onValueChange={setCurrencyCode} />
+                  <CurrencySelect value={currencyCode ?? ""} onValueChange={setSelectedCurrency} />
+                  {currentContext?.error && !selectedCurrency && <p role="alert" className="text-xs text-destructive">{currentContext.error}</p>}
                 </div>
               </div>
             </div>
@@ -4314,14 +4344,14 @@ function CustomerCreditDrawer({ open, onClose }: { open: boolean; onClose: () =>
                     <SelectValue placeholder="Choose where the money landed..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {bankAccounts.map((acc) => (
+                    {matchingBanks.map((acc) => (
                       <SelectItem key={acc.id} value={acc.id}>
                         {acc.accountName} · {acc.currencyCode}
                       </SelectItem>
                     ))}
-                    {bankAccounts.length === 0 && (
+                    {matchingBanks.length === 0 && (
                       <div className="px-2 py-4 text-center text-sm text-muted-foreground">
-                        No bank or cash accounts yet
+                        No bank or cash accounts in this currency
                       </div>
                     )}
                   </SelectContent>
@@ -4339,7 +4369,7 @@ function CustomerCreditDrawer({ open, onClose }: { open: boolean; onClose: () =>
               <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notes about this prepayment..." rows={3} />
             </div>
           </div>
-          <DrawerFooter onClose={onClose} saving={saving} label="Record prepayment" />
+          <DrawerFooter onClose={onClose} saving={saving} label="Record prepayment" disabled={!orgId || !contactId || !exactAmount || !selectedBank} />
         </form>
       </SheetContent>
     </Sheet>

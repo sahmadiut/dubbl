@@ -1,3 +1,34 @@
+## MON-146 customer prepayment UI
+
+CustomerCreditDrawer/CustomerCreditForm and sales/customer-prepayments list/detail
+use customer-prepayment-ui.ts and CustomerPrepaymentMoneyDetails. Create resolves
+explicit/contact/org/USD currency, shows an exact received preview, and sends
+amountMinor with explicit currencyCode. Same-currency paid-in accounts are selected;
+failed currency reads require explicit selection. Decimal text is parsed without
+money Number conversion; positive whole minor units and safe workflow range are
+required. Saved numeric aliases are checked against canonical Minor strings before
+bigint display and original-minus-remaining arithmetic. Loaded, server-filtered
+sample summaries exclude cancelled credits and group by currency; they are not
+all-page or FX-converted totals. Client search preserves the existing sample scope.
+
+Application options adopt amountDueMinor and require the same saved customer and
+currency, outstanding status, and positive due. amountMinor writes cannot exceed
+either balance. Detail/list/drawer remount by organization (detail also by id and
+drawer by open); reads abort or reject obsolete filter generations. Invalid saved
+money suppresses amounts/actions with English alerts. Invoice options retain the
+existing 100-row selection cap. Existing static USD illustrations, counts, pages,
+dates and source/status labels remain; no stored units are rescaled. Shared
+InvoiceAmountInput and credit-note eligibility/application adapters are reused.
+
+Four pure/rendered groups and migrated REST/MCP/SQL fixtures cover USD/JPY/IRR/KWD,
+low digits, malformed/range/alias rejection, preview/saved agreement, default
+currency, recognition journals and one-minor-unit application. Existing credit
+contracts verify lifecycle/security/negative cases. These are synthetic accounting
+fixtures and static React renders, not live browser or production qualification.
+No REST/MCP/schema/IRR flag change. MON-136, MON-131, MON-129 and MON-007 retain
+independent combined acceptance; other consumers remain under their current owners.
+This completed slice supersedes earlier MON-146-pending prose below.
+
 ## MON-132 payable/procurement UI integration
 
 Current 2026-10-11 integration acceptance supersedes earlier child-era pending

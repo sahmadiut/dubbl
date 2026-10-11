@@ -3,11 +3,12 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
-import { ArrowLeft, FileText, Wallet } from "lucide-react";
+import { ArrowLeft, FileText } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CurrencyInput } from "@/components/ui/currency-input";
+import { InvoiceAmountInput } from "@/components/dashboard/invoice-amount-input";
+import { CustomerPrepaymentMoneyDetails } from "@/components/dashboard/customer-prepayment-money-details";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
@@ -23,7 +24,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatMoney, minorUnitsToDecimal, decimalToMinorUnits } from "@/lib/money";
+import { customerPrepaymentRow, customerPrepaymentInvoice, customerPrepaymentInvoiceEligible, customerPrepaymentApplication,
+  customerPrepaymentMoney as formatMoney, customerPrepaymentDecimal } from "@/lib/money/customer-prepayment-ui";
 import { useEntityTitle } from "@/lib/hooks/use-entity-title";
 import Link from "next/link";
 
@@ -31,14 +33,17 @@ interface CustomerCreditDetail {
   id: string;
   date: string;
   status: string;
-  originalAmount: number;
-  amountRemaining: number;
+  originalAmount: bigint;
+  amountRemaining: bigint;
   sourceType: string;
   currencyCode: string;
   notes: string | null;
   contactId: string | null;
   contact: { name: string; email: string | null } | null;
 }
+type CustomerCreditWire = Omit<CustomerCreditDetail, "originalAmount" | "amountRemaining"> & {
+  originalAmount: number; amountRemaining: number; [key: string]: unknown;
+};
 
 const statusColors: Record<string, string> = {
   open: "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-300",
@@ -65,8 +70,8 @@ const sourceLabels: Record<string, string> = {
 interface InvoiceOption {
   id: string;
   invoiceNumber: string;
-  total: number;
-  amountDue: number;
+  contactId: string | null;
+  amountDue: bigint;
   status: string;
   currencyCode: string;
   contact: { name: string } | null;
@@ -74,6 +79,11 @@ interface InvoiceOption {
 
 export default function CustomerPrepaymentDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
+  return <CustomerPrepaymentDetail key={`${orgId}:${id}`} id={id} orgId={orgId} />;
+}
+
+function CustomerPrepaymentDetail({ id, orgId }: { id: string; orgId: string | null }) {
   const [cc, setCc] = useState<CustomerCreditDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [applyOpen, setApplyOpen] = useState(false);
@@ -81,64 +91,64 @@ export default function CustomerPrepaymentDetailPage() {
   const [applyInvoiceId, setApplyInvoiceId] = useState("");
   const [applyAmount, setApplyAmount] = useState("");
   const [invoices, setInvoices] = useState<InvoiceOption[]>([]);
-
-  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
+  const [readError, setReadError] = useState("");
+  const [invoiceError, setInvoiceError] = useState("");
 
   useEntityTitle(cc?.contact?.name);
 
   useEffect(() => {
     if (!orgId) return;
+    const controller = new AbortController();
     fetch(`/api/v1/customer-credits/${id}`, {
       headers: { "x-organization-id": orgId },
+      signal: controller.signal,
     })
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("Unable to load prepayment"); return r.json(); })
       .then((data) => {
-        if (data.customerCredit) setCc(data.customerCredit);
+        if (!controller.signal.aborted) setCc(customerPrepaymentRow(data.customerCredit as CustomerCreditWire));
       })
-      .finally(() => setLoading(false));
+      .catch(() => { if (!controller.signal.aborted) setReadError("Unable to load valid prepayment amounts. Try again."); })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
   }, [id, orgId]);
 
   // Fetch outstanding invoices (same customer + currency) for the apply dialog.
   useEffect(() => {
     if (!orgId || !applyOpen || !cc) return;
-    fetch(`/api/v1/invoices?limit=100`, {
+    const controller = new AbortController();
+    fetch(`/api/v1/invoices?limit=100&contactId=${encodeURIComponent(cc.contactId ?? "")}`, {
       headers: { "x-organization-id": orgId },
+      signal: controller.signal,
     })
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("Unable to load invoices"); return r.json(); })
       .then((data) => {
-        if (data.data) {
-          setInvoices(
-            (data.data as InvoiceOption[]).filter(
-              (inv) =>
-                ["sent", "partial", "overdue"].includes(inv.status) &&
-                inv.amountDue > 0 &&
-                inv.currencyCode === cc.currencyCode
-            )
-          );
-        }
-      });
+        if (!Array.isArray(data.data)) throw new Error("Invalid invoice response");
+        const rows: InvoiceOption[] = data.data.map(customerPrepaymentInvoice);
+        if (!controller.signal.aborted) setInvoices(rows.filter(inv => customerPrepaymentInvoiceEligible(cc, inv)));
+      })
+      .catch(() => { if (!controller.signal.aborted) { setInvoices([]); setInvoiceError("Unable to load valid invoice balances. Reopen to try again."); } });
+    return () => controller.abort();
   }, [orgId, applyOpen, cc]);
 
   async function handleApply() {
     if (!orgId || !applyInvoiceId || !cc) return;
-    const amount = decimalToMinorUnits(applyAmount, cc.currencyCode);
-    if (!amount || amount <= 0) {
-      toast.error("Enter a valid amount");
-      return;
-    }
+    const selected = invoices.find(inv => inv.id === applyInvoiceId);
+    if (!selected) return;
     setApplyLoading(true);
     try {
+      const payload = customerPrepaymentApplication(applyAmount, cc, selected);
       const res = await fetch(`/api/v1/customer-credits/${id}/apply`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "x-organization-id": orgId,
         },
-        body: JSON.stringify({ invoiceId: applyInvoiceId, amount }),
+        body: JSON.stringify(payload),
       });
       if (res.ok) {
         const data = await res.json();
-        setCc((prev) => prev ? { ...prev, ...data.customerCredit } : prev);
+        try { setCc({ ...cc, ...customerPrepaymentRow(data.customerCredit as CustomerCreditWire) }); }
+        catch { setCc(null); setReadError("Unable to read the updated prepayment balance. Reload before continuing."); }
         setApplyOpen(false);
         setApplyInvoiceId("");
         setApplyAmount("");
@@ -147,15 +157,24 @@ export default function CustomerPrepaymentDetailPage() {
         const data = await res.json();
         toast.error(typeof data.error === "string" ? data.error : "Couldn't use this credit");
       }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Couldn't use this credit");
     } finally {
       setApplyLoading(false);
     }
   }
 
   if (loading) return <div className="space-y-6"><PageHeader title="Loading..." /></div>;
+  if (readError) return <p role="alert" className="text-sm text-destructive">{readError}</p>;
   if (!cc) return <div className="space-y-6"><PageHeader title="Prepayment not found" /></div>;
 
-  const amountApplied = cc.originalAmount - cc.amountRemaining;
+  let applicationValid = false;
+  let applicationError = "";
+  const selected = invoices.find(inv => inv.id === applyInvoiceId);
+  if (selected && applyAmount) {
+    try { customerPrepaymentApplication(applyAmount, cc, selected); applicationValid = true; }
+    catch (error) { applicationError = error instanceof Error ? error.message : "Enter a valid amount"; }
+  }
 
   return (
     <div className="space-y-6">
@@ -163,8 +182,10 @@ export default function CustomerPrepaymentDetailPage() {
         <Button variant="outline" size="sm" asChild>
           <Link href="/sales/customer-prepayments"><ArrowLeft className="mr-2 size-4" />Back</Link>
         </Button>
-        {cc.status === "open" && cc.amountRemaining > 0 && (
-          <Dialog open={applyOpen} onOpenChange={setApplyOpen}>
+        {cc.status === "open" && cc.amountRemaining > 0n && (
+          <Dialog open={applyOpen} onOpenChange={(open) => {
+            setApplyOpen(open); setInvoices([]); setInvoiceError(""); setApplyInvoiceId(""); setApplyAmount("");
+          }}>
             <DialogTrigger asChild>
               <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" title="Put this credit towards what a customer owes on an invoice">
                 <FileText className="mr-2 size-4" />Apply to an invoice
@@ -197,20 +218,22 @@ export default function CustomerPrepaymentDetailPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Amount</Label>
-                  <CurrencyInput
-                    prefix="$"
+                  <InvoiceAmountInput
+                    currency={cc.currencyCode}
                     value={applyAmount}
                     onChange={setApplyAmount}
-                    placeholder={minorUnitsToDecimal(cc.amountRemaining, cc.currencyCode)}
+                    placeholder={customerPrepaymentDecimal(cc.amountRemaining, cc.currencyCode)}
                   />
                   <p className="text-xs text-muted-foreground">
                     Available credit: {formatMoney(cc.amountRemaining, cc.currencyCode)}
                   </p>
                 </div>
+                {invoiceError && <p role="alert" className="text-sm text-destructive">{invoiceError}</p>}
+                {applicationError && <p role="alert" className="text-sm text-destructive">{applicationError}</p>}
                 <Button
                   onClick={handleApply}
                   loading={applyLoading}
-                  disabled={!applyInvoiceId}
+                  disabled={!applicationValid || !!invoiceError}
                   className="w-full bg-emerald-600 hover:bg-emerald-700"
                 >
                   Put towards the invoice
@@ -233,23 +256,7 @@ export default function CustomerPrepaymentDetailPage() {
         </span>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <div className="rounded-lg border p-4">
-          <p className="text-xs text-muted-foreground">Original</p>
-          <p className="text-xl font-bold font-mono">{formatMoney(cc.originalAmount, cc.currencyCode)}</p>
-        </div>
-        <div className="rounded-lg border p-4">
-          <p className="text-xs text-muted-foreground">Used so far</p>
-          <p className="text-xl font-bold font-mono text-emerald-600">{formatMoney(amountApplied, cc.currencyCode)}</p>
-        </div>
-        <div className="rounded-lg border p-4">
-          <div className="flex items-center gap-2">
-            <Wallet className="size-3.5 text-amber-600" />
-            <p className="text-xs text-muted-foreground">Available to use</p>
-          </div>
-          <p className="text-xl font-bold font-mono text-amber-600 mt-1">{formatMoney(cc.amountRemaining, cc.currencyCode)}</p>
-        </div>
-      </div>
+      <CustomerPrepaymentMoneyDetails credit={cc} />
 
       {cc.notes && (
         <div className="rounded-lg border p-4">

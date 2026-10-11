@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatMoney } from "@/lib/money";
+import { customerPrepaymentRow, customerPrepaymentMoney as formatMoney, customerPrepaymentSummary } from "@/lib/money/customer-prepayment-ui";
 import { devDelay } from "@/lib/dev-delay";
 import { useCreateDrawer } from "@/components/dashboard/create-drawer";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
@@ -29,8 +29,8 @@ interface CustomerCredit {
   id: string;
   date: string;
   status: string;
-  originalAmount: number;
-  amountRemaining: number;
+  originalAmount: bigint;
+  amountRemaining: bigint;
   sourceType: string;
   currencyCode: string;
   contact: { name: string } | null;
@@ -102,7 +102,7 @@ function buildColumns(): Column<CustomerCredit>[] {
       sortKey: "amount",
       className: "w-28 text-right",
       render: (r) => (
-        <span className="font-mono text-sm tabular-nums">
+        <span className="font-mono text-sm tabular-nums break-all">
           {formatMoney(r.originalAmount, r.currencyCode)}
         </span>
       ),
@@ -113,7 +113,7 @@ function buildColumns(): Column<CustomerCredit>[] {
       sortKey: "remaining",
       className: "w-28 text-right",
       render: (r) => (
-        <span className="font-mono text-sm tabular-nums">
+        <span className="font-mono text-sm tabular-nums break-all">
           {formatMoney(r.amountRemaining, r.currencyCode)}
         </span>
       ),
@@ -122,9 +122,16 @@ function buildColumns(): Column<CustomerCredit>[] {
 }
 
 export default function CustomerPrepaymentsPage() {
+  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
+  return <CustomerPrepaymentsList key={orgId} orgId={orgId} />;
+}
+
+function CustomerPrepaymentsList({ orgId }: { orgId: string | null }) {
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
   const [credits, setCredits] = useState<CustomerCredit[]>([]);
+  const [readError, setReadError] = useState("");
+  const generation = useRef(0);
   const [initialLoad, setInitialLoad] = useState(true);
   const [refetching, setRefetching] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -143,7 +150,6 @@ export default function CustomerPrepaymentsPage() {
   const [dateTo, setDateTo] = useState("");
 
   const PAGE_SIZE = 50;
-  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
 
   const columns = useMemo(() => buildColumns(), []);
 
@@ -163,43 +169,53 @@ export default function CustomerPrepaymentsPage() {
   useEffect(() => {
     if (!orgId) return;
     let cancelled = false;
+    generation.current += 1;
+    const controller = new AbortController();
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setRefetching(true);
     setPage(1);
+    setReadError("");
+    setLoadingMore(false);
 
     fetch(`/api/v1/customer-credits?${buildParams(1)}`, {
       headers: { "x-organization-id": orgId },
+      signal: controller.signal,
     })
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("Unable to load prepayments"); return r.json(); })
       .then((data) => {
         if (cancelled) return;
-        setCredits(data.data || []);
+        if (!Array.isArray(data.data)) throw new Error("Invalid prepayment response");
+        setCredits(data.data.map(customerPrepaymentRow));
         setTotalCount(data.pagination?.total || 0);
       })
       .then(() => devDelay())
+      .catch(() => { if (!cancelled) { setCredits([]); setReadError("Unable to load valid prepayment amounts. Try again."); } })
       .finally(() => { if (!cancelled) { setInitialLoad(false); setRefetching(false); setFetchKey((k) => k + 1); } });
 
-    return () => { cancelled = true; };
+    return () => { cancelled = true; controller.abort(); generation.current += 1; };
   }, [orgId, buildParams]);
 
   // Load more
   const loadMore = useCallback(() => {
-    if (!orgId || loadingMore) return;
+    if (!orgId || loadingMore || refetching || readError) return;
     const nextPage = page + 1;
+    const current = generation.current;
     setLoadingMore(true);
 
     fetch(`/api/v1/customer-credits?${buildParams(nextPage)}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("Unable to load prepayments"); return r.json(); })
       .then((data) => {
-        if (data.data) {
-          setCredits((prev) => [...prev, ...data.data]);
-          setPage(nextPage);
-        }
+        if (current !== generation.current) return;
+        if (!Array.isArray(data.data)) throw new Error("Invalid prepayment response");
+        const rows = data.data.map(customerPrepaymentRow);
+        setCredits((prev) => [...prev, ...rows]);
+        setPage(nextPage);
       })
-      .finally(() => setLoadingMore(false));
-  }, [orgId, page, buildParams, loadingMore]);
+      .catch(() => { if (current === generation.current) setReadError("Unable to load more valid prepayment amounts. Try again."); })
+      .finally(() => { if (current === generation.current) setLoadingMore(false); });
+  }, [orgId, page, buildParams, loadingMore, refetching, readError]);
 
   const hasMore = credits.length < totalCount;
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -210,13 +226,13 @@ export default function CustomerPrepaymentsPage() {
     if (!el) return;
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && !refetching) loadMore();
+        if (entries[0].isIntersecting && !refetching && !readError) loadMore();
       },
       { rootMargin: "200px" }
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [loadMore, refetching]);
+  }, [loadMore, refetching, readError]);
 
   const handleSort = useCallback((key: string) => {
     setSortBy((prev) => {
@@ -249,18 +265,11 @@ export default function CustomerPrepaymentsPage() {
     setSearchKey((k) => k + 1);
   }, [debouncedSearch]);
 
-  const totalReceived = useMemo(
-    () => credits.reduce((sum, c) => sum + (c.status !== "void" ? c.originalAmount : 0), 0),
-    [credits]
-  );
-  const totalRemaining = useMemo(
-    () => credits.reduce((sum, c) => sum + (c.status !== "void" ? c.amountRemaining : 0), 0),
-    [credits]
-  );
+  const totals = useMemo(() => customerPrepaymentSummary(credits), [credits]);
 
   if (initialLoad) return <BrandLoader />;
 
-  if (!initialLoad && !refetching && credits.length === 0 && statusFilter === "all" && !hasFilters) {
+  if (!readError && !initialLoad && !refetching && credits.length === 0 && statusFilter === "all" && !hasFilters) {
     return (
       <ContentReveal>
         <div className="pt-12 pb-12 space-y-10">
@@ -362,11 +371,13 @@ export default function CustomerPrepaymentsPage() {
   return (
     <ContentReveal className="space-y-6">
       {/* Top: Stats */}
-      <div className="grid gap-3 sm:grid-cols-3">
-        <StatCard title="Received" value={formatMoney(totalReceived)} icon={Wallet} />
-        <StatCard title="Available to use" value={formatMoney(totalRemaining)} icon={Wallet} />
+      <div className="grid gap-3 sm:grid-cols-3 [overflow-wrap:anywhere]">
+        <StatCard title="Received (loaded)" value={readError ? "—" : totals.received} icon={Wallet} />
+        <StatCard title="Available to use (loaded)" value={readError ? "—" : totals.remaining} icon={Wallet} />
         <StatCard title="Prepayments" value={totalCount.toString()} icon={ReceiptText} />
       </div>
+
+      {readError && <p role="alert" className="text-sm text-destructive">{readError}</p>}
 
       <div className="h-px bg-border" />
 

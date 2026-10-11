@@ -1,5 +1,49 @@
 # Core UI money ownership (MON-129 children)
 
+## MON-140 debit note UI
+
+DebitNoteDrawer explicitly defaults to USD, matching both debit-note transports
+independently of supplier/org currency, and sends selected currency plus decimal
+unitPriceExact strings. The shared extended-price calculator matches the debit
+wire: USD 0.005 x 3 previews/saves 2 minor units. Up to 18 fractional price digits,
+signed ties, safe-number workflow limits and blank-to-zero price/blank-to-one
+quantity remain. Explicit zero/fractional quantities survive. Invalid input,
+unknown tax, unsafe totals and missing descriptions prevent saving; handlers
+reparse exact lines. Org-keyed drawer/editor state keeps supplier and tax context.
+
+debit-note-ui.ts owns strict saved numeric/Minor validation with checked numeric-
+only legacy fallback. Bigint drives header, line price/amount/tax, list and sample
+overview display. Saved currency drives English presentation, never an inferred
+scale or repeated FX conversion. Quantity /100 is physical hundredths. Overview
+totals describe the loaded matching sample, exclude void notes and group currencies;
+exact aggregate sums may exceed one document's safe-number limit. Empty groups
+show a dash. List sort controls only send supported server keys. Aborted reads,
+org/filter context and pagination generations suppress obsolete fetched money;
+detail/dialog state remounts by org/document. Actions reload validated full reads
+instead of merging numeric headers into bigint state. Send receives saved currency.
+
+Applications require a sent note, recognized outstanding received/partial/overdue
+bill, same supplier/currency and positive whole-minor amount within both balances.
+Pending approval bills are excluded. Currency-scale input rejects malformed,
+fractional-minor, unsafe and nonpositive amounts and sends amountMinor. Handler
+revalidation and backend recognition/role/lock/FX/allocation/reversal controls remain.
+The existing bill endpoint supports no supplier filter: the latest 100 org bills
+are filtered locally, and the UI labels this bounded candidate sample. No lookup
+completeness is claimed. Opening the dialog discards previous candidates/amount.
+Debit void clears remaining/applied balances to zero and unwinds bill allocations.
+
+Five adapter/render groups and an actual migrated REST/MCP/SQL fixture cover scales,
+large low digits, exact create/draft update/read/list, malformed/range rejection,
+tax/quantity/dimensions, grouped SQL sums and application/void. Existing debit and
+bill lifecycle fixtures independently retain domain controls. These pages have no
+monetary edit/copy or cash-refund operation; none is invented. Supported exact
+draft PATCH/MCP contracts are checked separately. Debit line discounts are not
+persisted as a separate column. No monetary fixed-two exception remains here;
+shared unmigrated editor defaults, tax basis points and numeric wire coexistence
+retain their units. Fixed USD empty-state examples remain illustrative. Browser
+effects, outbound email/PDF, production IRR, full-int64 workflows, MON-141/142 and
+MON-132/MON-129/MON-007 combined acceptance remain separate.
+
 ## MON-144 credit note UI
 
 CreditNoteDrawer explicitly defaults to USD as both credit transports do,
@@ -96,7 +140,7 @@ original combined criteria; MON-007 retains its original integration acceptance.
 | MON-132 | Integration parent for MON-138..142 payable/procurement consumers | Independent combined acceptance; no child completion closes this parent |
 | MON-138 | create-drawer.tsx BillDrawer; line-items-editor.tsx bill policy; lib/money/bill-editor.ts | Exact extended-price preview and unitPriceExact writes; explicit supplier/org/selected currency; reverse-charge amount due; approval/duplicate controls |
 | MON-139 | purchases/page.tsx and purchases/[id]/page.tsx; bill-ui.ts and BillCurrencyAmounts; shared InvoiceAmountInput/DualAmount props | Validated saved Minor reads, currency-grouped counts/sample aging, exact source/base/progress, whole-minor payments and supplier-credit price/dimension copies |
-| MON-140 | purchases/debit-notes and DebitNoteDrawer | Pending debit-note-specific exact/compatibility and application/refund contracts |
+| MON-140 | purchases/debit-notes list/detail, DebitNoteDrawer, debit-note-ui.ts, DebitNoteMoneyDetails and DebitNoteOverview; shared LineItemsEditor/InvoiceAmountInput/SendDocumentDialog props | Exact extended-price preview/unitPriceExact writes, validated saved Minor aliases, currency-grouped sample sums and same-supplier/currency amountMinor bill application; no cash-refund operation exists |
 | MON-141 | purchases/orders, requisitions, goods-receipts and PurchaseOrderDrawer | Pending exact procurement money, fixed-two compatibility, conversion and quantity contracts |
 | MON-142 | purchases/bills/recurring | Pending recurring bill currency, pricing and schedules |
 | MON-133 | accounting/accounts/[id] page/layout; accounting/opening-balances/page.tsx and OpeningBalanceDrawer; accounting/banking, payments and payment batches; purchases/expenses and expense create/edit/mileage controls; tax/page.tsx, tax/periods/[id], tax/sales-tax and tax settlement controls; remaining core bank/payment/tax/settings/approval consumers | Explicit exact money and source/base-currency presentation; opening balances still require numeric compatibility writes until their separate API adoption; no silent unsupported Minor fields |

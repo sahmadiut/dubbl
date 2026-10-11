@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
 import { ArrowLeft, Send, Ban, FileText } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CurrencyInput } from "@/components/ui/currency-input";
+import { InvoiceAmountInput } from "@/components/dashboard/invoice-amount-input";
+import { DebitNoteMoneyDetails } from "@/components/dashboard/debit-note-money-details";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
@@ -23,7 +24,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatMoney, decimalToMinorUnits, minorUnitsToDecimal } from "@/lib/money";
+import { debitNoteUiDocument, debitNoteUiBill, debitNoteUiBillEligible, debitNoteUiApplication, debitNoteUiMoney } from "@/lib/money/debit-note-ui";
+import { invoiceUiDecimal } from "@/lib/money/invoice-ui";
 import { useConfirm } from "@/lib/hooks/use-confirm";
 import { useEntityTitle } from "@/lib/hooks/use-entity-title";
 import { SendDocumentDialog } from "@/components/dashboard/send-document-dialog";
@@ -31,18 +33,18 @@ import { EmailHistory } from "@/components/dashboard/email-history";
 import Link from "next/link";
 
 interface DebitNoteDetail {
+  currencyCode: string;
   id: string;
   debitNoteNumber: string;
   issueDate: string;
   status: string;
   reference: string | null;
   notes: string | null;
-  subtotal: number;
-  taxTotal: number;
-  total: number;
-  amountApplied: number;
-  amountRemaining: number;
-  currencyCode: string;
+  subtotal: bigint;
+  taxTotal: bigint;
+  total: bigint;
+  amountApplied: bigint;
+  amountRemaining: bigint;
   contactId: string | null;
   billId: string | null;
   contact: { name: string; email: string | null } | null;
@@ -50,10 +52,10 @@ interface DebitNoteDetail {
     id: string;
     description: string;
     quantity: number;
-    unitPrice: number;
-    amount: number;
+    unitPrice: bigint;
+    amount: bigint;
     account: { code: string; name: string } | null;
-    taxRate: number | null;
+    taxAmount: bigint;
   }[];
 }
 
@@ -72,16 +74,24 @@ const statusLabels: Record<string, string> = {
   void: "cancelled",
 };
 
+type DebitNoteWire = Omit<DebitNoteDetail, "subtotal" | "taxTotal" | "total" | "amountApplied" | "amountRemaining" | "lines"> & {
+  subtotal: number; taxTotal: number; total: number; amountApplied: number; amountRemaining: number;
+  lines: (Omit<DebitNoteDetail["lines"][number], "unitPrice" | "amount" | "taxAmount"> & { unitPrice: number; amount: number; taxAmount: number; [key: string]: unknown })[];
+  [key: string]: unknown;
+};
 interface BillOption {
-  id: string;
-  billNumber: string;
-  total: number;
-  amountDue: number;
-  contact: { name: string } | null;
+  id: string; billNumber: string; contactId: string | null; currencyCode: string; status: string;
+  amountDue: bigint; contact: { name: string } | null;
 }
+type BillWire = Omit<BillOption, "amountDue"> & { amountDue: number; [key: string]: unknown };
 
 export default function DebitNoteDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
+  return <DebitNoteDetail key={`${orgId}:${id}`} id={id} orgId={orgId} />;
+}
+
+function DebitNoteDetail({ id, orgId }: { id: string; orgId: string | null }) {
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [dn, setDn] = useState<DebitNoteDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -89,77 +99,80 @@ export default function DebitNoteDetailPage() {
   const [applyLoading, setApplyLoading] = useState(false);
   const [applyBillId, setApplyBillId] = useState("");
   const [applyAmount, setApplyAmount] = useState("");
-  const [bills, setBills] = useState<BillOption[]>([]);
+  const [billLoaded, setBillLoaded] = useState<{ context: string; rows: BillOption[]; error: string | null } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [reload, setReload] = useState(0);
+  const active = useRef(true);
+  useEffect(() => { active.current = true; return () => { active.current = false; }; }, []);
 
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
   const [emailHistoryKey, setEmailHistoryKey] = useState(0);
   const [orgName, setOrgName] = useState("");
 
-  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
-
   useEntityTitle(dn?.debitNoteNumber);
 
   useEffect(() => {
     if (!orgId) return;
-    fetch(`/api/v1/debit-notes/${id}`, {
-      headers: { "x-organization-id": orgId },
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.debitNote) setDn(data.debitNote);
-      })
-      .finally(() => setLoading(false));
-    fetch("/api/v1/organization", { headers: { "x-organization-id": orgId } })
-      .then((r) => r.json()).then((data) => { if (data.organization?.name) setOrgName(data.organization.name); }).catch(() => {});
-  }, [id, orgId]);
+    const controller = new AbortController();
+    fetch(`/api/v1/debit-notes/${id}`, { headers: { "x-organization-id": orgId }, signal: controller.signal })
+      .then(r => { if (!r.ok) throw new Error("Unable to load supplier credit"); return r.json(); })
+      .then(data => { const credit = debitNoteUiDocument(data.debitNote as DebitNoteWire); if (!controller.signal.aborted) { setDn(credit); setError(null); } })
+      .catch(() => { if (!controller.signal.aborted) { setDn(null); setError("Unable to load valid supplier credit amounts. Try again."); } })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    fetch("/api/v1/organization", { headers: { "x-organization-id": orgId }, signal: controller.signal })
+      .then(r => r.json()).then(data => { if (!controller.signal.aborted && data.organization?.name) setOrgName(data.organization.name); }).catch(() => {});
+    return () => controller.abort();
+  }, [id, orgId, reload]);
 
-  // Fetch outstanding bills for the same supplier for the apply dialog
+  const billContext = `${dn?.contactId}:${dn?.currencyCode}:${dn?.amountRemaining}:${reload}`;
+  const bills = billLoaded?.context === billContext ? billLoaded.rows : [];
+  const billError = billLoaded?.context === billContext ? billLoaded.error : null;
   useEffect(() => {
-    if (!orgId || !applyOpen) return;
-    fetch(`/api/v1/bills?limit=100`, {
-      headers: { "x-organization-id": orgId },
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.data) {
-          setBills(
-            data.data.filter((b: BillOption & { status: string; contactId: string | null }) =>
-              ["pending_approval", "received", "partial", "overdue"].includes(b.status) &&
-              b.amountDue > 0 &&
-              (!dn?.contactId || b.contactId === dn.contactId)
-            )
-          );
-        }
-      });
-  }, [orgId, applyOpen, dn?.contactId]);
+    if (!orgId || !applyOpen || !dn?.contactId) return;
+    const controller = new AbortController();
+    const params = new URLSearchParams({ limit: "100" });
+    fetch(`/api/v1/bills?${params}`, { headers: { "x-organization-id": orgId }, signal: controller.signal })
+      .then(r => { if (!r.ok) throw new Error("Unable to load bills"); return r.json(); })
+      .then(data => {
+        if (!Array.isArray(data.data)) throw new Error("Unable to load bills");
+        const rows = data.data.map((row: BillWire) => debitNoteUiBill(row)).filter((inv: BillOption) => debitNoteUiBillEligible(dn, inv));
+        if (!controller.signal.aborted) setBillLoaded({ context: billContext, rows, error: null });
+      })
+      .catch(() => { if (!controller.signal.aborted) setBillLoaded({ context: billContext, rows: [], error: "Unable to load valid bill balances. Try again." }); });
+    return () => controller.abort();
+  }, [orgId, applyOpen, dn, billContext]);
 
   function handleSendComplete() {
-    if (!orgId) return;
-    fetch(`/api/v1/debit-notes/${id}`, { headers: { "x-organization-id": orgId } })
-      .then((r) => r.json()).then((data) => { if (data.debitNote) setDn(data.debitNote); });
-    setEmailHistoryKey((k) => k + 1);
+    if (!active.current) return;
+    setSendDialogOpen(false);
+    setDn(null); setLoading(true); setReload(k => k + 1);
+    setEmailHistoryKey(k => k + 1);
+  }
+
+  let application: ReturnType<typeof debitNoteUiApplication> | null = null;
+  let applicationError: string | null = null;
+  const selectedBill = bills.find(inv => inv.id === applyBillId);
+  if (dn && selectedBill && applyAmount !== "") {
+    try { application = debitNoteUiApplication(applyAmount, dn, selectedBill); }
+    catch (error) { applicationError = error instanceof Error ? error.message : "Enter a valid amount"; }
   }
 
   async function handleApply() {
-    if (!orgId || !applyBillId) return;
-    const amount = decimalToMinorUnits(parseFloat(applyAmount) || 0, dn?.currencyCode || "USD");
-    if (!amount || amount <= 0) {
-      toast.error("Enter a valid amount");
-      return;
-    }
+    if (!orgId || !dn || !selectedBill || applyLoading) return;
     setApplyLoading(true);
     try {
+      const payload = debitNoteUiApplication(applyAmount, dn, selectedBill);
       const res = await fetch(`/api/v1/debit-notes/${id}/apply`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "x-organization-id": orgId,
         },
-        body: JSON.stringify({ billId: applyBillId, amount }),
+        body: JSON.stringify(payload),
       });
       if (res.ok) {
-        const data = await res.json();
-        setDn((prev) => prev ? { ...prev, ...data.debitNote } : prev);
+        if (!active.current) return;
+        handleSendComplete();
         setApplyOpen(false);
         setApplyBillId("");
         setApplyAmount("");
@@ -168,8 +181,10 @@ export default function DebitNoteDetailPage() {
         const data = await res.json();
         toast.error(typeof data.error === "string" ? data.error : "Couldn't use this credit");
       }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Couldn't use this credit");
     } finally {
-      setApplyLoading(false);
+      if (active.current) setApplyLoading(false);
     }
   }
 
@@ -186,8 +201,8 @@ export default function DebitNoteDetailPage() {
           headers: { "x-organization-id": orgId },
         });
         if (res.ok) {
-          const data = await res.json();
-          setDn((prev) => prev ? { ...prev, ...data.debitNote } : prev);
+          if (!active.current) return;
+          handleSendComplete();
           toast.success("Supplier credit cancelled");
         }
       },
@@ -195,6 +210,7 @@ export default function DebitNoteDetailPage() {
   }
 
   if (loading) return <div className="space-y-6"><PageHeader title="Loading..." /></div>;
+  if (error) return <p role="alert" className="text-sm text-destructive">{error}</p>;
   if (!dn) return <div className="space-y-6"><PageHeader title="Supplier credit not found" /></div>;
 
   return (
@@ -208,8 +224,11 @@ export default function DebitNoteDetailPage() {
             <Send className="mr-2 size-4" />Send
           </Button>
         )}
-        {(dn.status === "sent" || dn.status === "applied") && dn.amountRemaining > 0 && (
-          <Dialog open={applyOpen} onOpenChange={setApplyOpen}>
+        {dn.status === "sent" && dn.amountRemaining > 0n && (
+          <Dialog open={applyOpen} onOpenChange={(open) => {
+            setApplyOpen(open);
+            if (open) { setBillLoaded(null); setApplyBillId(""); setApplyAmount(""); }
+          }}>
             <DialogTrigger asChild>
               <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" title="Use this credit to reduce what you owe on a bill">
                 <FileText className="mr-2 size-4" />Use against a bill
@@ -222,19 +241,20 @@ export default function DebitNoteDetailPage() {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Bill</Label>
+                  <p className="text-xs text-muted-foreground">Matching outstanding bills from the latest 100 bills.</p>
                   <Select value={applyBillId} onValueChange={setApplyBillId}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select a bill..." />
                     </SelectTrigger>
                     <SelectContent>
-                      {bills.map((b) => (
-                        <SelectItem key={b.id} value={b.id}>
-                          {b.billNumber} · {b.contact?.name || "Unknown"} · Due: {formatMoney(b.amountDue, dn.currencyCode)}
+                      {bills.map((inv) => (
+                        <SelectItem key={inv.id} value={inv.id}>
+                          {inv.billNumber} · {inv.contact?.name || "Unknown"} · Due: {debitNoteUiMoney(inv.amountDue, inv.currencyCode)}
                         </SelectItem>
                       ))}
                       {bills.length === 0 && (
                         <div className="px-2 py-4 text-center text-sm text-muted-foreground">
-                          No outstanding bills for this supplier
+                          No outstanding bills for this supplier in {dn.currencyCode}
                         </div>
                       )}
                     </SelectContent>
@@ -242,20 +262,22 @@ export default function DebitNoteDetailPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Amount</Label>
-                  <CurrencyInput
-                    prefix="$"
+                  <InvoiceAmountInput
+                    currency={dn.currencyCode}
                     value={applyAmount}
                     onChange={setApplyAmount}
-                    placeholder={minorUnitsToDecimal(dn.amountRemaining, dn.currencyCode)}
+                    placeholder={invoiceUiDecimal(dn.amountRemaining, dn.currencyCode)}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Remaining credit: {formatMoney(dn.amountRemaining, dn.currencyCode)}
+                    Remaining credit: {debitNoteUiMoney(dn.amountRemaining, dn.currencyCode)}
                   </p>
                 </div>
+                {billError && <p role="alert" className="text-xs text-destructive">{billError}</p>}
+                {applicationError && <p role="alert" className="text-xs text-destructive">{applicationError}</p>}
                 <Button
                   onClick={handleApply}
                   loading={applyLoading}
-                  disabled={!applyBillId}
+                  disabled={!application || !!billError || applyLoading}
                   className="w-full bg-emerald-600 hover:bg-emerald-700"
                 >
                   Reduce the bill
@@ -278,56 +300,10 @@ export default function DebitNoteDetailPage() {
         <span className="text-xs sm:text-sm text-muted-foreground">
           Issued {dn.issueDate}
         </span>
-        {dn.reference && (
-          <span className="text-xs sm:text-sm text-muted-foreground">
-            Ref: {dn.reference}
-          </span>
-        )}
+        {dn.reference && <span className="text-xs sm:text-sm text-muted-foreground">Ref: {dn.reference}</span>}
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <div className="rounded-lg border p-4">
-          <p className="text-xs text-muted-foreground">Total</p>
-          <p className="text-xl font-bold font-mono">{formatMoney(dn.total, dn.currencyCode)}</p>
-        </div>
-        <div className="rounded-lg border p-4">
-          <p className="text-xs text-muted-foreground">Used</p>
-          <p className="text-xl font-bold font-mono text-emerald-600">{formatMoney(dn.amountApplied, dn.currencyCode)}</p>
-        </div>
-        <div className="rounded-lg border p-4">
-          <p className="text-xs text-muted-foreground">Remaining</p>
-          <p className="text-xl font-bold font-mono text-amber-600">{formatMoney(dn.amountRemaining, dn.currencyCode)}</p>
-        </div>
-      </div>
-
-      <div className="rounded-lg border overflow-x-auto">
-        <div className="grid min-w-[500px] grid-cols-[1fr_80px_100px_120px] gap-2 border-b bg-muted/50 px-4 py-2 text-xs font-medium text-muted-foreground">
-          <span>Description</span>
-          <span className="text-right">Qty</span>
-          <span className="text-right">Price</span>
-          <span className="text-right">Amount</span>
-        </div>
-        {dn.lines.map((line) => (
-          <div key={line.id} className="grid min-w-[500px] grid-cols-[1fr_80px_100px_120px] gap-2 border-b px-4 py-2 last:border-b-0">
-            <div>
-              <p className="text-sm">{line.description}</p>
-              {line.account && (
-                <p className="text-xs text-muted-foreground">{line.account.code} &middot; {line.account.name}</p>
-              )}
-            </div>
-            <span className="text-right text-sm font-mono">{(line.quantity / 100).toFixed(2)}</span>
-            <span className="text-right text-sm font-mono">{formatMoney(line.unitPrice, dn.currencyCode)}</span>
-            <span className="text-right text-sm font-mono font-medium">{formatMoney(line.amount, dn.currencyCode)}</span>
-          </div>
-        ))}
-        <div className="border-t bg-muted/30 px-4 py-2 text-right flex flex-wrap justify-end gap-x-4 gap-y-1">
-          <span className="text-sm font-medium">Subtotal: {formatMoney(dn.subtotal, dn.currencyCode)}</span>
-          {dn.taxTotal > 0 && (
-            <span className="text-sm">Tax: {formatMoney(dn.taxTotal, dn.currencyCode)}</span>
-          )}
-          <span className="text-sm font-bold">Total: {formatMoney(dn.total, dn.currencyCode)}</span>
-        </div>
-      </div>
+      <DebitNoteMoneyDetails credit={dn} />
 
       {dn.notes && (
         <div className="rounded-lg border p-4">
@@ -348,6 +324,7 @@ export default function DebitNoteDetailPage() {
         contactName={dn.contact?.name}
         organizationName={orgName}
         amountDue={dn.total}
+        currencyCode={dn.currencyCode}
         issueDate={dn.issueDate}
         sendApiUrl={`/api/v1/debit-notes/${id}/send`}
         onSent={handleSendComplete}

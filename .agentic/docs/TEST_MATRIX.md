@@ -1,5 +1,24 @@
 # Verification matrix
 
+## MON-140 debit note creation and lifecycle UI money
+
+- `tests/debit-note-ui-money.test.ts`: real debit REST/MCP schemas and calculators,
+  extended-price preview/payload parity, USD/JPY/synthetic IRR/KWD scales, safe
+  low digits, signed ties, defaults, zero/fractional quantities, malformed/range/
+  tax/alias rejection, grouped sample sums and supplier/currency/status/balance
+  application restrictions. Actual React renders verify English detail/overview
+  amounts, accessible decimal input labels, fractional quantities and error alerts.
+- `tests/integration/debit-note-ui-money.test.ts` and worker: migrated disposable
+  SQL, authenticated REST and registered MCP SDK create/update/read/list/send/
+  apply/void using UI payloads. Independent SQL checks total/price/amount/tax,
+  dimensions/quantity/currency, grouped sums, allocation amounts and bill balances.
+  Malformed/unsafe REST/MCP create rejection leaves header count/sum unchanged.
+- Existing debit-note and bill lifecycle suites preserve domain controls. Large
+  safe draft values are exercised without claiming large posting qualification.
+  Latest-100 org bills remain a locally filtered candidate sample. No cash-refund
+  workflow exists in these pages. No live browser effects, provider/PDF, full-int64,
+  production IRR or parent combined acceptance is inferred.
+
 ## MON-144 credit note creation and lifecycle UI money
 
 - `tests/credit-note-ui-money.test.ts`: actual credit REST/MCP schemas, extended

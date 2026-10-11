@@ -1,5 +1,21 @@
 # Money and FX boundary manifest
 
+## MON-140 debit note creation and lifecycle UI
+
+[CORE_UI_MONEY_CUTOVER](CORE_UI_MONEY_CUTOVER.md#mon-140-debit-note-ui)
+owns DebitNoteDrawer, debit-note list/detail and their exact adapters/components.
+Explicit USD default/selected currency and extended-price preview follow both
+existing transports; exact decimals are sent as unitPriceExact. Safe numeric/Minor
+aliases validate before bigint adoption and saved-currency display without unit
+rescaling. Loaded sample sums exclude void notes and group currencies. Exact whole-
+minor applications send amountMinor, requiring sent credit, recognized same-
+supplier/currency bill and both balance bounds. Actions reload validated reads.
+Quantity hundredths, basis points and legacy numeric wire coexistence retain units.
+No monetary fixed-two exception, new refund operation, schema/API/MCP change or
+production flag change is introduced. Existing exact registered direct-DB tools
+are verified. Latest-100 org bill candidates are filtered locally. MON-141/142 and
+MON-132/MON-129/MON-007 independent combined acceptance remain open.
+
 ## MON-144 credit note creation and lifecycle UI
 
 [CORE_UI_MONEY_CUTOVER](CORE_UI_MONEY_CUTOVER.md#mon-144-credit-note-ui)
@@ -40,8 +56,8 @@ stored units. Shared InvoiceAmountInput and DualAmount render explicit currencie
 only bounded progress/bar ratios become Number. Quantity hundredths and tax/discount
 basis points retain units. Real REST/MCP/SQL fixtures preserve supported copy fields
 and authoritative domain controls. No bill monetary editor/copy button exists in
-these pages. Sibling debit-note/procurement/recurring UI and combined parents remain
-open. No schema, rescaling or production flag changes.
+these pages. Debit-note UI is covered above; procurement/recurring UI and combined
+parents remain open. No schema, rescaling or production flag changes.
 
 ## MON-135 saved invoices and settlement UI
 

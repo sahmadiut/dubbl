@@ -60,6 +60,7 @@ import { billLineInputs, billEditorCurrency } from "@/lib/money/bill-editor";
 import { documentLineInputs, invoiceEditorCurrency } from "@/lib/money/document-editor";
 import { journalEditorPreview, journalDecimal } from "@/lib/money/journal-display";
 import { quoteEditorLines } from "@/lib/money/quote-ui";
+import { debitNoteEditorLines } from "@/lib/money/debit-note-ui";
 import { creditNoteEditorLines } from "@/lib/money/credit-note-ui";
 import { EntryForm } from "@/components/dashboard/entry-form";
 import { AccountPicker } from "@/components/dashboard/account-picker";
@@ -96,6 +97,7 @@ export function useCreateDrawer() {
 export function CreateDrawerProvider({ children }: { children: React.ReactNode }) {
   const [activeType, setActiveType] = useState<DrawerType | null>(null);
   const [initialData, setInitialData] = useState<DrawerInitialData | undefined>();
+  const drawerOrgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
 
   const open = useCallback((type: DrawerType, data?: DrawerInitialData) => {
     setInitialData(data);
@@ -130,7 +132,7 @@ export function CreateDrawerProvider({ children }: { children: React.ReactNode }
       <BankTransferDrawer open={activeType === "bankTransfer"} onClose={close} />
       <ContractorDrawer open={activeType === "contractor"} onClose={close} />
       <DealDrawer open={activeType === "deal"} onClose={close} initialData={initialData} />
-      <DebitNoteDrawer open={activeType === "debitNote"} onClose={close} />
+      <DebitNoteDrawer key={drawerOrgId} open={activeType === "debitNote"} onClose={close} />
       <CustomerCreditDrawer open={activeType === "customerCredit"} onClose={close} />
       <LoanDrawer open={activeType === "loan"} onClose={close} />
       <OpeningBalanceDrawer open={activeType === "openingBalance"} onClose={close} />
@@ -4044,14 +4046,16 @@ function DebitNoteDrawer({ open, onClose }: { open: boolean; onClose: () => void
   const [issueDate, setIssueDate] = useState(new Date().toISOString().split("T")[0]);
   const [reference, setReference] = useState("");
   const [notes, setNotes] = useState("");
-  const [currencyCode, setCurrencyCode] = useState("");
+  const [currencyCode, setCurrencyCode] = useState("USD");
+  const [validLines, setValidLines] = useState(false);
+  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
   const [lines, setLines] = useState<LineItem[]>([
     { description: "", quantity: "1", unitPrice: "", accountId: "", taxRateId: "" },
   ]);
 
   useEffect(() => {
     if (!open) {
-      setContactId(""); setReference(""); setNotes(""); setCurrencyCode("");
+      setContactId(""); setReference(""); setNotes(""); setCurrencyCode("USD"); setValidLines(false);
       setIssueDate(new Date().toISOString().split("T")[0]);
       setLines([{ description: "", quantity: "1", unitPrice: "", accountId: "", taxRateId: "" }]);
     }
@@ -4060,11 +4064,12 @@ function DebitNoteDrawer({ open, onClose }: { open: boolean; onClose: () => void
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!contactId) { toast.error("Please select a supplier"); return; }
-    setSaving(true);
-    const orgId = localStorage.getItem("activeOrgId");
-    if (!orgId) { setSaving(false); return; }
+    if (!orgId) return;
+    if (!validLines) { toast.error("Check the supplier credit line amounts"); return; }
 
     try {
+      const exactLines = debitNoteEditorLines(lines);
+      setSaving(true);
       const res = await fetch("/api/v1/debit-notes", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
@@ -4072,14 +4077,8 @@ function DebitNoteDrawer({ open, onClose }: { open: boolean; onClose: () => void
           contactId, issueDate,
           reference: reference || null,
           notes: notes || null,
-          currencyCode: currencyCode || undefined,
-          lines: lines.map((l) => ({
-            description: l.description,
-            quantity: parseFloat(l.quantity) || 1,
-            unitPrice: parseFloat(l.unitPrice) || 0,
-            accountId: l.accountId || null,
-            taxRateId: l.taxRateId || null,
-          })),
+          currencyCode,
+          lines: exactLines,
         }),
       });
       if (!res.ok) {
@@ -4130,7 +4129,7 @@ function DebitNoteDrawer({ open, onClose }: { open: boolean; onClose: () => void
                 </div>
                 <div className="space-y-2">
                   <Label>Currency</Label>
-                  <CurrencySelect value={currencyCode} onValueChange={setCurrencyCode} />
+                  <CurrencySelect value={currencyCode} onValueChange={(code) => { setCurrencyCode(code); if (code !== currencyCode) setValidLines(false); }} />
                 </div>
               </div>
             </div>
@@ -4139,7 +4138,8 @@ function DebitNoteDrawer({ open, onClose }: { open: boolean; onClose: () => void
 
             <div className="space-y-4">
               <SectionLabel>Line Items</SectionLabel>
-              <LineItemsEditor lines={lines} onChange={setLines} accountTypeFilter={["expense"]} taxContext="purchase" />
+              <LineItemsEditor key={orgId} lines={lines} onChange={(next) => { setLines(next); setValidLines(false); }} accountTypeFilter={["expense"]} taxContext="purchase"
+                currencyCode={currencyCode} roundPriceFirst={false} priceFractionDigits={18} onValidityChange={setValidLines} />
             </div>
 
             <div className="h-px bg-border" />
@@ -4149,7 +4149,7 @@ function DebitNoteDrawer({ open, onClose }: { open: boolean; onClose: () => void
               <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Reason for the credit..." rows={3} />
             </div>
           </div>
-          <DrawerFooter onClose={onClose} saving={saving} label="Create supplier credit" />
+          <DrawerFooter onClose={onClose} saving={saving} label="Create supplier credit" disabled={!validLines || !contactId || !orgId || lines.some(line => !line.description.trim())} />
         </form>
       </SheetContent>
     </Sheet>

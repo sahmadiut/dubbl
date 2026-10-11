@@ -1,5 +1,25 @@
 # Verification matrix
 
+## MON-131 combined receivable document UI money
+
+- `receivable-document-ui.test.ts` migrates an isolated PostgreSQL database and
+  runs the parent worker using actual authenticated REST and linked MCP SDK.
+  Twenty-four workflows compose direct invoice creation, accepted quote conversion
+  and recurring generation with saved reads/copy/PATCH, recognition, cash payment,
+  prepayment and credit application plus selective credit void. USD/JPY/synthetic
+  IRR/KWD cover 0/2/3 scales with literal SQL text expectations for low-digit totals,
+  balances and journal equality. Recurring previews retain dates/caps/advancement.
+- Preserve the distinct half-minor-times-three rounding policies and saved-price
+  copy behavior. Invalid creates/overpayments/excess prepayment applications keep
+  ordered snapshots unchanged; cross-organization invoice reads/payments reject.
+- Jointly rerun MON-134/135/137 and MON-143..146 UI transports, plus MON-136's
+  combined receipt/credit/prepayment fixture. Focused adapter/static React checks
+  cover safe edges, malformed/range/aliases, quantity/basis points, currency defaults,
+  mixed summaries and accessible English controls. Review actual scoped consumers.
+- DEC-005 permits source layout/behavior review without screenshots. No interactive
+  browser, hosted CI, full-int64 business, provider/PDF or production IRR claim.
+  MON-129 and MON-007 retain their independent acceptance.
+
 ## MON-136 combined quote, credit, receipt and prepayment UI money
 
 - `tests/integration/receivable-ui-integration.test.ts` and worker independently

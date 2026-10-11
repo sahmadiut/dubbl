@@ -1,3 +1,24 @@
+## MON-131 receivable document UI parent acceptance
+
+CORE_UI_MONEY_CUTOVER records independent combined acceptance of MON-134..137,
+including MON-143..146 within MON-136. Existing ownership rows enumerate the
+invoice/quote/credit/receipt/prepayment/recurring list/detail/drawer/shared editor
+and adapter consumers. `tests/integration/receivable-document-ui*` adds 24 composed
+REST/MCP/SQL workflows across three invoice origins, two transports and four
+currency scales, using saved-copy/edit, cash, prepayment, credit and void unwind.
+All child UI fixtures and MON-136's receipt composition are jointly reverified.
+See MON-131 attempt/review for actual commands and limits. This supersedes earlier
+MON-131-pending statements without changing other parent/task ownership.
+
+Exact text and canonical agreeing Minor aliases drive bigint previews, saved
+amounts and display. Price-first versus extended-price rounding remains explicit;
+copy/edit uses saved rounded prices, never recovers sub-minor input text. Safe
+numeric wire compatibility, quantity hundredths, basis points, sample scope,
+currency defaults, unavailable mixed summaries and static examples retain their
+units/meaning. No scoped monetary float/fixed-two shortcut remains. MON-129 and
+MON-007 retain independent acceptance and MON-133 retains remaining consumers.
+No production IRR, browser/provider/PDF, full-int64 or release qualification.
+
 ## MON-136 combined quote, credit, receipt and prepayment UI
 
 [CORE_UI_MONEY_CUTOVER](CORE_UI_MONEY_CUTOVER.md#mon-136-combined-receivable-ui-acceptance)

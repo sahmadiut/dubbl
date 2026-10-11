@@ -1,3 +1,44 @@
+## MON-131 combined receivable document UI acceptance
+
+Independent parent acceptance composes MON-134 creation/shared editor, MON-135
+saved invoice lifecycle, MON-136 quote/credit/receipt/prepayment and MON-137
+recurring invoice consumers. The domain ownership rows below remain authoritative
+for every list/detail/drawer/component/adapter; this entry supersedes older
+MON-131-pending statements. See MON-131 attempt/review evidence and
+`tests/integration/receivable-document-ui*`, jointly run with all seven domain
+UI transport fixtures and MON-136's combined receipt/credit workflow.
+
+Twenty-four workflows create invoices directly, convert accepted quotes, or
+generate recurring drafts through REST and registered MCP in USD/JPY/synthetic
+IRR/KWD. One linked MCP session per organization registers all six tool families.
+Exact editor text, saved rounded prices, copy/PATCH, cash settlement, prepayment
+and credit application, base display and allocation unwind compose without
+rescaling raw units or inferring FX. SQL text independently verifies low digits,
+line quantity 300, recognition balance and paid/due/remaining amounts. Invalid
+creates, overpayments and excess prepayment applications preserve snapshots;
+foreign invoice reads/payments fail. Recurring upcoming dates and advancement
+retain schedule semantics. MON-136 separately composes receipt post/void and
+grouped mixed-currency saved summaries in the same joint verification.
+
+Rounding remains operation-specific: a half-minor price times three is 3 units
+for invoice REST creation, quotes and recurring templates, and 2 units for invoice
+MCP creation, credits and receipts. Copy/edit reconstructs the saved 1-unit price,
+producing 3 units even when the original line saved 2. Original sub-minor text is
+not stored/recovered. Credit creation maps only its supported line fields rather
+than forwarding all invoice inventory/project dimensions. Stored units and safe
+numeric compatibility with agreeing canonical Minor aliases are unchanged.
+
+Joint behavioral/static React render checks cover currency scales, malformed/range/
+alias rejection, quantities, taxes/discounts, summaries and English labels/alerts.
+Source review confirms explicit preview policies, submit parsing/gating, context
+guards, saved adapters, scrolling and wrapping. Physical quantity hundredths,
+basis points, counts/dates, bounded list samples, unavailable mixed summaries and
+static USD illustrations retain their documented contracts. Remaining shared
+drawer/default consumers belong to their existing owners. MON-129 and MON-007
+retain independent acceptance; MON-133 owns remaining cash/tax/account consumers.
+No runtime/API/MCP/schema/production flag change or live browser/provider/PDF,
+full-int64 business, production IRR or accounting/linguistic qualification claim.
+
 ## MON-136 combined receivable UI acceptance
 
 Independent integration of MON-143..146 is verified by

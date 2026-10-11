@@ -1,11 +1,12 @@
 import { db } from "@/lib/db";
 import { journalEntry, journalLine } from "@/lib/db/schema";
-import { eq, and, isNull, sql } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { getAuthContext } from "@/lib/api/auth-context";
 import { requireRole } from "@/lib/api/require-role";
 import { handleError, validationError, created, ok } from "@/lib/api/response";
 import { logAudit } from "@/lib/api/audit";
 import { z } from "zod";
+import { readOpeningBalance } from "@/lib/api/opening-balance-read";
 
 const balanceSchema = z.object({
   accountId: z.string().min(1),
@@ -33,19 +34,7 @@ export async function GET(request: Request) {
     const ctx = await getAuthContext(request);
 
     // Return the current (non-voided, not deleted) opening balance entry, if any.
-    const entry = await db.query.journalEntry.findFirst({
-      where: and(
-        eq(journalEntry.organizationId, ctx.organizationId),
-        eq(journalEntry.sourceType, "opening_balance"),
-        eq(journalEntry.status, "posted"),
-        isNull(journalEntry.deletedAt)
-      ),
-      with: {
-        lines: {
-          with: { account: true },
-        },
-      },
-    });
+    const entry = await readOpeningBalance(ctx.organizationId);
 
     return ok({ entry: entry ?? null });
   } catch (err) {
@@ -129,14 +118,7 @@ export async function POST(request: Request) {
     );
 
     // Fetch the full entry with lines
-    const full = await db.query.journalEntry.findFirst({
-      where: eq(journalEntry.id, entry.id),
-      with: {
-        lines: {
-          with: { account: true },
-        },
-      },
-    });
+    const full = await readOpeningBalance(ctx.organizationId, entry.id);
 
     logAudit({ ctx, action: "update", entityType: "opening_balance", entityId: ctx.organizationId, request });
 

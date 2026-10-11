@@ -63,6 +63,8 @@ import { quoteEditorLines } from "@/lib/money/quote-ui";
 import { debitNoteEditorLines } from "@/lib/money/debit-note-ui";
 import { salesReceiptEditorLines, salesReceiptEditorCurrency } from "@/lib/money/sales-receipt-ui";
 import { creditNoteEditorLines } from "@/lib/money/credit-note-ui";
+import { OpeningBalanceForm } from "@/components/dashboard/opening-balance-form";
+import type { OpeningBalanceWrite } from "@/lib/money/opening-balance-ui";
 import { EntryForm } from "@/components/dashboard/entry-form";
 import { AccountPicker } from "@/components/dashboard/account-picker";
 import { FileUploader } from "@/components/dashboard/file-uploader";
@@ -4504,92 +4506,46 @@ function LoanDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
 // ---------------------------------------------------------------------------
 // Opening Balance Drawer (debit/credit rows, must balance)
 // ---------------------------------------------------------------------------
-interface OpeningBalanceRow {
-  accountId: string;
-  debit: string;
-  credit: string;
-}
-
 function OpeningBalanceDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [accounts, setAccounts] = useState<Account[]>([]);
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
-  const [rows, setRows] = useState<OpeningBalanceRow[]>([
-    { accountId: "", debit: "", credit: "" },
-    { accountId: "", debit: "", credit: "" },
-  ]);
-
   useEffect(() => {
-    if (!open) {
-      setDate(new Date().toISOString().split("T")[0]);
-      setRows([
-        { accountId: "", debit: "", credit: "" },
-        { accountId: "", debit: "", credit: "" },
-      ]);
-      return;
-    }
+    setAccounts([]);
+    if (!open) return;
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
+    let cancelled = false;
     fetch("/api/v1/accounts", { headers: { "x-organization-id": orgId } })
-      .then((r) => r.json())
-      .then((data) => { if (data.accounts) setAccounts(data.accounts); })
+      .then(r => r.json())
+      .then(data => { if (!cancelled && data.accounts) setAccounts(data.accounts); })
       .catch(() => {});
+    return () => { cancelled = true; };
   }, [open]);
-
-  const totalDebit = rows.reduce((sum, r) => sum + (parseFloat(r.debit) || 0), 0);
-  const totalCredit = rows.reduce((sum, r) => sum + (parseFloat(r.credit) || 0), 0);
-  const isBalanced = Math.abs(totalDebit - totalCredit) < 0.0001 && totalDebit > 0;
-
-  function updateRow(index: number, field: keyof OpeningBalanceRow, value: string) {
-    setRows((prev) => prev.map((r, i) => (i === index ? { ...r, [field]: value } : r)));
-  }
-  function addRow() {
-    setRows((prev) => [...prev, { accountId: "", debit: "", credit: "" }]);
-  }
-  function removeRow(index: number) {
-    if (rows.length <= 2) return;
-    setRows((prev) => prev.filter((_, i) => i !== index));
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!isBalanced) return;
+  async function handleSubmit(payload: { date: string; balances: OpeningBalanceWrite[] }) {
     setSaving(true);
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) { setSaving(false); return; }
-
     try {
       const res = await fetch("/api/v1/opening-balances", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
-        body: JSON.stringify({
-          date,
-          balances: rows
-            .filter((r) => r.accountId)
-            .map((r) => ({
-              accountId: r.accountId,
-              debitAmount: decimalToCents(r.debit),
-              creditAmount: decimalToCents(r.credit),
-            })),
-        }),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) {
         const data = await res.json();
         throw new Error(typeof data.error === "string" ? data.error : "Failed to set opening balances");
       }
       toast.success("Opening balances set");
+      window.dispatchEvent(new Event("opening-balances-updated"));
       onClose();
       router.push("/accounting/opening-balances");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to set opening balances");
-    } finally {
-      setSaving(false);
-    }
+    } finally { setSaving(false); }
   }
-
   return (
-    <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
+    <Sheet open={open} onOpenChange={v => !v && onClose()}>
       <SheetContent className="sm:max-w-3xl w-full p-0 flex flex-col">
         <SheetHeader className="px-4 pt-4 pb-3 sm:px-6 sm:pt-6 sm:pb-4 border-b space-y-3">
           <div className="flex items-center gap-3">
@@ -4600,83 +4556,7 @@ function OpeningBalanceDrawer({ open, onClose }: { open: boolean; onClose: () =>
             </div>
           </div>
         </SheetHeader>
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-          <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
-            <div className="space-y-2">
-              <Label>As of date</Label>
-              <DatePicker value={date} onChange={setDate} placeholder="Opening date" />
-            </div>
-
-            <div className="space-y-3">
-              <div className="space-y-1">
-                <Label>Account balances</Label>
-                <p className="text-xs text-muted-foreground">
-                  Each line is money in (debit) or money out (credit). The Debit and
-                  Credit columns must add up to the same total.
-                </p>
-              </div>
-              <div className="overflow-x-auto rounded-lg border">
-                <div className="grid min-w-[600px] grid-cols-[1fr_120px_120px_40px] gap-2 border-b bg-muted/50 px-3 py-2 text-xs font-medium text-muted-foreground">
-                  <span>Account</span>
-                  <span className="text-right">Debit</span>
-                  <span className="text-right">Credit</span>
-                  <span />
-                </div>
-                {rows.map((row, i) => (
-                  <div
-                    key={i}
-                    className="grid min-w-[600px] grid-cols-[1fr_120px_120px_40px] gap-2 border-b px-3 py-2 last:border-b-0"
-                  >
-                    <Select value={row.accountId} onValueChange={(v) => updateRow(i, "accountId", v)}>
-                      <SelectTrigger className="h-8 text-sm">
-                        <SelectValue placeholder="Select account" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {accounts.map((a) => (
-                          <SelectItem key={a.id} value={a.id}>
-                            {a.code} - {a.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <CurrencyInput size="sm" value={row.debit} onChange={(v) => updateRow(i, "debit", v)} />
-                    <CurrencyInput size="sm" value={row.credit} onChange={(v) => updateRow(i, "credit", v)} />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="size-8"
-                      onClick={() => removeRow(i)}
-                      disabled={rows.length <= 2}
-                    >
-                      <Trash2 className="size-3.5 text-muted-foreground" />
-                    </Button>
-                  </div>
-                ))}
-                <div className="grid min-w-[600px] grid-cols-[1fr_120px_120px_40px] gap-2 border-t bg-muted/30 px-3 py-2">
-                  <Button type="button" variant="ghost" size="sm" onClick={addRow} className="w-fit text-xs">
-                    <Plus className="mr-1 size-3" />
-                    Add line
-                  </Button>
-                  <span className="text-right text-sm font-mono font-semibold tabular-nums">{totalDebit.toFixed(2)}</span>
-                  <span className="text-right text-sm font-mono font-semibold tabular-nums">{totalCredit.toFixed(2)}</span>
-                  <span />
-                </div>
-              </div>
-              {!isBalanced && totalDebit + totalCredit > 0 && (
-                <p className="text-xs font-medium text-red-600">
-                  Debits ({totalDebit.toFixed(2)}) must equal credits ({totalCredit.toFixed(2)})
-                </p>
-              )}
-            </div>
-          </div>
-          <div className="sticky bottom-0 z-10 flex items-center justify-end gap-3 border-t bg-background/80 px-4 py-3 sm:px-6 sm:py-4 backdrop-blur-sm">
-            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-            <Button type="submit" disabled={saving || !isBalanced} className="bg-emerald-600 hover:bg-emerald-700">
-              {saving ? "Saving..." : "Set opening balances"}
-            </Button>
-          </div>
-        </form>
+        {open && <OpeningBalanceForm accounts={accounts} saving={saving} onCancel={onClose} onSubmit={handleSubmit} />}
       </SheetContent>
     </Sheet>
   );

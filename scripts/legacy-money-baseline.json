@@ -54,9 +54,6 @@
   "app/(dashboard)/accounting/fixed-assets/page.tsx": {
     "formatMoney": 9
   },
-  "app/(dashboard)/accounting/opening-balances/page.tsx": {
-    "formatMoney": 5
-  },
   "app/(dashboard)/accounting/page.tsx": {
     "formatMoney": 3
   },
@@ -451,7 +448,7 @@
   },
   "components/dashboard/create-drawer.tsx": {
     "formatMoney": 5,
-    "decimalToCents": 7,
+    "decimalToCents": 5,
     "decimalToMinorUnits": 2
   },
   "components/dashboard/entry-form.tsx": {

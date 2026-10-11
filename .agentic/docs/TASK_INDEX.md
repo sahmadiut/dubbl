@@ -290,3 +290,12 @@ MON-136 retains independent combined acceptance after these verified domain slic
 - [MON-144](../tasks/MON-144.md): Credit note UI money.
 - [MON-145](../tasks/MON-145.md): Sales receipt UI money.
 - [MON-146](../tasks/MON-146.md): Customer prepayment UI money.
+
+## MON-133 bounded core UI slices
+
+- [MON-147](../tasks/MON-147.md): Cut over opening balance UI money.
+- [MON-148](../tasks/MON-148.md): Cut over payment and allocation UI money.
+- [MON-149](../tasks/MON-149.md): Cut over expense and mileage UI money.
+- [MON-150](../tasks/MON-150.md): Cut over banking and reconciliation UI money.
+- [MON-151](../tasks/MON-151.md): Cut over tax and core settings UI money.
+- [MON-152](../tasks/MON-152.md): Cut over account ledger and shared core presentation.

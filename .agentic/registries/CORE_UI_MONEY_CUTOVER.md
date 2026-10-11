@@ -1,3 +1,49 @@
+## MON-147 opening balances and MON-133 split
+
+Source verified 2026-10-11. MON-133 now retains independent integration of
+MON-147..152: opening balances, payments/allocations, expenses/mileage,
+banking/reconciliation, tax/settings/approval, and ledger/shared presentation.
+The original MON-133 acceptance and all remaining consumers are preserved.
+
+| Owner | Consumers | Contract |
+|---|---|---|
+| MON-147 | accounting/opening-balances/page.tsx; create-drawer.tsx OpeningBalanceDrawer; OpeningBalanceForm; OpeningBalanceMoneyDetails; opening-balance-ui.ts | Exact decimal text, bigint preview/validation/saved totals; checked numeric fixed-cents writes only; unsupported Minor writes are not sent |
+| MON-148 | Payments/allocations and payment batches/controls | Pending exact adopted money/currency closure |
+| MON-149 | Expense list/detail/edit, ExpenseDrawer and mileage | Pending money and nonmoney unit closure |
+| MON-150 | Banking/statements/import/reconciliation/transfers/settings, bank drawers | Pending bank/base currency closure |
+| MON-151 | Tax/period/sales-tax/settlement/settings and remaining core approvals | Pending exact money, basis-point/settings closure |
+| MON-152 | Accounts list/detail/layout and untagged journal totals/automated detail | Pending source/base presentation closure |
+
+Opening balance UI uses strict nonnegative major text with two decimal places;
+blank cells are zero. Malformed/negative/fractional-cent/orphan amounts and
+unsafe per-line or side totals block writes. Bigint equality replaces tolerance;
+zero/unbalanced totals cannot submit. The same validated rows drive preview and
+numeric payloads. Unused zero rows are omitted, and the endpoint's existing
+acceptance of one two-sided row is retained. Every nonnegative side total is
+safe so the legacy endpoint's Number sums remain exact for these UI payloads.
+Saved numeric reads require safe integers; optional Minor aliases must be
+canonical and agree. Display sums are bigint and preserve low digits.
+
+Explicit compatibility exception: actual REST/MCP opening-balance operations
+accept numeric cents only and insert default USD journal tags, even for JPY/KWD
+organizations/accounts. The UI labels USD/fixed-two and does not infer/rescale
+from org/account metadata. This slice does not modernize that backend policy,
+add unsupported aliases, change FX, or repair historic entries. A currency-aware
+opening-balance API adoption remains prerequisite to removing this exception in
+MON-133/MON-129 combined acceptance. Existing endpoint scope/period/atomicity
+policies are unchanged and are not qualified by this UI fixture.
+
+Rendered form tests cover submission gating, exact totals, labels and decimal
+keyboard input. Real registered MCP and authenticated REST writes/reads plus SQL
+cover split 0.10+0.20/0.30, low digits, MAX_SAFE_INTEGER, replacement and USD/JPY/KWD
+organization metadata. DEC-005 permits behavioral/layout review without screenshots.
+MON-133, MON-129, MON-007 and MON-008 retain separate acceptance.
+Shared opening-balance-read.ts flat selects repair the observed REST/MCP nested
+FX numeric coercion failure. Existing numeric-cent line outputs remain and add
+agreeing debitAmountMinor/creditAmountMinor strings; account reads are scoped to
+the organization. No write schema, posting policy or stored history is changed.
+
+
 # Core UI money ownership (MON-129 children)
 
 ## MON-145 sales receipt UI

@@ -2,10 +2,11 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { journalEntry, journalLine } from "@/lib/db/schema";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { requireRole } from "@/lib/api/require-role";
 import { getNextEntryNumber } from "@/lib/api/journal-automation";
 import { logAudit } from "@/lib/api/audit";
+import { readOpeningBalance } from "@/lib/api/opening-balance-read";
 import { wrapTool } from "@/lib/mcp/errors";
 import type { AuthContext } from "@/lib/api/auth-context";
 
@@ -24,23 +25,11 @@ export function registerOpeningBalanceTools(
 ) {
   server.tool(
     "get_opening_balances",
-    "Get the current opening-balance journal entry for this organization, with its lines and the account on each line, or null if none has been set. The entry is the single posted journal entry with sourceType 'opening_balance'. All line amounts (debitAmount, creditAmount) are in integer cents.",
+    "Get the current opening-balance journal entry for this organization, with its lines and the account on each line, or null if none has been set. The entry is the single posted journal entry with sourceType 'opening_balance'. Line amounts retain numeric integer cents with agreeing debitAmountMinor/creditAmountMinor strings. The existing fixed-cents/default USD-tag policy does not infer organization currency.",
     {},
     () =>
       wrapTool(ctx, async () => {
-        const entry = await db.query.journalEntry.findFirst({
-          where: and(
-            eq(journalEntry.organizationId, ctx.organizationId),
-            eq(journalEntry.sourceType, "opening_balance"),
-            eq(journalEntry.status, "posted"),
-            isNull(journalEntry.deletedAt)
-          ),
-          with: {
-            lines: {
-              with: { account: true },
-            },
-          },
-        });
+        const entry = await readOpeningBalance(ctx.organizationId);
 
         return { entry: entry ?? null };
       })
@@ -48,7 +37,7 @@ export function registerOpeningBalanceTools(
 
   server.tool(
     "set_opening_balances",
-    "Set (replace) the organization's opening balances. Voids any existing posted opening-balance entry, then posts a new journal entry (sourceType 'opening_balance') with one line per balance. Total debits MUST equal total credits, and the totals must be non-zero. All amounts are in integer cents (e.g. $12.50 = 1250). Returns the newly created posted entry with its lines.",
+    "Set (replace) the organization's opening balances. Voids any existing posted opening-balance entry, then posts a new journal entry (sourceType 'opening_balance') with one line per balance. Total debits MUST equal total credits, and the totals must be non-zero. All amounts are in integer cents (e.g. $12.50 = 1250). Returns the newly created posted entry with numeric-cent line amounts and agreeing Minor strings. Inputs remain numeric cents only; default USD tags are retained independently of organization currency.",
     {
       date: z
         .string()
@@ -147,14 +136,7 @@ export function registerOpeningBalanceTools(
             }))
           );
 
-          return tx.query.journalEntry.findFirst({
-            where: eq(journalEntry.id, entry.id),
-            with: {
-              lines: {
-                with: { account: true },
-              },
-            },
-          });
+          return readOpeningBalance(ctx.organizationId, entry.id, tx);
         });
 
         await logAudit({

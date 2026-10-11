@@ -1,3 +1,20 @@
+## MON-147 opening-balance UI
+
+OpeningBalanceDrawer and accounting/opening-balances/page.tsx now delegate to
+OpeningBalanceForm, OpeningBalanceMoneyDetails and opening-balance-ui.ts. Exact
+text/bigint validation, matching preview/numeric compatibility writes and checked
+saved amounts replace monetary floats and legacy format/parse helpers. Side totals
+are capped at the safe numeric bridge; no unsupported Minor write aliases are used.
+The actual REST/MCP contract remains fixed cents/default USD tags regardless of org
+metadata. This explicit fixed-two exception awaits separate backend currency
+adoption; no rescale or FX is inferred. CORE_UI_MONEY_CUTOVER assigns every remaining
+MON-133 subset to MON-148..152. MON-133/MON-129/MON-007 integration stays open.
+Shared opening-balance-read.ts flat selects repair the observed REST/MCP nested
+FX numeric coercion failure. Existing numeric-cent line outputs remain and add
+agreeing debitAmountMinor/creditAmountMinor strings; account reads are scoped to
+the organization. No write schema, posting policy or stored history is changed.
+
+
 # Money and FX boundary manifest
 
 ## MON-145 sales receipt creation and saved UI

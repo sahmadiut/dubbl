@@ -154,3 +154,5 @@ Children trace to money architecture, database migration and the required PR seq
 - [MON-144](../tasks/MON-144.md): Credit note prices, reads and invoice application.
 - [MON-145](../tasks/MON-145.md): Sales receipt prices, reads and cash lifecycle.
 - [MON-146](../tasks/MON-146.md): Customer prepayment amounts, balances and application.
+
+MON-133 core cash/tax/account UI is split into MON-147..152, retaining money-and-database-architecture, database-and-currency-migration and required-files-and-pull-request-sequence coverage. MON-133 retains independent combined acceptance; child completion is insufficient.

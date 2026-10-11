@@ -4,49 +4,45 @@ import { useState, useEffect } from "react";
 import { Scale, Plus } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Button } from "@/components/ui/button";
-import { formatMoney } from "@/lib/money";
+import { OpeningBalanceMoneyDetails } from "@/components/dashboard/opening-balance-money-details";
+import type { OpeningBalanceSavedLine } from "@/lib/money/opening-balance-ui";
 import { useCreateDrawer } from "@/components/dashboard/create-drawer";
-
-interface OpeningBalanceLine {
-  id: string;
-  description: string | null;
-  debitAmount: number;
-  creditAmount: number;
-  account: { code: string; name: string } | null;
-}
 
 interface OpeningBalanceEntry {
   id: string;
   date: string;
   description: string;
-  lines: OpeningBalanceLine[];
+  lines: OpeningBalanceSavedLine[];
 }
 
 export default function OpeningBalancesPage() {
   const { open: openDrawer } = useCreateDrawer();
   const [entry, setEntry] = useState<OpeningBalanceEntry | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
 
   useEffect(() => {
     if (!orgId) return;
-    fetch(`/api/v1/opening-balances`, {
-      headers: { "x-organization-id": orgId },
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.entry) setEntry(data.entry);
-      })
-      .finally(() => setLoading(false));
+    let cancelled = false;
+    const load = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch("/api/v1/opening-balances", { headers: { "x-organization-id": orgId } });
+        if (!response.ok) throw new Error("Could not load opening balances");
+        const data = await response.json();
+        if (!cancelled) { setEntry(data.entry ?? null); setError(null); }
+      } catch {
+        if (!cancelled) setError("Could not load opening balances");
+      } finally { if (!cancelled) setLoading(false); }
+    };
+    void load();
+    window.addEventListener("opening-balances-updated", load);
+    return () => { cancelled = true; window.removeEventListener("opening-balances-updated", load); };
   }, [orgId]);
 
   if (loading) return <div className="space-y-6"><PageHeader title="Loading..." /></div>;
-
-  const totalDebit = entry?.lines.reduce((sum, l) => sum + l.debitAmount, 0) ?? 0;
-  const totalCredit = entry?.lines.reduce((sum, l) => sum + l.creditAmount, 0) ?? 0;
-  // Opening balances always use the org's home currency.
-  const currencyCode = "USD";
 
   return (
     <div className="space-y-6">
@@ -72,7 +68,7 @@ export default function OpeningBalancesPage() {
         </div>
       </div>
 
-      {!entry ? (
+      {error ? <p role="alert" className="text-sm text-red-600">{error}</p> : !entry ? (
         <div className="rounded-lg border p-10 text-center">
           <Scale className="size-8 mx-auto text-muted-foreground" />
           <p className="mt-3 text-sm font-medium">No opening balances yet</p>
@@ -92,31 +88,7 @@ export default function OpeningBalancesPage() {
             </span>
           </div>
 
-          <div className="rounded-lg border overflow-x-auto">
-            <div className="grid min-w-[500px] grid-cols-[1fr_140px_140px] gap-2 border-b bg-muted/50 px-4 py-2 text-xs font-medium text-muted-foreground">
-              <span>Account</span>
-              <span className="text-right">Money in (debit)</span>
-              <span className="text-right">Money owed (credit)</span>
-            </div>
-            {entry.lines.map((line) => (
-              <div key={line.id} className="grid min-w-[500px] grid-cols-[1fr_140px_140px] gap-2 border-b px-4 py-2 last:border-b-0">
-                <p className="text-sm">
-                  {line.account ? `${line.account.code} · ${line.account.name}` : "Unknown account"}
-                </p>
-                <span className="text-right text-sm font-mono">
-                  {line.debitAmount > 0 ? formatMoney(line.debitAmount, currencyCode) : "—"}
-                </span>
-                <span className="text-right text-sm font-mono">
-                  {line.creditAmount > 0 ? formatMoney(line.creditAmount, currencyCode) : "—"}
-                </span>
-              </div>
-            ))}
-            <div className="grid min-w-[500px] grid-cols-[1fr_140px_140px] gap-2 border-t bg-muted/30 px-4 py-2">
-              <span className="text-sm font-bold">Total</span>
-              <span className="text-right text-sm font-mono font-bold">{formatMoney(totalDebit, currencyCode)}</span>
-              <span className="text-right text-sm font-mono font-bold">{formatMoney(totalCredit, currencyCode)}</span>
-            </div>
-          </div>
+          <OpeningBalanceMoneyDetails lines={entry.lines} />
         </>
       )}
     </div>

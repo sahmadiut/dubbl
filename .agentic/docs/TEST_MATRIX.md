@@ -1374,3 +1374,13 @@ MON-090: `tests/loan-wire.test.ts` covers distinct REST major/MCP minor units, a
 ## MON-116 cash forecast and unrealized FX
 
 `tests/forecast-fx-wire.test.ts` covers strict horizon/currency/query contracts, UTC Gregorian weeks/leap dates, exact monetary products and signed Math.round ties, legacy quote limits and lossless inverse rates. `tests/integration/forecast-fx.test.ts`/worker calls both actual API-key REST handlers and registered MCP SDK tools on migrated disposable PostgreSQL. Covers legacy/exact writer clients, defaults, due/status/deletion/currency filters, complete 52-week recurrences, all frequencies, occurrence/end/backlog constraints, scoped/deleted contact labels, populated tenant/role/key isolation, synthetic direct/inverse/quarantined/missing/unrepresentable quotes, safe source/product/subtotal/root limits, correct signed gains/losses and unchanged document/template/rate/GL/audit snapshots. Deliberate future/corrupt-rate seeding temporarily bypasses synchronization triggers only in the disposable fixture; reports run after re-enabling guards. Adjacent document/KPI report regressions verify shared helpers. Browser/session/OAuth, performance, independent accounting, full-range and production qualification remain separate.
+
+## MON-147 opening-balance UI
+
+- tests/opening-balance-ui-money.test.ts: exact preview/numeric payload, malformed,
+  fractional/range/orphan/imbalance rejection, fixed-cents compatibility, saved
+  alias agreement, React rendered submission gating, accessible input and low digits.
+- tests/integration/opening-balance-ui-money.test.ts + worker: disposable loopback
+  PostgreSQL, real REST/MCP/SQL writes and reads, replacements, safe edge, split sums
+  and retained default USD tags in USD/JPY/KWD organizations. No backend policy
+  modernization, independent accounting or browser-effect qualification implied.

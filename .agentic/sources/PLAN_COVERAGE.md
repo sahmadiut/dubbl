@@ -146,3 +146,11 @@ MON-132 retains independent payable/procurement integration after these source-v
 - [MON-140](../tasks/MON-140.md): Cut over debit note UI money.
 - [MON-141](../tasks/MON-141.md): Cut over procurement document UI money.
 - [MON-142](../tasks/MON-142.md): Cut over recurring bill UI money.
+
+MON-136 retains all original criteria after splitting its four independent UI domains.
+Children trace to money architecture, database migration and the required PR sequence:
+
+- [MON-143](../tasks/MON-143.md): Quote creation, saved display and lifecycle money.
+- [MON-144](../tasks/MON-144.md): Credit note prices, reads and invoice application.
+- [MON-145](../tasks/MON-145.md): Sales receipt prices, reads and cash lifecycle.
+- [MON-146](../tasks/MON-146.md): Customer prepayment amounts, balances and application.

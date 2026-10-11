@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
-import { formatMoney } from "@/lib/money";
+import { quoteUiHeader, quoteUiMoney, quoteUiSummary } from "@/lib/money/quote-ui";
 import { BlurReveal } from "@/components/ui/blur-reveal";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 
@@ -21,8 +21,14 @@ interface Quote {
   issueDate: string;
   expiryDate: string;
   status: string;
-  total: number;
+  currencyCode: string;
+  total: bigint;
   contact: { name: string } | null;
+}
+
+interface QuoteWire extends Omit<Quote, "total"> {
+  subtotal: number; taxTotal: number; total: number; billedTotal: number;
+  [key: string]: unknown;
 }
 
 const statusColors: Record<string, string> = {
@@ -86,7 +92,7 @@ const columns: Column<Quote>[] = [
     className: "w-28 text-right",
     render: (r) => (
       <span className="font-mono text-sm tabular-nums">
-        {formatMoney(r.total)}
+        {quoteUiMoney(r.total, r.currencyCode)}
       </span>
     ),
   },
@@ -95,14 +101,18 @@ const columns: Column<Quote>[] = [
 export default function QuotesPage() {
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
-  const [quotes, setQuotes] = useState<Quote[]>([]);
-  const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("all");
+  const [loaded, setLoaded] = useState<{ context: string; quotes: Quote[]; error: string | null } | null>(null);
+  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
+  const context = `${orgId}:${statusFilter}`;
+  const quotes = loaded?.context === context ? loaded.quotes : [];
+  const error = loaded?.context === context ? loaded.error : null;
+  const loading = !!orgId && loaded?.context !== context;
 
   useDocumentTitle("Sales · Quotes");
 
   useEffect(() => {
-    const orgId = localStorage.getItem("activeOrgId");
+    const controller = new AbortController();
     if (!orgId) return;
 
     const params = new URLSearchParams();
@@ -110,25 +120,26 @@ export default function QuotesPage() {
 
     fetch(`/api/v1/quotes?${params}`, {
       headers: { "x-organization-id": orgId },
+      signal: controller.signal,
     })
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("Unable to load quotes"); return r.json(); })
       .then((data) => {
-        if (data.data) setQuotes(data.data);
+        if (!Array.isArray(data.data)) throw new Error("Unable to load quotes");
+        const rows = data.data.map((row: QuoteWire) => quoteUiHeader(row));
+        if (!controller.signal.aborted) setLoaded({ context, quotes: rows, error: null });
       })
-      .finally(() => setLoading(false));
-  }, [statusFilter]);
+      .catch(() => { if (!controller.signal.aborted) setLoaded({ context, quotes: [], error: "Unable to load valid quote amounts. Try again." }); });
+    return () => controller.abort();
+  }, [statusFilter, orgId, context]);
 
-  const sent = quotes
-    .filter((q) => q.status === "sent")
-    .reduce((sum, q) => sum + q.total, 0);
-
-  const accepted = quotes
-    .filter((q) => q.status === "accepted")
-    .reduce((sum, q) => sum + q.total, 0);
+  const sent = quoteUiSummary(quotes, "sent");
+  const accepted = quoteUiSummary(quotes, "accepted");
 
   if (loading) {
     return <BrandLoader />;
   }
+
+  if (error) return <p role="alert" className="text-sm text-red-600">{error}</p>;
 
   if (quotes.length === 0 && statusFilter === "all") {
     return (
@@ -232,11 +243,11 @@ export default function QuotesPage() {
 
   return (
     <BlurReveal className="space-y-10">
-      <Section title="Overview" description="Quotes summary and pending amounts across all proposals.">
+      <Section title="Overview" description="Amounts for the displayed quotes, grouped by currency.">
         <div className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-3">
-            <StatCard title="Sent" value={formatMoney(sent)} icon={FileText} />
-            <StatCard title="Accepted" value={formatMoney(accepted)} icon={FileText} changeType="positive" />
+          <div className="grid gap-4 sm:grid-cols-3 [overflow-wrap:anywhere]">
+            <StatCard title="Sent" value={sent} icon={FileText} />
+            <StatCard title="Accepted" value={accepted} icon={FileText} changeType="positive" />
             <StatCard title="Total Quotes" value={quotes.length.toString()} icon={FileText} />
           </div>
           <div className="flex justify-end flex-wrap">

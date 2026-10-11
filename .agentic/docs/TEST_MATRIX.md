@@ -1,5 +1,21 @@
 # Verification matrix
 
+## MON-143 quote creation and lifecycle UI money
+
+- `tests/quote-ui-money.test.ts`: actual quote schemas, editor preview/payload,
+  numeric/Minor validation, safe low digits, USD/JPY/synthetic IRR/KWD scales,
+  signed ties, malformed/range/missing-tax rejection, fractional/zero quantities,
+  explicit USD default and currency-grouped sample sums. Real React renders
+  verify saved price/totals/quantity and editor English labels/decimal input/alerts.
+- `tests/integration/quote-ui-money.test.ts` and worker: disposable migrated
+  PostgreSQL, authenticated REST and registered MCP creation/read/list/status/
+  conversion using UI payloads, independent SQL text prices/tax/total/currency,
+  same saved units and converted residuals. Large safe prices are draft only.
+- Existing quotes integration separately covers tenant/role/locks/atomicity,
+  draft update, pricing tiers, partial/residual/milestone conversion and strict
+  transport validation. No browser effects, outbound email/PDF qualification,
+  production IRR, full int64 public workflow or parent completion is inferred.
+
 ## MON-139 saved bill lifecycle UI money
 
 - `tests/bill-ui-money.test.ts`: exact numeric/Minor alias and legacy validation,

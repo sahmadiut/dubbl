@@ -283,3 +283,10 @@ MON-132 retains independent payable/procurement integration after these source-v
 - [MON-140](../tasks/MON-140.md): Cut over debit note UI money.
 - [MON-141](../tasks/MON-141.md): Cut over procurement document UI money.
 - [MON-142](../tasks/MON-142.md): Cut over recurring bill UI money.
+
+MON-136 retains independent combined acceptance after these verified domain slices:
+
+- [MON-143](../tasks/MON-143.md): Quote creation and lifecycle UI money.
+- [MON-144](../tasks/MON-144.md): Credit note UI money.
+- [MON-145](../tasks/MON-145.md): Sales receipt UI money.
+- [MON-146](../tasks/MON-146.md): Customer prepayment UI money.

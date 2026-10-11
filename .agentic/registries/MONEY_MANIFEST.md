@@ -1,5 +1,19 @@
 # Money and FX boundary manifest
 
+## MON-143 quote creation and lifecycle UI
+
+[CORE_UI_MONEY_CUTOVER](CORE_UI_MONEY_CUTOVER.md#mon-143-quote-ui)
+owns QuoteDrawer and sales/quotes list/detail. Explicit USD default matches both
+quote transports, independently of customer/org currency. The selectable currency
+controls exact-major input, price-first previews and unitPriceExact writes.
+Saved numeric/Minor aliases validate before bigint display and currency-grouped
+sample sums. No stored amount rescaling or extra FX is introduced. Shared editor
+quantity stays numeric physical units; saved hundredths display fractional units.
+SendDocumentDialog receives exact bigint and saved currency. Quote transitions
+reload and validate full reads; conversion keeps its existing residual policy.
+MON-144..146 and recurring UI remain pending; MON-136, MON-131, MON-129 and
+MON-007 retain independent combined acceptance. No schema/API/MCP changes.
+
 ## MON-139 saved bill lifecycle UI
 
 [CORE_UI_MONEY_CUTOVER](CORE_UI_MONEY_CUTOVER.md#mon-139-saved-bill-lifecycle)

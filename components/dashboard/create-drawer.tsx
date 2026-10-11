@@ -59,6 +59,7 @@ import { LineItemsEditor, type LineItem } from "@/components/dashboard/line-item
 import { billLineInputs, billEditorCurrency } from "@/lib/money/bill-editor";
 import { documentLineInputs, invoiceEditorCurrency } from "@/lib/money/document-editor";
 import { journalEditorPreview, journalDecimal } from "@/lib/money/journal-display";
+import { quoteEditorLines } from "@/lib/money/quote-ui";
 import { EntryForm } from "@/components/dashboard/entry-form";
 import { AccountPicker } from "@/components/dashboard/account-picker";
 import { FileUploader } from "@/components/dashboard/file-uploader";
@@ -1206,6 +1207,9 @@ function InventoryDrawer({ open, onClose }: { open: boolean; onClose: () => void
 function QuoteDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  const [currencyCode, setCurrencyCode] = useState("USD");
+  const [validLines, setValidLines] = useState(false);
+  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
   const [contactId, setContactId] = useState("");
   const [issueDate, setIssueDate] = useState(new Date().toISOString().split("T")[0]);
   const [expiryDate, setExpiryDate] = useState(() => {
@@ -1219,6 +1223,7 @@ function QuoteDrawer({ open, onClose }: { open: boolean; onClose: () => void }) 
 
   useEffect(() => {
     if (!open) {
+      setCurrencyCode("USD"); setValidLines(false);
       setContactId(""); setReference(""); setNotes("");
       setIssueDate(new Date().toISOString().split("T")[0]);
       const d = new Date(); d.setDate(d.getDate() + 30);
@@ -1230,25 +1235,20 @@ function QuoteDrawer({ open, onClose }: { open: boolean; onClose: () => void }) 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!contactId) { toast.error("Please select a customer"); return; }
-    setSaving(true);
-    const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
+    if (!validLines) { toast.error("Check the quote line amounts"); return; }
 
     try {
+      const exactLines = quoteEditorLines(lines);
+      setSaving(true);
       const res = await fetch("/api/v1/quotes", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify({
-          contactId, issueDate, expiryDate,
+          contactId, issueDate, expiryDate, currencyCode,
           reference: reference || null,
           notes: notes || null,
-          lines: lines.map((l) => ({
-            description: l.description,
-            quantity: parseFloat(l.quantity) || 1,
-            unitPrice: parseFloat(l.unitPrice) || 0,
-            accountId: l.accountId || null,
-            taxRateId: l.taxRateId || null,
-          })),
+          lines: exactLines,
         }),
       });
       if (!res.ok) {
@@ -1282,6 +1282,10 @@ function QuoteDrawer({ open, onClose }: { open: boolean; onClose: () => void }) 
           <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
             <div className="space-y-4">
               <SectionLabel>Quote Details</SectionLabel>
+              <div className="space-y-2">
+                <Label>Quote currency</Label>
+                <CurrencySelect value={currencyCode} onValueChange={(code) => { setCurrencyCode(code); if (code !== currencyCode) setValidLines(false); }} />
+              </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Customer *</Label>
@@ -1308,7 +1312,8 @@ function QuoteDrawer({ open, onClose }: { open: boolean; onClose: () => void }) 
 
             <div className="space-y-4">
               <SectionLabel>Line Items</SectionLabel>
-              <LineItemsEditor lines={lines} onChange={setLines} accountTypeFilter={["revenue"]} taxContext="sales" />
+              <LineItemsEditor key={orgId} lines={lines} onChange={(next) => { setLines(next); setValidLines(false); }} accountTypeFilter={["revenue"]} taxContext="sales"
+                currencyCode={currencyCode} roundPriceFirst priceFractionDigits={18} onValidityChange={setValidLines} />
             </div>
 
             <div className="h-px bg-border" />
@@ -1318,7 +1323,7 @@ function QuoteDrawer({ open, onClose }: { open: boolean; onClose: () => void }) 
               <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notes to customer..." rows={3} />
             </div>
           </div>
-          <DrawerFooter onClose={onClose} saving={saving} label="Create Quote" />
+          <DrawerFooter onClose={onClose} saving={saving} label="Create Quote" disabled={!validLines || !contactId || !orgId || lines.some(line => !line.description.trim())} />
         </form>
       </SheetContent>
     </Sheet>

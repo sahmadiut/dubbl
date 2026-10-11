@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ArrowLeft, Send, Check, X, FileText } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatMoney } from "@/lib/money";
+import { quoteUiDocument } from "@/lib/money/quote-ui";
+import { QuoteMoneyDetails } from "@/components/dashboard/quote-money-details";
 import { useEntityTitle } from "@/lib/hooks/use-entity-title";
 import { SendDocumentDialog } from "@/components/dashboard/send-document-dialog";
 import { EmailHistory } from "@/components/dashboard/email-history";
@@ -15,9 +16,17 @@ import Link from "next/link";
 
 interface QuoteDetail {
   id: string; quoteNumber: string; issueDate: string; expiryDate: string; status: string;
-  subtotal: number; taxTotal: number; total: number; notes: string | null;
+  currencyCode: string; subtotal: bigint; taxTotal: bigint; total: bigint; billedTotal: bigint; notes: string | null;
   contact: { name: string; email: string | null } | null;
-  lines: { id: string; description: string; quantity: number; unitPrice: number; amount: number; account: { code: string; name: string } | null }[];
+  lines: { id: string; description: string; quantity: number; unitPrice: bigint; amount: bigint; taxAmount: bigint; account: { code: string; name: string } | null }[];
+}
+
+interface QuoteWire extends Omit<QuoteDetail, "subtotal" | "taxTotal" | "total" | "billedTotal" | "lines"> {
+  subtotal: number; taxTotal: number; total: number; billedTotal: number;
+  lines: (Omit<QuoteDetail["lines"][number], "unitPrice" | "amount" | "taxAmount"> & {
+    unitPrice: number; amount: number; taxAmount: number; [key: string]: unknown;
+  })[];
+  [key: string]: unknown;
 }
 
 const statusColors: Record<string, string> = {
@@ -34,44 +43,68 @@ const statusLabels: Record<string, string> = {
 export default function QuoteDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const [q, setQ] = useState<QuoteDetail | null>(null);
+  const [loaded, setLoaded] = useState<{ context: string; quote: QuoteDetail } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
   const [emailHistoryKey, setEmailHistoryKey] = useState(0);
   const [orgName, setOrgName] = useState("");
-  useEntityTitle(q?.quoteNumber);
   const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
+  const context = `${orgId}:${id}`;
+  const currentContext = useRef(context);
+  useEffect(() => { currentContext.current = context; }, [context]);
+  const q = loaded?.context === context ? loaded.quote : null;
+  useEntityTitle(q?.quoteNumber);
 
   useEffect(() => {
+    const controller = new AbortController();
+    setLoaded(null); setError(null); setLoading(true); setOrgName(""); setSendDialogOpen(false);
+    if (!orgId) { setLoading(false); return; }
+    fetch(`/api/v1/quotes/${id}`, { headers: { "x-organization-id": orgId }, signal: controller.signal })
+      .then(r => { if (!r.ok) throw new Error("Unable to load quote"); return r.json(); })
+      .then(data => { const quote = quoteUiDocument(data.quote as QuoteWire); if (!controller.signal.aborted) setLoaded({ context, quote }); })
+      .catch(() => { if (!controller.signal.aborted) setError("Unable to load valid quote amounts. Try again."); })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    fetch("/api/v1/organization", { headers: { "x-organization-id": orgId }, signal: controller.signal })
+      .then(r => r.json()).then(data => { if (!controller.signal.aborted && data.organization?.name) setOrgName(data.organization.name); }).catch(() => {});
+    return () => controller.abort();
+  }, [id, orgId, context]);
+
+  async function refreshQuote() {
     if (!orgId) return;
-    fetch(`/api/v1/quotes/${id}`, { headers: { "x-organization-id": orgId } })
-      .then((r) => r.json()).then((data) => { if (data.quote) setQ(data.quote); }).finally(() => setLoading(false));
-    fetch("/api/v1/organization", { headers: { "x-organization-id": orgId } })
-      .then((r) => r.json()).then((data) => { if (data.organization?.name) setOrgName(data.organization.name); }).catch(() => {});
-  }, [id, orgId]);
+    try {
+      const response = await fetch(`/api/v1/quotes/${id}`, { headers: { "x-organization-id": orgId } });
+      if (!response.ok) throw new Error("Unable to reload quote");
+      const data = await response.json();
+      const quote = quoteUiDocument(data.quote as QuoteWire);
+      if (currentContext.current === context) { setLoaded({ context, quote }); setError(null); }
+    } catch {
+      if (currentContext.current === context) { setLoaded(null); setError("Unable to reload valid quote amounts. Try again."); }
+    }
+  }
 
   async function action(path: string) {
     if (!orgId) return;
     const res = await fetch(`/api/v1/quotes/${id}/${path}`, { method: "POST", headers: { "x-organization-id": orgId } });
-    if (res.ok) { const data = await res.json(); setQ((prev) => prev ? { ...prev, ...(data.quote || {}) } : prev); toast.success("Done"); }
+    if (res.ok) { await refreshQuote(); toast.success("Done"); }
     else toast.error("Failed");
   }
 
-  function handleSendComplete() {
+  async function handleSendComplete() {
     if (!orgId) return;
-    fetch(`/api/v1/quotes/${id}`, { headers: { "x-organization-id": orgId } })
-      .then((r) => r.json()).then((data) => { if (data.quote) setQ(data.quote); });
+    await refreshQuote();
     setEmailHistoryKey((k) => k + 1);
   }
 
   async function handleConvert() {
     if (!orgId) return;
     const res = await fetch(`/api/v1/quotes/${id}/convert`, { method: "POST", headers: { "x-organization-id": orgId } });
-    if (res.ok) { const data = await res.json(); toast.success("Invoice created from this quote"); router.push(`/sales/${data.invoice.id}`); }
+    if (res.ok) { const data = await res.json(); if (currentContext.current !== context) return; toast.success("Invoice created from this quote"); router.push(`/sales/${data.invoice.id}`); }
     else toast.error("Couldn't create an invoice from this quote");
   }
 
   if (loading) return <div className="space-y-6"><PageHeader title="Loading..." /></div>;
+  if (error) return <p role="alert" className="text-sm text-red-600">{error}</p>;
   if (!q) return <div className="space-y-6"><PageHeader title="Quote not found" /></div>;
 
   return (
@@ -91,21 +124,7 @@ export default function QuoteDetailPage() {
         <span className="text-xs sm:text-sm text-muted-foreground">Issued {q.issueDate} · Expires {q.expiryDate}</span>
       </div>
 
-      <div className="rounded-lg border p-4"><p className="text-xl font-bold font-mono">{formatMoney(q.total)}</p></div>
-
-      <div className="rounded-lg border overflow-x-auto">
-        <div className="grid min-w-[500px] grid-cols-[1fr_80px_100px_120px] gap-2 border-b bg-muted/50 px-4 py-2 text-xs font-medium text-muted-foreground">
-          <span>Description</span><span className="text-right">Qty</span><span className="text-right">Price</span><span className="text-right">Amount</span>
-        </div>
-        {q.lines.map((line) => (
-          <div key={line.id} className="grid min-w-[500px] grid-cols-[1fr_80px_100px_120px] gap-2 border-b px-4 py-2 last:border-b-0">
-            <div><p className="text-sm">{line.description}</p>{line.account && <p className="text-xs text-muted-foreground">{line.account.code} &middot; {line.account.name}</p>}</div>
-            <span className="text-right text-sm font-mono">{(line.quantity / 100).toFixed(0)}</span>
-            <span className="text-right text-sm font-mono">{formatMoney(line.unitPrice)}</span>
-            <span className="text-right text-sm font-mono font-medium">{formatMoney(line.amount)}</span>
-          </div>
-        ))}
-      </div>
+      <QuoteMoneyDetails quote={q} />
 
       <EmailHistory key={emailHistoryKey} documentType="quote" documentId={id} />
 
@@ -119,6 +138,7 @@ export default function QuoteDetailPage() {
         contactName={q.contact?.name}
         organizationName={orgName}
         amountDue={q.total}
+        currencyCode={q.currencyCode}
         dueDate={q.expiryDate}
         issueDate={q.issueDate}
         sendApiUrl={`/api/v1/quotes/${id}/send`}

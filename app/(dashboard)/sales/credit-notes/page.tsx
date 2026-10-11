@@ -18,26 +18,32 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatMoney } from "@/lib/money";
-import { devDelay } from "@/lib/dev-delay";
+import { creditNoteUiHeader, creditNoteUiSummary, creditNoteUiMoney } from "@/lib/money/credit-note-ui";
 import { useCreateDrawer } from "@/components/dashboard/create-drawer";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
 
 interface CreditNote {
+  currencyCode: string;
   id: string;
   creditNoteNumber: string;
   issueDate: string;
   status: string;
-  subtotal: number;
-  taxTotal: number;
-  total: number;
-  amountApplied: number;
-  amountRemaining: number;
+  subtotal: bigint;
+  taxTotal: bigint;
+  total: bigint;
+  amountApplied: bigint;
+  amountRemaining: bigint;
   contact: { name: string } | null;
   invoiceId: string | null;
 }
+
+type CreditNoteWire = Omit<CreditNote, "subtotal" | "taxTotal" | "total" | "amountApplied" | "amountRemaining"> & {
+  subtotal: number; taxTotal: number; total: number; amountApplied: number; amountRemaining: number; [key: string]: unknown;
+};
+type SummaryWire = { totalCount: number; currencyCode: string | null; totalAmount: number; totalApplied: number; totalRemaining: number;
+  statusBreakdown: Record<string, { count: number; amount: number; amountMinor?: string }>; [key: string]: unknown };
 
 const statusColors: Record<string, string> = {
   draft: "",
@@ -96,8 +102,8 @@ function buildColumns(): Column<CreditNote>[] {
       sortKey: "total",
       className: "w-28 text-right",
       render: (r) => (
-        <span className="font-mono text-sm tabular-nums">
-          {formatMoney(r.total)}
+        <span className="font-mono text-sm tabular-nums break-all">
+          {creditNoteUiMoney(r.total, r.currencyCode)}
         </span>
       ),
     },
@@ -107,8 +113,8 @@ function buildColumns(): Column<CreditNote>[] {
       sortKey: "remaining",
       className: "w-28 text-right",
       render: (r) => (
-        <span className="font-mono text-sm tabular-nums">
-          {formatMoney(r.amountRemaining)}
+        <span className="font-mono text-sm tabular-nums break-all">
+          {creditNoteUiMoney(r.amountRemaining, r.currencyCode)}
         </span>
       ),
     },
@@ -118,22 +124,10 @@ function buildColumns(): Column<CreditNote>[] {
 export default function CreditNotesPage() {
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
-  const [creditNotes, setCreditNotes] = useState<CreditNote[]>([]);
-  const [initialLoad, setInitialLoad] = useState(true);
-  const [refetching, setRefetching] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [page, setPage] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
+  const [loaded, setLoaded] = useState<{ context: string; rows: CreditNote[]; total: number; page: number; error: string | null } | null>(null);
+  const [moreContext, setMoreContext] = useState<string | null>(null);
   const [fetchKey, setFetchKey] = useState(0);
-  const [summary, setSummary] = useState<{
-    totalCount: number;
-    totalAmount: number;
-    totalApplied: number;
-    totalRemaining: number;
-    currencyCode: string | null;
-    statusBreakdown: Record<string, { count: number; amount: number }>;
-  } | null>(null);
-  const [summaryError, setSummaryError] = useState<string | null>(null);
+  const [summaryLoaded, setSummaryLoaded] = useState<{ org: string; summary: ReturnType<typeof creditNoteUiSummary<SummaryWire>> | null; error: string | null } | null>(null);
   const [statusFilter, setStatusFilter] = useState("all");
   const [sortBy, setSortBy] = useState("created");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
@@ -162,47 +156,50 @@ export default function CreditNotesPage() {
     return params;
   }, [statusFilter, sortBy, sortOrder, dateFrom, dateTo]);
 
-  // Fetch first page when filters change
+  const context = `${orgId}:${buildParams(1)}`;
+  const currentContext = useRef(context);
+  useEffect(() => { currentContext.current = context; }, [context]);
+  const creditNotes = useMemo(() => loaded?.context === context ? loaded.rows : [], [loaded, context]);
+  const listError = loaded?.context === context ? loaded.error : null;
+  const totalCount = loaded?.context === context ? loaded.total : 0;
+  const page = loaded?.context === context ? loaded.page : 1;
+  const initialLoad = !!orgId && !loaded;
+  const refetching = !!orgId && loaded?.context !== context;
+  const loadingMore = moreContext === context;
+  const summary = summaryLoaded?.org === orgId ? summaryLoaded.summary : null;
+  const summaryError = summaryLoaded?.org === orgId ? summaryLoaded.error : null;
+
+  // Abort old reads and keep loaded rows tied to their organization/filter context.
   useEffect(() => {
     if (!orgId) return;
-    let cancelled = false;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setRefetching(true);
-    setPage(1);
-
+    const controller = new AbortController();
     fetch(`/api/v1/credit-notes?${buildParams(1)}`, {
-      headers: { "x-organization-id": orgId },
+      headers: { "x-organization-id": orgId }, signal: controller.signal,
     })
-      .then((r) => r.json())
-      .then((data) => {
-        if (cancelled) return;
-        setCreditNotes(data.data || []);
-        setTotalCount(data.pagination?.total || 0);
+      .then(r => { if (!r.ok) throw new Error("Unable to load credit notes"); return r.json(); })
+      .then(data => {
+        if (!Array.isArray(data.data)) throw new Error("Unable to load credit notes");
+        const rows = data.data.map((row: CreditNoteWire) => creditNoteUiHeader(row));
+        if (!controller.signal.aborted) { setLoaded({ context, rows, total: data.pagination?.total ?? rows.length, page: 1, error: null }); setFetchKey(k => k + 1); }
       })
-      .then(() => devDelay())
-      .finally(() => { if (!cancelled) { setInitialLoad(false); setRefetching(false); setFetchKey((k) => k + 1); } });
+      .catch(() => { if (!controller.signal.aborted) setLoaded({ context, rows: [], total: 0, page: 1, error: "Unable to load valid credit-note amounts. Try again." }); });
+    return () => controller.abort();
+  }, [orgId, buildParams, context]);
 
-    return () => { cancelled = true; };
-  }, [orgId, buildParams]);
-
-  // Load more
   const loadMore = useCallback(() => {
-    if (!orgId || loadingMore) return;
+    if (!orgId || loadingMore || refetching) return;
     const nextPage = page + 1;
-    setLoadingMore(true);
-
-    fetch(`/api/v1/credit-notes?${buildParams(nextPage)}`, {
-      headers: { "x-organization-id": orgId },
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.data) {
-          setCreditNotes((prev) => [...prev, ...data.data]);
-          setPage(nextPage);
-        }
+    setMoreContext(context);
+    fetch(`/api/v1/credit-notes?${buildParams(nextPage)}`, { headers: { "x-organization-id": orgId } })
+      .then(r => { if (!r.ok) throw new Error("Unable to load credit notes"); return r.json(); })
+      .then(data => {
+        if (!Array.isArray(data.data)) throw new Error("Unable to load credit notes");
+        const rows = data.data.map((row: CreditNoteWire) => creditNoteUiHeader(row));
+        if (currentContext.current === context) setLoaded(prev => prev?.context === context ? { ...prev, rows: [...prev.rows, ...rows], page: nextPage, error: null } : prev);
       })
-      .finally(() => setLoadingMore(false));
-  }, [orgId, page, buildParams, loadingMore]);
+      .catch(() => { if (currentContext.current === context) setLoaded(prev => prev?.context === context ? { ...prev, error: "Unable to load valid credit-note amounts. Try again." } : prev); })
+      .finally(() => setMoreContext(prev => prev === context ? null : prev));
+  }, [orgId, page, buildParams, loadingMore, refetching, context]);
 
   const hasMore = creditNotes.length < totalCount;
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -234,11 +231,10 @@ export default function CreditNotesPage() {
         if (!response.ok) throw new Error(data.error || "Credit-note totals are unavailable");
         return data;
       })
-      .then((data) => { setSummary(data); setSummaryError(null); })
+      .then((data) => { const summary = creditNoteUiSummary(data as SummaryWire); if (!controller.signal.aborted) setSummaryLoaded({ org: orgId, summary, error: null }); })
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
-        setSummary(null);
-        setSummaryError(error instanceof Error ? error.message : "Credit-note totals are unavailable");
+        setSummaryLoaded({ org: orgId, summary: null, error: error instanceof Error ? error.message : "Credit-note totals are unavailable" });
       });
     return () => controller.abort();
   }, [orgId]);
@@ -274,11 +270,11 @@ export default function CreditNotesPage() {
     setSearchKey((k) => k + 1);
   }, [debouncedSearch]);
 
-  const totalIssued = summary?.totalAmount || 0;
-  const totalApplied = summary?.totalApplied || 0;
-  const totalRemaining = summary?.totalRemaining || 0;
+  const summaryMoney = (field: "totalAmount" | "totalApplied" | "totalRemaining") =>
+    summary?.currencyCode ? creditNoteUiMoney(summary[field], summary.currencyCode) : "—";
 
   if (initialLoad) return <BrandLoader />;
+  if (listError) return <p role="alert" className="text-sm text-destructive">{listError}</p>;
 
   if (!initialLoad && !refetching && creditNotes.length === 0 && statusFilter === "all" && !hasFilters) {
     return (
@@ -382,10 +378,10 @@ export default function CreditNotesPage() {
   return (
     <ContentReveal className="space-y-6">
       {/* Top: Stats */}
-      <div className="grid gap-3 sm:grid-cols-3">
-        <StatCard title="Total Issued" value={summaryError ? "Unavailable" : formatMoney(totalIssued, summary?.currencyCode ?? "USD")} icon={CreditCard} />
-        <StatCard title="Applied" value={summaryError ? "Unavailable" : formatMoney(totalApplied, summary?.currencyCode ?? "USD")} icon={CreditCard} />
-        <StatCard title="Remaining" value={summaryError ? "Unavailable" : formatMoney(totalRemaining, summary?.currencyCode ?? "USD")} icon={CreditCard} />
+      <div className="grid gap-3 sm:grid-cols-3 [overflow-wrap:anywhere]">
+        <StatCard title="Total Issued" value={summaryError ? "Unavailable" : summaryMoney("totalAmount")} icon={CreditCard} />
+        <StatCard title="Applied" value={summaryError ? "Unavailable" : summaryMoney("totalApplied")} icon={CreditCard} />
+        <StatCard title="Remaining" value={summaryError ? "Unavailable" : summaryMoney("totalRemaining")} icon={CreditCard} />
       </div>
       {summaryError && <p role="alert" className="text-sm text-destructive">{summaryError}</p>}
 

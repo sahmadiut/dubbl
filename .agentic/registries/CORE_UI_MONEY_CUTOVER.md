@@ -1,5 +1,47 @@
 # Core UI money ownership (MON-129 children)
 
+## MON-144 credit note UI
+
+CreditNoteDrawer explicitly defaults to USD as both credit transports do,
+independently of customer/org currency. Selected currency is sent with exact
+decimal unitPriceExact strings. Preview uses extended-price rounding, so USD
+0.005 x 3 previews/saves 2 minor units; signed ties retain the domain rule.
+Eighteen fractional price digits, safe-number workflow limits, blank-to-zero
+price/blank-to-one quantity and explicit zero/fractional quantity are retained.
+Invalid price/quantity/tax/range suppresses preview/save; submission reparses
+supported fields and requires descriptions. Org-keyed editor reloads tax context.
+
+credit-note-ui.ts validates saved header/line/summary numeric aliases against
+canonical Minor strings with checked numeric-only legacy fallback. Bigint and
+saved currency drive list/detail, subtotal/tax/applied/remaining and send amounts.
+Saved quantity hundredths show fractions; units never rescale. Overview retains
+the all-status, all-filter summary API contract: mixed currencies/unsafe sums
+show Unavailable plus the server error; missing/empty currency shows a dash.
+Individual tagged rows remain readable when the aggregate is unavailable.
+
+Invoice applications show only outstanding same-customer/same-currency invoices
+from the existing latest-100 lookup, scoped to the customer. Amount input uses
+saved currency scales, rejects fractional minor/nonpositive/malformed/unsafe
+values and either balance bound, and sends amountMinor. Handlers revalidate.
+Domain roles, locks, recognition, allocation and reversal rules stay authoritative.
+Main reads abort when context changes; list/filter results and summaries are
+keyed to context, and detail/dialog state remounts by org/document. Lifecycle
+actions reload normalized full reads, never merge numeric headers into bigint.
+Opening the application dialog discards old candidates and amounts. Pagination
+continues to append validated rows with context checks; search/sort/dates remain.
+
+Five adapter/rendered tests and a migrated REST/MCP/SQL fixture verify scales,
+safe-edge low digits, defaults, exact extended rounding, saved prices/tax/units,
+summary aliases, eligible application/bounds and void unwind. Existing credit
+regressions independently cover tenant/role/locks, inventory and atomicity.
+Large safe draft values are verified without claiming large posting qualification.
+Quantity/100 and tax basis points remain nonmoney; fixed USD example cards are
+illustrative. There is no monetary credit edit/copy workflow in these pages.
+Shared editor defaults for unmigrated callers and numeric wire coexistence remain.
+Public/email/PDF delivery, browser effects, full signed-int64 workflows, production
+IRR and parent combined acceptance are separate. MON-145/146/137 remain pending;
+MON-136, MON-131, MON-129 and MON-007 remain open.
+
 ## MON-143 quote UI
 
 QuoteDrawer uses explicit USD by default, matching REST and MCP even when customer
@@ -28,8 +70,9 @@ Four adapter/rendered cases and a real REST/MCP/SQL fixture cover scales, low di
 price-first rounding, malformed/range/alias rejection, tax, quantity, saved reads,
 default currency and conversion. Existing quote worker independently covers domain
 negative cases and partial/milestone conversion. No live browser/effect, provider,
-PDF, production IRR or full signed-int64 workflow qualification is claimed. Credit,
-receipt and prepayment UI are pending MON-144..146; recurring remains MON-137.
+PDF, production IRR or full signed-int64 workflow qualification is claimed. Credit
+UI is now covered by MON-144 above; receipt/prepayment remain MON-145/146 and
+recurring remains MON-137.
 MON-136, MON-131, MON-129 and MON-007 retain independent combined acceptance.
 
 
@@ -46,7 +89,7 @@ original combined criteria; MON-007 retains its original integration acceptance.
 | MON-135 | sales/page.tsx and sales/[id]/page.tsx; invoice-amount-input.tsx; invoice-ui.ts; invoice-specific DualAmount and SendDocumentDialog props | Validated Minor reads, exact saved/copy prices, source/base display, aging and progress; currency-scale payment/interest Minor writes and same-currency credit application |
 | MON-136 | Integration parent for MON-143..146 quote, credit, receipt and prepayment UI | Independent combined acceptance; each domain retains currency, rounding and lifecycle policy |
 | MON-143 | sales/quotes list/detail; create-drawer.tsx QuoteDrawer; quote-money-details.tsx; lib/money/quote-ui.ts | Explicit USD default/selectable currency, price-first exact preview and unitPriceExact payloads, validated saved Minor aliases and currency-grouped sample summaries |
-| MON-144 | sales/credit-notes list/detail and CreditNoteDrawer | Pending exact credit prices/currency/saved reads/summary/application |
+| MON-144 | sales/credit-notes list/detail; create-drawer.tsx CreditNoteDrawer; credit-note-money-details.tsx; lib/money/credit-note-ui.ts | Explicit USD/selectable currency, exact extended-price preview/writes, validated saved Minor/summary reads and same-customer/currency amountMinor invoice application |
 | MON-145 | sales/receipts list/detail and SalesReceiptDrawer | Pending extended-price preview, currency resolution, saved read/post/void |
 | MON-146 | sales/customer-prepayments list/detail and CustomerCreditDrawer | Pending exact amount input, currency, saved balances and invoice application |
 | MON-137 | Recurring invoice list/detail/editor and create-drawer.tsx RecurringDrawer | Pending recurring pricing/currency, exact fields and schedule preservation |
@@ -143,12 +186,13 @@ labels; the grid scrolls horizontally on narrow screens.
 The shared editor's omitted currency retains an explicit USD/fixed-two preview,
 extended-price rounding and two-fraction input default. This compatibility
 presentation serves SalesReceiptDrawer,
-PurchaseOrderDrawer, CreditNoteDrawer, RecurringDrawer and SupplierCreditDrawer.
+PurchaseOrderDrawer, RecurringDrawer and SupplierCreditDrawer.
 Their payload parsing, currency resolution, domain rounding and final preview/
-saved parity remain pending under MON-132, MON-144..146 and MON-137 (and the owning
+saved parity remain pending under MON-132, MON-145/146 and MON-137 (and the owning
 parent integrations). They must pass explicit policy props when migrated; this
 child does not qualify them. MON-135 owns saved invoice editing and lifecycle.
 QuoteDrawer now passes explicit price-first/currency/precision policy under MON-143.
+CreditNoteDrawer passes explicit extended-price/currency/precision policy under MON-144.
 MON-131, MON-129 and MON-007 remain open for independent combined acceptance.
 
 `document-editor-money` tests cover currency scales, signed sub-minor ties,

@@ -1,5 +1,22 @@
 # Verification matrix
 
+## MON-144 credit note creation and lifecycle UI money
+
+- `tests/credit-note-ui-money.test.ts`: actual credit REST/MCP schemas, extended
+  preview/payload parity, currency scales, safe low digits, defaults, signed ties,
+  quantities, malformed/range/tax/alias rejection, exact summary and application
+  bounds/customer/currency/status. Real React renders verify English saved totals,
+  fractional quantity, explicit currency/decimal labels and invalid alerts.
+- `tests/integration/credit-note-ui-money.test.ts` and worker: migrated disposable
+  PostgreSQL, authenticated REST plus registered MCP creation/read/list/summary/
+  recognition/application/void with UI payloads. Independent SQL checks prices,
+  amount/tax/total/currency/dimensions, invoice balances and allocation units.
+  USD/JPY/synthetic IRR/KWD tested; large safe prices remain draft only.
+- Existing credits integration independently covers tenant/role/locks/stock,
+  strict aliases, unsupported history, reversals and atomicity. No live browser
+  effects, outbound provider/PDF, full int64, production IRR or parent combined
+  acceptance is inferred. The latest-100 invoice lookup remains bounded.
+
 ## MON-143 quote creation and lifecycle UI money
 
 - `tests/quote-ui-money.test.ts`: actual quote schemas, editor preview/payload,

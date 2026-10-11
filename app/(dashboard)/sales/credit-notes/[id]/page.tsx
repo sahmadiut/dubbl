@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
 import { ArrowLeft, Send, Ban, FileText } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { CurrencyInput } from "@/components/ui/currency-input";
+import { InvoiceAmountInput } from "@/components/dashboard/invoice-amount-input";
+import { CreditNoteMoneyDetails } from "@/components/dashboard/credit-note-money-details";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
@@ -24,7 +24,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatMoney, centsToDecimal } from "@/lib/money";
+import { creditNoteUiDocument, creditNoteUiInvoice, creditNoteUiInvoiceEligible, creditNoteUiApplication, creditNoteUiMoney } from "@/lib/money/credit-note-ui";
+import { invoiceUiDecimal } from "@/lib/money/invoice-ui";
 import { useConfirm } from "@/lib/hooks/use-confirm";
 import { useEntityTitle } from "@/lib/hooks/use-entity-title";
 import { SendDocumentDialog } from "@/components/dashboard/send-document-dialog";
@@ -32,17 +33,18 @@ import { EmailHistory } from "@/components/dashboard/email-history";
 import Link from "next/link";
 
 interface CreditNoteDetail {
+  currencyCode: string;
   id: string;
   creditNoteNumber: string;
   issueDate: string;
   status: string;
   reference: string | null;
   notes: string | null;
-  subtotal: number;
-  taxTotal: number;
-  total: number;
-  amountApplied: number;
-  amountRemaining: number;
+  subtotal: bigint;
+  taxTotal: bigint;
+  total: bigint;
+  amountApplied: bigint;
+  amountRemaining: bigint;
   contactId: string | null;
   invoiceId: string | null;
   contact: { name: string; email: string | null } | null;
@@ -50,10 +52,10 @@ interface CreditNoteDetail {
     id: string;
     description: string;
     quantity: number;
-    unitPrice: number;
-    amount: number;
+    unitPrice: bigint;
+    amount: bigint;
     account: { code: string; name: string } | null;
-    taxRate: number | null;
+    taxAmount: bigint;
   }[];
 }
 
@@ -72,16 +74,24 @@ const statusLabels: Record<string, string> = {
   void: "cancelled",
 };
 
+type CreditNoteWire = Omit<CreditNoteDetail, "subtotal" | "taxTotal" | "total" | "amountApplied" | "amountRemaining" | "lines"> & {
+  subtotal: number; taxTotal: number; total: number; amountApplied: number; amountRemaining: number;
+  lines: (Omit<CreditNoteDetail["lines"][number], "unitPrice" | "amount" | "taxAmount"> & { unitPrice: number; amount: number; taxAmount: number; [key: string]: unknown })[];
+  [key: string]: unknown;
+};
 interface InvoiceOption {
-  id: string;
-  invoiceNumber: string;
-  total: number;
-  amountDue: number;
-  contact: { name: string } | null;
+  id: string; invoiceNumber: string; contactId: string | null; currencyCode: string; status: string;
+  amountDue: bigint; contact: { name: string } | null;
 }
+type InvoiceWire = Omit<InvoiceOption, "amountDue"> & { amountDue: number; [key: string]: unknown };
 
 export default function CreditNoteDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
+  return <CreditNoteDetail key={`${orgId}:${id}`} id={id} orgId={orgId} />;
+}
+
+function CreditNoteDetail({ id, orgId }: { id: string; orgId: string | null }) {
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [cn, setCn] = useState<CreditNoteDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -89,75 +99,80 @@ export default function CreditNoteDetailPage() {
   const [applyLoading, setApplyLoading] = useState(false);
   const [applyInvoiceId, setApplyInvoiceId] = useState("");
   const [applyAmount, setApplyAmount] = useState("");
-  const [invoices, setInvoices] = useState<InvoiceOption[]>([]);
+  const [invoiceLoaded, setInvoiceLoaded] = useState<{ context: string; rows: InvoiceOption[]; error: string | null } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [reload, setReload] = useState(0);
+  const active = useRef(true);
+  useEffect(() => { active.current = true; return () => { active.current = false; }; }, []);
 
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
   const [emailHistoryKey, setEmailHistoryKey] = useState(0);
   const [orgName, setOrgName] = useState("");
 
-  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
-
   useEntityTitle(cn?.creditNoteNumber);
 
   useEffect(() => {
     if (!orgId) return;
-    fetch(`/api/v1/credit-notes/${id}`, {
-      headers: { "x-organization-id": orgId },
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.creditNote) setCn(data.creditNote);
-      })
-      .finally(() => setLoading(false));
-    fetch("/api/v1/organization", { headers: { "x-organization-id": orgId } })
-      .then((r) => r.json()).then((data) => { if (data.organization?.name) setOrgName(data.organization.name); }).catch(() => {});
-  }, [id, orgId]);
+    const controller = new AbortController();
+    fetch(`/api/v1/credit-notes/${id}`, { headers: { "x-organization-id": orgId }, signal: controller.signal })
+      .then(r => { if (!r.ok) throw new Error("Unable to load credit note"); return r.json(); })
+      .then(data => { const credit = creditNoteUiDocument(data.creditNote as CreditNoteWire); if (!controller.signal.aborted) { setCn(credit); setError(null); } })
+      .catch(() => { if (!controller.signal.aborted) { setCn(null); setError("Unable to load valid credit-note amounts. Try again."); } })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    fetch("/api/v1/organization", { headers: { "x-organization-id": orgId }, signal: controller.signal })
+      .then(r => r.json()).then(data => { if (!controller.signal.aborted && data.organization?.name) setOrgName(data.organization.name); }).catch(() => {});
+    return () => controller.abort();
+  }, [id, orgId, reload]);
 
-  // Fetch outstanding invoices for apply dialog
+  const invoiceContext = `${cn?.contactId}:${cn?.currencyCode}:${cn?.amountRemaining}:${reload}`;
+  const invoices = invoiceLoaded?.context === invoiceContext ? invoiceLoaded.rows : [];
+  const invoiceError = invoiceLoaded?.context === invoiceContext ? invoiceLoaded.error : null;
   useEffect(() => {
-    if (!orgId || !applyOpen) return;
-    fetch(`/api/v1/invoices?limit=100`, {
-      headers: { "x-organization-id": orgId },
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.data) {
-          setInvoices(
-            data.data.filter((inv: InvoiceOption & { status: string }) =>
-              ["sent", "partial", "overdue"].includes(inv.status) && inv.amountDue > 0
-            )
-          );
-        }
-      });
-  }, [orgId, applyOpen]);
+    if (!orgId || !applyOpen || !cn?.contactId) return;
+    const controller = new AbortController();
+    const params = new URLSearchParams({ limit: "100", contactId: cn.contactId });
+    fetch(`/api/v1/invoices?${params}`, { headers: { "x-organization-id": orgId }, signal: controller.signal })
+      .then(r => { if (!r.ok) throw new Error("Unable to load invoices"); return r.json(); })
+      .then(data => {
+        if (!Array.isArray(data.data)) throw new Error("Unable to load invoices");
+        const rows = data.data.map((row: InvoiceWire) => creditNoteUiInvoice(row)).filter((inv: InvoiceOption) => creditNoteUiInvoiceEligible(cn, inv));
+        if (!controller.signal.aborted) setInvoiceLoaded({ context: invoiceContext, rows, error: null });
+      })
+      .catch(() => { if (!controller.signal.aborted) setInvoiceLoaded({ context: invoiceContext, rows: [], error: "Unable to load valid invoice balances. Try again." }); });
+    return () => controller.abort();
+  }, [orgId, applyOpen, cn, invoiceContext]);
 
   function handleSendComplete() {
-    if (!orgId) return;
-    fetch(`/api/v1/credit-notes/${id}`, { headers: { "x-organization-id": orgId } })
-      .then((r) => r.json()).then((data) => { if (data.creditNote) setCn(data.creditNote); });
-    setEmailHistoryKey((k) => k + 1);
+    if (!active.current) return;
+    setSendDialogOpen(false);
+    setCn(null); setLoading(true); setReload(k => k + 1);
+    setEmailHistoryKey(k => k + 1);
+  }
+
+  let application: ReturnType<typeof creditNoteUiApplication> | null = null;
+  let applicationError: string | null = null;
+  const selectedInvoice = invoices.find(inv => inv.id === applyInvoiceId);
+  if (cn && selectedInvoice && applyAmount !== "") {
+    try { application = creditNoteUiApplication(applyAmount, cn, selectedInvoice); }
+    catch (error) { applicationError = error instanceof Error ? error.message : "Enter a valid amount"; }
   }
 
   async function handleApply() {
-    if (!orgId || !applyInvoiceId) return;
-    const amount = Math.round(parseFloat(applyAmount) * 100);
-    if (!amount || amount <= 0) {
-      toast.error("Enter a valid amount");
-      return;
-    }
+    if (!orgId || !cn || !selectedInvoice) return;
     setApplyLoading(true);
     try {
+      const payload = creditNoteUiApplication(applyAmount, cn, selectedInvoice);
       const res = await fetch(`/api/v1/credit-notes/${id}/apply`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "x-organization-id": orgId,
         },
-        body: JSON.stringify({ invoiceId: applyInvoiceId, amount }),
+        body: JSON.stringify(payload),
       });
       if (res.ok) {
-        const data = await res.json();
-        setCn((prev) => prev ? { ...prev, ...data.creditNote } : prev);
+        if (!active.current) return;
+        handleSendComplete();
         setApplyOpen(false);
         setApplyInvoiceId("");
         setApplyAmount("");
@@ -166,8 +181,10 @@ export default function CreditNoteDetailPage() {
         const data = await res.json();
         toast.error(typeof data.error === "string" ? data.error : "Couldn't use this credit");
       }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Couldn't use this credit");
     } finally {
-      setApplyLoading(false);
+      if (active.current) setApplyLoading(false);
     }
   }
 
@@ -184,8 +201,8 @@ export default function CreditNoteDetailPage() {
           headers: { "x-organization-id": orgId },
         });
         if (res.ok) {
-          const data = await res.json();
-          setCn((prev) => prev ? { ...prev, ...data.creditNote } : prev);
+          if (!active.current) return;
+          handleSendComplete();
           toast.success("Credit note cancelled");
         }
       },
@@ -193,6 +210,7 @@ export default function CreditNoteDetailPage() {
   }
 
   if (loading) return <div className="space-y-6"><PageHeader title="Loading..." /></div>;
+  if (error) return <p role="alert" className="text-sm text-destructive">{error}</p>;
   if (!cn) return <div className="space-y-6"><PageHeader title="Credit note not found" /></div>;
 
   return (
@@ -206,8 +224,11 @@ export default function CreditNoteDetailPage() {
             <Send className="mr-2 size-4" />Send
           </Button>
         )}
-        {cn.status === "sent" && cn.amountRemaining > 0 && (
-          <Dialog open={applyOpen} onOpenChange={setApplyOpen}>
+        {cn.status === "sent" && cn.amountRemaining > 0n && (
+          <Dialog open={applyOpen} onOpenChange={(open) => {
+            setApplyOpen(open);
+            if (open) { setInvoiceLoaded(null); setApplyInvoiceId(""); setApplyAmount(""); }
+          }}>
             <DialogTrigger asChild>
               <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" title="Use this credit to reduce what a customer owes on an invoice">
                 <FileText className="mr-2 size-4" />Use against an invoice
@@ -227,12 +248,12 @@ export default function CreditNoteDetailPage() {
                     <SelectContent>
                       {invoices.map((inv) => (
                         <SelectItem key={inv.id} value={inv.id}>
-                          {inv.invoiceNumber} · {inv.contact?.name || "Unknown"} · Due: {formatMoney(inv.amountDue)}
+                          {inv.invoiceNumber} · {inv.contact?.name || "Unknown"} · Due: {creditNoteUiMoney(inv.amountDue, inv.currencyCode)}
                         </SelectItem>
                       ))}
                       {invoices.length === 0 && (
                         <div className="px-2 py-4 text-center text-sm text-muted-foreground">
-                          No outstanding invoices
+                          No outstanding invoices for this customer in {cn.currencyCode}
                         </div>
                       )}
                     </SelectContent>
@@ -240,20 +261,22 @@ export default function CreditNoteDetailPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Amount</Label>
-                  <CurrencyInput
-                    prefix="$"
+                  <InvoiceAmountInput
+                    currency={cn.currencyCode}
                     value={applyAmount}
                     onChange={setApplyAmount}
-                    placeholder={centsToDecimal(cn.amountRemaining)}
+                    placeholder={invoiceUiDecimal(cn.amountRemaining, cn.currencyCode)}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Remaining credit: {formatMoney(cn.amountRemaining)}
+                    Remaining credit: {creditNoteUiMoney(cn.amountRemaining, cn.currencyCode)}
                   </p>
                 </div>
+                {invoiceError && <p role="alert" className="text-xs text-destructive">{invoiceError}</p>}
+                {applicationError && <p role="alert" className="text-xs text-destructive">{applicationError}</p>}
                 <Button
                   onClick={handleApply}
                   loading={applyLoading}
-                  disabled={!applyInvoiceId}
+                  disabled={!application || !!invoiceError}
                   className="w-full bg-emerald-600 hover:bg-emerald-700"
                 >
                   Reduce the invoice
@@ -278,49 +301,7 @@ export default function CreditNoteDetailPage() {
         </span>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <div className="rounded-lg border p-4">
-          <p className="text-xs text-muted-foreground">Total</p>
-          <p className="text-xl font-bold font-mono">{formatMoney(cn.total)}</p>
-        </div>
-        <div className="rounded-lg border p-4">
-          <p className="text-xs text-muted-foreground">Applied</p>
-          <p className="text-xl font-bold font-mono text-emerald-600">{formatMoney(cn.amountApplied)}</p>
-        </div>
-        <div className="rounded-lg border p-4">
-          <p className="text-xs text-muted-foreground">Remaining</p>
-          <p className="text-xl font-bold font-mono text-amber-600">{formatMoney(cn.amountRemaining)}</p>
-        </div>
-      </div>
-
-      <div className="rounded-lg border overflow-x-auto">
-        <div className="grid min-w-[500px] grid-cols-[1fr_80px_100px_120px] gap-2 border-b bg-muted/50 px-4 py-2 text-xs font-medium text-muted-foreground">
-          <span>Description</span>
-          <span className="text-right">Qty</span>
-          <span className="text-right">Price</span>
-          <span className="text-right">Amount</span>
-        </div>
-        {cn.lines.map((line) => (
-          <div key={line.id} className="grid min-w-[500px] grid-cols-[1fr_80px_100px_120px] gap-2 border-b px-4 py-2 last:border-b-0">
-            <div>
-              <p className="text-sm">{line.description}</p>
-              {line.account && (
-                <p className="text-xs text-muted-foreground">{line.account.code} &middot; {line.account.name}</p>
-              )}
-            </div>
-            <span className="text-right text-sm font-mono">{(line.quantity / 100).toFixed(0)}</span>
-            <span className="text-right text-sm font-mono">{formatMoney(line.unitPrice)}</span>
-            <span className="text-right text-sm font-mono font-medium">{formatMoney(line.amount)}</span>
-          </div>
-        ))}
-        <div className="border-t bg-muted/30 px-4 py-2 text-right flex flex-wrap justify-end gap-x-4 gap-y-1">
-          <span className="text-sm font-medium">Subtotal: {formatMoney(cn.subtotal)}</span>
-          {cn.taxTotal > 0 && (
-            <span className="text-sm">Tax: {formatMoney(cn.taxTotal)}</span>
-          )}
-          <span className="text-sm font-bold">Total: {formatMoney(cn.total)}</span>
-        </div>
-      </div>
+      <CreditNoteMoneyDetails credit={cn} />
 
       {cn.notes && (
         <div className="rounded-lg border p-4">
@@ -341,6 +322,7 @@ export default function CreditNoteDetailPage() {
         contactName={cn.contact?.name}
         organizationName={orgName}
         amountDue={cn.total}
+        currencyCode={cn.currencyCode}
         issueDate={cn.issueDate}
         sendApiUrl={`/api/v1/credit-notes/${id}/send`}
         onSent={handleSendComplete}

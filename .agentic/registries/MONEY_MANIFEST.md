@@ -1,5 +1,20 @@
 # Money and FX boundary manifest
 
+## MON-144 credit note creation and lifecycle UI
+
+[CORE_UI_MONEY_CUTOVER](CORE_UI_MONEY_CUTOVER.md#mon-144-credit-note-ui)
+owns CreditNoteDrawer, credit-note list/detail and their exact helper/component.
+Explicit USD default/selected currency, decimal unitPriceExact and extended-price
+preview follow both existing transports. Saved numeric/Minor fields validate
+before bigint display with saved currency. Summary keeps the existing single-
+currency all-status contract and suppresses unavailable/untagged money. Applications
+require same customer/currency, outstanding state and exact positive whole-minor
+amounts within both balances, sent as amountMinor. Full reads reload after actions.
+Quantity hundredths, tax basis points, legacy numeric wire coexistence and the
+latest-100 candidate lookup keep their semantics. No rescaling or second FX.
+MON-145/146/137 and all integration parents remain open; public/provider/PDF and
+production/full-int64 qualification remain separate. No schema/API/MCP changes.
+
 ## MON-143 quote creation and lifecycle UI
 
 [CORE_UI_MONEY_CUTOVER](CORE_UI_MONEY_CUTOVER.md#mon-143-quote-ui)
@@ -11,7 +26,8 @@ sample sums. No stored amount rescaling or extra FX is introduced. Shared editor
 quantity stays numeric physical units; saved hundredths display fractional units.
 SendDocumentDialog receives exact bigint and saved currency. Quote transitions
 reload and validate full reads; conversion keeps its existing residual policy.
-MON-144..146 and recurring UI remain pending; MON-136, MON-131, MON-129 and
+MON-144 credit UI is covered above; MON-145/146 and recurring UI remain pending;
+MON-136, MON-131, MON-129 and
 MON-007 retain independent combined acceptance. No schema/API/MCP changes.
 
 ## MON-139 saved bill lifecycle UI

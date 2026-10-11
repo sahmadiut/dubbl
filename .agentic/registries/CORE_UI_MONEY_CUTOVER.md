@@ -10,7 +10,7 @@ original combined criteria; MON-007 retains its original integration acceptance.
 | MON-130 | components/dashboard/entry-form.tsx; create-drawer.tsx EntryDrawer and RecurringJournalDrawer; accounting/page.tsx and accounting/[id]/page.tsx; accounting/recurring-journals/[id]/page.tsx; dashboard/page.tsx recent journal columns | Exact editor cells/previews and Minor writes; saved manual currency-scale display/edit; raw fixed-two REST aliases validated against Minor strings; numeric legacy list totals remain explicitly fixed-two compatibility presentation |
 | MON-131 | sales/page.tsx, sales/[id]/page.tsx, sales/quotes, sales/credit-notes, sales/receipts, sales/recurring; their invoice/quote/credit/receipt/customer-credit create-drawer sections; components/dashboard/line-items-editor.tsx receivable consumers | Invoice/quote/credit/receipt currency-scale contracts and explicit recurring exceptions; adopted receivable inventories and REST price Exact/Minor fields |
 | MON-134 | components/dashboard/line-items-editor.tsx, lib/money/document-editor.ts; create-drawer.tsx InvoiceDrawer | Shared exact preview/display/input; invoice create exact-major strings, resolved currency and REST price-first rounding |
-| MON-135 | sales/page.tsx and sales/[id]/page.tsx | Pending invoice list/detail/edit, base amounts, payments and credits |
+| MON-135 | sales/page.tsx and sales/[id]/page.tsx; invoice-amount-input.tsx; invoice-ui.ts; invoice-specific DualAmount and SendDocumentDialog props | Validated Minor reads, exact saved/copy prices, source/base display, aging and progress; currency-scale payment/interest Minor writes and same-currency credit application |
 | MON-136 | Quote, credit note, sales receipt and customer prepayment lists/details/create drawers | Pending domain-specific currency, rounding, exact fields and settlement |
 | MON-137 | Recurring invoice list/detail/editor and create-drawer.tsx RecurringDrawer | Pending recurring pricing/currency, exact fields and schedule preservation |
 | MON-132 | purchases/page.tsx, purchases/[id]/page.tsx, purchases/debit-notes, purchases/orders, purchases/requisitions, purchases/goods-receipts, purchases/bills/recurring; corresponding create-drawer sections and line-items-editor payable consumers | Existing payable/procurement fixed-two versus currency scale policies; quantity hundredths and basis-point controls are separate |
@@ -127,3 +127,59 @@ MCP SDK transports, reads/edits it, and independently checks SQL text totals and
 retained currency/FX/dimensions. Existing journal integration separately checks
 tenant, role, lock, import, posting/reversal, recurrence and scheduling policies.
 These are neither live browser interactions nor production/accounting qualification.
+
+## MON-135 saved invoices and settlement UI
+
+`invoice-ui.ts` validates canonical Minor strings against retained safe integer
+numeric aliases, with a validated numeric-only fallback for legacy responses.
+Raw units never rescale. Invoice list/detail headers and lines, aging buckets,
+payment/credit amounts and nullable issue-date lookup base display become bigint
+at the fetch boundary. Source/base currencies stay separate and no FX is repeated.
+English display preserves safe-edge low digits with currency scales. Aging sums
+and paid percentages use bigint; only bounded percentage presentation becomes
+Number. Unavailable/mixed-currency summaries show a dash, not a USD money total.
+Summary counts fall back to the actual list count. Empty illustrative money cards
+also show a dash when there is no currency. Recent payments use their saved
+currency. Invoice GET payment history is allocation money without a currency tag;
+it explicitly inherits the invoice currency, as required by invoice-reads.ts.
+
+Payment and custom late-fee controls use explicit currency prefixes, scale-aware
+text inputs, decimal keyboard mode, accessible labels/invalid status and English
+alerts. Invalid/nonpositive/fractional-minor/unsafe amounts disable submission;
+handlers reparse and send amountMinor. Blank late fee retains configured interest
+calculation. Whole-minor input does not round silently. Credit min/due uses bigint,
+requires matching currency and sends amountMinor. Backend roles, locks, recognition,
+overpayment and safe-range guards remain authoritative and unchanged.
+
+Make a copy sends explicit saved currency and unitPriceExact reconstructed from
+saved raw units. Tax, discounts, account, cost center, project, inventory, warehouse
+and price-list dimensions are retained. The same exact copied line payload is
+verified through draft REST PATCH and MCP update_invoice. The existing detail
+page's Edit sheet edits sender/recipient snapshots only; there was no monetary
+line editor to migrate, and no new line-edit workflow is introduced here. The
+creation editor remains MON-134. Fractional physical quantity now displays without
+integer truncation; quantity /100 and tax/deposit basis-point controls remain
+nonmoney. Draft copying uses REST price-first rounding, while PATCH keeps its
+existing extended-price policy; stored prices are already rounded minor units.
+No hidden source-price precision is inferred from saved prices.
+
+Balance refreshes reload invoice, base amounts, history and credits. Main fetches
+are keyed to organization/invoice context and aborted on navigation; stale main
+money/credit results cannot populate another context. Invalid detail money shows
+an alert and suppresses actions. Failed summary/history/credit reads suppress those
+amounts. Other metadata fetches retain existing behavior; no browser race claim.
+DualAmount accepts bigint for this slice; numeric callers retain legacy behavior.
+SendDocumentDialog gets exact bigint plus explicit invoice currency; other callers
+keep their prior fixed-two default pending their owners. CurrencyInput's optional
+aria-invalid prop preserves existing input defaults.
+
+Pure adapter and rendered React tests cover scales, safe low digits, malformed
+and alias/range rejection, signed display, nullable base display, input labels,
+invalid alerts and exact progress/aging. Migrated disposable SQL uses authenticated
+REST and registered MCP for saved/list/read, copy, PATCH, cash, credits, summary
+and custom late fees; independent SQL text verifies amounts and retained dimensions.
+Existing invoice-read/lifecycle/payment-settlement/credit workers cover domain
+negative cases. Rendered checks are not browser interactions; no screenshots,
+production IRR enablement, full int64 public workflow or accounting review is
+claimed. MON-136/MON-137, MON-132/MON-133 and MON-008 consumers remain pending.
+MON-131, MON-129 and MON-007 retain independent combined acceptance.

@@ -23,6 +23,7 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { formatMoney } from "@/lib/money";
+import { bankMoneyDisplay } from "@/lib/money/bank-display";
 
 interface SendDocumentDialogProps {
   open: boolean;
@@ -33,7 +34,8 @@ interface SendDocumentDialogProps {
   contactEmail?: string | null;
   contactName?: string | null;
   organizationName?: string;
-  amountDue?: number;
+  amountDue?: number | bigint;
+  currencyCode?: string;
   dueDate?: string | null;
   issueDate?: string | null;
   sendApiUrl: string;
@@ -80,6 +82,7 @@ export function SendDocumentDialog({
   contactName,
   organizationName = "",
   amountDue,
+  currencyCode,
   dueDate,
   issueDate,
   sendApiUrl,
@@ -106,7 +109,8 @@ export function SendDocumentDialog({
   const canPreviewDocument = Boolean(renderRoute && documentId);
   const showAttachPdf = documentType === "invoice";
   const isInvoice = documentType === "invoice";
-  const amountFormatted = amountDue != null ? formatMoney(amountDue) : undefined;
+  const amountFormatted = amountDue == null ? undefined : currencyCode
+    ? bankMoneyDisplay(amountDue, currencyCode) : typeof amountDue === "number" ? formatMoney(amountDue) : undefined;
   const dueDateFormatted = formatDateDisplay(dueDate);
   const issueDateFormatted = formatDateDisplay(issueDate);
 

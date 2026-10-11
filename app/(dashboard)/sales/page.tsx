@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatMoney } from "@/lib/money";
+import { invoiceUiMoney as formatMoney, invoiceUiDocument, invoiceUiPayment, invoiceUiSummary, invoiceUiPercent } from "@/lib/money/invoice-ui";
 import { devDelay } from "@/lib/dev-delay";
 import { useCreateDrawer } from "@/components/dashboard/create-drawer";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
@@ -33,8 +33,8 @@ interface Invoice {
   issueDate: string;
   dueDate: string;
   status: string;
-  total: number;
-  amountDue: number;
+  total: bigint;
+  amountDue: bigint;
   currencyCode: string;
   contact: { name: string } | null;
 }
@@ -43,10 +43,11 @@ interface PaymentRecord {
   id: string;
   paymentNumber: string;
   date: string;
-  amount: number;
+  amount: bigint;
   method: string;
+  currencyCode: string;
   contact: { name: string } | null;
-  allocations: { documentType: string; documentId: string; amount: number }[];
+  allocations: { documentType: string; documentId: string; amount: number; amountMinor?: string }[];
 }
 
 const statusColors: Record<string, string> = {
@@ -205,9 +206,10 @@ export default function InvoicesPage() {
   const [fetchKey, setFetchKey] = useState(0);
   const [summary, setSummary] = useState<{
     totalCount: number;
-    outstanding: number;
-    overdue: number;
-    aging: Record<string, { count: number; amount: number }>;
+    currencyCode: string | null;
+    outstanding: bigint;
+    overdue: bigint;
+    aging: Record<string, { count: number; amount: bigint }>;
   } | null>(null);
   const [statusFilter, setStatusFilter] = useState("all");
   const [sortBy, setSortBy] = useState("created");
@@ -265,7 +267,7 @@ export default function InvoicesPage() {
       .then((r) => r.json())
       .then((data) => {
         if (cancelled) return;
-        setInvoices(data.data || []);
+        setInvoices((data.data || []).map(invoiceUiDocument));
         setTotalCount(data.pagination?.total || 0);
       })
       .then(() => devDelay())
@@ -287,10 +289,12 @@ export default function InvoicesPage() {
       .then((r) => r.json())
       .then((data) => {
         if (data.data) {
-          setInvoices((prev) => [...prev, ...data.data]);
+          const rows = data.data.map(invoiceUiDocument);
+          setInvoices((prev) => [...prev, ...rows]);
           setPage(nextPage);
         }
       })
+      .catch(() => setError("Failed to load valid invoice amounts."))
       .finally(() => setLoadingMore(false));
   }, [orgId, page, buildParams, loadingMore]);
 
@@ -318,15 +322,16 @@ export default function InvoicesPage() {
       headers: { "x-organization-id": orgId },
     })
       .then((r) => r.json())
-      .then((data) => setSummary(data));
+      .then((data) => setSummary(invoiceUiSummary(data)))
+      .catch(() => setSummary(null));
 
     fetch(`/api/v1/payments?type=received&limit=5`, {
       headers: { "x-organization-id": orgId },
     })
       .then((r) => r.json())
       .then((data) => {
-        if (data.data) setPayments(data.data);
-      });
+        if (data.data) setPayments(data.data.map(invoiceUiPayment));
+      }).catch(() => setPayments([]));
   }, [orgId]);
 
   const handleSort = useCallback((key: string) => {
@@ -408,16 +413,16 @@ export default function InvoicesPage() {
     })
       .then((r) => r.json())
       .then((data) => {
-        setInvoices(data.data || []);
+        setInvoices((data.data || []).map(invoiceUiDocument));
         setTotalCount(data.pagination?.total || 0);
         setPage(1);
         setFetchKey((k) => k + 1);
       })
-      .catch(() => {});
+      .catch(() => setError("Failed to refresh valid invoice amounts."));
     fetch(`/api/v1/invoices/summary`, { headers: { "x-organization-id": orgId } })
       .then((r) => r.json())
-      .then((data) => setSummary(data))
-      .catch(() => {});
+      .then((data) => setSummary(invoiceUiSummary(data)))
+      .catch(() => setSummary(null));
   }, [orgId, buildParams]);
 
   const runBulkAction = useCallback(
@@ -458,17 +463,17 @@ export default function InvoicesPage() {
     [orgId, bulkRunning, clearSelection, refreshList]
   );
 
-  const outstanding = summary?.outstanding || 0;
-  const overdue = summary?.overdue || 0;
-  const invoiceCount = summary?.totalCount || 0;
+  const outstanding = summary?.outstanding || 0n;
+  const overdue = summary?.overdue || 0n;
+  const invoiceCount = summary?.totalCount ?? totalCount;
 
   const aging = summary?.aging || {
-    current: { count: 0, amount: 0 },
-    "1-30": { count: 0, amount: 0 },
-    "31-60": { count: 0, amount: 0 },
-    "60+": { count: 0, amount: 0 },
+    current: { count: 0, amount: 0n },
+    "1-30": { count: 0, amount: 0n },
+    "31-60": { count: 0, amount: 0n },
+    "60+": { count: 0, amount: 0n },
   };
-  const agingTotal = (aging.current?.amount || 0) + (aging["1-30"]?.amount || 0) + (aging["31-60"]?.amount || 0) + (aging["60+"]?.amount || 0);
+  const agingTotal = (aging.current?.amount || 0n) + (aging["1-30"]?.amount || 0n) + (aging["31-60"]?.amount || 0n) + (aging["60+"]?.amount || 0n);
 
   if (initialLoad) return <BrandLoader />;
 
@@ -517,9 +522,9 @@ export default function InvoicesPage() {
           {/* Preview stat cards (empty) */}
           <div className="w-full max-w-lg grid grid-cols-1 sm:grid-cols-3 gap-3 opacity-40">
             {[
-              { label: "Outstanding", value: "$0.00" },
-              { label: "Overdue", value: "$0.00" },
-              { label: "Paid this month", value: "$0.00" },
+              { label: "Outstanding", value: summary?.currencyCode ? formatMoney(0n, summary.currencyCode) : "\u2014" },
+              { label: "Overdue", value: summary?.currencyCode ? formatMoney(0n, summary.currencyCode) : "\u2014" },
+              { label: "Paid this month", value: summary?.currencyCode ? formatMoney(0n, summary.currencyCode) : "\u2014" },
             ].map(({ label, value }) => (
               <div key={label} className="rounded-lg border border-dashed p-3 text-center">
                 <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
@@ -536,8 +541,8 @@ export default function InvoicesPage() {
     <ContentReveal className="space-y-6">
       {/* Top: Stats */}
       <div className="grid gap-3 sm:grid-cols-3">
-        <StatCard title="Outstanding" value={formatMoney(outstanding)} icon={FileText} />
-        <StatCard title="Overdue" value={formatMoney(overdue)} icon={FileText} changeType="negative" />
+        <StatCard title="Outstanding" value={summary?.currencyCode ? formatMoney(outstanding, summary.currencyCode) : "\u2014"} icon={FileText} />
+        <StatCard title="Overdue" value={summary?.currencyCode ? formatMoney(overdue, summary.currencyCode) : "\u2014"} icon={FileText} changeType="negative" />
         <StatCard title="Total Invoices" value={invoiceCount.toString()} icon={FileText} />
       </div>
 
@@ -555,7 +560,7 @@ export default function InvoicesPage() {
                 { key: "60+" as const, color: "bg-red-500" },
               ] as const).map(({ key, color }) => {
                 const bucket = aging[key];
-                const pct = bucket ? (bucket.amount / agingTotal) * 100 : 0;
+                const pct = bucket ? invoiceUiPercent(bucket.amount, agingTotal, 2) : 0;
                 if (pct === 0) return null;
                 return <div key={key} className={`${color} h-full`} style={{ width: `${pct}%` }} />;
               })}
@@ -573,7 +578,7 @@ export default function InvoicesPage() {
                     <span className="text-muted-foreground">{label}</span>
                   </div>
                   <span className="font-mono tabular-nums">
-                    {aging[key]?.count || 0} · {formatMoney(aging[key]?.amount || 0)}
+                    {aging[key]?.count || 0} · {summary?.currencyCode ? formatMoney(aging[key]?.amount || 0n, summary.currencyCode) : "\u2014"}
                   </span>
                 </div>
               ))}
@@ -603,7 +608,7 @@ export default function InvoicesPage() {
                     <span className="text-[11px] text-muted-foreground hidden sm:inline">{p.date}</span>
                   </div>
                   <span className="text-xs font-mono font-medium text-emerald-600 shrink-0 ml-2">
-                    {formatMoney(p.amount)}
+                    {formatMoney(p.amount, p.currencyCode)}
                   </span>
                 </div>
               ))}

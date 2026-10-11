@@ -1,5 +1,16 @@
 # Money and FX boundary manifest
 
+## MON-135 saved invoices and settlement UI
+
+[CORE_UI_MONEY_CUTOVER](CORE_UI_MONEY_CUTOVER.md#mon-135-saved-invoices-and-settlement-ui)
+owns invoice list/detail headers and lines, source/base display, aging/progress,
+copy payloads, payment/late-fee controls and available-credit application. Raw
+numeric aliases are checked against canonical Minor strings, then bigint drives
+the UI. Writes use the existing amountMinor/unitPriceExact contracts; quantities,
+discount/tax/deposit basis points and rate metadata keep their original units.
+Registered direct-DB MCP operations are exercised by the disposable SQL fixture.
+Remaining shared component compatibility and parent acceptance are explicit.
+
 ## MON-134 shared line editor and invoice create
 
 [CORE_UI_MONEY_CUTOVER](CORE_UI_MONEY_CUTOVER.md#mon-134-shared-editor-and-invoice-creation)

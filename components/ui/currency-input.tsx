@@ -15,6 +15,7 @@ interface CurrencyInputProps {
   id?: string;
   fractionDigits?: number;
   "aria-label"?: string;
+  "aria-invalid"?: boolean;
 }
 
 export function CurrencyInput({
@@ -29,6 +30,7 @@ export function CurrencyInput({
   id,
   fractionDigits = 2,
   "aria-label": ariaLabel,
+  "aria-invalid": ariaInvalid,
 }: CurrencyInputProps) {
   const inputRef = React.useRef<HTMLInputElement>(null);
 
@@ -56,6 +58,7 @@ export function CurrencyInput({
         ref={inputRef}
         id={id}
         aria-label={ariaLabel}
+        aria-invalid={ariaInvalid}
         type="text"
         inputMode="decimal"
         value={value}

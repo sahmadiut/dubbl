@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ArrowLeft, Send, DollarSign, Ban, Copy, Clock, Mail, Banknote, Download, AlertTriangle, X, Pencil, Loader2, FileX, Percent, Wallet, ThumbsUp, Bell } from "lucide-react";
@@ -8,7 +8,7 @@ import { PageHeader } from "@/components/dashboard/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { CurrencyInput } from "@/components/ui/currency-input";
+import { InvoiceAmountInput } from "@/components/dashboard/invoice-amount-input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { DatePicker } from "@/components/ui/date-picker";
-import { formatMoney, minorUnitsToDecimal } from "@/lib/money";
+import { invoiceUiMoney as formatMoney, invoiceUiDecimal as minorUnitsToDecimal, invoiceUiDocument, invoiceUiPayment, invoiceUiCredit, invoiceUiBase, invoiceUiAmount, invoiceUiAmountValid, invoiceUiCreditAmount, invoiceUiCopyLines, invoiceUiPercent } from "@/lib/money/invoice-ui";
 import { DualAmount } from "@/components/ui/dual-amount";
 import { RateNote, type RateInfo } from "@/components/ui/rate-note";
 import { useConfirm } from "@/lib/hooks/use-confirm";
@@ -53,11 +53,11 @@ interface InvoiceDetail {
   invoiceType?: string | null;
   depositPercent?: number | null;
   dunningLevel?: number | null;
-  subtotal: number;
-  taxTotal: number;
-  total: number;
-  amountPaid: number;
-  amountDue: number;
+  subtotal: bigint;
+  taxTotal: bigint;
+  total: bigint;
+  amountPaid: bigint;
+  amountDue: bigint;
   currencyCode: string;
   reference: string | null;
   notes: string | null;
@@ -67,9 +67,17 @@ interface InvoiceDetail {
     id: string;
     description: string;
     quantity: number;
-    unitPrice: number;
-    amount: number;
-    taxAmount: number;
+    unitPrice: bigint;
+    accountId?: string | null;
+    taxRateId?: string | null;
+    costCenterId?: string | null;
+    projectId?: string | null;
+    inventoryItemId?: string | null;
+    warehouseId?: string | null;
+    priceListId?: string | null;
+    discountPercent?: number;
+    amount: bigint;
+    taxAmount: bigint;
     account: { code: string; name: string; id: string } | null;
     taxRate: { id: string; name: string; rate: number } | null;
   }[];
@@ -79,8 +87,8 @@ interface AvailableCredit {
   id: string;
   date: string;
   currencyCode: string;
-  originalAmount: number;
-  amountRemaining: number;
+  originalAmount: bigint;
+  amountRemaining: bigint;
   sourceType: string;
   notes: string | null;
 }
@@ -96,11 +104,11 @@ interface BaseAmounts {
   baseCurrency: string;
   rate: number | null;
   amounts: {
-    total: number | null;
-    amountDue: number | null;
-    amountPaid: number | null;
-    subtotal: number | null;
-    taxTotal: number | null;
+    total: bigint | null;
+    amountDue: bigint | null;
+    amountPaid: bigint | null;
+    subtotal: bigint | null;
+    taxTotal: bigint | null;
   };
   status?: RateInfo;
 }
@@ -161,8 +169,9 @@ interface PaymentRecord {
   id: string;
   paymentNumber: string;
   date: string;
-  amount: number;
+  amount: bigint;
   method: string;
+  currencyCode: string;
 }
 
 function formatDate(dateStr: string) {
@@ -187,6 +196,9 @@ export default function InvoiceDetailPage() {
   const [base, setBase] = useState<BaseAmounts | null>(null);
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [moneyError, setMoneyError] = useState<string | null>(null);
+  const [loadedContext, setLoadedContext] = useState("");
+  const invoiceRequest = useRef<{ key: string; controller: AbortController } | null>(null);
   const [payAmount, setPayAmount] = useState("");
   const [payDate, setPayDate] = useState(new Date().toISOString().split("T")[0]);
   const [payMethod, setPayMethod] = useState("bank_transfer");
@@ -220,6 +232,7 @@ export default function InvoiceDetailPage() {
   const [interestLoading, setInterestLoading] = useState(false);
   // Available customer credits
   const [credits, setCredits] = useState<AvailableCredit[]>([]);
+  const [creditContext, setCreditContext] = useState("");
   const [applyingCreditId, setApplyingCreditId] = useState<string | null>(null);
   // Approval actions (mirrors the bill detail flow)
   const [approving, setApproving] = useState(false);
@@ -230,19 +243,30 @@ export default function InvoiceDetailPage() {
 
   useEntityTitle(inv?.invoiceNumber);
   const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
+  const contextKey = `${orgId}:${id}`;
 
   useEffect(() => {
     if (!orgId) return;
+    const controller = new AbortController();
+    invoiceRequest.current = { key: contextKey, controller };
     fetch(`/api/v1/invoices/${id}`, {
       headers: { "x-organization-id": orgId },
+      signal: controller.signal,
     })
       .then((r) => r.json())
       .then((data) => {
-        if (data.invoice) setInv(data.invoice);
-        if (data.payments) setPayments(data.payments);
-        if (data.base) setBase(data.base);
+        if (controller.signal.aborted) return;
+        if (!data.invoice) throw new Error("Invoice amounts unavailable");
+        const saved = invoiceUiDocument(data.invoice) as unknown as InvoiceDetail;
+        const history = (data.payments || []).map((row: Record<string, unknown>) => invoiceUiPayment({ ...row, currencyCode: saved.currencyCode }));
+        const converted = data.base ? invoiceUiBase(data.base) : null;
+        setInv(saved); setPayments(history); setBase(converted);
+        setMoneyError(null); setLoadedContext(contextKey);
       })
-      .finally(() => setLoading(false));
+      .catch(() => {
+        if (!controller.signal.aborted) { setMoneyError("Unable to load valid invoice amounts. Please reload."); setLoadedContext(contextKey); }
+      })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
 
     fetch(`/api/v1/invoices/${id}/compliance`, {
       headers: { "x-organization-id": orgId },
@@ -272,50 +296,60 @@ export default function InvoiceDetailPage() {
 
     fetch(`/api/v1/invoices/${id}/available-credits`, {
       headers: { "x-organization-id": orgId },
+      signal: controller.signal,
     })
       .then((r) => r.json())
       .then((data) => {
-        if (Array.isArray(data.credits)) setCredits(data.credits);
+        if (controller.signal.aborted) return;
+        if (Array.isArray(data.credits)) setCredits(data.credits.map(invoiceUiCredit));
+        else setCredits([]);
+        setCreditContext(contextKey);
       })
-      .catch(() => {});
-  }, [id, orgId]);
+      .catch(() => { if (!controller.signal.aborted) setCredits([]); });
+    return () => controller.abort();
+  }, [id, orgId, contextKey]);
 
   // Re-pull the invoice (+ payments + base) and available credits after an
   // action that changes balances (late fee, applying a credit).
-  function refetchInvoice() {
+  async function refetchInvoice() {
     if (!orgId) return;
-    fetch(`/api/v1/invoices/${id}`, { headers: { "x-organization-id": orgId } })
+    const active = invoiceRequest.current;
+    if (active?.key !== contextKey || active.controller.signal.aborted) return;
+    const invoiceRefresh = fetch(`/api/v1/invoices/${id}`, { headers: { "x-organization-id": orgId }, signal: active.controller.signal })
       .then((r) => r.json())
       .then((data) => {
-        if (data.invoice) setInv(data.invoice);
-        if (data.payments) setPayments(data.payments);
-        if (data.base) setBase(data.base);
+        if (active.controller.signal.aborted) return;
+        if (!data.invoice) throw new Error("Invoice amounts unavailable");
+        const saved = invoiceUiDocument(data.invoice) as unknown as InvoiceDetail;
+        const history = (data.payments || []).map((row: Record<string, unknown>) => invoiceUiPayment({ ...row, currencyCode: saved.currencyCode }));
+        const converted = data.base ? invoiceUiBase(data.base) : null;
+        setInv(saved); setPayments(history); setBase(converted); setMoneyError(null);
       })
-      .catch(() => {});
-    fetch(`/api/v1/invoices/${id}/available-credits`, {
+      .catch(() => { if (!active.controller.signal.aborted) setMoneyError("Unable to refresh invoice amounts. Please reload."); });
+    const creditRefresh = fetch(`/api/v1/invoices/${id}/available-credits`, {
       headers: { "x-organization-id": orgId },
+      signal: active.controller.signal,
     })
       .then((r) => r.json())
       .then((data) => {
-        if (Array.isArray(data.credits)) setCredits(data.credits);
+        if (active.controller.signal.aborted) return;
+        if (Array.isArray(data.credits)) setCredits(data.credits.map(invoiceUiCredit));
+        else setCredits([]);
+        setCreditContext(contextKey);
       })
-      .catch(() => {});
+      .catch(() => { if (!active.controller.signal.aborted) setCredits([]); });
+    await Promise.all([invoiceRefresh, creditRefresh]);
   }
 
   async function handleChargeInterest() {
     if (!orgId) return;
     setInterestLoading(true);
     try {
-      const body: { amount?: number } = {};
+      const body: { amountMinor?: string } = {};
       const trimmed = interestAmount.trim();
       if (trimmed) {
-        const amt = parseFloat(trimmed);
-        if (!amt || amt <= 0) {
-          toast.error("Enter a valid amount");
-          setInterestLoading(false);
-          return;
-        }
-        body.amount = amt;
+        if (!inv) return;
+        Object.assign(body, invoiceUiAmount(trimmed, inv.currencyCode));
       }
       const res = await fetch(`/api/v1/invoices/${id}/charge-interest`, {
         method: "POST",
@@ -326,11 +360,13 @@ export default function InvoiceDetailPage() {
         setInterestOpen(false);
         setInterestAmount("");
         toast.success("Late fee added as a new invoice");
-        refetchInvoice();
+        await refetchInvoice();
       } else {
         const data = await res.json().catch(() => ({}));
         toast.error(typeof data.error === "string" ? data.error : "Couldn't add a late fee");
       }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Couldn't add a late fee");
     } finally {
       setInterestLoading(false);
     }
@@ -339,21 +375,20 @@ export default function InvoiceDetailPage() {
   async function handleApplyCredit(credit: AvailableCredit) {
     if (!orgId || !inv) return;
     // Apply the smaller of what's left on the credit and what's owed.
-    const amount = Math.min(credit.amountRemaining, inv.amountDue);
-    if (amount <= 0) {
-      toast.error("Nothing left to apply");
-      return;
-    }
+    let input: { amountMinor: string };
+    try { input = invoiceUiCreditAmount(credit, inv); }
+    catch (error) { toast.error(error instanceof Error ? error.message : "Invalid credit amount"); return; }
+    const amount = BigInt(input.amountMinor);
     setApplyingCreditId(credit.id);
     try {
       const res = await fetch(`/api/v1/customer-credits/${credit.id}/apply`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
-        body: JSON.stringify({ invoiceId: id, amount }),
+        body: JSON.stringify({ invoiceId: id, ...input }),
       });
       if (res.ok) {
         toast.success(`Applied ${formatMoney(amount, inv.currencyCode)} credit`);
-        refetchInvoice();
+        await refetchInvoice();
       } else {
         const data = await res.json().catch(() => ({}));
         toast.error(typeof data.error === "string" ? data.error : "Couldn't apply this credit");
@@ -374,7 +409,7 @@ export default function InvoiceDetailPage() {
       });
       if (res.ok) {
         toast.success("Invoice approved");
-        refetchInvoice();
+        await refetchInvoice();
       } else {
         const data = await res.json().catch(() => ({}));
         toast.error(typeof data.error === "string" ? data.error : "Couldn't approve this invoice");
@@ -398,7 +433,7 @@ export default function InvoiceDetailPage() {
         setRejectOpen(false);
         setRejectReason("");
         toast.success("Invoice rejected");
-        refetchInvoice();
+        await refetchInvoice();
       } else {
         const data = await res.json().catch(() => ({}));
         toast.error(typeof data.error === "string" ? data.error : "Couldn't reject this invoice");
@@ -424,7 +459,7 @@ export default function InvoiceDetailPage() {
           });
           if (res.ok) {
             toast.success("Sent for approval");
-            refetchInvoice();
+            await refetchInvoice();
           } else {
             const data = await res.json().catch(() => ({}));
             toast.error(typeof data.error === "string" ? data.error : "Couldn't send this invoice for approval");
@@ -520,27 +555,17 @@ export default function InvoiceDetailPage() {
     }
   }
 
-  function handleSendComplete() {
-    // Re-fetch invoice to get updated status
-    if (!orgId) return;
-    fetch(`/api/v1/invoices/${id}`, {
-      headers: { "x-organization-id": orgId },
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.invoice) setInv(data.invoice);
-        if (data.payments) setPayments(data.payments);
-      });
+  async function handleSendComplete() {
+    await refetchInvoice();
     setEmailHistoryKey((k) => k + 1);
   }
 
   async function handlePay() {
     if (!orgId) return;
-    const amount = Math.round(parseFloat(payAmount) * 100);
-    if (!amount || amount <= 0) {
-      toast.error("Enter a valid amount");
-      return;
-    }
+    if (!inv) return;
+    let input: { amountMinor: string };
+    try { input = invoiceUiAmount(payAmount, inv.currencyCode); }
+    catch (error) { toast.error(error instanceof Error ? error.message : "Invalid payment amount"); return; }
 
     setPayLoading(true);
     try {
@@ -550,21 +575,21 @@ export default function InvoiceDetailPage() {
           "Content-Type": "application/json",
           "x-organization-id": orgId,
         },
-        body: JSON.stringify({ amount, date: payDate, method: payMethod, bankAccountId: payBankAccountId || null }),
+        body: JSON.stringify({ ...input, date: payDate, method: payMethod, bankAccountId: payBankAccountId || null }),
       });
 
       if (res.ok) {
         const data = await res.json();
-        setInv((prev) => prev ? { ...prev, ...data.invoice } : prev);
-        if (data.payment) {
-          setPayments((prev) => [...prev, data.payment]);
-        }
+        invoiceUiDocument(data.invoice);
+        await refetchInvoice();
         setPayOpen(false);
         setPayAmount("");
         toast.success("Payment recorded");
       } else {
         toast.error("Failed to record payment");
       }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to record payment");
     } finally {
       setPayLoading(false);
     }
@@ -584,7 +609,8 @@ export default function InvoiceDetailPage() {
         });
         if (res.ok) {
           const data = await res.json();
-          setInv((prev) => prev ? { ...prev, ...data.invoice } : prev);
+          invoiceUiDocument(data.invoice);
+          await refetchInvoice();
           toast.success("Invoice cancelled");
         }
       },
@@ -606,7 +632,8 @@ export default function InvoiceDetailPage() {
         });
         if (res.ok) {
           const data = await res.json();
-          setInv((prev) => prev ? { ...prev, ...data.invoice } : prev);
+          invoiceUiDocument(data.invoice);
+          await refetchInvoice();
           toast.success("Unpaid amount written off as a loss");
         } else {
           const data = await res.json().catch(() => ({}));
@@ -631,12 +658,8 @@ export default function InvoiceDetailPage() {
           notes: inv.notes || null,
           invoiceType: inv.invoiceType || "standard",
           depositPercent: inv.depositPercent ?? null,
-          lines: inv.lines.map((l) => ({
-            description: l.description,
-            quantity: l.quantity / 100,
-            unitPrice: l.unitPrice / 100,
-            accountId: l.account?.id || null,
-          })),
+          currencyCode: inv.currencyCode,
+          lines: invoiceUiCopyLines(inv.lines, inv.currencyCode),
         }),
       });
       if (res.ok) {
@@ -651,13 +674,12 @@ export default function InvoiceDetailPage() {
     }
   }
 
-  if (loading) return <div className="space-y-6"><PageHeader title="Loading..." /></div>;
+  if (loading || loadedContext !== contextKey) return <div className="space-y-6"><PageHeader title="Loading..." /></div>;
+  if (moneyError) return <div role="alert" className="p-6">{moneyError}</div>;
   if (!inv) return <div className="space-y-6"><PageHeader title="Invoice not found" /></div>;
 
   const overdueInfo = getOverdueInfo(inv.dueDate, inv.status);
-  const paidPercent = inv.total > 0
-    ? Math.min(100, Math.round((inv.amountPaid / inv.total) * 100))
-    : inv.amountPaid > 0 ? 100 : 0;
+  const paidPercent = invoiceUiPercent(inv.amountPaid, inv.total);
   const sc = statusConfig[inv.status] || statusConfig.draft;
 
   return (
@@ -765,8 +787,8 @@ export default function InvoiceDetailPage() {
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <Label>Amount</Label>
-                      <CurrencyInput
-                        prefix="$"
+                      <InvoiceAmountInput
+                        currency={inv.currencyCode}
                         value={payAmount}
                         onChange={setPayAmount}
                         placeholder={minorUnitsToDecimal(inv.amountDue, inv.currencyCode)}
@@ -806,7 +828,7 @@ export default function InvoiceDetailPage() {
                         </Select>
                       </div>
                     )}
-                    <Button onClick={handlePay} loading={payLoading} className="w-full bg-emerald-600 hover:bg-emerald-700">
+                    <Button onClick={handlePay} disabled={!invoiceUiAmountValid(payAmount, inv.currencyCode)} loading={payLoading} className="w-full bg-emerald-600 hover:bg-emerald-700">
                       Record Payment
                     </Button>
                   </div>
@@ -842,8 +864,8 @@ export default function InvoiceDetailPage() {
                     </p>
                     <div className="space-y-2">
                       <Label>Custom amount (optional)</Label>
-                      <CurrencyInput
-                        prefix="$"
+                      <InvoiceAmountInput
+                        currency={inv.currencyCode}
                         value={interestAmount}
                         onChange={setInterestAmount}
                         placeholder="Use my interest rate"
@@ -852,6 +874,7 @@ export default function InvoiceDetailPage() {
                     <Button
                       onClick={handleChargeInterest}
                       loading={interestLoading}
+                      disabled={interestAmount.trim() !== "" && !invoiceUiAmountValid(interestAmount.trim(), inv.currencyCode)}
                       className="w-full bg-emerald-600 hover:bg-emerald-700"
                     >
                       Add late fee
@@ -971,7 +994,7 @@ export default function InvoiceDetailPage() {
                         <p className="text-xs text-muted-foreground mt-0.5">{line.account.code} · {line.account.name}</p>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-right font-mono tabular-nums">{(line.quantity / 100).toFixed(0)}</td>
+                    <td className="px-4 py-3 text-right font-mono tabular-nums">{line.quantity / 100}</td>
                     <td className="px-4 py-3 text-right font-mono tabular-nums text-muted-foreground">{formatMoney(line.unitPrice, inv.currencyCode)}</td>
                     <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
                       {line.taxRate ? (
@@ -1121,7 +1144,7 @@ export default function InvoiceDetailPage() {
         </div>
 
         {/* Available customer credit */}
-        {credits.length > 0 &&
+        {creditContext === contextKey && credits.length > 0 &&
           inv.amountDue > 0 &&
           !["paid", "void", "draft"].includes(inv.status) && (
             <div className="rounded-xl border bg-card overflow-hidden">
@@ -1136,7 +1159,7 @@ export default function InvoiceDetailPage() {
               </p>
               <div className="divide-y mt-1">
                 {credits.map((c) => {
-                  const applyAmount = Math.min(c.amountRemaining, inv.amountDue);
+                  const applyAmount = c.amountRemaining < inv.amountDue ? c.amountRemaining : inv.amountDue;
                   return (
                     <div key={c.id} className="flex items-center justify-between px-5 py-3">
                       <div className="flex items-center gap-3 min-w-0">
@@ -1154,6 +1177,7 @@ export default function InvoiceDetailPage() {
                       <Button
                         size="sm"
                         variant="outline"
+                        disabled={c.currencyCode !== inv.currencyCode || applyAmount <= 0n}
                         onClick={() => handleApplyCredit(c)}
                         loading={applyingCreditId === c.id}
                         title={`Apply ${formatMoney(applyAmount, c.currencyCode)} to this invoice`}
@@ -1285,7 +1309,7 @@ export default function InvoiceDetailPage() {
                       <p className="text-xs text-muted-foreground mt-0.5">{formatDate(p.date)}</p>
                     </div>
                   </div>
-                  <span className="text-sm font-mono font-semibold text-emerald-600 shrink-0">{formatMoney(p.amount, inv.currencyCode)}</span>
+                  <span className="text-sm font-mono font-semibold text-emerald-600 shrink-0">{formatMoney(p.amount, p.currencyCode)}</span>
                 </div>
               ))}
             </div>
@@ -1306,6 +1330,7 @@ export default function InvoiceDetailPage() {
           contactName={inv.contact?.name}
           organizationName={orgName}
           amountDue={inv.amountDue}
+          currencyCode={inv.currencyCode}
           dueDate={inv.dueDate}
           issueDate={inv.issueDate}
           sendApiUrl={`/api/v1/invoices/${id}/send`}

@@ -1,5 +1,20 @@
 # Verification matrix
 
+## MON-135 saved invoice UI money
+
+- `tests/invoice-ui-money.test.ts`: adopted aliases, safe limits, currency-scale
+  payment/interest input, credit application, aging/progress, copy tax/dimensions
+  and REST preview/wire calculations; no database or browser.
+- `tests/invoice-ui-components.test.ts`: real React exact source/base English
+  rendering, currency input labels/decimal mode and malformed-input alerts.
+- `tests/integration/invoice-ui-money.test.ts` and worker: migrated disposable
+  loopback PostgreSQL; real authenticated REST and registered MCP read/create/
+  update/pay/customer-credit/interest contracts plus independent SQL text checks
+  across USD, JPY, synthetic IRR and KWD. No production IRR or browser claim.
+- Existing invoice-reads, invoice-lifecycle, payment-settlements and credits
+  integration workers supply preserved tenant/role/lock/rollback/domain checks.
+
+
 ## MON-134 shared editor and invoice creation
 
 `tests/document-editor-money.test.ts` covers exact major price strings, USD/IRR/

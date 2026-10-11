@@ -6,12 +6,16 @@ import { ArrowLeft, Truck, PackageCheck, BookOpen, ReceiptText, Loader2 } from "
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatMoney } from "@/lib/money";
+import { procurementReceipt, procurementMoney } from "@/lib/money/procurement-ui";
+import type { ProcurementWire } from "@/lib/money/procurement-ui";
+import { ProcurementMoneyDetails } from "@/components/dashboard/procurement-money-details";
 import { useEntityTitle } from "@/lib/hooks/use-entity-title";
 import { toast } from "sonner";
 import Link from "next/link";
 
 interface GoodsReceiptDetail {
+  currencyCode: string;
+  total: bigint;
   id: string;
   receiptNumber: string;
   date: string;
@@ -24,7 +28,8 @@ interface GoodsReceiptDetail {
     id: string;
     description: string;
     quantityReceived: number;
-    unitCost: number;
+    amount: bigint;
+    unitCost: bigint;
     journalEntryId: string | null;
     inventoryItem: { name: string; sku: string | null } | null;
     warehouse: { name: string } | null;
@@ -48,9 +53,16 @@ const statusLabels: Record<string, string> = {
 
 export default function GoodsReceiptDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
+  return <GoodsReceiptDetailContent key={`${orgId}:${id}`} />;
+}
+
+function GoodsReceiptDetailContent() {
+  const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [gr, setGr] = useState<GoodsReceiptDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [readError, setReadError] = useState<string | null>(null);
   const [billing, setBilling] = useState(false);
 
   const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
@@ -81,23 +93,20 @@ export default function GoodsReceiptDetailPage() {
 
   useEffect(() => {
     if (!orgId) return;
-    fetch(`/api/v1/goods-receipts/${id}`, {
-      headers: { "x-organization-id": orgId },
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.goodsReceipt) setGr(data.goodsReceipt);
-      })
-      .finally(() => setLoading(false));
+    const controller = new AbortController();
+    fetch(`/api/v1/goods-receipts/${id}`, { headers: { "x-organization-id": orgId }, signal: controller.signal })
+      .then(r => { if (!r.ok) throw new Error("Could not load procurement document"); return r.json(); })
+      .then(data => { if (!controller.signal.aborted) setGr(procurementReceipt(data.goodsReceipt as ProcurementWire<GoodsReceiptDetail>)); })
+      .catch(error => { if (!controller.signal.aborted) { setGr(null); setReadError(error instanceof Error ? error.message : "Invalid procurement amounts"); } })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
   }, [id, orgId]);
 
+  if (readError) return <p role="alert" className="text-sm text-red-600">{readError}</p>;
   if (loading) return <div className="space-y-6"><PageHeader title="Loading..." /></div>;
   if (!gr) return <div className="space-y-6"><PageHeader title="Goods receipt not found" /></div>;
 
-  // Total value received: sum of (qty received / 100) * unit cost per line.
-  const totalValue = Math.round(
-    gr.lines.reduce((sum, l) => sum + (l.quantityReceived / 100) * l.unitCost, 0)
-  );
+  const totalValue = gr.total;
   // First line carrying a journal entry — the GRNI posting for this receipt.
   const journalEntryId = gr.lines.find((l) => l.journalEntryId)?.journalEntryId ?? null;
 
@@ -158,7 +167,7 @@ export default function GoodsReceiptDetailPage() {
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="rounded-lg border p-4">
           <p className="text-xs text-muted-foreground">Value received</p>
-          <p className="text-xl font-bold font-mono">{formatMoney(totalValue)}</p>
+          <p className="text-xl font-bold font-mono break-all">{procurementMoney(totalValue, gr.currencyCode)}</p>
         </div>
         <div className="rounded-lg border p-4">
           <div className="flex items-center gap-2">
@@ -171,34 +180,7 @@ export default function GoodsReceiptDetailPage() {
         </div>
       </div>
 
-      <div className="rounded-lg border overflow-x-auto">
-        <div className="grid min-w-[640px] grid-cols-[1fr_140px_80px_110px_120px] gap-2 border-b bg-muted/50 px-4 py-2 text-xs font-medium text-muted-foreground">
-          <span>Item</span>
-          <span>Location</span>
-          <span className="text-right">Qty</span>
-          <span className="text-right">Unit cost</span>
-          <span className="text-right">Value</span>
-        </div>
-        {gr.lines.map((line) => (
-          <div key={line.id} className="grid min-w-[640px] grid-cols-[1fr_140px_80px_110px_120px] gap-2 border-b px-4 py-2 last:border-b-0">
-            <div>
-              <p className="text-sm">{line.inventoryItem?.name || line.description}</p>
-              {line.inventoryItem?.sku && (
-                <p className="text-xs text-muted-foreground">{line.inventoryItem.sku}</p>
-              )}
-            </div>
-            <span className="text-sm text-muted-foreground truncate">{line.warehouse?.name || "-"}</span>
-            <span className="text-right text-sm font-mono">{(line.quantityReceived / 100).toFixed(0)}</span>
-            <span className="text-right text-sm font-mono">{formatMoney(line.unitCost)}</span>
-            <span className="text-right text-sm font-mono font-medium">
-              {formatMoney(Math.round((line.quantityReceived / 100) * line.unitCost))}
-            </span>
-          </div>
-        ))}
-        <div className="border-t bg-muted/30 px-4 py-2 text-right">
-          <span className="text-sm font-bold">Total value: {formatMoney(totalValue)}</span>
-        </div>
-      </div>
+      <ProcurementMoneyDetails document={gr} receipt />
 
       {gr.notes && (
         <div className="rounded-lg border p-4">

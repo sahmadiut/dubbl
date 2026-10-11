@@ -265,7 +265,7 @@ original combined criteria; MON-007 retains its original integration acceptance.
 | MON-138 | create-drawer.tsx BillDrawer; line-items-editor.tsx bill policy; lib/money/bill-editor.ts | Exact extended-price preview and unitPriceExact writes; explicit supplier/org/selected currency; reverse-charge amount due; approval/duplicate controls |
 | MON-139 | purchases/page.tsx and purchases/[id]/page.tsx; bill-ui.ts and BillCurrencyAmounts; shared InvoiceAmountInput/DualAmount props | Validated saved Minor reads, currency-grouped counts/sample aging, exact source/base/progress, whole-minor payments and supplier-credit price/dimension copies |
 | MON-140 | purchases/debit-notes list/detail, DebitNoteDrawer, debit-note-ui.ts, DebitNoteMoneyDetails and DebitNoteOverview; shared LineItemsEditor/InvoiceAmountInput/SendDocumentDialog props | Exact extended-price preview/unitPriceExact writes, validated saved Minor aliases, currency-grouped sample sums and same-supplier/currency amountMinor bill application; no cash-refund operation exists |
-| MON-141 | purchases/orders, requisitions, goods-receipts and PurchaseOrderDrawer | Pending exact procurement money, fixed-two compatibility, conversion and quantity contracts |
+| MON-141 | purchases/orders, requisitions, goods-receipts list/detail; PurchaseOrderDrawer; procurement-ui.ts; ProcurementMoneyDetails and RequisitionLineEditor; shared LineItemsEditor PO policy | Exact decimal prices/Minor reads, wire-specific bigint previews, per-line receipt rounding, currency-grouped sample totals, physical quantity/tally/conversion contracts |
 | MON-142 | purchases/bills/recurring | Pending recurring bill currency, pricing and schedules |
 | MON-133 | accounting/accounts/[id] page/layout; accounting/opening-balances/page.tsx and OpeningBalanceDrawer; accounting/banking, payments and payment batches; purchases/expenses and expense create/edit/mileage controls; tax/page.tsx, tax/periods/[id], tax/sales-tax and tax settlement controls; remaining core bank/payment/tax/settings/approval consumers | Explicit exact money and source/base-currency presentation; opening balances still require numeric compatibility writes until their separate API adoption; no silent unsupported Minor fields |
 | MON-008 | Other dashboard financial/report consumers, budgets/assets/loans/projects/payroll/inventory auxiliary surfaces, contacts summaries, jobs, exports, public/provider/PDF consumers | Existing domain adoption does not imply complete consumer closure |
@@ -525,3 +525,56 @@ alias/range/precision errors, copying, tax/discount, payment and missing FX. Exi
 domain suites cover controls. No live browser effects, screenshot qualification,
 full-int64 workflow, production IRR or financial approval is claimed. MON-140..142
 and MON-132/MON-129/MON-007 retain their separate scope and acceptance.
+
+## MON-141 procurement UI
+
+Owner: purchases/orders, purchases/requisitions and purchases/goods-receipts list/detail,
+create-drawer.tsx PurchaseOrderDrawer, procurement-ui.ts, ProcurementMoneyDetails,
+RequisitionLineEditor and the LineItemsEditor purchaseOrder policy.
+
+Creation explicitly defaults to USD as both procurement transports do, independently
+of supplier/org currency. Selected currency is sent with unitPriceExact decimal strings,
+up to 18 fractional price digits. Blank prices mean zero, blank quantities one, and
+explicit zero/fractional quantities survive. Malformed input, missing descriptions,
+unresolved tax, int32 quantity and safe money range failures prevent submission.
+Handlers reparse lines; UI PATCH sends only the supported line subset. PO create
+calculates exclusive tax; PO draft PATCH and requisitions retain zero-tax/no-discount
+policies with tax references. PO editing explicitly labels that policy and seeds saved
+rounded prices in saved currency; original subminor price text is not persisted.
+USD 0.005 x 3 creates 2 minor units, saving a 1-minor rounded unit price. Receiving
+those 3 units uses that saved cost and can value them at 3 minor units. No historical
+price is reconstructed. Receipt/bill amounts round each line, then sum; two half-unit
+lines at one minor each total 2, never aggregate-round to 1.
+
+Saved numeric/Minor amounts must be safe, canonical and agree; numeric-only fallback
+retains raw units. Document header/line sums agree exactly. Currency metadata drives
+presentation for USD/JPY/synthetic IRR/KWD, never inferred rescaling. Receipt cost
+aliases and physical quantityReceivedExact aliases are checked. Bigint sums/overview
+can exceed one document's safe bridge. PO/receipt overview excludes voids and groups
+loaded matching records by currency. The counts endpoint rejects mixed currencies
+within a status; counts unavailability is stated without suppressing valid list money.
+It never supplies mixed currency amounts. Empty groups are dashes. No monetary
+fixed-two exception remains in these consumers; USD defaults/static examples,
+quantity hundredths, tax basis points and numeric wire coexistence keep their units.
+
+Remaining receipt quantities use quantityExact, preserving physical hundredths.
+Saved ordered/received/billed-or-reserved quantities retain fractions. Direct PO bill
+conversion reserves billed quantities at draft creation; receipt bill drafts update
+billed tallies only at recognition. UI displays saved authoritative tallies; no cash,
+posting, FX, reservation or stock policy changes. Receipt billing creates a draft;
+recognition remains a separate domain operation. Optional supplier selection on the
+requisition create sheet supports later conversion; existing approval/reject/convert,
+notes/reference/dates, send/edit/delete and receive controls remain. Requisition
+lifecycle DTOs update only status/reason fields instead of overwriting bigint money.
+
+List services support status/page, not search/date/sort. Existing local controls now
+inspect and sort loaded samples, labeled explicitly; amount sorting groups currencies
+then compares bigint. Pagination remains server-scoped. Org/document keys remount
+state, main reads abort, and filter generations suppress obsolete pagination. Pages
+parse incoming amounts before enqueueing React state updates; invalid money is
+suppressed with English alerts. Requisition sheet renders a stable element to preserve
+input focus. Tables scroll horizontally; large amounts wrap. DEC-005 requires no
+screenshots; pure adapters and rendered controls/details plus real REST/MCP/SQL
+fixtures cover money behavior. Live browser effects, provider/email/PDF, full-int64
+posting, production IRR and accounting/linguistic qualification are not claimed.
+MON-142 and MON-132/MON-129/MON-007 retain independent acceptance.

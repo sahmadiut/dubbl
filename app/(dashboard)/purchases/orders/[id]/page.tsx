@@ -7,7 +7,6 @@ import { ArrowLeft, Send, ShoppingCart, Pencil, Trash2, Plus, Package, PackageCh
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { CurrencyInput } from "@/components/ui/currency-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -24,12 +23,15 @@ import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { useConfirm } from "@/lib/hooks/use-confirm";
 import { useEntityTitle } from "@/lib/hooks/use-entity-title";
-import { formatMoney, centsToDecimal } from "@/lib/money";
+import { procurementDocument, procurementMoney, procurementEditPrice, procurementQuantityText, procurementReceiveLines, procurementEditorLines, procurementPreview } from "@/lib/money/procurement-ui";
+import type { ProcurementWire } from "@/lib/money/procurement-ui";
+import { ProcurementMoneyDetails } from "@/components/dashboard/procurement-money-details";
 import { SendDocumentDialog } from "@/components/dashboard/send-document-dialog";
 import { EmailHistory } from "@/components/dashboard/email-history";
 import Link from "next/link";
 
 interface PODetail {
+  currencyCode: string;
   id: string;
   poNumber: string;
   contactId: string;
@@ -38,8 +40,9 @@ interface PODetail {
   status: string;
   reference: string | null;
   notes: string | null;
-  subtotal: number;
-  total: number;
+  taxTotal: bigint;
+  subtotal: bigint;
+  total: bigint;
   contact: { name: string; email: string | null } | null;
   lines: {
     id: string;
@@ -47,8 +50,8 @@ interface PODetail {
     quantity: number;
     quantityReceived: number;
     quantityBilled: number;
-    unitPrice: number;
-    amount: number;
+    unitPrice: bigint;
+    amount: bigint;
     account: { id: string; code: string; name: string } | null;
     taxRate: { id: string } | null;
   }[];
@@ -105,10 +108,12 @@ function DrawerFooter({
   onClose,
   saving,
   label,
+  disabled = false,
 }: {
   onClose: () => void;
   saving: boolean;
   label: string;
+  disabled?: boolean;
 }) {
   return (
     <div className="sticky bottom-0 z-10 flex items-center justify-end gap-3 border-t bg-background/80 px-4 py-3 sm:px-6 sm:py-4 backdrop-blur-sm">
@@ -117,7 +122,7 @@ function DrawerFooter({
       </Button>
       <Button
         type="submit"
-        disabled={saving}
+        disabled={saving || disabled}
         className="bg-emerald-600 hover:bg-emerald-700"
       >
         {saving ? "Saving..." : label}
@@ -157,8 +162,8 @@ function EditPODrawer({
       setLines(
         po.lines.map((l) => ({
           description: l.description,
-          quantity: String(l.quantity / 100),
-          unitPrice: centsToDecimal(l.unitPrice),
+          quantity: procurementQuantityText(l.quantity),
+          unitPrice: procurementEditPrice(l.unitPrice, po.currencyCode),
           accountId: l.account?.id || "",
           taxRateId: l.taxRate?.id || "",
         }))
@@ -179,6 +184,8 @@ function EditPODrawer({
     setLines((prev) => prev.filter((_, i) => i !== index));
   }
 
+  const preview = procurementPreview(lines, po.currencyCode, [], "purchaseOrderUpdate");
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const orgId = localStorage.getItem("activeOrgId");
@@ -186,8 +193,8 @@ function EditPODrawer({
       toast.error("Supplier is required");
       return;
     }
-    if (lines.some((l) => !l.description.trim() || !l.unitPrice)) {
-      toast.error("All lines need a description and price");
+    if (preview.error || lines.some((l) => !l.description.trim())) {
+      toast.error("Check every line description, quantity and price");
       return;
     }
 
@@ -201,13 +208,7 @@ function EditPODrawer({
           issueDate,
           deliveryDate: deliveryDate || null,
           notes: notes || null,
-          lines: lines.map((l) => ({
-            description: l.description,
-            quantity: parseFloat(l.quantity) || 1,
-            unitPrice: parseFloat(l.unitPrice) || 0,
-            accountId: l.accountId || null,
-            taxRateId: l.taxRateId || null,
-          })),
+          lines: procurementEditorLines(lines, "purchaseOrderUpdate"),
         }),
       });
 
@@ -285,11 +286,11 @@ function EditPODrawer({
                       </div>
                       <div className="space-y-2">
                         <Label className="text-xs">Quantity</Label>
-                        <Input type="number" step="1" min="1" value={line.quantity} onChange={(e) => updateLine(index, { quantity: e.target.value })} />
+                        <Input type="number" step="any" value={line.quantity} onChange={(e) => updateLine(index, { quantity: e.target.value })} />
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-xs">Unit Price *</Label>
-                        <CurrencyInput prefix="$" value={line.unitPrice} onChange={(v) => updateLine(index, { unitPrice: v })} />
+                        <Label className="text-xs">Unit Price ({po.currencyCode})</Label>
+                        <Input inputMode="decimal" value={line.unitPrice} onChange={(e) => updateLine(index, { unitPrice: e.target.value })} />
                       </div>
                       <div className="space-y-2">
                         <Label className="text-xs">Account</Label>
@@ -303,12 +304,14 @@ function EditPODrawer({
 
             <div className="h-px bg-border" />
 
+            <p className="text-sm">Prices shown are the saved rounded prices. Saving recalculates totals without tax or discounts.</p>
+            {preview.error ? <p role="alert" className="text-sm text-red-600">{preview.error}</p> : <p className="text-right font-mono break-all">Preview total: {procurementMoney(preview.total, po.currencyCode)}</p>}
             <div className="space-y-4">
               <SectionLabel>Notes</SectionLabel>
               <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Internal notes..." rows={3} />
             </div>
           </div>
-          <DrawerFooter onClose={onClose} saving={saving} label="Save Changes" />
+          <DrawerFooter onClose={onClose} saving={saving} disabled={!!preview.error || !contactId || lines.some(line => !line.description.trim())} label="Save Changes" />
         </form>
       </SheetContent>
     </Sheet>
@@ -321,10 +324,17 @@ function EditPODrawer({
 
 export default function PODetailPage() {
   const { id } = useParams<{ id: string }>();
+  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
+  return <PODetailContent key={`${orgId}:${id}`} />;
+}
+
+function PODetailContent() {
+  const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [po, setPo] = useState<PODetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [readError, setReadError] = useState<string | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
   const [emailHistoryKey, setEmailHistoryKey] = useState(0);
@@ -333,20 +343,25 @@ export default function PODetailPage() {
 
   useEntityTitle(po?.poNumber);
 
-  const loadPO = useCallback(() => {
+  const loadPO = useCallback(async (signal?: AbortSignal) => {
     if (!orgId) return;
-    fetch(`/api/v1/purchase-orders/${id}`, { headers: { "x-organization-id": orgId } })
-      .then((r) => r.json())
-      .then((data) => { if (data.purchaseOrder) setPo(data.purchaseOrder); })
-      .finally(() => setLoading(false));
+    try {
+      const res = await fetch(`/api/v1/purchase-orders/${id}`, { headers: { "x-organization-id": orgId }, signal });
+      if (!res.ok) throw new Error("Could not load purchase order");
+      const data = await res.json();
+      if (!signal?.aborted) { setPo(procurementDocument(data.purchaseOrder as ProcurementWire<PODetail>)); setReadError(null); }
+    } catch (error) { if (!signal?.aborted) { setPo(null); setReadError(error instanceof Error ? error.message : "Invalid purchase order amounts"); } }
+    finally { if (!signal?.aborted) setLoading(false); }
   }, [id, orgId]);
 
   useEffect(() => {
-    loadPO();
+    const controller = new AbortController();
+    void loadPO(controller.signal);
     if (orgId) {
-      fetch("/api/v1/organization", { headers: { "x-organization-id": orgId } })
-        .then((r) => r.json()).then((data) => { if (data.organization?.name) setOrgName(data.organization.name); }).catch(() => {});
+      fetch("/api/v1/organization", { headers: { "x-organization-id": orgId }, signal: controller.signal })
+        .then(r => r.json()).then(data => { if (!controller.signal.aborted) setOrgName(data.organization?.name || ""); }).catch(() => {});
     }
+    return () => controller.abort();
   }, [loadPO, orgId]);
 
   function handleSendComplete() {
@@ -370,12 +385,7 @@ export default function PODetailPage() {
   // outstanding on each line). Adds stock you track to your inventory.
   async function handleReceiveItems() {
     if (!orgId || !po) return;
-    const linesToReceive = po.lines
-      .map((l) => ({
-        purchaseOrderLineId: l.id,
-        quantity: (l.quantity - l.quantityReceived) / 100,
-      }))
-      .filter((l) => l.quantity > 0);
+    const linesToReceive = procurementReceiveLines(po.lines);
 
     if (linesToReceive.length === 0) {
       toast.info("All items on this order are already marked as received");
@@ -430,6 +440,7 @@ export default function PODetailPage() {
     }
   }
 
+  if (readError) return <p role="alert" className="text-sm text-red-600">{readError}</p>;
   if (loading) return <BrandLoader />;
 
   if (!po) {
@@ -517,7 +528,7 @@ export default function PODetailPage() {
         <div className="grid gap-4 grid-cols-2 sm:grid-cols-3">
           <div className="rounded-lg border bg-card p-4">
             <p className="text-xs text-muted-foreground">Total</p>
-            <p className="mt-1 text-xl font-bold font-mono tabular-nums">{formatMoney(po.total)}</p>
+            <p className="mt-1 text-xl font-bold font-mono tabular-nums break-all">{procurementMoney(po.total, po.currencyCode)}</p>
           </div>
           <div className="rounded-lg border bg-card p-4">
             <p className="text-xs text-muted-foreground">Items</p>
@@ -529,37 +540,7 @@ export default function PODetailPage() {
           </div>
         </div>
 
-        {/* Line items */}
-        <div className="rounded-lg border overflow-hidden">
-          <div className="overflow-x-auto">
-            <div className="grid min-w-[500px] grid-cols-[1fr_80px_100px_120px] gap-2 border-b bg-muted/50 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              <span>Description</span>
-              <span className="text-right">Qty</span>
-              <span className="text-right">Price</span>
-              <span className="text-right">Amount</span>
-            </div>
-            {po.lines.map((line) => (
-              <div key={line.id} className="grid min-w-[500px] grid-cols-[1fr_80px_100px_120px] gap-2 border-b px-4 py-3 last:border-b-0 hover:bg-muted/30 transition-colors">
-                <div>
-                  <p className="text-sm font-medium">{line.description}</p>
-                  {line.account && (
-                    <p className="text-xs text-muted-foreground">{line.account.code} · {line.account.name}</p>
-                  )}
-                </div>
-                <span className="text-right text-sm font-mono tabular-nums">{(line.quantity / 100).toFixed(0)}</span>
-                <span className="text-right text-sm font-mono tabular-nums">{formatMoney(line.unitPrice)}</span>
-                <span className="text-right text-sm font-mono font-medium tabular-nums">{formatMoney(line.amount)}</span>
-              </div>
-            ))}
-            {/* Total row */}
-            <div className="grid min-w-[500px] grid-cols-[1fr_80px_100px_120px] gap-2 bg-muted/50 px-4 py-3">
-              <span />
-              <span />
-              <span className="text-right text-sm font-semibold">Total</span>
-              <span className="text-right text-sm font-mono font-bold tabular-nums">{formatMoney(po.total)}</span>
-            </div>
-          </div>
-        </div>
+        <ProcurementMoneyDetails document={po} />
       </div>
 
       <EmailHistory key={emailHistoryKey} documentType="purchase_order" documentId={id} />
@@ -569,7 +550,7 @@ export default function PODetailPage() {
         open={editOpen}
         onClose={() => setEditOpen(false)}
         po={po}
-        onSaved={loadPO}
+        onSaved={() => { void loadPO(); }}
       />
 
       <SendDocumentDialog
@@ -582,6 +563,7 @@ export default function PODetailPage() {
         contactName={po.contact?.name}
         organizationName={orgName}
         amountDue={po.total}
+        currencyCode={po.currencyCode}
         issueDate={po.issueDate}
         sendApiUrl={`/api/v1/purchase-orders/${id}/send`}
         onSent={handleSendComplete}

@@ -28,7 +28,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatMoney } from "@/lib/money";
+import { procurementList, procurementMoney, procurementOverviewText, procurementFilter } from "@/lib/money/procurement-ui";
+import { billUiCounts } from "@/lib/money/bill-ui";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { motion, MotionConfig } from "motion/react";
@@ -39,7 +40,8 @@ interface PO {
   issueDate: string;
   deliveryDate: string | null;
   status: string;
-  total: number;
+  currencyCode: string;
+  total: bigint;
   contact: { name: string } | null;
 }
 
@@ -110,8 +112,8 @@ function buildColumns(): Column<PO>[] {
       sortKey: "total",
       className: "w-28 text-right",
       render: (r) => (
-        <span className="font-mono text-sm tabular-nums">
-          {formatMoney(r.total)}
+        <span className="font-mono text-sm tabular-nums break-all">
+          {procurementMoney(r.total, r.currencyCode)}
         </span>
       ),
     },
@@ -119,10 +121,19 @@ function buildColumns(): Column<PO>[] {
 }
 
 export default function PurchaseOrdersPage() {
+  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
+  return <PurchaseOrdersContent key={orgId} />;
+}
+
+function PurchaseOrdersContent() {
   const router = useRouter();
+  const [readError, setReadError] = useState<string | null>(null);
+  const generation = useRef(0);
   const { open: openDrawer } = useCreateDrawer();
   const [pos, setPos] = useState<PO[]>([]);
-  const [countsData, setCountsData] = useState<{ counts: Record<string, { count: number; amount: number }>; total: number } | null>(null);
+  const [countsData, setCountsData] = useState<{ counts: Record<string, { count: number; amount: bigint; currencyCode: string }>; total: number } | null>(null);
+  const [countsError, setCountsError] = useState(false);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refetching, setRefetching] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
@@ -166,8 +177,9 @@ export default function PurchaseOrdersPage() {
     })
       .then((r) => r.json())
       .then((data) => {
-        if (!cancelled && data.counts) setCountsData(data);
-      });
+        if (!cancelled) { if (!data.counts) throw new Error("Counts unavailable"); setCountsData(billUiCounts(data)); }
+      })
+      .catch(() => { if (!cancelled) setCountsError(true); });
     return () => { cancelled = true; };
   }, [orgId]);
 
@@ -175,6 +187,9 @@ export default function PurchaseOrdersPage() {
   useEffect(() => {
     if (!orgId) return;
     let cancelled = false;
+    const controller = new AbortController();
+    generation.current += 1;
+    setLoadingMore(false);
     const isRefetch = !loading;
 
     setPage(1);
@@ -182,16 +197,19 @@ export default function PurchaseOrdersPage() {
     if (isRefetch) setRefetching(true);
 
     fetch(`/api/v1/purchase-orders?${buildParams(1)}`, {
-      headers: { "x-organization-id": orgId },
+      headers: { "x-organization-id": orgId }, signal: controller.signal,
     })
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("Could not load procurement documents"); return r.json(); })
       .then((data) => {
         if (cancelled) return;
-        if (data.data) setPos(data.data);
+        if (data.data) setPos(data.data.map(procurementList));
+        setReadError(null);
         if (data.pagination) {
+          setTotalCount(data.pagination.total);
           setHasMore(data.pagination.page < data.pagination.totalPages);
         }
       })
+      .catch((error) => { if (!cancelled) { setPos([]); setReadError(error instanceof Error ? error.message : "Invalid procurement amounts"); } })
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
@@ -200,7 +218,7 @@ export default function PurchaseOrdersPage() {
         }
       });
 
-    return () => { cancelled = true; };
+    return () => { cancelled = true; controller.abort(); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orgId, statusFilter, debouncedSearch, sortBy, sortOrder, dateFrom, dateTo]);
 
@@ -208,6 +226,7 @@ export default function PurchaseOrdersPage() {
   const loadMore = useCallback(() => {
     if (loadingMore || !hasMore || !orgId) return;
     const nextPage = page + 1;
+    const requestGeneration = generation.current;
     setLoadingMore(true);
 
     fetch(`/api/v1/purchase-orders?${buildParams(nextPage)}`, {
@@ -215,13 +234,16 @@ export default function PurchaseOrdersPage() {
     })
       .then((r) => r.json())
       .then((data) => {
-        if (data.data) setPos((prev) => [...prev, ...data.data]);
+        if (requestGeneration !== generation.current) return;
+        if (data.data) { const adopted = data.data.map(procurementList); setPos((prev) => [...prev, ...adopted]); }
         if (data.pagination) {
           setPage(data.pagination.page);
+          setTotalCount(data.pagination.total);
           setHasMore(data.pagination.page < data.pagination.totalPages);
         }
       })
-      .finally(() => setLoadingMore(false));
+      .catch((error) => { if (requestGeneration === generation.current) { setPos([]); setReadError(error instanceof Error ? error.message : "Invalid procurement amounts"); } })
+      .finally(() => { if (requestGeneration === generation.current) setLoadingMore(false); });
   }, [loadingMore, hasMore, orgId, page, buildParams]);
 
   // IntersectionObserver for infinite scroll
@@ -259,16 +281,16 @@ export default function PurchaseOrdersPage() {
     return c;
   }, [countsData]);
 
-  const totalValue = useMemo(() => {
-    if (!countsData) return 0;
-    return Object.values(countsData.counts).reduce((s, d) => s + d.amount, 0);
-  }, [countsData]);
-  const activeValue = (countsData?.counts.sent?.amount || 0) + (countsData?.counts.partial?.amount || 0);
-  const activeCount = (statusCounts.sent || 0) + (statusCounts.partial || 0);
+  const filteredPos = useMemo(() => procurementFilter(pos, row => row.poNumber, row => row.issueDate,
+    { search: debouncedSearch, from: dateFrom, to: dateTo, sortBy, sortOrder }), [pos, debouncedSearch, dateFrom, dateTo, sortBy, sortOrder]);
+  const totalValue = procurementOverviewText(filteredPos);
+  const activeValue = procurementOverviewText(filteredPos, ["sent", "partial"]);
+  const receivedValue = procurementOverviewText(filteredPos, ["received"]);
 
   if (loading) return <BrandLoader />;
+  if (readError) return <p role="alert" className="text-sm text-red-600">{readError}</p>;
 
-  if ((countsData?.total || 0) === 0 && statusFilter === "all" && !debouncedSearch && !hasFilters) {
+  if (totalCount === 0 && statusFilter === "all" && !debouncedSearch && !hasFilters) {
     return (
       <ContentReveal>
         <div>
@@ -375,48 +397,50 @@ export default function PurchaseOrdersPage() {
           </Button>
         </PageHeader>
 
+        {countsError && <p role="alert" className="text-xs text-muted-foreground">Status counts are unavailable. Amounts below describe loaded matching orders by currency.</p>}
         {/* Stats strip */}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
           <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Total Value</p>
-            <p className="text-lg sm:text-2xl font-bold font-mono tabular-nums tracking-tight">
-              {formatMoney(totalValue)}
+            <p className="text-xs text-muted-foreground">Value in loaded matching orders</p>
+            <p className="text-lg sm:text-2xl font-bold font-mono tabular-nums tracking-tight break-all">
+              {totalValue}
             </p>
           </div>
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground flex items-center gap-1.5">
               <span className="size-1.5 rounded-full bg-blue-500" />
-              Active
+              Active in loaded matching orders
             </p>
-            <p className="text-lg sm:text-2xl font-bold font-mono tabular-nums tracking-tight text-blue-600 dark:text-blue-400">
-              {formatMoney(activeValue)}
+            <p className="text-lg sm:text-2xl font-bold font-mono tabular-nums tracking-tight break-all text-blue-600 dark:text-blue-400">
+              {activeValue}
             </p>
           </div>
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground flex items-center gap-1.5">
               <span className="size-1.5 rounded-full bg-emerald-500" />
-              Received
+              Received in loaded matching orders
             </p>
-            <p className="text-lg sm:text-2xl font-bold font-mono tabular-nums tracking-tight text-emerald-600 dark:text-emerald-400">
-              {formatMoney(countsData?.counts.received?.amount || 0)}
+            <p className="text-lg sm:text-2xl font-bold font-mono tabular-nums tracking-tight break-all text-emerald-600 dark:text-emerald-400">
+              {receivedValue}
             </p>
           </div>
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground">Orders</p>
             <p className="text-lg sm:text-2xl font-bold tabular-nums tracking-tight">
-              {countsData?.total || 0}
+              {countsData?.total ?? totalCount}
             </p>
           </div>
         </div>
 
         <div className="h-px bg-border" />
 
+        <p className="text-xs text-muted-foreground">Search, dates and sorting apply to loaded orders. Amount sorting groups orders by currency.</p>
         {/* Status tabs + search */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
             <Tabs value={statusFilter} onValueChange={setStatusFilter}>
               <TabsList>
-                <TabsTrigger value="all" className="whitespace-nowrap">All ({countsData?.total || 0})</TabsTrigger>
+                <TabsTrigger value="all" className="whitespace-nowrap">All ({countsData?.total ?? totalCount})</TabsTrigger>
                 <TabsTrigger value="draft" className="whitespace-nowrap">Draft ({statusCounts.draft || 0})</TabsTrigger>
                 <TabsTrigger value="sent" className="whitespace-nowrap">Ordered ({statusCounts.sent || 0})</TabsTrigger>
                 <TabsTrigger value="partial" className="whitespace-nowrap">Some items in ({statusCounts.partial || 0})</TabsTrigger>
@@ -510,7 +534,7 @@ export default function PurchaseOrdersPage() {
             >
               <DataTable
                 columns={columns}
-                data={pos}
+              data={filteredPos}
                 loading={loading}
                 emptyMessage="No purchase orders match your filters."
                 onRowClick={(r) => router.push(`/purchases/orders/${r.id}`)}

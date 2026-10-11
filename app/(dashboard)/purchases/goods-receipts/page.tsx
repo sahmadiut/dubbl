@@ -11,25 +11,16 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Button } from "@/components/ui/button";
-import { formatMoney } from "@/lib/money";
+import { procurementReceipt, procurementMoney, procurementOverviewText, procurementFilter } from "@/lib/money/procurement-ui";
 import { devDelay } from "@/lib/dev-delay";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import Link from "next/link";
 
-interface GoodsReceiptLine {
-  quantityReceived: number;
-  unitCost: number;
-}
-
 interface GoodsReceipt {
-  id: string;
-  receiptNumber: string;
-  date: string;
-  status: string;
-  contact: { name: string } | null;
-  lines?: GoodsReceiptLine[];
+  id: string; receiptNumber: string; date: string; status: string;
+  currencyCode: string; total: bigint; contact: { name: string } | null;
 }
 
 const statusColors: Record<string, string> = {
@@ -48,12 +39,6 @@ const statusLabels: Record<string, string> = {
   billed: "billed",
   void: "cancelled",
 };
-
-// Total value of goods received: sum of (qty received / 100) * unit cost per line.
-function receivedValue(r: GoodsReceipt): number {
-  if (!r.lines) return 0;
-  return r.lines.reduce((sum, l) => sum + (l.quantityReceived / 100) * l.unitCost, 0);
-}
 
 function buildColumns(): Column<GoodsReceipt>[] {
   return [
@@ -95,8 +80,8 @@ function buildColumns(): Column<GoodsReceipt>[] {
       header: "Value received",
       className: "w-32 text-right",
       render: (r) => (
-        <span className="font-mono text-sm tabular-nums">
-          {r.lines ? formatMoney(Math.round(receivedValue(r))) : "-"}
+        <span className="font-mono text-sm tabular-nums break-all">
+          {procurementMoney(r.total, r.currencyCode)}
         </span>
       ),
     },
@@ -104,7 +89,14 @@ function buildColumns(): Column<GoodsReceipt>[] {
 }
 
 export default function GoodsReceiptsPage() {
+  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
+  return <GoodsReceiptsContent key={orgId} />;
+}
+
+function GoodsReceiptsContent() {
   const router = useRouter();
+  const [readError, setReadError] = useState<string | null>(null);
+  const generation = useRef(0);
   const [receipts, setReceipts] = useState<GoodsReceipt[]>([]);
   const [initialLoad, setInitialLoad] = useState(true);
   const [refetching, setRefetching] = useState(false);
@@ -140,29 +132,35 @@ export default function GoodsReceiptsPage() {
   useEffect(() => {
     if (!orgId) return;
     let cancelled = false;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    const controller = new AbortController();
+    generation.current += 1;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset pagination for the new status read
+    setLoadingMore(false);
     setRefetching(true);
     setPage(1);
 
     fetch(`/api/v1/goods-receipts?${buildParams(1)}`, {
-      headers: { "x-organization-id": orgId },
+      headers: { "x-organization-id": orgId }, signal: controller.signal,
     })
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("Could not load procurement documents"); return r.json(); })
       .then((data) => {
         if (cancelled) return;
-        setReceipts(data.data || []);
+        setReceipts((data.data || []).map(procurementReceipt));
+        setReadError(null);
         setTotalCount(data.pagination?.total || 0);
       })
       .then(() => devDelay())
+      .catch((error) => { if (!cancelled) { setReceipts([]); setReadError(error instanceof Error ? error.message : "Invalid procurement amounts"); } })
       .finally(() => { if (!cancelled) { setInitialLoad(false); setRefetching(false); setFetchKey((k) => k + 1); } });
 
-    return () => { cancelled = true; };
+    return () => { cancelled = true; controller.abort(); };
   }, [orgId, buildParams]);
 
   // Load more
   const loadMore = useCallback(() => {
     if (!orgId || loadingMore) return;
     const nextPage = page + 1;
+    const requestGeneration = generation.current;
     setLoadingMore(true);
 
     fetch(`/api/v1/goods-receipts?${buildParams(nextPage)}`, {
@@ -170,12 +168,15 @@ export default function GoodsReceiptsPage() {
     })
       .then((r) => r.json())
       .then((data) => {
+        if (requestGeneration !== generation.current) return;
         if (data.data) {
-          setReceipts((prev) => [...prev, ...data.data]);
+          const adopted = data.data.map(procurementReceipt);
+          setReceipts((prev) => [...prev, ...adopted]);
           setPage(nextPage);
         }
       })
-      .finally(() => setLoadingMore(false));
+      .catch((error) => { if (requestGeneration === generation.current) { setReceipts([]); setReadError(error instanceof Error ? error.message : "Invalid procurement amounts"); } })
+      .finally(() => { if (requestGeneration === generation.current) setLoadingMore(false); });
   }, [orgId, page, buildParams, loadingMore]);
 
   const hasMore = receipts.length < totalCount;
@@ -210,20 +211,8 @@ export default function GoodsReceiptsPage() {
   const pendingSearch = search !== debouncedSearch;
 
   const [searchKey, setSearchKey] = useState(0);
-  const filteredReceipts = useMemo(() => {
-    let rows = receipts;
-    if (dateFrom) rows = rows.filter((r) => r.date >= dateFrom);
-    if (dateTo) rows = rows.filter((r) => r.date <= dateTo);
-    if (debouncedSearch) {
-      const q = debouncedSearch.toLowerCase();
-      rows = rows.filter(
-        (r) =>
-          r.receiptNumber.toLowerCase().includes(q) ||
-          (r.contact?.name || "").toLowerCase().includes(q)
-      );
-    }
-    return rows;
-  }, [receipts, debouncedSearch, dateFrom, dateTo]);
+  const filteredReceipts = useMemo(() => procurementFilter(receipts, row => row.receiptNumber, row => row.date,
+    { search: debouncedSearch, from: dateFrom, to: dateTo, sortBy, sortOrder }), [receipts, debouncedSearch, dateFrom, dateTo, sortBy, sortOrder]);
 
   // Bump searchKey when debounced search changes to trigger ContentReveal
   useEffect(() => {
@@ -231,12 +220,10 @@ export default function GoodsReceiptsPage() {
     setSearchKey((k) => k + 1);
   }, [debouncedSearch]);
 
-  const totalValue = useMemo(
-    () => receipts.reduce((sum, r) => sum + (r.status !== "void" ? receivedValue(r) : 0), 0),
-    [receipts]
-  );
+  const totalValue = procurementOverviewText(filteredReceipts);
 
   if (initialLoad) return <BrandLoader />;
+  if (readError) return <p role="alert" className="text-sm text-red-600">{readError}</p>;
 
   if (!initialLoad && !refetching && receipts.length === 0 && statusFilter === "all" && !hasFilters) {
     return (
@@ -340,12 +327,13 @@ export default function GoodsReceiptsPage() {
     <ContentReveal className="space-y-6">
       {/* Top: Stats */}
       <div className="grid gap-3 sm:grid-cols-3">
-        <StatCard title="Value received" value={formatMoney(Math.round(totalValue))} icon={PackageCheck} />
+        <div className="[&_p]:break-all"><StatCard title="Value in loaded matching receipts" value={totalValue} icon={PackageCheck} /></div>
         <StatCard title="Receipts" value={totalCount.toString()} icon={Truck} />
       </div>
 
       <div className="h-px bg-border" />
 
+      <p className="text-xs text-muted-foreground">Search, dates and sorting apply to loaded receipts.</p>
       {/* Goods receipt table */}
       <div className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

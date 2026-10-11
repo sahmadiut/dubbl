@@ -60,6 +60,7 @@ import { billLineInputs, billEditorCurrency } from "@/lib/money/bill-editor";
 import { documentLineInputs, invoiceEditorCurrency } from "@/lib/money/document-editor";
 import { journalEditorPreview, journalDecimal } from "@/lib/money/journal-display";
 import { quoteEditorLines } from "@/lib/money/quote-ui";
+import { procurementEditorLines } from "@/lib/money/procurement-ui";
 import { debitNoteEditorLines } from "@/lib/money/debit-note-ui";
 import { salesReceiptEditorLines, salesReceiptEditorCurrency } from "@/lib/money/sales-receipt-ui";
 import { recurringInvoiceEditorLines, recurringInvoiceEditorCurrency } from "@/lib/money/recurring-invoice-ui";
@@ -120,7 +121,7 @@ export function CreateDrawerProvider({ children }: { children: React.ReactNode }
       <InventoryDrawer open={activeType === "inventory"} onClose={close} />
       <QuoteDrawer open={activeType === "quote"} onClose={close} />
       <SalesReceiptDrawer key={typeof window !== "undefined" ? localStorage.getItem("activeOrgId") || "" : ""} open={activeType === "salesReceipt"} onClose={close} />
-      <PurchaseOrderDrawer open={activeType === "purchaseOrder"} onClose={close} />
+      <PurchaseOrderDrawer key={drawerOrgId} open={activeType === "purchaseOrder"} onClose={close} />
       <ExpenseDrawer open={activeType === "expense"} onClose={close} />
       <FixedAssetDrawer open={activeType === "fixedAsset"} onClose={close} />
       <BudgetDrawer open={activeType === "budget"} onClose={close} />
@@ -1535,6 +1536,9 @@ function SalesReceiptDrawer({ open, onClose }: { open: boolean; onClose: () => v
 // ---------------------------------------------------------------------------
 function PurchaseOrderDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const router = useRouter();
+  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
+  const [currencyCode, setCurrencyCode] = useState("USD");
+  const [validLines, setValidLines] = useState(false);
   const [saving, setSaving] = useState(false);
   const [contactId, setContactId] = useState("");
   const [issueDate, setIssueDate] = useState(new Date().toISOString().split("T")[0]);
@@ -1547,6 +1551,7 @@ function PurchaseOrderDrawer({ open, onClose }: { open: boolean; onClose: () => 
 
   useEffect(() => {
     if (!open) {
+      setCurrencyCode("USD"); setValidLines(false);
       setContactId(""); setReference(""); setNotes(""); setDeliveryDate("");
       setIssueDate(new Date().toISOString().split("T")[0]);
       setLines([{ description: "", quantity: "1", unitPrice: "", accountId: "", taxRateId: "" }]);
@@ -1556,26 +1561,19 @@ function PurchaseOrderDrawer({ open, onClose }: { open: boolean; onClose: () => 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!contactId) { toast.error("Please select a supplier"); return; }
+    if (!orgId || !validLines) { toast.error("Check the purchase order amounts"); return; }
     setSaving(true);
-    const orgId = localStorage.getItem("activeOrgId");
-    if (!orgId) return;
 
     try {
       const res = await fetch("/api/v1/purchase-orders", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify({
-          contactId, issueDate,
+          contactId, issueDate, currencyCode,
           deliveryDate: deliveryDate || null,
           reference: reference || null,
           notes: notes || null,
-          lines: lines.map((l) => ({
-            description: l.description,
-            quantity: parseFloat(l.quantity) || 1,
-            unitPrice: parseFloat(l.unitPrice) || 0,
-            accountId: l.accountId || null,
-            taxRateId: l.taxRateId || null,
-          })),
+          lines: procurementEditorLines(lines, "purchaseOrder"),
         }),
       });
       if (!res.ok) {
@@ -1609,6 +1607,8 @@ function PurchaseOrderDrawer({ open, onClose }: { open: boolean; onClose: () => 
           <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
             <div className="space-y-4">
               <SectionLabel>Order Details</SectionLabel>
+              <Label>Currency</Label>
+              <CurrencySelect value={currencyCode} onValueChange={(code) => { setCurrencyCode(code); setValidLines(false); }} />
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Supplier *</Label>
@@ -1635,7 +1635,7 @@ function PurchaseOrderDrawer({ open, onClose }: { open: boolean; onClose: () => 
 
             <div className="space-y-4">
               <SectionLabel>Line Items</SectionLabel>
-              <LineItemsEditor lines={lines} onChange={setLines} accountTypeFilter={["expense"]} taxContext="purchase" />
+              <LineItemsEditor key={orgId} lines={lines} onChange={(next) => { setLines(next); setValidLines(false); }} documentKind="purchaseOrder" currencyCode={currencyCode} priceFractionDigits={18} onValidityChange={setValidLines} accountTypeFilter={["expense"]} taxContext="purchase" />
             </div>
 
             <div className="h-px bg-border" />
@@ -1645,7 +1645,7 @@ function PurchaseOrderDrawer({ open, onClose }: { open: boolean; onClose: () => 
               <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Internal notes..." rows={3} />
             </div>
           </div>
-          <DrawerFooter onClose={onClose} saving={saving} label="Create purchase order" />
+          <DrawerFooter onClose={onClose} saving={saving} disabled={!orgId || !contactId || !validLines || lines.some(line => !line.description.trim())} label="Create purchase order" />
         </form>
       </SheetContent>
     </Sheet>

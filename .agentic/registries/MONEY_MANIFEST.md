@@ -1690,3 +1690,56 @@ and incomplete dependent recovery graphs reject with table/storage/adapter state
 unchanged. Existing schema JSON ownership closure and domain inventories retain
 their owners. No new runtime/schema/history rescale, full-int64 cutover, live
 provider/deployment, production IRR or independent qualification claim.
+
+## MON-141 procurement UI
+
+Owner: purchases/orders, purchases/requisitions and purchases/goods-receipts list/detail,
+create-drawer.tsx PurchaseOrderDrawer, procurement-ui.ts, ProcurementMoneyDetails,
+RequisitionLineEditor and the LineItemsEditor purchaseOrder policy.
+
+Creation explicitly defaults to USD as both procurement transports do, independently
+of supplier/org currency. Selected currency is sent with unitPriceExact decimal strings,
+up to 18 fractional price digits. Blank prices mean zero, blank quantities one, and
+explicit zero/fractional quantities survive. Malformed input, missing descriptions,
+unresolved tax, int32 quantity and safe money range failures prevent submission.
+Handlers reparse lines; UI PATCH sends only the supported line subset. PO create
+calculates exclusive tax; PO draft PATCH and requisitions retain zero-tax/no-discount
+policies with tax references. PO editing explicitly labels that policy and seeds saved
+rounded prices in saved currency; original subminor price text is not persisted.
+USD 0.005 x 3 creates 2 minor units, saving a 1-minor rounded unit price. Receiving
+those 3 units uses that saved cost and can value them at 3 minor units. No historical
+price is reconstructed. Receipt/bill amounts round each line, then sum; two half-unit
+lines at one minor each total 2, never aggregate-round to 1.
+
+Saved numeric/Minor amounts must be safe, canonical and agree; numeric-only fallback
+retains raw units. Document header/line sums agree exactly. Currency metadata drives
+presentation for USD/JPY/synthetic IRR/KWD, never inferred rescaling. Receipt cost
+aliases and physical quantityReceivedExact aliases are checked. Bigint sums/overview
+can exceed one document's safe bridge. PO/receipt overview excludes voids and groups
+loaded matching records by currency. The counts endpoint rejects mixed currencies
+within a status; counts unavailability is stated without suppressing valid list money.
+It never supplies mixed currency amounts. Empty groups are dashes. No monetary
+fixed-two exception remains in these consumers; USD defaults/static examples,
+quantity hundredths, tax basis points and numeric wire coexistence keep their units.
+
+Remaining receipt quantities use quantityExact, preserving physical hundredths.
+Saved ordered/received/billed-or-reserved quantities retain fractions. Direct PO bill
+conversion reserves billed quantities at draft creation; receipt bill drafts update
+billed tallies only at recognition. UI displays saved authoritative tallies; no cash,
+posting, FX, reservation or stock policy changes. Receipt billing creates a draft;
+recognition remains a separate domain operation. Optional supplier selection on the
+requisition create sheet supports later conversion; existing approval/reject/convert,
+notes/reference/dates, send/edit/delete and receive controls remain. Requisition
+lifecycle DTOs update only status/reason fields instead of overwriting bigint money.
+
+List services support status/page, not search/date/sort. Existing local controls now
+inspect and sort loaded samples, labeled explicitly; amount sorting groups currencies
+then compares bigint. Pagination remains server-scoped. Org/document keys remount
+state, main reads abort, and filter generations suppress obsolete pagination. Pages
+parse incoming amounts before enqueueing React state updates; invalid money is
+suppressed with English alerts. Requisition sheet renders a stable element to preserve
+input focus. Tables scroll horizontally; large amounts wrap. DEC-005 requires no
+screenshots; pure adapters and rendered controls/details plus real REST/MCP/SQL
+fixtures cover money behavior. Live browser effects, provider/email/PDF, full-int64
+posting, production IRR and accounting/linguistic qualification are not claimed.
+MON-142 and MON-132/MON-129/MON-007 retain independent acceptance.

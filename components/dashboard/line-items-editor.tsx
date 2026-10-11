@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { AccountPicker } from "./account-picker";
 import { documentEditorPreview, documentEditorDecimal } from "@/lib/money/document-editor";
+import { procurementPreview } from "@/lib/money/procurement-ui";
 import { billEditorPreview } from "@/lib/money/bill-editor";
 import { recurringInvoiceEditorPreview } from "@/lib/money/recurring-invoice-ui";
 
@@ -46,7 +47,7 @@ interface LineItemsEditorProps {
   roundPriceFirst?: boolean;
   priceFractionDigits?: number;
   onValidityChange?: (valid: boolean) => void;
-  documentKind?: "invoice" | "bill" | "recurringInvoice";
+  documentKind?: "invoice" | "bill" | "recurringInvoice" | "purchaseOrder";
 }
 
 // Format a basis-point rate as a percentage (2000 -> "20", 1750 -> "17.5").
@@ -105,6 +106,7 @@ export function LineItemsEditor({ lines, onChange, accountTypeFilter, taxContext
   const preview = useMemo(() => documentKind === "bill"
     ? billEditorPreview(lines, previewCurrency, taxRates)
     : documentKind === "recurringInvoice" ? recurringInvoiceEditorPreview(lines, previewCurrency, taxRates)
+    : documentKind === "purchaseOrder" ? procurementPreview(lines, previewCurrency, taxRates)
     : documentEditorPreview(lines, previewCurrency, taxRates, roundPriceFirst), [lines, previewCurrency, taxRates, roundPriceFirst, documentKind]);
   useEffect(() => { onValidityChange?.(!preview.error); }, [onValidityChange, preview]);
   const decimal = (amount: bigint) => preview.error || !previewCurrency ? "—" : documentEditorDecimal(amount, previewCurrency);
@@ -219,7 +221,7 @@ export function LineItemsEditor({ lines, onChange, accountTypeFilter, taxContext
               <span>Total</span>
               <span>{decimal(preview.total)}</span>
             </div>
-            {"amountDue" in preview && <div className="flex justify-between gap-6 font-semibold">
+            {"amountDue" in preview && typeof preview.amountDue === "bigint" && <div className="flex justify-between gap-6 font-semibold">
               <span>Amount due</span>
               <span>{decimal(preview.amountDue)}</span>
             </div>}

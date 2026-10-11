@@ -9,7 +9,6 @@ import {
   Search,
   X,
   Loader2,
-  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/dashboard/page-header";
@@ -34,7 +33,11 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { formatMoney } from "@/lib/money";
+import { procurementList, procurementMoney, procurementEditorLines, procurementPreview, procurementFilter } from "@/lib/money/procurement-ui";
+import { ContactPicker } from "@/components/dashboard/contact-picker";
+import { CurrencySelect } from "@/components/ui/currency-select";
+import { RequisitionLineEditor, emptyRequisitionLine } from "@/components/dashboard/requisition-line-editor";
+import type { DocumentEditorLine } from "@/lib/money/document-editor";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
@@ -47,15 +50,10 @@ interface Requisition {
   requiredDate: string | null;
   status: string;
   subtotal: number;
-  total: number;
+  currencyCode: string;
+  total: bigint;
   contact: { name: string } | null;
   lines: { id: string }[];
-}
-
-interface LineInput {
-  description: string;
-  quantity: number;
-  unitPrice: number;
 }
 
 const statusColors: Record<string, string> = {
@@ -113,22 +111,23 @@ function buildColumns(): Column<Requisition>[] {
       sortKey: "total",
       className: "w-28 text-right",
       render: (r) => (
-        <span className="font-mono text-sm tabular-nums">
-          {formatMoney(r.total)}
+        <span className="font-mono text-sm tabular-nums break-all">
+          {procurementMoney(r.total, r.currencyCode)}
         </span>
       ),
     },
   ];
 }
 
-const emptyLine = (): LineInput => ({
-  description: "",
-  quantity: 1,
-  unitPrice: 0,
-});
-
 export default function RequisitionsPage() {
+  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
+  return <RequisitionsContent key={orgId} />;
+}
+
+function RequisitionsContent() {
   const router = useRouter();
+  const [readError, setReadError] = useState<string | null>(null);
+  const generation = useRef(0);
   const [items, setItems] = useState<Requisition[]>([]);
   const [loading, setLoading] = useState(true);
   const [refetching, setRefetching] = useState(false);
@@ -155,7 +154,9 @@ export default function RequisitionsPage() {
   const [formRequiredDate, setFormRequiredDate] = useState("");
   const [formReference, setFormReference] = useState("");
   const [formNotes, setFormNotes] = useState("");
-  const [formLines, setFormLines] = useState<LineInput[]>([emptyLine()]);
+  const [currencyCode, setCurrencyCode] = useState("USD");
+  const [contactId, setContactId] = useState("");
+  const [formLines, setFormLines] = useState<DocumentEditorLine[]>([emptyRequisitionLine()]);
 
   const orgId =
     typeof window !== "undefined"
@@ -186,6 +187,9 @@ export default function RequisitionsPage() {
   useEffect(() => {
     if (!orgId) return;
     let cancelled = false;
+    const controller = new AbortController();
+    generation.current += 1;
+    setLoadingMore(false);
     const isRefetch = !loading;
 
     setPage(1);
@@ -193,17 +197,19 @@ export default function RequisitionsPage() {
     if (isRefetch) setRefetching(true);
 
     fetch(`/api/v1/purchase-requisitions?${buildParams(1)}`, {
-      headers: { "x-organization-id": orgId },
+      headers: { "x-organization-id": orgId }, signal: controller.signal,
     })
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("Could not load procurement documents"); return r.json(); })
       .then((data) => {
         if (cancelled) return;
-        if (data.data) setItems(data.data);
+        if (data.data) setItems(data.data.map(procurementList));
+        setReadError(null);
         if (data.pagination) {
           setTotalCount(data.pagination.total);
           setHasMore(data.pagination.page < data.pagination.totalPages);
         }
       })
+      .catch((error) => { if (!cancelled) { setItems([]); setReadError(error instanceof Error ? error.message : "Invalid procurement amounts"); } })
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
@@ -213,7 +219,7 @@ export default function RequisitionsPage() {
       });
 
     return () => {
-      cancelled = true;
+      cancelled = true; controller.abort();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
@@ -230,6 +236,7 @@ export default function RequisitionsPage() {
   const loadMore = useCallback(() => {
     if (loadingMore || !hasMore || !orgId) return;
     const nextPage = page + 1;
+    const requestGeneration = generation.current;
     setLoadingMore(true);
 
     fetch(`/api/v1/purchase-requisitions?${buildParams(nextPage)}`, {
@@ -237,13 +244,15 @@ export default function RequisitionsPage() {
     })
       .then((r) => r.json())
       .then((data) => {
-        if (data.data) setItems((prev) => [...prev, ...data.data]);
+        if (requestGeneration !== generation.current) return;
+        if (data.data) { const adopted = data.data.map(procurementList); setItems((prev) => [...prev, ...adopted]); }
         if (data.pagination) {
           setPage(data.pagination.page);
           setHasMore(data.pagination.page < data.pagination.totalPages);
         }
       })
-      .finally(() => setLoadingMore(false));
+      .catch((error) => { if (requestGeneration === generation.current) { setItems([]); setReadError(error instanceof Error ? error.message : "Invalid procurement amounts"); } })
+      .finally(() => { if (requestGeneration === generation.current) setLoadingMore(false); });
   }, [loadingMore, hasMore, orgId, page, buildParams]);
 
   // IntersectionObserver for infinite scroll
@@ -274,22 +283,14 @@ export default function RequisitionsPage() {
   const pendingSearch = search !== debouncedSearch;
   const hasFilters = dateFrom || dateTo;
 
-  function updateLine(idx: number, field: keyof LineInput, value: string | number) {
-    setFormLines((prev) =>
-      prev.map((l, i) => (i === idx ? { ...l, [field]: value } : l))
-    );
-  }
-
-  function removeLine(idx: number) {
-    setFormLines((prev) => prev.filter((_, i) => i !== idx));
-  }
+  const preview = procurementPreview(formLines, currencyCode, [], "requisition");
+  const filteredItems = useMemo(() => procurementFilter(items, row => row.requisitionNumber, row => row.requestDate,
+    { search: debouncedSearch, from: dateFrom, to: dateTo, sortBy, sortOrder }), [items, debouncedSearch, dateFrom, dateTo, sortBy, sortOrder]);
 
   async function handleCreate() {
     if (!orgId) return;
-    const validLines = formLines.filter((l) => l.description.trim());
-    if (validLines.length === 0) {
-      toast.error("Add at least one line item");
-      return;
+    if (preview.error || formLines.some(line => !line.description.trim())) {
+      toast.error("Check every requisition line description, quantity and price"); return;
     }
 
     setCreating(true);
@@ -301,11 +302,11 @@ export default function RequisitionsPage() {
           "x-organization-id": orgId,
         },
         body: JSON.stringify({
-          requestDate: formRequestDate,
+          requestDate: formRequestDate, currencyCode, contactId: contactId || null,
           requiredDate: formRequiredDate || null,
           reference: formReference || null,
           notes: formNotes || null,
-          lines: validLines,
+          lines: procurementEditorLines(formLines, "requisition"),
         }),
       });
 
@@ -313,19 +314,8 @@ export default function RequisitionsPage() {
         toast.success("Requisition created");
         setSheetOpen(false);
         resetForm();
-        // Refresh
-        setLoading(true);
-        setFetchKey((k) => k + 1);
-        const data = await fetch(
-          `/api/v1/purchase-requisitions?${buildParams(1)}`,
-          { headers: { "x-organization-id": orgId } }
-        ).then((r) => r.json());
-        if (data.data) setItems(data.data);
-        if (data.pagination) {
-          setTotalCount(data.pagination.total);
-          setHasMore(data.pagination.page < data.pagination.totalPages);
-        }
-        setLoading(false);
+        const data = await res.json();
+        router.push(`/purchases/requisitions/${data.requisition.id}`);
       } else {
         const err = await res.json();
         toast.error(err.error || "Failed to create");
@@ -342,10 +332,81 @@ export default function RequisitionsPage() {
     setFormRequiredDate("");
     setFormReference("");
     setFormNotes("");
-    setFormLines([emptyLine()]);
+    setFormLines([emptyRequisitionLine()]);
+    setCurrencyCode("USD");
+    setContactId("");
   }
 
+  const createSheet = (
+      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+        <SheetContent className="max-h-[85vh]">
+          <SheetHeader>
+            <SheetTitle>New Purchase Requisition</SheetTitle>
+          </SheetHeader>
+          <div className="overflow-y-auto px-4 pb-6 space-y-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Request Date</Label>
+                <Input
+                  type="date"
+                  value={formRequestDate}
+                  onChange={(e) => setFormRequestDate(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Required By</Label>
+                <Input
+                  type="date"
+                  value={formRequiredDate}
+                  onChange={(e) => setFormRequiredDate(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs">Reference</Label>
+              <Input
+                value={formReference}
+                onChange={(e) => setFormReference(e.target.value)}
+                placeholder="Optional reference"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs">Notes</Label>
+              <Textarea
+                value={formNotes}
+                onChange={(e) => setFormNotes(e.target.value)}
+                placeholder="Optional notes"
+                rows={2}
+              />
+            </div>
+
+            <Label>Supplier (optional until order conversion)</Label>
+            <ContactPicker value={contactId} onChange={setContactId} type="supplier" />
+            <Label>Currency</Label>
+            <CurrencySelect value={currencyCode} onValueChange={setCurrencyCode} />
+            <RequisitionLineEditor lines={formLines} onChange={setFormLines} currencyCode={currencyCode} />
+
+            <Button
+              onClick={handleCreate}
+              disabled={creating || !!preview.error || formLines.some(line => !line.description.trim())}
+              className="w-full bg-emerald-600 hover:bg-emerald-700"
+            >
+              {creating ? (
+                <Loader2 className="mr-2 size-4 animate-spin" />
+              ) : (
+                <Plus className="mr-2 size-4" />
+              )}
+              Create Requisition
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
+  );
+
   if (loading) return <BrandLoader />;
+  if (readError) return <p role="alert" className="text-sm text-red-600">{readError}</p>;
 
   if (
     totalCount === 0 &&
@@ -478,154 +539,12 @@ export default function RequisitionsPage() {
             </div>
           </div>
 
-          <CreateSheet />
+          {createSheet}
         </div>
       </ContentReveal>
     );
   }
 
-  function CreateSheet() {
-    return (
-      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent className="max-h-[85vh]">
-          <SheetHeader>
-            <SheetTitle>New Purchase Requisition</SheetTitle>
-          </SheetHeader>
-          <div className="overflow-y-auto px-4 pb-6 space-y-4">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label className="text-xs">Request Date</Label>
-                <Input
-                  type="date"
-                  value={formRequestDate}
-                  onChange={(e) => setFormRequestDate(e.target.value)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Required By</Label>
-                <Input
-                  type="date"
-                  value={formRequiredDate}
-                  onChange={(e) => setFormRequiredDate(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs">Reference</Label>
-              <Input
-                value={formReference}
-                onChange={(e) => setFormReference(e.target.value)}
-                placeholder="Optional reference"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs">Notes</Label>
-              <Textarea
-                value={formNotes}
-                onChange={(e) => setFormNotes(e.target.value)}
-                placeholder="Optional notes"
-                rows={2}
-              />
-            </div>
-
-            {/* Line items */}
-            <div className="space-y-2">
-              <Label className="text-xs font-medium">Line Items</Label>
-              {formLines.map((line, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-start gap-2 rounded-lg border p-3"
-                >
-                  <div className="flex-1 space-y-2">
-                    <Input
-                      placeholder="Description"
-                      value={line.description}
-                      onChange={(e) =>
-                        updateLine(idx, "description", e.target.value)
-                      }
-                    />
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="space-y-1">
-                        <Label className="text-[10px] text-muted-foreground">
-                          Qty
-                        </Label>
-                        <Input
-                          type="number"
-                          min={1}
-                          value={line.quantity}
-                          onChange={(e) =>
-                            updateLine(
-                              idx,
-                              "quantity",
-                              Number(e.target.value)
-                            )
-                          }
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-[10px] text-muted-foreground">
-                          Unit Price
-                        </Label>
-                        <Input
-                          type="number"
-                          min={0}
-                          step={0.01}
-                          value={line.unitPrice}
-                          onChange={(e) =>
-                            updateLine(
-                              idx,
-                              "unitPrice",
-                              Number(e.target.value)
-                            )
-                          }
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  {formLines.length > 1 && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="shrink-0 size-8 text-muted-foreground hover:text-red-600"
-                      onClick={() => removeLine(idx)}
-                    >
-                      <Trash2 className="size-3.5" />
-                    </Button>
-                  )}
-                </div>
-              ))}
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full"
-                onClick={() =>
-                  setFormLines((prev) => [...prev, emptyLine()])
-                }
-              >
-                <Plus className="mr-2 size-3.5" />
-                Add Line
-              </Button>
-            </div>
-
-            <Button
-              onClick={handleCreate}
-              disabled={creating}
-              className="w-full bg-emerald-600 hover:bg-emerald-700"
-            >
-              {creating ? (
-                <Loader2 className="mr-2 size-4 animate-spin" />
-              ) : (
-                <Plus className="mr-2 size-4" />
-              )}
-              Create Requisition
-            </Button>
-          </div>
-        </SheetContent>
-      </Sheet>
-    );
-  }
 
   return (
     <ContentReveal>
@@ -647,6 +566,7 @@ export default function RequisitionsPage() {
 
         <div className="h-px bg-border" />
 
+        <p className="text-xs text-muted-foreground">Search, dates and sorting apply to loaded requisitions. Amount sorting groups requisitions by currency.</p>
         {/* Status tabs + search */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
@@ -760,7 +680,7 @@ export default function RequisitionsPage() {
             >
               <DataTable
                 columns={columns}
-                data={items}
+                data={filteredItems}
                 loading={loading}
                 emptyMessage="No requisitions match your filters."
                 onRowClick={(r) =>
@@ -786,7 +706,7 @@ export default function RequisitionsPage() {
           </div>
         )}
 
-        <CreateSheet />
+        {createSheet}
       </div>
     </ContentReveal>
   );

@@ -15,7 +15,9 @@ import { PageHeader } from "@/components/dashboard/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { formatMoney } from "@/lib/money";
+import { procurementDocument, procurementMoney } from "@/lib/money/procurement-ui";
+import type { ProcurementWire } from "@/lib/money/procurement-ui";
+import { ProcurementMoneyDetails } from "@/components/dashboard/procurement-money-details";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { useEntityTitle } from "@/lib/hooks/use-entity-title";
 import {
@@ -28,6 +30,7 @@ import { Textarea } from "@/components/ui/textarea";
 import Link from "next/link";
 
 interface RequisitionDetail {
+  currencyCode: string;
   id: string;
   requisitionNumber: string;
   requestDate: string;
@@ -35,9 +38,9 @@ interface RequisitionDetail {
   status: string;
   reference: string | null;
   notes: string | null;
-  subtotal: number;
-  taxTotal: number;
-  total: number;
+  subtotal: bigint;
+  taxTotal: bigint;
+  total: bigint;
   rejectionReason: string | null;
   convertedPoId: string | null;
   contact: { name: string } | null;
@@ -45,8 +48,9 @@ interface RequisitionDetail {
     id: string;
     description: string;
     quantity: number;
-    unitPrice: number;
-    amount: number;
+    unitPrice: bigint;
+    taxAmount: bigint;
+    amount: bigint;
     account: { code: string; name: string } | null;
   }[];
 }
@@ -65,9 +69,16 @@ const statusColors: Record<string, string> = {
 
 export default function RequisitionDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
+  return <RequisitionDetailContent key={`${orgId}:${id}`} />;
+}
+
+function RequisitionDetailContent() {
+  const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [req, setReq] = useState<RequisitionDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [readError, setReadError] = useState<string | null>(null);
   const [rejectSheetOpen, setRejectSheetOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [acting, setActing] = useState(false);
@@ -80,14 +91,13 @@ export default function RequisitionDetailPage() {
 
   useEffect(() => {
     if (!orgId) return;
-    fetch(`/api/v1/purchase-requisitions/${id}`, {
-      headers: { "x-organization-id": orgId },
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.id) setReq(data);
-      })
-      .finally(() => setLoading(false));
+    const controller = new AbortController();
+    fetch(`/api/v1/purchase-requisitions/${id}`, { headers: { "x-organization-id": orgId }, signal: controller.signal })
+      .then(r => { if (!r.ok) throw new Error("Could not load procurement document"); return r.json(); })
+      .then(data => { if (!controller.signal.aborted) setReq(procurementDocument(data as ProcurementWire<RequisitionDetail>)); })
+      .catch(error => { if (!controller.signal.aborted) { setReq(null); setReadError(error instanceof Error ? error.message : "Invalid procurement amounts"); } })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
   }, [id, orgId]);
 
   async function handleSubmit() {
@@ -104,7 +114,7 @@ export default function RequisitionDetailPage() {
       });
       if (submitRes.ok) {
         const data = await submitRes.json();
-        setReq((prev) => (prev ? { ...prev, ...data, status: data.status } : prev));
+        setReq((prev) => (prev ? { ...prev, status: data.status } : prev));
         toast.success("Requisition submitted for approval");
       } else {
         toast.error("Failed to submit");
@@ -128,9 +138,9 @@ export default function RequisitionDetailPage() {
         }
       );
       if (res.ok) {
-        const data = await res.json();
+        await res.json();
         setReq((prev) =>
-          prev ? { ...prev, ...data, status: "approved" } : prev
+          prev ? { ...prev, status: "approved" } : prev
         );
         toast.success("Requisition approved");
       } else {
@@ -159,12 +169,11 @@ export default function RequisitionDetailPage() {
         }
       );
       if (res.ok) {
-        const data = await res.json();
+        await res.json();
         setReq((prev) =>
           prev
             ? {
                 ...prev,
-                ...data,
                 status: "rejected",
                 rejectionReason: rejectReason || null,
               }
@@ -209,6 +218,7 @@ export default function RequisitionDetailPage() {
     }
   }
 
+  if (readError) return <p role="alert" className="text-sm text-red-600">{readError}</p>;
   if (loading)
     return (
       <div className="space-y-6">
@@ -344,44 +354,12 @@ export default function RequisitionDetailPage() {
 
       {/* Total */}
       <div className="rounded-lg border p-4">
-        <p className="text-xl font-bold font-mono">
-          {formatMoney(req.total)}
+        <p className="text-xl font-bold font-mono break-all">
+          {procurementMoney(req.total, req.currencyCode)}
         </p>
       </div>
 
-      {/* Line items */}
-      <div className="rounded-lg border overflow-x-auto">
-        <div className="grid min-w-[500px] grid-cols-[1fr_80px_100px_120px] gap-2 border-b bg-muted/50 px-4 py-2 text-xs font-medium text-muted-foreground">
-          <span>Description</span>
-          <span className="text-right">Qty</span>
-          <span className="text-right">Price</span>
-          <span className="text-right">Amount</span>
-        </div>
-        {req.lines.map((line) => (
-          <div
-            key={line.id}
-            className="grid min-w-[500px] grid-cols-[1fr_80px_100px_120px] gap-2 border-b px-4 py-2 last:border-b-0"
-          >
-            <div>
-              <p className="text-sm">{line.description}</p>
-              {line.account && (
-                <p className="text-xs text-muted-foreground">
-                  {line.account.code} &middot; {line.account.name}
-                </p>
-              )}
-            </div>
-            <span className="text-right text-sm font-mono">
-              {(line.quantity / 100).toFixed(0)}
-            </span>
-            <span className="text-right text-sm font-mono">
-              {formatMoney(line.unitPrice)}
-            </span>
-            <span className="text-right text-sm font-mono font-medium">
-              {formatMoney(line.amount)}
-            </span>
-          </div>
-        ))}
-      </div>
+      <ProcurementMoneyDetails document={req} />
 
       {/* Reject drawer */}
       <Sheet open={rejectSheetOpen} onOpenChange={setRejectSheetOpen}>

@@ -1,3 +1,26 @@
+## MON-132 payable/procurement UI integration
+
+Current 2026-10-11 integration acceptance supersedes earlier child-era pending
+MON-132 statements. CORE_UI_MONEY_CUTOVER assigns every scoped bill, debit,
+purchase-order, requisition, goods-receipt and recurring-bill consumer to
+MON-138..142, including shared drawer/editor/adoption sections. Independent
+payable-ui-integration REST/MCP/SQL fixtures compose all bill origins with saved
+bill reads, supplier-credit copies, recognition, exact amountMinor allocation
+and void unwind across USD/JPY/IRR/KWD. Child behavioral/transport regressions
+are rerun jointly; see MON-132-attempt-1.md for actual checks and limitations.
+
+Recurring payables retain explicit fixed-two price INPUT in every currency:
+12.50 stores 1250 units. Generated bills and copied debit notes preserve those
+units and format in saved currency. Ordinary bill/debit/PO input uses currency
+scales and domain rounding. Receipt half-unit lines round independently; quantity
+hundredths and percentage basis points remain nonmoney. Safe numeric aliases must
+agree with canonical Minor strings; bigint drives adopted presentation and sums.
+Existing sample/group/count contracts, unavailable mixed/base totals and static
+USD illustrations are preserved. No schema, REST/MCP operation, storage rescaling
+or production flag changes. MON-129/MON-007 retain independent acceptance;
+live browser, full-int64, production IRR, PDF/provider and financial qualification
+are not established by this UI parent.
+
 ## MON-137 recurring invoice UI
 
 RecurringDrawer sends explicit currencyCode and unitPriceExact decimal strings;

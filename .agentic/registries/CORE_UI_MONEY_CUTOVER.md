@@ -261,12 +261,12 @@ original combined criteria; MON-007 retains its original integration acceptance.
 | MON-145 | sales/receipts list/detail, SalesReceiptDrawer, sales-receipt-ui.ts and SalesReceiptMoneyDetails | Exact extended-price preview/unitPriceExact writes, selected/contact/org currency, validated saved Minor reads and per-currency paid sample sums; separate post/void domain policy retained |
 | MON-146 | sales/customer-prepayments list/detail and CustomerCreditDrawer | Pending exact amount input, currency, saved balances and invoice application |
 | MON-137 | Recurring invoice list/detail, RecurringDrawer; recurring-invoice-ui.ts, RecurringInvoiceMoneyDetails and recurring-specific LineItemsEditor | Exact unitPriceExact writes, explicit USD default/selected currency, stored price/quantity-first preview, validated Minor saved/gross upcoming display and schedule preservation |
-| MON-132 | Integration parent for MON-138..142 payable/procurement consumers | Independent combined acceptance; no child completion closes this parent |
+| MON-132 | Integration parent for MON-138..142 payable/procurement consumers; tests/integration/payable-ui-integration* | Independent combined REST/MCP/SQL acceptance of ordinary, recurring, receipt-derived and requisition-derived bill reads, supplier-credit copies, allocation and unwind; see MON-132 evidence |
 | MON-138 | create-drawer.tsx BillDrawer; line-items-editor.tsx bill policy; lib/money/bill-editor.ts | Exact extended-price preview and unitPriceExact writes; explicit supplier/org/selected currency; reverse-charge amount due; approval/duplicate controls |
 | MON-139 | purchases/page.tsx and purchases/[id]/page.tsx; bill-ui.ts and BillCurrencyAmounts; shared InvoiceAmountInput/DualAmount props | Validated saved Minor reads, currency-grouped counts/sample aging, exact source/base/progress, whole-minor payments and supplier-credit price/dimension copies |
 | MON-140 | purchases/debit-notes list/detail, DebitNoteDrawer, debit-note-ui.ts, DebitNoteMoneyDetails and DebitNoteOverview; shared LineItemsEditor/InvoiceAmountInput/SendDocumentDialog props | Exact extended-price preview/unitPriceExact writes, validated saved Minor aliases, currency-grouped sample sums and same-supplier/currency amountMinor bill application; no cash-refund operation exists |
 | MON-141 | purchases/orders, requisitions, goods-receipts list/detail; PurchaseOrderDrawer; procurement-ui.ts; ProcurementMoneyDetails and RequisitionLineEditor; shared LineItemsEditor PO policy | Exact decimal prices/Minor reads, wire-specific bigint previews, per-line receipt rounding, currency-grouped sample totals, physical quantity/tally/conversion contracts |
-| MON-142 | purchases/bills/recurring | Pending recurring bill currency, pricing and schedules |
+| MON-142 | purchases/bills/recurring/page.tsx; recurring-bill-ui.ts; LineItemsEditor recurringBill policy | Exact fixed-two compatibility price inputs in every currency, saved-currency Minor reads/gross display, preview/generated draft agreement and schedule preservation |
 | MON-133 | accounting/accounts/[id] page/layout; accounting/opening-balances/page.tsx and OpeningBalanceDrawer; accounting/banking, payments and payment batches; purchases/expenses and expense create/edit/mileage controls; tax/page.tsx, tax/periods/[id], tax/sales-tax and tax settlement controls; remaining core bank/payment/tax/settings/approval consumers | Explicit exact money and source/base-currency presentation; opening balances still require numeric compatibility writes until their separate API adoption; no silent unsupported Minor fields |
 | MON-008 | Other dashboard financial/report consumers, budgets/assets/loans/projects/payroll/inventory auxiliary surfaces, contacts summaries, jobs, exports, public/provider/PDF consumers | Existing domain adoption does not imply complete consumer closure |
 
@@ -352,13 +352,14 @@ basis-point conversions. Shared inputs keep keyboard decimal mode and line
 labels; the grid scrolls horizontally on narrow screens.
 
 The shared editor's omitted currency retains an explicit USD/fixed-two preview,
-extended-price rounding and two-fraction input default. This compatibility
-presentation serves SalesReceiptDrawer,
-PurchaseOrderDrawer, RecurringDrawer and SupplierCreditDrawer.
-Their payload parsing, currency resolution, domain rounding and final preview/
-saved parity remain pending under MON-132, MON-145/146 and MON-137 (and the owning
-parent integrations). They must pass explicit policy props when migrated; this
-child does not qualify them. MON-135 owns saved invoice editing and lifecycle.
+extended-price rounding and two-fraction input default for compatibility callers.
+Current document drawers pass explicit currency and domain policy: MON-138 bills,
+MON-140 debit notes, MON-141 purchase orders, MON-145 sales receipts and MON-137
+recurring invoices. Supplier credit is the saved bill's debit-note copy action,
+owned by MON-139; no separate SupplierCreditDrawer exists in the current source.
+MON-142 deliberately selects the recurringBill fixed-two input policy, documented
+below. MON-135 owns saved invoice editing and lifecycle. Other parent integrations
+retain their own acceptance; these explicit props do not qualify their scope.
 QuoteDrawer now passes explicit price-first/currency/precision policy under MON-143.
 CreditNoteDrawer passes explicit extended-price/currency/precision policy under MON-144.
 MON-131, MON-129 and MON-007 remain open for independent combined acceptance.
@@ -620,3 +621,45 @@ completion and no duplicate generation. Existing payable and recurring-invoice U
 fixtures cover shared-editor regressions. MON-132/MON-129/MON-007 combined
 acceptance remains separate. No production IRR/full-int64/browser/accounting
 qualification, historical rescaling, build, dev server or deployment is claimed.
+
+## MON-132 combined payable/procurement UI acceptance
+
+Current 2026-10-11 parent review supersedes earlier child-era statements that
+MON-132 is pending. Consumer ownership remains MON-138..142 in the table above;
+the parent independently verifies their composition rather than inferring
+completion from child status. Evidence: MON-132-attempt-1.md and self-review.
+
+The combined payable-ui-integration fixture uses actual UI payload/adoption
+helpers, authenticated REST handlers, linked registered MCP tools and SQL-text
+assertions in a disposable migrated database. Both transports exercise ordinary
+bill creation, PO receipt conversion, requisition-to-PO direct conversion and
+recurring generation through saved bill reads, supplier-credit copying,
+recognition, whole-minor application and void unwind in USD/JPY/IRR/KWD. Physical
+1.25 and 0.5 quantities remain hundredths; two half-unit receipt lines round
+independently to 2 raw units. Recognition updates PO billed tallies. Draft creation
+and recurring occurrence completion remain separate from bill recognition.
+
+Supplier credit copies the saved rounded price, as MON-139 documents. The USD
+extended-price input 0.005 x 3 saves a 2-unit bill with 1-unit stored price;
+copying that stored 0.01 price produces a 3-unit debit note. Both transports
+verify allocation stops at the 2-unit bill, retains 1 credit unit, and void
+restores the bill balance. Original sub-minor price text is not stored/recovered.
+
+Recurring 12.50 input stores 1250 price units in every currency; the generated
+bill and copied debit note retain those units and use saved currency formatting.
+No history is rescaled. Ordinary bill/debit/PO inputs retain currency-scale
+pricing, with each adopted wire's own rounding/tax policies. Child behavioral
+and transport fixtures are rerun jointly for sub-minor/signed ties, low digits,
+safe-range rejection, malformed/alias rejection, reverse-charge due amounts,
+tax/discount/dimension preservation, payment/base reads, mixed summary rejection,
+English labels and schedule controls. Source inspection confirms explicit policy
+props and saved adapters at scoped list/detail/editor/drawer consumers.
+
+Explicit exceptions are recurring payable fixed-two PRICE INPUT, retained safe
+numeric/Minor wire coexistence, physical quantity /100, tax/discount basis points,
+nonmoney percentages/counts and static illustrative USD examples. Aggregates
+respect each documented sample/count contract and never invent FX. No remaining
+monetary float/fixed-two shortcut is adopted for scoped saved presentation.
+MON-129 and MON-007 retain independent combined acceptance; MON-133, auxiliary,
+public/PDF/provider and full-int64/production-IRR qualification are separate.
+DEC-005 behavioral/layout review applies; live browser effects are not claimed.

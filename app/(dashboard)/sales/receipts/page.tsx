@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatMoney } from "@/lib/money";
+import { salesReceiptUiHeader, salesReceiptUiMoney, salesReceiptUiCollected } from "@/lib/money/sales-receipt-ui";
 import { devDelay } from "@/lib/dev-delay";
 import { useCreateDrawer } from "@/components/dashboard/create-drawer";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
@@ -30,11 +30,16 @@ interface SalesReceipt {
   receiptNumber: string;
   date: string;
   status: string;
-  subtotal: number;
-  taxTotal: number;
-  total: number;
+  subtotal: bigint;
+  taxTotal: bigint;
+  total: bigint;
   currencyCode: string;
   contact: { name: string } | null;
+}
+
+interface SalesReceiptWire extends Omit<SalesReceipt, "subtotal" | "taxTotal" | "total"> {
+  subtotal: number; taxTotal: number; total: number;
+  [key: string]: unknown;
 }
 
 const statusColors: Record<string, string> = {
@@ -92,7 +97,7 @@ function buildColumns(): Column<SalesReceipt>[] {
       className: "w-28 text-right",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums">
-          {formatMoney(r.total, r.currencyCode)}
+          {salesReceiptUiMoney(r.total, r.currencyCode)}
         </span>
       ),
     },
@@ -102,12 +107,12 @@ function buildColumns(): Column<SalesReceipt>[] {
 export default function SalesReceiptsPage() {
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
-  const [receipts, setReceipts] = useState<SalesReceipt[]>([]);
+  const [loaded, setLoaded] = useState<{ context: string; receipts: SalesReceipt[]; total: number; error: string | null } | null>(null);
   const [initialLoad, setInitialLoad] = useState(true);
   const [refetching, setRefetching] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
+  const generation = useRef(0);
   const [fetchKey, setFetchKey] = useState(0);
   const [statusFilter, setStatusFilter] = useState("all");
   const [sortBy, setSortBy] = useState("created");
@@ -123,6 +128,11 @@ export default function SalesReceiptsPage() {
   const PAGE_SIZE = 50;
   const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
 
+  const context = `${orgId}:${statusFilter}:${sortBy}:${sortOrder}:${dateFrom}:${dateTo}`;
+  const receipts = useMemo(() => loaded?.context === context ? loaded.receipts : [], [loaded, context]);
+  const totalCount = loaded?.context === context ? loaded.total : 0;
+  const error = loaded?.context === context ? loaded.error : null;
+  const waitingForContext = !!orgId && loaded?.context !== context;
   const columns = useMemo(() => buildColumns(), []);
 
   const buildParams = useCallback((p: number) => {
@@ -137,47 +147,44 @@ export default function SalesReceiptsPage() {
     return params;
   }, [statusFilter, sortBy, sortOrder, dateFrom, dateTo]);
 
-  // Fetch first page when filters change
+  // Invalidate pagination whenever the organization or server filters change.
   useEffect(() => {
+    const controller = new AbortController();
+    const current = ++generation.current;
     if (!orgId) return;
-    let cancelled = false;
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setRefetching(true);
-    setPage(1);
-
+    setRefetching(true); setLoadingMore(false); setPage(1);
     fetch(`/api/v1/sales-receipts?${buildParams(1)}`, {
-      headers: { "x-organization-id": orgId },
+      headers: { "x-organization-id": orgId }, signal: controller.signal,
     })
-      .then((r) => r.json())
-      .then((data) => {
-        if (cancelled) return;
-        setReceipts(data.data || []);
-        setTotalCount(data.pagination?.total || 0);
+      .then(r => { if (!r.ok) throw new Error("Unable to load cash sales"); return r.json(); })
+      .then(data => {
+        if (!Array.isArray(data.data)) throw new Error("Invalid cash sale list");
+        const rows = data.data.map((row: SalesReceiptWire) => salesReceiptUiHeader(row));
+        if (!controller.signal.aborted) setLoaded({ context, receipts: rows, total: data.pagination?.total || 0, error: null });
       })
+      .catch(() => { if (!controller.signal.aborted) setLoaded({ context, receipts: [], total: 0, error: "Unable to load valid cash sale amounts. Try again." }); })
       .then(() => devDelay())
-      .finally(() => { if (!cancelled) { setInitialLoad(false); setRefetching(false); setFetchKey((k) => k + 1); } });
+      .finally(() => { if (!controller.signal.aborted && generation.current === current) { setInitialLoad(false); setRefetching(false); setFetchKey(k => k + 1); } });
+    return () => controller.abort();
+  }, [orgId, buildParams, context]);
 
-    return () => { cancelled = true; };
-  }, [orgId, buildParams]);
-
-  // Load more
   const loadMore = useCallback(() => {
-    if (!orgId || loadingMore) return;
-    const nextPage = page + 1;
+    if (!orgId || loadingMore || waitingForContext) return;
+    const nextPage = page + 1, current = generation.current;
     setLoadingMore(true);
-
-    fetch(`/api/v1/sales-receipts?${buildParams(nextPage)}`, {
-      headers: { "x-organization-id": orgId },
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.data) {
-          setReceipts((prev) => [...prev, ...data.data]);
-          setPage(nextPage);
-        }
+    fetch(`/api/v1/sales-receipts?${buildParams(nextPage)}`, { headers: { "x-organization-id": orgId } })
+      .then(r => { if (!r.ok) throw new Error("Unable to load more cash sales"); return r.json(); })
+      .then(data => {
+        if (!Array.isArray(data.data)) throw new Error("Invalid cash sale list");
+        const rows = data.data.map((row: SalesReceiptWire) => salesReceiptUiHeader(row));
+        if (generation.current !== current) return;
+        setLoaded(prev => prev?.context === context ? { ...prev, receipts: [...prev.receipts, ...rows], error: null } : prev);
+        setPage(nextPage);
       })
-      .finally(() => setLoadingMore(false));
-  }, [orgId, page, buildParams, loadingMore]);
+      .catch(() => { if (generation.current === current) setLoaded(prev => prev?.context === context ? { ...prev, error: "Unable to load more valid cash sale amounts. Try again." } : prev); })
+      .finally(() => { if (generation.current === current) setLoadingMore(false); });
+  }, [orgId, page, buildParams, loadingMore, waitingForContext, context]);
 
   const hasMore = receipts.length < totalCount;
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -227,14 +234,11 @@ export default function SalesReceiptsPage() {
     setSearchKey((k) => k + 1);
   }, [debouncedSearch]);
 
-  const totalCollected = useMemo(
-    () => receipts.reduce((sum, r) => sum + (r.status !== "void" ? r.total : 0), 0),
-    [receipts]
-  );
+  const totalCollected = useMemo(() => salesReceiptUiCollected(filteredReceipts), [filteredReceipts]);
 
-  if (initialLoad) return <BrandLoader />;
+  if (initialLoad || waitingForContext) return <BrandLoader />;
 
-  if (!initialLoad && !refetching && receipts.length === 0 && statusFilter === "all" && !hasFilters) {
+  if (!error && !initialLoad && !refetching && receipts.length === 0 && statusFilter === "all" && !hasFilters) {
     return (
       <ContentReveal>
         <div className="pt-12 pb-12 space-y-10">
@@ -335,9 +339,10 @@ export default function SalesReceiptsPage() {
 
   return (
     <ContentReveal className="space-y-6">
+      {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
       {/* Top: Stats */}
       <div className="grid gap-3 sm:grid-cols-3">
-        <StatCard title="Collected" value={formatMoney(totalCollected)} icon={Banknote} />
+        <div className="min-w-0 [&_.font-mono]:break-all [&_.space-y-1]:min-w-0"><StatCard title="Collected (loaded matches)" value={totalCollected} icon={Banknote} /></div>
         <StatCard title="Cash sales" value={totalCount.toString()} icon={ReceiptText} />
       </div>
 

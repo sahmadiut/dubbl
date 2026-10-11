@@ -6,7 +6,8 @@ import { ArrowLeft, Banknote, Landmark } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatMoney } from "@/lib/money";
+import { salesReceiptUiDocument, salesReceiptUiMoney } from "@/lib/money/sales-receipt-ui";
+import { SalesReceiptMoneyDetails } from "@/components/dashboard/sales-receipt-money-details";
 import { useEntityTitle } from "@/lib/hooks/use-entity-title";
 import Link from "next/link";
 
@@ -17,9 +18,9 @@ interface SalesReceiptDetail {
   status: string;
   reference: string | null;
   notes: string | null;
-  subtotal: number;
-  taxTotal: number;
-  total: number;
+  subtotal: bigint;
+  taxTotal: bigint;
+  total: bigint;
   currencyCode: string;
   contact: { name: string; email: string | null } | null;
   bankAccount: { accountName: string } | null;
@@ -28,9 +29,18 @@ interface SalesReceiptDetail {
     id: string;
     description: string;
     quantity: number;
-    unitPrice: number;
-    amount: number;
+    unitPrice: bigint;
+    amount: bigint;
+    taxAmount: bigint;
   }[];
+}
+
+interface SalesReceiptWire extends Omit<SalesReceiptDetail, "subtotal" | "taxTotal" | "total" | "lines"> {
+  subtotal: number; taxTotal: number; total: number;
+  lines: (Omit<SalesReceiptDetail["lines"][number], "unitPrice" | "amount" | "taxAmount"> & {
+    unitPrice: number; amount: number; taxAmount: number; [key: string]: unknown;
+  })[];
+  [key: string]: unknown;
 }
 
 const statusColors: Record<string, string> = {
@@ -48,26 +58,29 @@ const statusLabels: Record<string, string> = {
 
 export default function SalesReceiptDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const [sr, setSr] = useState<SalesReceiptDetail | null>(null);
-  const [loading, setLoading] = useState(true);
-
   const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
+  return <SalesReceiptDetailContent key={`${orgId}:${id}`} id={id} orgId={orgId} />;
+}
 
+function SalesReceiptDetailContent({ id, orgId }: { id: string; orgId: string | null }) {
+  const [sr, setSr] = useState<SalesReceiptDetail | null>(null);
+  const [loading, setLoading] = useState(!!orgId);
+  const [error, setError] = useState<string | null>(null);
   useEntityTitle(sr?.receiptNumber);
 
   useEffect(() => {
+    const controller = new AbortController();
     if (!orgId) return;
-    fetch(`/api/v1/sales-receipts/${id}`, {
-      headers: { "x-organization-id": orgId },
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.salesReceipt) setSr(data.salesReceipt);
-      })
-      .finally(() => setLoading(false));
+    fetch(`/api/v1/sales-receipts/${id}`, { headers: { "x-organization-id": orgId }, signal: controller.signal })
+      .then(r => { if (!r.ok) throw new Error("Unable to load cash sale"); return r.json(); })
+      .then(data => { const receipt = salesReceiptUiDocument(data.salesReceipt as SalesReceiptWire); if (!controller.signal.aborted) setSr(receipt); })
+      .catch(() => { if (!controller.signal.aborted) setError("Unable to load valid cash sale amounts. Try again."); })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
   }, [id, orgId]);
 
   if (loading) return <div className="space-y-6"><PageHeader title="Loading..." /></div>;
+  if (error) return <p role="alert" className="text-sm text-red-600">{error}</p>;
   if (!sr) return <div className="space-y-6"><PageHeader title="Cash sale not found" /></div>;
 
   const paidInto = sr.bankAccount?.accountName
@@ -98,7 +111,7 @@ export default function SalesReceiptDetailPage() {
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="rounded-lg border p-4">
           <p className="text-xs text-muted-foreground">Total</p>
-          <p className="text-xl font-bold font-mono">{formatMoney(sr.total, sr.currencyCode)}</p>
+          <p className="text-xl font-bold font-mono break-all">{salesReceiptUiMoney(sr.total, sr.currencyCode)}</p>
         </div>
         <div className="rounded-lg border p-4">
           <div className="flex items-center gap-2">
@@ -118,29 +131,7 @@ export default function SalesReceiptDetailPage() {
         </div>
       </div>
 
-      <div className="rounded-lg border overflow-x-auto">
-        <div className="grid min-w-[500px] grid-cols-[1fr_80px_100px_120px] gap-2 border-b bg-muted/50 px-4 py-2 text-xs font-medium text-muted-foreground">
-          <span>Description</span>
-          <span className="text-right">Qty</span>
-          <span className="text-right">Price</span>
-          <span className="text-right">Amount</span>
-        </div>
-        {sr.lines.map((line) => (
-          <div key={line.id} className="grid min-w-[500px] grid-cols-[1fr_80px_100px_120px] gap-2 border-b px-4 py-2 last:border-b-0">
-            <p className="text-sm">{line.description}</p>
-            <span className="text-right text-sm font-mono">{(line.quantity / 100).toFixed(0)}</span>
-            <span className="text-right text-sm font-mono">{formatMoney(line.unitPrice, sr.currencyCode)}</span>
-            <span className="text-right text-sm font-mono font-medium">{formatMoney(line.amount, sr.currencyCode)}</span>
-          </div>
-        ))}
-        <div className="border-t bg-muted/30 px-4 py-2 text-right flex flex-wrap justify-end gap-x-4 gap-y-1">
-          <span className="text-sm font-medium">Subtotal: {formatMoney(sr.subtotal, sr.currencyCode)}</span>
-          {sr.taxTotal > 0 && (
-            <span className="text-sm">Tax: {formatMoney(sr.taxTotal, sr.currencyCode)}</span>
-          )}
-          <span className="text-sm font-bold">Total: {formatMoney(sr.total, sr.currencyCode)}</span>
-        </div>
-      </div>
+      <SalesReceiptMoneyDetails receipt={sr} />
 
       {sr.notes && (
         <div className="rounded-lg border p-4">

@@ -61,6 +61,7 @@ import { documentLineInputs, invoiceEditorCurrency } from "@/lib/money/document-
 import { journalEditorPreview, journalDecimal } from "@/lib/money/journal-display";
 import { quoteEditorLines } from "@/lib/money/quote-ui";
 import { debitNoteEditorLines } from "@/lib/money/debit-note-ui";
+import { salesReceiptEditorLines, salesReceiptEditorCurrency } from "@/lib/money/sales-receipt-ui";
 import { creditNoteEditorLines } from "@/lib/money/credit-note-ui";
 import { EntryForm } from "@/components/dashboard/entry-form";
 import { AccountPicker } from "@/components/dashboard/account-picker";
@@ -115,7 +116,7 @@ export function CreateDrawerProvider({ children }: { children: React.ReactNode }
       <EntryDrawer open={activeType === "entry"} onClose={close} />
       <InventoryDrawer open={activeType === "inventory"} onClose={close} />
       <QuoteDrawer open={activeType === "quote"} onClose={close} />
-      <SalesReceiptDrawer open={activeType === "salesReceipt"} onClose={close} />
+      <SalesReceiptDrawer key={typeof window !== "undefined" ? localStorage.getItem("activeOrgId") || "" : ""} open={activeType === "salesReceipt"} onClose={close} />
       <PurchaseOrderDrawer open={activeType === "purchaseOrder"} onClose={close} />
       <ExpenseDrawer open={activeType === "expense"} onClose={close} />
       <FixedAssetDrawer open={activeType === "fixedAsset"} onClose={close} />
@@ -1349,7 +1350,12 @@ function SalesReceiptDrawer({ open, onClose }: { open: boolean; onClose: () => v
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [reference, setReference] = useState("");
   const [notes, setNotes] = useState("");
-  const [currencyCode, setCurrencyCode] = useState("");
+  const [selectedCurrency, setSelectedCurrency] = useState("");
+  const [validLines, setValidLines] = useState(false);
+  const [currencyContext, setCurrencyContext] = useState<{ orgId: string; contactId: string; code?: string; error?: string } | null>(null);
+  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
+  const currentCurrencyContext = currencyContext?.orgId === orgId && currencyContext?.contactId === contactId ? currencyContext : null;
+  const currencyCode = selectedCurrency || currentCurrencyContext?.code || null;
   const [bankAccountId, setBankAccountId] = useState("");
   const [bankAccounts, setBankAccounts] = useState<BankAccountOption[]>([]);
   const [lines, setLines] = useState<LineItem[]>([
@@ -1358,28 +1364,52 @@ function SalesReceiptDrawer({ open, onClose }: { open: boolean; onClose: () => v
 
   useEffect(() => {
     if (!open) {
-      setContactId(""); setReference(""); setNotes(""); setCurrencyCode(""); setBankAccountId("");
+      setContactId(""); setReference(""); setNotes(""); setSelectedCurrency(""); setCurrencyContext(null); setValidLines(false); setBankAccounts([]); setBankAccountId("");
       setDate(new Date().toISOString().split("T")[0]);
       setLines([{ description: "", quantity: "1", unitPrice: "", accountId: "", taxRateId: "" }]);
       return;
     }
-    const orgId = localStorage.getItem("activeOrgId");
-    if (!orgId) return;
-    fetch("/api/v1/bank-accounts", { headers: { "x-organization-id": orgId } })
-      .then((r) => r.json())
-      .then((data) => { if (data.bankAccounts) setBankAccounts(data.bankAccounts); })
-      .catch(() => {});
   }, [open]);
+
+  useEffect(() => {
+    if (!open || !orgId) return;
+    const controller = new AbortController();
+    fetch("/api/v1/bank-accounts", { headers: { "x-organization-id": orgId }, signal: controller.signal })
+      .then(r => { if (!r.ok) throw new Error("Unable to load bank accounts"); return r.json(); })
+      .then(data => { if (!controller.signal.aborted && Array.isArray(data.bankAccounts)) setBankAccounts(data.bankAccounts); })
+      .catch(() => { if (!controller.signal.aborted) setBankAccounts([]); });
+    return () => controller.abort();
+  }, [open, orgId]);
+
+  useEffect(() => {
+    if (!open || !orgId || !contactId) return;
+    const controller = new AbortController();
+    const headers = { "x-organization-id": orgId };
+    Promise.all([
+      fetch(`/api/v1/contacts/${encodeURIComponent(contactId)}`, { headers, signal: controller.signal }),
+      fetch("/api/v1/organization", { headers, signal: controller.signal }),
+    ]).then(async ([customer, org]) => {
+      if (!customer.ok || !org.ok) throw new Error("Unable to load cash sale currency");
+      const [customerData, orgData] = await Promise.all([customer.json(), org.json()]);
+      if (!customerData.contact || !orgData.organization) throw new Error("Unable to load cash sale currency");
+      const code = salesReceiptEditorCurrency(null, customerData.contact.currencyCode, orgData.organization.defaultCurrency);
+      if (!controller.signal.aborted) setCurrencyContext({ orgId, contactId, code });
+    }).catch(() => {
+      if (!controller.signal.aborted) setCurrencyContext({ orgId, contactId, error: "Unable to load the customer's currency. Select a currency to continue." });
+    });
+    return () => controller.abort();
+  }, [open, orgId, contactId]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!contactId) { toast.error("Please select a customer"); return; }
     if (!bankAccountId) { toast.error("Please choose where the money was paid in"); return; }
-    setSaving(true);
-    const orgId = localStorage.getItem("activeOrgId");
-    if (!orgId) { setSaving(false); return; }
+    if (!orgId) return;
+    if (!currencyCode || !validLines) { toast.error("Check the cash sale currency and line amounts"); return; }
 
     try {
+      const exactLines = salesReceiptEditorLines(lines);
+      setSaving(true);
       const res = await fetch("/api/v1/sales-receipts", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
@@ -1388,15 +1418,9 @@ function SalesReceiptDrawer({ open, onClose }: { open: boolean; onClose: () => v
           date,
           reference: reference || null,
           notes: notes || null,
-          currencyCode: currencyCode || undefined,
+          currencyCode,
           bankAccountId,
-          lines: lines.map((l) => ({
-            description: l.description,
-            quantity: parseFloat(l.quantity) || 1,
-            unitPrice: parseFloat(l.unitPrice) || 0,
-            accountId: l.accountId || null,
-            taxRateId: l.taxRateId || null,
-          })),
+          lines: exactLines,
         }),
       });
       if (!res.ok) {
@@ -1447,7 +1471,8 @@ function SalesReceiptDrawer({ open, onClose }: { open: boolean; onClose: () => v
                 </div>
                 <div className="space-y-2">
                   <Label>Currency</Label>
-                  <CurrencySelect value={currencyCode} onValueChange={setCurrencyCode} />
+                  <CurrencySelect value={currencyCode || ""} onValueChange={setSelectedCurrency} />
+                  {!selectedCurrency && currentCurrencyContext?.error && <p role="alert" className="text-xs text-red-600">{currentCurrencyContext.error}</p>}
                 </div>
               </div>
             </div>
@@ -1456,7 +1481,7 @@ function SalesReceiptDrawer({ open, onClose }: { open: boolean; onClose: () => v
 
             <div className="space-y-4">
               <SectionLabel>What was sold</SectionLabel>
-              <LineItemsEditor lines={lines} onChange={setLines} accountTypeFilter={["revenue"]} taxContext="sales" />
+              <LineItemsEditor key={orgId} lines={lines} onChange={setLines} accountTypeFilter={["revenue"]} taxContext="sales" currencyCode={currencyCode} roundPriceFirst={false} priceFractionDigits={18} onValidityChange={setValidLines} />
             </div>
 
             <div className="h-px bg-border" />
@@ -1495,7 +1520,7 @@ function SalesReceiptDrawer({ open, onClose }: { open: boolean; onClose: () => v
               <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notes for this sale..." rows={3} />
             </div>
           </div>
-          <DrawerFooter onClose={onClose} saving={saving} label="Record cash sale" />
+          <DrawerFooter onClose={onClose} saving={saving} disabled={!contactId || !bankAccountId || !currencyCode || !validLines || lines.some(line => !line.description.trim())} label="Record cash sale" />
         </form>
       </SheetContent>
     </Sheet>

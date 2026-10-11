@@ -1,5 +1,45 @@
 # Core UI money ownership (MON-129 children)
 
+## MON-145 sales receipt UI
+
+SalesReceiptDrawer resolves explicit selection, customer, organization, then USD
+exactly as both receipt create services do. Currency context is keyed to org and
+customer; aborted reads cannot supply an obsolete default. Explicit currency is
+sent with unitPriceExact strings and the supported line subset. Extended-price
+preview matches salesReceiptTotals: USD 0.005 x 3 previews/saves 2 minor units.
+Eighteen fractional price digits, signed ties, blank-to-zero price/blank-to-one
+quantity and explicit zero/fractional quantities retain their domain semantics.
+Malformed price/quantity, unknown tax, unsafe product/sum, unresolved currency
+and missing descriptions disable saving; submit reparses exact lines. Bank
+selection remains required in this drawer. Existing creation saves a draft;
+posting/void remain the separate REST/MCP domain operations, not implicit cash
+recognition. Bank currency, revenue, tax, period/role/tenant/FX and reversal
+controls remain authoritative. No new lifecycle/edit/copy UI is introduced.
+
+sales-receipt-ui.ts validates canonical Minor aliases against safe numeric raw
+units, with checked numeric-only legacy fallback. Saved headers, line prices,
+amounts and taxes become bigint without rescaling. Saved currency drives English
+list/detail and subtotal/tax/total display; fractional quantity hundredths retain
+fractions. Collected counts paid receipts only, grouped by saved currency from
+the loaded matching sample, explicitly labeled in the card. Draft/void receipts
+are excluded. Bigint aggregate sums may exceed one document's safe limit; empty
+groups show a dash. Main reads abort on context change, lists are context-keyed,
+pagination rejects obsolete generations and detail/drawer state remounts by org.
+Invalid reads show alerts and suppress invalid money. Search/date/status/sort and
+pagination remain; shared table horizontal scrolling/amount wrapping remain.
+
+Five pure/rendered groups and migrated real REST/MCP/SQL fixtures cover USD, JPY,
+synthetic IRR, KWD, safe-edge low digits, aliases, defaults, exact rounding, zero/
+blank/fractional quantities, tax/cash references, saved reads and post/void. The
+existing receipt fixture independently covers domain controls and atomicity.
+Quantity /100, numeric physical-unit API quantities, tax basis points and retained
+numeric wire coexistence keep units. Static USD empty-state illustrations and
+shared defaults for pending editor callers remain explicit. No monetary fixed-two
+exception remains in these receipt consumers. No schema/API/MCP/production flag
+change. Browser effects, full-int64 posting, provider/PDF, production IRR and
+financial/linguistic qualification are not claimed. MON-146/137 remain pending;
+MON-136, MON-131, MON-129 and MON-007 retain independent combined acceptance.
+
 ## MON-140 debit note UI
 
 DebitNoteDrawer explicitly defaults to USD, matching both debit-note transports
@@ -83,7 +123,8 @@ Quantity/100 and tax basis points remain nonmoney; fixed USD example cards are
 illustrative. There is no monetary credit edit/copy workflow in these pages.
 Shared editor defaults for unmigrated callers and numeric wire coexistence remain.
 Public/email/PDF delivery, browser effects, full signed-int64 workflows, production
-IRR and parent combined acceptance are separate. MON-145/146/137 remain pending;
+IRR and parent combined acceptance are separate. MON-145 receipts are covered
+above; MON-146/137 remain pending;
 MON-136, MON-131, MON-129 and MON-007 remain open.
 
 ## MON-143 quote UI
@@ -115,7 +156,8 @@ price-first rounding, malformed/range/alias rejection, tax, quantity, saved read
 default currency and conversion. Existing quote worker independently covers domain
 negative cases and partial/milestone conversion. No live browser/effect, provider,
 PDF, production IRR or full signed-int64 workflow qualification is claimed. Credit
-UI is now covered by MON-144 above; receipt/prepayment remain MON-145/146 and
+UI is now covered by MON-144 above; receipt UI is covered above; prepayment remains
+MON-146 and
 recurring remains MON-137.
 MON-136, MON-131, MON-129 and MON-007 retain independent combined acceptance.
 
@@ -134,7 +176,7 @@ original combined criteria; MON-007 retains its original integration acceptance.
 | MON-136 | Integration parent for MON-143..146 quote, credit, receipt and prepayment UI | Independent combined acceptance; each domain retains currency, rounding and lifecycle policy |
 | MON-143 | sales/quotes list/detail; create-drawer.tsx QuoteDrawer; quote-money-details.tsx; lib/money/quote-ui.ts | Explicit USD default/selectable currency, price-first exact preview and unitPriceExact payloads, validated saved Minor aliases and currency-grouped sample summaries |
 | MON-144 | sales/credit-notes list/detail; create-drawer.tsx CreditNoteDrawer; credit-note-money-details.tsx; lib/money/credit-note-ui.ts | Explicit USD/selectable currency, exact extended-price preview/writes, validated saved Minor/summary reads and same-customer/currency amountMinor invoice application |
-| MON-145 | sales/receipts list/detail and SalesReceiptDrawer | Pending extended-price preview, currency resolution, saved read/post/void |
+| MON-145 | sales/receipts list/detail, SalesReceiptDrawer, sales-receipt-ui.ts and SalesReceiptMoneyDetails | Exact extended-price preview/unitPriceExact writes, selected/contact/org currency, validated saved Minor reads and per-currency paid sample sums; separate post/void domain policy retained |
 | MON-146 | sales/customer-prepayments list/detail and CustomerCreditDrawer | Pending exact amount input, currency, saved balances and invoice application |
 | MON-137 | Recurring invoice list/detail/editor and create-drawer.tsx RecurringDrawer | Pending recurring pricing/currency, exact fields and schedule preservation |
 | MON-132 | Integration parent for MON-138..142 payable/procurement consumers | Independent combined acceptance; no child completion closes this parent |

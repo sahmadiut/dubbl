@@ -1,5 +1,21 @@
 # Money and FX boundary manifest
 
+## MON-145 sales receipt creation and saved UI
+
+[CORE_UI_MONEY_CUTOVER](CORE_UI_MONEY_CUTOVER.md#mon-145-sales-receipt-ui)
+owns SalesReceiptDrawer, sales/receipts list/detail and their exact helper/component.
+Selected/contact/org/USD currency resolution matches both create transports.
+Exact decimal unitPriceExact writes and extended-price preview preserve raw units.
+Canonical Minor aliases validate against safe numeric values before bigint saved-
+currency display. Collected groups paid loaded matching receipts by currency;
+draft/void are excluded. Creation remains draft; separate post/void services retain
+cash-currency, revenue/tax, recognition, role/period/tenant and saved-FX reversal
+policy. Quantity hundredths, basis points, numeric wire coexistence and static USD
+examples retain semantics. No monetary fixed-two exception, new workflow, schema,
+API/MCP or IRR flag change. Real registered direct-DB tools are verified. MON-146/
+137 and MON-136/131/129/007 independent combined acceptance remain open; browser,
+provider/PDF, full-int64 posting and production qualification remain separate.
+
 ## MON-140 debit note creation and lifecycle UI
 
 [CORE_UI_MONEY_CUTOVER](CORE_UI_MONEY_CUTOVER.md#mon-140-debit-note-ui)
@@ -28,7 +44,8 @@ require same customer/currency, outstanding state and exact positive whole-minor
 amounts within both balances, sent as amountMinor. Full reads reload after actions.
 Quantity hundredths, tax basis points, legacy numeric wire coexistence and the
 latest-100 candidate lookup keep their semantics. No rescaling or second FX.
-MON-145/146/137 and all integration parents remain open; public/provider/PDF and
+MON-145 receipts are covered above; MON-146/137 and all integration parents remain
+open; public/provider/PDF and
 production/full-int64 qualification remain separate. No schema/API/MCP changes.
 
 ## MON-143 quote creation and lifecycle UI
@@ -42,7 +59,8 @@ sample sums. No stored amount rescaling or extra FX is introduced. Shared editor
 quantity stays numeric physical units; saved hundredths display fractional units.
 SendDocumentDialog receives exact bigint and saved currency. Quote transitions
 reload and validate full reads; conversion keeps its existing residual policy.
-MON-144 credit UI is covered above; MON-145/146 and recurring UI remain pending;
+MON-144 credit and MON-145 receipt UI are covered above; MON-146 and recurring UI
+remain pending;
 MON-136, MON-131, MON-129 and
 MON-007 retain independent combined acceptance. No schema/API/MCP changes.
 

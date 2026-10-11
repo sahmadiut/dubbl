@@ -1,5 +1,27 @@
 # Verification matrix
 
+## MON-136 combined quote, credit, receipt and prepayment UI money
+
+- `tests/integration/receivable-ui-integration.test.ts` and worker independently
+  combine the four completed child domains on migrated disposable PostgreSQL.
+  Eight workflows exercise both REST/MCP transports across USD/JPY/synthetic
+  IRR/KWD using actual editor/adoption helpers and independent SQL text assertions.
+  Quote price-first conversion preserves 3000000004 minor units; extended-price
+  credit/receipt lines retain 2 rather than the quote's 3. Credit and prepayment
+  applications share that invoice, preserve low paid/due digits, and credit void
+  restores only its own allocation. Receipt recognition/void remains separate.
+- Real registered MCP tools share one organization context. Foreign quote reads,
+  malformed prices, unsafe prepayments and excessive applications reject without
+  changing scoped document counts, balances, allocations or journal counts.
+  Default currency policies remain distinct in the same customer/org context;
+  loaded mixed-currency prepayment summaries agree with grouped SQL text sums.
+- Four child UI fixtures and 18 focused pure/static-render groups pass again,
+  covering English behavior, accessible exact inputs, precision/range/tax/alias
+  rejection, safe-edge draft prices, summaries and lifecycle application bounds.
+  These synthetic fixtures do not qualify live browser effects, provider/PDF,
+  full-int64 posting, production IRR or broader accounting. MON-131, MON-129 and
+  MON-007 retain independent acceptance. See MON-136 attempt/review evidence.
+
 ## MON-140 debit note creation and lifecycle UI money
 
 - `tests/debit-note-ui-money.test.ts`: real debit REST/MCP schemas and calculators,

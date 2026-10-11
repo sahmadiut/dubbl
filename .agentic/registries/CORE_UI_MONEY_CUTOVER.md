@@ -1,3 +1,45 @@
+## MON-136 combined receivable UI acceptance
+
+Independent integration of MON-143..146 is verified by
+`tests/integration/receivable-ui-integration*`; see
+[attempt evidence](../evidence/MON-136-attempt-1.md) and
+[self-review](../evidence/MON-136-review-1.md). The scoped consumers remain owned
+by the four domain rows below: quote/credit/receipt/prepayment list/detail,
+their create-drawer sections, exact adapters, saved detail components and reused
+LineItemsEditor/InvoiceAmountInput/SendDocumentDialog presentation.
+
+Eight combined REST/MCP workflows on migrated disposable PostgreSQL cover USD,
+JPY, synthetic IRR and KWD: quote price-first preview/conversion, extended-price
+credit and receipt previews, credit plus prepayment application to one converted
+invoice, low-digit saved/SQL balances, cash recognition, and credit/receipt void.
+USD 0.005 x 3 remains 3 minor units on quotes and 2 on credits/receipts. Equivalent
+half-minor inputs verify the other currency scales. Original raw 1250 and
+3000000001 values retain their units. A credit void restores only its allocation;
+the prepayment balance and independent cash receipt remain separate.
+
+One MCP session per organization registers all six relevant direct-DB tool
+families. Cross-organization reads fail, invalid writes/applications leave the
+four domains and invoice settlement unchanged, and both transports preserve
+quote/credit USD defaults versus receipt/prepayment contact/org/USD resolution.
+Exact grouped prepayment list summaries agree with SQL text sums after mixed
+currency defaults. Eighteen focused adapter/static-render groups independently
+retain English labels, scale/precision/range and alias rejection checks.
+
+Compatibility limits remain explicit: public numeric amounts must be safe and
+agree with canonical Minor aliases; bigint handles UI arithmetic. Numeric physical
+quantities become stored hundredths and tax/discount percentages are basis points.
+Sample list summaries and the 100-invoice picker do not promise all-page coverage.
+Mixed-currency credit summaries remain unavailable under the existing API contract.
+Static USD examples are illustrations. No FX is inferred by the UI; the fixture's
+explicit synthetic rate only supplies the default-currency prepayment recognition.
+
+This entry supersedes older MON-136/MON-146/137-pending prose in this registry.
+MON-131 retains independent invoice/quote/credit/receipt/prepayment/recurring
+combined acceptance; MON-129 and MON-007 remain open. MON-133 owns remaining
+opening-balance/payment/expense/banking/tax/shared consumers. No API/MCP/schema
+or production flag change; live browser/provider/PDF, full-int64 business use,
+production IRR and broader accounting/linguistic qualification remain separate.
+
 ## MON-146 customer prepayment UI
 
 CustomerCreditDrawer/CustomerCreditForm and sales/customer-prepayments list/detail
@@ -286,7 +328,7 @@ original combined criteria; MON-007 retains its original integration acceptance.
 | MON-131 | sales/page.tsx, sales/[id]/page.tsx, sales/quotes, sales/credit-notes, sales/receipts, sales/recurring; their invoice/quote/credit/receipt/customer-credit create-drawer sections; components/dashboard/line-items-editor.tsx receivable consumers | Invoice/quote/credit/receipt currency-scale contracts and explicit recurring exceptions; adopted receivable inventories and REST price Exact/Minor fields |
 | MON-134 | components/dashboard/line-items-editor.tsx, lib/money/document-editor.ts; create-drawer.tsx InvoiceDrawer | Shared exact preview/display/input; invoice create exact-major strings, resolved currency and REST price-first rounding |
 | MON-135 | sales/page.tsx and sales/[id]/page.tsx; invoice-amount-input.tsx; invoice-ui.ts; invoice-specific DualAmount and SendDocumentDialog props | Validated Minor reads, exact saved/copy prices, source/base display, aging and progress; currency-scale payment/interest Minor writes and same-currency credit application |
-| MON-136 | Integration parent for MON-143..146 quote, credit, receipt and prepayment UI | Independent combined acceptance; each domain retains currency, rounding and lifecycle policy |
+| MON-136 | Integration parent for MON-143..146 quote, credit, receipt and prepayment UI; tests/integration/receivable-ui-integration* | Independent combined REST/MCP/SQL acceptance verified; each domain retains currency, rounding and lifecycle policy; see MON-136 evidence |
 | MON-143 | sales/quotes list/detail; create-drawer.tsx QuoteDrawer; quote-money-details.tsx; lib/money/quote-ui.ts | Explicit USD default/selectable currency, price-first exact preview and unitPriceExact payloads, validated saved Minor aliases and currency-grouped sample summaries |
 | MON-144 | sales/credit-notes list/detail; create-drawer.tsx CreditNoteDrawer; credit-note-money-details.tsx; lib/money/credit-note-ui.ts | Explicit USD/selectable currency, exact extended-price preview/writes, validated saved Minor/summary reads and same-customer/currency amountMinor invoice application |
 | MON-145 | sales/receipts list/detail, SalesReceiptDrawer, sales-receipt-ui.ts and SalesReceiptMoneyDetails | Exact extended-price preview/unitPriceExact writes, selected/contact/org currency, validated saved Minor reads and per-currency paid sample sums; separate post/void domain policy retained |

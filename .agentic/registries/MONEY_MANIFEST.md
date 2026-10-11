@@ -1,3 +1,25 @@
+## MON-136 combined quote, credit, receipt and prepayment UI
+
+[CORE_UI_MONEY_CUTOVER](CORE_UI_MONEY_CUTOVER.md#mon-136-combined-receivable-ui-acceptance)
+records independent combined acceptance for the MON-143..146 consumers and
+`tests/integration/receivable-ui-integration*`. Exact decimal price/amount inputs,
+adopted Minor/numeric reads, bigint arithmetic and saved-currency presentation are
+verified through one quote-to-invoice workflow with both credit and prepayment
+applications plus separate receipt posting/void. Eight real REST/MCP/SQL workflows
+cover USD/JPY/synthetic IRR/KWD, low digits, distinct rounding and default currency,
+invalid-write atomicity, organization scope and mixed saved-currency summaries.
+The four child manifests keep their explicit consumer ownership and domain policies.
+
+Raw stored units, safe numeric compatibility, physical hundredths, basis points,
+bounded list/invoice samples and static USD illustrations retain their semantics.
+No UI FX inference or money fixed-two exception remains in this slice. Existing
+mixed-currency credit-summary rejection stays explicit. See MON-136 attempt/review
+evidence for checks and limits. This supersedes earlier pending MON-136/146/137
+prose below; MON-131, MON-129 and MON-007 retain independent combined acceptance.
+MON-133 and its unfinished children retain remaining shared/accounting/banking
+consumers. No API/MCP/schema/IRR flag change or browser/provider/PDF, full-int64,
+production/accounting/linguistic qualification claim.
+
 ## MON-146 customer prepayment UI
 
 CustomerCreditDrawer/CustomerCreditForm and sales/customer-prepayments list/detail

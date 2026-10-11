@@ -267,3 +267,10 @@ MON-007 retains its original acceptance criteria and independent combined verifi
 - [MON-131](../tasks/MON-131.md): Receivable document UI money.
 - [MON-132](../tasks/MON-132.md): Payable and procurement UI money.
 - [MON-133](../tasks/MON-133.md): Core cash, tax, account ledger and opening balance UI money.
+
+MON-131 is split into bounded receivable consumers and retains final integration:
+
+- [MON-134](../tasks/MON-134.md): Shared line editor and invoice creation money.
+- [MON-135](../tasks/MON-135.md): Invoice list, detail and settlement UI money.
+- [MON-136](../tasks/MON-136.md): Quote, credit, receipt and prepayment UI money.
+- [MON-137](../tasks/MON-137.md): Recurring invoice UI money.

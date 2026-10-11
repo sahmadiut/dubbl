@@ -1,5 +1,14 @@
 # Money and FX boundary manifest
 
+## MON-134 shared line editor and invoice create
+
+[CORE_UI_MONEY_CUTOVER](CORE_UI_MONEY_CUTOVER.md#mon-134-shared-editor-and-invoice-creation)
+assigns shared exact inputs/previews and InvoiceDrawer to MON-134, with explicit
+REST price-first versus MCP extended-price rounding and currency resolution.
+MON-135..137 own the remaining receivable UI. Other shared editor callers retain
+documented fixed-two preview/input defaults until their domain cutover. MON-131,
+MON-129 and MON-007 retain independent acceptance.
+
 ## MON-130 journal UI and remaining core UI ownership
 
 [CORE_UI_MONEY_CUTOVER](CORE_UI_MONEY_CUTOVER.md) assigns the actual core UI

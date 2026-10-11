@@ -1,5 +1,21 @@
 # Verification matrix
 
+## MON-134 shared editor and invoice creation
+
+`tests/document-editor-money.test.ts` covers exact major price strings, USD/IRR/
+JPY/KWD scales, safe low digits, signed price-first/extended ties, tax-exclusive
+totals, malformed/unsupported/range rejection and nonmoney control units.
+`tests/document-editor-components.test.ts` renders the actual shared editor for
+exact English totals, compatibility defaults, unresolved/invalid alerts and
+accessible decimal fields. `tests/integration/document-editor-money.test.ts`
+checks authenticated customer/org currency GETs, REST invoice creation,
+registered MCP policy and independent stored SQL totals. Invoice-write and
+expense-lifecycle integration regressions retain transport/tenant/lock behavior.
+The CI repair in the combined payment/expense/bank fixture fixes its synthetic
+clock across UTC midnight and explicitly rejects reimbursement before approval.
+No browser interaction, parent closure, accounting or production qualification
+is claimed. See CORE_UI_MONEY_CUTOVER for remaining caller ownership.
+
 ## MON-130 journal UI money
 
 `tests/journal-ui-money.test.ts` reconciles strict editor cells/preview totals

@@ -56,6 +56,7 @@ import {
 import { DatePicker } from "@/components/ui/date-picker";
 import { ContactPicker } from "@/components/dashboard/contact-picker";
 import { LineItemsEditor, type LineItem } from "@/components/dashboard/line-items-editor";
+import { documentLineInputs, invoiceEditorCurrency } from "@/lib/money/document-editor";
 import { journalEditorPreview, journalDecimal } from "@/lib/money/journal-display";
 import { EntryForm } from "@/components/dashboard/entry-form";
 import { AccountPicker } from "@/components/dashboard/account-picker";
@@ -160,10 +161,12 @@ function DrawerFooter({
   onClose,
   saving,
   label,
+  disabled = false,
 }: {
   onClose: () => void;
   saving: boolean;
   label: string;
+  disabled?: boolean;
 }) {
   return (
     <div className="sticky bottom-0 z-10 flex items-center justify-end gap-3 border-t bg-background/80 px-4 py-3 sm:px-6 sm:py-4 backdrop-blur-sm">
@@ -172,7 +175,7 @@ function DrawerFooter({
       </Button>
       <Button
         type="submit"
-        disabled={saving}
+        disabled={saving || disabled}
         className="bg-emerald-600 hover:bg-emerald-700"
       >
         {saving ? "Creating..." : label}
@@ -520,6 +523,12 @@ function InvoiceDrawer({ open, onClose }: { open: boolean; onClose: () => void }
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [contactId, setContactId] = useState("");
+  const [selectedCurrency, setSelectedCurrency] = useState("");
+  const [currencyContext, setCurrencyContext] = useState<{ orgId: string; contactId: string; code?: string; error?: string } | null>(null);
+  const [validLines, setValidLines] = useState(false);
+  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
+  const currentCurrencyContext = currencyContext?.orgId === orgId && currencyContext?.contactId === contactId ? currencyContext : null;
+  const currencyCode = selectedCurrency || currentCurrencyContext?.code || null;
   const [issueDate, setIssueDate] = useState(new Date().toISOString().split("T")[0]);
   const [dueDate, setDueDate] = useState(() => {
     const d = new Date(); d.setDate(d.getDate() + 30); return d.toISOString().split("T")[0];
@@ -542,7 +551,7 @@ function InvoiceDrawer({ open, onClose }: { open: boolean; onClose: () => void }
 
   useEffect(() => {
     if (!open) {
-      setContactId(""); setReference(""); setNotes("");
+      setContactId(""); setSelectedCurrency(""); setCurrencyContext(null); setValidLines(false); setReference(""); setNotes("");
       setIsDepositRetainer(false); setInvoiceType("deposit"); setDepositPercent("");
       setForApproval(false);
       setIssueDate(new Date().toISOString().split("T")[0]);
@@ -552,12 +561,30 @@ function InvoiceDrawer({ open, onClose }: { open: boolean; onClose: () => void }
     }
   }, [open]);
 
+  useEffect(() => {
+    if (!open || !orgId || !contactId) return;
+    const controller = new AbortController();
+    const headers = { "x-organization-id": orgId };
+    Promise.all([
+      fetch(`/api/v1/contacts/${encodeURIComponent(contactId)}`, { headers, signal: controller.signal }),
+      fetch("/api/v1/organization", { headers, signal: controller.signal }),
+    ]).then(async ([customer, org]) => {
+      if (!customer.ok || !org.ok) throw new Error("Unable to load the customer's invoice currency");
+      const [customerData, orgData] = await Promise.all([customer.json(), org.json()]);
+      if (!customerData.contact || !orgData.organization) throw new Error("Unable to load the customer's invoice currency");
+      const code = invoiceEditorCurrency(null, customerData.contact.currencyCode, orgData.organization.defaultCurrency);
+      if (!controller.signal.aborted) setCurrencyContext({ orgId, contactId, code });
+    }).catch(() => {
+      if (!controller.signal.aborted) setCurrencyContext({ orgId, contactId, error: "Unable to load the customer's invoice currency. Select a currency to continue." });
+    });
+    return () => controller.abort();
+  }, [open, orgId, contactId]);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!contactId) { toast.error("Please select a customer"); return; }
-    setSaving(true);
-    const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
+    if (!currencyCode || !validLines) { toast.error("Check the invoice currency and line amounts"); return; }
 
     // Deposit % is entered as a plain percent and stored as basis points.
     const pct = parseFloat(depositPercent);
@@ -567,23 +594,20 @@ function InvoiceDrawer({ open, onClose }: { open: boolean; onClose: () => void }
         : null;
 
     try {
+      const exactLines = documentLineInputs(lines);
+      if (exactLines.some(line => !line.description.trim())) throw new Error("Add a description for every line");
+      setSaving(true);
       const res = await fetch("/api/v1/invoices", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify({
-          contactId, issueDate, dueDate,
+          contactId, issueDate, dueDate, currencyCode,
           reference: reference || null,
           notes: notes || null,
           invoiceType: isDepositRetainer ? invoiceType : "standard",
           depositPercent: isDepositRetainer ? depositBasisPoints : null,
           ...(forApproval ? { submitForApproval: true } : {}),
-          lines: lines.map((l) => ({
-            description: l.description,
-            quantity: parseFloat(l.quantity) || 1,
-            unitPrice: parseFloat(l.unitPrice) || 0,
-            accountId: l.accountId || null,
-            taxRateId: l.taxRateId || null,
-          })),
+          lines: exactLines,
         }),
       });
       if (!res.ok) {
@@ -624,12 +648,17 @@ function InvoiceDrawer({ open, onClose }: { open: boolean; onClose: () => void }
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Customer *</Label>
-                  <ContactPicker value={contactId} onChange={setContactId} type="customer" />
+                  <ContactPicker value={contactId} onChange={(id) => { if (id !== contactId) { setContactId(id); setSelectedCurrency(""); setValidLines(false); } }} type="customer" />
                 </div>
                 <div className="space-y-2">
                   <Label>Reference</Label>
                   <Input value={reference} onChange={(e) => setReference(e.target.value)} placeholder="PO number, etc." />
                 </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Invoice currency</Label>
+                <CurrencySelect value={currencyCode ?? ""} onValueChange={(code) => { setSelectedCurrency(code); if (code !== currencyCode) setValidLines(false); }} />
+                {!selectedCurrency && currentCurrencyContext?.error && <p role="alert" className="text-xs text-red-600">{currentCurrencyContext.error}</p>}
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
@@ -702,7 +731,7 @@ function InvoiceDrawer({ open, onClose }: { open: boolean; onClose: () => void }
 
             <div className="space-y-4">
               <SectionLabel>Line Items</SectionLabel>
-              <LineItemsEditor lines={lines} onChange={setLines} accountTypeFilter={["revenue"]} taxContext="sales" />
+              <LineItemsEditor key={orgId} lines={lines} onChange={(next) => { setLines(next); setValidLines(false); }} accountTypeFilter={["revenue"]} taxContext="sales" currencyCode={currencyCode} roundPriceFirst priceFractionDigits={18} onValidityChange={setValidLines} />
             </div>
 
             <div className="h-px bg-border" />
@@ -712,7 +741,7 @@ function InvoiceDrawer({ open, onClose }: { open: boolean; onClose: () => void }
               <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notes to customer..." rows={3} />
             </div>
           </div>
-          <DrawerFooter onClose={onClose} saving={saving} label="Create Invoice" />
+          <DrawerFooter onClose={onClose} saving={saving} label="Create Invoice" disabled={!contactId || !currencyCode || !validLines} />
         </form>
       </SheetContent>
     </Sheet>

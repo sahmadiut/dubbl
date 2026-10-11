@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AccountPicker } from "./account-picker";
+import { documentEditorPreview, documentEditorDecimal } from "@/lib/money/document-editor";
 
 export interface LineItem {
   description: string;
@@ -38,6 +39,11 @@ interface LineItemsEditorProps {
   accountTypeFilter?: string[];
   // Intent of the document, so we can surface purchase-side reclaim hints.
   taxContext?: "sales" | "purchase";
+  /** Explicit invoice currency; omitted retains the shared historical fixed-two preview. */
+  currencyCode?: string | null;
+  roundPriceFirst?: boolean;
+  priceFractionDigits?: number;
+  onValidityChange?: (valid: boolean) => void;
 }
 
 // Format a basis-point rate as a percentage (2000 -> "20", 1750 -> "17.5").
@@ -59,7 +65,7 @@ function reclaimHint(rate: TaxRateOption): string | null {
   return "reclaimable";
 }
 
-export function LineItemsEditor({ lines, onChange, accountTypeFilter, taxContext }: LineItemsEditorProps) {
+export function LineItemsEditor({ lines, onChange, accountTypeFilter, taxContext, currencyCode, roundPriceFirst = false, priceFractionDigits = 2, onValidityChange }: LineItemsEditorProps) {
   const [taxRates, setTaxRates] = useState<TaxRateOption[]>([]);
 
   // Fetch the org's tax rates once (org via x-organization-id, mirroring the
@@ -92,32 +98,19 @@ export function LineItemsEditor({ lines, onChange, accountTypeFilter, taxContext
     onChange(lines.filter((_, i) => i !== index));
   }
 
-  function lineAmount(line: LineItem) {
-    const qty = parseFloat(line.quantity) || 0;
-    const price = parseFloat(line.unitPrice) || 0;
-    return qty * price;
-  }
-
-  // Tax-EXCLUSIVE: tax is computed on top of qty*price, matching how the
-  // invoice/bill routes post (taxAmount = round(amount * rateBp / 10000)).
-  function lineTax(line: LineItem) {
-    if (!line.taxRateId) return 0;
-    const rate = taxRates.find((t) => t.id === line.taxRateId);
-    if (!rate || rate.rate <= 0) return 0;
-    return Math.round((lineAmount(line) * 100 * rate.rate) / 10000) / 100;
-  }
-
-  const subtotal = lines.reduce((sum, l) => sum + lineAmount(l), 0);
-  const taxTotal = lines.reduce((sum, l) => sum + lineTax(l), 0);
-  const total = subtotal + taxTotal;
+  const previewCurrency = currencyCode === undefined ? "USD" : currencyCode;
+  const preview = useMemo(() => documentEditorPreview(lines, previewCurrency, taxRates, roundPriceFirst), [lines, previewCurrency, taxRates, roundPriceFirst]);
+  useEffect(() => { onValidityChange?.(!preview.error); }, [onValidityChange, preview]);
+  const decimal = (amount: bigint) => preview.error || !previewCurrency ? "—" : documentEditorDecimal(amount, previewCurrency);
 
   return (
     <div className="space-y-3">
-      <div className="rounded-lg border">
-        <div className="grid grid-cols-[1fr_80px_100px_120px_40px] gap-2 border-b bg-muted/50 px-3 py-2 text-xs font-medium text-muted-foreground">
+      {preview.error && <p role="alert" className="text-xs text-red-600">{preview.error}</p>}
+      <div className="overflow-x-auto rounded-lg border">
+        <div className="grid min-w-[620px] grid-cols-[1fr_80px_100px_120px_40px] gap-2 border-b bg-muted/50 px-3 py-2 text-xs font-medium text-muted-foreground">
           <span>Description</span>
           <span className="text-right">Qty</span>
-          <span className="text-right">Price</span>
+          <span className="text-right">Price{currencyCode ? ` (${currencyCode})` : ""}</span>
           <span className="text-right">Amount</span>
           <span />
         </div>
@@ -130,7 +123,7 @@ export function LineItemsEditor({ lines, onChange, accountTypeFilter, taxContext
           return (
             <div
               key={i}
-              className="grid grid-cols-[1fr_80px_100px_120px_40px] gap-2 border-b px-3 py-2 last:border-b-0"
+              className="grid min-w-[620px] grid-cols-[1fr_80px_100px_120px_40px] gap-2 border-b px-3 py-2 last:border-b-0"
             >
               <div className="space-y-1">
                 <Input
@@ -167,19 +160,21 @@ export function LineItemsEditor({ lines, onChange, accountTypeFilter, taxContext
               </div>
               <Input
                 className="h-8 text-right text-sm font-mono tabular-nums"
+                aria-label={`Quantity for line ${i + 1}`}
                 type="number"
-                step="1"
-                min="1"
+                step="any"
                 value={line.quantity}
                 onChange={(e) => updateLine(i, "quantity", e.target.value)}
               />
               <CurrencyInput
                 size="sm"
+                aria-label={`Price for line ${i + 1}`}
+                fractionDigits={priceFractionDigits}
                 value={line.unitPrice}
                 onChange={(v) => updateLine(i, "unitPrice", v)}
               />
               <span className="flex h-8 items-center justify-end text-sm font-mono font-medium tabular-nums">
-                {lineAmount(line).toFixed(2)}
+                {decimal(preview.lines[i]?.amountMinor ?? 0n)}
               </span>
               <Button
                 type="button"
@@ -208,15 +203,15 @@ export function LineItemsEditor({ lines, onChange, accountTypeFilter, taxContext
           <div className="space-y-0.5 text-right text-sm font-mono tabular-nums">
             <div className="flex justify-between gap-6">
               <span className="text-muted-foreground">Subtotal</span>
-              <span>{subtotal.toFixed(2)}</span>
+              <span>{decimal(preview.subtotal)}</span>
             </div>
             <div className="flex justify-between gap-6">
               <span className="text-muted-foreground">Tax</span>
-              <span>{taxTotal.toFixed(2)}</span>
+              <span>{decimal(preview.taxTotal)}</span>
             </div>
             <div className="flex justify-between gap-6 font-semibold">
               <span>Total</span>
-              <span>{total.toFixed(2)}</span>
+              <span>{decimal(preview.total)}</span>
             </div>
           </div>
         </div>

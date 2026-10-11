@@ -1,5 +1,6 @@
 // Runs only in the harness's migrated disposable database, with synthetic tenants.
 import assert from "node:assert/strict";
+import { mock } from "node:test";
 import { createHash } from "node:crypto";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -196,6 +197,7 @@ async function scenario(currency: string) {
     assert.equal(claim.totalAmountMinor, "250");
     await tool("submit_expense_claim", { expenseClaimId: claim.id }); await tool("approve_expense_claim", { expenseClaimId: claim.id });
     const paymentCount = (await db.select().from(payment)).length;
+    await rejectTool("pay_expense_claim", { expenseClaimId: claim.id, date: "2026-10-10", bankAccountCode: "1100" });
     await tool("pay_expense_claim", { expenseClaimId: claim.id, date: today, bankAccountCode: "1100" });
     assert.equal(await journalNet(cash.id), beforeExpenseCash - 250n);
     assert.equal((await db.select().from(payment)).length, paymentCount);
@@ -225,7 +227,12 @@ async function scenario(currency: string) {
 }
 
 async function run() {
-  for (const currency of ["USD", "IRR", "JPY", "KWD"]) await scenario(currency);
-  console.log("Combined payment expense bank contracts verified");
+  // Approval uses the application clock. A real UTC midnight between capturing
+  // `today` and approving must not turn this synthetic reimbursement into a backdate.
+  mock.timers.enable({ apis: ["Date"], now: new Date("2026-10-11T12:00:00Z") });
+  try {
+    for (const currency of ["USD", "IRR", "JPY", "KWD"]) await scenario(currency);
+    console.log("Combined payment expense bank contracts verified");
+  } finally { mock.timers.reset(); }
 }
 run().then(() => process.exit(0), error => { console.error(error); process.exit(1); });

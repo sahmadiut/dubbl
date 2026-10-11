@@ -17,6 +17,7 @@ import { documentEditorPreview, documentEditorDecimal } from "@/lib/money/docume
 import { procurementPreview } from "@/lib/money/procurement-ui";
 import { billEditorPreview } from "@/lib/money/bill-editor";
 import { recurringInvoiceEditorPreview } from "@/lib/money/recurring-invoice-ui";
+import { recurringBillEditorPreview } from "@/lib/money/recurring-bill-ui";
 
 export interface LineItem {
   description: string;
@@ -47,7 +48,7 @@ interface LineItemsEditorProps {
   roundPriceFirst?: boolean;
   priceFractionDigits?: number;
   onValidityChange?: (valid: boolean) => void;
-  documentKind?: "invoice" | "bill" | "recurringInvoice" | "purchaseOrder";
+  documentKind?: "invoice" | "bill" | "recurringInvoice" | "recurringBill" | "purchaseOrder";
 }
 
 // Format a basis-point rate as a percentage (2000 -> "20", 1750 -> "17.5").
@@ -106,6 +107,7 @@ export function LineItemsEditor({ lines, onChange, accountTypeFilter, taxContext
   const preview = useMemo(() => documentKind === "bill"
     ? billEditorPreview(lines, previewCurrency, taxRates)
     : documentKind === "recurringInvoice" ? recurringInvoiceEditorPreview(lines, previewCurrency, taxRates)
+    : documentKind === "recurringBill" ? recurringBillEditorPreview(lines, previewCurrency, taxRates)
     : documentKind === "purchaseOrder" ? procurementPreview(lines, previewCurrency, taxRates)
     : documentEditorPreview(lines, previewCurrency, taxRates, roundPriceFirst), [lines, previewCurrency, taxRates, roundPriceFirst, documentKind]);
   useEffect(() => { onValidityChange?.(!preview.error); }, [onValidityChange, preview]);
@@ -113,12 +115,13 @@ export function LineItemsEditor({ lines, onChange, accountTypeFilter, taxContext
 
   return (
     <div className="space-y-3">
+      {documentKind === "recurringBill" && <p className="text-xs text-muted-foreground">Recurring bill prices use a fixed two-decimal scale in every currency: 1.00 stores 100 units. Amounts below show those units in {currencyCode}. Price and quantity are rounded before multiplication. Tax uses the current rate when each draft bill is generated.</p>}
       {preview.error && <p role="alert" className="text-xs text-red-600">{preview.error}</p>}
       <div className="overflow-x-auto rounded-lg border">
         <div className="grid min-w-[620px] grid-cols-[1fr_80px_100px_120px_40px] gap-2 border-b bg-muted/50 px-3 py-2 text-xs font-medium text-muted-foreground">
           <span>Description</span>
           <span className="text-right">Qty</span>
-          <span className="text-right">Price{currencyCode ? ` (${currencyCode})` : ""}</span>
+          <span className="text-right">Price{documentKind === "recurringBill" ? " (fixed two-decimal scale)" : currencyCode ? ` (${currencyCode})` : ""}</span>
           <span className="text-right">Amount</span>
           <span />
         </div>

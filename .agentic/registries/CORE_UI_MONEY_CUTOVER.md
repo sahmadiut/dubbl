@@ -578,3 +578,45 @@ screenshots; pure adapters and rendered controls/details plus real REST/MCP/SQL
 fixtures cover money behavior. Live browser effects, provider/email/PDF, full-int64
 posting, production IRR and accounting/linguistic qualification are not claimed.
 MON-142 and MON-132/MON-129/MON-007 retain independent acceptance.
+
+## MON-142 recurring bill UI
+
+Owner: MON-142 owns app/(dashboard)/purchases/bills/recurring/page.tsx,
+lib/money/recurring-bill-ui.ts and the recurringBill branch of
+components/dashboard/line-items-editor.tsx. The actual UI is a list and create
+sheet; no recurring bill detail/header-edit/manual-generation screen exists.
+Recurring payable REST/MCP services and generation remain the adopted MON-099
+contracts. Existing MCP create/list/get/preview/pause/update/run/delete tools
+already support this consumer; no transport or schema changes were required.
+
+Creation sends explicit currencyCode (default USD, independently of supplier/org)
+and intact unitPriceExact text, up to 18 fractional digits. The compatibility
+policy is deliberately fixed two-decimal input for ALL currencies: multiply price
+by 100 and round before storing; independently round physical quantity to int32
+hundredths before extension. The UI labels that input policy and formats resulting
+minor units using the selected currency scale. Price 12.50 becomes 1250 raw units,
+displaying USD 12.50, JPY/IRR 1250 or KWD 1.250 before quantity/tax. Never rescale
+history or silently reinterpret prices using the selected currency. Bigint wire
+calculations preserve signed ties and low digits; USD 0.005 x 3 becomes 3 units.
+Tax preview uses current purchase rates; generation uses then-current rates and
+creates draft bills. No final future-tax snapshot or FX policy is invented.
+
+Zero quantity remains zero, blank quantity means one, blank price means zero.
+Every submitted line requires a description; incomplete lines are not dropped.
+Malformed money, missing tax selections, quantity/safe-money/aggregate overflow,
+invalid currency, dates and occurrence limits produce English errors. Dates,
+frequency, start/end caps, supplier, expense accounts and reference remain.
+Closing resets the draft; editor remounts on opening and workspaces on org changes.
+List requests abort on cleanup. Saved list unitPriceMinor aliases must be canonical
+and agree with safe numeric raw units before bigint gross sums. Each row shows its
+currency and gross amount, explicitly before discount/tax; currencies are never
+summed. Corrupt money suppresses the loaded rows with an alert. Scrollable tables,
+decimal keyboard input, quantity/price labels and wide sheet preserve readability.
+
+Five behavioral/React render groups and migrated real REST/MCP/SQL fixtures cover
+USD, JPY, synthetic IRR, KWD, safe-edge digits, malformed/compatibility/alias cases,
+preview/list/saved/generation agreement, pause/resume, two dates, inclusive end/cap
+completion and no duplicate generation. Existing payable and recurring-invoice UI
+fixtures cover shared-editor regressions. MON-132/MON-129/MON-007 combined
+acceptance remains separate. No production IRR/full-int64/browser/accounting
+qualification, historical rescaling, build, dev server or deployment is claimed.

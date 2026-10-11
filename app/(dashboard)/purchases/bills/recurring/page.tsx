@@ -25,10 +25,13 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { ContactPicker } from "@/components/dashboard/contact-picker";
-import { AccountPicker } from "@/components/dashboard/account-picker";
+import { LineItemsEditor, type LineItem } from "@/components/dashboard/line-items-editor";
+import { CurrencySelect } from "@/components/ui/currency-select";
+import { recurringBillEditorPayload, recurringBillUiDocument } from "@/lib/money/recurring-bill-ui";
+import { invoiceUiMoney } from "@/lib/money/invoice-ui";
 
 interface RecurringTemplate {
   id: string;
@@ -37,14 +40,9 @@ interface RecurringTemplate {
   status: string;
   nextRunDate: string | null;
   reference: string | null;
+  currencyCode: string;
+  lines: { id: string; description: string; quantity: number; discountPercent: number; unitPrice: bigint; grossMinor: bigint }[];
   contact: { name: string } | null;
-}
-
-interface LineItem {
-  description: string;
-  quantity: string;
-  unitPrice: string;
-  accountId: string | null;
 }
 
 const statusColors: Record<string, string> = {
@@ -75,10 +73,16 @@ const emptyLine = (): LineItem => ({
   description: "",
   quantity: "1",
   unitPrice: "",
-  accountId: null,
+  accountId: "",
+  taxRateId: "",
 });
 
 export default function RecurringBillsPage() {
+  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") || "" : "";
+  return <RecurringBillsWorkspace key={orgId} orgId={orgId} />;
+}
+
+function RecurringBillsWorkspace({ orgId }: { orgId: string }) {
   const [templates, setTemplates] = useState<RecurringTemplate[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -94,28 +98,23 @@ export default function RecurringBillsPage() {
   const [endDate, setEndDate] = useState("");
   const [maxOccurrences, setMaxOccurrences] = useState("");
   const [reference, setReference] = useState("");
+  const [currencyCode, setCurrencyCode] = useState("USD");
+  const [validLines, setValidLines] = useState(false);
+  const [error, setError] = useState("");
+  const [reload, setReload] = useState(0);
   const [lines, setLines] = useState<LineItem[]>([emptyLine()]);
 
-  const orgHeaders = useCallback(
-    () => ({
-      "x-organization-id": localStorage.getItem("activeOrgId") || "",
-    }),
-    []
-  );
-
-  const fetchTemplates = useCallback(() => {
-    setLoading(true);
-    fetch("/api/v1/recurring?type=bill", {
-      headers: orgHeaders(),
-    })
-      .then((r) => r.json())
-      .then((data) => setTemplates(data.data || []))
-      .finally(() => setLoading(false));
-  }, [orgHeaders]);
-
+  const orgHeaders = useCallback(() => ({ "x-organization-id": orgId }), [orgId]);
   useEffect(() => {
-    fetchTemplates();
-  }, [fetchTemplates]);
+    const controller = new AbortController();
+    setLoading(true);
+    fetch("/api/v1/recurring?type=bill", { headers: orgHeaders(), signal: controller.signal })
+      .then(async r => { if (!r.ok) throw new Error("Unable to load recurring bills"); return r.json(); })
+      .then(data => { if (!controller.signal.aborted) setTemplates((data.data || []).map(recurringBillUiDocument)); })
+      .catch(() => { if (!controller.signal.aborted) { setTemplates([]); setError("Unable to load recurring bill amounts"); } })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
+  }, [orgHeaders, reload]);
 
   const resetForm = () => {
     setName("");
@@ -126,14 +125,16 @@ export default function RecurringBillsPage() {
     setMaxOccurrences("");
     setReference("");
     setLines([emptyLine()]);
+    setCurrencyCode("USD");
+    setValidLines(false);
+    setError("");
   };
 
   const handleSubmit = async () => {
     if (!name || !contactId || !startDate || lines.length === 0) return;
 
-    const validLines = lines.filter((l) => l.description && l.unitPrice);
-    if (validLines.length === 0) return;
-
+    if (!validLines) { setError("Check the currency and line amounts"); return; }
+    setError("");
     setSubmitting(true);
     try {
       const res = await fetch("/api/v1/recurring", {
@@ -142,46 +143,23 @@ export default function RecurringBillsPage() {
           "Content-Type": "application/json",
           ...orgHeaders(),
         },
-        body: JSON.stringify({
-          name,
-          type: "bill",
-          contactId,
-          frequency,
-          startDate,
-          endDate: endDate || null,
-          maxOccurrences: maxOccurrences ? parseInt(maxOccurrences, 10) : null,
-          reference: reference || null,
-          lines: validLines.map((l) => ({
-            description: l.description,
-            quantity: parseFloat(l.quantity) || 1,
-            unitPriceExact: l.unitPrice || "0",
-            accountId: l.accountId || null,
-          })),
-        }),
+        body: JSON.stringify(recurringBillEditorPayload({ name, contactId, frequency, startDate, endDate, maxOccurrences, reference, currencyCode }, lines)),
       });
 
       if (res.ok) {
         setDrawerOpen(false);
         resetForm();
-        fetchTemplates();
+        setReload(value => value + 1);
+      } else {
+        const data = await res.json();
+        setError(data.error || "Unable to create recurring bill");
       }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to create recurring bill";
+      setError(message.startsWith("[") ? "Check the name, supplier, dates and occurrence limit" : message);
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const updateLine = (
-    index: number,
-    field: keyof LineItem,
-    value: string | null
-  ) => {
-    setLines((prev) =>
-      prev.map((l, i) => (i === index ? { ...l, [field]: value } : l))
-    );
-  };
-
-  const removeLine = (index: number) => {
-    setLines((prev) => prev.filter((_, i) => i !== index));
   };
 
   return (
@@ -205,7 +183,8 @@ export default function RecurringBillsPage() {
         </Button>
       </div>
 
-      <div className="rounded-lg border">
+      {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+      <div className="rounded-lg border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -214,13 +193,15 @@ export default function RecurringBillsPage() {
               <TableHead>Frequency</TableHead>
               <TableHead>Next Bill</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Currency</TableHead>
+              <TableHead className="text-right">Gross Amount (before discount and tax)</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
                 <TableCell
-                  colSpan={5}
+                  colSpan={7}
                   className="text-center py-8 text-sm text-muted-foreground"
                 >
                   Loading...
@@ -229,7 +210,7 @@ export default function RecurringBillsPage() {
             ) : templates.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={5}
+                  colSpan={7}
                   className="text-center py-8 text-sm text-muted-foreground"
                 >
                   No recurring bills yet. Create one to get started.
@@ -258,6 +239,8 @@ export default function RecurringBillsPage() {
                       {statusLabels[t.status] || t.status}
                     </Badge>
                   </TableCell>
+                  <TableCell>{t.currencyCode}</TableCell>
+                  <TableCell className="text-right font-mono break-words">{invoiceUiMoney(t.lines.reduce((sum, line) => sum + line.grossMinor, 0n), t.currencyCode)}</TableCell>
                 </TableRow>
               ))
             )}
@@ -265,13 +248,18 @@ export default function RecurringBillsPage() {
         </Table>
       </div>
 
-      <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
-        <SheetContent className="sm:max-w-lg w-full p-0 flex flex-col overflow-y-auto">
+      <Sheet open={drawerOpen} onOpenChange={(open) => { setDrawerOpen(open); if (!open) resetForm(); }}>
+        <SheetContent className="sm:max-w-3xl w-full p-0 flex flex-col overflow-y-auto">
           <SheetHeader className="px-4 pt-4 pb-3 sm:px-6 sm:pt-6 sm:pb-4 border-b">
             <SheetTitle>New Recurring Bill</SheetTitle>
           </SheetHeader>
 
           <div className="px-4 pb-6 pt-4 sm:px-6 space-y-4 flex-1 overflow-y-auto">
+            {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Currency</label>
+              <CurrencySelect value={currencyCode} onValueChange={(code) => { setCurrencyCode(code); setValidLines(false); }} />
+            </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Name</label>
               <Input
@@ -347,76 +335,14 @@ export default function RecurringBillsPage() {
               />
             </div>
 
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium">Line Items</label>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setLines((prev) => [...prev, emptyLine()])}
-                >
-                  <Plus className="mr-1 size-3" />
-                  Add Line
-                </Button>
-              </div>
-
-              {lines.map((line, i) => (
-                <div key={i} className="flex items-start gap-2">
-                  <div className="flex-1 space-y-2">
-                    <Input
-                      placeholder="Description"
-                      value={line.description}
-                      onChange={(e) =>
-                        updateLine(i, "description", e.target.value)
-                      }
-                    />
-                    <div className="grid grid-cols-3 gap-2">
-                      <Input
-                        type="number"
-                        step="0.01"
-                        placeholder="Qty"
-                        value={line.quantity}
-                        onChange={(e) =>
-                          updateLine(i, "quantity", e.target.value)
-                        }
-                      />
-                      <Input
-                        type="number"
-                        step="0.01"
-                        placeholder="Unit price"
-                        value={line.unitPrice}
-                        onChange={(e) =>
-                          updateLine(i, "unitPrice", e.target.value)
-                        }
-                      />
-                      <AccountPicker
-                        value={line.accountId || ""}
-                        onChange={(v) => updateLine(i, "accountId", v)}
-                        typeFilter={["expense"]}
-                        placeholder="Account..."
-                      />
-                    </div>
-                  </div>
-                  {lines.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="mt-1 shrink-0"
-                      onClick={() => removeLine(i)}
-                    >
-                      <Trash2 className="size-4 text-destructive" />
-                    </Button>
-                  )}
-                </div>
-              ))}
-            </div>
+            {drawerOpen && <LineItemsEditor lines={lines} onChange={(next) => { setLines(next); setValidLines(false); }}
+              accountTypeFilter={["expense"]} taxContext="purchase" currencyCode={currencyCode}
+              documentKind="recurringBill" priceFractionDigits={18} onValidityChange={setValidLines} />}
 
             <Button
               className="w-full bg-emerald-600 hover:bg-emerald-700"
               onClick={handleSubmit}
-              disabled={submitting || !name || !contactId || !startDate}
+              disabled={submitting || !name.trim() || !contactId || !startDate || !validLines}
             >
               {submitting ? "Creating..." : "Create Recurring Bill"}
             </Button>

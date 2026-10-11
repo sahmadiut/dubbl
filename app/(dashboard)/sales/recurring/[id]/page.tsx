@@ -7,20 +7,12 @@ import { ArrowLeft, Pause, Play, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatMoney } from "@/lib/money";
+import { recurringInvoiceUiDocument, type RecurringInvoiceUiLine } from "@/lib/money/recurring-invoice-ui";
+import { RecurringInvoiceMoneyDetails } from "@/components/dashboard/recurring-invoice-money-details";
 import { useConfirm } from "@/lib/hooks/use-confirm";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { useEntityTitle } from "@/lib/hooks/use-entity-title";
 import Link from "next/link";
-
-interface RecurringLine {
-  id: string;
-  description: string;
-  quantity: number;
-  unitPrice: number;
-  sortOrder: number;
-  account: { code: string; name: string } | null;
-}
 
 interface RecurringTemplate {
   id: string;
@@ -39,7 +31,7 @@ interface RecurringTemplate {
   notes: string | null;
   currencyCode: string;
   contact: { name: string } | null;
-  lines: RecurringLine[];
+  lines: RecurringInvoiceUiLine[];
 }
 
 const statusColors: Record<string, string> = {
@@ -64,7 +56,8 @@ export default function RecurringDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { confirm, dialog: confirmDialog } = useConfirm();
-  const [template, setTemplate] = useState<RecurringTemplate | null>(null);
+  const [loaded, setLoaded] = useState<{ context: string; template: RecurringTemplate } | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -74,20 +67,22 @@ export default function RecurringDetailPage() {
       ? localStorage.getItem("activeOrgId")
       : null;
 
+  const context = `${orgId}:${id}`;
+  const template = loaded?.context === context ? loaded.template : null;
+
   useDocumentTitle("Sales · Recurring Template");
   useEntityTitle(template?.name);
 
   useEffect(() => {
     if (!orgId) return;
-    fetch(`/api/v1/recurring/${id}`, {
-      headers: { "x-organization-id": orgId },
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.template) setTemplate(data.template);
-      })
-      .finally(() => setLoading(false));
-  }, [id, orgId]);
+    const controller = new AbortController();
+    fetch(`/api/v1/recurring/${id}`, { headers: { "x-organization-id": orgId }, signal: controller.signal })
+      .then(async response => { if (!response.ok) throw new Error("Unable to load recurring template"); return response.json(); })
+      .then(data => { if (!controller.signal.aborted) { setLoaded({ context, template: recurringInvoiceUiDocument(data.template) as RecurringTemplate }); setError(null); } })
+      .catch(error => { if (!controller.signal.aborted) { setLoaded(null); setError(error instanceof Error ? error.message : "Invalid recurring amounts"); } })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
+  }, [id, orgId, context]);
 
   async function handleToggleStatus() {
     if (!orgId || !template) return;
@@ -104,9 +99,7 @@ export default function RecurringDetailPage() {
       });
       if (res.ok) {
         const data = await res.json();
-        setTemplate((prev) =>
-          prev ? { ...prev, ...data.template } : prev
-        );
+        setLoaded(prev => prev?.context === context ? { context, template: { ...prev.template, ...data.template, lines: prev.template.lines } } : prev);
         toast.success(
           newStatus === "paused"
             ? "Recurring template paused"
@@ -162,6 +155,7 @@ export default function RecurringDetailPage() {
     return (
       <div className="space-y-6">
         <PageHeader title="Template not found" />
+        {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
       </div>
     );
 
@@ -249,38 +243,7 @@ export default function RecurringDetailPage() {
         </div>
       </div>
 
-      <div className="rounded-lg border overflow-x-auto">
-        <div className="grid min-w-[500px] grid-cols-[1fr_80px_100px_120px] gap-2 border-b bg-muted/50 px-4 py-2 text-xs font-medium text-muted-foreground">
-          <span>Description</span>
-          <span className="text-right">Qty</span>
-          <span className="text-right">Unit Price</span>
-          <span className="text-right">Amount</span>
-        </div>
-        {template.lines.map((line) => (
-          <div
-            key={line.id}
-            className="grid min-w-[500px] grid-cols-[1fr_80px_100px_120px] gap-2 border-b px-4 py-2 last:border-b-0"
-          >
-            <div>
-              <p className="text-sm">{line.description}</p>
-              {line.account && (
-                <p className="text-xs text-muted-foreground">
-                  {line.account.code} &middot; {line.account.name}
-                </p>
-              )}
-            </div>
-            <span className="text-right text-sm font-mono">
-              {(line.quantity / 100).toFixed(0)}
-            </span>
-            <span className="text-right text-sm font-mono">
-              {formatMoney(line.unitPrice)}
-            </span>
-            <span className="text-right text-sm font-mono font-medium">
-              {formatMoney((line.quantity / 100) * line.unitPrice)}
-            </span>
-          </div>
-        ))}
-      </div>
+      <RecurringInvoiceMoneyDetails currencyCode={template.currencyCode} lines={template.lines} />
 
       {template.notes && (
         <div className="rounded-lg border p-4">

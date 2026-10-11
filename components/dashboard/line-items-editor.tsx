@@ -15,6 +15,7 @@ import {
 import { AccountPicker } from "./account-picker";
 import { documentEditorPreview, documentEditorDecimal } from "@/lib/money/document-editor";
 import { billEditorPreview } from "@/lib/money/bill-editor";
+import { recurringInvoiceEditorPreview } from "@/lib/money/recurring-invoice-ui";
 
 export interface LineItem {
   description: string;
@@ -45,7 +46,7 @@ interface LineItemsEditorProps {
   roundPriceFirst?: boolean;
   priceFractionDigits?: number;
   onValidityChange?: (valid: boolean) => void;
-  documentKind?: "invoice" | "bill";
+  documentKind?: "invoice" | "bill" | "recurringInvoice";
 }
 
 // Format a basis-point rate as a percentage (2000 -> "20", 1750 -> "17.5").
@@ -103,6 +104,7 @@ export function LineItemsEditor({ lines, onChange, accountTypeFilter, taxContext
   const previewCurrency = currencyCode === undefined ? "USD" : currencyCode;
   const preview = useMemo(() => documentKind === "bill"
     ? billEditorPreview(lines, previewCurrency, taxRates)
+    : documentKind === "recurringInvoice" ? recurringInvoiceEditorPreview(lines, previewCurrency, taxRates)
     : documentEditorPreview(lines, previewCurrency, taxRates, roundPriceFirst), [lines, previewCurrency, taxRates, roundPriceFirst, documentKind]);
   useEffect(() => { onValidityChange?.(!preview.error); }, [onValidityChange, preview]);
   const decimal = (amount: bigint) => preview.error || !previewCurrency ? "—" : documentEditorDecimal(amount, previewCurrency);

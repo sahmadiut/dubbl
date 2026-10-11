@@ -62,6 +62,7 @@ import { journalEditorPreview, journalDecimal } from "@/lib/money/journal-displa
 import { quoteEditorLines } from "@/lib/money/quote-ui";
 import { debitNoteEditorLines } from "@/lib/money/debit-note-ui";
 import { salesReceiptEditorLines, salesReceiptEditorCurrency } from "@/lib/money/sales-receipt-ui";
+import { recurringInvoiceEditorLines, recurringInvoiceEditorCurrency } from "@/lib/money/recurring-invoice-ui";
 import { creditNoteEditorLines } from "@/lib/money/credit-note-ui";
 import { OpeningBalanceForm } from "@/components/dashboard/opening-balance-form";
 import type { OpeningBalanceWrite } from "@/lib/money/opening-balance-ui";
@@ -125,7 +126,7 @@ export function CreateDrawerProvider({ children }: { children: React.ReactNode }
       <BudgetDrawer open={activeType === "budget"} onClose={close} />
       <EmployeeDrawer open={activeType === "employee"} onClose={close} />
       <CreditNoteDrawer open={activeType === "creditNote"} onClose={close} />
-      <RecurringDrawer open={activeType === "recurring"} onClose={close} />
+      <RecurringDrawer key={drawerOrgId} open={activeType === "recurring"} onClose={close} />
       <AccountDrawer open={activeType === "account"} onClose={close} />
       <BankAccountDrawer open={activeType === "bankAccount"} onClose={close} />
       <WarehouseDrawer open={activeType === "warehouse"} onClose={close} />
@@ -2747,6 +2748,9 @@ function CreditNoteDrawer({ open, onClose }: { open: boolean; onClose: () => voi
 function RecurringDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  const [currencyCode, setCurrencyCode] = useState("USD");
+  const [validLines, setValidLines] = useState(false);
+  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
   const [name, setName] = useState("");
   const [contactId, setContactId] = useState("");
   const [frequency, setFrequency] = useState("monthly");
@@ -2764,7 +2768,7 @@ function RecurringDrawer({ open, onClose }: { open: boolean; onClose: () => void
   useEffect(() => {
     if (!open) {
       setName(""); setContactId(""); setFrequency("monthly"); setReference(""); setNotes(""); setEndDate("");
-      setAutoSend(false);
+      setAutoSend(false); setCurrencyCode("USD"); setValidLines(false);
       setStartDate(new Date().toISOString().split("T")[0]);
       setLines([{ description: "", quantity: "1", unitPrice: "", accountId: "", taxRateId: "" }]);
     }
@@ -2774,9 +2778,9 @@ function RecurringDrawer({ open, onClose }: { open: boolean; onClose: () => void
     e.preventDefault();
     if (!contactId) { toast.error("Please select a customer"); return; }
     if (!name.trim()) { toast.error("Please enter a template name"); return; }
+    if (!orgId) { toast.error("Select an organization"); return; }
+    if (!validLines) { toast.error("Check the line amounts before saving"); return; }
     setSaving(true);
-    const orgId = localStorage.getItem("activeOrgId");
-    if (!orgId) return;
 
     try {
       const res = await fetch("/api/v1/recurring-invoices", {
@@ -2784,17 +2788,12 @@ function RecurringDrawer({ open, onClose }: { open: boolean; onClose: () => void
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify({
           name, contactId, frequency, startDate,
+          currencyCode: recurringInvoiceEditorCurrency(currencyCode),
           endDate: endDate || null,
           reference: reference || null,
           notes: notes || null,
           autoSend,
-          lines: lines.map((l) => ({
-            description: l.description,
-            quantity: parseFloat(l.quantity) || 1,
-            unitPrice: parseFloat(l.unitPrice) || 0,
-            accountId: l.accountId || null,
-            taxRateId: l.taxRateId || null,
-          })),
+          lines: recurringInvoiceEditorLines(lines),
         }),
       });
       if (!res.ok) {
@@ -2836,6 +2835,11 @@ function RecurringDrawer({ open, onClose }: { open: boolean; onClose: () => void
                   <Label>Customer *</Label>
                   <ContactPicker value={contactId} onChange={setContactId} type="customer" />
                 </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Currency</Label>
+                <CurrencySelect value={currencyCode} onValueChange={(code) => { setCurrencyCode(code); setValidLines(false); }} />
+                <p className="text-xs text-muted-foreground">Prices use this currency. New templates default to USD.</p>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
@@ -2887,7 +2891,8 @@ function RecurringDrawer({ open, onClose }: { open: boolean; onClose: () => void
 
             <div className="space-y-4">
               <SectionLabel>Line Items</SectionLabel>
-              <LineItemsEditor lines={lines} onChange={setLines} accountTypeFilter={["revenue"]} taxContext="sales" />
+              <LineItemsEditor key={orgId} lines={lines} onChange={(next) => { setLines(next); setValidLines(false); }} accountTypeFilter={["revenue"]} taxContext="sales"
+                currencyCode={currencyCode} documentKind="recurringInvoice" priceFractionDigits={18} onValidityChange={setValidLines} />
             </div>
 
             <div className="h-px bg-border" />
@@ -2897,7 +2902,7 @@ function RecurringDrawer({ open, onClose }: { open: boolean; onClose: () => void
               <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notes for generated invoices..." rows={3} />
             </div>
           </div>
-          <DrawerFooter onClose={onClose} saving={saving} label="Create Template" />
+          <DrawerFooter onClose={onClose} saving={saving} label="Create Template" disabled={!orgId || !name.trim() || !contactId || !validLines || lines.some(line => !line.description.trim())} />
         </form>
       </SheetContent>
     </Sheet>

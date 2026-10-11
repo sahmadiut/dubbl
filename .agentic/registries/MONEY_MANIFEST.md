@@ -1,3 +1,39 @@
+## MON-137 recurring invoice UI
+
+RecurringDrawer sends explicit currencyCode and unitPriceExact decimal strings;
+new templates default to USD as both existing REST/MCP create services do. Contact
+and organization currencies do not override that default. Currency selection is
+now available; no FX is invented or supplied. Prices allow 18 fractional digits.
+The recurring-specific LineItemsEditor preview rounds price to currency minor
+units AND quantity to signed int32 hundredths before extension, discount and tax.
+USD 0.005 x 3 previews/saves 3 minor units; USD 1 x 1.234 previews/saves 123.
+Bigint products/sums retain low digits and reject unsupported safe-number ranges.
+Malformed prices/quantities, unavailable tax rates and blank descriptions block
+creation. Zero quantity is preserved; blank quantity means one and blank price zero.
+
+Saved detail validates unitPriceMinor against retained safe numeric units and uses
+bigint gross products/totals in saved currency. Fractional quantities remain visible.
+Upcoming cards adopt lineTotalMinor and currencyCode, explicitly labeled before
+discounts and tax, matching the existing gross preview contract. Detail gross totals
+have the same label; saved discount basis points are displayed separately. Taxes
+are determined at generation using the then-current rate; no tax snapshot or
+new final-total claim is attached to templates. List monetary totals remain absent;
+summary counts, dates, schedule caps and frequencies are nonmoney. Existing start/
+end/frequency/reference/notes/autoSend and pause/resume/delete controls remain.
+No line-edit UI exists because PATCH only supports header edits. New editors and
+lists remount by org; detail reads abort and use org/id context, upcoming requests
+abort with the list read, and paginated responses reject obsolete filter generations.
+Invalid read money is suppressed with an English alert. Existing table scrolling
+and large amount wrapping preserve readable details.
+
+Four pure/rendered groups plus migrated real REST/MCP/SQL fixtures verify USD,
+JPY, synthetic IRR and KWD, signed ties, rounded fractional quantities, safe-edge
+low digits, saved reads, default USD, gross upcoming amounts, draft generation and
+schedule preservation. Existing recurring contracts cover automation/FX/lifecycle
+regressions separately. MON-131, MON-129, MON-007 and MON-008 retain independent
+combined acceptance and remaining consumers. No schema/history rescaling or IRR
+production enablement; no live browser/provider/accounting qualification claim.
+
 ## MON-147 opening-balance UI
 
 OpeningBalanceDrawer and accounting/opening-balances/page.tsx now delegate to

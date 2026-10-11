@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatMoney } from "@/lib/money";
+import { recurringInvoiceUiUpcoming, recurringInvoiceUiMoney } from "@/lib/money/recurring-invoice-ui";
 import { devDelay } from "@/lib/dev-delay";
 import { useCreateDrawer } from "@/components/dashboard/create-drawer";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
@@ -121,8 +121,15 @@ function buildColumns(): Column<RecurringTemplate>[] {
 }
 
 export default function RecurringInvoicesPage() {
+  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
+  return <RecurringInvoicesContent key={orgId} />;
+}
+
+function RecurringInvoicesContent() {
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
+  const [error, setError] = useState<string | null>(null);
+  const generation = useRef(0);
   const [templates, setTemplates] = useState<RecurringTemplate[]>([]);
   const [initialLoad, setInitialLoad] = useState(true);
   const [refetching, setRefetching] = useState(false);
@@ -147,7 +154,7 @@ export default function RecurringInvoicesPage() {
   useDocumentTitle("Sales · Recurring Invoices");
 
   const [upcoming, setUpcoming] = useState<
-    { templateName: string; contactName: string; lineTotal: number; dates: { date: string; occurrence: number }[] }[]
+    { templateName: string; contactName: string; currencyCode: string; lineTotal: bigint; dates: { date: string; occurrence: number }[] }[]
   >([]);
 
   const PAGE_SIZE = 50;
@@ -171,16 +178,21 @@ export default function RecurringInvoicesPage() {
   useEffect(() => {
     if (!orgId) return;
     let cancelled = false;
+    const controller = new AbortController();
+    ++generation.current;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setRefetching(true);
     setPage(1);
+    setLoadingMore(false);
 
     fetch(`/api/v1/recurring?${buildParams(1)}`, {
-      headers: { "x-organization-id": orgId },
+      headers: { "x-organization-id": orgId }, signal: controller.signal,
     })
-      .then((r) => r.json())
+      .then(async r => { if (!r.ok) throw new Error("Unable to load recurring templates"); return r.json(); })
       .then((data) => {
         if (cancelled) return;
+        setError(null);
+        setUpcoming([]);
         const items = data.data || [];
         setTemplates(items);
         setTotalCount(data.pagination?.total || 0);
@@ -191,16 +203,18 @@ export default function RecurringInvoicesPage() {
           Promise.all(
             active.slice(0, 5).map((t) =>
               fetch(`/api/v1/recurring/${t.id}/preview?count=3`, {
-                headers: { "x-organization-id": orgId },
+                headers: { "x-organization-id": orgId }, signal: controller.signal,
               })
-                .then((r) => r.json())
+                .then(async r => { if (!r.ok) throw new Error("Unable to load upcoming amounts"); return r.json(); })
+                .then(d => ({ ...d, template: recurringInvoiceUiUpcoming(d.template) }))
                 .then((d) => ({
                   templateName: d.template?.name || t.name,
                   contactName: d.template?.contactName || t.contact?.name || "",
-                  lineTotal: d.template?.lineTotal || 0,
+                  lineTotal: d.template.lineTotal,
+                  currencyCode: d.template.currencyCode,
                   dates: d.upcoming || [],
                 }))
-                .catch(() => null)
+                .catch(() => { if (!cancelled) setError("Some upcoming amounts could not be loaded. Refresh to try again."); return null; })
             )
           ).then((results) => {
             if (!cancelled) {
@@ -211,29 +225,33 @@ export default function RecurringInvoicesPage() {
           setUpcoming([]);
         }
       })
+      .catch(error => { if (!cancelled) setError(error instanceof Error ? error.message : "Unable to load templates"); })
       .then(() => devDelay())
       .finally(() => { if (!cancelled) { setInitialLoad(false); setRefetching(false); setFetchKey((k) => k + 1); } });
 
-    return () => { cancelled = true; };
+    return () => { cancelled = true; controller.abort(); };
   }, [orgId, buildParams]);
 
   // Load more
   const loadMore = useCallback(() => {
     if (!orgId || loadingMore) return;
+    const requestGeneration = generation.current;
     const nextPage = page + 1;
     setLoadingMore(true);
 
     fetch(`/api/v1/recurring?${buildParams(nextPage)}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then(async r => { if (!r.ok) throw new Error("Unable to load more templates"); return r.json(); })
       .then((data) => {
+        if (generation.current !== requestGeneration) return;
         if (data.data) {
           setTemplates((prev) => [...prev, ...data.data]);
           setPage(nextPage);
         }
       })
-      .finally(() => setLoadingMore(false));
+      .catch(() => { if (generation.current === requestGeneration) setError("Unable to load more templates"); })
+      .finally(() => { if (generation.current === requestGeneration) setLoadingMore(false); });
   }, [orgId, page, buildParams, loadingMore]);
 
   const hasMore = templates.length < totalCount;
@@ -256,11 +274,14 @@ export default function RecurringInvoicesPage() {
   // Fetch summary stats (independent of filters)
   useEffect(() => {
     if (!orgId) return;
+    const controller = new AbortController();
     fetch(`/api/v1/recurring/summary`, {
-      headers: { "x-organization-id": orgId },
+      headers: { "x-organization-id": orgId }, signal: controller.signal,
     })
       .then((r) => r.json())
-      .then((data) => setSummary(data));
+      .then((data) => { if (!controller.signal.aborted) setSummary(data); })
+      .catch(() => {});
+    return () => controller.abort();
   }, [orgId]);
 
   const handleSort = useCallback((key: string) => {
@@ -300,7 +321,7 @@ export default function RecurringInvoicesPage() {
 
   if (initialLoad) return <BrandLoader />;
 
-  if (!initialLoad && !refetching && templates.length === 0 && statusFilter === "all" && !hasFilters) {
+  if (!error && !initialLoad && !refetching && templates.length === 0 && statusFilter === "all" && !hasFilters) {
     // Generate a sample month grid
     const today = new Date();
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -426,6 +447,7 @@ export default function RecurringInvoicesPage() {
 
   return (
     <ContentReveal className="space-y-6">
+      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
       {/* Top: Stats */}
       <div className="grid gap-3 sm:grid-cols-3">
         <StatCard title="Active Templates" value={activeCount.toString()} icon={RefreshCw} />
@@ -436,7 +458,7 @@ export default function RecurringInvoicesPage() {
       {/* Upcoming Generations */}
       {upcoming.length > 0 && (
         <div className="space-y-3">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Upcoming Generations</p>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Upcoming Generations (before discounts and tax)</p>
           <div className="flex gap-3 overflow-x-auto pb-1">
             {upcoming.map((u) => (
               <div key={u.templateName} className="rounded-lg border px-4 py-3 min-w-[220px] shrink-0">
@@ -447,7 +469,7 @@ export default function RecurringInvoicesPage() {
                       <p className="text-xs text-muted-foreground truncate">{u.contactName}</p>
                     )}
                   </div>
-                  <p className="text-sm font-mono font-semibold tabular-nums shrink-0 ml-2">{formatMoney(u.lineTotal)}</p>
+                  <p className="text-sm font-mono font-semibold tabular-nums shrink-0 ml-2">{recurringInvoiceUiMoney(u.lineTotal, u.currencyCode)}</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   {u.dates.map((d) => (

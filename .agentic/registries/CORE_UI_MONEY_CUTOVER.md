@@ -1,3 +1,39 @@
+## MON-137 recurring invoice UI
+
+RecurringDrawer sends explicit currencyCode and unitPriceExact decimal strings;
+new templates default to USD as both existing REST/MCP create services do. Contact
+and organization currencies do not override that default. Currency selection is
+now available; no FX is invented or supplied. Prices allow 18 fractional digits.
+The recurring-specific LineItemsEditor preview rounds price to currency minor
+units AND quantity to signed int32 hundredths before extension, discount and tax.
+USD 0.005 x 3 previews/saves 3 minor units; USD 1 x 1.234 previews/saves 123.
+Bigint products/sums retain low digits and reject unsupported safe-number ranges.
+Malformed prices/quantities, unavailable tax rates and blank descriptions block
+creation. Zero quantity is preserved; blank quantity means one and blank price zero.
+
+Saved detail validates unitPriceMinor against retained safe numeric units and uses
+bigint gross products/totals in saved currency. Fractional quantities remain visible.
+Upcoming cards adopt lineTotalMinor and currencyCode, explicitly labeled before
+discounts and tax, matching the existing gross preview contract. Detail gross totals
+have the same label; saved discount basis points are displayed separately. Taxes
+are determined at generation using the then-current rate; no tax snapshot or
+new final-total claim is attached to templates. List monetary totals remain absent;
+summary counts, dates, schedule caps and frequencies are nonmoney. Existing start/
+end/frequency/reference/notes/autoSend and pause/resume/delete controls remain.
+No line-edit UI exists because PATCH only supports header edits. New editors and
+lists remount by org; detail reads abort and use org/id context, upcoming requests
+abort with the list read, and paginated responses reject obsolete filter generations.
+Invalid read money is suppressed with an English alert. Existing table scrolling
+and large amount wrapping preserve readable details.
+
+Four pure/rendered groups plus migrated real REST/MCP/SQL fixtures verify USD,
+JPY, synthetic IRR and KWD, signed ties, rounded fractional quantities, safe-edge
+low digits, saved reads, default USD, gross upcoming amounts, draft generation and
+schedule preservation. Existing recurring contracts cover automation/FX/lifecycle
+regressions separately. MON-131, MON-129, MON-007 and MON-008 retain independent
+combined acceptance and remaining consumers. No schema/history rescaling or IRR
+production enablement; no live browser/provider/accounting qualification claim.
+
 ## MON-147 opening balances and MON-133 split
 
 Source verified 2026-10-11. MON-133 now retains independent integration of
@@ -204,7 +240,7 @@ negative cases and partial/milestone conversion. No live browser/effect, provide
 PDF, production IRR or full signed-int64 workflow qualification is claimed. Credit
 UI is now covered by MON-144 above; receipt UI is covered above; prepayment remains
 MON-146 and
-recurring remains MON-137.
+recurring is covered by MON-137 below.
 MON-136, MON-131, MON-129 and MON-007 retain independent combined acceptance.
 
 
@@ -224,7 +260,7 @@ original combined criteria; MON-007 retains its original integration acceptance.
 | MON-144 | sales/credit-notes list/detail; create-drawer.tsx CreditNoteDrawer; credit-note-money-details.tsx; lib/money/credit-note-ui.ts | Explicit USD/selectable currency, exact extended-price preview/writes, validated saved Minor/summary reads and same-customer/currency amountMinor invoice application |
 | MON-145 | sales/receipts list/detail, SalesReceiptDrawer, sales-receipt-ui.ts and SalesReceiptMoneyDetails | Exact extended-price preview/unitPriceExact writes, selected/contact/org currency, validated saved Minor reads and per-currency paid sample sums; separate post/void domain policy retained |
 | MON-146 | sales/customer-prepayments list/detail and CustomerCreditDrawer | Pending exact amount input, currency, saved balances and invoice application |
-| MON-137 | Recurring invoice list/detail/editor and create-drawer.tsx RecurringDrawer | Pending recurring pricing/currency, exact fields and schedule preservation |
+| MON-137 | Recurring invoice list/detail, RecurringDrawer; recurring-invoice-ui.ts, RecurringInvoiceMoneyDetails and recurring-specific LineItemsEditor | Exact unitPriceExact writes, explicit USD default/selected currency, stored price/quantity-first preview, validated Minor saved/gross upcoming display and schedule preservation |
 | MON-132 | Integration parent for MON-138..142 payable/procurement consumers | Independent combined acceptance; no child completion closes this parent |
 | MON-138 | create-drawer.tsx BillDrawer; line-items-editor.tsx bill policy; lib/money/bill-editor.ts | Exact extended-price preview and unitPriceExact writes; explicit supplier/org/selected currency; reverse-charge amount due; approval/duplicate controls |
 | MON-139 | purchases/page.tsx and purchases/[id]/page.tsx; bill-ui.ts and BillCurrencyAmounts; shared InvoiceAmountInput/DualAmount props | Validated saved Minor reads, currency-grouped counts/sample aging, exact source/base/progress, whole-minor payments and supplier-credit price/dimension copies |

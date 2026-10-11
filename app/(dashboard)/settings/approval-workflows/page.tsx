@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import {
@@ -41,6 +41,7 @@ import {
 import { Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { taxUiConditions } from "@/lib/money/tax-ui";
 
 interface OrgMember {
   id: string;
@@ -94,6 +95,11 @@ function entityTypeLabel(t: string) {
 }
 
 export default function ApprovalWorkflowsPage() {
+  const activeOrgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
+  return <ApprovalWorkflowsWorkspace key={activeOrgId} activeOrgId={activeOrgId} />;
+}
+
+function ApprovalWorkflowsWorkspace({ activeOrgId }: { activeOrgId: string | null }) {
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [members, setMembers] = useState<OrgMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -109,30 +115,31 @@ export default function ApprovalWorkflowsPage() {
     { approverId: string; isRequired: boolean }[]
   >([]);
 
-  function orgId() {
-    return localStorage.getItem("activeOrgId") ?? "";
-  }
+  function orgId() { return activeOrgId ?? ""; }
 
   function headers() {
     return { "x-organization-id": orgId() };
   }
 
-  async function fetchWorkflows() {
+  const fetchWorkflows = useCallback(async () => {
     try {
       const res = await fetch("/api/v1/approval-workflows?limit=100", {
-        headers: headers(),
+        headers: { "x-organization-id": activeOrgId ?? "" },
       });
       const data = await res.json();
-      if (data.data) setWorkflows(data.data);
+      if (!res.ok) throw new Error(data.error || "Could not load workflows");
+      if (data.data) setWorkflows(data.data.map((workflow: Workflow) => ({ ...workflow, conditions: taxUiConditions(workflow.entityType, workflow.conditions) })));
+    } catch (err) {
+      setWorkflows([]); toast.error(err instanceof Error ? err.message : "Invalid saved workflow");
     } finally {
       setLoading(false);
     }
-  }
+  }, [activeOrgId]);
 
-  async function fetchMembers() {
+  const fetchMembers = useCallback(async () => {
     try {
       const res = await fetch("/api/v1/members?limit=200", {
-        headers: headers(),
+        headers: { "x-organization-id": activeOrgId ?? "" },
       });
       const data = await res.json();
       if (data.data) setMembers(data.data);
@@ -140,12 +147,12 @@ export default function ApprovalWorkflowsPage() {
     } catch {
       // Non-critical
     }
-  }
+  }, [activeOrgId]);
 
   useEffect(() => {
     fetchWorkflows();
     fetchMembers();
-  }, []);
+  }, [fetchWorkflows, fetchMembers]);
 
   function openCreate() {
     setEditingWorkflow(null);
@@ -209,7 +216,11 @@ export default function ApprovalWorkflowsPage() {
     setSteps(steps.map((s, idx) => (idx === i ? { ...s, ...patch } : s)));
   }
 
+  let conditionError: string | null = null;
+  try { taxUiConditions(entityType, conditions); } catch { conditionError = "Use supported fields and canonical integer minor-unit thresholds. Text supports equals or not equals."; }
+
   async function save() {
+    if (!activeOrgId || localStorage.getItem("activeOrgId") !== activeOrgId || conditionError) return;
     if (!name || steps.length === 0 || steps.some((s) => !s.approverId)) return;
     setSaving(true);
     try {
@@ -222,7 +233,7 @@ export default function ApprovalWorkflowsPage() {
         body: JSON.stringify({
           name,
           entityType,
-          conditions,
+          conditions: taxUiConditions(entityType, conditions),
           steps,
         }),
       });
@@ -486,6 +497,7 @@ export default function ApprovalWorkflowsPage() {
                     onChange={(e) =>
                       updateCondition(i, { value: e.target.value })
                     }
+                    aria-label={`Condition ${i + 1} value`}
                     placeholder="value"
                     className="flex-1"
                   />
@@ -581,6 +593,7 @@ export default function ApprovalWorkflowsPage() {
             </div>
           </div>
 
+          {conditionError && <p role="alert" className="px-4 text-sm text-destructive">{conditionError}</p>}
           <SheetFooter>
             <Button variant="outline" onClick={() => setSheetOpen(false)}>
               Cancel
@@ -588,7 +601,7 @@ export default function ApprovalWorkflowsPage() {
             <Button
               onClick={save}
               disabled={
-                !name ||
+                !!conditionError || !name ||
                 steps.length === 0 ||
                 steps.some((s) => !s.approverId) ||
                 saving

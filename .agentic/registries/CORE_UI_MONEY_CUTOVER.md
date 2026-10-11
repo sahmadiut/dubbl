@@ -1,3 +1,34 @@
+## MON-151 tax and core settings UI
+
+Source verified 2026-10-12. `lib/money/tax-ui.ts` validates retained safe numeric
+amounts against canonical Minor aliases before bigint arithmetic and English
+currency-scale display. Stored raw units never rescale and malformed reads expose
+an alert instead of amounts. No new REST/MCP operation or storage change.
+
+| Consumer | Ownership and retained policy |
+|---|---|
+| tax/vat-return, bas, schedule-c and sales-tax | Adopt report currencyCode and amount/total aliases; bigint totals and bounded visual ratios. VAT drill validates amount/debit/credit aliases, currency and request generation. CSV exports exact raw integer strings plus currencyCode. Dates, basis, flat-rate basis points, rate percentages and invoice counts remain nonmoney. Reports retain API-owned full-period/single-base-currency and mixed-document rejection policies. |
+| tax/periods/[id] and TaxSettlementPreview | Filed lines validate amountMinor; current organization base currency owns their stored units, as in the filing/settlement service. Decimal prefill/preview/save share currency-scale parsing, reject fractional minor units and unsafe range, send amountMinor, validate saved amount/currency. Zero retains the backend no-op policy; payment/refund direction is separate. Base-currency bank GL choices use optional AccountPicker currency/subtype filters. The backend retains role, tenant, active-account, filed-state and lock enforcement. |
+| tax/periods list and tax dashboard/settings | Period dates/counts/status and ID-only filing controls contain no monetary input. Tax/recoverability/components are existing numeric basis points; no rescaling into currency amounts. Tax settings and procurement controls retain their existing services and tests. |
+| tax/currencies | Unrealized due amounts validate source-currency aliases; gains/losses/summary aliases validate base currency and retain missing-rate nulls. Manual quotes send rateExact and quote_per_base without float conversion. Existing positive int32 millionths coexistence still requires <=6 significant fractional decimals and <=2147.483647; unsupported input rejects rather than rounds. Saved legacy quote presentation validates agreeing exact metadata when present; pending null exact metadata remains a legacy quote, without qualification/promotion. ISO currency metadata controls remain nonmoney. |
+| settings/approval-workflows | Shared parseConditions validates supported fields, operators, canonical signed int64 raw thresholds and alias agreement on read/preview/save. Monetary writes add agreeing valueMinor; text, entryNumber ordinals and depositPercent basis points retain their own units. Workflows span document currencies, so thresholds deliberately use raw document minor units. No FX or decimal-major reinterpretation. |
+| settings/general, procurement and remaining core settings | General currency selection and lock/date/metadata controls contain no money editor. Procurement tolerances are numeric basis points. No mileage-rate or bill-approval-threshold editor exists here; organization API/MCP aliases/settings retain MON-070/125 ownership, and mileage consumers remain MON-149. Bank/rules/payment settings remain MON-148/150; auxiliary payroll/projects/assets/loans/budgets, provider billing and reports retain existing domain/MON-008 ownership. |
+
+Organization-keyed report/workflow/currency workspaces and org/id-keyed period
+workspaces reset scoped state. Report reads ignore obsolete date/filter replies;
+period reads abort on context changes and settlement checks the active org again.
+Existing keyboard controls, responsive sheets, scrollable detail tables and English
+labels are retained; settlement has an accessible currency label and preview/error.
+Five focused behavior/static React groups and a migrated real REST/linked MCP/SQL
+fixture verify USD/JPY/KWD settlements and synthetic IRR frozen/report reads with
+settlement still rejected by the rollout gate. Seven existing related suites cover
+report, filing, approval, organization, procurement, tax configuration and FX
+negative/lifecycle policies. No live browser/screenshot/provider/legal/accounting
+qualification, full-int64 money workflow or production IRR enablement is claimed.
+Safe numeric saved/settlement coexistence remains +/-9007199254740991; int64
+approval threshold strings are comparison configuration, not settlement amounts.
+MON-133, MON-129 and MON-007 retain independent integration acceptance.
+
 ## MON-150 banking and reconciliation UI
 
 Source verified 2026-10-12. `lib/money/bank-ui.ts` owns validated saved numeric/
@@ -246,7 +277,7 @@ The original MON-133 acceptance and all remaining consumers are preserved.
 | MON-148 | sales/payments list/detail; banking/batches list/create/detail/remittance; banking/scheduled list/create/cancel/process; payment-ui.ts; PaymentAmountPreview | Checked Minor aliases, bigint balances/grouped sample summaries, explicit one-currency batch and schedule Minor writes, exact due/range preview/save checks; historical leftover allocation unsupported |
 | MON-149 | Expense list/detail/edit/pay amount, ExpenseDrawer/mileage, recurring expense controls; expense-ui.ts, recurring-expense-ui.ts, ExpenseAmountInput | Exact text/Minor writes, bigint previews and validated saved aliases; organization/claim currency, miles hundredths and independently rounded per-mile rate; recurring payable fixed-two gross policy retained |
 | MON-150 | Banking/statements/import/reconciliation/transfers/settings/rules, bank drawers | Validated Minor reads, bigint sums/tax/splits and bank-scale exact writes; grouped currency balances and separate bank/base reconciliation; raw bank minor-unit rule exception |
-| MON-151 | Tax/period/sales-tax/settlement/settings and remaining core approvals | Pending exact money, basis-point/settings closure |
+| MON-151 | Tax dashboard/period/reports/settlement/currencies and core settings/approvals; tax-ui.ts and TaxSettlementPreview | Checked Minor reads, bigint report totals, explicit base/source currencies, exact settlement/rate inputs and canonical raw approval thresholds; nonmoney basis points/settings retained |
 | MON-152 | Accounts list/detail/layout and untagged journal totals/automated detail | Pending source/base presentation closure |
 
 Opening balance UI uses strict nonnegative major text with two decimal places;

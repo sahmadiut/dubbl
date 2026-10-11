@@ -9,7 +9,7 @@ import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { formatMoney } from "@/lib/money";
+import { taxUiCurrency, taxUiRows, taxUiMoney, taxUiAbs, taxUiMax, taxUiPercent } from "@/lib/money/tax-ui";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -17,7 +17,7 @@ import Link from "next/link";
 interface BasField {
   field: string;
   label: string;
-  amount: number;
+  amount: bigint;
 }
 
 const GST_FIELDS = ["G1", "G2", "G3", "G10", "G11", "1A", "1B"];
@@ -30,40 +30,51 @@ function getFieldSection(field: string): string {
 }
 
 export default function BasPage() {
+  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
+  return <BasPageWorkspace key={orgId} orgId={orgId} />;
+}
+
+function BasPageWorkspace({ orgId }: { orgId: string | null }) {
   const now = new Date();
   const [startDate, setStartDate] = useState(`${now.getFullYear()}-01-01`);
   const [endDate, setEndDate] = useState(now.toISOString().slice(0, 10));
   const [fields, setFields] = useState<BasField[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currency, setCurrency] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   useDocumentTitle("Tax · BAS");
 
   useEffect(() => {
-    const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
     let cancelled = false;
+    setLoading(true);
     const params = new URLSearchParams({ startDate, endDate });
     fetch(`/api/v1/reports/bas?${params}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("Could not load tax report"); return r.json(); })
       .then((data) => {
         if (cancelled) return;
-        setFields(data.fields || []);
+        const code = taxUiCurrency(data.currencyCode);
+        const rows = taxUiRows(data.fields as (Omit<BasField, "amount"> & { amount: number })[], ["amount"]);
+        setFields(rows);
+        setCurrency(code); setError(null);
       })
+      .catch((err) => { if (!cancelled) { setError(err instanceof Error ? err.message : "Invalid tax report"); setCurrency(null); } })
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
         }
       });
     return () => { cancelled = true; };
-  }, [startDate, endDate]);
+  }, [startDate, endDate, orgId]);
 
-  const gstOnSales = fields.find((f) => f.field === "1A")?.amount || 0;
-  const gstOnPurchases = fields.find((f) => f.field === "1B")?.amount || 0;
-  const netGst = fields.find((f) => f.field === "NET")?.amount || 0;
-  const maxGst = Math.max(Math.abs(gstOnSales), Math.abs(gstOnPurchases), 1);
-  const salesPct = (Math.abs(gstOnSales) / maxGst) * 100;
-  const purchasesPct = (Math.abs(gstOnPurchases) / maxGst) * 100;
+  const gstOnSales = fields.find((f) => f.field === "1A")?.amount ?? 0n;
+  const gstOnPurchases = fields.find((f) => f.field === "1B")?.amount ?? 0n;
+  const netGst = fields.find((f) => f.field === "NET")?.amount ?? 0n;
+  const maxGst = taxUiMax(taxUiAbs(gstOnSales), taxUiAbs(gstOnPurchases));
+  const salesPct = taxUiPercent(gstOnSales, maxGst);
+  const purchasesPct = taxUiPercent(gstOnPurchases, maxGst);
 
   const gstFields = fields.filter((f) => getFieldSection(f.field) === "gst");
   const netField = fields.find((f) => f.field === KEY_FIELD);
@@ -80,8 +91,8 @@ export default function BasPage() {
           Print
         </Button>
         <ExportButton
-          data={fields.map((f) => ({ field: f.field, description: f.label, amount: f.amount }))}
-          columns={["field", "description", "amount"]}
+          data={(error || loading || !currency ? [] : fields).map((f) => ({ field: f.field, description: f.label, amount: f.amount.toString(), currencyCode: currency }))}
+          columns={["field", "description", "amount", "currencyCode"]}
           filename="bas"
         />
         <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5" asChild>
@@ -98,7 +109,7 @@ export default function BasPage() {
         onDateChange={(s, e) => { setStartDate(s); setEndDate(e); }}
       />
 
-      {loading ? (
+      {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : loading || !currency ? (
         <BrandLoader className="h-48" />
       ) : (
         <ContentReveal className="space-y-6">
@@ -115,7 +126,7 @@ export default function BasPage() {
                     <span className="text-muted-foreground">GST on Sales (1A)</span>
                   </div>
                   <span className="font-mono text-sm tabular-nums font-medium text-blue-600 dark:text-blue-400">
-                    {formatMoney(gstOnSales)}
+                    {taxUiMoney(gstOnSales, currency!)}
                   </span>
                 </div>
                 <div className="h-2 rounded-full bg-muted">
@@ -132,7 +143,7 @@ export default function BasPage() {
                     <span className="text-muted-foreground">GST on Purchases (1B)</span>
                   </div>
                   <span className="font-mono text-sm tabular-nums font-medium text-orange-600 dark:text-orange-400">
-                    {formatMoney(gstOnPurchases)}
+                    {taxUiMoney(gstOnPurchases, currency!)}
                   </span>
                 </div>
                 <div className="h-2 rounded-full bg-muted">
@@ -150,7 +161,7 @@ export default function BasPage() {
                   "font-mono text-sm tabular-nums font-semibold",
                   netGst >= 0 ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"
                 )}>
-                  {formatMoney(Math.abs(netGst))}
+                  {taxUiMoney(taxUiAbs(netGst), currency!)}
                 </span>
               </div>
             </div>
@@ -173,7 +184,7 @@ export default function BasPage() {
                     "mt-1 text-2xl font-bold font-mono tabular-nums",
                     netField.amount >= 0 ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"
                   )}>
-                    {formatMoney(Math.abs(netField.amount))}
+                    {taxUiMoney(taxUiAbs(netField.amount), currency!)}
                   </p>
                 </div>
                 <div className={cn(
@@ -227,7 +238,7 @@ export default function BasPage() {
                         f.field === "1A" && "text-blue-600 dark:text-blue-400",
                         f.field === "1B" && "text-orange-600 dark:text-orange-400"
                       )}>
-                        {formatMoney(f.amount)}
+                        {taxUiMoney(f.amount, currency!)}
                       </span>
                     </div>
                   );
@@ -255,7 +266,7 @@ export default function BasPage() {
                       </div>
                       <p className="text-sm">{f.label}</p>
                     </div>
-                    <span className="font-mono text-sm tabular-nums font-medium">{formatMoney(f.amount)}</span>
+                    <span className="font-mono text-sm tabular-nums font-medium">{taxUiMoney(f.amount, currency!)}</span>
                   </div>
                 ))}
               </div>

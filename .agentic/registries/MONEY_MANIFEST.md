@@ -1,3 +1,17 @@
+## MON-151 tax and settings UI
+
+Tax reports, frozen return lines and settlements use tax-ui.ts for checked numeric/
+Minor aliases, bigint totals, explicit report/base currency and exact decimal
+settlement previews/amountMinor writes. CSV amounts are canonical raw minor-unit
+strings with currencyCode. FX source/base summaries validate aliases/nulls; manual
+quotes use exact strings within the retained int32-millionths contract. Approval
+conditions reuse the canonical signed int64 document-minor parser and add valueMinor.
+Tax rates, tolerances and recoverability remain nonmoney basis points; general
+settings contain currency/metadata/date controls rather than money editors.
+See CORE_UI_MONEY_CUTOVER MON-151 for every consumer and compatibility exception.
+Frozen/report IRR presentation does not enable settlement or production IRR.
+MON-133/MON-129/MON-007 retain independent integration acceptance.
+
 ## MON-150 banking and reconciliation UI
 
 Banking list/detail/context, statement import previews, matching/categorization/

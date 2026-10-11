@@ -26,12 +26,15 @@ interface Account {
   name: string;
   type: string;
   subType?: string | null;
+  currencyCode?: string;
 }
 
 interface AccountPickerProps {
   value: string;
   onChange: (accountId: string) => void;
   typeFilter?: string[];
+  currencyFilter?: string;
+  subTypeFilter?: string;
   placeholder?: string;
   /** Show a "Create new account" affordance linking to chart-of-accounts settings */
   allowCreate?: boolean;
@@ -51,6 +54,8 @@ export function AccountPicker({
   value,
   onChange,
   typeFilter,
+  currencyFilter,
+  subTypeFilter,
   placeholder = "Select account...",
   allowCreate = false,
 }: AccountPickerProps) {
@@ -72,7 +77,7 @@ export function AccountPicker({
         const res = await fetch("/api/v1/accounts", { headers: { "x-organization-id": orgId } });
         const data = await res.json();
         if (!cancelled && data.accounts) {
-          setAccounts(allow ? data.accounts.filter((a: Account) => allow.includes(a.type)) : data.accounts);
+          setAccounts(data.accounts.filter((a: Account) => (!allow || allow.includes(a.type)) && (!currencyFilter || a.currencyCode === currencyFilter) && (!subTypeFilter || a.subType === subTypeFilter)));
         }
       } catch {
         // leave accounts empty on failure
@@ -81,7 +86,7 @@ export function AccountPicker({
       }
     })();
     return () => { cancelled = true; };
-  }, [typeKey]);
+  }, [typeKey, currencyFilter, subTypeFilter]);
 
   // Group accounts by type, in accounting display order, each group sorted by code.
   const groups = useMemo(() => {

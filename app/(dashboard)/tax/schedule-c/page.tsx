@@ -9,61 +9,75 @@ import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { formatMoney } from "@/lib/money";
+import { taxUiMinor, taxUiCurrency, taxUiRows, taxUiMoney, taxUiAbs, taxUiMax, taxUiPercent } from "@/lib/money/tax-ui";
 import { cn } from "@/lib/utils";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 
 interface ScheduleCLine {
   line: string;
   label: string;
-  amount: number;
+  amount: bigint;
 }
 
 const INCOME_LINES = ["1", "2", "3", "4", "5", "6", "7"];
 const SUMMARY_LINES = ["28", "29", "30", "31"];
 
 export default function ScheduleCPage() {
+  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
+  return <ScheduleCPageWorkspace key={orgId} orgId={orgId} />;
+}
+
+function ScheduleCPageWorkspace({ orgId }: { orgId: string | null }) {
   const now = new Date();
   const [startDate, setStartDate] = useState(`${now.getFullYear()}-01-01`);
   const [endDate, setEndDate] = useState(`${now.getFullYear()}-12-31`);
   const [lines, setLines] = useState<ScheduleCLine[]>([]);
-  const [totalIncome, setTotalIncome] = useState(0);
-  const [totalExpenses, setTotalExpenses] = useState(0);
-  const [netProfit, setNetProfit] = useState(0);
+  const [totalIncome, setTotalIncome] = useState(0n);
+  const [totalExpenses, setTotalExpenses] = useState(0n);
+  const [netProfit, setNetProfit] = useState(0n);
   const [loading, setLoading] = useState(true);
+  const [currency, setCurrency] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   useDocumentTitle("Tax · Schedule C");
 
   useEffect(() => {
-    const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
     let cancelled = false;
+    setLoading(true);
     const params = new URLSearchParams({ startDate, endDate });
     fetch(`/api/v1/reports/schedule-c?${params}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("Could not load tax report"); return r.json(); })
       .then((data) => {
         if (cancelled) return;
-        setLines(data.lines || []);
-        setTotalIncome(data.totalIncome || 0);
-        setTotalExpenses(data.totalExpenses || 0);
-        setNetProfit(data.netProfit || 0);
+        const code = taxUiCurrency(data.currencyCode);
+        const rows = taxUiRows(data.lines as (Omit<ScheduleCLine, "amount"> & { amount: number })[], ["amount"]);
+        const income = taxUiMinor(data.totalIncome, data.totalIncomeMinor);
+        const expenses = taxUiMinor(data.totalExpenses, data.totalExpensesMinor);
+        const profit = taxUiMinor(data.netProfit, data.netProfitMinor);
+        setLines(rows);
+        setCurrency(code); setError(null);
+        setTotalIncome(income);
+        setTotalExpenses(expenses);
+        setNetProfit(profit);
       })
+      .catch((err) => { if (!cancelled) { setError(err instanceof Error ? err.message : "Invalid tax report"); setCurrency(null); } })
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
         }
       });
     return () => { cancelled = true; };
-  }, [startDate, endDate]);
+  }, [startDate, endDate, orgId]);
 
   const incomeLines = lines.filter((l) => INCOME_LINES.includes(l.line));
   const expenseLines = lines.filter((l) => !INCOME_LINES.includes(l.line) && !SUMMARY_LINES.includes(l.line));
   const summaryLines = lines.filter((l) => SUMMARY_LINES.includes(l.line));
 
-  const maxIncExp = Math.max(totalIncome, totalExpenses, 1);
-  const incomePct = (totalIncome / maxIncExp) * 100;
-  const expensesPct = (totalExpenses / maxIncExp) * 100;
+  const maxIncExp = taxUiMax(totalIncome, totalExpenses);
+  const incomePct = taxUiPercent(totalIncome, maxIncExp);
+  const expensesPct = taxUiPercent(totalExpenses, maxIncExp);
 
   return (
     <div className="space-y-6">
@@ -76,12 +90,12 @@ export default function ScheduleCPage() {
           Print
         </Button>
         <ExportButton
-          data={lines.map((l) => ({
+          data={(error || loading || !currency ? [] : lines).map((l) => ({
             line: l.line,
             description: l.label,
-            amount: l.amount,
+            amount: l.amount.toString(), currencyCode: currency,
           }))}
-          columns={["line", "description", "amount"]}
+          columns={["line", "description", "amount", "currencyCode"]}
           filename={`schedule-c-${startDate.slice(0, 4)}`}
         />
       </PageHeader>
@@ -100,7 +114,7 @@ export default function ScheduleCPage() {
         onDateChange={(s, e) => { setStartDate(s); setEndDate(e); }}
       />
 
-      {loading ? (
+      {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : loading || !currency ? (
         <BrandLoader className="h-48" />
       ) : (
         <ContentReveal className="space-y-6">
@@ -117,7 +131,7 @@ export default function ScheduleCPage() {
                     <span className="text-muted-foreground">Gross Income</span>
                   </div>
                   <span className="font-mono text-sm tabular-nums font-medium text-emerald-600 dark:text-emerald-400">
-                    {formatMoney(totalIncome)}
+                    {taxUiMoney(totalIncome, currency!)}
                   </span>
                 </div>
                 <div className="h-2 rounded-full bg-muted">
@@ -134,7 +148,7 @@ export default function ScheduleCPage() {
                     <span className="text-muted-foreground">Total Expenses</span>
                   </div>
                   <span className="font-mono text-sm tabular-nums font-medium text-red-600 dark:text-red-400">
-                    {formatMoney(totalExpenses)}
+                    {taxUiMoney(totalExpenses, currency!)}
                   </span>
                 </div>
                 <div className="h-2 rounded-full bg-muted">
@@ -153,7 +167,7 @@ export default function ScheduleCPage() {
                   "font-mono text-sm tabular-nums font-semibold",
                   netProfit >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
                 )}>
-                  {formatMoney(netProfit)}
+                  {taxUiMoney(netProfit, currency!)}
                 </span>
               </div>
             </div>
@@ -175,7 +189,7 @@ export default function ScheduleCPage() {
                   "mt-1 text-2xl font-bold font-mono tabular-nums",
                   netProfit >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
                 )}>
-                  {formatMoney(Math.abs(netProfit))}
+                  {taxUiMoney(taxUiAbs(netProfit), currency!)}
                 </p>
               </div>
               <div className={cn(
@@ -213,13 +227,13 @@ export default function ScheduleCPage() {
                         <span className="flex size-7 items-center justify-center rounded-md bg-muted text-[11px] font-mono font-bold text-muted-foreground">{l.line}</span>
                         <span className="text-sm">{l.label}</span>
                       </div>
-                      <span className="font-mono text-sm tabular-nums font-medium">{formatMoney(l.amount)}</span>
+                      <span className="font-mono text-sm tabular-nums font-medium">{taxUiMoney(l.amount, currency!)}</span>
                     </div>
                   ))}
                 </div>
                 <div className="flex justify-between items-center px-4 py-2.5 mt-2 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg border border-emerald-200 dark:border-emerald-900/40 text-sm font-semibold">
                   <span>Gross Income</span>
-                  <span className="font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{formatMoney(totalIncome)}</span>
+                  <span className="font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{taxUiMoney(totalIncome, currency!)}</span>
                 </div>
               </div>
             )}
@@ -238,7 +252,7 @@ export default function ScheduleCPage() {
                       className={cn(
                         "flex items-center justify-between px-4 py-3",
                         i < expenseLines.length - 1 && "border-b",
-                        l.amount === 0 && "opacity-40"
+                        l.amount === 0n && "opacity-40"
                       )}
                     >
                       <div className="flex items-center gap-3">
@@ -246,14 +260,14 @@ export default function ScheduleCPage() {
                         <span className="text-sm">{l.label}</span>
                       </div>
                       <span className="font-mono text-sm tabular-nums font-medium">
-                        {l.amount === 0 ? "-" : formatMoney(l.amount)}
+                        {l.amount === 0n ? "-" : taxUiMoney(l.amount, currency!)}
                       </span>
                     </div>
                   ))}
                 </div>
                 <div className="flex justify-between items-center px-4 py-2.5 mt-2 bg-red-50 dark:bg-red-950/30 rounded-lg border border-red-200 dark:border-red-900/40 text-sm font-semibold">
                   <span>Total Expenses</span>
-                  <span className="font-mono tabular-nums text-red-600 dark:text-red-400">{formatMoney(totalExpenses)}</span>
+                  <span className="font-mono tabular-nums text-red-600 dark:text-red-400">{taxUiMoney(totalExpenses, currency!)}</span>
                 </div>
               </div>
             )}
@@ -286,7 +300,7 @@ export default function ScheduleCPage() {
                           isNet && "text-base font-bold",
                           isNet && (l.amount >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400")
                         )}>
-                          {formatMoney(l.amount)}
+                          {taxUiMoney(l.amount, currency!)}
                         </span>
                       </div>
                     );

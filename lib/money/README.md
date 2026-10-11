@@ -1,5 +1,14 @@
 # Exact money core
 
+MON-151 adopts tax reports, frozen returns/settlements, currencies and approval
+settings through `tax-ui.ts`. Saved numeric amounts must agree with canonical
+Minor aliases; bigint totals and explicit source/base currency preserve units.
+Settlement preview/save use currency-scale decimal text and amountMinor; FX input
+uses exact strings within int32-millionths coexistence. Approval thresholds stay
+raw signed int64 document minor units. Tax/tolerance/recoverability basis points
+and general metadata/date controls remain nonmoney. See CORE_UI_MONEY_CUTOVER
+for complete ownership, compatibility limits and MON-133 independent acceptance.
+
 MON-150 adopts banking list/detail/statements/imports/reconciliation, bank settings,
 rules and the account/transfer drawers through `bank-ui.ts`. Saved safe numeric
 money must agree with canonical Minor aliases before bigint arithmetic/display.

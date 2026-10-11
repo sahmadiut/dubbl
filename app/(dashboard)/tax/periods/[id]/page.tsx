@@ -30,8 +30,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { TaxSettlementPreview } from "@/components/dashboard/tax-settlement-preview";
 import { AccountPicker } from "@/components/dashboard/account-picker";
-import { formatMoney } from "@/lib/money";
+import { taxUiMinor, taxUiCurrency, taxUiRows, taxUiMoney, taxUiAbs, taxUiDecimal, taxUiSettlement } from "@/lib/money/tax-ui";
 import { cn } from "@/lib/utils";
 import { useEntityTitle } from "@/lib/hooks/use-entity-title";
 
@@ -39,7 +40,7 @@ interface TaxReturnLine {
   id: string;
   boxNumber: string;
   label: string;
-  amount: number; // cents
+  amount: bigint; // organization base-currency minor units
   isCalculated: boolean;
   sourceDescription: string | null;
   sortOrder: number;
@@ -93,6 +94,7 @@ function SettleSheet({
   orgId,
   defaultIsRefund,
   netAmount,
+  currency,
 }: {
   period: TaxPeriodDetail;
   open: boolean;
@@ -100,7 +102,8 @@ function SettleSheet({
   onSettled: () => void;
   orgId: string | null;
   defaultIsRefund: boolean;
-  netAmount: number | null;
+  netAmount: bigint | null;
+  currency: string;
 }) {
   const [bankGlAccountId, setBankGlAccountId] = useState("");
   const [amount, setAmount] = useState("");
@@ -116,20 +119,22 @@ function SettleSheet({
     if (!open) return;
     setDirection(defaultIsRefund ? "refund" : "pay");
     if (netAmount != null) {
-      setAmount((Math.abs(netAmount) / 100).toFixed(2));
+      setAmount(taxUiDecimal(taxUiAbs(netAmount), currency));
     }
-  }, [open, defaultIsRefund, netAmount]);
+  }, [open, defaultIsRefund, netAmount, currency]);
+
+  const preview = taxUiSettlement(amount, currency);
 
   async function handleSettle(e: React.FormEvent) {
     e.preventDefault();
-    if (!orgId) return;
+    if (!orgId || localStorage.getItem("activeOrgId") !== orgId) return;
     if (!bankGlAccountId) {
       toast.error("Choose which account the money moves through");
       return;
     }
-    const cents = Math.round(parseFloat(amount || "0") * 100);
-    if (!Number.isFinite(cents) || cents < 0) {
-      toast.error("Enter a valid amount");
+    const parsed = taxUiSettlement(amount, currency);
+    if (parsed.error) {
+      toast.error(parsed.error);
       return;
     }
     setSaving(true);
@@ -143,7 +148,7 @@ function SettleSheet({
         body: JSON.stringify({
           mode: "settle",
           bankGlAccountId,
-          amount: cents,
+          amountMinor: parsed.amountMinor,
           isRefund: direction === "refund",
           date,
           reference: reference || undefined,
@@ -153,6 +158,8 @@ function SettleSheet({
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || "Failed");
       }
+      const saved = await res.json();
+      if (taxUiCurrency(saved.currencyCode) !== currency || taxUiMinor(saved.amount, saved.amountMinor) !== parsed.amount) throw new Error("Settlement amount or currency disagrees with the preview");
       toast.success(
         direction === "refund"
           ? "Refund recorded"
@@ -216,22 +223,25 @@ function SettleSheet({
               value={bankGlAccountId}
               onChange={setBankGlAccountId}
               typeFilter={["asset"]}
+              currencyFilter={currency}
+              subTypeFilter="bank"
               placeholder="Select bank or cash account..."
             />
           </div>
 
           <div className="space-y-2">
-            <Label>Amount</Label>
+            <Label htmlFor="tax-settlement-amount">Amount ({currency})</Label>
             <Input
-              type="number"
-              step="0.01"
-              min="0"
+              id="tax-settlement-amount"
+              inputMode="decimal"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="0.00"
               required
             />
           </div>
+
+          <TaxSettlementPreview amount={amount} currency={currency} />
 
           <div className="space-y-2">
             <Label>Date</Label>
@@ -254,7 +264,7 @@ function SettleSheet({
 
           <Button
             type="submit"
-            disabled={saving}
+            disabled={saving || !!preview.error || !bankGlAccountId}
             className="w-full bg-emerald-600 hover:bg-emerald-700"
           >
             {saving
@@ -275,30 +285,41 @@ function SettleSheet({
 
 export default function TaxPeriodDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
+  return <TaxPeriodWorkspace key={`${orgId}:${id}`} id={id} orgId={orgId} />;
+}
+
+function TaxPeriodWorkspace({ id, orgId }: { id: string; orgId: string | null }) {
   const [period, setPeriod] = useState<TaxPeriodDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [settleOpen, setSettleOpen] = useState(false);
 
-  const orgId =
-    typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
+  const [currency, setCurrency] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEntityTitle(period?.name);
 
-  const fetchPeriod = useCallback(async () => {
+  const fetchPeriod = useCallback(async (signal?: AbortSignal) => {
     if (!orgId) return;
     try {
-      const res = await fetch(`/api/v1/tax-periods/${id}`, {
-        headers: { "x-organization-id": orgId },
-      });
-      const data = await res.json();
-      if (data.taxPeriod) setPeriod(data.taxPeriod);
+      const options = { headers: { "x-organization-id": orgId }, signal };
+      const [res, orgRes] = await Promise.all([fetch(`/api/v1/tax-periods/${id}`, options), fetch("/api/v1/organization", options)]);
+      if (!res.ok || !orgRes.ok) throw new Error("Could not load tax period currency or amounts");
+      const data = await res.json(), orgData = await orgRes.json();
+      const code = taxUiCurrency(orgData.organization?.defaultCurrency);
+      const lines = taxUiRows(data.taxPeriod?.lines as (Omit<TaxReturnLine, "amount"> & { amount: number })[], ["amount"]);
+      if (!signal?.aborted) { setPeriod({ ...data.taxPeriod, lines }); setCurrency(code); setError(null); }
+    } catch (err) {
+      if (!signal?.aborted) { setPeriod(null); setError(err instanceof Error ? err.message : "Invalid tax period"); }
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
   }, [id, orgId]);
 
   useEffect(() => {
-    fetchPeriod();
+    const controller = new AbortController();
+    void fetchPeriod(controller.signal);
+    return () => controller.abort();
   }, [fetchPeriod]);
 
   if (loading) {
@@ -310,9 +331,10 @@ export default function TaxPeriodDetailPage() {
     );
   }
 
-  if (!period) {
+  if (!period || !currency) {
     return (
       <div className="space-y-6">
+        {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
         <PageHeader title="Tax period not found">
           <Button variant="outline" size="sm" asChild>
             <Link href="/tax/periods">
@@ -385,9 +407,9 @@ export default function TaxPeriodDetailPage() {
               {netAmount == null
                 ? "Record the payment to, or refund from, the tax office."
                 : netAmount < 0
-                  ? `You should receive ${formatMoney(Math.abs(netAmount), "USD")} back from the tax office.`
+                  ? `You should receive ${taxUiMoney(taxUiAbs(netAmount), currency)} back from the tax office.`
                   : netAmount > 0
-                    ? `You owe ${formatMoney(netAmount, "USD")} to the tax office.`
+                    ? `You owe ${taxUiMoney(netAmount, currency)} to the tax office.`
                     : "Nothing to pay or reclaim for this return."}
             </p>
           </div>
@@ -408,7 +430,7 @@ export default function TaxPeriodDetailPage() {
           <p className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
             Return boxes
           </p>
-          <div className="overflow-hidden rounded-lg border">
+          <div className="overflow-x-auto rounded-lg border">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/30">
@@ -447,7 +469,7 @@ export default function TaxPeriodDetailPage() {
                         )}
                       </td>
                       <td className="px-4 py-2.5 text-right font-mono tabular-nums">
-                        {formatMoney(line.amount, "USD")}
+                        {taxUiMoney(line.amount, currency)}
                       </td>
                     </tr>
                   );
@@ -487,13 +509,15 @@ export default function TaxPeriodDetailPage() {
       )}
 
       <SettleSheet
+        key={`${period.id}:${settleOpen}`}
         period={period}
         open={settleOpen}
         onClose={() => setSettleOpen(false)}
-        onSettled={fetchPeriod}
+        onSettled={() => { void fetchPeriod(); }}
         orgId={orgId}
         defaultIsRefund={defaultIsRefund}
         netAmount={netAmount}
+        currency={currency}
       />
     </div>
   );

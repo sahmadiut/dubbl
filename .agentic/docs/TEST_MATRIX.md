@@ -1,5 +1,19 @@
 # Verification matrix
 
+## MON-151 tax and settings UI money
+
+- `tests/tax-ui-money.test.ts`: saved alias/range/currency rejection, 0/2/3 scale
+  preview/payload/static React English rendering, safe-edge input, exact large
+  aggregate low digits, raw int64 approval conditions/nonmoney fields, lossless FX.
+- `tests/integration/tax-ui-money.test.ts`: migrated disposable PostgreSQL with
+  actual authenticated REST, linked registered MCP and SQL text checks. Frozen
+  lines/reports/drill in USD/JPY/KWD/IRR; payment/refund settlements for enabled
+  currencies, IRR settlement rejection, int64 approval thresholds and manual FX.
+- Jointly rerun tax-period/report/rate, approval, organization-settings, procurement
+  settings and forecast-FX suites to preserve domain/tenant/role/lock/negative cases.
+- Source/accessibility review under DEC-005; no build/dev server, live browser,
+  provider, legal or production-IRR qualification. MON-133 remains separate.
+
 ## MON-150 banking and reconciliation UI money
 
 - `tests/bank-ui-money.test.ts`: raw safe saved amounts/aliases, bank scales,

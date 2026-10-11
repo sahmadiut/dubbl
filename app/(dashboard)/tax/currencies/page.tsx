@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { statementMoneyText } from "@/lib/reports/statement-money";
+import { taxUiMinor, taxUiCurrency, taxUiMoney, taxUiRate, taxUiRateInput } from "@/lib/money/tax-ui";
 import {
   Plus,
   Search,
@@ -47,12 +47,9 @@ interface ExchangeRate {
   baseCurrency: string;
   targetCurrency: string;
   rate: number;
+  rateExact?: string | null;
   date: string;
   source: "manual" | "api";
-}
-
-function formatRate(rate: number): string {
-  return (rate / 1_000_000).toFixed(6);
 }
 
 interface UnrealizedFxItem {
@@ -60,8 +57,8 @@ interface UnrealizedFxItem {
   id: string;
   number: string;
   currencyCode: string;
-  amountDue: number;
-  unrealizedGainLoss: number | null;
+  amountDue: bigint;
+  unrealizedGainLoss: bigint | null;
 }
 
 interface UnrealizedFxReport {
@@ -70,9 +67,9 @@ interface UnrealizedFxReport {
   summary: {
     totalItems: number;
     missingRateItems: number;
-    totalUnrealizedGain: number;
-    totalUnrealizedLoss: number;
-    netUnrealizedGainLoss: number;
+    totalUnrealizedGain: bigint;
+    totalUnrealizedLoss: bigint;
+    netUnrealizedGainLoss: bigint;
   };
 }
 
@@ -208,11 +205,7 @@ function AddRateSheet({
     if (!orgId || !baseCurrency || !targetCurrency || !rate || !date) return;
     setSaving(true);
     try {
-      const rateInt = Math.round(parseFloat(rate) * 1_000_000);
-      if (!rateInt || isNaN(rateInt)) {
-        toast.error("Please enter a valid rate");
-        return;
-      }
+      const exact = taxUiRateInput(rate);
       const res = await fetch("/api/v1/exchange-rates", {
         method: "POST",
         headers: {
@@ -224,7 +217,7 @@ function AddRateSheet({
             {
               baseCurrency,
               targetCurrency,
-              rate: rateInt,
+              ...exact,
               date,
               source: "manual",
             },
@@ -305,6 +298,11 @@ function AddRateSheet({
 }
 
 export default function CurrenciesPage() {
+  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
+  return <CurrenciesWorkspace key={orgId} orgId={orgId} />;
+}
+
+function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [exchangeRates, setExchangeRates] = useState<ExchangeRate[]>([]);
   const [baseCurrency, setBaseCurrency] = useState<string | null>(null);
@@ -318,10 +316,6 @@ export default function CurrenciesPage() {
   const [fxReport, setFxReport] = useState<UnrealizedFxReport | null>(null);
   useDocumentTitle("Tax · Currencies");
 
-  const orgId =
-    typeof window !== "undefined"
-      ? localStorage.getItem("activeOrgId")
-      : null;
 
   async function fetchOrganization() {
     try {
@@ -347,9 +341,14 @@ export default function CurrenciesPage() {
         headers: { "x-organization-id": orgId },
       });
       const data = await res.json();
-      if (data.data) setExchangeRates(data.data);
+      if (!res.ok) throw new Error(data.error || "Could not load rates");
+      if (data.data) {
+        for (const row of data.data as ExchangeRate[]) taxUiRate(row.rate, row.rateExact);
+        setExchangeRates(data.data);
+      }
     } catch {
-      /* ignore */
+      setExchangeRates([]);
+      toast.error("Could not load exact exchange rates");
     } finally {
       setRatesLoading(false);
     }
@@ -374,7 +373,12 @@ export default function CurrenciesPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Unable to load unrealized FX report.");
       setFxError(null);
-      if (data?.summary) setFxReport(data);
+      const defaultCurrency = taxUiCurrency(data.defaultCurrency);
+      const summary = { ...data.summary };
+      for (const key of ["totalUnrealizedGain", "totalUnrealizedLoss", "netUnrealizedGainLoss"]) summary[key] = taxUiMinor(data.summary[key], data.summary[`${key}Minor`]);
+      const items = data.items.map((item: Record<string, unknown>) => ({ ...item, currencyCode: taxUiCurrency(item.currencyCode), amountDue: taxUiMinor(item.amountDue, item.amountDueMinor),
+        unrealizedGainLoss: item.unrealizedGainLoss === null && (item.unrealizedGainLossMinor === undefined || item.unrealizedGainLossMinor === null) ? null : taxUiMinor(item.unrealizedGainLoss, item.unrealizedGainLossMinor) }));
+      setFxReport({ ...data, defaultCurrency, summary, items });
     } catch (err: unknown) {
       setFxReport(null);
       setFxError(err instanceof Error ? err.message : "Unable to load unrealized FX report.");
@@ -520,7 +524,7 @@ export default function CurrenciesPage() {
                         : "text-red-600 dark:text-red-400"
                     }`}
                   >
-                    {statementMoneyText(
+                    {taxUiMoney(
                       fxReport.summary.netUnrealizedGainLoss,
                       fxReport.defaultCurrency
                     )}
@@ -531,7 +535,7 @@ export default function CurrenciesPage() {
                     Gains
                   </p>
                   <p className="mt-1 text-xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
-                    {statementMoneyText(
+                    {taxUiMoney(
                       fxReport.summary.totalUnrealizedGain,
                       fxReport.defaultCurrency
                     )}
@@ -542,7 +546,7 @@ export default function CurrenciesPage() {
                     Losses
                   </p>
                   <p className="mt-1 text-xl font-bold tabular-nums text-red-600 dark:text-red-400">
-                    {statementMoneyText(
+                    {taxUiMoney(
                       fxReport.summary.totalUnrealizedLoss,
                       fxReport.defaultCurrency
                     )}
@@ -564,7 +568,7 @@ export default function CurrenciesPage() {
                         {item.number}
                       </span>
                       <span className="text-sm text-muted-foreground">
-                        {statementMoneyText(item.amountDue, item.currencyCode)} due
+                        {taxUiMoney(item.amountDue, item.currencyCode)} due
                       </span>
                     </div>
                     <span
@@ -576,7 +580,7 @@ export default function CurrenciesPage() {
                     >
                       {item.unrealizedGainLoss === null
                         ? "—"
-                        : statementMoneyText(
+                        : taxUiMoney(
                             item.unrealizedGainLoss,
                             fxReport.defaultCurrency
                           )}
@@ -620,7 +624,7 @@ export default function CurrenciesPage() {
                     <span>{rate.targetCurrency}</span>
                   </div>
                   <span className="font-mono text-sm tabular-nums text-muted-foreground">
-                    {formatRate(rate.rate)}
+                    {taxUiRate(rate.rate, rate.rateExact)}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">

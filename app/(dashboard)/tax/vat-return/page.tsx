@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { ArrowUpRight, ArrowDownLeft, Printer, ChevronDown, ChevronRight } from "lucide-react";
 import { DateRangeFilter } from "@/components/dashboard/date-range-filter";
 import { ExportButton } from "@/components/dashboard/export-button";
@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { formatMoney } from "@/lib/money";
+import { taxUiCurrency, taxUiRows, taxUiMoney, taxUiAbs, taxUiMax, taxUiPercent } from "@/lib/money/tax-ui";
 import { cn } from "@/lib/utils";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import Link from "next/link";
@@ -20,7 +20,7 @@ import Link from "next/link";
 interface VatBox {
   box: string;
   label: string;
-  amount: number;
+  amount: bigint;
 }
 
 interface BoxTransaction {
@@ -33,9 +33,9 @@ interface BoxTransaction {
   sourceType: string | null;
   accountCode: string;
   accountName: string;
-  debit: number;
-  credit: number;
-  amount: number;
+  debit: bigint;
+  credit: bigint;
+  amount: bigint;
 }
 
 const CALCULATED_BOXES = ["3", "5"];
@@ -47,6 +47,11 @@ const DRILLABLE_BOXES = ["1", "4"];
 type Basis = "accrual" | "cash";
 
 export default function VatReturnPage() {
+  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
+  return <VatReturnPageWorkspace key={orgId} orgId={orgId} />;
+}
+
+function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
   const now = new Date();
   const [startDate, setStartDate] = useState(`${now.getFullYear()}-01-01`);
   const [endDate, setEndDate] = useState(now.toISOString().slice(0, 10));
@@ -56,14 +61,16 @@ export default function VatReturnPage() {
   const [flatRateOn, setFlatRateOn] = useState(false);
   const [boxes, setBoxes] = useState<VatBox[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currency, setCurrency] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   // Per-box drill-down: which box is open, plus its loaded/loading transactions.
+  const drillGeneration = useRef(0);
   const [openBox, setOpenBox] = useState<string | null>(null);
   const [drillData, setDrillData] = useState<Record<string, BoxTransaction[]>>({});
   const [drillLoading, setDrillLoading] = useState<string | null>(null);
   useDocumentTitle("Tax · VAT Return");
 
   useEffect(() => {
-    const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
     let cancelled = false;
     const params = new URLSearchParams({ startDate, endDate, basis });
@@ -73,30 +80,34 @@ export default function VatReturnPage() {
     if (flatRateOn && Number.isFinite(pct) && pct > 0) {
       params.set("flatRatePercent", String(Math.round(pct * 100)));
     }
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     fetch(`/api/v1/reports/vat-return?${params}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("Could not load tax report"); return r.json(); })
       .then((data) => {
         if (cancelled) return;
-        setBoxes(data.boxes || []);
+        const code = taxUiCurrency(data.currencyCode);
+        const rows = taxUiRows(data.boxes as (Omit<VatBox, "amount"> & { amount: number })[], ["amount"]);
+        setBoxes(rows);
+        setCurrency(code); setError(null);
       })
+      .catch((err) => { if (!cancelled) { setError(err instanceof Error ? err.message : "Invalid tax report"); setCurrency(null); } })
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
         }
       });
     return () => { cancelled = true; };
-  }, [startDate, endDate, basis, flatRateOn, flatRatePercent]);
+  }, [startDate, endDate, basis, flatRateOn, flatRatePercent, orgId]);
 
   // Any change to the period/basis invalidates the cached drill-down rows.
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setOpenBox(null);
+    drillGeneration.current += 1;
     setDrillData({});
-  }, [startDate, endDate, basis]);
+    return () => { drillGeneration.current += 1; };
+  }, [startDate, endDate, basis, orgId]);
 
   const toggleDrill = useCallback(
     (box: string) => {
@@ -106,28 +117,32 @@ export default function VatReturnPage() {
       }
       setOpenBox(box);
       if (drillData[box]) return; // already loaded for this period
-      const orgId = localStorage.getItem("activeOrgId");
       if (!orgId) return;
       const params = new URLSearchParams({ box, startDate, endDate, basis });
       setDrillLoading(box);
+      const generation = drillGeneration.current;
       fetch(`/api/v1/reports/vat-return/transactions?${params}`, {
         headers: { "x-organization-id": orgId },
       })
-        .then((r) => r.json())
+        .then((r) => { if (!r.ok) throw new Error("Could not load tax report"); return r.json(); })
         .then((data) => {
-          setDrillData((prev) => ({ ...prev, [box]: data.transactions || [] }));
+          if (generation !== drillGeneration.current) return;
+          if (taxUiCurrency(data.currencyCode) !== currency) throw new Error("Tax drill currency changed");
+          const rows = taxUiRows(data.transactions as (Omit<BoxTransaction, "amount" | "debit" | "credit"> & { amount: number; debit: number; credit: number })[], ["amount", "debit", "credit"]);
+          setDrillData((prev) => ({ ...prev, [box]: rows }));
         })
-        .finally(() => setDrillLoading((cur) => (cur === box ? null : cur)));
+        .catch(err => { if (generation === drillGeneration.current) setError(err instanceof Error ? err.message : "Invalid tax drill rows"); })
+        .finally(() => { if (generation === drillGeneration.current) setDrillLoading((cur) => (cur === box ? null : cur)); });
     },
-    [openBox, drillData, startDate, endDate, basis]
+    [openBox, drillData, startDate, endDate, basis, orgId, currency]
   );
 
-  const outputVat = boxes.find((b) => b.box === "1")?.amount || 0;
-  const inputVat = boxes.find((b) => b.box === "4")?.amount || 0;
-  const netVat = boxes.find((b) => b.box === "5")?.amount || 0;
-  const maxVat = Math.max(Math.abs(outputVat), Math.abs(inputVat), 1);
-  const outputPct = (Math.abs(outputVat) / maxVat) * 100;
-  const inputPct = (Math.abs(inputVat) / maxVat) * 100;
+  const outputVat = boxes.find((b) => b.box === "1")?.amount ?? 0n;
+  const inputVat = boxes.find((b) => b.box === "4")?.amount ?? 0n;
+  const netVat = boxes.find((b) => b.box === "5")?.amount ?? 0n;
+  const maxVat = taxUiMax(taxUiAbs(outputVat), taxUiAbs(inputVat));
+  const outputPct = taxUiPercent(outputVat, maxVat);
+  const inputPct = taxUiPercent(inputVat, maxVat);
 
   return (
     <div className="space-y-6">
@@ -140,8 +155,8 @@ export default function VatReturnPage() {
           Print
         </Button>
         <ExportButton
-          data={boxes.map((b) => ({ box: b.box, description: b.label, amount: b.amount }))}
-          columns={["box", "description", "amount"]}
+          data={(error || loading || !currency ? [] : boxes).map((b) => ({ box: b.box, description: b.label, amount: b.amount.toString(), currencyCode: currency }))}
+          columns={["box", "description", "amount", "currencyCode"]}
           filename="vat-return"
         />
         <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5" asChild>
@@ -225,7 +240,7 @@ export default function VatReturnPage() {
         </div>
       </div>
 
-      {loading ? (
+      {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : loading || !currency ? (
         <BrandLoader className="h-48" />
       ) : (
         <ContentReveal className="space-y-6">
@@ -242,7 +257,7 @@ export default function VatReturnPage() {
                     <span className="text-muted-foreground">Output VAT (Sales)</span>
                   </div>
                   <span className="font-mono text-sm tabular-nums font-medium">
-                    {formatMoney(outputVat)}
+                    {taxUiMoney(outputVat, currency!)}
                   </span>
                 </div>
                 <div className="h-2 rounded-full bg-muted">
@@ -259,7 +274,7 @@ export default function VatReturnPage() {
                     <span className="text-muted-foreground">Input VAT (Purchases)</span>
                   </div>
                   <span className="font-mono text-sm tabular-nums font-medium">
-                    {formatMoney(inputVat)}
+                    {taxUiMoney(inputVat, currency!)}
                   </span>
                 </div>
                 <div className="h-2 rounded-full bg-muted">
@@ -277,7 +292,7 @@ export default function VatReturnPage() {
                   "font-mono text-sm tabular-nums font-semibold",
                   netVat >= 0 ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"
                 )}>
-                  {formatMoney(Math.abs(netVat))}
+                  {taxUiMoney(taxUiAbs(netVat), currency!)}
                 </span>
               </div>
             </div>
@@ -299,7 +314,7 @@ export default function VatReturnPage() {
                   "mt-1 text-2xl font-bold font-mono tabular-nums",
                   netVat >= 0 ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"
                 )}>
-                  {formatMoney(Math.abs(netVat))}
+                  {taxUiMoney(taxUiAbs(netVat), currency!)}
                 </p>
               </div>
               <div className={cn(
@@ -367,7 +382,7 @@ export default function VatReturnPage() {
                         isKey && netVat < 0 && "text-emerald-600 dark:text-emerald-400",
                         !isKey && "font-medium"
                       )}>
-                        {formatMoney(Math.abs(b.amount))}
+                        {taxUiMoney(taxUiAbs(b.amount), currency!)}
                       </p>
                     </div>
                   </>
@@ -427,7 +442,7 @@ export default function VatReturnPage() {
                                     <td className="py-1.5 pr-3">{t.description || "—"}</td>
                                     <td className="py-1.5 pr-3 text-muted-foreground">{t.reference || "—"}</td>
                                     <td className="py-1.5 pl-3 text-right font-mono tabular-nums">
-                                      {formatMoney(t.amount)}
+                                      {taxUiMoney(t.amount, currency!)}
                                     </td>
                                   </tr>
                                 ))}
@@ -438,7 +453,7 @@ export default function VatReturnPage() {
                                     Total ({rows.length} {rows.length === 1 ? "line" : "lines"})
                                   </td>
                                   <td className="py-1.5 pl-3 text-right font-mono tabular-nums">
-                                    {formatMoney(rows.reduce((s, t) => s + t.amount, 0))}
+                                    {taxUiMoney(rows.reduce((s, t) => s + t.amount, 0n), currency!)}
                                   </td>
                                 </tr>
                               </tfoot>

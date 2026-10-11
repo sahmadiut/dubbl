@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { AccountPicker } from "./account-picker";
 import { documentEditorPreview, documentEditorDecimal } from "@/lib/money/document-editor";
+import { billEditorPreview } from "@/lib/money/bill-editor";
 
 export interface LineItem {
   description: string;
@@ -39,11 +40,12 @@ interface LineItemsEditorProps {
   accountTypeFilter?: string[];
   // Intent of the document, so we can surface purchase-side reclaim hints.
   taxContext?: "sales" | "purchase";
-  /** Explicit invoice currency; omitted retains the shared historical fixed-two preview. */
+  /** Explicit document currency; omitted retains the shared historical fixed-two preview. */
   currencyCode?: string | null;
   roundPriceFirst?: boolean;
   priceFractionDigits?: number;
   onValidityChange?: (valid: boolean) => void;
+  documentKind?: "invoice" | "bill";
 }
 
 // Format a basis-point rate as a percentage (2000 -> "20", 1750 -> "17.5").
@@ -65,7 +67,7 @@ function reclaimHint(rate: TaxRateOption): string | null {
   return "reclaimable";
 }
 
-export function LineItemsEditor({ lines, onChange, accountTypeFilter, taxContext, currencyCode, roundPriceFirst = false, priceFractionDigits = 2, onValidityChange }: LineItemsEditorProps) {
+export function LineItemsEditor({ lines, onChange, accountTypeFilter, taxContext, currencyCode, roundPriceFirst = false, priceFractionDigits = 2, onValidityChange, documentKind = "invoice" }: LineItemsEditorProps) {
   const [taxRates, setTaxRates] = useState<TaxRateOption[]>([]);
 
   // Fetch the org's tax rates once (org via x-organization-id, mirroring the
@@ -99,7 +101,9 @@ export function LineItemsEditor({ lines, onChange, accountTypeFilter, taxContext
   }
 
   const previewCurrency = currencyCode === undefined ? "USD" : currencyCode;
-  const preview = useMemo(() => documentEditorPreview(lines, previewCurrency, taxRates, roundPriceFirst), [lines, previewCurrency, taxRates, roundPriceFirst]);
+  const preview = useMemo(() => documentKind === "bill"
+    ? billEditorPreview(lines, previewCurrency, taxRates)
+    : documentEditorPreview(lines, previewCurrency, taxRates, roundPriceFirst), [lines, previewCurrency, taxRates, roundPriceFirst, documentKind]);
   useEffect(() => { onValidityChange?.(!preview.error); }, [onValidityChange, preview]);
   const decimal = (amount: bigint) => preview.error || !previewCurrency ? "—" : documentEditorDecimal(amount, previewCurrency);
 
@@ -213,6 +217,10 @@ export function LineItemsEditor({ lines, onChange, accountTypeFilter, taxContext
               <span>Total</span>
               <span>{decimal(preview.total)}</span>
             </div>
+            {"amountDue" in preview && <div className="flex justify-between gap-6 font-semibold">
+              <span>Amount due</span>
+              <span>{decimal(preview.amountDue)}</span>
+            </div>}
           </div>
         </div>
       </div>

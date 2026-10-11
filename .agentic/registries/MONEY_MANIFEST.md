@@ -11,6 +11,15 @@ discount/tax/deposit basis points and rate metadata keep their original units.
 Registered direct-DB MCP operations are exercised by the disposable SQL fixture.
 Remaining shared component compatibility and parent acceptance are explicit.
 
+## MON-138 bill creation UI
+
+[CORE_UI_MONEY_CUTOVER](CORE_UI_MONEY_CUTOVER.md#mon-138-bill-creation)
+assigns BillDrawer and the shared bill editor policy to MON-138. Exact decimal
+prices and supplier/org currency resolve before preview/write; extended-price
+rounding, reverse-charge payable and duplicate/approval policies match actual
+REST/MCP/SQL fixtures. Saved bill/debit/procurement/recurring UI remain owned by
+MON-139..142. MON-132, MON-129 and MON-007 retain combined acceptance.
+
 ## MON-134 shared line editor and invoice create
 
 [CORE_UI_MONEY_CUTOVER](CORE_UI_MONEY_CUTOVER.md#mon-134-shared-editor-and-invoice-creation)

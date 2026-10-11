@@ -137,3 +137,12 @@ MON-007 retains all original criteria; backend completion cannot establish UI or
 - [MON-129](../tasks/MON-129.md): Core exact money editors, previews and presentation; split further if needed.
 - [MON-130](../tasks/MON-130.md), [MON-131](../tasks/MON-131.md), [MON-132](../tasks/MON-132.md), [MON-133](../tasks/MON-133.md): Source-verified journal, receivable, payable and cash/tax/account UI slices; MON-129 retains combined acceptance.
 - [MON-134](../tasks/MON-134.md), [MON-135](../tasks/MON-135.md), [MON-136](../tasks/MON-136.md), [MON-137](../tasks/MON-137.md): Shared invoice creation/editor, saved invoice lifecycle, other receivable documents and recurring UI children; MON-131 retains combined acceptance.
+
+
+MON-132 retains independent payable/procurement integration after these source-verified UI children:
+
+- [MON-138](../tasks/MON-138.md): Cut over bill creation UI money.
+- [MON-139](../tasks/MON-139.md): Cut over saved bill lifecycle UI money.
+- [MON-140](../tasks/MON-140.md): Cut over debit note UI money.
+- [MON-141](../tasks/MON-141.md): Cut over procurement document UI money.
+- [MON-142](../tasks/MON-142.md): Cut over recurring bill UI money.

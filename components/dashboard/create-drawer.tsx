@@ -56,6 +56,7 @@ import {
 import { DatePicker } from "@/components/ui/date-picker";
 import { ContactPicker } from "@/components/dashboard/contact-picker";
 import { LineItemsEditor, type LineItem } from "@/components/dashboard/line-items-editor";
+import { billLineInputs, billEditorCurrency } from "@/lib/money/bill-editor";
 import { documentLineInputs, invoiceEditorCurrency } from "@/lib/money/document-editor";
 import { journalEditorPreview, journalDecimal } from "@/lib/money/journal-display";
 import { EntryForm } from "@/components/dashboard/entry-form";
@@ -755,6 +756,12 @@ function BillDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [contactId, setContactId] = useState("");
+  const [selectedCurrency, setSelectedCurrency] = useState("");
+  const [currencyContext, setCurrencyContext] = useState<{ orgId: string; contactId: string; code?: string; error?: string } | null>(null);
+  const [validLines, setValidLines] = useState(false);
+  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
+  const currentCurrencyContext = currencyContext?.orgId === orgId && currencyContext?.contactId === contactId ? currencyContext : null;
+  const currencyCode = selectedCurrency || currentCurrencyContext?.code || null;
   const [issueDate, setIssueDate] = useState(new Date().toISOString().split("T")[0]);
   const [dueDate, setDueDate] = useState(() => {
     const d = new Date(); d.setDate(d.getDate() + 30); return d.toISOString().split("T")[0];
@@ -775,7 +782,7 @@ function BillDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
 
   useEffect(() => {
     if (!open) {
-      setContactId(""); setReference(""); setBillNumber(""); setNotes(""); setForApproval(false); setDuplicateBillNumber(null);
+      setContactId(""); setSelectedCurrency(""); setCurrencyContext(null); setValidLines(false); setReference(""); setBillNumber(""); setNotes(""); setForApproval(false); setDuplicateBillNumber(null);
       setIssueDate(new Date().toISOString().split("T")[0]);
       const d = new Date(); d.setDate(d.getDate() + 30);
       setDueDate(d.toISOString().split("T")[0]);
@@ -783,30 +790,45 @@ function BillDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
     }
   }, [open]);
 
+  useEffect(() => {
+    if (!open || !orgId || !contactId) return;
+    const controller = new AbortController();
+    const headers = { "x-organization-id": orgId };
+    Promise.all([
+      fetch(`/api/v1/contacts/${encodeURIComponent(contactId)}`, { headers, signal: controller.signal }),
+      fetch("/api/v1/organization", { headers, signal: controller.signal }),
+    ]).then(async ([supplier, org]) => {
+      if (!supplier.ok || !org.ok) throw new Error("Unable to load the supplier's bill currency");
+      const [supplierData, orgData] = await Promise.all([supplier.json(), org.json()]);
+      if (!supplierData.contact || !orgData.organization) throw new Error("Unable to load the supplier's bill currency");
+      const code = billEditorCurrency(null, supplierData.contact.currencyCode, orgData.organization.defaultCurrency);
+      if (!controller.signal.aborted) setCurrencyContext({ orgId, contactId, code });
+    }).catch(() => {
+      if (!controller.signal.aborted) setCurrencyContext({ orgId, contactId, error: "Unable to load the supplier's bill currency. Select a currency to continue." });
+    });
+    return () => controller.abort();
+  }, [open, orgId, contactId]);
+
   async function submitBill(confirmDuplicate: boolean) {
     if (!contactId) { toast.error("Please select a supplier"); return; }
-    setSaving(true);
-    const orgId = localStorage.getItem("activeOrgId");
-    if (!orgId) { setSaving(false); return; }
+    if (!orgId) return;
+    if (!currencyCode || !validLines) { toast.error("Check the bill currency and line amounts"); return; }
 
     try {
+      const exactLines = billLineInputs(lines);
+      if (exactLines.some(line => !line.description.trim())) throw new Error("Add a description for every line");
+      setSaving(true);
       const res = await fetch("/api/v1/bills", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify({
-          contactId, issueDate, dueDate,
+          contactId, issueDate, dueDate, currencyCode,
           billNumber: billNumber.trim() || null,
           reference: reference || null,
           notes: notes || null,
           ...(confirmDuplicate ? { confirmDuplicate: true } : {}),
           ...(forApproval ? { submitForApproval: true } : {}),
-          lines: lines.map((l) => ({
-            description: l.description,
-            quantity: parseFloat(l.quantity) || 1,
-            unitPrice: parseFloat(l.unitPrice) || 0,
-            accountId: l.accountId || null,
-            taxRateId: l.taxRateId || null,
-          })),
+          lines: exactLines,
         }),
       });
       if (!res.ok) {
@@ -820,7 +842,7 @@ function BillDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
       }
       const data = await res.json();
       toast.success(
-        forApproval
+        data.bill.status === "pending_approval"
           ? "Bill saved for approval — approve it from the bill's page to post it"
           : "Bill created"
       );
@@ -858,7 +880,7 @@ function BillDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Supplier *</Label>
-                  <ContactPicker value={contactId} onChange={setContactId} type="supplier" />
+                  <ContactPicker value={contactId} onChange={(id) => { if (id !== contactId) { setContactId(id); setSelectedCurrency(""); setValidLines(false); setDuplicateBillNumber(null); } }} type="supplier" />
                 </div>
                 <div className="space-y-2">
                   <Label>Supplier bill number</Label>
@@ -870,6 +892,11 @@ function BillDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
                   <Label>Reference</Label>
                   <Input value={reference} onChange={(e) => setReference(e.target.value)} placeholder="Bill reference" />
                 </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Bill currency</Label>
+                <CurrencySelect value={currencyCode ?? ""} onValueChange={(code) => { setSelectedCurrency(code); if (code !== currencyCode) setValidLines(false); setDuplicateBillNumber(null); }} />
+                {!selectedCurrency && currentCurrencyContext?.error && <p role="alert" className="text-xs text-red-600">{currentCurrencyContext.error}</p>}
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
@@ -908,7 +935,7 @@ function BillDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
                       type="button"
                       size="sm"
                       className="bg-amber-600 hover:bg-amber-700"
-                      disabled={saving}
+                      disabled={saving || !currencyCode || !validLines}
                       onClick={() => submitBill(true)}
                     >
                       {saving ? "Creating..." : "Create anyway"}
@@ -930,7 +957,7 @@ function BillDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
 
             <div className="space-y-4">
               <SectionLabel>Line Items</SectionLabel>
-              <LineItemsEditor lines={lines} onChange={setLines} accountTypeFilter={["expense"]} taxContext="purchase" />
+              <LineItemsEditor key={orgId} lines={lines} onChange={(next) => { setLines(next); setValidLines(false); setDuplicateBillNumber(null); }} accountTypeFilter={["expense"]} taxContext="purchase" documentKind="bill" currencyCode={currencyCode} priceFractionDigits={18} onValidityChange={setValidLines} />
             </div>
 
             <div className="h-px bg-border" />
@@ -940,7 +967,7 @@ function BillDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
               <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Internal notes..." rows={3} />
             </div>
           </div>
-          <DrawerFooter onClose={onClose} saving={saving} label="Create Bill" />
+          <DrawerFooter onClose={onClose} saving={saving} label="Create Bill" disabled={!contactId || !currencyCode || !validLines} />
         </form>
       </SheetContent>
     </Sheet>

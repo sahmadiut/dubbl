@@ -13,7 +13,12 @@ original combined criteria; MON-007 retains its original integration acceptance.
 | MON-135 | sales/page.tsx and sales/[id]/page.tsx; invoice-amount-input.tsx; invoice-ui.ts; invoice-specific DualAmount and SendDocumentDialog props | Validated Minor reads, exact saved/copy prices, source/base display, aging and progress; currency-scale payment/interest Minor writes and same-currency credit application |
 | MON-136 | Quote, credit note, sales receipt and customer prepayment lists/details/create drawers | Pending domain-specific currency, rounding, exact fields and settlement |
 | MON-137 | Recurring invoice list/detail/editor and create-drawer.tsx RecurringDrawer | Pending recurring pricing/currency, exact fields and schedule preservation |
-| MON-132 | purchases/page.tsx, purchases/[id]/page.tsx, purchases/debit-notes, purchases/orders, purchases/requisitions, purchases/goods-receipts, purchases/bills/recurring; corresponding create-drawer sections and line-items-editor payable consumers | Existing payable/procurement fixed-two versus currency scale policies; quantity hundredths and basis-point controls are separate |
+| MON-132 | Integration parent for MON-138..142 payable/procurement consumers | Independent combined acceptance; no child completion closes this parent |
+| MON-138 | create-drawer.tsx BillDrawer; line-items-editor.tsx bill policy; lib/money/bill-editor.ts | Exact extended-price preview and unitPriceExact writes; explicit supplier/org/selected currency; reverse-charge amount due; approval/duplicate controls |
+| MON-139 | purchases/page.tsx and purchases/[id]/page.tsx | Pending saved bill list/detail/edit/copy and settlement money |
+| MON-140 | purchases/debit-notes and DebitNoteDrawer | Pending debit-note-specific exact/compatibility and application/refund contracts |
+| MON-141 | purchases/orders, requisitions, goods-receipts and PurchaseOrderDrawer | Pending exact procurement money, fixed-two compatibility, conversion and quantity contracts |
+| MON-142 | purchases/bills/recurring | Pending recurring bill currency, pricing and schedules |
 | MON-133 | accounting/accounts/[id] page/layout; accounting/opening-balances/page.tsx and OpeningBalanceDrawer; accounting/banking, payments and payment batches; purchases/expenses and expense create/edit/mileage controls; tax/page.tsx, tax/periods/[id], tax/sales-tax and tax settlement controls; remaining core bank/payment/tax/settings/approval consumers | Explicit exact money and source/base-currency presentation; opening balances still require numeric compatibility writes until their separate API adoption; no silent unsupported Minor fields |
 | MON-008 | Other dashboard financial/report consumers, budgets/assets/loans/projects/payroll/inventory auxiliary surfaces, contacts summaries, jobs, exports, public/provider/PDF consumers | Existing domain adoption does not imply complete consumer closure |
 
@@ -100,7 +105,7 @@ labels; the grid scrolls horizontally on narrow screens.
 
 The shared editor's omitted currency retains an explicit USD/fixed-two preview,
 extended-price rounding and two-fraction input default. This compatibility
-presentation serves BillDrawer, QuoteDrawer, SalesReceiptDrawer,
+presentation serves QuoteDrawer, SalesReceiptDrawer,
 PurchaseOrderDrawer, CreditNoteDrawer, RecurringDrawer and SupplierCreditDrawer.
 Their payload parsing, currency resolution, domain rounding and final preview/
 saved parity remain pending under MON-132, MON-136 and MON-137 (and the owning
@@ -183,3 +188,44 @@ negative cases. Rendered checks are not browser interactions; no screenshots,
 production IRR enablement, full int64 public workflow or accounting review is
 claimed. MON-136/MON-137, MON-132/MON-133 and MON-008 consumers remain pending.
 MON-131, MON-129 and MON-007 retain independent combined acceptance.
+
+
+## MON-138 bill creation
+
+BillDrawer resolves selected/supplier/organization/USD currency exactly as REST
+create and always sends the resolved currency. MCP still defaults to USD only
+when omitted; explicit UI payloads agree across both transports. Supplier/org
+GETs are scoped, abort stale requests and key results to their context. Failures
+leave totals unresolved and offer explicit currency selection. Org changes
+remount the line editor. Existing saved bill UI is owned by MON-139.
+
+bill-editor.ts parses decimal prices without monetary Number conversion and
+uses billWriteLineSchema and billWriteTotals for the actual extended-price
+policy, signed rounding, safe-number workflow limits and exact bigint displays.
+Unlike invoice REST create, bill REST and MCP both extend the unrounded price:
+USD 0.005 x 3 previews/saves 2 minor units. Stored unit price is rounded to 1;
+no hidden source-price precision is reconstructed by this child. Reverse-charge
+VAT remains in document tax/total but is excluded from Amount due, using the
+actual bill calculator. Missing selected rate/kind suppresses totals and saving.
+Recoverability labels are nonmoney basis-point controls; physical quantities
+remain signed numeric controls stored in hundredths, with supplied zero retained.
+Blank price defaults to zero and blank quantity to one. No posted units rescale.
+
+Invalid/unresolved preview disables both create and duplicate-confirm actions;
+submission reparses exact line inputs and rejects empty descriptions before HTTP.
+Currency/line/supplier changes invalidate preview state and clear stale duplicate
+warnings. Duplicate warn confirmation, unoverrideable block, hold and approval
+states keep their existing backend policies. Success notices use saved status,
+including a held bill saved pending approval. Monetary inputs retain text/decimal
+keyboard mode, line labels, 18 fractional price digits and horizontal scrolling.
+
+Pure and rendered React tests cover safe low digits, USD/JPY/IRR/KWD scales,
+malformed/range/product/sum/tax failures, currency fallback, signed ties, fractional
+and zero quantities, exact English totals and alerts. Migrated disposable SQL
+uses authenticated currency GETs and bill POST/read plus registered MCP create;
+independent SQL text validates prices, extended amounts, tax and quantity.
+Fixtures also assert duplicate warn/block/hold and pending approval controls.
+Bill write/read/lifecycle regressions retain tenant/role/lock protections.
+No live browser effect coverage, signed-int64 public expansion, IRR enablement,
+financial approval or parent completion is claimed. MON-139..142 remain pending;
+MON-132, MON-129 and MON-007 retain independent integration acceptance.

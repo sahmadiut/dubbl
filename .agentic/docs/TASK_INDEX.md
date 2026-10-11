@@ -274,3 +274,12 @@ MON-131 is split into bounded receivable consumers and retains final integration
 - [MON-135](../tasks/MON-135.md): Invoice list, detail and settlement UI money.
 - [MON-136](../tasks/MON-136.md): Quote, credit, receipt and prepayment UI money.
 - [MON-137](../tasks/MON-137.md): Recurring invoice UI money.
+
+
+MON-132 retains independent payable/procurement integration after these source-verified UI children:
+
+- [MON-138](../tasks/MON-138.md): Cut over bill creation UI money.
+- [MON-139](../tasks/MON-139.md): Cut over saved bill lifecycle UI money.
+- [MON-140](../tasks/MON-140.md): Cut over debit note UI money.
+- [MON-141](../tasks/MON-141.md): Cut over procurement document UI money.
+- [MON-142](../tasks/MON-142.md): Cut over recurring bill UI money.

@@ -7,7 +7,7 @@ import { ArrowLeft, Check, DollarSign, Ban, Undo2, ThumbsUp, X, GitCompareArrows
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { CurrencyInput } from "@/components/ui/currency-input";
+import { InvoiceAmountInput } from "@/components/dashboard/invoice-amount-input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
@@ -15,7 +15,8 @@ import { ContentReveal } from "@/components/ui/content-reveal";
 import { useConfirm } from "@/lib/hooks/use-confirm";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { useEntityTitle } from "@/lib/hooks/use-entity-title";
-import { formatMoney, minorUnitsToDecimal } from "@/lib/money";
+import { billUiMoney as formatMoney, billUiDecimal as minorUnitsToDecimal, billUiDocument,
+  billUiBase, billUiAmountValid, billUiPaymentAmount, billUiPaymentValid, billUiPercent, billUiSupplierCreditLines } from "@/lib/money/bill-ui";
 import { DualAmount } from "@/components/ui/dual-amount";
 import { RateNote, type RateInfo } from "@/components/ui/rate-note";
 import { ReceiptAttachments } from "@/components/dashboard/receipt-attachments";
@@ -23,23 +24,25 @@ import Link from "next/link";
 
 interface BillDetail {
   id: string; billNumber: string; issueDate: string; dueDate: string; status: string;
-  subtotal: number; taxTotal: number; total: number; amountPaid: number; amountDue: number;
+  subtotal: bigint; taxTotal: bigint; total: bigint; amountPaid: bigint; amountDue: bigint;
   currencyCode: string;
   contactId: string;
   notes: string | null; contact: { name: string } | null;
   rejectionReason: string | null;
-  lines: { id: string; description: string; quantity: number; unitPrice: number; amount: number; goodsReceiptLineId: string | null; account: { code: string; name: string } | null }[];
+  lines: { id: string; description: string; quantity: number; unitPrice: bigint; amount: bigint; taxAmount: bigint;
+    accountId?: string | null; taxRateId?: string | null; costCenterId?: string | null; discountPercent?: number;
+    taxRate?: { id: string } | null; goodsReceiptLineId: string | null; account: { id: string; code: string; name: string } | null }[];
 }
 
 interface BaseAmounts {
   baseCurrency: string;
   rate: number | null;
   amounts: {
-    total: number | null;
-    amountDue: number | null;
-    amountPaid: number | null;
-    subtotal: number | null;
-    taxTotal: number | null;
+    total: bigint | null;
+    amountDue: bigint | null;
+    amountPaid: bigint | null;
+    subtotal: bigint | null;
+    taxTotal: bigint | null;
   };
   status?: RateInfo;
 }
@@ -73,9 +76,13 @@ export default function BillDetailPage() {
   const [b, setB] = useState<BillDetail | null>(null);
   const [base, setBase] = useState<BaseAmounts | null>(null);
   const [loading, setLoading] = useState(true);
+  const [moneyError, setMoneyError] = useState("");
+  const [loadedContext, setLoadedContext] = useState("");
+  const [refresh, setRefresh] = useState(0);
   const [payAmount, setPayAmount] = useState("");
   const [payDate, setPayDate] = useState(new Date().toISOString().split("T")[0]);
   const [payOpen, setPayOpen] = useState(false);
+  const [paying, setPaying] = useState(false);
   const [creditingSupplier, setCreditingSupplier] = useState(false);
   const [approving, setApproving] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
@@ -86,22 +93,35 @@ export default function BillDetailPage() {
   useDocumentTitle("Purchases · Bill Details");
   useEntityTitle(b?.billNumber);
 
-  const loadBill = useCallback(() => {
-    if (!orgId) return;
-    fetch(`/api/v1/bills/${id}`, { headers: { "x-organization-id": orgId } })
-      .then((r) => r.json())
-      .then((data) => { if (data.bill) setB(data.bill); if (data.base) setBase(data.base); })
-      .finally(() => setLoading(false));
-  }, [id, orgId]);
+  const context = `${orgId}:${id}`;
+  const loadBill = useCallback(() => setRefresh(value => value + 1), []);
 
   useEffect(() => {
-    loadBill();
-  }, [loadBill]);
+    if (!orgId) return;
+    const controller = new AbortController();
+    setLoading(true); setB(null); setBase(null); setMoneyError("");
+    setPayOpen(false); setPayAmount("");
+    fetch(`/api/v1/bills/${id}`, { headers: { "x-organization-id": orgId }, signal: controller.signal })
+      .then(async response => {
+        if (response.status === 404) return { bill: null, base: null };
+        if (!response.ok) throw new Error("Bill read failed");
+        return response.json();
+      })
+      .then(data => {
+        if (data.bill === null) return;
+        const document = billUiDocument(data.bill) as BillDetail;
+        const converted = data.base ? billUiBase(data.base) as BaseAmounts : null;
+        if (!controller.signal.aborted) { setB(document); setBase(converted); }
+      })
+      .catch(() => { if (!controller.signal.aborted) setMoneyError("Couldn't load valid bill amounts. Reload this bill before continuing."); })
+      .finally(() => { if (!controller.signal.aborted) { setLoadedContext(context); setLoading(false); } });
+    return () => controller.abort();
+  }, [id, orgId, refresh, context]);
 
   async function handleReceive() {
-    if (!orgId) return;
+    if (!orgId || !b || loadedContext !== context) return;
     const res = await fetch(`/api/v1/bills/${id}/receive`, { method: "POST", headers: { "x-organization-id": orgId } });
-    if (res.ok) { const data = await res.json(); setB((prev) => prev ? { ...prev, ...data.bill } : prev); toast.success("Bill added to your books"); }
+    if (res.ok) { loadBill(); toast.success("Bill added to your books"); }
     else toast.error("Couldn't add this bill to your books");
   }
 
@@ -150,15 +170,21 @@ export default function BillDetailPage() {
   }
 
   async function handlePay() {
-    if (!orgId) return;
-    const amount = Math.round(parseFloat(payAmount) * 100);
-    if (!amount || amount <= 0) { toast.error("Enter a valid amount"); return; }
-    const res = await fetch(`/api/v1/bills/${id}/pay`, {
-      method: "POST", headers: { "Content-Type": "application/json", "x-organization-id": orgId },
-      body: JSON.stringify({ amount, date: payDate }),
-    });
-    if (res.ok) { const data = await res.json(); setB((prev) => prev ? { ...prev, ...data.bill } : prev); setPayOpen(false); toast.success("Payment recorded"); }
-    else toast.error("Failed");
+    if (!orgId || !b || loadedContext !== context || paying) return;
+    let amount: { amountMinor: string };
+    try {
+      amount = billUiPaymentAmount(payAmount, b.currencyCode, b.amountDue);
+    } catch { toast.error("Enter a valid amount no greater than the balance due"); return; }
+    setPaying(true);
+    try {
+      const res = await fetch(`/api/v1/bills/${id}/pay`, {
+        method: "POST", headers: { "Content-Type": "application/json", "x-organization-id": orgId },
+        body: JSON.stringify({ ...amount, date: payDate }),
+      });
+      if (res.ok) { loadBill(); setPayOpen(false); toast.success("Payment recorded"); }
+      else { const data = await res.json().catch(() => ({})); toast.error(typeof data.error === "string" ? data.error : "Couldn't record this payment"); }
+    } catch { toast.error("Couldn't record this payment. Reload the bill before trying again."); }
+    finally { setPaying(false); }
   }
 
   async function handleVoid() {
@@ -171,7 +197,7 @@ export default function BillDetailPage() {
     });
     if (!confirmed) return;
     const res = await fetch(`/api/v1/bills/${id}/void`, { method: "POST", headers: { "x-organization-id": orgId } });
-    if (res.ok) { const data = await res.json(); setB((prev) => prev ? { ...prev, ...data.bill } : prev); toast.success("Bill cancelled"); }
+    if (res.ok) { loadBill(); toast.success("Bill cancelled"); }
   }
 
   // Record a supplier credit (a "debit note") — money the supplier owes you back,
@@ -197,11 +223,7 @@ export default function BillDetailPage() {
           issueDate: new Date().toISOString().split("T")[0],
           currencyCode: b.currencyCode,
           reference: b.billNumber,
-          lines: b.lines.map((l) => ({
-            description: l.description,
-            quantity: l.quantity / 100,
-            unitPrice: l.unitPrice / 100,
-          })),
+          lines: billUiSupplierCreditLines(b.lines, b.currencyCode),
         }),
       });
       if (res.ok) {
@@ -216,7 +238,9 @@ export default function BillDetailPage() {
     }
   }
 
-  if (loading) return <BrandLoader />;
+  if (loading || (orgId && loadedContext !== context)) return <BrandLoader />;
+
+  if (moneyError) return <div role="alert" className="text-sm text-destructive">{moneyError}</div>;
 
   if (!b) {
     return (
@@ -317,13 +341,15 @@ export default function BillDetailPage() {
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <Label>Amount</Label>
-                      <CurrencyInput prefix="$" value={payAmount} onChange={setPayAmount} placeholder={minorUnitsToDecimal(b.amountDue, b.currencyCode)} />
+                      <InvoiceAmountInput currency={b.currencyCode} value={payAmount} onChange={setPayAmount} placeholder={minorUnitsToDecimal(b.amountDue, b.currencyCode)} />
+                      {billUiAmountValid(payAmount, b.currencyCode) && !billUiPaymentValid(payAmount, b.currencyCode, b.amountDue) &&
+                        <p role="alert" className="text-xs text-destructive">Payment cannot exceed the balance due.</p>}
                     </div>
                     <div className="space-y-2">
                       <Label>Date</Label>
                       <Input type="date" value={payDate} onChange={(e) => setPayDate(e.target.value)} />
                     </div>
-                    <Button onClick={handlePay} className="w-full bg-emerald-600 hover:bg-emerald-700">Record Payment</Button>
+                    <Button onClick={handlePay} loading={paying} disabled={paying || !billUiPaymentValid(payAmount, b.currencyCode, b.amountDue)} className="w-full bg-emerald-600 hover:bg-emerald-700">Record Payment</Button>
                   </div>
                 </DialogContent>
               </Dialog>
@@ -398,7 +424,7 @@ export default function BillDetailPage() {
                         <p className="text-xs text-muted-foreground mt-0.5">{line.account.code} · {line.account.name}</p>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-right font-mono tabular-nums">{(line.quantity / 100).toFixed(0)}</td>
+                    <td className="px-4 py-3 text-right font-mono tabular-nums">{line.quantity / 100}</td>
                     <td className="px-4 py-3 text-right font-mono tabular-nums text-muted-foreground">{formatMoney(line.unitPrice, b.currencyCode)}</td>
                     <td className="px-4 py-3 text-right font-mono tabular-nums font-medium sm:pr-6">{formatMoney(line.amount, b.currencyCode)}</td>
                   </tr>
@@ -415,7 +441,7 @@ export default function BillDetailPage() {
                   <span className="text-muted-foreground">Subtotal</span>
                   <span className="font-mono tabular-nums">{formatMoney(b.subtotal, b.currencyCode)}</span>
                 </div>
-                {b.taxTotal > 0 && (
+                {b.taxTotal > 0n && (
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Tax</span>
                     <span className="font-mono tabular-nums">{formatMoney(b.taxTotal, b.currencyCode)}</span>
@@ -453,12 +479,12 @@ export default function BillDetailPage() {
           <div className="rounded-xl border bg-card p-5">
             <div className="flex items-center justify-between mb-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Payment Status</p>
-              <span className="text-xs font-mono text-muted-foreground">{b.total > 0 ? Math.round((b.amountPaid / b.total) * 100) : 0}%</span>
+              <span className="text-xs font-mono text-muted-foreground">{billUiPercent(b.amountPaid, b.total)}%</span>
             </div>
             <div className="h-2.5 w-full rounded-full bg-muted overflow-hidden mb-4">
               <div
                 className="h-full rounded-full bg-emerald-500 transition-all"
-                style={{ width: `${b.total > 0 ? Math.round((b.amountPaid / b.total) * 100) : 0}%` }}
+                style={{ width: `${billUiPercent(b.amountPaid, b.total)}%` }}
               />
             </div>
             <div className="grid grid-cols-3 gap-3">
@@ -541,7 +567,7 @@ export default function BillDetailPage() {
                   <div className="min-w-0">
                     <p className="text-sm truncate">{line.description}</p>
                     <p className="text-xs text-muted-foreground">
-                      {(line.quantity / 100).toFixed(0)} × {formatMoney(line.unitPrice, b.currencyCode)}
+                      {line.quantity / 100} × {formatMoney(line.unitPrice, b.currencyCode)}
                     </p>
                   </div>
                   {line.goodsReceiptLineId ? (

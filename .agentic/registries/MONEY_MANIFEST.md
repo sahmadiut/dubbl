@@ -1,5 +1,18 @@
 # Money and FX boundary manifest
 
+## MON-139 saved bill lifecycle UI
+
+[CORE_UI_MONEY_CUTOVER](CORE_UI_MONEY_CUTOVER.md#mon-139-saved-bill-lifecycle)
+owns saved bill list/detail/line/source/base display, per-currency status totals
+and latest-100 sample aging, exact progress, payment amountMinor and supplier-credit
+unitPriceExact copies. Strict numeric/Minor aliases become bigint without changing
+stored units. Shared InvoiceAmountInput and DualAmount render explicit currencies;
+only bounded progress/bar ratios become Number. Quantity hundredths and tax/discount
+basis points retain units. Real REST/MCP/SQL fixtures preserve supported copy fields
+and authoritative domain controls. No bill monetary editor/copy button exists in
+these pages. Sibling debit-note/procurement/recurring UI and combined parents remain
+open. No schema, rescaling or production flag changes.
+
 ## MON-135 saved invoices and settlement UI
 
 [CORE_UI_MONEY_CUTOVER](CORE_UI_MONEY_CUTOVER.md#mon-135-saved-invoices-and-settlement-ui)

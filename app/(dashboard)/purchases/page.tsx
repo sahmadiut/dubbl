@@ -12,7 +12,6 @@ import {
   Clock,
   CheckCircle2,
   Loader2,
-  FileText,
 } from "lucide-react";
 import { Section } from "@/components/dashboard/section";
 import { DataTable, type Column } from "@/components/dashboard/data-table";
@@ -28,7 +27,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatMoney } from "@/lib/money";
+import { billUiMoney as formatMoney, billUiList, billUiCounts, billUiAging, billUiPercent } from "@/lib/money/bill-ui";
+import { BillCurrencyAmounts } from "@/components/dashboard/bill-currency-amounts";
 import { devDelay } from "@/lib/dev-delay";
 import { useCreateDrawer } from "@/components/dashboard/create-drawer";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
@@ -42,8 +42,8 @@ interface Bill {
   issueDate: string;
   dueDate: string;
   status: string;
-  total: number;
-  amountDue: number;
+  total: bigint;
+  amountDue: bigint;
   currencyCode: string;
   contact: { name: string } | null;
 }
@@ -162,7 +162,7 @@ function buildColumns(): Column<Bill>[] {
       className: "w-28 text-right",
       render: (r) => {
         const color =
-          r.amountDue > 0 && r.status !== "draft" ? "text-amber-600" : "";
+          r.amountDue > 0n && r.status !== "draft" ? "text-amber-600" : "";
         return (
           <span className={`font-mono text-sm tabular-nums ${color}`}>
             {formatMoney(r.amountDue, r.currencyCode)}
@@ -178,7 +178,12 @@ export default function BillsPage() {
   const { open: openDrawer } = useCreateDrawer();
   const [bills, setBills] = useState<Bill[]>([]);
   const [allBills, setAllBills] = useState<Bill[]>([]);
-  const [countsData, setCountsData] = useState<{ counts: Record<string, { count: number; amount: number }>; total: number } | null>(null);
+  const [countsData, setCountsData] = useState<ReturnType<typeof billUiCounts> | null>(null);
+  const [listTotal, setListTotal] = useState(0);
+  const [loadedOrg, setLoadedOrg] = useState<string | null>(null);
+  const [moneyError, setMoneyError] = useState("");
+  const [overviewError, setOverviewError] = useState("");
+  const requestGeneration = useRef(0);
   const [loading, setLoading] = useState(true);
   const [refetching, setRefetching] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
@@ -216,79 +221,95 @@ export default function BillsPage() {
   // Fetch status counts + all bills for overview (once, not affected by filters)
   useEffect(() => {
     if (!orgId) return;
-    let cancelled = false;
+    const controller = new AbortController();
+    setCountsData(null); setAllBills([]); setOverviewError("");
     fetch(`/api/v1/bills/counts`, {
-      headers: { "x-organization-id": orgId },
+      headers: { "x-organization-id": orgId }, signal: controller.signal,
     })
-      .then((r) => r.json())
+      .then(async r => { if (!r.ok) throw new Error("Counts unavailable"); return r.json(); })
       .then((data) => {
-        if (!cancelled && data.counts) setCountsData(data);
-      });
-    fetch(`/api/v1/bills?limit=200`, {
-      headers: { "x-organization-id": orgId },
+        const counts = billUiCounts(data);
+        if (!controller.signal.aborted) setCountsData(counts);
+      })
+      .catch(() => { if (!controller.signal.aborted) setOverviewError("Bill overview totals are unavailable. Amounts in the list retain each bill's currency."); });
+    fetch(`/api/v1/bills?limit=100`, {
+      headers: { "x-organization-id": orgId }, signal: controller.signal,
     })
-      .then((r) => r.json())
+      .then(async r => { if (!r.ok) throw new Error("Aging unavailable"); return r.json(); })
       .then((data) => {
-        if (!cancelled && data.data) setAllBills(data.data);
-      });
-    return () => { cancelled = true; };
+        const rows = data.data.map(billUiList) as Bill[];
+        // Validate dates/aggregate bounds before publishing overview state.
+        billUiAging(rows);
+        if (!controller.signal.aborted) setAllBills(rows);
+      })
+      .catch(() => { if (!controller.signal.aborted) setOverviewError("Some bill overview amounts are unavailable. Reload to try again."); });
+    return () => controller.abort();
   }, [orgId]);
 
   // Reset and fetch page 1 when filters change
   useEffect(() => {
     if (!orgId) return;
     let cancelled = false;
+    const controller = new AbortController();
+    const generation = requestGeneration.current + 1;
+    requestGeneration.current = generation;
     const isRefetch = !loading;
+    setBills([]); setListTotal(0); setMoneyError(""); setLoadingMore(false);
 
     setPage(1);
     setHasMore(true);
     if (isRefetch) setRefetching(true);
 
     fetch(`/api/v1/bills?${buildParams(1)}`, {
-      headers: { "x-organization-id": orgId },
+      headers: { "x-organization-id": orgId }, signal: controller.signal,
     })
-      .then((r) => r.json())
+      .then(async r => { if (!r.ok) throw new Error("Bills unavailable"); return r.json(); })
       .then((data) => {
         if (cancelled) return;
-        if (data.data) setBills(data.data);
+        if (data.data) setBills(data.data.map(billUiList) as Bill[]);
         if (data.pagination) {
-
+          setListTotal(data.pagination.total);
           setHasMore(data.pagination.page < data.pagination.totalPages);
         }
       })
       .then(() => devDelay())
+      .catch(() => { if (!cancelled) setMoneyError("Couldn't load valid bill amounts. Reload to try again."); })
       .finally(() => {
         if (!cancelled) {
+          setLoadedOrg(orgId);
           setLoading(false);
           setRefetching(false);
           setFetchKey((k) => k + 1);
         }
       });
 
-    return () => { cancelled = true; };
+    return () => { cancelled = true; controller.abort(); requestGeneration.current = generation + 1; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orgId, statusFilter, debouncedSearch, sortBy, sortOrder, dateFrom, dateTo]);
 
   // Load next page
   const loadMore = useCallback(() => {
-    if (loadingMore || !hasMore || !orgId) return;
+    if (loadingMore || refetching || moneyError || !hasMore || !orgId) return;
     const nextPage = page + 1;
+    const generation = requestGeneration.current;
     setLoadingMore(true);
 
     fetch(`/api/v1/bills?${buildParams(nextPage)}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then(async r => { if (!r.ok) throw new Error("Bills unavailable"); return r.json(); })
       .then((data) => {
-        if (data.data) setBills((prev) => [...prev, ...data.data]);
+        if (generation !== requestGeneration.current) return;
+        if (data.data) { const rows = data.data.map(billUiList) as Bill[]; setBills(prev => [...prev, ...rows]); }
         if (data.pagination) {
           setPage(data.pagination.page);
 
           setHasMore(data.pagination.page < data.pagination.totalPages);
         }
       })
-      .finally(() => setLoadingMore(false));
-  }, [loadingMore, hasMore, orgId, page, buildParams]);
+      .catch(() => { if (generation === requestGeneration.current) setMoneyError("Couldn't load the next page of valid bill amounts."); })
+      .finally(() => { if (generation === requestGeneration.current) setLoadingMore(false); });
+  }, [loadingMore, refetching, moneyError, hasMore, orgId, page, buildParams]);
 
   // IntersectionObserver for infinite scroll
   useEffect(() => {
@@ -313,50 +334,7 @@ export default function BillsPage() {
     });
   }, []);
 
-  const outstanding = useMemo(() => {
-    if (!countsData) return 0;
-    return ["received", "partial", "overdue"].reduce(
-      (s, st) => s + (countsData.counts[st]?.amount || 0), 0
-    );
-  }, [countsData]);
-
-  const overdue = countsData?.counts.overdue?.amount || 0;
-
-  const aging = useMemo(() => {
-    const now = new Date();
-    const buckets = {
-      current: { count: 0, amount: 0 },
-      "1-30": { count: 0, amount: 0 },
-      "31-60": { count: 0, amount: 0 },
-      "60+": { count: 0, amount: 0 },
-    };
-    allBills
-      .filter(
-        (b) =>
-          ["received", "partial", "overdue"].includes(b.status) &&
-          b.amountDue > 0
-      )
-      .forEach((bill) => {
-        const due = new Date(bill.dueDate);
-        const days = Math.floor(
-          (now.getTime() - due.getTime()) / 86400000
-        );
-        if (days <= 0) {
-          buckets.current.count++;
-          buckets.current.amount += bill.amountDue;
-        } else if (days <= 30) {
-          buckets["1-30"].count++;
-          buckets["1-30"].amount += bill.amountDue;
-        } else if (days <= 60) {
-          buckets["31-60"].count++;
-          buckets["31-60"].amount += bill.amountDue;
-        } else {
-          buckets["60+"].count++;
-          buckets["60+"].amount += bill.amountDue;
-        }
-      });
-    return buckets;
-  }, [allBills]);
+  const agingGroups = useMemo(() => billUiAging(allBills), [allBills]);
 
   // Bills due within 7 days (not paid/void/draft)
   const dueSoon = useMemo(() => {
@@ -386,9 +364,9 @@ export default function BillsPage() {
     return c;
   }, [countsData]);
 
-  if (loading) return <BrandLoader />;
+  if (loading || loadedOrg !== orgId) return <BrandLoader />;
 
-  if (!loading && (countsData?.total || 0) === 0 && statusFilter === "all" && !debouncedSearch && !hasFilters) {
+  if (!loading && (countsData?.total ?? listTotal) === 0 && !moneyError && !overviewError && statusFilter === "all" && !debouncedSearch && !hasFilters) {
     return (
       <ContentReveal>
         <div className="relative">
@@ -486,14 +464,10 @@ export default function BillsPage() {
     );
   }
 
-  const agingTotal =
-    aging.current.amount +
-    aging["1-30"].amount +
-    aging["31-60"].amount +
-    aging["60+"].amount;
-
   return (
     <ContentReveal className="space-y-10">
+      {moneyError && <p role="alert" className="text-sm text-destructive">{moneyError}</p>}
+      {overviewError && <p role="alert" className="text-sm text-destructive">{overviewError}</p>}
       {/* Overview */}
       <div className="rounded-xl border bg-card overflow-hidden">
         {/* Hero stats row */}
@@ -502,7 +476,7 @@ export default function BillsPage() {
             <div>
               <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Total Outstanding</p>
               <p className="mt-1 text-3xl sm:text-4xl font-bold font-mono tabular-nums tracking-tighter">
-                {formatMoney(outstanding)}
+                <BillCurrencyAmounts amounts={countsData?.currencies.map(group => ({ currencyCode: group.currencyCode, amount: group.outstanding })) ?? null} />
               </p>
             </div>
             <div className="flex gap-6 sm:gap-8">
@@ -511,19 +485,19 @@ export default function BillsPage() {
                   <span className="size-1.5 rounded-full bg-red-500" />Overdue
                 </p>
                 <p className="mt-0.5 text-lg font-semibold font-mono tabular-nums text-red-600 dark:text-red-400">
-                  {formatMoney(overdue)}
+                  <BillCurrencyAmounts amounts={countsData?.currencies.map(group => ({ currencyCode: group.currencyCode, amount: group.overdue })) ?? null} />
                 </p>
               </div>
               <div>
                 <p className="text-[11px] text-muted-foreground">Bills</p>
-                <p className="mt-0.5 text-lg font-semibold tabular-nums">{countsData?.total || 0}</p>
+                <p className="mt-0.5 text-lg font-semibold tabular-nums">{countsData?.total ?? listTotal}</p>
               </div>
               <div>
                 <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
                   <span className="size-1.5 rounded-full bg-emerald-500" />Paid
                 </p>
                 <p className="mt-0.5 text-lg font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
-                  {statusCounts.paid || 0}
+                  {countsData ? statusCounts.paid || 0 : "—"}
                 </p>
               </div>
             </div>
@@ -531,9 +505,9 @@ export default function BillsPage() {
         </div>
 
         {/* Aging bar + legend */}
-        {agingTotal > 0 && (
-          <div className="border-t px-5 py-4 sm:px-6">
-            <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground mb-3">Aging</p>
+        {agingGroups.map(({ currencyCode, buckets: aging, total: agingTotal }) => (
+          <div key={currencyCode} className="border-t px-5 py-4 sm:px-6">
+            <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground mb-3">Aging · {currencyCode} (latest 100 bills)</p>
             <div className="h-2.5 w-full rounded-full overflow-hidden flex mb-3">
               {([
                 { key: "current" as const, color: "bg-emerald-500" },
@@ -541,7 +515,7 @@ export default function BillsPage() {
                 { key: "31-60" as const, color: "bg-orange-500" },
                 { key: "60+" as const, color: "bg-red-500" },
               ] as const).map(({ key, color }) => {
-                const pct = (aging[key].amount / agingTotal) * 100;
+                const pct = billUiPercent(aging[key].amount, agingTotal, 2);
                 if (pct === 0) return null;
                 return <div key={key} className={`${color} h-full first:rounded-l-full last:rounded-r-full`} style={{ width: `${pct}%` }} />;
               })}
@@ -559,14 +533,14 @@ export default function BillsPage() {
                     {label}
                   </div>
                   <p className="text-xs font-mono font-medium tabular-nums">
-                    {formatMoney(aging[key].amount)}
+                    {formatMoney(aging[key].amount, currencyCode)}
                     <span className="text-muted-foreground font-normal ml-1.5">({aging[key].count})</span>
                   </p>
                 </div>
               ))}
             </div>
           </div>
-        )}
+        ))}
 
         {/* Due soon */}
         {dueSoon.length > 0 && (
@@ -596,7 +570,7 @@ export default function BillsPage() {
                     </div>
                     <div className="text-right shrink-0">
                       <p className="text-xs font-mono font-semibold tabular-nums">
-                        {formatMoney(b.amountDue)}
+                        {formatMoney(b.amountDue, b.currencyCode)}
                       </p>
                       <p className="text-[11px] text-amber-600 dark:text-amber-400">
                         {days === 0 ? "Today" : days === 1 ? "Tomorrow" : `${days} days`}
@@ -618,11 +592,11 @@ export default function BillsPage() {
             <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
               <Tabs value={statusFilter} onValueChange={setStatusFilter}>
                 <TabsList>
-                  <TabsTrigger value="all" className="whitespace-nowrap">All ({countsData?.total || 0})</TabsTrigger>
+                  <TabsTrigger value="all" className="whitespace-nowrap">All ({countsData?.total ?? listTotal})</TabsTrigger>
                   <TabsTrigger value="draft" className="whitespace-nowrap">Draft ({statusCounts.draft || 0})</TabsTrigger>
                   <TabsTrigger value="received" className="whitespace-nowrap" title="Bills you've approved and added to your books">In your books ({statusCounts.received || 0})</TabsTrigger>
                   <TabsTrigger value="partial" className="whitespace-nowrap">Part paid ({statusCounts.partial || 0})</TabsTrigger>
-                  <TabsTrigger value="paid" className="whitespace-nowrap">Paid ({statusCounts.paid || 0})</TabsTrigger>
+                  <TabsTrigger value="paid" className="whitespace-nowrap">Paid ({countsData ? statusCounts.paid || 0 : "—"})</TabsTrigger>
                   <TabsTrigger value="overdue" className="whitespace-nowrap">Overdue ({statusCounts.overdue || 0})</TabsTrigger>
                 </TabsList>
               </Tabs>

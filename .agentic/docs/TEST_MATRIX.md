@@ -1,5 +1,22 @@
 # Verification matrix
 
+## MON-139 saved bill lifecycle UI money
+
+- `tests/bill-ui-money.test.ts`: exact numeric/Minor alias and legacy validation,
+  currency scales, nullable base, payment precision/range/due guards, currency
+  grouping, bigint aging/progress and accepted supplier-credit dimensions.
+- `tests/bill-ui-components.test.ts`: actual React renders for separate English
+  currency totals, safe low digits, unavailable dashes, scale-aware inputs,
+  accessible labels/decimal mode/errors and missing FX base display.
+- `tests/integration/bill-ui-money.test.ts` and worker: migrated disposable
+  loopback PostgreSQL; authenticated REST and registered MCP create/read/list/
+  counts/draft-update/recognition/pay/debit-create plus independent SQL text
+  checks across USD/JPY/synthetic IRR/KWD, safe-edge prices and nullable FX.
+  Mixed-status-currency counts fail while individually tagged list money reads.
+- Existing bill-writes, bill-reads, bill-lifecycle, payment-settlements and
+  debit-notes suites retain tenant/role/lock/rollback/domain checks. No live browser
+  effects, screenshots, parent acceptance or production qualification is inferred.
+
 ## MON-135 saved invoice UI money
 
 - `tests/invoice-ui-money.test.ts`: adopted aliases, safe limits, currency-scale

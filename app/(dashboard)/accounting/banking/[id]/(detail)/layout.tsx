@@ -19,7 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
-import { formatMoney } from "@/lib/money";
+import { bankUiAccount, bankUiTransaction, bankUiDocument, bankUiCandidate, bankUiPreview, bankUiMoney as formatMoney, bankUiAbs } from "@/lib/money/bank-ui";
 import { useEntityTitle } from "@/lib/hooks/use-entity-title";
 import { cn } from "@/lib/utils";
 import type {
@@ -76,8 +76,8 @@ interface BankAccountContextValue {
     unreconciled: number;
     reconciled: number;
     excluded: number;
-    credits: number;
-    debits: number;
+    credits: bigint;
+    debits: bigint;
     total: number;
   };
 }
@@ -168,15 +168,17 @@ export default function BankAccountDetailLayout({ children }: { children: React.
     const headers = { "x-organization-id": orgId };
 
     Promise.all([
-      fetch(`/api/v1/bank-accounts/${id}`, { headers }).then((r) => r.json()),
-      fetch(`/api/v1/bank-accounts/${id}/transactions`, { headers }).then((r) => r.json()),
-      fetch(`/api/v1/bank-accounts/${id}/imports`, { headers }).then((r) => r.json()),
+      fetch(`/api/v1/bank-accounts/${id}`, { headers }).then((r) => { if (!r.ok) throw new Error("Bank data is unavailable"); return r.json(); }),
+      fetch(`/api/v1/bank-accounts/${id}/transactions`, { headers }).then((r) => { if (!r.ok) throw new Error("Bank data is unavailable"); return r.json(); }),
+      fetch(`/api/v1/bank-accounts/${id}/imports`, { headers }).then((r) => { if (!r.ok) throw new Error("Bank data is unavailable"); return r.json(); }),
     ])
       .then(([accountData, txData, importData]) => {
-        setAccount(accountData.bankAccount || null);
-        setTransactions(txData.data || []);
+        const loaded = accountData.bankAccount ? bankUiAccount(accountData.bankAccount) as unknown as BankAccountDetail : null;
+        setAccount(loaded);
+        setTransactions((txData.data || []).map((row: Record<string, unknown>) => bankUiTransaction(row, loaded?.currencyCode)) as Transaction[]);
         setImports(importData.imports || []);
       })
+      .catch(() => { setAccount(null); setTransactions([]); toast.error("Bank amounts are unavailable. Reload to try again."); })
       .finally(() => setLoading(false));
   }, [id, orgId]);
 
@@ -188,15 +190,15 @@ export default function BankAccountDetailLayout({ children }: { children: React.
   useEffect(() => {
     if (!orgId) return;
     fetch(`/api/v1/bank-accounts`, { headers: { "x-organization-id": orgId } })
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("Bank data is unavailable"); return r.json(); })
       .then((data) => {
-        const list = (data.bankAccounts ?? []).map((b: {
+        const list = (data.bankAccounts ?? []).map(bankUiAccount).map((b: {
           id: string;
           accountName: string;
           bankName: string | null;
           currencyCode: string;
           accountType: BankAccountSummary["accountType"];
-          balance: number;
+          balance: bigint;
           chartAccountId: string | null;
         }) => ({
           id: b.id,
@@ -218,10 +220,10 @@ export default function BankAccountDetailLayout({ children }: { children: React.
     const excluded = transactions.filter((tx) => tx.status === "excluded").length;
     const credits = transactions
       .filter((tx) => tx.amount > 0 && tx.status !== "excluded")
-      .reduce((sum, tx) => sum + tx.amount, 0);
+      .reduce((sum, tx) => sum + tx.amount, 0n);
     const debits = transactions
       .filter((tx) => tx.amount < 0 && tx.status !== "excluded")
-      .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+      .reduce((sum, tx) => sum + bankUiAbs(tx.amount), 0n);
     return { unreconciled, reconciled, excluded, credits, debits, total: transactions.length };
   }, [transactions]);
 
@@ -289,10 +291,10 @@ export default function BankAccountDetailLayout({ children }: { children: React.
       });
       if (res.ok) {
         const data = await res.json();
-        setMatchBills(data.openBills || []);
-        setMatchSuggestions(data.suggestedMatches || []);
+        setMatchBills((data.openBills || []).map((row: Record<string, unknown>) => bankUiDocument(row, account!.currencyCode)) as unknown as OpenBill[]);
+        setMatchSuggestions((data.suggestedMatches || []).map((row: Record<string, unknown>) => bankUiCandidate(row, account!.currencyCode)) as unknown as SuggestedMatch[]);
       }
-    } finally {
+    } catch { toast.error("Matching amounts are unavailable"); } finally {
       setMatchLoading(false);
     }
   }
@@ -317,10 +319,10 @@ export default function BankAccountDetailLayout({ children }: { children: React.
       });
       if (res.ok) {
         const data = await res.json();
-        setMatchInvoices(data.openInvoices || []);
-        setMatchInvoiceSuggestions(data.suggestedMatches || []);
+        setMatchInvoices((data.openInvoices || []).map((row: Record<string, unknown>) => bankUiDocument(row, account!.currencyCode)) as unknown as OpenInvoice[]);
+        setMatchInvoiceSuggestions((data.suggestedMatches || []).map((row: Record<string, unknown>) => bankUiCandidate(row, account!.currencyCode)) as unknown as SuggestedMatch[]);
       }
-    } finally {
+    } catch { toast.error("Matching amounts are unavailable"); } finally {
       setMatchInvoiceLoading(false);
     }
   }
@@ -341,12 +343,12 @@ export default function BankAccountDetailLayout({ children }: { children: React.
       });
       if (res.ok) {
         const data = await res.json();
-        setUnifiedInvoices(data.openInvoices || []);
-        setUnifiedBills(data.openBills || []);
-        setUnifiedDocSuggestions(data.suggestedMatches || []);
-        setUnifiedExistingMatches(data.existingMatches || []);
+        setUnifiedInvoices((data.openInvoices || []).map((row: Record<string, unknown>) => bankUiDocument(row, account!.currencyCode)) as unknown as OpenInvoice[]);
+        setUnifiedBills((data.openBills || []).map((row: Record<string, unknown>) => bankUiDocument(row, account!.currencyCode)) as unknown as OpenBill[]);
+        setUnifiedDocSuggestions((data.suggestedMatches || []).map((row: Record<string, unknown>) => bankUiCandidate(row, account!.currencyCode)) as unknown as SuggestedMatch[]);
+        setUnifiedExistingMatches((data.existingMatches || []).map((row: Record<string, unknown>) => bankUiCandidate(row, account!.currencyCode)) as unknown as ExistingMatch[]);
       }
-    } finally {
+    } catch { toast.error("Matching amounts are unavailable"); } finally {
       setUnifiedMatchLoading(false);
     }
   }
@@ -377,7 +379,7 @@ export default function BankAccountDetailLayout({ children }: { children: React.
       });
       const data = await res.json();
       if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : "Request failed");
-      setPreview(data.preview);
+      setPreview(bankUiPreview(data.preview, account!.currencyCode) as unknown as ImportPreview);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to preview");
     } finally {

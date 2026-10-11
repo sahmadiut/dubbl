@@ -1,5 +1,21 @@
 # Verification matrix
 
+## MON-150 banking and reconciliation UI money
+
+- `tests/bank-ui-money.test.ts`: raw safe saved amounts/aliases, bank scales,
+  malformed/conflicting/range failures, exact decimal transfer/full-line match
+  policy, bigint splits/tax/grouped totals, preview/report/base currency and
+  raw-bank-minor rule thresholds/fixed aliases.
+- `tests/integration/bank-ui-money.test.ts`: actual REST handlers and linked
+  MCP SDK, isolated migrated PostgreSQL, independent SQL-text expectations.
+  USD/JPY/synthetic IRR/KWD statement preview/import/read, category splits,
+  recognized document payment payloads, transfer preview/save through safe
+  maximum, account reads and reconciliation session/proof equality.
+- Re-run bank accounts/imports/transfers/document matches/categorization/
+  reconciliations/transaction reads/rules for existing negative transport,
+  ownership, locks, replay and concurrency coverage. No build/dev server or
+  production/foreign-reconciliation qualification.
+
 ## MON-131 combined receivable document UI money
 
 - `receivable-document-ui.test.ts` migrates an isolated PostgreSQL database and

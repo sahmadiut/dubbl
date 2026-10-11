@@ -1,3 +1,16 @@
+## MON-150 banking and reconciliation UI
+
+Banking list/detail/context, statement import previews, matching/categorization/
+expense/splits/transfers, sessions/proof, settings/rules and the bank drawers use
+`bank-ui.ts` for checked saved Minor aliases, bank-scale exact decimal inputs,
+bigint arithmetic and currency-aware English presentation. Account summaries
+group currencies; reconciliation keeps bank/base values separate and refuses
+mixed-unit differences/completion. Rule fixed/threshold input intentionally uses
+raw bank minor-unit integer text. Existing safe numeric wire bounds and backend
+currency/history/authorization/lock policies remain. See CORE_UI_MONEY_CUTOVER
+MON-150 and the focused behavior/REST/MCP/SQL fixture. MON-133/MON-129/MON-007
+integration acceptance, full-int64 and production IRR qualification stay open.
+
 ## MON-149 expense and mileage UI
 
 Expense create/edit/list/detail/pay display and recurring expense controls use

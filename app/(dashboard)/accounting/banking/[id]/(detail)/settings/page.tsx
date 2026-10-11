@@ -1,4 +1,6 @@
 "use client";
+import { bankUiAccount } from "@/lib/money/bank-ui";
+import type { BankAccountDetail } from "../../_components";
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -60,7 +62,7 @@ export default function BankSettingsPage() {
       });
       if (!res.ok) throw new Error((await res.json()).error);
       const data = await res.json();
-      setAccount(() => data.bankAccount);
+      setAccount(() => bankUiAccount(data.bankAccount) as unknown as BankAccountDetail);
       toast.success("Account updated");
       refetch();
     } catch (err) {

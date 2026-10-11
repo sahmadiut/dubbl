@@ -1,3 +1,37 @@
+## MON-150 banking and reconciliation UI
+
+Source verified 2026-10-12. `lib/money/bank-ui.ts` owns validated saved numeric/
+Minor bridges, exact decimal bank input, signed balances, grouped currency totals,
+full-statement document matching, transfers, category splits and tax previews.
+
+| Consumer | Ownership and policy |
+|---|---|
+| accounting/banking/page.tsx | Account balance aliases validated before bigint; total/positive/negative balances grouped by currency. Positive/negative balance labels describe balances, not transaction flow. Bars compare only same-currency magnitude; bounded presentation percentages become Numbers after bigint division. |
+| banking/[id]/(detail)/layout.tsx and overview/transactions | Bank and movements validated against explicit bank currency; sampled credit/debit totals use bigint. Sorting compares bigint magnitudes. Overview and rows use the adapted context. Errors suppress invalid account/transaction state. |
+| banking/[id]/(detail)/imports and ImportSheet | Import history consumes dates/counts/warnings only. Preview balances, rows and duplicates validate numeric/Minor aliases; statement currency must agree with bank. Parser content/profile/format goes unchanged to the existing read-only preview and atomic commit APIs. No parser duplication in UI. |
+| banking/[id]/reconcile and ReconciliationReport | Signed bank-scale session input sends startBalanceMinor/endBalanceMinor with safe bounds. Saved sessions/proof groups validate aliases and exact sums; bank statement and GL base currencies display separately. Different units withhold difference and disable statement completion/adjustment. No inferred FX comparison. |
+| MatchToBillSheet, MatchToInvoiceSheet and unified MatchSheet | Saved same-currency documents/candidates validated; bigint due/statement limits, decimal prefill, full-statement payment preview and amountMinor writes. Existing payment/journal matches retain ID-only requests. Partial statement matching remains unsupported by the existing backend. |
+| CreateExpenseSheet, CategorizeSheet, SplitAccountSheet, bulk coding | Bank-scale amountMinor expense lines must equal the outgoing statement. Positive exact category allocations must sum to its magnitude. Blank unused draft rows are ignored; malformed or incompletely selected rows reject. Inclusive VAT/recoverability preview uses bigint ratios. Coding/bulk controls send IDs, preserving existing atomic/per-item policies. |
+| TransferSheet and BankTransferDrawer | Same-currency own-account targets; counterpart rows validate against bank currency and exact opposite amount. Manual transfer preview/save share bankUiAmount and send amountMinor. No cross-currency transfer introduced. |
+| BankAccountDrawer and bank settings | Account drawer sets explicit currency/type with zero statement balance by existing API default; no opening GL input exists. Settings metadata writes unchanged; returned bank balances validated before context replacement. Currency/history restrictions remain API-owned. |
+| settings/bank-rules | Rules apply across banks: fixed amounts and comparison thresholds intentionally use raw integer bank minor units, not decimal-major input. Saved aliases/conditions are validated, conditions retain canonical text in the editor, existing amountMinor fixed writes remain. Percent/priority/rate/count fields are nonmoney. |
+
+`bank-ui-money.test.ts` covers safe edges, raw USD 1250 compatibility, 0/2/3 scales,
+malformed/conflicting/range input, full-line match and same-currency policy,
+large exact split/tax/grouped totals, nulls, preview/report/rule validation.
+`integration/bank-ui-money.test.ts` exercises real authenticated REST and linked
+MCP SDK plus SQL text for imported previews, saved movements, splits, document
+payments, transfers through the safe maximum, account reads and session/proof
+balances in USD/JPY/synthetic IRR/KWD. Existing bank domain regressions retain
+tenant/role/lock/replay/concurrency and negative transport checks.
+
+Compatible numeric saved amounts remain supported only through +/-9007199254740991;
+aliases cannot override conflicting Numbers. No full-int64 public expansion,
+foreign-currency reconciliation completion, partial statement settlement,
+production IRR, migration, locale or browser qualification is claimed. Rates,
+percentages, counts and file-size presentation remain nonmoney Number fields.
+MON-133, MON-129 and MON-007 retain independent integration acceptance.
+
 ## MON-148 payment and allocation UI
 
 Payment list/detail and banking payment batch list/create/detail/remittance plus
@@ -211,7 +245,7 @@ The original MON-133 acceptance and all remaining consumers are preserved.
 | MON-147 | accounting/opening-balances/page.tsx; create-drawer.tsx OpeningBalanceDrawer; OpeningBalanceForm; OpeningBalanceMoneyDetails; opening-balance-ui.ts | Exact decimal text, bigint preview/validation/saved totals; checked numeric fixed-cents writes only; unsupported Minor writes are not sent |
 | MON-148 | sales/payments list/detail; banking/batches list/create/detail/remittance; banking/scheduled list/create/cancel/process; payment-ui.ts; PaymentAmountPreview | Checked Minor aliases, bigint balances/grouped sample summaries, explicit one-currency batch and schedule Minor writes, exact due/range preview/save checks; historical leftover allocation unsupported |
 | MON-149 | Expense list/detail/edit/pay amount, ExpenseDrawer/mileage, recurring expense controls; expense-ui.ts, recurring-expense-ui.ts, ExpenseAmountInput | Exact text/Minor writes, bigint previews and validated saved aliases; organization/claim currency, miles hundredths and independently rounded per-mile rate; recurring payable fixed-two gross policy retained |
-| MON-150 | Banking/statements/import/reconciliation/transfers/settings, bank drawers | Pending bank/base currency closure |
+| MON-150 | Banking/statements/import/reconciliation/transfers/settings/rules, bank drawers | Validated Minor reads, bigint sums/tax/splits and bank-scale exact writes; grouped currency balances and separate bank/base reconciliation; raw bank minor-unit rule exception |
 | MON-151 | Tax/period/sales-tax/settlement/settings and remaining core approvals | Pending exact money, basis-point/settings closure |
 | MON-152 | Accounts list/detail/layout and untagged journal totals/automated detail | Pending source/base presentation closure |
 

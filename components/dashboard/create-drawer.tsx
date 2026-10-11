@@ -1,4 +1,6 @@
 "use client";
+import { currencyMetadata } from "@/lib/money/exact";
+import { bankUiTransfer, bankUiAccount, bankUiMoney } from "@/lib/money/bank-ui";
 
 import { projectCentsInput, projectHoursInput } from "@/lib/money/project-display";
 
@@ -3600,10 +3602,11 @@ function BankTransferDrawer({ open, onClose }: { open: boolean; onClose: () => v
     }
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
+    setBankAccounts([]);
     fetch("/api/v1/bank-accounts", { headers: { "x-organization-id": orgId } })
-      .then((r) => r.json())
-      .then((data) => { if (data.bankAccounts) setBankAccounts(data.bankAccounts); })
-      .catch(() => {});
+      .then((r) => { if (!r.ok) throw new Error("Bank accounts are unavailable"); return r.json(); })
+      .then((data) => { if (data.bankAccounts) setBankAccounts(data.bankAccounts.map(bankUiAccount)); })
+      .catch(() => { setBankAccounts([]); toast.error("Bank accounts are unavailable"); });
   }, [open]);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -3611,8 +3614,9 @@ function BankTransferDrawer({ open, onClose }: { open: boolean; onClose: () => v
     if (!fromBankAccountId) { toast.error("Choose the account the money is coming from"); return; }
     if (!toBankAccountId) { toast.error("Choose the account the money is going to"); return; }
     if (fromBankAccountId === toBankAccountId) { toast.error("Pick two different accounts"); return; }
-    const amt = parseFloat(amount);
-    if (!amt || amt <= 0) { toast.error("Enter an amount greater than zero"); return; }
+    let amountMinor: string;
+    try { amountMinor = bankUiTransfer(amount, bankAccounts.find(b => b.id === fromBankAccountId), bankAccounts.find(b => b.id === toBankAccountId)).amountMinor; }
+    catch (error) { toast.error(error instanceof Error ? error.message : "Invalid transfer amount"); return; }
     setSaving(true);
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) { setSaving(false); return; }
@@ -3624,7 +3628,7 @@ function BankTransferDrawer({ open, onClose }: { open: boolean; onClose: () => v
         body: JSON.stringify({
           fromBankAccountId,
           toBankAccountId,
-          amount: amt,
+          amountMinor,
           date,
           memo: memo.trim() || null,
         }),
@@ -3645,6 +3649,11 @@ function BankTransferDrawer({ open, onClose }: { open: boolean; onClose: () => v
   }
 
   const fromCurrency = bankAccounts.find((b) => b.id === fromBankAccountId)?.currencyCode;
+
+  let preview: string | null = null;
+  let previewError = "";
+  try { if (fromCurrency) preview = bankUiMoney(BigInt(bankUiTransfer(amount, bankAccounts.find(b => b.id === fromBankAccountId), bankAccounts.find(b => b.id === toBankAccountId)).amountMinor), fromCurrency); }
+  catch (error) { previewError = error instanceof Error ? error.message : "Enter a valid amount"; }
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
@@ -3681,7 +3690,7 @@ function BankTransferDrawer({ open, onClose }: { open: boolean; onClose: () => v
                   <SelectTrigger><SelectValue placeholder="Account the money arrives in" /></SelectTrigger>
                   <SelectContent>
                     {bankAccounts.map((b) => (
-                      <SelectItem key={b.id} value={b.id} disabled={b.id === fromBankAccountId}>
+                      <SelectItem key={b.id} value={b.id} disabled={b.id === fromBankAccountId || (!!fromCurrency && b.currencyCode !== fromCurrency)}>
                         {b.accountName} ({b.currencyCode})
                       </SelectItem>
                     ))}
@@ -3697,9 +3706,9 @@ function BankTransferDrawer({ open, onClose }: { open: boolean; onClose: () => v
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Amount *</Label>
-                  <CurrencyInput prefix={fromCurrency ? "" : "$"} value={amount} onChange={setAmount} placeholder="0.00" />
+                  <CurrencyInput prefix={fromCurrency || ""} fractionDigits={fromCurrency ? currencyMetadata(fromCurrency).minorUnits : 2} aria-label={`Transfer amount (${fromCurrency || "select a bank"})`} value={amount} onChange={setAmount} placeholder="0.00" />
                   {fromCurrency && (
-                    <p className="text-[11px] text-muted-foreground">In {fromCurrency} (the from account&apos;s currency)</p>
+                    <p className="text-[11px] text-muted-foreground">In {fromCurrency} (the from account&apos;s currency). {preview ? `Transfer: ${preview}` : previewError}</p>
                   )}
                 </div>
                 <div className="space-y-2">

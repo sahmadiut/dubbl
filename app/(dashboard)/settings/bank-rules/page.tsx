@@ -1,4 +1,5 @@
 "use client";
+import { bankUiRule } from "@/lib/money/bank-ui";
 
 import { useState, useEffect, useCallback } from "react";
 import { ContentReveal } from "@/components/ui/content-reveal";
@@ -246,7 +247,8 @@ export default function BankRulesPage() {
       headers: { "x-organization-id": orgId },
     })
       .then((r) => r.json())
-      .then((data) => setRules(data.data || data.rules || []))
+      .then((data) => setRules((data.data || data.rules || []).map(bankUiRule)))
+      .catch(() => { setRules([]); toast.error("Bank rules are unavailable. Reload to try again."); })
       .finally(() => setLoading(false));
   }, []);
 
@@ -307,15 +309,13 @@ export default function BankRulesPage() {
               return {
                 field: c.field,
                 op: c.op,
-                value: `${formatMinorUnits(Number(a) || 0)},${formatMinorUnits(
-                  Number(b) || 0
-                )}`,
+                value: `${a},${b}`,
               };
             }
             return {
               field: c.field,
               op: c.op,
-              value: formatMinorUnits(Number(c.value) || 0),
+              value: c.value,
             };
           }
           return c;

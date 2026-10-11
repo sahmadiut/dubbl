@@ -1,4 +1,5 @@
 "use client";
+import { bankUiAccount, bankUiTransaction, bankUiReport, bankUiReconciliation, bankUiBalance } from "@/lib/money/bank-ui";
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -26,7 +27,6 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { bankMoneyDisplay } from "@/lib/money/bank-display";
-import { parseMajor } from "@/lib/money/exact";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { cn } from "@/lib/utils";
@@ -36,7 +36,7 @@ import { ReconciliationReport, type ReconciliationData } from "../_components";
 interface BankAccountDetail {
   id: string;
   accountName: string;
-  balance: number;
+  balance: bigint;
   currencyCode: string;
 }
 
@@ -45,8 +45,8 @@ interface Transaction {
   date: string;
   description: string;
   reference: string | null;
-  amount: number;
-  balance: number | null;
+  amount: bigint;
+  balance: bigint | null;
   status: "unreconciled" | "reconciled" | "excluded";
   accountId?: string | null;
   accountCode?: string | null;
@@ -65,8 +65,8 @@ interface Reconciliation {
   id: string;
   startDate: string;
   endDate: string;
-  startBalance: number;
-  endBalance: number;
+  startBalance: bigint;
+  endBalance: bigint;
   status: "in_progress" | "completed";
   createdAt: string;
 }
@@ -108,16 +108,16 @@ export default function ReconcilePage() {
     // into a statement reconciliation. Lines already part of a completed
     // statement reconciliation (reconciliationId set) are filtered out below.
     Promise.all([
-      fetch(`/api/v1/bank-accounts/${id}`, { headers }).then((r) => r.json()),
+      fetch(`/api/v1/bank-accounts/${id}`, { headers }).then((r) => { if (!r.ok) throw new Error("Bank data is unavailable"); return r.json(); }),
       fetch(`/api/v1/bank-accounts/${id}/transactions?status=unreconciled&limit=100`, {
         headers,
-      }).then((r) => r.json()),
+      }).then((r) => { if (!r.ok) throw new Error("Bank data is unavailable"); return r.json(); }),
       fetch(`/api/v1/bank-accounts/${id}/transactions?status=reconciled&limit=100`, {
         headers,
-      }).then((r) => r.json()),
+      }).then((r) => { if (!r.ok) throw new Error("Bank data is unavailable"); return r.json(); }),
       fetch(`/api/v1/bank-accounts/${id}/reconciliations`, {
         headers,
-      }).then((r) => r.json()),
+      }).then((r) => { if (!r.ok) throw new Error("Bank data is unavailable"); return r.json(); }),
       // Statement-vs-GL report: end balance, GL balance, running difference and
       // the reconciled / unreconciled splits, scoped to the latest reconciliation.
       fetch(`/api/v1/bank-accounts/${id}/reconciliation`, { headers })
@@ -125,17 +125,18 @@ export default function ReconcilePage() {
         .catch(() => null),
     ])
       .then(([accountData, unreconciledData, reconciledData, recData, reportData]) => {
-        if (accountData.bankAccount) setAccount(accountData.bankAccount);
-        const unreconciled: Transaction[] = unreconciledData.data ?? [];
+        if (accountData.bankAccount) setAccount(bankUiAccount(accountData.bankAccount) as unknown as BankAccountDetail);
+        const unreconciled: Transaction[] = (unreconciledData.data ?? []).map((row: Record<string, unknown>) => bankUiTransaction(row, accountData.bankAccount.currencyCode) as unknown as Transaction);
         // Categorized lines that haven't yet been rolled into a completed
         // statement reconciliation.
-        const categorized: Transaction[] = (reconciledData.data ?? []).filter(
+        const categorized: Transaction[] = (reconciledData.data ?? []).map((row: Record<string, unknown>) => bankUiTransaction(row, accountData.bankAccount.currencyCode) as unknown as Transaction).filter(
           (t: Transaction) => t.journalEntryId && !t.reconciliationId
         );
         setTransactions([...unreconciled, ...categorized]);
-        if (recData.data) setReconciliations(recData.data);
-        setReport(reportData && reportData.bankAccountId ? reportData : null);
+        if (recData.data) setReconciliations(recData.data.map(bankUiReconciliation) as Reconciliation[]);
+        setReport(reportData && reportData.bankAccountId ? bankUiReport(reportData) as unknown as ReconciliationData : null);
       })
+      .catch(() => { setAccount(null); setTransactions([]); setReport(null); toast.error("Statement amounts are unavailable. Reload to try again."); })
       .finally(() => setLoading(false));
   }, [id, orgId]);
 
@@ -223,8 +224,8 @@ export default function ReconcilePage() {
         body: JSON.stringify({
           startDate: recForm.startDate,
           endDate: recForm.endDate,
-          startBalanceMinor: parseMajor(recForm.startBalance || "0", account?.currencyCode || "USD", "reject").amountMinor.toString(),
-          endBalanceMinor: parseMajor(recForm.endBalance || "0", account?.currencyCode || "USD", "reject").amountMinor.toString(),
+          startBalanceMinor: bankUiBalance(recForm.startBalance || "0", account!.currencyCode),
+          endBalanceMinor: bankUiBalance(recForm.endBalance || "0", account!.currencyCode),
         }),
       });
       if (!res.ok) throw new Error((await res.json()).error);
@@ -293,9 +294,9 @@ export default function ReconcilePage() {
 
   const unreconciledTotal = transactions.reduce((sum, t) => sum + BigInt(t.amount), 0n);
 
-  const formatBankAmount = (amount: number | bigint) => bankMoneyDisplay(amount, account?.currencyCode || "USD");
-
   if (loading) return <BrandLoader />;
+  if (!account) return <p role="alert">Statement amounts are unavailable. Reload to try again.</p>;
+  const formatBankAmount = (amount: number | bigint) => bankMoneyDisplay(amount, account.currencyCode);
 
   return (
     <ContentReveal className="space-y-6">
@@ -320,7 +321,7 @@ export default function ReconcilePage() {
           <Button
             size="sm"
             onClick={() => finishStatementCheck()}
-            disabled={acting}
+            disabled={acting || !report || report.currencyCode !== report.glCurrencyCode}
             className="bg-emerald-600 hover:bg-emerald-700"
             title="Mark every in-your-books line in this period as on the statement and close the check"
           >
@@ -340,7 +341,7 @@ export default function ReconcilePage() {
           <div className="p-4">
             <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Account balance</p>
             <p className="mt-1 text-xl font-semibold font-mono tabular-nums">
-              {formatBankAmount(account?.balance || 0)}
+              {formatBankAmount(account?.balance || 0n)}
             </p>
           </div>
           <div className="p-4">

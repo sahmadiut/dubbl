@@ -31,7 +31,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useCreateDrawer } from "@/components/dashboard/create-drawer";
-import { formatMoney } from "@/lib/money";
+import { bankUiAccount, bankUiMoney as formatMoney, bankUiAbs, bankUiGroups, bankUiPercent } from "@/lib/money/bank-ui";
 import { cn } from "@/lib/utils";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 
@@ -53,7 +53,7 @@ interface BankAccount {
   countryCode: string | null;
   accountType: BankAccountType;
   color: string;
-  balance: number;
+  balance: bigint;
   isActive: boolean;
 }
 
@@ -92,6 +92,7 @@ export default function BankingPage() {
   const { open: openDrawer } = useCreateDrawer();
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [loading, setLoading] = useState(true);
+  const [readError, setReadError] = useState("");
   const [showBalances, setShowBalances] = useState(true);
 
   useDocumentTitle("Accounting \u00B7 Bank Accounts");
@@ -103,8 +104,9 @@ export default function BankingPage() {
     fetch("/api/v1/bank-accounts", {
       headers: { "x-organization-id": orgId },
     })
-      .then((res) => res.json())
-      .then((data) => setAccounts(data.bankAccounts || []))
+      .then((res) => { if (!res.ok) throw new Error("Bank data is unavailable"); return res.json(); })
+      .then((data) => { setAccounts((data.bankAccounts || []).map(bankUiAccount) as BankAccount[]); setReadError(""); })
+      .catch(() => { setAccounts([]); setReadError("Bank amounts are unavailable. Reload to try again."); })
       .finally(() => setLoading(false));
   }
 
@@ -117,11 +119,12 @@ export default function BankingPage() {
 
   const totals = useMemo(() => {
     const active = accounts.filter((a) => a.isActive).length;
-    const balance = accounts.reduce((sum, a) => sum + a.balance, 0);
-    return { active, balance };
+    return { active };
   }, [accounts]);
 
   if (loading && accounts.length === 0) return <BrandLoader />;
+
+  if (readError) return <p role="alert">{readError}</p>;
 
   // Empty state
   if (!loading && accounts.length === 0) {
@@ -198,7 +201,7 @@ export default function BankingPage() {
           {/* Preview stats */}
           <div className="w-full max-w-md grid grid-cols-2 gap-3 opacity-30">
             {[
-              { label: "Total Balance", value: "$0.00" },
+              { label: "Total Balance", value: "—" },
               { label: "Accounts", value: "0" },
             ].map(({ label, value }) => (
               <div key={label} className="rounded-xl border border-dashed p-4 text-center">
@@ -212,10 +215,8 @@ export default function BankingPage() {
     );
   }
 
-  const positiveBalance = accounts.filter((a) => a.balance > 0).reduce((s, a) => s + a.balance, 0);
-  const negativeBalance = accounts.filter((a) => a.balance < 0).reduce((s, a) => s + Math.abs(a.balance), 0);
-  const currencies = [...new Set(accounts.map((a) => a.currencyCode))];
-  const maxBalance = Math.max(...accounts.map((a) => Math.abs(a.balance)), 1);
+  const displayGroups = (rows: BankAccount[], direction?: "positive" | "negative") => bankUiGroups(rows, direction).map(([code, value]) => formatMoney(value, code)).join(" · ") || "—";
+  const currencies = [...new Set(accounts.map(a => a.currencyCode))];
 
   // Group accounts by type
   const groupedAccounts = accounts.reduce<Record<string, BankAccount[]>>((groups, account) => {
@@ -234,33 +235,26 @@ export default function BankingPage() {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
         <div>
           <p className="text-[11px] text-muted-foreground">Total Balance</p>
-          <p className={cn(
-            "mt-0.5 font-mono text-lg font-semibold tabular-nums",
-            totals.balance > 0
-              ? "text-emerald-600 dark:text-emerald-400"
-              : totals.balance < 0
-                ? "text-red-600 dark:text-red-400"
-                : ""
-          )}>
-            {showBalances ? formatMoney(totals.balance) : "********"}
+          <p className="mt-0.5 font-mono text-lg font-semibold tabular-nums">
+            {showBalances ? displayGroups(accounts) : "********"}
           </p>
         </div>
         <div>
           <p className="text-[11px] text-muted-foreground flex items-center gap-1">
             <ArrowDownLeft className="size-3 text-emerald-500" />
-            Money In
+            Positive balances
           </p>
           <p className="mt-0.5 font-mono text-lg font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
-            {showBalances ? formatMoney(positiveBalance) : "********"}
+            {showBalances ? displayGroups(accounts, "positive") : "********"}
           </p>
         </div>
         <div>
           <p className="text-[11px] text-muted-foreground flex items-center gap-1">
             <ArrowUpRight className="size-3 text-red-500" />
-            Money Out
+            Negative balances
           </p>
           <p className="mt-0.5 font-mono text-lg font-semibold tabular-nums text-red-600 dark:text-red-400">
-            {showBalances ? formatMoney(negativeBalance) : "********"}
+            {showBalances ? displayGroups(accounts, "negative") : "********"}
           </p>
         </div>
         <div>
@@ -323,7 +317,7 @@ export default function BankingPage() {
         {sortedGroups.map((type) => {
           const group = groupedAccounts[type];
           const Icon = ACCOUNT_TYPE_ICONS[type];
-          const groupBalance = group.reduce((s, a) => s + a.balance, 0);
+          const groupBalance = displayGroups(group);
 
           return (
             <div key={type}>
@@ -337,7 +331,7 @@ export default function BankingPage() {
                     <span className="text-xs text-muted-foreground/50 tabular-nums">({group.length})</span>
                   </div>
                   <p className="text-xs font-mono tabular-nums text-muted-foreground">
-                    {showBalances ? formatMoney(groupBalance) : "****"}
+                    {showBalances ? groupBalance : "****"}
                   </p>
                 </div>
               )}
@@ -345,7 +339,7 @@ export default function BankingPage() {
               <div className="rounded-xl border bg-card overflow-hidden divide-y divide-border">
                 {group.map((account) => {
                   const AccountIcon = ACCOUNT_TYPE_ICONS[account.accountType];
-                  const balancePct = Math.min((Math.abs(account.balance) / maxBalance) * 100, 100);
+                  const balancePct = bankUiPercent(bankUiAbs(account.balance), accounts.filter(a => a.currencyCode === account.currencyCode).reduce((max, a) => bankUiAbs(a.balance) > max ? bankUiAbs(a.balance) : max, 1n));
 
                   return (
                     <button

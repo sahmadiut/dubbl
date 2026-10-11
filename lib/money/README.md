@@ -1,5 +1,15 @@
 # Exact money core
 
+MON-150 adopts banking list/detail/statements/imports/reconciliation, bank settings,
+rules and the account/transfer drawers through `bank-ui.ts`. Saved safe numeric
+money must agree with canonical Minor aliases before bigint arithmetic/display.
+Amounts use bank currency scales, summaries group currencies, and GL balances
+retain their explicit base currency. Matching covers the full statement amount;
+category splits, expense and transfer controls send existing exact wire fields.
+Rule conditions/fixed splits intentionally remain raw bank minor units. No public
+range expansion, implicit FX, historical rescale or production IRR enablement.
+See the MON-150 section in the core UI ownership registry; MON-133 remains open.
+
 MON-130 adopts manual/recurring journal UI input, previews, Minor writes and
 saved currency-scale display/edit through `journal-display.ts`. Legacy fixed-two
 REST aliases, untagged aggregate and automated-source presentation exceptions

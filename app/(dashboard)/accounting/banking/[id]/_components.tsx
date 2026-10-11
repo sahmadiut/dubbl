@@ -61,7 +61,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { bankMoneyDisplay } from "@/lib/money/bank-display";
-import { formatMoney, centsToDecimal } from "@/lib/money";
+import { bankUiTransaction, bankUiMoney as formatMoney, bankUiDecimal, bankUiAbs, bankUiMin, bankUiAmount, bankUiMatchAmount, bankUiSplit, bankUiTax } from "@/lib/money/bank-ui";
+import { currencyMetadata } from "@/lib/money/exact";
 import { cn } from "@/lib/utils";
 import { AccountPicker } from "@/components/dashboard/account-picker";
 import { ContactPicker } from "@/components/dashboard/contact-picker";
@@ -72,6 +73,16 @@ import {
   type ResolvableAccount as SpecialResolvableAccount,
   type SpecialCategoryRole,
 } from "@/lib/banking/special-categories";
+
+function BankMatchPreview({ text, currencyCode, transaction, document }: {
+  text: string; currencyCode: string; transaction: Transaction | null; document: OpenBill | OpenInvoice | undefined;
+}) {
+  if (!transaction || !document) return null;
+  let message: string;
+  try { message = `Payment: ${formatMoney(BigInt(bankUiMatchAmount(text, currencyCode, transaction, document).amountMinor), currencyCode)}`; }
+  catch (error) { message = error instanceof Error ? error.message : "Enter a valid payment amount"; }
+  return <p role="status" className="text-xs text-muted-foreground">{message}</p>;
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -110,7 +121,7 @@ export interface BankAccountDetail {
   countryCode: string | null;
   accountType: BankAccountType;
   color: string;
-  balance: number;
+  balance: bigint;
   isActive: boolean;
   // The ledger account this bank account is recorded under in the books. Set up
   // automatically; surfaced read-only so users can see the connection exists.
@@ -121,9 +132,9 @@ export interface BankAccountDetail {
 export interface ImportPreviewRow {
   date: string;
   description: string;
-  amount: number;
+  amount: bigint;
   reference: string | null;
-  balance?: number | null;
+  balance?: bigint | null;
   payee?: string | null;
   counterparty?: string | null;
 }
@@ -134,11 +145,11 @@ export interface ImportPreview {
   currencyCode: string | null;
   statementStartDate: string | null;
   statementEndDate: string | null;
-  openingBalance: number | null;
-  closingBalance: number | null;
+  openingBalance: bigint | null;
+  closingBalance: bigint | null;
   warnings: string[];
   rowCount: number;
-  duplicates: Array<{ dedupeHash: string; description: string; amount: number; date: string }>;
+  duplicates: Array<{ dedupeHash: string; description: string; amount: bigint; date: string }>;
   transactions: ImportPreviewRow[];
 }
 
@@ -160,8 +171,8 @@ export interface Transaction {
   date: string;
   description: string;
   reference: string | null;
-  amount: number;
-  balance: number | null;
+  amount: bigint;
+  balance: bigint | null;
   status: "unreconciled" | "reconciled" | "excluded";
   payee?: string | null;
   counterparty?: string | null;
@@ -182,18 +193,19 @@ export interface Transaction {
 }
 
 export interface OpenBill {
+  currencyCode: string;
   id: string;
   billNumber: string;
   contactName: string;
   dueDate: string;
-  total: number;
-  amountDue: number;
+  total: bigint;
+  amountDue: bigint;
   status: string;
 }
 
 export interface SuggestedMatch {
   transactionId: string;
-  candidate: { type: string; id: string; description: string; amount: number; date: string };
+  candidate: { type: string; id: string; description: string; amount: bigint; date: string };
   confidence: number;
   reasons: string[];
 }
@@ -208,7 +220,7 @@ export interface ExistingMatch {
     journalEntryId: string | null;
     date: string;
     description: string;
-    amount: number;
+    amount: bigint;
     reference: string | null;
     meta: Record<string, unknown>;
   };
@@ -223,7 +235,7 @@ export interface BankAccountSummary {
   bankName: string | null;
   currencyCode: string;
   accountType: BankAccountType;
-  balance: number;
+  balance: bigint;
   hasLedgerAccount: boolean;
 }
 
@@ -884,10 +896,10 @@ export function MatchToBillSheet({
   useEffect(() => {
     if (transaction) {
       setSelectedBill(null);
-      setPayAmount(centsToDecimal(Math.abs(transaction.amount)));
+      setPayAmount(bankUiDecimal(bankUiAbs(transaction.amount), currencyCode));
       setBillSearch("");
     }
-  }, [transaction]);
+  }, [transaction, currencyCode]);
 
   const suggestedBillIds = useMemo(
     () => new Set(suggestions.map((s) => s.candidate.id)),
@@ -908,14 +920,13 @@ export function MatchToBillSheet({
     if (!orgId || !transaction || !selectedBill) return;
     setSaving(true);
     try {
-      const amount = Math.round(parseFloat(payAmount) * 100);
-      if (!amount || amount <= 0) { toast.error("Enter a valid amount"); return; }
+      const { amountMinor } = bankUiMatchAmount(payAmount, currencyCode, transaction, bills.find(b => b.id === selectedBill)!);
       const res = await fetch(`/api/v1/bank-transactions/${transaction.id}/match`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify({
           billId: selectedBill,
-          amount,
+          amountMinor,
           date: transaction.date,
         }),
       });
@@ -966,7 +977,7 @@ export function MatchToBillSheet({
                     <button
                       key={s.candidate.id}
                       type="button"
-                      onClick={() => { setSelectedBill(b.id); setPayAmount(centsToDecimal(Math.min(Math.abs(transaction?.amount || 0), b.amountDue))); }}
+                      onClick={() => { setSelectedBill(b.id); setPayAmount(bankUiDecimal(bankUiMin(bankUiAbs(transaction?.amount || 0n), b.amountDue), currencyCode)); }}
                       className={cn(
                         "w-full flex items-center justify-between rounded-lg border p-3 text-left transition-colors hover:bg-muted/50",
                         selectedBill === b.id && "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20"
@@ -1017,7 +1028,7 @@ export function MatchToBillSheet({
                   <button
                     key={b.id}
                     type="button"
-                    onClick={() => { setSelectedBill(b.id); setPayAmount(centsToDecimal(Math.min(Math.abs(transaction?.amount || 0), b.amountDue))); }}
+                    onClick={() => { setSelectedBill(b.id); setPayAmount(bankUiDecimal(bankUiMin(bankUiAbs(transaction?.amount || 0n), b.amountDue), currencyCode)); }}
                     className={cn(
                       "w-full flex items-center justify-between rounded-lg border p-3 text-left transition-colors hover:bg-muted/50",
                       selectedBill === b.id && "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20",
@@ -1047,10 +1058,11 @@ export function MatchToBillSheet({
                 </span>
               </div>
               <CurrencyInput
-                prefix="$"
+                prefix={currencyCode} fractionDigits={currencyMetadata(currencyCode).minorUnits} aria-label={`Amount (${currencyCode})`}
                 value={payAmount}
                 onChange={setPayAmount}
               />
+              <BankMatchPreview text={payAmount} currencyCode={currencyCode} transaction={transaction} document={selected} />
             </div>
           )}
         </div>
@@ -1103,14 +1115,14 @@ export function CreateExpenseSheet({
       setTitle(transaction.payee || transaction.description || "");
       setDescription("");
       setItemDesc(transaction.description || "");
-      setItemAmount(centsToDecimal(Math.abs(transaction.amount)));
+      setItemAmount(bankUiDecimal(bankUiAbs(transaction.amount), currencyCode));
       setAccountId("");
       setTaxRateId("none");
       setContactId("");
       setCostCenterId("");
       setProjectId("");
     }
-  }, [transaction]);
+  }, [transaction, currencyCode]);
 
   useEffect(() => {
     if (!transaction || !orgId || taxRates.length > 0) return;
@@ -1126,8 +1138,8 @@ export function CreateExpenseSheet({
     if (!accountId) { toast.error("Choose a category for this expense"); return; }
     setSaving(true);
     try {
-      const amount = parseFloat(itemAmount);
-      if (!amount || amount <= 0) { toast.error("Enter a valid amount"); return; }
+      const { amountMinor } = bankUiAmount(itemAmount, currencyCode);
+      if (BigInt(amountMinor) !== bankUiAbs(transaction.amount)) throw new RangeError("Expense must equal the statement amount");
       const res = await fetch(`/api/v1/bank-transactions/${transaction.id}/create-expense`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
@@ -1142,7 +1154,7 @@ export function CreateExpenseSheet({
           items: [{
             date: transaction.date,
             description: itemDesc.trim() || title.trim(),
-            amount,
+            amountMinor,
             accountId,
           }],
         }),
@@ -1203,7 +1215,7 @@ export function CreateExpenseSheet({
 
             <div className="space-y-1.5">
               <Label className="text-xs">Amount</Label>
-              <CurrencyInput prefix="$" value={itemAmount} onChange={setItemAmount} />
+              <CurrencyInput prefix={currencyCode} fractionDigits={currencyMetadata(currencyCode).minorUnits} aria-label={`Amount (${currencyCode})`} value={itemAmount} onChange={setItemAmount} />
             </div>
 
             <div className="space-y-1.5">
@@ -1300,21 +1312,7 @@ function taxOptionLabel(t: TaxRateOption, isPurchase: boolean): string {
   return `${base} · ${Math.round(recoverableBp / 100)}% reclaimable`;
 }
 
-function splitTaxPreview(
-  gross: number,
-  t: TaxRateOption,
-  isCredit: boolean
-): { net: number; tax: number; recoverable: number; absorbed: number } | null {
-  const kind = t.kind || "standard";
-  if (t.rate <= 0 || kind === "exempt" || kind === "no_vat" || kind === "reverse_charge") return null;
-  const tax = Math.round((gross * t.rate) / (10000 + t.rate));
-  const net = gross - tax;
-  if (isCredit) return { net, tax, recoverable: tax, absorbed: 0 };
-  if (kind === "sales_tax_us") return { net: gross, tax, recoverable: 0, absorbed: tax };
-  const recoverableBp = t.recoverablePercent ?? 10000;
-  const recoverable = Math.round((tax * recoverableBp) / 10000);
-  return { net, tax, recoverable, absorbed: tax - recoverable };
-}
+const splitTaxPreview = bankUiTax;
 
 // ---------------------------------------------------------------------------
 // Categorize Sheet — code a transaction to ANY ledger account: income,
@@ -1373,7 +1371,7 @@ export function CategorizeSheet({
       setPickerType(undefined);
       setChoiceHint("");
     }
-  }, [transaction]);
+  }, [transaction, currencyCode]);
 
   // Load the org's accounts (also triggers the built-in category sync) and
   // whether it's an incorporated company, so the quick choices can resolve to
@@ -1404,7 +1402,7 @@ export function CategorizeSheet({
 
   const selectedTax = taxRates.find((t) => t.id === taxRateId) || null;
   const taxPreview = useMemo(
-    () => (selectedTax && transaction ? splitTaxPreview(Math.abs(transaction.amount), selectedTax, isCredit) : null),
+    () => (selectedTax && transaction ? splitTaxPreview(bankUiAbs(transaction.amount), selectedTax, isCredit) : null),
     [selectedTax, transaction, isCredit]
   );
 
@@ -1649,12 +1647,13 @@ export function CategorizeSheet({
 // (records the received payment + posts DR Bank / CR Accounts Receivable).
 // ---------------------------------------------------------------------------
 export interface OpenInvoice {
+  currencyCode: string;
   id: string;
   invoiceNumber: string;
   contactName: string;
   dueDate: string;
-  total: number;
-  amountDue: number;
+  total: bigint;
+  amountDue: bigint;
   status: string;
 }
 
@@ -1685,10 +1684,10 @@ export function MatchToInvoiceSheet({
   useEffect(() => {
     if (transaction) {
       setSelectedInvoice(null);
-      setPayAmount(centsToDecimal(Math.abs(transaction.amount)));
+      setPayAmount(bankUiDecimal(bankUiAbs(transaction.amount), currencyCode));
       setSearch("");
     }
-  }, [transaction]);
+  }, [transaction, currencyCode]);
 
   const suggestedIds = useMemo(
     () => new Set(suggestions.map((s) => s.candidate.id)),
@@ -1709,12 +1708,11 @@ export function MatchToInvoiceSheet({
     if (!orgId || !transaction || !selectedInvoice) return;
     setSaving(true);
     try {
-      const amount = Math.round(parseFloat(payAmount) * 100);
-      if (!amount || amount <= 0) { toast.error("Enter a valid amount"); return; }
+      const { amountMinor } = bankUiMatchAmount(payAmount, currencyCode, transaction, invoices.find(inv => inv.id === selectedInvoice)!);
       const res = await fetch(`/api/v1/bank-transactions/${transaction.id}/match-invoice`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
-        body: JSON.stringify({ invoiceId: selectedInvoice, amount, date: transaction.date }),
+        body: JSON.stringify({ invoiceId: selectedInvoice, amountMinor, date: transaction.date }),
       });
       if (!res.ok) throw new Error((await res.json()).error);
       toast.success("Linked to invoice and marked paid");
@@ -1763,7 +1761,7 @@ export function MatchToInvoiceSheet({
                     <button
                       key={s.candidate.id}
                       type="button"
-                      onClick={() => { setSelectedInvoice(inv.id); setPayAmount(centsToDecimal(Math.min(Math.abs(transaction?.amount || 0), inv.amountDue))); }}
+                      onClick={() => { setSelectedInvoice(inv.id); setPayAmount(bankUiDecimal(bankUiMin(bankUiAbs(transaction?.amount || 0n), inv.amountDue), currencyCode)); }}
                       className={cn(
                         "w-full flex items-center justify-between rounded-lg border p-3 text-left transition-colors hover:bg-muted/50",
                         selectedInvoice === inv.id && "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20"
@@ -1814,7 +1812,7 @@ export function MatchToInvoiceSheet({
                   <button
                     key={inv.id}
                     type="button"
-                    onClick={() => { setSelectedInvoice(inv.id); setPayAmount(centsToDecimal(Math.min(Math.abs(transaction?.amount || 0), inv.amountDue))); }}
+                    onClick={() => { setSelectedInvoice(inv.id); setPayAmount(bankUiDecimal(bankUiMin(bankUiAbs(transaction?.amount || 0n), inv.amountDue), currencyCode)); }}
                     className={cn(
                       "w-full flex items-center justify-between rounded-lg border p-3 text-left transition-colors hover:bg-muted/50",
                       selectedInvoice === inv.id && "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20",
@@ -1843,7 +1841,8 @@ export function MatchToInvoiceSheet({
                   Invoice due: {formatMoney(selected.amountDue, currencyCode)}
                 </span>
               </div>
-              <CurrencyInput prefix="$" value={payAmount} onChange={setPayAmount} />
+              <CurrencyInput prefix={currencyCode} fractionDigits={currencyMetadata(currencyCode).minorUnits} aria-label={`Amount (${currencyCode})`} value={payAmount} onChange={setPayAmount} />
+              <BankMatchPreview text={payAmount} currencyCode={currencyCode} transaction={transaction} document={selected} />
             </div>
           )}
         </div>
@@ -1928,10 +1927,10 @@ export function MatchSheet({
   useEffect(() => {
     if (transaction) {
       setSelection(null);
-      setPayAmount(centsToDecimal(Math.abs(transaction.amount)));
+      setPayAmount(bankUiDecimal(bankUiAbs(transaction.amount), currencyCode));
       setSearch("");
     }
-  }, [transaction]);
+  }, [transaction, currencyCode]);
 
   const docList = isCredit ? invoices : bills;
   const filteredDocs = useMemo(() => {
@@ -1957,11 +1956,10 @@ export function MatchSheet({
           body = { matchType: "existing_journal", journalEntryId: c.journalEntryId };
         }
       } else {
-        const amount = Math.round(parseFloat(payAmount) * 100);
-        if (!amount || amount <= 0) { toast.error("Enter a valid amount"); setSaving(false); return; }
+        const { amountMinor } = bankUiMatchAmount(payAmount, currencyCode, transaction, selection.doc);
         body = selection.kind === "invoice"
-          ? { matchType: "invoice", invoiceId: selection.doc.id, amount, date: transaction.date }
-          : { matchType: "bill", billId: selection.doc.id, amount, date: transaction.date };
+          ? { matchType: "invoice", invoiceId: selection.doc.id, amountMinor, date: transaction.date }
+          : { matchType: "bill", billId: selection.doc.id, amountMinor, date: transaction.date };
       }
       const res = await fetch(`/api/v1/bank-transactions/${transaction.id}/match`, {
         method: "POST",
@@ -2078,7 +2076,7 @@ export function MatchSheet({
                           type="button"
                           onClick={() => {
                             setSelection(isCredit ? { kind: "invoice", doc: d as OpenInvoice } : { kind: "bill", doc: d as OpenBill });
-                            setPayAmount(centsToDecimal(Math.min(Math.abs(transaction?.amount || 0), d.amountDue)));
+                            setPayAmount(bankUiDecimal(bankUiMin(bankUiAbs(transaction?.amount || 0n), d.amountDue), currencyCode));
                           }}
                           className={cn(
                             "w-full flex items-center justify-between rounded-lg border p-3 text-left transition-colors hover:bg-muted/50",
@@ -2111,7 +2109,8 @@ export function MatchSheet({
               {needsAmount && (
                 <div className="space-y-2 rounded-lg border p-3">
                   <Label className="text-xs">{isCredit ? "Amount Received" : "Payment Amount"}</Label>
-                  <CurrencyInput prefix="$" value={payAmount} onChange={setPayAmount} />
+                  <CurrencyInput prefix={currencyCode} fractionDigits={currencyMetadata(currencyCode).minorUnits} aria-label={`Amount (${currencyCode})`} value={payAmount} onChange={setPayAmount} />
+                  <BankMatchPreview text={payAmount} currencyCode={currencyCode} transaction={transaction} document={selection?.doc} />
                 </div>
               )}
             </>
@@ -2170,7 +2169,7 @@ export function TransferSheet({
       setCounterTx(null);
       setCounterCandidates([]);
     }
-  }, [transaction]);
+  }, [transaction, currencyCode]);
 
   // When a target account is chosen, look for an unreconciled statement line in
   // it with the opposite sign + equal magnitude to suggest as the counter line.
@@ -2184,12 +2183,12 @@ export function TransferSheet({
       .then((r) => r.json())
       .then((data) => {
         const want = -transaction.amount;
-        const candidates = (data.data ?? []).filter((t: Transaction) => t.amount === want);
+        const candidates = (data.data ?? []).map((t: Record<string, unknown>) => bankUiTransaction(t, currencyCode) as unknown as Transaction).filter((t: Transaction) => t.amount === want);
         setCounterCandidates(candidates);
       })
       .catch(() => setCounterCandidates([]))
       .finally(() => setLoadingCounters(false));
-  }, [targetId, orgId, transaction]);
+  }, [targetId, orgId, transaction, currencyCode]);
 
   async function handleTransfer() {
     if (!orgId || !transaction || !targetId) return;
@@ -2353,14 +2352,14 @@ export function SplitAccountSheet({
   const [saving, setSaving] = useState(false);
 
   const isCredit = (transaction?.amount ?? 0) > 0;
-  const totalCents = Math.abs(transaction?.amount ?? 0);
+  const totalCents = bankUiAbs(transaction?.amount ?? 0n);
 
   useEffect(() => {
     if (transaction) {
       // Seed with the whole amount on the first row + one empty row to split into.
-      setRows([newSplitRow(centsToDecimal(Math.abs(transaction.amount))), newSplitRow()]);
+      setRows([newSplitRow(bankUiDecimal(bankUiAbs(transaction.amount), currencyCode)), newSplitRow()]);
     }
-  }, [transaction]);
+  }, [transaction, currencyCode]);
 
   useEffect(() => {
     if (!transaction || !orgId || taxRates.length > 0) return;
@@ -2370,12 +2369,15 @@ export function SplitAccountSheet({
       .catch(() => {});
   }, [transaction, orgId, taxRates.length]);
 
-  const allocatedCents = useMemo(
-    () => rows.reduce((sum, r) => sum + (Math.round(parseFloat(r.amount) * 100) || 0), 0),
-    [rows]
-  );
+  const splitPreview = useMemo(() => {
+    try {
+      const amounts = rows.filter(r => r.amount).map(r => BigInt(bankUiAmount(r.amount, currencyCode).amountMinor));
+      return { total: amounts.reduce((sum, value) => sum + value, 0n), valid: true };
+    } catch { return { total: 0n, valid: false }; }
+  }, [rows, currencyCode]);
+  const allocatedCents = splitPreview.total;
   const remainingCents = totalCents - allocatedCents;
-  const balanced = remainingCents === 0;
+  const balanced = splitPreview.valid && remainingCents === 0n;
 
   function updateRow(key: string, patch: Partial<SplitAllocationDraft>) {
     setRows((prev) => prev.map((r) => (r.key === key ? { ...r, ...patch } : r)));
@@ -2385,24 +2387,14 @@ export function SplitAccountSheet({
   }
   function addRow() {
     // Pre-fill the new row with the outstanding remainder, if any.
-    setRows((prev) => [...prev, newSplitRow(remainingCents > 0 ? centsToDecimal(remainingCents) : "")]);
+    setRows((prev) => [...prev, newSplitRow(remainingCents > 0 ? bankUiDecimal(remainingCents, currencyCode) : "")]);
   }
 
   async function handleSave() {
     if (!orgId || !transaction) return;
-    const allocations = rows
-      .filter((r) => r.accountId && parseFloat(r.amount) > 0)
-      .map((r) => ({
-        accountId: r.accountId,
-        amount: Math.round(parseFloat(r.amount) * 100),
-        taxRateId: r.taxRateId === "none" ? null : r.taxRateId,
-        memo: r.memo.trim() || null,
-      }));
-    if (allocations.length === 0) { toast.error("Add at least one part with a category and amount"); return; }
-    if (allocations.reduce((s, a) => s + a.amount, 0) !== totalCents) {
-      toast.error("The parts must add up to the transaction amount");
-      return;
-    }
+    let allocations: ReturnType<typeof bankUiSplit>;
+    try { allocations = bankUiSplit(rows, currencyCode, transaction.amount); }
+    catch (error) { toast.error(error instanceof Error ? error.message : "Invalid split"); return; }
     setSaving(true);
     try {
       const res = await fetch(`/api/v1/bank-transactions/${transaction.id}/split-account`, {
@@ -2467,7 +2459,7 @@ export function SplitAccountSheet({
                 <div className="grid grid-cols-2 gap-2.5">
                   <div className="space-y-1.5">
                     <Label className="text-xs">Amount</Label>
-                    <CurrencyInput prefix="$" value={row.amount} onChange={(v) => updateRow(row.key, { amount: v })} />
+                    <CurrencyInput prefix={currencyCode} fractionDigits={currencyMetadata(currencyCode).minorUnits} aria-label={`Amount (${currencyCode})`} value={row.amount} onChange={(v) => updateRow(row.key, { amount: v })} />
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">Tax</Label>
@@ -2501,12 +2493,12 @@ export function SplitAccountSheet({
           )}>
             <div>
               <p className="text-xs text-muted-foreground">Allocated</p>
-              <p className="font-mono font-medium tabular-nums">{formatMoney(allocatedCents, currencyCode)} of {formatMoney(totalCents, currencyCode)}</p>
+              <p className="font-mono font-medium tabular-nums">{splitPreview.valid ? formatMoney(allocatedCents, currencyCode) : "Enter valid amounts"} of {formatMoney(totalCents, currencyCode)}</p>
             </div>
             <div className="text-right">
               <p className="text-xs text-muted-foreground">{remainingCents >= 0 ? "Remaining" : "Over by"}</p>
               <p className={cn("font-mono font-medium tabular-nums", balanced ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400")}>
-                {formatMoney(Math.abs(remainingCents), currencyCode)}
+                {splitPreview.valid ? formatMoney(bankUiAbs(remainingCents), currencyCode) : "Unavailable"}
               </p>
             </div>
           </div>
@@ -2727,21 +2719,21 @@ export interface ReconciliationData {
     id: string;
     startDate: string;
     endDate: string;
-    startBalance: number;
-    endBalance: number;
+    startBalance: bigint;
+    endBalance: bigint;
     status: string;
   } | null;
   currencyCode: string;
   glCurrencyCode: string;
   comparisonUnavailableReason: string | null;
-  statementEndBalance: number;
-  glBalance: number | null;
-  difference: number | null;
+  statementEndBalance: bigint;
+  glBalance: bigint | null;
+  difference: bigint | null;
   differenceMinor: string | null;
   isBalanced: boolean;
   hasLedgerAccount: boolean;
-  reconciled: { count: number; total: number; transactions: Transaction[] };
-  unreconciled: { count: number; total: number; transactions: Transaction[] };
+  reconciled: { count: number; total: bigint; transactions: Transaction[] };
+  unreconciled: { count: number; total: bigint; transactions: Transaction[] };
 }
 
 export function ReconciliationReport({
@@ -2765,7 +2757,7 @@ export function ReconciliationReport({
   const balanced = data.isBalanced;
 
   async function postAdjustment() {
-    if (!orgId || diff == null || diff === 0 || data.reconciliation?.status === "completed") return;
+    if (!orgId || diff == null || diff === 0n || data.reconciliation?.status === "completed") return;
     setPosting(true);
     try {
       const res = await fetch(`/api/v1/bank-accounts/${bankAccountId}/reconciliation`, {
@@ -2836,7 +2828,7 @@ export function ReconciliationReport({
                   : "Your books show more than the statement."}
               </span>
               <div className="flex-1" />
-              <Button size="sm" variant="outline" onClick={() => setAdjustOpen(true)} disabled={diff == null || diff === 0 || data.reconciliation?.status === "completed"} title="Add a small entry so your books match the statement exactly">
+              <Button size="sm" variant="outline" onClick={() => setAdjustOpen(true)} disabled={diff == null || diff === 0n || data.reconciliation?.status === "completed"} title="Add a small entry so your books match the statement exactly">
                 <Scale className="mr-1.5 size-3.5" />Write off the difference
               </Button>
             </>
@@ -2897,7 +2889,7 @@ export function ReconciliationReport({
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAdjustOpen(false)}>Cancel</Button>
-            <Button onClick={postAdjustment} disabled={posting || diff == null || diff === 0 || data.reconciliation?.status === "completed"} className="bg-emerald-600 hover:bg-emerald-700">
+            <Button onClick={postAdjustment} disabled={posting || diff == null || diff === 0n || data.reconciliation?.status === "completed"} className="bg-emerald-600 hover:bg-emerald-700">
               {posting ? <><Loader2 className="mr-2 size-3.5 animate-spin" />Saving…</> : "Write off the difference"}
             </Button>
           </DialogFooter>

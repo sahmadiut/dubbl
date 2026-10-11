@@ -1,4 +1,5 @@
 "use client";
+import { bankUiAbs } from "@/lib/money/bank-ui";
 
 import { useState, useMemo, useEffect } from "react";
 import { useDebounce } from "@/lib/hooks/use-debounce";
@@ -80,7 +81,7 @@ export default function BankTransactionsPage() {
     result = [...result].sort((a, b) => {
       const mul = sortDir === "asc" ? 1 : -1;
       if (sortKey === "date") return mul * a.date.localeCompare(b.date);
-      if (sortKey === "amount") return mul * (Math.abs(a.amount) - Math.abs(b.amount));
+      if (sortKey === "amount") return mul * (bankUiAbs(a.amount) < bankUiAbs(b.amount) ? -1 : bankUiAbs(a.amount) > bankUiAbs(b.amount) ? 1 : 0);
       return 0;
     });
     return result;

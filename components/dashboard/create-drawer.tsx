@@ -62,6 +62,8 @@ import { journalEditorPreview, journalDecimal } from "@/lib/money/journal-displa
 import { quoteEditorLines } from "@/lib/money/quote-ui";
 import { procurementEditorLines } from "@/lib/money/procurement-ui";
 import { debitNoteEditorLines } from "@/lib/money/debit-note-ui";
+import { expenseEditorItems, expenseEditorPreview, expenseUiMoney, expenseUiMileageSetting } from "@/lib/money/expense-ui";
+import { ExpenseAmountInput } from "@/components/dashboard/expense-amount-input";
 import { salesReceiptEditorLines, salesReceiptEditorCurrency } from "@/lib/money/sales-receipt-ui";
 import { recurringInvoiceEditorLines, recurringInvoiceEditorCurrency } from "@/lib/money/recurring-invoice-ui";
 import { customerPrepaymentCurrency, customerPrepaymentAmount, customerPrepaymentMoney } from "@/lib/money/customer-prepayment-ui";
@@ -79,7 +81,7 @@ import { CategoryPicker } from "@/components/dashboard/category-picker";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { payrollCentsInput, payrollBasisPointsInput } from "@/lib/money/payroll-input";
 import { catalogPriceMinor, catalogWholeInput } from "@/lib/money/catalog-input";
-import { formatMoney, decimalToCents } from "@/lib/money";
+import { formatMoney } from "@/lib/money";
 
 type DrawerType = "contact" | "project" | "invoice" | "bill" | "entry" | "inventory" | "quote" | "salesReceipt" | "purchaseOrder" | "expense" | "fixedAsset" | "budget" | "employee" | "creditNote" | "recurring" | "account" | "bankAccount" | "warehouse" | "stockTake" | "category" | "transfer" | "bankTransfer" | "contractor" | "deal" | "debitNote" | "customerCredit" | "loan" | "openingBalance" | "accrualSchedule" | "revenueSchedule" | "recurringJournal";
 
@@ -124,7 +126,7 @@ export function CreateDrawerProvider({ children }: { children: React.ReactNode }
       <QuoteDrawer open={activeType === "quote"} onClose={close} />
       <SalesReceiptDrawer key={typeof window !== "undefined" ? localStorage.getItem("activeOrgId") || "" : ""} open={activeType === "salesReceipt"} onClose={close} />
       <PurchaseOrderDrawer key={drawerOrgId} open={activeType === "purchaseOrder"} onClose={close} />
-      <ExpenseDrawer open={activeType === "expense"} onClose={close} />
+      <ExpenseDrawer key={`expense-${drawerOrgId}-${activeType === "expense"}`} open={activeType === "expense"} onClose={close} />
       <FixedAssetDrawer open={activeType === "fixedAsset"} onClose={close} />
       <BudgetDrawer open={activeType === "budget"} onClose={close} />
       <EmployeeDrawer open={activeType === "employee"} onClose={close} />
@@ -1669,7 +1671,7 @@ interface ExpenseItemForm {
   // Mileage capture. When on, amount is computed from distance * rate.
   isMileage: boolean;
   distanceMiles: string; // miles, decimal as typed (e.g. "120.5")
-  mileageRate: string; // dollars per mile, decimal as typed (e.g. "0.67")
+  mileageRate: string; // claim-currency major units per mile, exact decimal text
 }
 
 const emptyExpenseItem = (): ExpenseItemForm => ({
@@ -1683,7 +1685,7 @@ const emptyExpenseItem = (): ExpenseItemForm => ({
   receiptFileName: "",
   isMileage: false,
   distanceMiles: "",
-  mileageRate: "0.67",
+  mileageRate: "",
 });
 
 // Mirrors the tax-rates API row shape ({ taxRates: [...] } from GET
@@ -1703,34 +1705,31 @@ function ExpenseDrawer({ open, onClose }: { open: boolean; onClose: () => void }
   const [items, setItems] = useState<ExpenseItemForm[]>([emptyExpenseItem()]);
   const [taxRates, setTaxRates] = useState<ExpenseTaxRateOption[]>([]);
 
+  const [settings, setSettings] = useState<{ currencyCode: string; rate: string } | null>(null);
+  const [settingsError, setSettingsError] = useState<string | null>(null);
+
   useEffect(() => {
-    if (!open) {
-      setTitle(""); setDescription("");
-      setItems([emptyExpenseItem()]);
-      return;
-    }
+    if (!open) return;
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
-    fetch("/api/v1/tax-rates", { headers: { "x-organization-id": orgId } })
-      .then((r) => r.json())
-      .then((data) => { if (data.taxRates) setTaxRates(data.taxRates); })
-      .catch(() => {});
+    const controller = new AbortController();
+    const options = { headers: { "x-organization-id": orgId }, signal: controller.signal };
+    fetch("/api/v1/organization/mileage-rate", options)
+      .then(async r => { const data = await r.json(); if (!r.ok) throw new Error(data.error || "Unable to load expense currency"); return expenseUiMileageSetting(data); })
+      .then(data => { setSettings(data); setItems(previous => previous.map(item => ({ ...item, mileageRate: item.mileageRate || data.rate }))); })
+      .catch(error => { if (!controller.signal.aborted) setSettingsError(error instanceof Error ? error.message : "Unable to load expense currency"); });
+    fetch("/api/v1/tax-rates", options)
+      .then(async r => { const data = await r.json(); if (!r.ok) throw new Error("Unable to load expense taxes"); return data; })
+      .then(data => setTaxRates(data.taxRates || []))
+      .catch(error => { if (!controller.signal.aborted) setSettingsError(error instanceof Error ? error.message : "Unable to load expense taxes"); });
+    return () => controller.abort();
   }, [open]);
-
-  // For a mileage item the amount is computed from distance * rate; otherwise
-  // it's the amount the user typed directly.
-  function itemAmount(item: ExpenseItemForm): number {
-    if (item.isMileage) {
-      return (parseFloat(item.distanceMiles) || 0) * (parseFloat(item.mileageRate) || 0);
-    }
-    return parseFloat(item.amount) || 0;
-  }
 
   function updateItem(index: number, updates: Partial<ExpenseItemForm>) {
     setItems((prev) => prev.map((item, i) => (i === index ? { ...item, ...updates } : item)));
   }
 
-  const total = items.reduce((sum, item) => sum + decimalToCents(itemAmount(item)), 0);
+  const preview = expenseEditorPreview(items, settings?.currencyCode ?? null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -1738,35 +1737,15 @@ function ExpenseDrawer({ open, onClose }: { open: boolean; onClose: () => void }
     if (items.some((item) => !item.description.trim())) {
       toast.error("Please fill in all item descriptions"); return;
     }
-    if (items.some((item) => itemAmount(item) <= 0)) {
-      toast.error("Each item needs an amount greater than zero (mileage items need distance and rate)"); return;
-    }
-    setSaving(true);
     const orgId = localStorage.getItem("activeOrgId");
-    if (!orgId) return;
-
+    if (!orgId || !settings || settingsError) { toast.error(settingsError || "Load the expense currency first"); return; }
     try {
+      const payload = expenseEditorItems(items, settings.currencyCode, true);
+      setSaving(true);
       const res = await fetch("/api/v1/expenses", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
-        body: JSON.stringify({
-          title,
-          description: description || null,
-          items: items.map((item) => ({
-            date: item.date,
-            description: item.description,
-            amount: itemAmount(item),
-            category: item.category || null,
-            accountId: item.accountId || null,
-            taxRateId: item.taxRateId || null,
-            isMileage: item.isMileage,
-            // distanceMiles is stored as miles x 100; mileageRate as cents per mile.
-            distanceMiles: item.isMileage ? Math.round((parseFloat(item.distanceMiles) || 0) * 100) : null,
-            mileageRate: item.isMileage ? Math.round((parseFloat(item.mileageRate) || 0) * 100) : null,
-            receiptFileKey: item.receiptFileKey || null,
-            receiptFileName: item.receiptFileName || null,
-          })),
-        }),
+        body: JSON.stringify({ title, description: description || null, currencyCode: settings.currencyCode, items: payload.items }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -1799,6 +1778,8 @@ function ExpenseDrawer({ open, onClose }: { open: boolean; onClose: () => void }
           <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
             <div className="space-y-4">
               <SectionLabel>Claim Info</SectionLabel>
+              <p className="text-sm text-muted-foreground">Currency: {settings?.currencyCode || "Loading..."}. Amounts include tax.</p>
+              {(settingsError || preview.error) && <p role="alert" className="text-sm text-destructive">{settingsError || preview.error}</p>}
               <div className="space-y-2">
                 <Label>Title *</Label>
                 <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Business trip to NYC" />
@@ -1814,7 +1795,7 @@ function ExpenseDrawer({ open, onClose }: { open: boolean; onClose: () => void }
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <SectionLabel>Expense Items</SectionLabel>
-                <Button type="button" variant="outline" size="sm" onClick={() => setItems((prev) => [...prev, emptyExpenseItem()])}>
+                <Button type="button" variant="outline" size="sm" onClick={() => setItems((prev) => [...prev, { ...emptyExpenseItem(), mileageRate: settings?.rate || "" }])}>
                   <Plus className="mr-2 size-3.5" />Add Item
                 </Button>
               </div>
@@ -1851,18 +1832,18 @@ function ExpenseDrawer({ open, onClose }: { open: boolean; onClose: () => void }
                         <>
                           <div className="space-y-2">
                             <Label>Distance (miles) *</Label>
-                            <Input type="number" min={0} step="0.1" value={item.distanceMiles} onChange={(e) => updateItem(index, { distanceMiles: e.target.value })} placeholder="0" />
+                            <Input type="text" inputMode="decimal" aria-label="Distance in miles" value={item.distanceMiles} onChange={(e) => updateItem(index, { distanceMiles: e.target.value })} placeholder="0" />
                           </div>
                           <div className="space-y-2">
                             <Label>Rate per mile *</Label>
-                            <CurrencyInput prefix="$" value={item.mileageRate} onChange={(v) => updateItem(index, { mileageRate: v })} />
+                            <ExpenseAmountInput currency={settings?.currencyCode || ""} label={`Mileage rate per mile for item ${index + 1}`} value={item.mileageRate} onChange={(v) => updateItem(index, { mileageRate: v })} />
                           </div>
                         </>
                       ) : (
                         <>
                           <div className="space-y-2">
                             <Label>Amount *</Label>
-                            <CurrencyInput prefix="$" value={item.amount} onChange={(v) => updateItem(index, { amount: v })} />
+                            <ExpenseAmountInput currency={settings?.currencyCode || ""} label={`Amount for item ${index + 1}`} value={item.amount} onChange={(v) => updateItem(index, { amount: v })} />
                           </div>
                           <div className="space-y-2">
                             <Label>Category</Label>
@@ -1874,7 +1855,7 @@ function ExpenseDrawer({ open, onClose }: { open: boolean; onClose: () => void }
                     {item.isMileage && (
                       <div className="flex items-center justify-between rounded-md bg-muted/40 px-3 py-2 text-sm">
                         <span className="text-muted-foreground">Computed amount</span>
-                        <span className="font-mono font-medium tabular-nums">{formatMoney(decimalToCents(itemAmount(item)))}</span>
+                        <span className="font-mono font-medium tabular-nums">{!preview.error && settings ? expenseUiMoney(preview.amounts[index], settings.currencyCode) : "\u2014"}</span>
                       </div>
                     )}
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -1913,7 +1894,7 @@ function ExpenseDrawer({ open, onClose }: { open: boolean; onClose: () => void }
 
             <div className="flex items-center justify-between rounded-lg border bg-muted/50 px-4 py-3">
               <span className="text-sm font-medium">Total</span>
-              <span className="text-lg font-bold font-mono tabular-nums">{formatMoney(total)}</span>
+              <span className="text-lg font-bold font-mono tabular-nums">{!preview.error && settings ? expenseUiMoney(preview.total, settings.currencyCode) : "\u2014"}</span>
             </div>
           </div>
           <DrawerFooter onClose={onClose} saving={saving} label="Create Expense Claim" />

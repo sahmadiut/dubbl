@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatMoney } from "@/lib/money";
+import { expenseUiHeader, expenseUiCounts, expenseUiMinor, expenseUiMoney } from "@/lib/money/expense-ui";
 import { expenseSummaryDisplay } from "@/lib/money/expense-display";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
@@ -93,7 +93,7 @@ function buildColumns(): Column<ExpenseClaim>[] {
       className: "w-28 text-right",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums">
-          {formatMoney(r.totalAmount, r.currencyCode)}
+          {expenseUiMoney(expenseUiMinor(r, "totalAmount"), r.currencyCode)}
         </span>
       ),
     },
@@ -101,6 +101,11 @@ function buildColumns(): Column<ExpenseClaim>[] {
 }
 
 export default function ExpensesPage() {
+  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
+  return <ExpensesWorkspace key={orgId} />;
+}
+
+function ExpensesWorkspace() {
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
   const [claims, setClaims] = useState<ExpenseClaim[]>([]);
@@ -150,7 +155,7 @@ export default function ExpensesPage() {
     })
       .then(async (r) => { const data = await r.json(); if (!r.ok) throw new Error(data.error || "Unable to load expense totals"); return data; })
       .then((data) => {
-        if (!cancelled) { setCountsData(data); setCountsError(null); }
+        if (!cancelled) { setCountsData(expenseUiCounts(data)); setCountsError(null); }
       })
       .catch((err) => { if (!cancelled) { setCountsData(null); setCountsError(err instanceof Error ? err.message : "Unable to load expense totals"); } });
     return () => { cancelled = true; };
@@ -173,7 +178,7 @@ export default function ExpensesPage() {
       .then((data) => {
         if (cancelled) return;
         setClaimsError(null);
-        if (data.data) setClaims(data.data);
+        if (data.data) setClaims(data.data.map(expenseUiHeader));
         if (data.pagination) {
 
           setHasMore(data.pagination.page < data.pagination.totalPages);
@@ -204,7 +209,7 @@ export default function ExpensesPage() {
       .then(async (r) => { const data = await r.json(); if (!r.ok) throw new Error(data.error || "Unable to load more expense claims"); return data; })
       .then((data) => {
         setClaimsError(null);
-        if (data.data) setClaims((prev) => [...prev, ...data.data]);
+        if (data.data) { const adopted = data.data.map(expenseUiHeader); setClaims((prev) => [...prev, ...adopted]); }
         if (data.pagination) {
           setPage(data.pagination.page);
 

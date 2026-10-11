@@ -210,7 +210,7 @@ The original MON-133 acceptance and all remaining consumers are preserved.
 |---|---|---|
 | MON-147 | accounting/opening-balances/page.tsx; create-drawer.tsx OpeningBalanceDrawer; OpeningBalanceForm; OpeningBalanceMoneyDetails; opening-balance-ui.ts | Exact decimal text, bigint preview/validation/saved totals; checked numeric fixed-cents writes only; unsupported Minor writes are not sent |
 | MON-148 | sales/payments list/detail; banking/batches list/create/detail/remittance; banking/scheduled list/create/cancel/process; payment-ui.ts; PaymentAmountPreview | Checked Minor aliases, bigint balances/grouped sample summaries, explicit one-currency batch and schedule Minor writes, exact due/range preview/save checks; historical leftover allocation unsupported |
-| MON-149 | Expense list/detail/edit, ExpenseDrawer and mileage | Pending money and nonmoney unit closure |
+| MON-149 | Expense list/detail/edit/pay amount, ExpenseDrawer/mileage, recurring expense controls; expense-ui.ts, recurring-expense-ui.ts, ExpenseAmountInput | Exact text/Minor writes, bigint previews and validated saved aliases; organization/claim currency, miles hundredths and independently rounded per-mile rate; recurring payable fixed-two gross policy retained |
 | MON-150 | Banking/statements/import/reconciliation/transfers/settings, bank drawers | Pending bank/base currency closure |
 | MON-151 | Tax/period/sales-tax/settlement/settings and remaining core approvals | Pending exact money, basis-point/settings closure |
 | MON-152 | Accounts list/detail/layout and untagged journal totals/automated detail | Pending source/base presentation closure |
@@ -828,3 +828,68 @@ monetary float/fixed-two shortcut is adopted for scoped saved presentation.
 MON-129 and MON-007 retain independent combined acceptance; MON-133, auxiliary,
 public/PDF/provider and full-int64/production-IRR qualification are separate.
 DEC-005 behavioral/layout review applies; live browser effects are not claimed.
+
+## MON-149 expense and mileage UI
+
+Owner: MON-149 owns purchases/expenses list/detail/edit and payment amount display,
+create-drawer.tsx ExpenseDrawer/mileage, purchases/expenses/recurring controls,
+expense-ui.ts, recurring-expense-ui.ts and ExpenseAmountInput. Existing expense
+CRUD/lifecycle (MON-060/061), organization settings (MON-125), and recurring
+payable services/generation (MON-099) retain their ownership. Registered MCP
+operations already accept these inputs and return matching aliases; no API,
+MCP, schema, migration or production currency flag change is required.
+
+Ordinary amounts and reimbursement rates are exact decimal major text using
+the claim currency. Creation loads organization currency and saved mileage rate,
+validates the rate's numeric/Minor agreement, and explicitly sends that currency.
+There is no guessed USD while loading or on failure. Organization raw 67 units
+is USD 0.67, JPY/IRR 67 or KWD 0.067 per mile. The null setting's existing 67-unit
+server fallback remains unchanged. Saved currency owns detail/edit/pay display.
+
+Mileage multiplies the original entered distance and rate as exact ratios,
+rounding each tax-inclusive item half away from zero to currency minor units.
+Distance metadata independently rounds to int32 hundredths of miles; rate
+metadata independently rounds to claim-currency minor units per mile. This
+preserves the existing calculation order without floats. The saved amount is
+authoritative, never recomputed from rounded metadata: USD 0.005 per mile times
+3 miles saves 2 units with a 1-unit saved per-mile rate. Ordinary lines send
+agreeing amountExact/amountMinor; mileage sends amountMinor, distanceMiles and
+mileageRateMinor. Preview and payload share the same calculation. Aggregate
+safe-number bounds are checked with bigint. Creation keeps its positive-item
+policy, whereas editing and the adopted API allow zero. Malformed/negative,
+exponent/partial decimal, unsupported currency, amount/rate/distance/aggregate
+overflow and blank submitted fields reject with English errors.
+
+Safe numeric compatibility fields remain in saved UI objects. Every monetary
+consumer validates any canonical Minor alias against that number before bigint
+arithmetic, exact decimal edit prefill or formatting. Detail validates item/header
+totals, nullable mileage aliases and physical metadata. Broken reads expose an
+alert and suppress their amounts. Lifecycle success reloads through that same
+detail adapter. Edit carries saved line IDs and account/receipt fields; omitted
+tax, cost-center and mileage metadata is retained by the service. Saved mileage
+distance/rate are shown without changing the amount. Status counts retain their
+server contract: one currency per status, cross-status mixed totals show
+"Multiple currencies", empty totals show 0 and same-currency sums use bigint.
+Organization/id keyed workspaces and opening/closing drawer mounts reset context.
+
+Recurring expenses remain type=expense under the existing recurring payable
+contract, with supplier, frequency, dates and occurrence cap preserved. Explicit
+currency defaults USD independently of organization/contact. Exact price text
+still rounds major x 100 for every currency before storage; the UI states this
+exception and formats the resulting gross total with the selected currency.
+Expense generation stays gross-only, without tax or discount. All submitted
+lines are required; no incomplete line is silently dropped. Ordinary expense
+currency-scale inputs do not redefine recurring price semantics. Template create
+and two capped occurrences are checked through real REST/MCP and SQL.
+
+Six behavioral/render groups and a new disposable migrated PostgreSQL fixture
+cover USD/JPY/synthetic IRR/KWD, low digits, subminor ties, aliases, invalid/range
+cases, preview/save/edit/read/count agreement and recurrence. Expense CRUD,
+lifecycle and recurring bill UI fixtures are jointly rerun. Existing scrollable
+detail table and responsive sheets are retained; monetary inputs have decimal
+keyboard modes and English accessible names. DEC-005 permits this source/render
+layout review; live browser effects are not claimed. Physical hundredths,
+tax-rate basis points and recurrence counts are explicit nonmoney exceptions.
+Receipt provider, organization setting editor, localization, full-int64 business
+expansion and production IRR qualification remain separate. MON-133/MON-129 and
+MON-007 retain independent integration acceptance; no build/dev/deployment occurs.

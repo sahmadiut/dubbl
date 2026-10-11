@@ -1,3 +1,20 @@
+## MON-149 expense and mileage UI
+
+Expense create/edit/list/detail/pay display and recurring expense controls use
+expense-ui.ts, recurring-expense-ui.ts and ExpenseAmountInput. Exact decimal
+ordinary amounts follow organization/claim currency; mileage extends entered
+decimal distance/rate before per-item rounding, independently storing int32
+miles hundredths and per-mile minor units. Preview and payload agree; aliases,
+nonnegative/safe bounds, totals and saved mileage metadata are validated before
+bigint arithmetic/presentation. Edits retain line identity and omitted dimensions.
+Status-count summaries preserve the adopted one-currency policy and expose
+invalid/mixed results. Recurring type=expense remains owned by MON-099's fixed-two
+payable price contract and gross-only generator; UI currency/schedule controls
+and exact input text preserve that exception. See CORE_UI_MONEY_CUTOVER MON-149
+and its behavior/REST/MCP/SQL evidence. No historical rescale, API/MCP/schema
+change, full-int64 or production IRR enablement. MON-133/MON-129/MON-007 retain
+independent integration acceptance.
+
 ## MON-148 payment and allocation UI
 
 Payment list/detail and banking payment batch list/create/detail/remittance plus

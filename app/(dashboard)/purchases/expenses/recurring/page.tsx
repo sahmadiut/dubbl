@@ -1,5 +1,10 @@
 "use client";
 
+import { toast } from "sonner";
+import { ExpenseAmountInput } from "@/components/dashboard/expense-amount-input";
+import { CurrencySelect } from "@/components/ui/currency-select";
+import { recurringExpensePayload, recurringExpensePreview } from "@/lib/money/recurring-expense-ui";
+import { expenseUiMoney } from "@/lib/money/expense-ui";
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -70,6 +75,11 @@ const emptyLine = (): LineItem => ({
 });
 
 export default function RecurringExpensesPage() {
+  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
+  return <RecurringExpensesWorkspace key={orgId} />;
+}
+
+function RecurringExpensesWorkspace() {
   const [templates, setTemplates] = useState<RecurringTemplate[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -78,6 +88,7 @@ export default function RecurringExpensesPage() {
   const [submitting, setSubmitting] = useState(false);
 
   // Form state
+  const [currencyCode, setCurrencyCode] = useState("USD");
   const [name, setName] = useState("");
   const [contactId, setContactId] = useState("");
   const [frequency, setFrequency] = useState("monthly");
@@ -107,7 +118,10 @@ export default function RecurringExpensesPage() {
     fetchTemplates();
   }, [fetchTemplates]);
 
+  const preview = recurringExpensePreview(lines, currencyCode);
+
   const resetForm = () => {
+    setCurrencyCode("USD");
     setName("");
     setContactId("");
     setFrequency("monthly");
@@ -120,39 +134,22 @@ export default function RecurringExpensesPage() {
   const handleSubmit = async () => {
     if (!name || !contactId || !startDate || lines.length === 0) return;
 
-    const validLines = lines.filter((l) => l.description && l.amount);
-    if (validLines.length === 0) return;
-
-    setSubmitting(true);
     try {
+      const payload = recurringExpensePayload({ name, contactId, frequency, startDate, endDate, maxOccurrences, currencyCode }, lines);
+      setSubmitting(true);
       const res = await fetch("/api/v1/recurring", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...orgHeaders(),
-        },
-        body: JSON.stringify({
-          name,
-          type: "expense",
-          contactId,
-          frequency,
-          startDate,
-          endDate: endDate || null,
-          maxOccurrences: maxOccurrences ? parseInt(maxOccurrences, 10) : null,
-          lines: validLines.map((l) => ({
-            description: l.description,
-            quantity: 1,
-            unitPriceExact: l.amount || "0",
-            accountId: l.accountId || null,
-          })),
-        }),
+        headers: { "Content-Type": "application/json", ...orgHeaders() },
+        body: JSON.stringify(payload),
       });
-
+      if (!res.ok) { const data = await res.json(); throw new Error(data.error || "Unable to create recurring expense"); }
       if (res.ok) {
         setDrawerOpen(false);
         resetForm();
         fetchTemplates();
       }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to create recurring expense");
     } finally {
       setSubmitting(false);
     }
@@ -243,13 +240,19 @@ export default function RecurringExpensesPage() {
         </Table>
       </div>
 
-      <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
+      <Sheet open={drawerOpen} onOpenChange={open => { setDrawerOpen(open); if (!open) resetForm(); }}>
         <SheetContent className="sm:max-w-lg w-full p-0 flex flex-col overflow-y-auto">
           <SheetHeader className="px-4 pt-4 pb-3 sm:px-6 sm:pt-6 sm:pb-4 border-b">
             <SheetTitle>New Recurring Expense</SheetTitle>
           </SheetHeader>
 
           <div className="px-4 pb-6 pt-4 sm:px-6 space-y-4 flex-1 overflow-y-auto">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Currency</label>
+              <CurrencySelect value={currencyCode} onValueChange={setCurrencyCode} />
+              <p className="text-xs text-muted-foreground">Recurring amounts use two-decimal input in every currency. 12.50 stores 1250 minor units. Expenses generate gross amounts without tax or discount.</p>
+            </div>
+            {preview.error && <p role="alert" className="text-sm text-destructive">{preview.error}</p>}
             <div className="space-y-2">
               <label className="text-sm font-medium">Name</label>
               <Input
@@ -341,15 +344,7 @@ export default function RecurringExpensesPage() {
                       }
                     />
                     <div className="grid grid-cols-2 gap-2">
-                      <Input
-                        type="number"
-                        step="0.01"
-                        placeholder="Amount"
-                        value={line.amount}
-                        onChange={(e) =>
-                          updateLine(i, "amount", e.target.value)
-                        }
-                      />
+                      <ExpenseAmountInput currency="Fixed-two" label={`Recurring amount for line ${i + 1}`} value={line.amount} onChange={value => updateLine(i, "amount", value)} />
                       <AccountPicker
                         value={line.accountId || ""}
                         onChange={(v) => updateLine(i, "accountId", v)}
@@ -373,6 +368,7 @@ export default function RecurringExpensesPage() {
               ))}
             </div>
 
+            <p className="text-sm font-mono">Total: {preview.error ? "\u2014" : expenseUiMoney(preview.total, currencyCode)}</p>
             <Button
               className="w-full bg-emerald-600 hover:bg-emerald-700"
               onClick={handleSubmit}

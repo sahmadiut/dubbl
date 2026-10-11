@@ -22,7 +22,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { CurrencyInput } from "@/components/ui/currency-input";
+import { ExpenseAmountInput } from "@/components/dashboard/expense-amount-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -46,9 +46,7 @@ import { ContentReveal } from "@/components/ui/content-reveal";
 import { useConfirm } from "@/lib/hooks/use-confirm";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { useEntityTitle } from "@/lib/hooks/use-entity-title";
-import { formatMoney } from "@/lib/money";
-import { fromLegacyNumber, toMajorDecimal, parseMajor } from "@/lib/money/exact";
-import { expenseMoneyDisplay } from "@/lib/money/expense-display";
+import { expenseEditorItems, expenseEditorPreview, expenseUiDecimal, expenseUiMinor, expenseUiMoney, expenseUiDocument, expenseDistanceText } from "@/lib/money/expense-ui";
 import Link from "next/link";
 
 interface ExpenseDetail {
@@ -71,6 +69,11 @@ interface ExpenseDetail {
     date: string;
     description: string;
     amount: number;
+    amountMinor?: string;
+    mileageRate: number | null;
+    mileageRateMinor?: string | null;
+    distanceMiles: number | null;
+    isMileage: boolean;
     accountId: string | null;
     category: string | null;
     receiptFileKey: string | null;
@@ -250,29 +253,14 @@ function EditExpenseDrawer({
   onSaved: () => void;
 }) {
   const [saving, setSaving] = useState(false);
-  const [editTitle, setEditTitle] = useState("");
-  const [editDescription, setEditDescription] = useState("");
-  const [editItems, setEditItems] = useState<EditItem[]>([]);
-
-  // Initialize form state when drawer opens
-  useEffect(() => {
-    if (open) {
-      setEditTitle(claim.title);
-      setEditDescription(claim.description || "");
-      setEditItems(
-        claim.items.map((item) => ({
-          id: item.id,
-          date: item.date,
-          description: item.description,
-          amount: toMajorDecimal(fromLegacyNumber(item.amount, claim.currencyCode)),
-          category: item.category || "",
-          accountId: item.accountId || "",
-          receiptFileKey: item.receiptFileKey || "",
-          receiptFileName: item.receiptFileName || "",
-        }))
-      );
-    }
-  }, [open, claim]);
+  const [editTitle, setEditTitle] = useState(claim.title);
+  const [editDescription, setEditDescription] = useState(claim.description || "");
+  const [editItems, setEditItems] = useState<EditItem[]>(() => claim.items.map(item => ({
+    id: item.id, date: item.date, description: item.description,
+    amount: expenseUiDecimal(expenseUiMinor(item, "amount"), claim.currencyCode),
+    category: item.category || "", accountId: item.accountId || "",
+    receiptFileKey: item.receiptFileKey || "", receiptFileName: item.receiptFileName || "",
+  })));
 
   function updateEditItem(index: number, updates: Partial<EditItem>) {
     setEditItems((prev) => prev.map((item, i) => (i === index ? { ...item, ...updates } : item)));
@@ -290,10 +278,8 @@ function EditExpenseDrawer({
     setEditItems((prev) => prev.filter((_, i) => i !== index));
   }
 
-  let editTotal = "\u2014";
-  try {
-    editTotal = expenseMoneyDisplay(editItems.reduce((sum, item) => sum + parseMajor(item.amount || "0", claim.currencyCode, "half-away-from-zero").amountMinor, 0n), claim.currencyCode);
-  } catch { /* Incomplete or invalid input has no monetary preview. */ }
+  const preview = expenseEditorPreview(editItems, claim.currencyCode);
+  const editTotal = preview.error ? "—" : expenseUiMoney(preview.total, claim.currencyCode);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -308,24 +294,16 @@ function EditExpenseDrawer({
       return;
     }
 
-    setSaving(true);
     try {
+      const payload = expenseEditorItems(editItems, claim.currencyCode);
+      setSaving(true);
       const res = await fetch(`/api/v1/expenses/${claim.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify({
           title: editTitle,
           description: editDescription || null,
-          items: editItems.map((item) => ({
-            id: item.id,
-            date: item.date,
-            description: item.description,
-            amountExact: item.amount,
-            category: item.category || null,
-            accountId: item.accountId || null,
-            receiptFileKey: item.receiptFileKey || null,
-            receiptFileName: item.receiptFileName || null,
-          })),
+          items: payload.items,
         }),
       });
 
@@ -360,6 +338,8 @@ function EditExpenseDrawer({
           <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
             <div className="space-y-4">
               <SectionLabel>Claim Info</SectionLabel>
+              <p className="text-sm text-muted-foreground">Currency: {claim.currencyCode}. Amounts include tax; saved mileage metadata is retained.</p>
+              {preview.error && <p role="alert" className="text-sm text-destructive">{preview.error}</p>}
               <div className="space-y-2">
                 <Label>Title *</Label>
                 <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
@@ -401,7 +381,7 @@ function EditExpenseDrawer({
                       </div>
                       <div className="space-y-2">
                         <Label className="text-xs">Amount *</Label>
-                        <CurrencyInput prefix={claim.currencyCode} value={item.amount} onChange={(v) => updateEditItem(index, { amount: v })} />
+                        <ExpenseAmountInput currency={claim.currencyCode} label={`Amount for item ${index + 1}`} value={item.amount} onChange={(v) => updateEditItem(index, { amount: v })} />
                       </div>
                       <div className="space-y-2">
                         <Label className="text-xs">Category</Label>
@@ -451,10 +431,16 @@ function EditExpenseDrawer({
 
 export default function ExpenseDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
+  return <ExpenseDetailWorkspace key={`${orgId}-${id}`} id={id} />;
+}
+
+function ExpenseDetailWorkspace({ id }: { id: string }) {
   const router = useRouter();
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [claim, setClaim] = useState<ExpenseDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
@@ -471,10 +457,9 @@ export default function ExpenseDetailPage() {
     fetch(`/api/v1/expenses/${id}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.expenseClaim) setClaim(data.expenseClaim);
-      })
+      .then(async r => { const data = await r.json(); if (!r.ok) throw new Error(data.error || "Unable to load expense claim"); return data; })
+      .then(data => { setClaim(expenseUiDocument(data.expenseClaim)); setLoadError(null); })
+      .catch(error => { setClaim(null); setLoadError(error instanceof Error ? error.message : "Unable to load expense claim"); })
       .finally(() => setLoading(false));
   }, [id, orgId]);
 
@@ -489,8 +474,7 @@ export default function ExpenseDetailPage() {
       headers: { "x-organization-id": orgId },
     });
     if (res.ok) {
-      const data = await res.json();
-      setClaim((prev) => (prev ? { ...prev, ...data.expenseClaim } : prev));
+      loadClaim();
       toast.success("Expense claim submitted for approval");
     } else {
       const data = await res.json();
@@ -513,8 +497,7 @@ export default function ExpenseDetailPage() {
       headers: { "x-organization-id": orgId },
     });
     if (res.ok) {
-      const data = await res.json();
-      setClaim((prev) => (prev ? { ...prev, ...data.expenseClaim } : prev));
+      loadClaim();
       toast.success("Reversed and moved back to draft");
     } else {
       const data = await res.json();
@@ -529,8 +512,7 @@ export default function ExpenseDetailPage() {
       headers: { "x-organization-id": orgId },
     });
     if (res.ok) {
-      const data = await res.json();
-      setClaim((prev) => (prev ? { ...prev, ...data.expenseClaim } : prev));
+      loadClaim();
       toast.success("Pulled back to draft — you can edit it now");
     } else {
       const data = await res.json();
@@ -545,8 +527,7 @@ export default function ExpenseDetailPage() {
       headers: { "x-organization-id": orgId },
     });
     if (res.ok) {
-      const data = await res.json();
-      setClaim((prev) => (prev ? { ...prev, ...data.expenseClaim } : prev));
+      loadClaim();
       toast.success("Expense claim approved");
     } else {
       const data = await res.json();
@@ -565,8 +546,7 @@ export default function ExpenseDetailPage() {
       body: JSON.stringify({ reason: rejectReason }),
     });
     if (res.ok) {
-      const data = await res.json();
-      setClaim((prev) => (prev ? { ...prev, ...data.expenseClaim } : prev));
+      loadClaim();
       setRejectOpen(false);
       setRejectReason("");
       toast.success("Expense claim rejected");
@@ -584,8 +564,7 @@ export default function ExpenseDetailPage() {
       body: JSON.stringify({ date: payDate }),
     });
     if (res.ok) {
-      const data = await res.json();
-      setClaim((prev) => (prev ? { ...prev, ...data.expenseClaim } : prev));
+      loadClaim();
       setPayOpen(false);
       toast.success("Expense claim marked as paid");
     } else {
@@ -621,7 +600,7 @@ export default function ExpenseDetailPage() {
   if (!claim) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh]">
-        <p className="text-sm text-muted-foreground">Expense claim not found</p>
+        <p role={loadError ? "alert" : undefined} className="text-sm text-muted-foreground">{loadError || "Expense claim not found"}</p>
         <Button variant="ghost" size="sm" asChild className="mt-2">
           <Link href="/purchases/expenses">Back to expenses</Link>
         </Button>
@@ -714,7 +693,7 @@ export default function ExpenseDetailPage() {
                   <div className="space-y-4">
                     <div className="rounded-lg border bg-muted/50 px-4 py-3">
                       <p className="text-xs text-muted-foreground">Total Amount</p>
-                      <p className="text-xl font-bold font-mono">{formatMoney(claim.totalAmount, claim.currencyCode)}</p>
+                      <p className="text-xl font-bold font-mono">{expenseUiMoney(expenseUiMinor(claim, "totalAmount"), claim.currencyCode)}</p>
                     </div>
                     <div className="space-y-2">
                       <Label>Payment Date</Label>
@@ -772,7 +751,7 @@ export default function ExpenseDetailPage() {
         <div className="grid gap-4 grid-cols-2 sm:grid-cols-3">
           <div className="rounded-lg border bg-card p-4">
             <p className="text-xs text-muted-foreground">Total Amount</p>
-            <p className="mt-1 text-xl font-bold font-mono tabular-nums">{formatMoney(claim.totalAmount, claim.currencyCode)}</p>
+            <p className="mt-1 text-xl font-bold font-mono tabular-nums">{expenseUiMoney(expenseUiMinor(claim, "totalAmount"), claim.currencyCode)}</p>
           </div>
           <div className="rounded-lg border bg-card p-4">
             <p className="text-xs text-muted-foreground">Items</p>
@@ -799,6 +778,7 @@ export default function ExpenseDetailPage() {
                 <span className="text-sm tabular-nums">{item.date}</span>
                 <div>
                   <p className="text-sm font-medium">{item.description}</p>
+                  {item.isMileage && item.distanceMiles !== null && item.mileageRate !== null && <p className="text-xs text-muted-foreground">{expenseDistanceText(item.distanceMiles)} miles · {expenseUiMoney(expenseUiMinor(item, "mileageRate"), claim.currencyCode)}/mile</p>}
                   {item.account && (
                     <p className="text-xs text-muted-foreground">{item.account.code} · {item.account.name}</p>
                   )}
@@ -812,7 +792,7 @@ export default function ExpenseDetailPage() {
                   )}
                 </span>
                 <span className="text-right text-sm font-mono font-medium tabular-nums">
-                  {formatMoney(item.amount, claim.currencyCode)}
+                  {expenseUiMoney(expenseUiMinor(item, "amount"), claim.currencyCode)}
                 </span>
               </div>
             ))}
@@ -823,7 +803,7 @@ export default function ExpenseDetailPage() {
               <span />
               <span className="text-sm font-semibold">Total</span>
               <span className="text-right text-sm font-mono font-bold tabular-nums">
-                {formatMoney(claim.totalAmount, claim.currencyCode)}
+                {expenseUiMoney(expenseUiMinor(claim, "totalAmount"), claim.currencyCode)}
               </span>
             </div>
           </div>
@@ -831,12 +811,12 @@ export default function ExpenseDetailPage() {
       </div>
 
       {/* Edit Expense Drawer */}
-      <EditExpenseDrawer
+      {editOpen && <EditExpenseDrawer
         open={editOpen}
         onClose={() => setEditOpen(false)}
         claim={claim}
         onSaved={loadClaim}
-      />
+      />}
 
       {confirmDialog}
     </ContentReveal>

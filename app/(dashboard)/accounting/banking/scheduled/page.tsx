@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import {
   Calendar,
   Plus,
@@ -30,9 +30,9 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { ContentReveal } from "@/components/ui/content-reveal";
+import { PaymentAmountPreview } from "@/components/dashboard/payment-amount-preview";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
-import { formatMoney } from "@/lib/money";
-import { parseMajor, fromLegacyNumber, toMajorDecimal } from "@/lib/money/exact";
+import { paymentUiMoney as formatMoney, paymentUiScheduled, paymentUiBill, paymentUiBillAmount, paymentUiDecimal } from "@/lib/money/payment-ui";
 import { cn } from "@/lib/utils";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 
@@ -40,7 +40,7 @@ interface ScheduledPaymentItem {
   id: string;
   billId: string | null;
   contactId: string | null;
-  amount: number;
+  amount: bigint;
   currencyCode: string;
   scheduledDate: string;
   status: "pending" | "processing" | "completed" | "failed" | "cancelled";
@@ -50,8 +50,8 @@ interface ScheduledPaymentItem {
   bill: {
     id: string;
     billNumber: string;
-    total: number;
-    amountDue: number;
+    total: bigint;
+    amountDue: bigint;
     contact: { id: string; name: string } | null;
   } | null;
   contact: { id: string; name: string } | null;
@@ -60,8 +60,8 @@ interface ScheduledPaymentItem {
 interface BillOption {
   id: string;
   billNumber: string;
-  total: number;
-  amountDue: number;
+  total: bigint;
+  amountDue: bigint;
   currencyCode: string;
   contactId: string;
   contact: { id: string; name: string } | null;
@@ -95,7 +95,12 @@ function getWeekLabel(dateStr: string): string {
 }
 
 export default function ScheduledPaymentsPage() {
+  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
+  return <ScheduledPaymentsList key={orgId} orgId={orgId} />;
+}
+function ScheduledPaymentsList({ orgId }: { orgId: string | null }) {
   const [items, setItems] = useState<ScheduledPaymentItem[]>([]);
+  const [readError, setReadError] = useState("");
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [showDialog, setShowDialog] = useState(false);
@@ -109,58 +114,63 @@ export default function ScheduledPaymentsPage() {
   const [scheduledDate, setScheduledDate] = useState("");
   const [notes, setNotes] = useState("");
 
-  const orgId =
-    typeof window !== "undefined"
-      ? localStorage.getItem("activeOrgId")
-      : null;
-
   useDocumentTitle("Accounting \u00B7 Scheduled Payments");
 
-  const fetchItems = useCallback(() => {
+  const generation = useRef(0);
+  const latestFetch = useRef<() => void>(() => {});
+  const fetchItems = useCallback((signal?: AbortSignal) => {
     if (!orgId) return;
+    const requestGeneration = ++generation.current;
     const params = new URLSearchParams();
     if (statusFilter !== "all") params.set("status", statusFilter);
 
     fetch(`/api/v1/scheduled-payments?${params}`, {
-      headers: { "x-organization-id": orgId },
+      headers: { "x-organization-id": orgId }, signal,
     })
-      .then((res) => res.json())
-      .then((data) => setItems(data.data || []))
-      .finally(() => setLoading(false));
+      .then((res) => { if (!res.ok) throw new Error("Unable to load payments"); return res.json(); })
+      .then((data) => { const rows = (data.data || []).map(paymentUiScheduled) as ScheduledPaymentItem[]; if (!signal?.aborted && requestGeneration === generation.current) { setItems(rows); setReadError(""); } })
+      .catch(() => { if (!signal?.aborted && requestGeneration === generation.current) { setItems([]); setReadError("Scheduled payment amounts are unavailable. Reload to try again."); } })
+      .finally(() => { if (!signal?.aborted && requestGeneration === generation.current) setLoading(false); });
   }, [orgId, statusFilter]);
 
-  const fetchBills = useCallback(() => {
+  const fetchBills = useCallback((signal?: AbortSignal) => {
     if (!orgId) return;
-    fetch("/api/v1/bills?status=received&limit=100", {
-      headers: { "x-organization-id": orgId },
+    fetch("/api/v1/bills?limit=100", {
+      headers: { "x-organization-id": orgId }, signal,
     })
-      .then((res) => res.json())
-      .then((data) => setBills(data.data || []));
+      .then((res) => { if (!res.ok) throw new Error("Unable to load payments"); return res.json(); })
+      .then((data) => { const rows = (data.data || []).map(paymentUiBill) as BillOption[]; if (!signal?.aborted) setBills(rows.filter(b => b.amountDue > 0n && ["received", "partial", "overdue"].includes((b as BillOption & { status: string }).status))); })
+      .catch(() => { if (!signal?.aborted) { setBills([]); toast.error("Bill amounts are unavailable"); } });
   }, [orgId]);
 
-  // Process due payments on load
   useEffect(() => {
-    if (!orgId) return;
-    fetch("/api/v1/scheduled-payments/process", {
-      method: "POST",
-      headers: { "x-organization-id": orgId },
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.processed > 0) {
-          toast.success(`Processed ${data.processed} scheduled payment(s)`);
-        }
-        if (data.failed > 0) {
-          toast.error(`${data.failed} scheduled payment(s) could not be processed and remain pending`);
-        }
-      })
-      .catch(() => {})
-      .finally(() => fetchItems());
-  }, [orgId, fetchItems]);
+    const controller = new AbortController();
+    fetchItems(controller.signal);
+    return () => controller.abort();
+  }, [fetchItems]);
 
   useEffect(() => {
-    fetchItems();
-  }, [fetchItems]);
+    if (!showDialog) return;
+    const controller = new AbortController();
+    fetchBills(controller.signal);
+    return () => controller.abort();
+  }, [showDialog, fetchBills]);
+
+  useEffect(() => { latestFetch.current = fetchItems; }, [fetchItems]);
+
+  // Preserve initial processing; changing a list filter never posts cash again.
+  useEffect(() => {
+    if (!orgId) return;
+    const controller = new AbortController();
+    fetch("/api/v1/scheduled-payments/process", {
+      method: "POST", headers: { "x-organization-id": orgId }, signal: controller.signal,
+    }).then(res => res.json()).then(data => {
+      if (controller.signal.aborted) return;
+      if (data.processed > 0) toast.success(`Processed ${data.processed} scheduled payment(s)`);
+      if (data.failed > 0) toast.error(`${data.failed} scheduled payment(s) could not be processed and remain pending`);
+    }).catch(() => {}).finally(() => { if (!controller.signal.aborted) latestFetch.current(); });
+    return () => controller.abort();
+  }, [orgId]);
 
   // Group by week
   const grouped = useMemo(() => {
@@ -184,11 +194,9 @@ export default function ScheduledPaymentsPage() {
     if (!selectedBill) return;
     let amountMinor: string;
     try {
-      const parsed = parseMajor(amount.trim(), selectedBill.currencyCode, "half-away-from-zero");
-      if (parsed.amountMinor <= 0n || parsed.amountMinor > BigInt(Number.MAX_SAFE_INTEGER)) throw new RangeError();
-      amountMinor = parsed.amountMinor.toString();
-    } catch {
-      toast.error("Enter a positive decimal amount within the supported range");
+      amountMinor = paymentUiBillAmount(amount, selectedBill).amountMinor;
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Enter a valid payment amount");
       return;
     }
     setSaving(true);
@@ -289,14 +297,19 @@ export default function ScheduledPaymentsPage() {
 
   function openScheduleDialog() {
     resetForm();
-    fetchBills();
+    setBills([]);
     setShowDialog(true);
   }
+
+  const selectedBill = bills.find(b => b.id === selectedBillId);
+  let preview: string | null = null;
+  try { if (selectedBill) preview = paymentUiBillAmount(amount, selectedBill).amountMinor; } catch {}
 
   if (loading) return <BrandLoader />;
 
   return (
     <ContentReveal className="space-y-6">
+      {readError && <p role="alert">{readError}</p>}
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -445,7 +458,7 @@ export default function ScheduledPaymentsPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
-                    <p className="font-mono text-sm font-semibold tabular-nums">
+                    <p className="font-mono text-sm font-semibold tabular-nums break-all">
                       {formatMoney(item.amount, item.currencyCode)}
                     </p>
                     {item.status === "pending" && (
@@ -480,7 +493,7 @@ export default function ScheduledPaymentsPage() {
                 onValueChange={(val) => {
                   setSelectedBillId(val);
                   const b = bills.find((x) => x.id === val);
-                  if (b) setAmount(toMajorDecimal(fromLegacyNumber(b.amountDue, b.currencyCode)));
+                  if (b) setAmount(paymentUiDecimal(b.amountDue, b.currencyCode));
                 }}
               >
                 <SelectTrigger>
@@ -500,11 +513,15 @@ export default function ScheduledPaymentsPage() {
               <Label className="text-xs">Amount</Label>
               <Input
                 type="text"
+                inputMode="decimal"
+                aria-label={`Payment amount (${selectedBill?.currencyCode || "select a bill"})`}
+                aria-invalid={!!amount && !preview}
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0.00"
               />
             </div>
+            <PaymentAmountPreview text={amount} bill={selectedBill} />
             <div className="space-y-2">
               <Label className="text-xs">Scheduled Date</Label>
               <Input
@@ -531,7 +548,7 @@ export default function ScheduledPaymentsPage() {
             </Button>
             <Button
               onClick={handleSchedule}
-              disabled={saving || !selectedBillId || !scheduledDate || !amount}
+              disabled={saving || !selectedBill || !scheduledDate || !preview}
               className="bg-emerald-600 hover:bg-emerald-700"
             >
               {saving && <Loader2 className="mr-2 size-4 animate-spin" />}

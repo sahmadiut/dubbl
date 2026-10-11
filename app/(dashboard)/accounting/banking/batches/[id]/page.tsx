@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/dialog";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { useConfirm } from "@/lib/hooks/use-confirm";
-import { formatMoney } from "@/lib/money";
+import { paymentUiMoney as formatMoney, paymentUiBatch, paymentUiRemittance } from "@/lib/money/payment-ui";
 import { cn } from "@/lib/utils";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 
@@ -34,14 +34,14 @@ interface BatchItemDetail {
   id: string;
   billId: string | null;
   contactId: string | null;
-  amount: number;
+  amount: bigint;
   currencyCode: string;
   status: "pending" | "processing" | "completed" | "failed" | "cancelled";
   bill: {
     id: string;
     billNumber: string;
-    total: number;
-    amountDue: number;
+    total: bigint;
+    amountDue: bigint;
     contact: { id: string; name: string } | null;
   } | null;
   contact: { id: string; name: string } | null;
@@ -52,8 +52,8 @@ interface RemittanceLine {
   billNumber: string;
   billDate: string;
   billReference: string | null;
-  billTotal: number;
-  amountPaid: number;
+  billTotal: bigint;
+  amountPaid: bigint;
   currencyCode: string;
 }
 
@@ -62,7 +62,7 @@ interface RemittanceGroup {
   contactName: string;
   contactEmail: string | null;
   currencyCode: string;
-  totalPaid: number;
+  totalPaid: bigint;
   lines: RemittanceLine[];
 }
 
@@ -70,7 +70,7 @@ interface BatchDetail {
   id: string;
   name: string;
   status: "draft" | "submitted" | "completed";
-  totalAmount: number;
+  totalAmount: bigint;
   currencyCode: string;
   paymentCount: number;
   submittedAt: string | null;
@@ -92,37 +92,37 @@ const ITEM_STATUS_CONFIG: Record<
 
 export default function BatchDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
+  return <BatchDetails key={`${orgId}:${id}`} id={id} orgId={orgId} />;
+}
+function BatchDetails({ id, orgId }: { id: string; orgId: string | null }) {
   const router = useRouter();
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [batch, setBatch] = useState<BatchDetail | null>(null);
+  const [readError, setReadError] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [remittanceOpen, setRemittanceOpen] = useState(false);
   const [remittanceLoading, setRemittanceLoading] = useState(false);
-  const [remittanceGroups, setRemittanceGroups] = useState<
-    RemittanceGroup[] | null
-  >(null);
+  const [remittanceGroups, setRemittanceGroups] = useState<RemittanceGroup[] | null>(null);
   const [sending, setSending] = useState(false);
-
-  const orgId =
-    typeof window !== "undefined"
-      ? localStorage.getItem("activeOrgId")
-      : null;
-
   useDocumentTitle("Accounting \u00B7 Batch Details");
 
-  const fetchBatch = useCallback(() => {
+  const fetchBatch = useCallback((signal?: AbortSignal) => {
     if (!orgId || !id) return;
     fetch(`/api/v1/payment-batches/${id}`, {
-      headers: { "x-organization-id": orgId },
+      headers: { "x-organization-id": orgId }, signal,
     })
-      .then((res) => res.json())
-      .then((data) => setBatch(data.batch || null))
-      .finally(() => setLoading(false));
+      .then((res) => { if (!res.ok) throw new Error("Unable to load batch"); return res.json(); })
+      .then((data) => { const saved = data.batch ? paymentUiBatch(data.batch) as unknown as BatchDetail : null; if (!signal?.aborted) { setBatch(saved); setReadError(""); } })
+      .catch(() => { if (!signal?.aborted) { setBatch(null); setReadError("Batch amounts are unavailable. Reload to try again."); } })
+      .finally(() => { if (!signal?.aborted) setLoading(false); });
   }, [orgId, id]);
 
   useEffect(() => {
-    fetchBatch();
+    const controller = new AbortController();
+    fetchBatch(controller.signal);
+    return () => controller.abort();
   }, [fetchBatch]);
 
   async function handleSubmit() {
@@ -135,7 +135,7 @@ export default function BatchDetailPage() {
       destructive: false,
     });
 
-    if (!confirmed) return;
+    if (!confirmed || localStorage.getItem("activeOrgId") !== orgId) return;
     setSubmitting(true);
 
     try {
@@ -182,7 +182,7 @@ export default function BatchDetailPage() {
         setRemittanceOpen(false);
         return;
       }
-      setRemittanceGroups(data.remittances || []);
+      setRemittanceGroups((data.remittances || []).map(paymentUiRemittance) as RemittanceGroup[]);
     } catch {
       toast.error("Failed to load remittance advice");
       setRemittanceOpen(false);
@@ -260,6 +260,7 @@ export default function BatchDetailPage() {
     }
   }
 
+  if (readError) return <p role="alert">{readError}</p>;
   if (loading) return <BrandLoader />;
 
   if (!batch) {
@@ -366,13 +367,13 @@ export default function BatchDetailPage() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="rounded-lg border p-3">
           <p className="text-[11px] text-muted-foreground">Total Amount</p>
-          <p className="mt-0.5 font-mono text-sm font-semibold tabular-nums">
+          <p className="mt-0.5 font-mono text-sm font-semibold tabular-nums break-all">
             {formatMoney(batch.totalAmount, batch.currencyCode)}
           </p>
         </div>
         <div className="rounded-lg border p-3">
           <p className="text-[11px] text-muted-foreground">Payments</p>
-          <p className="mt-0.5 font-mono text-sm font-semibold tabular-nums">
+          <p className="mt-0.5 font-mono text-sm font-semibold tabular-nums break-all">
             {batch.paymentCount}
           </p>
         </div>
@@ -380,7 +381,7 @@ export default function BatchDetailPage() {
           <>
             <div className="rounded-lg border p-3">
               <p className="text-[11px] text-muted-foreground">Completed</p>
-              <p className="mt-0.5 font-mono text-sm font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
+              <p className="mt-0.5 font-mono text-sm font-semibold tabular-nums break-all text-emerald-600 dark:text-emerald-400">
                 {completedCount}
               </p>
             </div>
@@ -388,7 +389,7 @@ export default function BatchDetailPage() {
               <p className="text-[11px] text-muted-foreground">Failed</p>
               <p
                 className={cn(
-                  "mt-0.5 font-mono text-sm font-semibold tabular-nums",
+                  "mt-0.5 font-mono text-sm font-semibold tabular-nums break-all",
                   failedCount > 0
                     ? "text-red-600 dark:text-red-400"
                     : "text-muted-foreground"
@@ -446,7 +447,7 @@ export default function BatchDetailPage() {
                   )}
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
-                  <p className="font-mono text-sm font-semibold tabular-nums">
+                  <p className="font-mono text-sm font-semibold tabular-nums break-all">
                     {formatMoney(item.amount, item.currencyCode)}
                   </p>
                   {batch.status === "draft" && (
@@ -508,7 +509,7 @@ export default function BatchDetailPage() {
                         </p>
                       )}
                     </div>
-                    <p className="font-mono text-sm font-semibold tabular-nums shrink-0">
+                    <p className="font-mono text-sm font-semibold tabular-nums break-all shrink-0">
                       {formatMoney(group.totalPaid, group.currencyCode)}
                     </p>
                   </div>
@@ -531,7 +532,7 @@ export default function BatchDetailPage() {
                               : ""}
                           </p>
                         </div>
-                        <p className="font-mono text-xs tabular-nums shrink-0">
+                        <p className="font-mono text-xs tabular-nums break-all">
                           {formatMoney(line.amountPaid, line.currencyCode)}
                         </p>
                       </div>

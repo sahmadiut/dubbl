@@ -22,19 +22,19 @@ import { EmptyState } from "@/components/dashboard/empty-state";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
-import { formatMoney } from "@/lib/money";
+import { paymentUiMoney as formatMoney, paymentUiRow, paymentUiSummary } from "@/lib/money/payment-ui";
 import { devDelay } from "@/lib/dev-delay";
 
 interface Payment {
   id: string;
   paymentNumber: string;
   date: string;
-  amount: number;
+  amount: bigint;
   currencyCode: string;
   method: string;
   reference: string | null;
   contact: { name: string } | null;
-  allocations: { documentType: string; documentId: string; amount: number }[];
+  allocations: { documentType: string; documentId: string; amount: bigint }[];
 }
 
 const methodLabels: Record<string, string> = {
@@ -96,7 +96,7 @@ function buildColumns(): Column<Payment>[] {
       sortKey: "amount",
       className: "w-28 text-right",
       render: (r) => (
-        <span className="font-mono text-sm tabular-nums font-medium text-emerald-600">
+        <span className="font-mono text-sm tabular-nums break-all font-medium text-emerald-600">
           {formatMoney(r.amount, r.currencyCode)}
         </span>
       ),
@@ -118,8 +118,14 @@ function buildColumns(): Column<Payment>[] {
 }
 
 export default function PaymentsPage() {
+  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
+  return <PaymentsList key={orgId} orgId={orgId} />;
+}
+
+function PaymentsList({ orgId }: { orgId: string | null }) {
   const router = useRouter();
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [readError, setReadError] = useState("");
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search);
@@ -135,19 +141,21 @@ export default function PaymentsPage() {
   const columns = useMemo(() => buildColumns(), []);
 
   useEffect(() => {
-    const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
-
+    const controller = new AbortController();
     fetch(`/api/v1/payments?type=received`, {
-      headers: { "x-organization-id": orgId },
+      headers: { "x-organization-id": orgId }, signal: controller.signal,
     })
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("Unable to load payments"); return r.json(); })
       .then((data) => {
-        if (data.data) setPayments(data.data);
+        const rows = (data.data || []).map(paymentUiRow) as Payment[];
+        if (!controller.signal.aborted) setPayments(rows);
       })
       .then(() => devDelay())
-      .finally(() => setLoading(false));
-  }, []);
+      .catch(() => { if (!controller.signal.aborted) { setReadError("Payment amounts are unavailable. Reload to try again."); setPayments([]); } })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
+  }, [orgId]);
 
   const handleSort = useCallback((key: string) => {
     setSortBy((prev) => {
@@ -191,7 +199,7 @@ export default function PaymentsPage() {
     result = [...result].sort((a, b) => {
       let cmp = 0;
       if (sortBy === "date") cmp = a.date.localeCompare(b.date);
-      else if (sortBy === "amount") cmp = a.amount - b.amount;
+      else if (sortBy === "amount") cmp = a.currencyCode.localeCompare(b.currencyCode) || (a.amount < b.amount ? -1 : a.amount > b.amount ? 1 : 0);
       else if (sortBy === "number") cmp = a.paymentNumber.localeCompare(b.paymentNumber);
       return sortOrder === "desc" ? -cmp : cmp;
     });
@@ -205,10 +213,12 @@ export default function PaymentsPage() {
     setFilterKey((k) => k + 1);
   }, [debouncedSearch, methodFilter, dateFrom, dateTo]);
 
-  const totalAmount = filtered.reduce((sum, p) => sum + p.amount, 0);
+  const summary = paymentUiSummary(filtered);
   const hasFilters = search || methodFilter !== "all" || dateFrom || dateTo;
 
   if (loading) return <BrandLoader />;
+
+  if (readError) return <p role="alert">{readError}</p>;
 
   if (!loading && payments.length === 0) {
     return (
@@ -246,13 +256,14 @@ export default function PaymentsPage() {
         </div>
       </div>
 
+      <p className="text-xs text-muted-foreground">Loaded payment sample, grouped by currency. Amount sorting groups currencies first.</p>
       {/* Stats */}
-      <div className="grid gap-3 sm:grid-cols-3">
-        <StatCard title="Total Received" value={formatMoney(totalAmount)} icon={Banknote} changeType="positive" />
+      <div className="grid gap-3 sm:grid-cols-3 [&_div]:min-w-0 [&_.font-mono]:break-all">
+        <StatCard title="Total Received" value={summary.total} icon={Banknote} changeType="positive" />
         <StatCard title="Payments" value={filtered.length.toString()} icon={Banknote} />
         <StatCard
           title="Avg Payment"
-          value={filtered.length > 0 ? formatMoney(Math.round(totalAmount / filtered.length)) : "$0.00"}
+          value={summary.average}
           icon={Banknote}
         />
       </div>

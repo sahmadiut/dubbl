@@ -1,3 +1,54 @@
+## MON-148 payment and allocation UI
+
+Payment list/detail and banking payment batch list/create/detail/remittance plus
+scheduled payment list/create/cancel/process use lib/money/payment-ui.ts. The
+shared PaymentAmountPreview renders scheduled input validation and exact saved
+currency scales. Canonical Minor aliases must agree with safe numeric raw units;
+bigint handles allocated/unallocated balances, grouped sample totals/averages,
+batch previews and remittance totals. Signed noncash credit/debit/prepayment
+carriers retain their raw amounts. Saved batch and remittance totals are checked
+against their items/lines and one currency. No stored units are rescaled.
+
+Batch input retains decimal text, requires positive whole minor units, checks
+bill identity/supplier/currency/due and a safe batch sum, and sends amountMinor
+items with explicit batch currencyCode. One parsed result drives preview and
+payload. Mixed currency selections and fractional minor inputs show English
+errors and disable save; no FX is inferred. Scheduled input reuses the same
+due/range/scale policy and shows its exact preview. Bill pickers include loaded
+received/partial/overdue rows, capped at 100. Lists retain their default 50-row
+sample; payment totals and legacy signed-tie averages are grouped by currency and
+labeled as a sample. Sorting compares currency first, then bigint amounts.
+Counts, pages, dates, methods and statuses are nonmoney.
+
+Payments are fully allocated at creation by the existing REST/MCP service.
+There is no operation to allocate historical leftover cash. The previous detail
+button called invoice pay, which creates another cash payment; it is removed.
+Historical leftovers remain visible with an English explanation for review.
+This is a documented compatibility limit, not a new reallocation API. Existing
+invoice and bill payment controls/shared InvoiceAmountInput remain owned and
+verified by MON-135/MON-139; CustomerCreditDrawer belongs to MON-146, receipt
+cash to MON-145, expense/mileage payment controls to MON-149, banking settlement
+controls to MON-150 and tax/approval controls to MON-151. No standalone payment
+create drawer exists. create-drawer.tsx is unchanged in this slice. Public/portal,
+contact/report/payroll/loan/background consumers retain their existing MON-008
+and domain ownership; this task does not replace those acceptance gates.
+
+Organization/id keys reset scoped page state, reads abort on context/dialog/filter
+changes, scheduled list generations reject older replies, and batch confirmation
+checks the active organization again. Initial schedule processing is preserved;
+filter changes only read the list. Large values wrap and bill selection is a
+keyboard-accessible button. Invalid saved money suppresses amounts/actions.
+
+Four pure/static React test groups and sixteen combined real REST/MCP/SQL
+workflows cover USD/JPY/synthetic IRR/KWD, 1250 and 3000000001 raw units, exact
+preview/saved agreement, cash allocations, batch submission/remittance and due
+schedule completion. Existing payment read/settlement/batch/schedule fixtures
+retain malformed/range/alias, permission/tenant, currency/FX, period/atomicity and
+negative coverage. No new REST/MCP operation, schema/migration, provider action,
+production flag or FX policy change. Safe numeric business compatibility remains;
+full-int64, live browser, production IRR and accounting/linguistic qualification
+are not claimed. MON-133, MON-129 and MON-007 retain independent integration.
+
 ## MON-131 receivable document UI parent acceptance
 
 CORE_UI_MONEY_CUTOVER records independent combined acceptance of MON-134..137,

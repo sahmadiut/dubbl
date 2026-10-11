@@ -23,18 +23,8 @@
     "formatMoney": 32,
     "centsToDecimal": 12
   },
-  "app/(dashboard)/accounting/banking/batches/[id]/page.tsx": {
-    "formatMoney": 6
-  },
-  "app/(dashboard)/accounting/banking/batches/page.tsx": {
-    "formatMoney": 4,
-    "parseMoney": 3
-  },
   "app/(dashboard)/accounting/banking/page.tsx": {
     "formatMoney": 6
-  },
-  "app/(dashboard)/accounting/banking/scheduled/page.tsx": {
-    "formatMoney": 3
   },
   "app/(dashboard)/accounting/budgets/[id]/layout.tsx": {
     "formatMoney": 5
@@ -329,14 +319,6 @@
   },
   "app/(dashboard)/sales/page.tsx": {
     "formatMoney": 7
-  },
-  "app/(dashboard)/sales/payments/[id]/page.tsx": {
-    "formatMoney": 8,
-    "minorUnitsToDecimal": 3,
-    "decimalToMinorUnits": 2
-  },
-  "app/(dashboard)/sales/payments/page.tsx": {
-    "formatMoney": 4
   },
   "app/(dashboard)/sales/quotes/[id]/page.tsx": {
     "formatMoney": 4

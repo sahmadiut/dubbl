@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
-import { formatMoney, parseMoney } from "@/lib/money";
+import { paymentUiMoney as formatMoney, paymentUiDecimal, paymentUiBill, paymentUiBatch, paymentUiBatchInput } from "@/lib/money/payment-ui";
 import { cn } from "@/lib/utils";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 
@@ -31,7 +31,7 @@ interface BatchItem {
   id: string;
   billId: string | null;
   contactId: string | null;
-  amount: number;
+  amount: bigint;
   status: string;
 }
 
@@ -39,7 +39,7 @@ interface Batch {
   id: string;
   name: string;
   status: "draft" | "submitted" | "completed";
-  totalAmount: number;
+  totalAmount: bigint;
   currencyCode: string;
   paymentCount: number;
   submittedAt: string | null;
@@ -51,8 +51,8 @@ interface Batch {
 interface BillOption {
   id: string;
   billNumber: string;
-  total: number;
-  amountDue: number;
+  total: bigint;
+  amountDue: bigint;
   currencyCode: string;
   contactId: string;
   contact: { id: string; name: string } | null;
@@ -65,8 +65,13 @@ const STATUS_VARIANTS: Record<string, "default" | "secondary" | "outline"> = {
 };
 
 export default function PaymentBatchesPage() {
+  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
+  return <PaymentBatchesList key={orgId} orgId={orgId} />;
+}
+function PaymentBatchesList({ orgId }: { orgId: string | null }) {
   const router = useRouter();
   const [batches, setBatches] = useState<Batch[]>([]);
+  const [readError, setReadError] = useState("");
   const [loading, setLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -78,42 +83,53 @@ export default function PaymentBatchesPage() {
     { billId: string; contactId: string; amount: string; currencyCode: string }[]
   >([]);
 
-  const orgId =
-    typeof window !== "undefined"
-      ? localStorage.getItem("activeOrgId")
-      : null;
-
   useDocumentTitle("Accounting \u00B7 Payment Batches");
 
-  const fetchBatches = useCallback(() => {
+  const fetchBatches = useCallback((signal?: AbortSignal) => {
     if (!orgId) return;
     fetch("/api/v1/payment-batches", {
-      headers: { "x-organization-id": orgId },
+      headers: { "x-organization-id": orgId }, signal,
     })
-      .then((res) => res.json())
-      .then((data) => setBatches(data.data || []))
-      .finally(() => setLoading(false));
+      .then((res) => { if (!res.ok) throw new Error("Unable to load payments"); return res.json(); })
+      .then((data) => { const rows = (data.data || []).map(paymentUiBatch) as Batch[]; if (!signal?.aborted) { setBatches(rows); setReadError(""); } })
+      .catch(() => { if (!signal?.aborted) { setBatches([]); setReadError("Batch amounts are unavailable. Reload to try again."); } })
+      .finally(() => { if (!signal?.aborted) setLoading(false); });
   }, [orgId]);
 
-  const fetchBills = useCallback(() => {
+  const fetchBills = useCallback((signal?: AbortSignal) => {
     if (!orgId) return;
-    fetch("/api/v1/bills?status=received&limit=100", {
-      headers: { "x-organization-id": orgId },
+    fetch("/api/v1/bills?limit=100", {
+      headers: { "x-organization-id": orgId }, signal,
     })
-      .then((res) => res.json())
-      .then((data) => setBills(data.data || []));
+      .then((res) => { if (!res.ok) throw new Error("Unable to load payments"); return res.json(); })
+      .then((data) => { const rows = (data.data || []).map(paymentUiBill) as BillOption[]; if (!signal?.aborted) setBills(rows.filter(b => b.amountDue > 0n && ["received", "partial", "overdue"].includes((b as BillOption & { status: string }).status))); })
+      .catch(() => { if (!signal?.aborted) { setBills([]); toast.error("Bill amounts are unavailable"); } });
   }, [orgId]);
 
   useEffect(() => {
-    fetchBatches();
+    const controller = new AbortController();
+    fetchBatches(controller.signal);
+    return () => controller.abort();
   }, [fetchBatches]);
 
   function openCreateDialog() {
     setBatchName("");
     setSelectedBills([]);
-    fetchBills();
+    setBills([]);
     setShowDialog(true);
   }
+
+  useEffect(() => {
+    if (!showDialog) return;
+    const controller = new AbortController();
+    fetchBills(controller.signal);
+    return () => controller.abort();
+  }, [showDialog, fetchBills]);
+
+  let preview: ReturnType<typeof paymentUiBatchInput> | null = null;
+  let previewError = "";
+  try { if (selectedBills.length) preview = paymentUiBatchInput(selectedBills, bills); }
+  catch (error) { previewError = error instanceof Error ? error.message : "Invalid batch amount"; }
 
   function toggleBill(bill: BillOption) {
     setSelectedBills((prev) => {
@@ -126,7 +142,7 @@ export default function PaymentBatchesPage() {
         {
           billId: bill.id,
           contactId: bill.contactId,
-          amount: (bill.amountDue / 100).toFixed(2),
+          amount: paymentUiDecimal(bill.amountDue, bill.currencyCode),
           currencyCode: bill.currencyCode,
         },
       ];
@@ -140,7 +156,7 @@ export default function PaymentBatchesPage() {
   }
 
   async function handleCreateBatch() {
-    if (!orgId || !batchName || selectedBills.length === 0) return;
+    if (!orgId || !batchName || !preview) return;
     setSaving(true);
 
     try {
@@ -152,12 +168,8 @@ export default function PaymentBatchesPage() {
         },
         body: JSON.stringify({
           name: batchName,
-          items: selectedBills.map((b) => ({
-            billId: b.billId,
-            contactId: b.contactId,
-            amount: parseMoney(b.amount),
-            currencyCode: b.currencyCode,
-          })),
+          currencyCode: preview.currencyCode,
+          items: preview.items,
         }),
       });
 
@@ -181,6 +193,7 @@ export default function PaymentBatchesPage() {
 
   return (
     <ContentReveal className="space-y-6">
+      {readError && <p role="alert">{readError}</p>}
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -259,7 +272,7 @@ export default function PaymentBatchesPage() {
                 </div>
               </div>
               <div className="flex items-center gap-3 shrink-0">
-                <p className="font-mono text-sm font-semibold tabular-nums">
+                <p className="font-mono text-sm font-semibold tabular-nums break-all">
                   {formatMoney(batch.totalAmount, batch.currencyCode)}
                 </p>
                 <ChevronRight className="size-4 text-muted-foreground/0 transition-all group-hover:text-muted-foreground group-hover:translate-x-0.5" />
@@ -304,8 +317,10 @@ export default function PaymentBatchesPage() {
                   );
                   return (
                     <div key={b.id} className="px-3 py-2.5">
-                      <div
-                        className="flex items-center gap-2 cursor-pointer"
+                      <button
+                        className="flex w-full items-center gap-2 text-left"
+                        type="button"
+                        aria-pressed={isSelected}
                         onClick={() => toggleBill(b)}
                       >
                         <div
@@ -340,11 +355,13 @@ export default function PaymentBatchesPage() {
                         <p className="text-xs font-mono tabular-nums text-muted-foreground">
                           {formatMoney(b.amountDue, b.currencyCode)}
                         </p>
-                      </div>
+                      </button>
                       {isSelected && selectedItem && (
                         <div className="mt-2 ml-6">
                           <Input
                             type="text"
+                            inputMode="decimal"
+                            aria-label={`Payment amount for ${b.billNumber} (${b.currencyCode})`}
                             value={selectedItem.amount}
                             onChange={(e) =>
                               updateBillAmount(b.id, e.target.value)
@@ -364,16 +381,12 @@ export default function PaymentBatchesPage() {
               <div className="flex items-center justify-between pt-2 border-t">
                 <p className="text-xs text-muted-foreground">Total</p>
                 <p className="text-sm font-mono font-semibold tabular-nums">
-                  {formatMoney(
-                    selectedBills.reduce(
-                      (sum, b) => sum + parseMoney(b.amount),
-                      0
-                    )
-                  )}
+                  {preview ? formatMoney(preview.total, preview.currencyCode) : "Unavailable"}
                 </p>
               </div>
             )}
           </div>
+          {previewError && <p role="alert" className="text-sm text-destructive">{previewError}</p>}
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDialog(false)}>
               Cancel
@@ -381,7 +394,7 @@ export default function PaymentBatchesPage() {
             <Button
               onClick={handleCreateBatch}
               disabled={
-                saving || !batchName || selectedBills.length === 0
+                saving || !batchName || !preview
               }
               className="bg-emerald-600 hover:bg-emerald-700"
             >

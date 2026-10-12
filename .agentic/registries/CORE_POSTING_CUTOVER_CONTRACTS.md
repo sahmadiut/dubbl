@@ -1,3 +1,13 @@
+## MON-007 final combined acceptance
+
+Independently verified 2026-10-12. [Final core acceptance](CORE_ACCOUNTING_CUTOVER_ACCEPTANCE.md)
+joins this posting inventory with the completed core UI and full operation
+inventories. New taxed editor-to-posting workflows verify cross-transport payment
+replay, locked operations, bank unmatch requirements and saved reversals, with
+literal SQL-text oracles and unchanged failure snapshots. All selected core/FX/
+serialization regressions rerun. This supersedes MON-129/MON-007-pending prose
+below; MON-008 and production/financial qualification remain separate.
+
 # Shared core posting cutover (MON-128)
 
 2026-10-10, Asia/Tehran. Bounded backend child of MON-007, under ADR-006 safe-number

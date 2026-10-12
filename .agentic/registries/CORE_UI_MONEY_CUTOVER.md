@@ -1,3 +1,14 @@
+## MON-007 final combined acceptance
+
+Independently verified 2026-10-12. [Final core acceptance](CORE_ACCOUNTING_CUTOVER_ACCEPTANCE.md)
+joins this complete core editor/presentation inventory with MON-128 posting and
+all operation inventories. Eight taxed quote/invoice and bill workflows compose
+exact editors, recognition, settlement/replay, bank imports/matching, manual GL,
+locks, saved reversals and account/journal reads through REST/MCP/SQL. Every
+original journal line is preserved and every final account net is zero. Actual
+core/domain/FX/serialization compositions rerun. This supersedes MON-007-pending
+notes below; MON-008 and production/financial qualification remain separate.
+
 ## MON-129 combined core editor and presentation acceptance
 
 Independent parent acceptance on 2026-10-12 composes MON-130 journals,

@@ -1,5 +1,14 @@
 # Exact money core
 
+MON-007 independently accepts the final core posting/editor/presentation
+composition. `tests/integration/core-cutover-acceptance*` verifies taxed documents,
+settlement/replay, bank matching/unmatch, locked operations and saved reversals
+through REST/MCP/SQL at four currency scales; original legs remain intact and
+final account nets return to zero. CORE_ACCOUNTING_CUTOVER_ACCEPTANCE joins the
+complete consumer inventories and reviewed legacy/nonmoney exceptions. This
+supersedes MON-007-pending notes below. MON-008 auxiliary/background/public closure
+and independent financial/migration/production IRR qualification remain open.
+
 MON-129 independently verifies all core editor/presentation slices together.
 `tests/integration/core-editor-integration*` composes quote/invoice and bill
 preview/save, shared bank cash settlement, payments, manual journals and exact

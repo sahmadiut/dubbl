@@ -1,5 +1,24 @@
 # Verification matrix
 
+## MON-007 final core consumer cutover acceptance
+
+- `tests/integration/core-cutover-acceptance.test.ts` and worker: eight disposable
+  migrated PostgreSQL workflows in USD/JPY/KWD/synthetic IRR through real REST
+  and linked registered MCP, composing exact taxed quote/invoice and bill editors,
+  recognition, settlement/replay, bank import/matching, manual GL and saved views.
+- Literal SQL-text oracles assert 3333-bp tax 999900001, document totals
+  3999900005/3999900004, tie lines 3/2, five balanced journal debits 15999600025,
+  cash net 8 and zero document dues. Both transports replay unchanged snapshots.
+- Locked settlement/reversal, bank-linked deletion, malformed/overflow/conflicting
+  money, foreign reads/settlement and repeated delete/void reject unchanged.
+  Unmatch/payment deletion restores dues; document/manual reversals mirror all
+  original legs and saved FX/dimensions. Every final posted account net is zero.
+- Joint existing core editor/UI, posting, journal, receivable, payable, cash/tax,
+  configuration, FX-history/wire and serialization suites retain deeper credit,
+  expense, procurement/recurrence, role/tenant, concurrency and source/base cases.
+  See CORE_ACCOUNTING_CUTOVER_ACCEPTANCE and task evidence for actual results,
+  complete manifest ownership, explicit exceptions and remaining MON-008 scope.
+
 ## MON-129 combined core editor and presentation acceptance
 
 - `tests/integration/core-editor-integration.test.ts` and worker: eight migrated

@@ -1,3 +1,20 @@
+## MON-007 final core accounting consumer cutover
+
+Independent combined acceptance on 2026-10-12 joins MON-128 posting and MON-129
+editors/presentation. [CORE_ACCOUNTING_CUTOVER_ACCEPTANCE](CORE_ACCOUNTING_CUTOVER_ACCEPTANCE.md)
+maps all core consumer families to complete backend/UI inventories and lexical
+MONEY_BOUNDARIES paths, including shared component sections and explicit nonmoney/
+legacy exceptions. New `tests/integration/core-cutover-acceptance*` composes taxed
+quote/invoice and bill editors, recognition, cash settlement, cross-transport
+idempotent replay, bank import/matching, period locks and verbatim saved reversals
+in eight USD/JPY/KWD/synthetic IRR workflows. SQL text independently checks low
+digits, allocations, five balanced journals and every account's final zero net.
+Actual core/domain/FX/serialization compositions rerun alongside this fixture.
+This supersedes older MON-007-pending notes below. MON-008 retains auxiliary/
+background/public consumer closure; production IRR, full-int64 business, historical
+unit remediation, accounting/migration/security/localization/release gates remain
+independent. No runtime, wire operation, schema or flag changes are needed.
+
 ## MON-129 combined core editor and presentation acceptance
 
 CORE_UI_MONEY_CUTOVER maps all core journal, receivable, payable/procurement,

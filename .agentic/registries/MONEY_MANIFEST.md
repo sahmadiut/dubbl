@@ -1,3 +1,19 @@
+## MON-129 combined core editor and presentation acceptance
+
+CORE_UI_MONEY_CUTOVER maps all core journal, receivable, payable/procurement,
+cash/expense/bank/tax/account consumers and shared component sections to the
+completed MON-130..133 slices. Independent combined REST/MCP/SQL acceptance in
+`tests/integration/core-editor-integration*` verifies quote-to-invoice and bill
+editor previews through shared bank settlement, allocations, manual posting and
+account/journal display in USD/JPY/KWD/synthetic IRR. Literal low-digit, sub-minor
+rounding, quantity, paid/due, cash net and balanced journal expectations compose
+with every leaf UI transport suite and all child integration fixtures.
+Existing exact adapters, registered tools and unit policies need no runtime repair.
+See MON-129 attempt/review and CORE_UI_MONEY_CUTOVER for checks and reviewed
+compatibility exceptions. This supersedes earlier core/MON-129-pending statements;
+MON-007 remains independent and MON-008 owns auxiliary/background/public closure.
+No production IRR, full-int64, browser or financial qualification is claimed.
+
 ## MON-133 combined core UI acceptance
 
 Independent combined REST/MCP/SQL acceptance joins MON-147..152 ownership and

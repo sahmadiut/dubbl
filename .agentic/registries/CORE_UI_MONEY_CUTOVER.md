@@ -1,3 +1,50 @@
+## MON-129 combined core editor and presentation acceptance
+
+Independent parent acceptance on 2026-10-12 composes MON-130 journals,
+MON-131 receivables, MON-132 payables/procurement and MON-133 cash/tax/accounts.
+This entry supersedes earlier MON-129-pending wording below; the detailed domain
+rows retain their operation-specific policies and path ownership. MONEY_MANIFEST
+and MONEY_BOUNDARIES join those rows, including section ownership of shared
+create-drawer, LineItemsEditor, dashboard, DualAmount and amount controls.
+
+`tests/integration/core-editor-integration*` adds eight real REST-origin/MCP-origin
+workflows in USD/JPY/KWD/synthetic IRR. One linked MCP session per organization
+registers all involved editor, document, bank, payment and account families.
+Exact quote preview -> accepted conversion -> recognized invoice and exact bill
+preview -> recognition share a bank CSV preview/import -> full-line settlement.
+The two saved payment/allocation views and manual journal preview/post feed the
+same account and grouped journal UI. Literal SQL-text expectations independently
+preserve a 3000000001-unit price and half-minor price times three: quote-derived
+invoice 3000000004 versus bill 3000000003, saved price 1 and quantity 300 on both
+tie lines, with line amounts 3 versus 2. Cash net 1 plus a manual 7-unit adjustment
+is 8; five balanced journal totals sum to 12000000021 in the explicit currency.
+Both document balances reach zero without changing rounding policy or rescaling.
+Foreign document reads/settlement, overpayments and malformed/overflow/conflicting
+writes reject with unchanged scoped snapshots; display reads are also unchanged.
+
+The combined run includes all four child compositions, every leaf UI transport
+suite and MON-128 posting regression. This independently reruns recurring
+generation, supplier/customer credits and unwind, procurement conversions,
+opening USD cents, expense/mileage, tax freeze/settlement, FX source/base views,
+bank proof, account pages and low-digit/negative policies. Pure/static React
+checks and source review retain English labels, alerts, decimal keyboard inputs,
+validation gating, context guards and scrollable layouts under DEC-005.
+
+Reviewed exceptions: safe numeric compatibility aliases must agree with Minor
+strings; journal REST decimal aliases remain fixed-two while MCP uses numeric
+minor units; openings remain numeric USD cents; recurring payable prices remain
+fixed-two before quantity extension; quantities/basis points are nonmoney; raw
+bank-rule/approval thresholds keep their documented units; account aggregates
+retain current-base raw GL conventions; different-currency groups are separate;
+cross-scale legacy REST invoice base display rejects rather than guesses units.
+No hidden money float/fixed-two shortcut remains in the owned core sections.
+Remaining create-drawer float matches are deposit basis points (nonmoney), budget
+money and accrual validation (MON-008). Auxiliary drawer/report/dashboard,
+background, public/provider/export/PDF consumers remain MON-008. MON-007 retains
+independent posting/replay/reversal/lock integration acceptance; production IRR,
+full-int64 business workflows, browser and accounting/migration/release gates
+are not inferred from this UI parent.
+
 ## MON-133 combined core UI acceptance
 
 Independently verified 2026-10-12 after MON-147..152. This entry supersedes
@@ -600,8 +647,8 @@ original combined criteria; MON-007 retains its original integration acceptance.
 
 Shared create-drawer.tsx and dashboard/page.tsx are owned by section. MON-130
 changes only journal sections/recent journal columns; MON-134 changes InvoiceDrawer.
-Opening-balance floats and other document price/expense/budget/payment parsers
-are pending under the rows above.
+Core document, opening-balance, expense and payment sections now use their
+adopted domain adapters. Budget and accrual sections retain MON-008 ownership.
 The recurring-journals list contains scheduling/count controls, no money fields.
 Core source groups are broad inventories for subsequent bounded review; children
 may split further without erasing any parent criterion.
@@ -629,7 +676,7 @@ its default remains two for existing consumers. Journal monetary inputs are
 text with decimal keyboard mode and accessible per-line labels. Existing grid
 scrolling is retained; saved edit columns accommodate currency codes.
 
-## Explicit compatibility and pending presentation exceptions
+## Explicit compatibility and presentation exceptions
 
 - Journal REST debit/credit and list total decimal aliases are fixed-two even
   for JPY/KWD tags. The exact alias is checked against that legacy spelling,

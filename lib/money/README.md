@@ -1,5 +1,14 @@
 # Exact money core
 
+MON-129 independently verifies all core editor/presentation slices together.
+`tests/integration/core-editor-integration*` composes quote/invoice and bill
+preview/save, shared bank cash settlement, payments, manual journals and exact
+account/grouped journal reads through real REST, linked MCP and SQL. All child
+compositions and leaf UI transport suites rerun; see CORE_UI_MONEY_CUTOVER MON-129
+for ownership and operation-specific rounding/legacy exceptions. This supersedes
+earlier core/MON-129-pending notes below. MON-007 integration and MON-008 auxiliary/
+background/public closure, production IRR and financial qualification are separate.
+
 MON-133 independently verifies the opening/payment/expense/bank/tax/account
 adapters through combined real REST, linked registered MCP and SQL fixtures.
 Source units, actual converted base postings and raw ledger views stay explicit;

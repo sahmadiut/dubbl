@@ -1,5 +1,26 @@
 # Verification matrix
 
+## MON-129 combined core editor and presentation acceptance
+
+- `tests/integration/core-editor-integration.test.ts` and worker: eight migrated
+  disposable PostgreSQL workflows, REST/MCP origins in USD/JPY/KWD/synthetic IRR.
+  Quote/editor -> invoice recognition and bill/editor -> recognition -> shared
+  bank import/settlement -> exact payments/allocations -> manual GL -> shared
+  journal/account presentation. All involved MCP families share one linked session.
+- Independent literal SQL expectations: low-digit price 3000000001, half-minor
+  price x 3 yields invoice 3 versus bill 2, quantity 300 and saved price 1; totals
+  3000000004/3000000003 settle to zero, manual 7 makes cash net 8, five balanced
+  journals sum to 12000000021. No changed rounding or rescaling to align previews.
+- Foreign read/settlement, overpayment, malformed/overflow/alias conflicts and
+  presentation reads preserve ordered scoped document/line/GL/payment/allocation/
+  bank/account snapshots. Tampered saved aliases reject before display.
+- Jointly run four child compositions, every leaf UI transport, recurring journal
+  and MON-128 posting regression; full pure/static React tests, typecheck, lint,
+  money/legacy guards, controller validation and diff check. See task evidence
+  for actual commands and results, compatibility exceptions and source ownership.
+- DEC-005 source/layout review; no live browser/full build/dev server. MON-007
+  and MON-008, accounting/migration/release and production IRR remain separate.
+
 ## MON-133 combined core UI acceptance
 
 - `tests/integration/core-ui-integration.test.ts` and worker: eight authenticated

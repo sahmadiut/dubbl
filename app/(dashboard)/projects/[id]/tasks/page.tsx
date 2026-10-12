@@ -1,5 +1,7 @@
 "use client";
 
+import { projectCrmJson } from "@/lib/money/project-crm-ui";
+
 import { projectWholeMinutes } from "@/lib/money/project-display";
 
 import { useState } from "react";
@@ -182,7 +184,7 @@ export default function TasksPage() {
         method: "DELETE",
         headers: { "x-organization-id": orgId },
       });
-      if (!res.ok) { const data = await res.json(); throw new Error(data.error || "Failed to delete task"); }
+      if (!res.ok) { const data = await projectCrmJson(res); throw new Error(data.error || "Failed to delete task"); }
       setViewTask(null);
       refresh();
     } catch (error) { toast.error(error instanceof Error ? error.message : "Failed to delete task"); }

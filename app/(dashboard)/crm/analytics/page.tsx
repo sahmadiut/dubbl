@@ -1,5 +1,7 @@
 "use client";
 
+import { projectCrmJson } from "@/lib/money/project-crm-ui";
+
 import { useState, useEffect } from "react";
 import { BarChart3, Target, TrendingUp, DollarSign } from "lucide-react";
 import { StatCard } from "@/components/dashboard/stat-card";
@@ -37,7 +39,7 @@ export default function CRMAnalyticsPage() {
     fetch(`/api/v1/crm/analytics${currency ? `?currency=${currency}` : ""}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then(async r => { const body = await r.json(); if (!r.ok) throw new Error(body.error || "Failed to load analytics"); return body; })
+      .then(async r => { const body = await projectCrmJson(r); if (!r.ok) throw new Error(body.error || "Failed to load analytics"); return body; })
       .then(body => { if (!cancelled) { setData(body); setError(null); } })
       .catch(err => { if (!cancelled) { setData(null); setError(err.message); } })
       .finally(() => { if (!cancelled) setLoading(false); });

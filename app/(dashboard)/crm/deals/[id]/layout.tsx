@@ -1,5 +1,7 @@
 "use client";
 
+import { projectCrmJson } from "@/lib/money/project-crm-ui";
+
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { useParams, useRouter, usePathname } from "next/navigation";
 import { toast } from "sonner";
@@ -10,9 +12,7 @@ import {
   Settings2,
   Trophy,
   XCircle,
-  Check,
   User,
-  DollarSign,
   Target,
   Briefcase,
 } from "lucide-react";
@@ -147,7 +147,7 @@ export default function DealDetailLayout({ children }: { children: React.ReactNo
   const fetchDeal = useCallback(async () => {
     try {
       const res = await fetch(`/api/v1/crm/deals/${id}`, { headers: getHeaders() });
-      const data = await res.json();
+      const data = await projectCrmJson(res);
       if (data.deal) setDeal(data.deal);
     } catch {
       toast.error("Failed to load deal");

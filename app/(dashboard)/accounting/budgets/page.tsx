@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatMoney } from "@/lib/money";
+import { budgetMoney, budgetPercent, budgetAbs, budgetJson } from "@/lib/money/budget-ui";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { cn } from "@/lib/utils";
@@ -29,31 +29,32 @@ interface Budget {
   periodType: string;
   isActive: boolean;
   createdAt: string;
-  lines?: { total: number }[];
+  lines?: { total: bigint }[];
 }
 
 interface PeriodBreakdown {
   label: string;
   startDate: string;
   endDate: string;
-  budgeted: number;
-  actual: number;
-  variance: number;
+  budgeted: bigint;
+  actual: bigint;
+  variance: bigint;
 }
 
 interface LineComparison {
   accountId: string;
   accountName: string;
   accountCode: string;
-  budgeted: number;
-  actual: number;
-  variance: number;
+  budgeted: bigint;
+  actual: bigint;
+  variance: bigint;
   periods: PeriodBreakdown[];
 }
 
 interface BudgetReport {
-  totalBudgeted: number;
-  totalActual: number;
+  currencyCode: string;
+  totalBudgeted: bigint;
+  totalActual: bigint;
   daysElapsed: number;
   daysRemaining: number;
   totalDays: number;
@@ -77,6 +78,7 @@ function getCurrentPeriod(periods: PeriodBreakdown[]): PeriodBreakdown | undefin
 export default function BudgetsPage() {
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
+  const [loadError, setLoadError] = useState("");
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [loading, setLoading] = useState(true);
   const [reports, setReports] = useState<Record<string, BudgetReport>>({});
@@ -91,10 +93,11 @@ export default function BudgetsPage() {
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
     setLoading(true);
+    setLoadError("");
     fetch("/api/v1/budgets?limit=100", {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then(budgetJson)
       .then((data) => {
         if (data.data) {
           setBudgets(data.data);
@@ -102,16 +105,17 @@ export default function BudgetsPage() {
 
           // Fetch reports in the background after list is shown
           setLoadingReports(true);
-          const active = (data.data as Budget[]).filter((b) => b.isActive).slice(0, 10);
+          const active = (data.data as Budget[]).slice(0, 10);
           Promise.all(
             active.map((b) =>
               fetch(`/api/v1/reports/budget-vs-actual?budgetId=${b.id}`, {
                 headers: { "x-organization-id": orgId },
               })
-                .then((r) => r.json())
+                .then(budgetJson)
                 .then((d) => [b.id, {
-                  totalBudgeted: d.totalBudgeted as number,
-                  totalActual: d.totalActual as number,
+                  currencyCode: d.currencyCode,
+                  totalBudgeted: d.totalBudgeted as bigint,
+                  totalActual: d.totalActual as bigint,
                   daysElapsed: d.daysElapsed as number,
                   daysRemaining: d.daysRemaining as number,
                   totalDays: d.totalDays as number,
@@ -131,17 +135,17 @@ export default function BudgetsPage() {
           setLoading(false);
         }
       })
-      .catch(() => setLoading(false));
+      .catch(error => { setBudgets([]); setLoadError(error instanceof Error ? error.message : "Unable to load budgets"); setLoading(false); });
   }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchData();
     window.addEventListener("budgets-changed", fetchData);
     return () => window.removeEventListener("budgets-changed", fetchData);
   }, [fetchData]);
 
   if (loading) return <BrandLoader />;
+  if (loadError) return <p role="alert" className="text-sm text-destructive">{loadError}</p>;
 
   if (budgets.length === 0) {
     return (
@@ -287,10 +291,15 @@ export default function BudgetsPage() {
         <div className="space-y-3">
           {activeBudgets.map((b) => {
             const report = reports[b.id];
-            const total = b.lines?.reduce((s, l) => s + l.total, 0) || 0;
-            const budgeted = report?.totalBudgeted || total;
-            const actual = report?.totalActual || 0;
-            const pct = budgeted === 0 ? 0 : Math.round((actual / budgeted) * 100);
+            if (!report) return <button key={b.id} onClick={() => router.push(`/accounting/budgets/${b.id}`)} className="w-full rounded-lg border p-4 text-left">
+              <span className="text-sm font-semibold">{b.name}</span>
+              <span className="block text-xs text-muted-foreground">{loadingReports ? "Loading budget amounts..." : "Budget amounts unavailable. Open this budget to retry."}</span>
+            </button>;
+            const formatMoney = (amount: bigint) => budgetMoney(amount, report.currencyCode);
+            const total = b.lines?.reduce((s, l) => s + l.total, 0n) ?? 0n;
+            const budgeted = report?.totalBudgeted ?? total;
+            const actual = report?.totalActual ?? 0n;
+            const pct = budgeted === 0n ? 0 : budgetPercent(actual, budgeted);
             const over = actual > budgeted;
             const remaining = budgeted - actual;
             const daysRemaining = report?.daysRemaining ?? 0;
@@ -323,7 +332,7 @@ export default function BudgetsPage() {
                             "font-mono tabular-nums",
                             over ? "text-red-600" : "text-emerald-600"
                           )}>
-                            {over ? "Over by " + formatMoney(Math.abs(remaining)) : formatMoney(remaining) + " left"}
+                            {over ? "Over by " + formatMoney(budgetAbs(remaining)) : formatMoney(remaining) + " left"}
                           </span>
                           <span>·</span>
                           <span>{daysRemaining}d left ({timePct}%)</span>
@@ -340,7 +349,7 @@ export default function BudgetsPage() {
                         "h-full rounded-full transition-all",
                         over ? "bg-red-500" : pct > 80 ? "bg-amber-500" : "bg-emerald-500"
                       )}
-                      style={{ width: `${Math.min(pct, 100)}%` }}
+                      style={{ width: `${Math.max(0, Math.min(pct, 100))}%` }}
                     />
                   </div>
                 </button>
@@ -349,7 +358,7 @@ export default function BudgetsPage() {
                 {lines.length > 0 ? (
                   <ContentReveal className="border-t divide-y">
                     {lines.map((line) => {
-                      const linePct = line.budgeted === 0 ? 0 : Math.round((line.actual / line.budgeted) * 100);
+                      const linePct = line.budgeted === 0n ? 0 : budgetPercent(line.actual, line.budgeted);
                       const lineOver = line.actual > line.budgeted;
                       const currentPeriod = getCurrentPeriod(line.periods);
                       const periodRemaining = currentPeriod ? currentPeriod.budgeted - currentPeriod.actual : null;
@@ -370,7 +379,7 @@ export default function BudgetsPage() {
                                   "h-full rounded-full",
                                   lineOver ? "bg-red-500" : linePct > 80 ? "bg-amber-500" : "bg-emerald-500"
                                 )}
-                                style={{ width: `${Math.min(linePct, 100)}%` }}
+                                style={{ width: `${Math.max(0, Math.min(linePct, 100))}%` }}
                               />
                             </div>
                           </div>
@@ -382,7 +391,7 @@ export default function BudgetsPage() {
                                 periodOver ? "text-red-600" : "text-emerald-600"
                               )}>
                                 {periodOver
-                                  ? "+" + formatMoney(Math.abs(periodRemaining!))
+                                  ? "+" + formatMoney(budgetAbs(periodRemaining!))
                                   : formatMoney(periodRemaining!)
                                 }
                               </p>
@@ -432,7 +441,8 @@ export default function BudgetsPage() {
           <div className="rounded-lg border overflow-hidden">
             <div className="divide-y">
               {inactiveBudgets.map((b) => {
-                const total = b.lines?.reduce((s, l) => s + l.total, 0) || 0;
+                const report = reports[b.id];
+                const total = report?.totalBudgeted;
                 return (
                   <button
                     key={b.id}
@@ -454,7 +464,7 @@ export default function BudgetsPage() {
                       </p>
                     </div>
                     <span className="font-mono text-sm font-medium tabular-nums shrink-0 text-muted-foreground">
-                      {formatMoney(total)}
+                      {total === undefined ? "Unavailable" : budgetMoney(total, report.currencyCode)}
                     </span>
                     <ChevronRight className="size-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                   </button>

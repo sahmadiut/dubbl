@@ -15,12 +15,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CurrencyInput } from "@/components/ui/currency-input";
-import { formatMoney } from "@/lib/money";
+import { budgetMoney, budgetDecimal, budgetDistribute, budgetPerPeriod, budgetInput, budgetLinesInput, budgetDraftInvalid, budgetRemoveDraftLine } from "@/lib/money/budget-ui";
 import { useConfirm } from "@/lib/hooks/use-confirm";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { useBudgetContext } from "../layout";
-import type { BudgetLineData, BudgetPeriodData } from "../layout";
-import { generatePeriods, distributeAmount } from "@/lib/budget-periods";
+import type { BudgetLineData } from "../layout";
+import { generatePeriods } from "@/lib/budget-periods";
 import type { PeriodType } from "@/lib/budget-periods";
 
 const PERIOD_TYPE_OPTIONS: { value: PeriodType; label: string }[] = [
@@ -36,14 +36,14 @@ interface PeriodInput {
   label: string;
   startDate: string;
   endDate: string;
-  amount: number;
+  amount: bigint;
   sortOrder: number;
 }
 
 interface LineInput {
   id?: string;
   accountId: string;
-  total: number;
+  total: bigint;
   periods: PeriodInput[];
 }
 
@@ -67,15 +67,16 @@ function buildLineFromBudgetLine(l: BudgetLineData): LineInput {
 function emptyLine(periodType: PeriodType, startDate: string, endDate: string): LineInput {
   const periods = generatePeriods(periodType, startDate, endDate).map((p) => ({
     ...p,
-    amount: 0,
+    amount: 0n,
   }));
-  return { accountId: "", total: 0, periods };
+  return { accountId: "", total: 0n, periods };
 }
 
 export default function BudgetSettingsPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { budget, accounts, refetch } = useBudgetContext();
+  const { budget, currencyCode, accounts, refetch } = useBudgetContext();
+  const formatMoney = (amount: bigint) => budgetMoney(amount, currencyCode);
   const { confirm, dialog: confirmDialog } = useConfirm();
 
   useDocumentTitle("Accounting \u00B7 Budget Settings");
@@ -87,6 +88,7 @@ export default function BudgetSettingsPage() {
   const [lines, setLines] = useState<LineInput[]>(
     budget.lines.map(buildLineFromBudgetLine)
   );
+  const [periodDrafts, setPeriodDrafts] = useState<Record<string, string>>({});
   const [annualAmounts, setAnnualAmounts] = useState<Record<number, string>>({});
   const [expandedLine, setExpandedLine] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
@@ -95,11 +97,12 @@ export default function BudgetSettingsPage() {
 
   function handlePeriodTypeChange(newType: PeriodType) {
     setPeriodType(newType);
+    setPeriodDrafts({});
     // Regenerate periods for all lines
     setLines((prev) =>
       prev.map((line) => {
         const newPeriods = generatePeriods(newType, startDate, endDate);
-        const amounts = distributeAmount(line.total, newPeriods.length);
+        const amounts = budgetDistribute(line.total, newPeriods.length);
         return {
           ...line,
           periods: newPeriods.map((p, i) => ({ ...p, amount: amounts[i] })),
@@ -114,11 +117,12 @@ export default function BudgetSettingsPage() {
     if (field === "start") setStartDate(value);
     else setEndDate(value);
 
+    setPeriodDrafts({});
     // Regenerate periods
     setLines((prev) =>
       prev.map((line) => {
         const newPeriods = generatePeriods(periodType, newStart, newEnd);
-        const amounts = distributeAmount(line.total, newPeriods.length);
+        const amounts = budgetDistribute(line.total, newPeriods.length);
         return {
           ...line,
           periods: newPeriods.map((p, i) => ({ ...p, amount: amounts[i] })),
@@ -128,32 +132,35 @@ export default function BudgetSettingsPage() {
   }
 
   function handleAnnualChange(index: number, value: string) {
+    setPeriodDrafts(prev => Object.fromEntries(Object.entries(prev).filter(([key]) => !key.startsWith(`${index}:`))));
     setAnnualAmounts((prev) => ({ ...prev, [index]: value }));
-    const cents = Math.round(parseFloat(value || "0") * 100);
-    if (cents >= 0) {
-      setLines((prev) => {
-        const copy = [...prev];
-        const line = copy[index];
-        const amounts = distributeAmount(cents, line.periods.length);
-        copy[index] = {
-          ...line,
-          total: cents,
-          periods: line.periods.map((p, i) => ({ ...p, amount: amounts[i] })),
-        };
-        return copy;
-      });
-    }
+    let cents: bigint;
+    try { cents = budgetInput(value || "0"); } catch { return; }
+    setLines((prev) => {
+      const copy = [...prev];
+      const line = copy[index];
+      const amounts = budgetDistribute(cents, line.periods.length);
+      copy[index] = {
+        ...line,
+        total: cents,
+        periods: line.periods.map((p, i) => ({ ...p, amount: amounts[i] })),
+      };
+      return copy;
+    });
   }
 
+
   function updatePeriodAmount(lineIndex: number, periodIndex: number, value: string) {
-    const cents = Math.round(parseFloat(value || "0") * 100);
+    setPeriodDrafts(prev => ({ ...prev, [`${lineIndex}:${periodIndex}`]: value }));
+    let cents: bigint;
+    try { cents = budgetInput(value || "0"); } catch { return; }
     setLines((prev) => {
       const copy = [...prev];
       const line = { ...copy[lineIndex] };
       const periods = [...line.periods];
       periods[periodIndex] = { ...periods[periodIndex], amount: cents };
       line.periods = periods;
-      line.total = periods.reduce((s, p) => s + p.amount, 0);
+      line.total = periods.reduce((s, p) => s + p.amount, 0n);
       copy[lineIndex] = line;
       return copy;
     });
@@ -165,13 +172,10 @@ export default function BudgetSettingsPage() {
   }
 
   function removeLine(index: number) {
+    setPeriodDrafts(prev => budgetRemoveDraftLine(prev, index));
     setLines((prev) => prev.filter((_, i) => i !== index));
-    setAnnualAmounts((prev) => {
-      const copy = { ...prev };
-      delete copy[index];
-      return copy;
-    });
-    if (expandedLine === index) setExpandedLine(null);
+    setAnnualAmounts(prev => budgetRemoveDraftLine(prev, index));
+    setExpandedLine(prev => prev === index ? null : prev !== null && prev > index ? prev - 1 : prev);
   }
 
   async function handleSave(e: React.FormEvent) {
@@ -185,6 +189,7 @@ export default function BudgetSettingsPage() {
 
     setSaving(true);
     try {
+      for (const value of [...Object.values(annualAmounts), ...Object.values(periodDrafts)]) budgetInput(value || "0");
       const res = await fetch(`/api/v1/budgets/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
@@ -193,11 +198,7 @@ export default function BudgetSettingsPage() {
           startDate,
           endDate,
           periodType,
-          lines: validLines.map((l) => ({
-            accountId: l.accountId,
-            total: l.total,
-            periods: l.periods,
-          })),
+          lines: budgetLinesInput(validLines),
         }),
       });
       if (!res.ok) throw new Error((await res.json()).error);
@@ -343,19 +344,21 @@ export default function BudgetSettingsPage() {
                   <div className="flex items-center gap-3">
                     <Label className="text-xs text-muted-foreground shrink-0 w-16">Annual</Label>
                     <CurrencyInput
-                      prefix="$"
-                      value={annualAmounts[i] ?? (line.total / 100).toFixed(2)}
+                      prefix={currencyCode === "USD" ? "$" : currencyCode}
+                      aria-label={`Total for budget line ${i + 1}`}
+                        aria-invalid={budgetDraftInvalid(annualAmounts[i] ?? budgetDecimal(line.total))}
+                        value={annualAmounts[i] ?? budgetDecimal(line.total)}
                       onChange={(v) => handleAnnualChange(i, v)}
                       placeholder="0.00"
                       className="flex-1"
                     />
-                    {line.total > 0 && line.periods.length > 0 && (
+                    {line.total !== 0n && line.periods.length > 0 && (
                       <span className="text-xs text-muted-foreground font-mono tabular-nums shrink-0">
-                        {formatMoney(Math.floor(line.total / line.periods.length))}/period
+                        {formatMoney(budgetPerPeriod(line.total, line.periods.length))}/period
                       </span>
                     )}
                   </div>
-                  {line.total > 0 && line.periods.length > 0 && (
+                  {line.total !== 0n && line.periods.length > 0 && (
                     <button
                       type="button"
                       onClick={() => setExpandedLine(isExpanded ? null : i)}
@@ -371,7 +374,9 @@ export default function BudgetSettingsPage() {
                           <label className="text-[10px] text-muted-foreground pl-0.5">{p.label}</label>
                           <CurrencyInput
                             size="sm"
-                            value={(p.amount / 100).toFixed(2)}
+                            aria-label={`Amount for period ${p.label}`}
+                              aria-invalid={budgetDraftInvalid(periodDrafts[`${i}:${pi}`] ?? budgetDecimal(p.amount))}
+                              value={periodDrafts[`${i}:${pi}`] ?? budgetDecimal(p.amount)}
                             onChange={(v) => updatePeriodAmount(i, pi, v)}
                           />
                         </div>

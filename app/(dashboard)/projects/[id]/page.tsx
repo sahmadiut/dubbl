@@ -32,7 +32,7 @@ import {
 } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { projectMoneyDisplay as formatMoney, projectTimeCents } from "@/lib/money/project-display";
+import { projectMoneyDisplay, projectTimeCents } from "@/lib/money/project-display";
 import {
   useProject,
   priorityConfig,
@@ -49,6 +49,7 @@ import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 
 export default function ProjectOverviewPage() {
   const { project: proj } = useProject();
+  const formatMoney = (amount: number | bigint | string) => projectMoneyDisplay(amount, proj?.currency ?? "USD");
   useDocumentTitle("Projects · Overview");
   if (!proj) return null;
 
@@ -165,7 +166,7 @@ export default function ProjectOverviewPage() {
                   <>
                     <div className="h-px bg-border my-1" />
                     <Row label="Budget" value={<span className="font-mono tabular-nums">{formatMoney(proj.budget)}</span>} />
-                    <Row label="Remaining" value={<span className={cn("font-mono tabular-nums font-semibold", proj.budget - proj.totalBilled < 0 ? "text-red-600" : "text-emerald-600")}>{formatMoney(proj.budget - proj.totalBilled)}</span>} />
+                    <Row label="Remaining" value={<span className={cn("font-mono tabular-nums font-semibold", (BigInt(proj.budget) - BigInt(proj.totalBilled)) < 0 ? "text-red-600" : "text-emerald-600")}>{formatMoney((BigInt(proj.budget) - BigInt(proj.totalBilled)))}</span>} />
                   </>
                 )}
                 {proj.enableTimeTracking && (

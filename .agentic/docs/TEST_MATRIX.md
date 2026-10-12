@@ -1,5 +1,20 @@
 # Verification matrix
 
+## MON-157 budget, project and CRM UI money
+
+- `tests/budget-project-crm-ui.test.ts`: eight behavior/static groups, signed/safe-max
+  fixed-cents input/distribution, canonical saved aliases, exact React progress and
+  chart tooltip payloads, nested/nullable project/CRM/pricing values, accrual rounding,
+  invalid-draft retention/reindexing, failed reads and scoped source guards.
+- `tests/integration/budget-project-crm-ui*`: six actual REST-origin/MCP-origin
+  USD/JPY/KWD workflows on randomized disposable migrated PostgreSQL, full SDK
+  registration, independent SQL-text budget/project/CRM/accrual assertions, negative
+  report spend, pricing resolution, cross-transport replay and unchanged rejections.
+- Existing budget-wire/report, project-master/billing/CRM/pricing parent, CRM,
+  pricing and accrual-schedules fixtures rerun. No browser/screenshot/production
+  qualification; MON-008 remains independently open. See the
+  [consumer mapping](../registries/BUDGET_PROJECT_CRM_UI_CUTOVER.md).
+
 ## MON-007 final core consumer cutover acceptance
 
 - `tests/integration/core-cutover-acceptance.test.ts` and worker: eight disposable

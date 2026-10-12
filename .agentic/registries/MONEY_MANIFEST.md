@@ -1,3 +1,19 @@
+## MON-157 budget, project and CRM consumer cutover
+
+[BUDGET_PROJECT_CRM_UI_CUTOVER](BUDGET_PROJECT_CRM_UI_CUTOVER.md) maps scoped
+budget pages/progress/report caller, project contexts/editors/billing previews,
+CRM lists/analytics/details and shared Project/Deal/Budget/Accrual drawer sections.
+Saved numeric cents must agree with canonical Minor strings before adoption.
+Budgets adopt bigint values and use exact signed sums, differences, input,
+distribution and ratios; charts retain exact tooltip payloads. Projects/CRM keep
+fixed cents and saved currency labels, physical minutes and percent exceptions.
+Accrual REST decimal-major input preserves positive half-up cents rounding.
+Missing reports show unavailable amounts rather than invented zero balances.
+Eight behavior/static groups and six actual REST/MCP/SQL workflows preserve
+low digits and signed values in USD/JPY/KWD; domain regressions retain negative,
+scope, retry and rollback coverage. Scoped inventory ownership and 19 removed
+legacy allowances are current. MON-008 independent acceptance remains open.
+
 ## MON-154 remaining inventory consumer cutover
 
 [INVENTORY_UI_CUTOVER](INVENTORY_UI_CUTOVER.md) maps list/detail/history/catalog,

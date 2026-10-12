@@ -1,5 +1,7 @@
 "use client";
 
+import { projectCrmJson } from "@/lib/money/project-crm-ui";
+
 import { projectBillingFixedCents, projectBillingPercent } from "@/lib/money/project-billing-display";
 import { projectCentsInput } from "@/lib/money/project-display";
 
@@ -29,12 +31,13 @@ import {
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { projectMoneyDisplay as formatMoney } from "@/lib/money/project-display";
+import { projectMoneyDisplay } from "@/lib/money/project-display";
 import { useProject, formatDateShort, pct } from "../project-context";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 
 export default function MilestonesPage() {
   const { project: proj, orgId, projectId, refresh } = useProject();
+  const formatMoney = (amount: number | bigint | string) => projectMoneyDisplay(amount, proj?.currency ?? "USD");
   const [addOpen, setAddOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [title, setTitle] = useState("");
@@ -81,7 +84,7 @@ export default function MilestonesPage() {
     fetch(`/api/v1/projects/${projectId}/milestones/${assignMilestoneId}/assignments`, {
       headers: { "x-organization-id": orgId },
     })
-      .then(r => r.json())
+      .then(projectCrmJson)
       .then(data => { if (data.assignments) setAssignments(data.assignments); })
       .finally(() => setLoadingAssignments(false));
   }, [assignMilestoneId, orgId, projectId]);
@@ -98,7 +101,7 @@ export default function MilestonesPage() {
     fetch(`/api/v1/projects/${projectId}/progress-invoice`, {
       headers: { "x-organization-id": orgId },
     })
-      .then(async r => { const data = await r.json(); if (!r.ok) throw new Error(data.error || "Failed to load billing preview"); return data; })
+      .then(async r => { const data = await projectCrmJson(r); if (!r.ok) throw new Error(data.error || "Failed to load billing preview"); return data; })
       .then(data => setUninvoicedData(data))
       .catch(error => toast.error(error instanceof Error ? error.message : "Failed to load billing preview"))
       .finally(() => setInvoiceLoading(false));
@@ -169,7 +172,7 @@ export default function MilestonesPage() {
     setDeletingId(msId);
     try {
       const res = await fetch(`/api/v1/projects/${projectId}/milestones/${msId}`, { method: "DELETE", headers: { "x-organization-id": orgId } });
-      if (!res.ok) { const data = await res.json(); throw new Error(data.error || "Failed to delete milestone"); }
+      if (!res.ok) { const data = await projectCrmJson(res); throw new Error(data.error || "Failed to delete milestone"); }
       refresh();
     } catch (error) { toast.error(error instanceof Error ? error.message : "Failed to delete milestone"); }
     finally { setDeletingId(null); }
@@ -190,14 +193,14 @@ export default function MilestonesPage() {
           description: assignDesc || null,
         }),
       });
-      if (!res.ok) { const data = await res.json(); throw new Error(data.error || "Failed"); }
+      if (!res.ok) { const data = await projectCrmJson(res); throw new Error(data.error || "Failed"); }
       toast.success("Assignment added");
       setAssignMemberId("none"); setAssignAmount(""); setAssignDesc("");
       // Refresh assignments
       const r = await fetch(`/api/v1/projects/${projectId}/milestones/${assignMilestoneId}/assignments`, {
         headers: { "x-organization-id": orgId },
       });
-      const data = await r.json();
+      const data = await projectCrmJson(r);
       if (data.assignments) setAssignments(data.assignments);
     } catch (err) { toast.error(err instanceof Error ? err.message : "Failed"); }
     finally { setAssignSaving(false); }
@@ -210,12 +213,12 @@ export default function MilestonesPage() {
         method: "PATCH",
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
       });
-      if (!res.ok) { const data = await res.json(); throw new Error(data.error || "Failed to mark assignment as paid"); }
+      if (!res.ok) { const data = await projectCrmJson(res); throw new Error(data.error || "Failed to mark assignment as paid"); }
       toast.success("Marked as paid");
       const r = await fetch(`/api/v1/projects/${projectId}/milestones/${assignMilestoneId}/assignments`, {
         headers: { "x-organization-id": orgId },
       });
-      const data = await r.json();
+      const data = await projectCrmJson(r);
       if (data.assignments) setAssignments(data.assignments);
     } catch { toast.error("Failed to update"); }
   }
@@ -240,11 +243,11 @@ export default function MilestonesPage() {
       });
 
       if (!res.ok) {
-        const data = await res.json();
+        const data = await projectCrmJson(res);
         throw new Error(data.error || "Failed to create invoice");
       }
 
-      const data = await res.json();
+      const data = await projectCrmJson(res);
       toast.success(`Invoice ${data.invoice.invoiceNumber} created`);
       setInvoiceOpen(false);
       refresh();
@@ -352,7 +355,7 @@ export default function MilestonesPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Amount</Label>
-                  <CurrencyInput prefix="$" value={amount} onChange={setAmount} />
+                  <CurrencyInput prefix={proj?.currency === "USD" ? "$" : proj?.currency} value={amount} onChange={setAmount} />
                 </div>
               </div>
             </div>
@@ -375,7 +378,6 @@ export default function MilestonesPage() {
         <div className="rounded-lg border overflow-hidden divide-y">
           {milestones.map((ms) => {
             const overdue = ms.dueDate && new Date(ms.dueDate) < new Date() && ms.status !== "completed";
-            const uninvoiced = ms.amount - ms.invoicedAmountCents;
             return (
               <div key={ms.id} className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 hover:bg-muted/20 transition-colors group">
                 <button onClick={() => toggleComplete(ms)} disabled={togglingId === ms.id} className="shrink-0">
@@ -483,7 +485,7 @@ export default function MilestonesPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Amount</Label>
-                  <CurrencyInput prefix="$" value={assignAmount} onChange={setAssignAmount} />
+                  <CurrencyInput prefix={proj?.currency === "USD" ? "$" : proj?.currency} value={assignAmount} onChange={setAssignAmount} />
                 </div>
                 <div className="space-y-2">
                   <Label>Description</Label>

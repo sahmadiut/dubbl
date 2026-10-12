@@ -6,7 +6,7 @@ import { ArrowLeft, Target, TrendingUp, TrendingDown, BarChart3, Settings2, Flam
 import { Badge } from "@/components/ui/badge";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
-import { formatMoney } from "@/lib/money";
+import { budgetMoney, budgetPercent, budgetAbs, budgetJson } from "@/lib/money/budget-ui";
 import { useEntityTitle } from "@/lib/hooks/use-entity-title";
 import { cn } from "@/lib/utils";
 import type { PeriodType } from "@/lib/budget-periods";
@@ -23,7 +23,7 @@ interface BudgetPeriodData {
   label: string;
   startDate: string;
   endDate: string;
-  amount: number;
+  amount: bigint;
   sortOrder: number;
 }
 
@@ -31,7 +31,7 @@ interface BudgetLineData {
   id: string;
   accountId: string;
   account: Account | null;
-  total: number;
+  total: bigint;
   periods: BudgetPeriodData[];
 }
 
@@ -51,9 +51,9 @@ interface PeriodComparison {
   label: string;
   startDate: string;
   endDate: string;
-  budgeted: number;
-  actual: number;
-  variance: number;
+  budgeted: bigint;
+  actual: bigint;
+  variance: bigint;
   sortOrder: number;
 }
 
@@ -61,22 +61,23 @@ interface Comparison {
   accountId: string;
   accountName: string;
   accountCode: string;
-  budgeted: number;
-  actual: number;
-  variance: number;
+  budgeted: bigint;
+  actual: bigint;
+  variance: bigint;
   variancePct: number;
-  burnRate: number;
-  projected: number;
+  burnRate: bigint;
+  projected: bigint;
   periods: PeriodComparison[];
 }
 
 interface BudgetContextValue {
   budget: BudgetData;
+  currencyCode: string;
   setBudget: (fn: (prev: BudgetData | null) => BudgetData | null) => void;
   comparisons: Comparison[];
-  totalBudgeted: number;
-  totalActual: number;
-  totalBurnRate: number;
+  totalBudgeted: bigint;
+  totalActual: bigint;
+  totalBurnRate: bigint;
   daysElapsed: number;
   daysRemaining: number;
   totalDays: number;
@@ -112,15 +113,17 @@ export default function BudgetDetailLayout({ children }: { children: React.React
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const pathname = usePathname();
+  const [currencyCode, setCurrencyCode] = useState("USD");
   const [budget, setBudget] = useState<BudgetData | null>(null);
   const [comparisons, setComparisons] = useState<Comparison[]>([]);
-  const [totalBudgeted, setTotalBudgeted] = useState(0);
-  const [totalActual, setTotalActual] = useState(0);
-  const [totalBurnRate, setTotalBurnRate] = useState(0);
+  const [totalBudgeted, setTotalBudgeted] = useState(0n);
+  const [totalActual, setTotalActual] = useState(0n);
+  const [totalBurnRate, setTotalBurnRate] = useState(0n);
   const [daysElapsed, setDaysElapsed] = useState(0);
   const [daysRemaining, setDaysRemaining] = useState(0);
   const [totalDays, setTotalDays] = useState(0);
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [loadError, setLoadError] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEntityTitle(budget?.name ?? undefined);
@@ -130,30 +133,32 @@ export default function BudgetDetailLayout({ children }: { children: React.React
   const fetchData = useCallback(() => {
     if (!orgId) return;
     setLoading(true);
+    setLoadError("");
 
     Promise.all([
-      fetch(`/api/v1/budgets/${id}`, { headers: { "x-organization-id": orgId } }).then((r) => r.json()),
-      fetch("/api/v1/accounts?limit=500", { headers: { "x-organization-id": orgId } }).then((r) => r.json()),
-      fetch(`/api/v1/reports/budget-vs-actual?budgetId=${id}`, { headers: { "x-organization-id": orgId } }).then((r) => r.json()).catch(() => null),
+      fetch(`/api/v1/budgets/${id}`, { headers: { "x-organization-id": orgId } }).then(budgetJson),
+      fetch("/api/v1/accounts?limit=500", { headers: { "x-organization-id": orgId } }).then(budgetJson),
+      fetch(`/api/v1/reports/budget-vs-actual?budgetId=${id}`, { headers: { "x-organization-id": orgId } }).then(budgetJson),
     ])
       .then(([budgetData, accountsData, reportData]) => {
         if (budgetData.budget) setBudget(budgetData.budget);
         setAccounts(accountsData.accounts || []);
         if (reportData) {
+          setCurrencyCode(reportData.currencyCode);
           setComparisons(reportData.comparisons || []);
-          setTotalBudgeted(reportData.totalBudgeted || 0);
-          setTotalActual(reportData.totalActual || 0);
-          setTotalBurnRate(reportData.totalBurnRate || 0);
+          setTotalBudgeted(reportData.totalBudgeted ?? 0n);
+          setTotalActual(reportData.totalActual ?? 0n);
+          setTotalBurnRate(reportData.totalBurnRate ?? 0n);
           setDaysElapsed(reportData.daysElapsed || 0);
           setDaysRemaining(reportData.daysRemaining || 0);
           setTotalDays(reportData.totalDays || 0);
         }
       })
+      .catch((error) => { setLoadError(error instanceof Error ? error.message : "Unable to load budget"); setBudget(null); setComparisons([]); })
       .finally(() => setLoading(false));
   }, [id, orgId]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchData();
   }, [fetchData]);
 
@@ -162,19 +167,20 @@ export default function BudgetDetailLayout({ children }: { children: React.React
   if (!budget) {
     return (
       <div className="space-y-4 pt-12 text-center">
-        <p className="text-sm text-muted-foreground">Budget not found</p>
+        <p className="text-sm text-muted-foreground">{loadError || "Budget not found"}</p>
         <button onClick={() => router.push("/accounting/budgets")} className="text-sm text-muted-foreground underline">Back to Budgets</button>
       </div>
     );
   }
 
-  const grandTotal = budget.lines.reduce((s, l) => s + l.total, 0);
+  const formatMoney = (amount: bigint) => budgetMoney(amount, currencyCode);
+  const grandTotal = budget.lines.reduce((s, l) => s + l.total, 0n);
   const totalVariance = totalBudgeted - totalActual;
-  const overallPct = totalBudgeted > 0 ? Math.round((totalActual / totalBudgeted) * 100) : 0;
+  const overallPct = totalBudgeted !== 0n ? budgetPercent(totalActual, totalBudgeted) : 0;
   const activeTab = pathname.endsWith("/settings") ? "settings" : "overview";
 
   return (
-    <BudgetContext.Provider value={{ budget, setBudget, comparisons, totalBudgeted, totalActual, totalBurnRate, daysElapsed, daysRemaining, totalDays, accounts, refetch: fetchData }}>
+    <BudgetContext.Provider value={{ currencyCode, budget, setBudget, comparisons, totalBudgeted, totalActual, totalBurnRate, daysElapsed, daysRemaining, totalDays, accounts, refetch: fetchData }}>
       <ContentReveal>
         {/* Back link */}
         <button
@@ -223,7 +229,7 @@ export default function BudgetDetailLayout({ children }: { children: React.React
               Actual Spend
             </p>
             <p className="mt-0.5 font-mono text-lg font-semibold tabular-nums text-blue-600">
-              {totalActual > 0 ? formatMoney(totalActual) : "-"}
+              {totalActual !== 0n ? formatMoney(totalActual) : "-"}
             </p>
           </div>
           <div>
@@ -238,7 +244,7 @@ export default function BudgetDetailLayout({ children }: { children: React.React
               "mt-0.5 font-mono text-lg font-semibold tabular-nums",
               totalVariance >= 0 ? "text-emerald-600" : "text-red-600"
             )}>
-              {totalBudgeted > 0 ? formatMoney(Math.abs(totalVariance)) : "-"}
+              {totalBudgeted !== 0n ? formatMoney(budgetAbs(totalVariance)) : "-"}
             </p>
           </div>
           <div>
@@ -247,9 +253,9 @@ export default function BudgetDetailLayout({ children }: { children: React.React
               Burn Rate
             </p>
             <p className="mt-0.5 font-mono text-lg font-semibold tabular-nums text-orange-600">
-              {totalBurnRate > 0 ? formatMoney(totalBurnRate) : "-"}
+              {totalBurnRate !== 0n ? formatMoney(totalBurnRate) : "-"}
             </p>
-            {totalBurnRate > 0 && (
+            {totalBurnRate !== 0n && (
               <p className="text-[10px] text-muted-foreground">projected total</p>
             )}
           </div>
@@ -272,7 +278,7 @@ export default function BudgetDetailLayout({ children }: { children: React.React
                     "h-full rounded-full transition-all",
                     overallPct > 100 ? "bg-red-500" : overallPct > 80 ? "bg-amber-500" : "bg-emerald-500"
                   )}
-                  style={{ width: `${Math.min(overallPct, 100)}%` }}
+                  style={{ width: `${Math.max(0, Math.min(overallPct, 100))}%` }}
                 />
               </div>
               <span className="text-xs font-mono tabular-nums text-muted-foreground">{overallPct}%</span>

@@ -1,5 +1,7 @@
 "use client";
 
+import { projectCrmJson } from "@/lib/money/project-crm-ui";
+
 import { useState, useEffect, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import {
@@ -40,7 +42,7 @@ import {
 } from "@/components/ui/sheet";
 import { DataTable, type Column } from "@/components/dashboard/data-table";
 import { cn } from "@/lib/utils";
-import { projectMoneyDisplay as formatMoney, projectTimeCents, projectHoursInput, projectWholeMinutes } from "@/lib/money/project-display";
+import { projectMoneyDisplay, projectTimeCents, projectHoursInput, projectWholeMinutes } from "@/lib/money/project-display";
 import {
   BarChart,
   Bar,
@@ -55,6 +57,7 @@ import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 
 export default function TimePage() {
   const { project: proj, orgId, projectId, refresh } = useProject();
+  const formatMoney = (amount: number | bigint | string) => projectMoneyDisplay(amount, proj?.currency ?? "USD");
 
   // Drawer state: "add" for new, entry object for edit
   const [drawerMode, setDrawerMode] = useState<"add" | "edit" | null>(null);
@@ -168,7 +171,7 @@ export default function TimePage() {
         body: JSON.stringify({ isBillable: true }),
       });
       if (!res.ok) throw new Error("Failed");
-      const data = await res.json();
+      const data = await projectCrmJson(res);
       setTimerData(data.timer);
       setTimerSeconds(0);
       setTimerDesc("");
@@ -193,7 +196,7 @@ export default function TimePage() {
         }),
       });
       if (!res.ok) throw new Error("Failed");
-      const data = await res.json();
+      const data = await projectCrmJson(res);
       setTimerData(data.timer);
     } catch { toast.error("Failed to pause timer"); }
   }
@@ -210,7 +213,7 @@ export default function TimePage() {
         }),
       });
       if (!res.ok) throw new Error("Failed");
-      const data = await res.json();
+      const data = await projectCrmJson(res);
       setTimerData(data.timer);
     } catch { toast.error("Failed to resume timer"); }
   }

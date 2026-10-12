@@ -1,5 +1,7 @@
 "use client";
 
+import { projectCrmJson } from "@/lib/money/project-crm-ui";
+
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -27,10 +29,11 @@ import {
   formatHours,
   daysUntil,
 } from "./project-context";
-import { formatMoney } from "@/lib/money";
+import { projectMoneyDisplay } from "@/lib/money/project-display";
 
 function ProjectLayoutInner({ children }: { children: React.ReactNode }) {
   const { project: proj, loading, orgId, projectId } = useProject();
+  const formatMoney = (amount: number | bigint | string) => projectMoneyDisplay(amount, proj?.currency ?? "USD");
   const pathname = usePathname();
   const router = useRouter();
 
@@ -69,8 +72,8 @@ function ProjectLayoutInner({ children }: { children: React.ReactNode }) {
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify({}),
       });
-      if (!res.ok) throw new Error((await res.json()).error || "Failed");
-      const data = await res.json();
+      if (!res.ok) throw new Error((await projectCrmJson(res)).error || "Failed");
+      const data = await projectCrmJson(res);
       toast.success("Invoice generated");
       router.push(`/sales/${data.invoice.id}`);
     } catch (err) {

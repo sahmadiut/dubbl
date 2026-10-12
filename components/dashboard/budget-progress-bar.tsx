@@ -1,15 +1,17 @@
 "use client";
 
+import { budgetMoney, budgetPercent } from "@/lib/money/budget-ui";
 import { cn } from "@/lib/utils";
 
 interface BudgetProgressBarProps {
-  budgeted: number;
-  actual: number;
+  budgeted: bigint;
+  actual: bigint;
   label: string;
+  currencyCode?: string;
 }
 
-export function BudgetProgressBar({ budgeted, actual, label }: BudgetProgressBarProps) {
-  const pct = budgeted === 0 ? 0 : Math.round((actual / budgeted) * 100);
+export function BudgetProgressBar({ budgeted, actual, label, currencyCode = "USD" }: BudgetProgressBarProps) {
+  const pct = budgetPercent(actual, budgeted);
   const over = actual > budgeted;
 
   return (
@@ -26,12 +28,12 @@ export function BudgetProgressBar({ budgeted, actual, label }: BudgetProgressBar
             "h-full rounded-full transition-all",
             over ? "bg-red-500" : pct > 80 ? "bg-amber-500" : "bg-emerald-500"
           )}
-          style={{ width: `${Math.min(pct, 100)}%` }}
+          style={{ width: `${Math.max(0, Math.min(pct, 100))}%` }}
         />
       </div>
       <div className="flex justify-between text-xs text-muted-foreground tabular-nums font-mono">
-        <span>Actual: ${(actual / 100).toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
-        <span>Budget: ${(budgeted / 100).toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+        <span>Actual: {budgetMoney(actual, currencyCode)}</span>
+        <span>Budget: {budgetMoney(budgeted, currencyCode)}</span>
       </div>
     </div>
   );

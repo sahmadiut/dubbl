@@ -1,12 +1,13 @@
 "use client";
 
+import { projectCrmJson } from "@/lib/money/project-crm-ui";
+
 import { projectCentsInput } from "@/lib/money/project-display";
 
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { Plus, Trash2, Users, Loader2, UsersRound, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -25,7 +26,7 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import { projectMoneyDisplay as formatMoney } from "@/lib/money/project-display";
+import { projectMoneyDisplay } from "@/lib/money/project-display";
 import { useProject } from "../project-context";
 
 const roleColors: Record<string, string> = {
@@ -55,6 +56,7 @@ interface OrgTeam {
 
 export default function MembersPage() {
   const { project: proj, orgId, projectId, refresh } = useProject();
+  const formatMoney = (amount: number | bigint | string) => projectMoneyDisplay(amount, proj?.currency ?? "USD");
   const [addOpen, setAddOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [orgMembers, setOrgMembers] = useState<{ id: string; userName: string | null; userEmail: string }[]>([]);
@@ -78,7 +80,7 @@ export default function MembersPage() {
       const res = await fetch(`/api/v1/projects/${projectId}/team-assignments`, {
         headers: { "x-organization-id": orgId },
       });
-      const data = await res.json();
+      const data = await projectCrmJson(res);
       if (data.assignments) setTeamAssignments(data.assignments);
     } catch { /* ignore */ }
   }, [orgId, projectId]);
@@ -90,7 +92,7 @@ export default function MembersPage() {
   useEffect(() => {
     if (!orgId || !addTeamOpen) return;
     fetch("/api/v1/teams?limit=100", { headers: { "x-organization-id": orgId } })
-      .then(r => r.json())
+      .then(projectCrmJson)
       .then(data => {
         if (data.data) setOrgTeams(data.data);
       })
@@ -106,7 +108,7 @@ export default function MembersPage() {
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify({ teamId: selectedTeamId, defaultRole: selectedTeamRole }),
       });
-      if (!res.ok) { const data = await res.json(); throw new Error(data.error || "Failed"); }
+      if (!res.ok) { const data = await projectCrmJson(res); throw new Error(data.error || "Failed"); }
       toast.success("Team assigned");
       setAddTeamOpen(false);
       setSelectedTeamId("none");
@@ -132,7 +134,7 @@ export default function MembersPage() {
   useEffect(() => {
     if (!orgId || !addOpen) return;
     fetch("/api/v1/members", { headers: { "x-organization-id": orgId } })
-      .then(r => r.json())
+      .then(projectCrmJson)
       .then(data => {
         if (data.members) setOrgMembers(data.members);
         else if (data.data) setOrgMembers(data.data);
@@ -159,7 +161,7 @@ export default function MembersPage() {
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify({ memberId: selectedMemberId, role: selectedRole, hourlyRateMinor: hourlyRate ? projectCentsInput(hourlyRate) : undefined }),
       });
-      if (!res.ok) { const data = await res.json(); throw new Error(data.error || "Failed"); }
+      if (!res.ok) { const data = await projectCrmJson(res); throw new Error(data.error || "Failed"); }
       toast.success("Member added");
       setAddOpen(false);
       setSelectedMemberId("none"); setSelectedRole("contributor"); setHourlyRate("");
@@ -389,7 +391,7 @@ export default function MembersPage() {
               <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Compensation</p>
               <div className="space-y-2">
                 <Label>Hourly Rate (optional)</Label>
-                <CurrencyInput prefix="$" value={hourlyRate} onChange={setHourlyRate} />
+                <CurrencyInput prefix={proj?.currency === "USD" ? "$" : proj?.currency} value={hourlyRate} onChange={setHourlyRate} />
                 <p className="text-[11px] text-muted-foreground">Override the project-level hourly rate for this member.</p>
               </div>
             </div>

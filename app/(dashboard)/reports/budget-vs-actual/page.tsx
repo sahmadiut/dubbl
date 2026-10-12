@@ -11,7 +11,7 @@ import { EmptyState } from "@/components/dashboard/empty-state";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { formatMoney } from "@/lib/money";
+import { budgetMoney as formatMoney, budgetJson } from "@/lib/money/budget-ui";
 
 interface Budget {
   id: string;
@@ -21,23 +21,24 @@ interface Budget {
 }
 
 interface Comparison {
+  currencyCode: string;
   accountId: string;
   accountName: string;
   accountCode: string;
-  budgeted: number;
-  actual: number;
-  variance: number;
+  budgeted: bigint;
+  actual: bigint;
+  variance: bigint;
   variancePct: number;
 }
 
 const columns: Column<Comparison>[] = [
   { key: "code", header: "Code", className: "w-24", render: (r) => <span className="font-mono text-sm">{r.accountCode}</span> },
   { key: "name", header: "Account", render: (r) => <span className="text-sm font-medium">{r.accountName}</span> },
-  { key: "budgeted", header: "Budgeted", className: "w-28 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{formatMoney(r.budgeted)}</span> },
-  { key: "actual", header: "Actual", className: "w-28 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{formatMoney(r.actual)}</span> },
+  { key: "budgeted", header: "Budgeted", className: "w-28 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{formatMoney(r.budgeted, r.currencyCode)}</span> },
+  { key: "actual", header: "Actual", className: "w-28 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{formatMoney(r.actual, r.currencyCode)}</span> },
   { key: "variance", header: "Variance", className: "w-28 text-right", render: (r) => (
     <span className={`font-mono text-sm tabular-nums ${r.variance >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-      {formatMoney(r.variance)}
+      {formatMoney(r.variance, r.currencyCode)}
     </span>
   )},
   { key: "pct", header: "%", className: "w-20 text-right", render: (r) => (
@@ -48,14 +49,16 @@ const columns: Column<Comparison>[] = [
 ];
 
 export default function BudgetVsActualPage() {
+  const [loadError, setLoadError] = useState("");
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(true);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [selectedBudgetId, setSelectedBudgetId] = useState<string>("");
+  const [currencyCode, setCurrencyCode] = useState("USD");
   const [comparisons, setComparisons] = useState<Comparison[]>([]);
-  const [totalBudgeted, setTotalBudgeted] = useState(0);
-  const [totalActual, setTotalActual] = useState(0);
-  const [totalVariance, setTotalVariance] = useState(0);
+  const [totalBudgeted, setTotalBudgeted] = useState(0n);
+  const [totalActual, setTotalActual] = useState(0n);
+  const [totalVariance, setTotalVariance] = useState(0n);
   const [reportLoading, setReportLoading] = useState(false);
 
   // Fetch budget list
@@ -66,7 +69,7 @@ export default function BudgetVsActualPage() {
     fetch("/api/v1/budgets?limit=100", {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then(budgetJson)
       .then((data) => {
         if (cancelled) return;
         const list = data.data || [];
@@ -75,6 +78,7 @@ export default function BudgetVsActualPage() {
           setSelectedBudgetId(list[0].id);
         }
       })
+      .catch((error) => { if (!cancelled) setLoadError(error instanceof Error ? error.message : "Unable to load budgets"); })
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
@@ -90,24 +94,28 @@ export default function BudgetVsActualPage() {
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
     let cancelled = false;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setReportLoading(true);
+    setLoadError("");
     fetch(`/api/v1/reports/budget-vs-actual?budgetId=${selectedBudgetId}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then(budgetJson)
       .then((data) => {
         if (cancelled) return;
-        setComparisons(data.comparisons || []);
-        setTotalBudgeted(data.totalBudgeted || 0);
-        setTotalActual(data.totalActual || 0);
-        setTotalVariance(data.totalVariance || 0);
+        setCurrencyCode(data.currencyCode);
+        setComparisons((data.comparisons || []).map((row: Comparison) => ({ ...row, currencyCode: data.currencyCode })));
+        setTotalBudgeted(data.totalBudgeted ?? 0n);
+        setTotalActual(data.totalActual ?? 0n);
+        setTotalVariance(data.totalVariance ?? 0n);
       })
+      .catch((error) => { if (!cancelled) { setLoadError(error instanceof Error ? error.message : "Unable to load budget amounts"); setComparisons([]); } })
       .finally(() => { if (!cancelled) setReportLoading(false); });
     return () => { cancelled = true; };
   }, [selectedBudgetId]);
 
   if (initialLoad) return <BrandLoader />;
+
+  if (loadError) return <p role="alert" className="text-sm text-destructive">{loadError}</p>;
 
   if (budgets.length === 0) {
     return (
@@ -151,11 +159,11 @@ export default function BudgetVsActualPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard title="Total Budgeted" value={formatMoney(totalBudgeted)} icon={Target} />
-        <StatCard title="Total Actual" value={formatMoney(totalActual)} icon={DollarSign} />
+        <StatCard title="Total Budgeted" value={formatMoney(totalBudgeted, currencyCode)} icon={Target} />
+        <StatCard title="Total Actual" value={formatMoney(totalActual, currencyCode)} icon={DollarSign} />
         <StatCard
           title="Variance"
-          value={formatMoney(totalVariance)}
+          value={formatMoney(totalVariance, currencyCode)}
           icon={DollarSign}
           changeType={totalVariance >= 0 ? "positive" : "negative"}
         />
@@ -172,6 +180,7 @@ export default function BudgetVsActualPage() {
                   <BudgetProgressBar
                     budgeted={c.budgeted}
                     actual={c.actual}
+                    currencyCode={currencyCode}
                     label={c.accountName}
                   />
                 </div>
@@ -189,7 +198,7 @@ export default function BudgetVsActualPage() {
           <div className="flex justify-between px-3 py-2 sm:px-4 sm:py-3 bg-muted/50 rounded-lg text-sm font-semibold mt-6">
             <span>Total Variance</span>
             <span className={`font-mono tabular-nums ${totalVariance >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-              {formatMoney(totalVariance)}
+              {formatMoney(totalVariance, currencyCode)}
             </span>
           </div>
         </ContentReveal>

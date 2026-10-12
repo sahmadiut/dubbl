@@ -1,5 +1,7 @@
 "use client";
 
+import { projectCrmJson } from "@/lib/money/project-crm-ui";
+
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { projectPercent } from "@/lib/money/project-display";
@@ -189,10 +191,11 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     fetch(`/api/v1/projects/${id}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then(projectCrmJson)
       .then((data) => {
         if (data.project) setProject(data.project);
       })
+      .catch(() => setProject(null))
       .finally(() => setLoading(false));
   }, [id, orgId]);
 

@@ -1,5 +1,7 @@
 "use client";
 
+import { projectCrmJson } from "@/lib/money/project-crm-ui";
+
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import { motion, MotionConfig } from "motion/react";
@@ -135,7 +137,7 @@ export default function DealActivityPage() {
     fetch(`/api/v1/crm/deals/${dealId}/activities?${params}`, {
       headers: getHeaders(),
     })
-      .then((r) => r.json())
+      .then(projectCrmJson)
       .then((data) => {
         if (cancelled) return;
         if (data.activities) setActivities(data.activities);
@@ -169,7 +171,7 @@ export default function DealActivityPage() {
     fetch(`/api/v1/crm/deals/${dealId}/activities?${params}`, {
       headers: getHeaders(),
     })
-      .then((r) => r.json())
+      .then(projectCrmJson)
       .then((data) => {
         if (data.activities) setActivities((prev) => [...prev, ...data.activities]);
         if (data.pagination) {
@@ -204,7 +206,7 @@ export default function DealActivityPage() {
       const r = await fetch(`/api/v1/crm/deals/${dealId}/activities?${params}`, {
         headers: getHeaders(),
       });
-      const data = await r.json();
+      const data = await projectCrmJson(r);
       if (data.activities) setActivities(data.activities);
       if (data.pagination) {
         setPage(1);

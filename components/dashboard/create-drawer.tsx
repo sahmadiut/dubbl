@@ -87,7 +87,8 @@ import { payrollJson } from "@/lib/money/payroll-ui";
 import { payrollCentsInput, payrollBasisPointsInput } from "@/lib/money/payroll-input";
 import { inventoryUiItem, inventoryTransferLines } from "@/lib/money/inventory-ui";
 import { catalogPriceMinor, catalogWholeInput } from "@/lib/money/catalog-input";
-import { formatMoney } from "@/lib/money";
+import { budgetMoney as formatMoney, budgetDecimal, budgetDistribute, budgetPerPeriod, budgetInput, budgetLinesInput, budgetDraftInvalid, budgetRemoveDraftLine, accrualUiInput, accrualUiPeriods } from "@/lib/money/budget-ui";
+import { projectCrmJson } from "@/lib/money/project-crm-ui";
 
 type DrawerType = "contact" | "project" | "invoice" | "bill" | "entry" | "inventory" | "quote" | "salesReceipt" | "purchaseOrder" | "expense" | "fixedAsset" | "budget" | "employee" | "creditNote" | "recurring" | "account" | "bankAccount" | "warehouse" | "stockTake" | "category" | "transfer" | "bankTransfer" | "contractor" | "deal" | "debitNote" | "customerCredit" | "loan" | "openingBalance" | "accrualSchedule" | "revenueSchedule" | "recurringJournal";
 
@@ -380,10 +381,10 @@ function ProjectDrawer({ open, onClose }: { open: boolean; onClose: () => void }
         }),
       });
       if (!res.ok) {
-        const data = await res.json();
+        const data = await projectCrmJson(res);
         throw new Error(data.error || "Failed to create project");
       }
-      const data = await res.json();
+      const data = await projectCrmJson(res);
       toast.success("Project created");
       window.dispatchEvent(new Event("projects-changed"));
       onClose();
@@ -2122,20 +2123,20 @@ function FixedAssetDrawer({ open, onClose }: { open: boolean; onClose: () => voi
 // ---------------------------------------------------------------------------
 // Budget Drawer
 // ---------------------------------------------------------------------------
-import { generatePeriods, distributeAmount } from "@/lib/budget-periods";
+import { generatePeriods } from "@/lib/budget-periods";
 import type { PeriodType } from "@/lib/budget-periods";
 
 interface BudgetPeriodInput {
   label: string;
   startDate: string;
   endDate: string;
-  amount: number;
+  amount: bigint;
   sortOrder: number;
 }
 
 interface BudgetLineInput {
   accountId: string;
-  total: number;
+  total: bigint;
   periods: BudgetPeriodInput[];
 }
 
@@ -2149,8 +2150,8 @@ const PERIOD_TYPE_OPTIONS: { value: PeriodType; label: string }[] = [
 ];
 
 function emptyBudgetLine(periodType: PeriodType, startDate: string, endDate: string): BudgetLineInput {
-  const periods = generatePeriods(periodType, startDate, endDate).map((p) => ({ ...p, amount: 0 }));
-  return { accountId: "", total: 0, periods };
+  const periods = generatePeriods(periodType, startDate, endDate).map((p) => ({ ...p, amount: 0n }));
+  return { accountId: "", total: 0n, periods };
 }
 
 interface BudgetAccount {
@@ -2162,12 +2163,14 @@ interface BudgetAccount {
 
 function BudgetDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const router = useRouter();
+  const [budgetCurrency, setBudgetCurrency] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [budgetName, setBudgetName] = useState("");
   const [startDate, setStartDate] = useState(`${new Date().getFullYear()}-01-01`);
   const [endDate, setEndDate] = useState(`${new Date().getFullYear()}-12-31`);
   const [periodType, setPeriodType] = useState<PeriodType>("monthly");
   const [budgetLines, setBudgetLines] = useState<BudgetLineInput[]>([emptyBudgetLine("monthly", `${new Date().getFullYear()}-01-01`, `${new Date().getFullYear()}-12-31`)]);
+  const [periodDrafts, setPeriodDrafts] = useState<Record<string, string>>({});
   const [annualAmounts, setAnnualAmounts] = useState<Record<number, string>>({});
   const [budgetAccounts, setBudgetAccounts] = useState<BudgetAccount[]>([]);
   const [expandedLine, setExpandedLine] = useState<number | null>(null);
@@ -2175,25 +2178,37 @@ function BudgetDrawer({ open, onClose }: { open: boolean; onClose: () => void })
   useEffect(() => {
     if (!open) {
       const yr = new Date().getFullYear();
-      setBudgetName(""); setPeriodType("monthly");
+      setBudgetName(""); setPeriodType("monthly"); setBudgetCurrency(null);
       setBudgetLines([emptyBudgetLine("monthly", `${yr}-01-01`, `${yr}-12-31`)]);
-      setAnnualAmounts({}); setExpandedLine(null);
+      setAnnualAmounts({}); setPeriodDrafts({}); setExpandedLine(null);
       setStartDate(`${yr}-01-01`);
       setEndDate(`${yr}-12-31`);
       return;
     }
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
+    let cancelled = false;
+    fetch(`/api/v1/organizations/${orgId}`, { headers: { "x-organization-id": orgId } })
+      .then(async response => { if (!response.ok) throw new Error("Unable to load budget currency"); return response.json(); })
+      .then(data => {
+        const code = data.organization?.defaultCurrency;
+        if (typeof code !== "string" || currencyMetadata(code).code !== code) throw new Error("Invalid budget currency");
+        if (!cancelled) setBudgetCurrency(code);
+      })
+      .catch(() => { if (!cancelled) setBudgetCurrency(null); });
     fetch("/api/v1/accounts?limit=500", { headers: { "x-organization-id": orgId } })
       .then((r) => r.json())
-      .then((data) => { if (data.accounts) setBudgetAccounts(data.accounts); else if (data.data) setBudgetAccounts(data.data); });
+      .then((data) => { if (!cancelled) { if (data.accounts) setBudgetAccounts(data.accounts); else if (data.data) setBudgetAccounts(data.data); } })
+      .catch(() => { if (!cancelled) setBudgetAccounts([]); });
+    return () => { cancelled = true; };
   }, [open]);
 
   function regenerateAllPeriods(newType: PeriodType, newStart: string, newEnd: string) {
+    setPeriodDrafts({});
     setBudgetLines((prev) =>
       prev.map((line) => {
-        const newPeriods = generatePeriods(newType, newStart, newEnd).map((p) => ({ ...p, amount: 0 }));
-        const amounts = distributeAmount(line.total, newPeriods.length);
+        const newPeriods = generatePeriods(newType, newStart, newEnd).map((p) => ({ ...p, amount: 0n }));
+        const amounts = budgetDistribute(line.total, newPeriods.length);
         return {
           ...line,
           periods: newPeriods.map((p, i) => ({ ...p, amount: amounts[i] })),
@@ -2218,32 +2233,35 @@ function BudgetDrawer({ open, onClose }: { open: boolean; onClose: () => void })
   }
 
   function handleAnnualChange(index: number, value: string) {
+    setPeriodDrafts(prev => Object.fromEntries(Object.entries(prev).filter(([key]) => !key.startsWith(`${index}:`))));
     setAnnualAmounts((prev) => ({ ...prev, [index]: value }));
-    const cents = Math.round(parseFloat(value || "0") * 100);
-    if (cents >= 0) {
-      setBudgetLines((prev) => {
-        const copy = [...prev];
-        const line = copy[index];
-        const amounts = distributeAmount(cents, line.periods.length);
-        copy[index] = {
-          ...line,
-          total: cents,
-          periods: line.periods.map((p, i) => ({ ...p, amount: amounts[i] })),
-        };
-        return copy;
-      });
-    }
+    let cents: bigint;
+    try { cents = budgetInput(value || "0"); } catch { return; }
+    setBudgetLines((prev) => {
+      const copy = [...prev];
+      const line = copy[index];
+      const amounts = budgetDistribute(cents, line.periods.length);
+      copy[index] = {
+        ...line,
+        total: cents,
+        periods: line.periods.map((p, i) => ({ ...p, amount: amounts[i] })),
+      };
+      return copy;
+    });
   }
 
+
   function updatePeriodAmount(lineIndex: number, periodIndex: number, value: string) {
-    const cents = Math.round(parseFloat(value || "0") * 100);
+    setPeriodDrafts(prev => ({ ...prev, [`${lineIndex}:${periodIndex}`]: value }));
+    let cents: bigint;
+    try { cents = budgetInput(value || "0"); } catch { return; }
     setBudgetLines((prev) => {
       const copy = [...prev];
       const line = { ...copy[lineIndex] };
       const periods = [...line.periods];
       periods[periodIndex] = { ...periods[periodIndex], amount: cents };
       line.periods = periods;
-      line.total = periods.reduce((s, p) => s + p.amount, 0);
+      line.total = periods.reduce((s, p) => s + p.amount, 0n);
       copy[lineIndex] = line;
       return copy;
     });
@@ -2255,13 +2273,10 @@ function BudgetDrawer({ open, onClose }: { open: boolean; onClose: () => void })
   }
 
   function removeLine(index: number) {
+    setPeriodDrafts(prev => budgetRemoveDraftLine(prev, index));
     setBudgetLines((prev) => prev.filter((_, i) => i !== index));
-    setAnnualAmounts((prev) => {
-      const copy = { ...prev };
-      delete copy[index];
-      return copy;
-    });
-    if (expandedLine === index) setExpandedLine(null);
+    setAnnualAmounts(prev => budgetRemoveDraftLine(prev, index));
+    setExpandedLine(prev => prev === index ? null : prev !== null && prev > index ? prev - 1 : prev);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -2273,6 +2288,7 @@ function BudgetDrawer({ open, onClose }: { open: boolean; onClose: () => void })
     if (!orgId) return;
 
     try {
+      for (const value of [...Object.values(annualAmounts), ...Object.values(periodDrafts)]) budgetInput(value || "0");
       const res = await fetch("/api/v1/budgets", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
@@ -2281,11 +2297,7 @@ function BudgetDrawer({ open, onClose }: { open: boolean; onClose: () => void })
           startDate,
           endDate,
           periodType,
-          lines: validLines.map((l) => ({
-            accountId: l.accountId,
-            total: l.total,
-            periods: l.periods,
-          })),
+          lines: budgetLinesInput(validLines),
         }),
       });
       if (!res.ok) {
@@ -2303,7 +2315,7 @@ function BudgetDrawer({ open, onClose }: { open: boolean; onClose: () => void })
     }
   }
 
-  const grandTotal = budgetLines.reduce((s, l) => s + l.total, 0);
+  const grandTotal = budgetLines.reduce((s, l) => s + l.total, 0n);
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
@@ -2392,21 +2404,23 @@ function BudgetDrawer({ open, onClose }: { open: boolean; onClose: () => void })
                     <div className="flex items-center gap-3">
                       <Label className="text-xs text-muted-foreground shrink-0 w-16">Annual</Label>
                       <CurrencyInput
-                        prefix="$"
-                        value={annualAmounts[i] ?? (line.total > 0 ? (line.total / 100).toFixed(2) : "")}
+                        prefix={budgetCurrency === "USD" ? "$" : budgetCurrency ?? undefined}
+                        aria-label={`Total for budget line ${i + 1}`}
+                        aria-invalid={budgetDraftInvalid(annualAmounts[i] ?? budgetDecimal(line.total))}
+                        value={annualAmounts[i] ?? (line.total !== 0n ? budgetDecimal(line.total) : "")}
                         onChange={(v) => handleAnnualChange(i, v)}
                         placeholder="0.00"
                         className="flex-1"
                       />
-                      {line.total > 0 && line.periods.length > 0 && (
+                      {line.total !== 0n && line.periods.length > 0 && (
                         <span className="text-xs text-muted-foreground font-mono tabular-nums shrink-0">
-                          {formatMoney(Math.floor(line.total / line.periods.length))}/period
+                          {budgetCurrency ? formatMoney(budgetPerPeriod(line.total, line.periods.length), budgetCurrency) : budgetDecimal(budgetPerPeriod(line.total, line.periods.length))}/period
                         </span>
                       )}
                     </div>
 
                     {/* Customize periods toggle */}
-                    {line.total > 0 && line.periods.length > 0 && (
+                    {line.total !== 0n && line.periods.length > 0 && (
                       <button
                         type="button"
                         onClick={() => setExpandedLine(isExpanded ? null : i)}
@@ -2424,7 +2438,9 @@ function BudgetDrawer({ open, onClose }: { open: boolean; onClose: () => void })
                             <label className="text-[10px] text-muted-foreground pl-0.5">{p.label}</label>
                             <CurrencyInput
                               size="sm"
-                              value={(p.amount / 100).toFixed(2)}
+                              aria-label={`Amount for period ${p.label}`}
+                              aria-invalid={budgetDraftInvalid(periodDrafts[`${i}:${pi}`] ?? budgetDecimal(p.amount))}
+                              value={periodDrafts[`${i}:${pi}`] ?? budgetDecimal(p.amount)}
                               onChange={(v) => updatePeriodAmount(i, pi, v)}
                             />
                           </div>
@@ -2443,10 +2459,10 @@ function BudgetDrawer({ open, onClose }: { open: boolean; onClose: () => void })
             </div>
           </div>
 
-          {grandTotal > 0 && (
+          {grandTotal !== 0n && (
             <div className="flex items-center justify-between border-t px-4 py-2.5 sm:px-6 text-sm">
               <span className="text-muted-foreground">Total budget</span>
-              <span className="font-mono font-semibold tabular-nums">{formatMoney(grandTotal)}</span>
+              <span className="font-mono font-semibold tabular-nums">{budgetCurrency ? formatMoney(grandTotal, budgetCurrency) : budgetDecimal(grandTotal)}</span>
             </div>
           )}
           <DrawerFooter onClose={onClose} saving={saving} label="Create Budget" />
@@ -3939,10 +3955,10 @@ function DealDrawer({ open, onClose, initialData }: { open: boolean; onClose: ()
         }),
       });
       if (!res.ok) {
-        const data = await res.json();
+        const data = await projectCrmJson(res);
         throw new Error(data.error || "Failed to create deal");
       }
-      const data = await res.json();
+      const data = await projectCrmJson(res);
       toast.success("Deal created");
       reset();
       onClose();
@@ -4630,9 +4646,8 @@ function AccrualScheduleDrawer({ open, onClose }: { open: boolean; onClose: () =
     if (!description.trim()) { toast.error("Please enter a description"); return; }
     if (!accountId) { toast.error("Please choose an account"); return; }
     if (!reverseAccountId) { toast.error("Please choose the reversing account"); return; }
-    if (parseFloat(totalAmount) <= 0) { toast.error("Please enter an amount greater than zero"); return; }
+    try { accrualUiInput(totalAmount); accrualUiPeriods(periods); } catch (error) { toast.error((error as Error).message); return; }
     if (!endDate) { toast.error("Please choose an end date"); return; }
-    if (!periods || parseInt(periods) <= 0) { toast.error("Please enter how many periods to spread over"); return; }
     setSaving(true);
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) { setSaving(false); return; }
@@ -4643,20 +4658,20 @@ function AccrualScheduleDrawer({ open, onClose }: { open: boolean; onClose: () =
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify({
           description,
-          totalAmountExact: totalAmount,
+          totalAmountExact: accrualUiInput(totalAmount).exact,
           idempotencyKey: retryKey,
           startDate,
           endDate,
-          periods: parseInt(periods) || 0,
+          periods: accrualUiPeriods(periods),
           accountId,
           reverseAccountId,
         }),
       });
       if (!res.ok) {
-        const data = await res.json();
+        const data = await projectCrmJson(res);
         throw new Error(typeof data.error === "string" ? data.error : "Failed to create accrual");
       }
-      const data = await res.json();
+      const data = await projectCrmJson(res);
       toast.success("Accrual created");
       onClose();
       router.push(`/accounting/accruals/${data.schedule.id}`);

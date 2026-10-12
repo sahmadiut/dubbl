@@ -1,5 +1,7 @@
 "use client";
 
+import { projectCrmJson } from "@/lib/money/project-crm-ui";
+
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, FolderKanban, Clock, DollarSign, Target, Users } from "lucide-react";
@@ -169,6 +171,7 @@ const columns: Column<Project>[] = [
 export default function ProjectsPage() {
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
+  const [loadError, setLoadError] = useState("");
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("all");
@@ -184,11 +187,12 @@ export default function ProjectsPage() {
     fetch(`/api/v1/projects?${params}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then(projectCrmJson)
       .then((data) => {
         if (data.data) setProjects(data.data);
       })
-      .then(() => devDelay())
+      .then(() => { setLoadError(""); return devDelay(); })
+      .catch(error => { setProjects([]); setLoadError(error instanceof Error ? error.message : "Unable to load project amounts"); })
       .finally(() => setLoading(false));
   }, [statusFilter]);
 
@@ -201,6 +205,7 @@ export default function ProjectsPage() {
   const totalMembers = new Set(projects.flatMap(p => p.members.map(m => m.member.id))).size;
 
   if (loading) return <BrandLoader />;
+  if (loadError) return <p role="alert" className="text-sm text-destructive">{loadError}</p>;
 
   if (!loading && projects.length === 0 && statusFilter === "all") {
     return (

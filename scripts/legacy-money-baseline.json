@@ -22,18 +22,6 @@
   "app/(dashboard)/accounting/banking/page.tsx": {
     "formatMoney": 6
   },
-  "app/(dashboard)/accounting/budgets/[id]/layout.tsx": {
-    "formatMoney": 5
-  },
-  "app/(dashboard)/accounting/budgets/[id]/page.tsx": {
-    "formatMoney": 20
-  },
-  "app/(dashboard)/accounting/budgets/[id]/settings/page.tsx": {
-    "formatMoney": 2
-  },
-  "app/(dashboard)/accounting/budgets/page.tsx": {
-    "formatMoney": 10
-  },
   "app/(dashboard)/accounting/page.tsx": {
     "formatMoney": 3
   },
@@ -56,24 +44,6 @@
     "formatMoney": 10
   },
   "app/(dashboard)/contacts/page.tsx": {
-    "formatMoney": 5
-  },
-  "app/(dashboard)/crm/analytics/page.tsx": {
-    "formatMoney": 5
-  },
-  "app/(dashboard)/crm/deals/[id]/activity/page.tsx": {
-    "formatMoney": 2
-  },
-  "app/(dashboard)/crm/deals/[id]/layout.tsx": {
-    "formatMoney": 2
-  },
-  "app/(dashboard)/crm/deals/[id]/page.tsx": {
-    "formatMoney": 3
-  },
-  "app/(dashboard)/crm/deals/[id]/settings/page.tsx": {
-    "formatMoney": 2
-  },
-  "app/(dashboard)/crm/page.tsx": {
     "formatMoney": 5
   },
   "app/(dashboard)/dashboard/page.tsx": {
@@ -103,27 +73,6 @@
   },
   "app/(dashboard)/inventory/valuation/page.tsx": {
     "formatMoney": 11
-  },
-  "app/(dashboard)/projects/[id]/layout.tsx": {
-    "formatMoney": 3
-  },
-  "app/(dashboard)/projects/[id]/members/page.tsx": {
-    "formatMoney": 2
-  },
-  "app/(dashboard)/projects/[id]/milestones/page.tsx": {
-    "formatMoney": 16
-  },
-  "app/(dashboard)/projects/[id]/page.tsx": {
-    "formatMoney": 18
-  },
-  "app/(dashboard)/projects/[id]/settings/page.tsx": {
-    "centsToDecimal": 4
-  },
-  "app/(dashboard)/projects/[id]/time/page.tsx": {
-    "formatMoney": 4
-  },
-  "app/(dashboard)/projects/page.tsx": {
-    "formatMoney": 5
   },
   "app/(dashboard)/purchases/[id]/page.tsx": {
     "formatMoney": 9,
@@ -179,9 +128,6 @@
   },
   "app/(dashboard)/reports/bank-reconciliation-status/page.tsx": {
     "formatMoney": 4
-  },
-  "app/(dashboard)/reports/budget-vs-actual/page.tsx": {
-    "formatMoney": 8
   },
   "app/(dashboard)/reports/cash-flow-forecast/page.tsx": {
     "formatMoney": 8
@@ -369,11 +315,6 @@
   },
   "components/dashboard/cash-flow-widget.tsx": {
     "formatMoney": 4
-  },
-  "components/dashboard/create-drawer.tsx": {
-    "formatMoney": 5,
-    "decimalToCents": 5,
-    "decimalToMinorUnits": 2
   },
   "components/dashboard/entry-form.tsx": {
     "decimalToCents": 3

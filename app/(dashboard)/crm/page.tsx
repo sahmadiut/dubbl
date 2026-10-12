@@ -1,5 +1,7 @@
 "use client";
 
+import { projectCrmJson } from "@/lib/money/project-crm-ui";
+
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
@@ -168,7 +170,7 @@ export default function CRMPage() {
   // Fetch pipelines on mount
   useEffect(() => {
     fetch("/api/v1/crm/pipelines", { headers: getHeaders() })
-      .then((r) => r.json())
+      .then(projectCrmJson)
       .then((data) => {
         const pipes = data.pipelines || [];
         setPipelines(pipes);
@@ -187,7 +189,7 @@ export default function CRMPage() {
         const res = await fetch(`/api/v1/crm/deals?${buildParams(pageNum)}`, {
           headers: getHeaders(),
         });
-        const data = await res.json();
+        const data = await projectCrmJson(res);
         if (!res.ok) throw new Error(data.error || "Failed to load deals");
 
         if (replace) {
@@ -280,7 +282,7 @@ export default function CRMPage() {
         }),
       });
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
+        const data = await projectCrmJson(res).catch(() => ({}));
         throw new Error(data.error || "Failed to create pipeline");
       }
       window.location.reload();

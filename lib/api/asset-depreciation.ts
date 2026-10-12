@@ -180,6 +180,23 @@ export async function depreciateAssets(ctx: AuthContext, input: unknown, request
     await record(tx, ctx, ctx.organizationId, "run_depreciation", p.idempotencyKey, fingerprint, result, request); return result;
   });
 }
+/** Trusted scheduler: retain configured-account/usage skips, with atomic monthly deduplication. */
+export async function depreciateAssetForMaintenance(ctx: AuthContext, id: string, date: string): Promise<boolean> {
+  requireRole(ctx, "manage:assets"); assetMasterId.parse(id); assetDate.parse(date);
+  return db.transaction(async tx => {
+    await lockTaxOrganization(tx, ctx.organizationId);
+    const asset = await load(tx, ctx, id);
+    await lockPeriods(tx);
+    if (asset.status !== "active" || asset.isCwip || asset.depreciationMethod === "units_of_production" ||
+      !asset.depreciationAccountId || !asset.accumulatedDepAccountId || date < (asset.inServiceDate ?? asset.purchaseDate)) return false;
+    const prior = await history(tx, ctx, asset), bounds = period(date);
+    if (prior.some(row => row.date >= bounds.start && row.date <= bounds.end) ||
+      calculateMonthlyDepreciation({ ...asset, periodIndex: prior.length, periodDate: date }) === 0) return false;
+    const result = await post(tx, ctx, asset, date, undefined, prior);
+    await record(tx, ctx, id, "depreciate", undefined, stringifyWire({ date }), result);
+    return true;
+  });
+}
 export async function rollbackAssetDepreciation(ctx: AuthContext, id: string, input: unknown, request?: Request) {
   requireRole(ctx, "manage:assets"); assetMasterId.parse(id); const p = assetDepreciationRollbackSchema.parse(input), date = p.date ?? today();
   const key = p.idempotencyKey ?? (p.depreciationEntryId ? "entry:" + p.depreciationEntryId : "daily:" + date);

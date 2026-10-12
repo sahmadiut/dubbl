@@ -1,137 +1,86 @@
 import { db } from "@/lib/db";
-import { journalEntry, journalLine } from "@/lib/db/schema";
-import { eq, and, lte, isNull, sql } from "drizzle-orm";
+import { journalEntry, journalLine, auditLog } from "@/lib/db/schema";
+import { eq, and, lte, isNull, sql, asc } from "drizzle-orm";
+import { z } from "zod";
+import { lockTaxOrganization } from "./tax-config-transaction";
+import { maintenanceContext } from "./maintenance-context";
+import { assertNotLocked } from "./period-lock";
+import { assertJournalReferences } from "./journal-references";
+import { getNextEntryNumber } from "./journal-automation";
+import { journalLineDto, journalTotalDebit, journalTotals } from "./journal-wire";
+import { currencyCodeSchema } from "@/lib/currency/zod";
+import { legacyMinorSchema, WireCompatibilityError } from "@/lib/money/wire";
 
-/**
- * Auto-reversing journals (accruals / prepayments).
- *
- * When a posted entry carries an `autoReverseDate`, this job posts a mirror
- * reversing entry on that date — swapping each line's debit and credit — so the
- * accrual/prepayment unwinds automatically in the next period. The original and
- * the reversal are linked both ways via `reversedByEntryId` / `reversesEntryId`,
- * which also makes the job idempotent: once an entry has a `reversedByEntryId`
- * it is never reversed again.
- *
- * Only POSTED entries are eligible (drafts/voids are skipped), and the reversal
- * is posted dated `autoReverseDate` so it lands in the correct period.
- */
-
-async function nextEntryNumber(
-  exec: Parameters<Parameters<(typeof db)["transaction"]>[0]>[0],
-  organizationId: string
-): Promise<number> {
-  const [m] = await exec
-    .select({
-      max: sql<number>`coalesce(max(${journalEntry.entryNumber}), 0)`,
-    })
-    .from(journalEntry)
-    .where(eq(journalEntry.organizationId, organizationId));
-  return (m?.max || 0) + 1;
-}
-
-/**
- * Post the mirror reversing entry for one due original entry, linking the pair.
- * Idempotent: re-checks `reversedByEntryId` inside the transaction so concurrent
- * runs can't double-post. Returns true if a reversal was posted.
- */
-async function reverseEntry(originalId: string): Promise<boolean> {
-  return db.transaction(async (tx) => {
-    const original = await tx.query.journalEntry.findFirst({
-      where: eq(journalEntry.id, originalId),
-      with: { lines: true },
-    });
-
-    // Re-validate eligibility under the transaction (guards against a concurrent
-    // run having already reversed it between the outer query and here).
-    if (
-      !original ||
-      original.status !== "posted" ||
-      original.deletedAt ||
-      original.reversedByEntryId ||
-      !original.autoReverseDate
-    ) {
-      return false;
+/** Auto-reversal mirrors stored GL amounts; original currency tags never cause a second FX conversion. */
+async function reverseEntry(originalId: string, organizationId: string, today: string): Promise<boolean> {
+  return db.transaction(async tx => {
+    // Match the adopted domain lock order, serializing numbering and overlapping runs.
+    await lockTaxOrganization(tx, organizationId);
+    const ctx = await maintenanceContext(organizationId, tx);
+    if (!ctx) throw new WireCompatibilityError("Auto-reversal requires an organization owner for audit attribution");
+    const [original] = await tx.select().from(journalEntry)
+      .where(and(eq(journalEntry.id, originalId), eq(journalEntry.organizationId, organizationId))).for("update");
+    if (!original || original.status !== "posted" || original.deletedAt || original.reversedByEntryId ||
+      !original.autoReverseDate || original.autoReverseDate > today) return false;
+    z.iso.date().parse(original.autoReverseDate);
+    if (original.autoReverseDate < original.date) throw new WireCompatibilityError("Saved auto-reversal date precedes the original journal");
+    // The original can be in a closed period; the new reversing date must be open.
+    await tx.execute(sql`lock table period_lock, fiscal_year in share mode`);
+    await assertNotLocked(organizationId, original.autoReverseDate, undefined, tx);
+    const lines = await tx.select({ ...journalLineFields, rateExact: sql<string | null>`${journalLine.rateExact}::text` })
+      .from(journalLine).where(eq(journalLine.journalEntryId, originalId)).orderBy(asc(journalLine.id));
+    if (!lines.length) throw new WireCompatibilityError("Auto-reversal requires saved journal lines");
+    for (const line of lines) {
+      legacyMinorSchema.min(0).parse(line.debitAmount); legacyMinorSchema.min(0).parse(line.creditAmount);
+      currencyCodeSchema.parse(line.currencyCode);
+      journalLineDto(line);
+      if ((line.debitAmount > 0 && line.creditAmount > 0) || !line.rateExact || line.rateMigrationStatus !== "exact" ||
+        line.rateFormatVersion !== 1 || line.rateProvenance !== "legacy_scaled_1e6:transaction") throw new WireCompatibilityError("Auto-reversal requires qualified saved money and FX metadata");
     }
-
-    const entryNumber = await nextEntryNumber(tx, original.organizationId);
-
-    const [reversal] = await tx
-      .insert(journalEntry)
-      .values({
-        organizationId: original.organizationId,
-        entryNumber,
-        date: original.autoReverseDate,
-        description: `Auto-reversal of entry #${original.entryNumber}: ${original.description}`,
-        reference: original.reference
-          ? `REV-${original.reference}`
-          : `REV-${original.entryNumber}`,
-        status: "posted",
-        sourceType: "auto_reversal",
-        sourceId: original.id,
-        postedAt: new Date(),
-        createdBy: original.createdBy,
-        reversesEntryId: original.id,
-      })
-      .returning();
-
-    // Mirror each line, swapping debit/credit and preserving dimensions.
-    if (original.lines.length > 0) {
-      await tx.insert(journalLine).values(
-        original.lines.map((l) => ({
-          journalEntryId: reversal.id,
-          accountId: l.accountId,
-          description: l.description,
-          debitAmount: l.creditAmount,
-          creditAmount: l.debitAmount,
-          currencyCode: l.currencyCode,
-          exchangeRate: l.exchangeRate,
-          costCenterId: l.costCenterId,
-          projectId: l.projectId,
-        }))
-      );
-    }
-
-    // Link the original back to its reversal so it's never reversed again.
-    await tx
-      .update(journalEntry)
-      .set({ reversedByEntryId: reversal.id, updatedAt: new Date() })
-      .where(eq(journalEntry.id, original.id));
-
+    const debit = journalTotalDebit(lines), credit = journalTotalDebit(lines.map(line => ({ ...line, debitAmount: line.creditAmount })));
+    // Preserve existing manual multi-currency balance policy and already-base automated legs.
+    if (debit === 0 || debit !== credit) journalTotals(lines, true);
+    await assertJournalReferences(organizationId, lines, original.fiscalYearId, true, tx);
+    const entryNumber = await getNextEntryNumber(organizationId, tx);
+    z.number().int().positive().max(2147483647).parse(entryNumber);
+    const [reversal] = await tx.insert(journalEntry).values({ organizationId, entryNumber,
+      date: original.autoReverseDate, description: `Auto-reversal of entry #${original.entryNumber}: ${original.description}`,
+      reference: original.reference ? `REV-${original.reference}` : `REV-${original.entryNumber}`,
+      status: "posted", sourceType: "auto_reversal", sourceId: original.id, postedAt: new Date(),
+      createdBy: original.createdBy, reversesEntryId: original.id }).returning();
+    await tx.insert(journalLine).values(lines.map(line => ({ journalEntryId: reversal.id,
+      accountId: line.accountId, description: line.description, debitAmount: line.creditAmount, creditAmount: line.debitAmount,
+      currencyCode: line.currencyCode, exchangeRate: line.exchangeRate, rateExact: line.rateExact,
+      rateDirection: line.rateDirection, rateFormatVersion: line.rateFormatVersion, rateProvenance: line.rateProvenance,
+      rateMigrationStatus: line.rateMigrationStatus, costCenterId: line.costCenterId, projectId: line.projectId })));
+    await tx.update(journalEntry).set({ reversedByEntryId: reversal.id, updatedAt: new Date() })
+      .where(and(eq(journalEntry.id, original.id), eq(journalEntry.organizationId, organizationId)));
+    await tx.insert(auditLog).values({ organizationId, userId: ctx.userId, entityType: "journal_entry",
+      entityId: original.id, action: "auto_reverse", changes: { reversalEntryId: reversal.id, date: original.autoReverseDate } });
     return true;
   });
 }
 
-/**
- * Find every posted entry whose `autoReverseDate` has arrived (<= today) and
- * which has not yet been reversed, and post its mirror reversing entry. Intended
- * to run daily from a scheduled job. Errors on one entry don't abort the rest.
- */
-export async function processAutoReversals(
-  today: string = new Date().toISOString().slice(0, 10)
-): Promise<{ checked: number; reversed: number; failed: number }> {
-  const due = await db
-    .select({ id: journalEntry.id })
-    .from(journalEntry)
-    .where(
-      and(
-        eq(journalEntry.status, "posted"),
-        isNull(journalEntry.deletedAt),
-        isNull(journalEntry.reversedByEntryId),
-        sql`${journalEntry.autoReverseDate} is not null`,
-        lte(journalEntry.autoReverseDate, today)
-      )
-    );
+// Explicit projections retain saved FX text and avoid relation numeric coercion.
+const journalLineFields = {
+  accountId: journalLine.accountId, description: journalLine.description,
+  debitAmount: journalLine.debitAmount, creditAmount: journalLine.creditAmount, currencyCode: journalLine.currencyCode,
+  exchangeRate: journalLine.exchangeRate, rateDirection: journalLine.rateDirection, rateFormatVersion: journalLine.rateFormatVersion,
+  rateMigrationStatus: journalLine.rateMigrationStatus, rateProvenance: journalLine.rateProvenance,
+  costCenterId: journalLine.costCenterId, projectId: journalLine.projectId,
+};
 
-  let reversed = 0;
-  let failed = 0;
-  for (const e of due) {
-    try {
-      if (await reverseEntry(e.id)) reversed++;
-    } catch (err) {
-      failed++;
-      console.error(`auto-reverse failed for entry ${e.id}`, err);
-    }
+/** Trusted daily sweep. Invalid/locked entries remain due and do not abort other organizations. */
+export async function processAutoReversals(today: string = new Date().toISOString().slice(0, 10)):
+  Promise<{ checked: number; reversed: number; failed: number }> {
+  z.iso.date().parse(today);
+  const due = await db.select({ id: journalEntry.id, organizationId: journalEntry.organizationId }).from(journalEntry)
+    .where(and(eq(journalEntry.status, "posted"), isNull(journalEntry.deletedAt), isNull(journalEntry.reversedByEntryId),
+      lte(journalEntry.autoReverseDate, today))).orderBy(asc(journalEntry.organizationId), asc(journalEntry.id));
+  let reversed = 0, failed = 0;
+  for (const entry of due) {
+    try { if (await reverseEntry(entry.id, entry.organizationId, today)) reversed++; }
+    catch { failed++; } // Count failures without logging monetary history or provider data.
   }
-
   return { checked: due.length, reversed, failed };
 }

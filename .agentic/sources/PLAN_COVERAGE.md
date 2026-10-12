@@ -177,3 +177,10 @@ MON-158 retains its original criteria and final integration acceptance. These ch
 - [MON-161](../tasks/MON-161.md): Cut over cumulative and period financial statement UI money.
 - [MON-162](../tasks/MON-162.md): Cut over remaining auxiliary report UI money.
 - [MON-163](../tasks/MON-163.md): Cut over contact dashboard and shared report display money.
+
+## MON-159 bounded background slices
+
+Source inspection separated duplicate scheduled depreciation/loan/revenue and auto-reversal writers from FX revaluation and remaining worker composition. Both children retain api-backward-compatibility and database-and-currency-migration; MON-159 keeps all original acceptance criteria.
+
+- [MON-164](../tasks/MON-164.md): Scheduled bookkeeping and auto-reversal money consumers.
+- [MON-165](../tasks/MON-165.md): FX revaluation and remaining background composition.

@@ -14,6 +14,16 @@ low digits and signed values in USD/JPY/KWD; domain regressions retain negative,
 scope, retry and rollback coverage. Scoped inventory ownership and 19 removed
 legacy allowances are current. MON-008 independent acceptance remains open.
 
+## MON-164 scheduled bookkeeping and auto-reversal consumers
+
+[BACKGROUND_BOOKKEEPING_CUTOVER](BACKGROUND_BOOKKEEPING_CUTOVER.md) maps actual
+Trigger delegates to shared depreciation, loan and revenue domain posting and
+qualified saved journal reversal. Exact arithmetic and domain replay/tenant/period
+guards replace duplicate scheduled writers. Saved raw cents, base restrictions and
+FX/dimension metadata are preserved. Actual REST/MCP/SQL worker composition and
+source guards verify positive, concurrent and negative behavior. MON-159 is split
+into MON-164/165; original MON-159/MON-008 acceptance stays open.
+
 ## MON-154 remaining inventory consumer cutover
 
 [INVENTORY_UI_CUTOVER](INVENTORY_UI_CUTOVER.md) maps list/detail/history/catalog,

@@ -320,3 +320,10 @@ MON-158 retains its original criteria and final integration acceptance. These ch
 - [MON-161](../tasks/MON-161.md): Cut over cumulative and period financial statement UI money.
 - [MON-162](../tasks/MON-162.md): Cut over remaining auxiliary report UI money.
 - [MON-163](../tasks/MON-163.md): Cut over contact dashboard and shared report display money.
+
+## MON-159 bounded background slices
+
+MON-159 retains original criteria and independent final integration acceptance.
+
+- [MON-164](../tasks/MON-164.md): Cut over scheduled bookkeeping and auto-reversal money consumers.
+- [MON-165](../tasks/MON-165.md): Cut over FX revaluation and verify remaining background composition.

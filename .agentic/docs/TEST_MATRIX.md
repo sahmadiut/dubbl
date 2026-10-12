@@ -1593,3 +1593,16 @@ MON-090: `tests/loan-wire.test.ts` covers distinct REST major/MCP minor units, a
   fixtures retain service, query, tenant/role, history and export compatibility.
 - Source/accessibility review under DEC-005; no browser/screenshot, full build,
   dev server, Docker, provider or production claim. MON-158/MON-008 remain open.
+
+## MON-164 scheduled bookkeeping and auto-reversal consumers
+
+- tests/integration/background-bookkeeping.test.ts and worker: actual maintenance
+  composition, real REST/MCP writes and reads, SQL-text snapshots, USD/JPY/KWD/
+  synthetic IRR assets, safe-max/low digits, loan/revenue remainder catch-up and
+  cross-transport target replay; overlapping auto-reversals, saved FX/dimensions,
+  locked original/open reversal, corruption/foreign/owner/period/currency negatives.
+- Existing asset-depreciation, loans, revenue-schedules, journal-lifecycle-wire,
+  journal-integration and asset-loan-integration fixtures verify shared contracts.
+- tests/background-bookkeeping.test.ts guards adopted exact services, absence of
+  duplicate floating money writers, saved metadata and actual Trigger delegates.
+- No provider/production action; MON-159/165/008 qualification remains separate.

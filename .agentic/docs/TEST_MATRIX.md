@@ -1531,3 +1531,17 @@ MON-090: `tests/loan-wire.test.ts` covers distinct REST major/MCP minor units, a
   PostgreSQL, real REST/MCP/SQL writes and reads, replacements, safe edge, split sums
   and retained default USD tags in USD/JPY/KWD organizations. No backend policy
   modernization, independent accounting or browser-effect qualification implied.
+
+## MON-153 inventory detail/write-down UI
+
+- tests/inventory-detail-ui-money.test.ts: required alias and product validation,
+  safe edge/low digits, carrying versus price value, exact margin ties, input
+  range/grammar and excessive/sub-cent rejection, scoped no-float source guard.
+- tests/integration/inventory-detail-ui-money.test.ts + worker: six synthetic
+  USD/JPY/KWD organizations, real REST/MCP creation/read/write-down across both
+  transports, literal SQL-text amount/average/base-leg assertions, unchanged
+  financial snapshots on excessive/conflicting writes, complete book exhaustion
+  and balanced journals. Existing inventory master/movement/valuation regression
+  fixtures retain permission/tenant/period/cost-method negative coverage.
+- English source accessibility/large-value wrapping review; no live browser claim,
+  production IRR, modernized inventory currency or full-int64 business scope.

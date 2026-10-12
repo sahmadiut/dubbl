@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter, usePathname } from "next/navigation";
 import { motion } from "motion/react";
 import { ArrowLeft, Package, ArrowUpDown, Power, PowerOff, Settings2, Clock, Truck, Layers, TrendingDown } from "lucide-react";
@@ -8,7 +8,6 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { CurrencyInput } from "@/components/ui/currency-input";
 import { Label } from "@/components/ui/label";
 import {
   Sheet,
@@ -20,6 +19,7 @@ import {
 } from "@/components/ui/sheet";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
+import { inventoryDetailMoney, inventoryWriteDown } from "@/lib/money/inventory-detail-ui";
 import { bankMoneyDisplay } from "@/lib/money/bank-display";
 const formatMoney = (value: number | bigint) => bankMoneyDisplay(value, "USD");
 import { setEntityTitle } from "@/lib/hooks/use-entity-title";
@@ -35,10 +35,15 @@ export interface InventoryItemDetail {
   sku: string | null;
   imageUrl: string | null;
   purchasePrice: number;
+  purchasePriceMinor: string;
   salePrice: number;
+  salePriceMinor: string;
   quantityOnHand: number;
   reorderPoint: number;
-  totalValue?: number;
+  totalValue: number;
+  totalValueMinor: string;
+  priceValue: number;
+  priceValueMinor: string;
   isActive: boolean;
 }
 
@@ -65,6 +70,11 @@ const PAGE_TABS = [
 
 export default function InventoryItemLayout({ children }: { children: React.ReactNode }) {
   const { id } = useParams<{ id: string }>();
+  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
+  return <InventoryItemWorkspace key={`${orgId}:${id}`} id={id} orgId={orgId}>{children}</InventoryItemWorkspace>;
+}
+
+function InventoryItemWorkspace({ children, id, orgId }: { children: React.ReactNode; id: string; orgId: string | null }) {
   const router = useRouter();
   const pathname = usePathname();
   const [item, setItemRaw] = useState<InventoryItemDetail | null>(null);
@@ -78,30 +88,54 @@ export default function InventoryItemLayout({ children }: { children: React.Reac
   const [writeDownReason, setWriteDownReason] = useState("");
   const [writeDownBusy, setWriteDownBusy] = useState(false);
 
-  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
+  const [readError, setReadError] = useState("");
+  const readController = useRef<AbortController | null>(null);
 
   const fetchItem = useCallback(() => {
-    if (!orgId) return;
+    readController.current?.abort();
+    const controller = new AbortController();
+    readController.current = controller;
+    setLoading(true);
+    setItemRaw(null);
+    setReadError("");
+    if (!orgId) { setLoading(false); return; }
     fetch(`/api/v1/inventory/${id}`, {
-      headers: { "x-organization-id": orgId },
+      headers: { "x-organization-id": orgId }, signal: controller.signal,
     })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.inventoryItem) {
+      .then(async (r) => {
+        const data = await r.json();
+        if (!r.ok || !data.inventoryItem) throw new Error(data.error || "Unable to load inventory item");
+        inventoryDetailMoney(data.inventoryItem);
+        if (!controller.signal.aborted) {
           setItemRaw(data.inventoryItem);
           setEntityTitle(data.inventoryItem.name);
         }
       })
-      .finally(() => setLoading(false));
+      .catch((error) => {
+        if (!controller.signal.aborted) setReadError(error instanceof Error ? error.message : "Unable to read inventory money");
+      })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
   }, [id, orgId]);
 
-  useEffect(() => {
-    fetchItem();
-  }, [fetchItem]);
+  useEffect(() => fetchItem(), [fetchItem]);
 
   const setItem = (fn: (prev: InventoryItemDetail) => InventoryItemDetail) => {
     setItemRaw((prev) => prev ? fn(prev) : prev);
   };
+
+  function adoptItem(value: InventoryItemDetail) {
+    try { inventoryDetailMoney(value); }
+    catch (error) {
+      readController.current?.abort();
+      setLoading(false);
+      setReadError("Saved inventory money could not be verified. Reload the item before continuing.");
+      throw error;
+    }
+    readController.current?.abort();
+    setItemRaw(value);
+    setLoading(false);
+  }
 
   async function handleAdjust() {
     if (!orgId) return;
@@ -124,7 +158,7 @@ export default function InventoryItemLayout({ children }: { children: React.Reac
       }
 
       const data = await res.json();
-      setItemRaw(data.inventoryItem);
+      adoptItem(data.inventoryItem);
       setAdjustOpen(false);
       setAdjustment("");
       setAdjustReason("");
@@ -135,21 +169,18 @@ export default function InventoryItemLayout({ children }: { children: React.Reac
   }
 
   async function handleWriteDown() {
-    if (!orgId) return;
-    const amount = Math.round(parseFloat(writeDownAmount || "0") * 100);
-    if (!amount || amount <= 0 || !writeDownReason.trim()) {
-      toast.error("Enter how much to write off and why");
-      return;
-    }
-    setWriteDownBusy(true);
+    if (!orgId || !item || writeDownBusy || localStorage.getItem("activeOrgId") !== orgId) return;
     try {
+      const preview = inventoryWriteDown(writeDownAmount, inventoryDetailMoney(item).carrying);
+      if (!writeDownReason.trim()) throw new Error("Enter why you are writing off this value");
+      setWriteDownBusy(true);
       const res = await fetch(`/api/v1/inventory/${id}/adjust`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify({
           adjustmentType: "write_down",
-          valueDelta: amount,
-          reason: writeDownReason,
+          valueDeltaMinor: preview.valueDeltaMinor,
+          reason: writeDownReason.trim(),
         }),
       });
       if (!res.ok) {
@@ -157,7 +188,7 @@ export default function InventoryItemLayout({ children }: { children: React.Reac
         throw new Error(data.error || "Couldn't write down the value");
       }
       const data = await res.json();
-      setItemRaw(data.inventoryItem);
+      adoptItem(data.inventoryItem);
       setWriteDownOpen(false);
       setWriteDownAmount("");
       setWriteDownReason("");
@@ -179,7 +210,7 @@ export default function InventoryItemLayout({ children }: { children: React.Reac
       });
       if (!res.ok) throw new Error();
       const data = await res.json();
-      setItemRaw(data.inventoryItem);
+      adoptItem(data.inventoryItem);
       toast.success(data.inventoryItem.isActive ? "Item is now shown" : "Item is now hidden");
     } catch {
       toast.error("Couldn't update the item");
@@ -188,7 +219,15 @@ export default function InventoryItemLayout({ children }: { children: React.Reac
 
   if (loading) return <BrandLoader />;
 
-  if (!item) {
+  let detail: ReturnType<typeof inventoryDetailMoney> | null = null;
+  let moneyError = readError;
+  if (item) {
+    try { detail = inventoryDetailMoney(item); }
+    catch (error) { moneyError = error instanceof Error ? error.message : "Invalid saved inventory money"; }
+  }
+  if (moneyError) return <div className="space-y-3 p-4"><p role="alert">Unable to show inventory money: {moneyError}</p><Button onClick={fetchItem}>Reload item</Button></div>;
+
+  if (!item || !detail) {
     return (
       <div className="space-y-4 pt-12 text-center">
         <p className="text-sm text-muted-foreground">Item not found</p>
@@ -200,10 +239,12 @@ export default function InventoryItemLayout({ children }: { children: React.Reac
   }
 
   const isLowStock = item.quantityOnHand <= item.reorderPoint && item.isActive;
-  const stockValue = BigInt(item.quantityOnHand) * BigInt(item.purchasePrice);
-  const margin = item.purchasePrice > 0
-    ? ((item.salePrice - item.purchasePrice) / item.purchasePrice * 100)
-    : 0;
+  let writeDownPreview: ReturnType<typeof inventoryWriteDown> | null = null;
+  let writeDownError = "";
+  if (writeDownAmount) {
+    try { writeDownPreview = inventoryWriteDown(writeDownAmount, detail.carrying); }
+    catch (error) { writeDownError = error instanceof Error ? error.message : "Invalid write-off amount"; }
+  }
   const stockPercent = item.reorderPoint > 0
     ? Math.min((item.quantityOnHand / (item.reorderPoint * 3)) * 100, 100)
     : 100;
@@ -310,7 +351,7 @@ export default function InventoryItemLayout({ children }: { children: React.Reac
           >
             <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Units on hand</p>
             <p className={cn(
-              "mt-1.5 text-2xl font-bold font-mono tabular-nums truncate",
+              "mt-1.5 text-2xl font-bold font-mono tabular-nums break-words",
               isLowStock && "text-amber-600 dark:text-amber-400"
             )}>
               {item.quantityOnHand}
@@ -339,11 +380,11 @@ export default function InventoryItemLayout({ children }: { children: React.Reac
             transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
           >
             <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Value of stock</p>
-            <p className="mt-1.5 text-2xl font-bold font-mono tabular-nums truncate">
-              {formatMoney(stockValue)}
+            <p className="mt-1.5 text-2xl font-bold font-mono tabular-nums break-words">
+              {formatMoney(detail.priceValue)}
             </p>
             <p className="mt-1 text-[11px] text-muted-foreground">
-              {item.quantityOnHand} x {formatMoney(item.purchasePrice)}
+              {item.quantityOnHand} x {formatMoney(detail.purchase)}
             </p>
           </motion.div>
           <motion.div
@@ -353,11 +394,11 @@ export default function InventoryItemLayout({ children }: { children: React.Reac
             transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1], delay: 0.15 }}
           >
             <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Selling price</p>
-            <p className="mt-1.5 text-2xl font-bold font-mono tabular-nums truncate text-emerald-600 dark:text-emerald-400">
-              {formatMoney(item.salePrice)}
+            <p className="mt-1.5 text-2xl font-bold font-mono tabular-nums break-words text-emerald-600 dark:text-emerald-400">
+              {formatMoney(detail.sale)}
             </p>
             <p className="mt-1 text-[11px] text-muted-foreground">
-              Cost {formatMoney(item.purchasePrice)}
+              Cost {formatMoney(detail.purchase)}
             </p>
           </motion.div>
           <motion.div
@@ -368,13 +409,13 @@ export default function InventoryItemLayout({ children }: { children: React.Reac
           >
             <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Profit margin</p>
             <p className={cn(
-              "mt-1.5 text-2xl font-bold font-mono tabular-nums truncate",
-              margin > 0 ? "text-emerald-600 dark:text-emerald-400" : margin < 0 ? "text-red-600" : ""
+              "mt-1.5 text-2xl font-bold font-mono tabular-nums break-words",
+              detail.profit > 0n ? "text-emerald-600 dark:text-emerald-400" : detail.profit < 0n ? "text-red-600" : ""
             )}>
-              {item.purchasePrice > 0 ? `${margin.toFixed(1)}%` : "-"}
+              {detail.margin}
             </p>
             <p className="mt-1 text-[11px] text-muted-foreground">
-              {item.purchasePrice > 0 ? `${formatMoney(item.salePrice - item.purchasePrice)} per unit` : "No cost set"}
+              {detail.purchase > 0n ? `${formatMoney(detail.profit)} per unit` : "No cost set"}
             </p>
           </motion.div>
         </div>
@@ -420,7 +461,7 @@ export default function InventoryItemLayout({ children }: { children: React.Reac
             <div className="space-y-4 px-4">
               <div className="rounded-lg bg-muted p-3">
                 <p className="text-xs text-muted-foreground">Units on hand now</p>
-                <p className="text-xl font-bold font-mono tabular-nums truncate">{item.quantityOnHand}</p>
+                <p className="text-xl font-bold font-mono tabular-nums break-words">{item.quantityOnHand}</p>
               </div>
               <div className="space-y-2">
                 <Label>Add or remove units</Label>
@@ -455,7 +496,11 @@ export default function InventoryItemLayout({ children }: { children: React.Reac
         </Sheet>
 
         {/* Write down value sheet */}
-        <Sheet open={writeDownOpen} onOpenChange={setWriteDownOpen}>
+        <Sheet open={writeDownOpen} onOpenChange={(open) => {
+          if (writeDownBusy) return;
+          setWriteDownOpen(open);
+          if (!open) { setWriteDownAmount(""); setWriteDownReason(""); }
+        }}>
           <SheetContent>
             <SheetHeader>
               <SheetTitle>Write down value</SheetTitle>
@@ -468,21 +513,28 @@ export default function InventoryItemLayout({ children }: { children: React.Reac
             <div className="space-y-4 px-4">
               <div className="rounded-lg bg-muted p-3">
                 <p className="text-xs text-muted-foreground">Current value in your books</p>
-                <p className="text-xl font-bold font-mono tabular-nums truncate">
-                  {formatMoney(item.totalValue ?? BigInt(item.quantityOnHand) * BigInt(item.purchasePrice))}
+                <p className="text-xl font-bold font-mono tabular-nums break-words">
+                  {formatMoney(detail.carrying)}
                 </p>
               </div>
               <div className="space-y-2">
-                <Label>How much to write off</Label>
-                <CurrencyInput
-                  prefix="$"
-                  value={writeDownAmount}
-                  onChange={setWriteDownAmount}
+                <Label htmlFor="inventory-write-off">How much to write off (USD)</Label>
+                <Input
+                  id="inventory-write-off" inputMode="decimal" value={writeDownAmount}
+                  onChange={(event) => setWriteDownAmount(event.target.value)}
+                  aria-invalid={!!writeDownError} aria-describedby="inventory-write-off-feedback"
+                  disabled={writeDownBusy} placeholder="0.00"
                 />
+                <p className="text-xs text-muted-foreground">Catalog amounts use USD cents. Enter at most two decimal places.</p>
+                <div id="inventory-write-off-feedback">
+                  {writeDownError && <p role="alert" className="text-sm text-destructive">{writeDownError}</p>}
+                  {writeDownPreview && <p className="text-sm break-words">Write off {formatMoney(writeDownPreview.amount)}; new book value {formatMoney(writeDownPreview.remaining)}</p>}
+                </div>
               </div>
               <div className="space-y-2">
-                <Label>Reason *</Label>
+                <Label htmlFor="inventory-write-off-reason">Reason *</Label>
                 <Input
+                  id="inventory-write-off-reason" disabled={writeDownBusy}
                   value={writeDownReason}
                   onChange={(e) => setWriteDownReason(e.target.value)}
                   placeholder="e.g. Damaged, expired, can't sell at full price"
@@ -490,8 +542,8 @@ export default function InventoryItemLayout({ children }: { children: React.Reac
               </div>
             </div>
             <SheetFooter>
-              <Button variant="outline" onClick={() => setWriteDownOpen(false)}>Cancel</Button>
-              <Button onClick={handleWriteDown} disabled={writeDownBusy} className="bg-emerald-600 hover:bg-emerald-700">
+              <Button variant="outline" disabled={writeDownBusy} onClick={() => { setWriteDownOpen(false); setWriteDownAmount(""); setWriteDownReason(""); }}>Cancel</Button>
+              <Button onClick={handleWriteDown} disabled={writeDownBusy || !writeDownPreview || !writeDownReason.trim()} className="bg-emerald-600 hover:bg-emerald-700">
                 Write down value
               </Button>
             </SheetFooter>

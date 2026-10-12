@@ -299,3 +299,16 @@ MON-136 retains independent combined acceptance after these verified domain slic
 - [MON-150](../tasks/MON-150.md): Cut over banking and reconciliation UI money.
 - [MON-151](../tasks/MON-151.md): Cut over tax and core settings UI money.
 - [MON-152](../tasks/MON-152.md): Cut over account ledger and shared core presentation.
+
+## MON-008 auxiliary/public consumer split
+
+Original MON-008 criteria and independent combined acceptance remain open. Source-verified children retain api-backward-compatibility and database-and-currency-migration coverage:
+
+- [MON-153](../tasks/MON-153.md): Cut over inventory detail and write-down UI money.
+- [MON-154](../tasks/MON-154.md): Cut over remaining inventory UI money.
+- [MON-155](../tasks/MON-155.md): Cut over payroll UI money.
+- [MON-156](../tasks/MON-156.md): Cut over asset and loan UI money.
+- [MON-157](../tasks/MON-157.md): Cut over budget project and CRM UI money.
+- [MON-158](../tasks/MON-158.md): Cut over auxiliary report dashboard and contact money.
+- [MON-159](../tasks/MON-159.md): Verify and cut over remaining background money consumers.
+- [MON-160](../tasks/MON-160.md): Cut over public rendering export and provider money consumers.

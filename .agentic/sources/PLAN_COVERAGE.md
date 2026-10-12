@@ -156,3 +156,16 @@ Children trace to money architecture, database migration and the required PR seq
 - [MON-146](../tasks/MON-146.md): Customer prepayment amounts, balances and application.
 
 MON-133 core cash/tax/account UI is split into MON-147..152, retaining money-and-database-architecture, database-and-currency-migration and required-files-and-pull-request-sequence coverage. MON-133 retains independent combined acceptance; child completion is insufficient.
+
+## MON-008 auxiliary/public consumer split
+
+Original MON-008 criteria and independent combined acceptance remain open. Source-verified children retain api-backward-compatibility and database-and-currency-migration coverage:
+
+- [MON-153](../tasks/MON-153.md): Cut over inventory detail and write-down UI money.
+- [MON-154](../tasks/MON-154.md): Cut over remaining inventory UI money.
+- [MON-155](../tasks/MON-155.md): Cut over payroll UI money.
+- [MON-156](../tasks/MON-156.md): Cut over asset and loan UI money.
+- [MON-157](../tasks/MON-157.md): Cut over budget project and CRM UI money.
+- [MON-158](../tasks/MON-158.md): Cut over auxiliary report dashboard and contact money.
+- [MON-159](../tasks/MON-159.md): Verify and cut over remaining background money consumers.
+- [MON-160](../tasks/MON-160.md): Cut over public rendering export and provider money consumers.

@@ -1,3 +1,16 @@
+## MON-153 inventory detail/write-down consumer cutover
+
+[INVENTORY_DETAIL_UI_CUTOVER](INVENTORY_DETAIL_UI_CUTOVER.md) maps the item layout,
+price/carrying values, margin and exact write-down input/payload to existing
+master/movement contracts. Required agreeing Minor aliases, bigint arithmetic and
+an explicit USD/cents catalog compatibility policy preserve low digits without
+rescaling non-USD ledger units. Sub-cent/excessive input rejects with a visible
+exact preview. Scoped pure/static guard plus real REST/MCP/SQL fixture covers both
+transports and USD/JPY/KWD organizations. MON-008 is split into MON-153..160 for
+remaining complete consumer-family ownership; original combined acceptance stays
+open. MON-154 owns remaining inventory consumers; production/financial gates stay
+separate.
+
 ## MON-007 final core accounting consumer cutover
 
 Independent combined acceptance on 2026-10-12 joins MON-128 posting and MON-129

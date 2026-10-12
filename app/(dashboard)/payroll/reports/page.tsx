@@ -1,5 +1,7 @@
 "use client";
 
+import { payrollJson } from "@/lib/money/payroll-ui";
+
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -43,6 +45,7 @@ export default function ReportsPage() {
   const router = useRouter();
   const [summary, setSummary] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [moneyError, setMoneyError] = useState<string | null>(null);
 
   const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
   useDocumentTitle("Payroll · Reports");
@@ -52,9 +55,9 @@ export default function ReportsPage() {
     fetch("/api/v1/payroll/reports/summary", {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => payrollJson(r))
       .then((data) => { if (data.error) toast.error(data.error); if (data.summary) setSummary(data.summary); })
-      .catch(() => toast.error("Unable to load payroll summary"))
+      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"))
       .finally(() => setLoading(false));
   }, [orgId]);
 
@@ -64,6 +67,7 @@ export default function ReportsPage() {
   }
 
   if (loading) return <BrandLoader />;
+  if (moneyError) return <p role="alert">{moneyError}</p>;
 
   return (
     <ContentReveal className="space-y-6">

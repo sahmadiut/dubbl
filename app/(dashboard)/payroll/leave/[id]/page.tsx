@@ -1,5 +1,7 @@
 "use client";
 
+import { payrollJson } from "@/lib/money/payroll-ui";
+
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -47,6 +49,7 @@ export default function LeaveRequestDetailPage() {
   const router = useRouter();
   const [req, setReq] = useState<LeaveRequestDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [moneyError, setMoneyError] = useState<string | null>(null);
   const { confirm, dialog: confirmDialog } = useConfirm();
 
   const [rejectOpen, setRejectOpen] = useState(false);
@@ -62,8 +65,9 @@ export default function LeaveRequestDetailPage() {
     fetch(`/api/v1/payroll/leave/requests/${id}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => payrollJson(r))
       .then((data) => { if (data.request) setReq(data.request); })
+      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"))
       .finally(() => setLoading(false));
   }, [id, orgId]);
 
@@ -84,10 +88,11 @@ export default function LeaveRequestDetailPage() {
         headers: { "x-organization-id": orgId },
       });
       if (res.ok) {
+      await payrollJson(res);
         toast.success("Leave request approved");
         fetchRequest();
       } else {
-        const data = await res.json().catch(() => ({}));
+        const data = await payrollJson(res).catch(() => ({}));
         toast.error(typeof data.error === "string" ? data.error : "Failed to approve");
       }
     } finally {
@@ -105,12 +110,13 @@ export default function LeaveRequestDetailPage() {
         body: JSON.stringify({ reason: rejectReason.trim() || undefined }),
       });
       if (res.ok) {
+      await payrollJson(res);
         toast.success("Leave request rejected");
         setRejectOpen(false);
         setRejectReason("");
         fetchRequest();
       } else {
-        const data = await res.json().catch(() => ({}));
+        const data = await payrollJson(res).catch(() => ({}));
         toast.error(typeof data.error === "string" ? data.error : "Failed to reject");
       }
     } finally {
@@ -119,6 +125,7 @@ export default function LeaveRequestDetailPage() {
   }
 
   if (loading) return <BrandLoader />;
+  if (moneyError) return <p role="alert">{moneyError}</p>;
 
   if (!req) {
     return (

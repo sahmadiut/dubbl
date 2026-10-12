@@ -1,5 +1,7 @@
 "use client";
 
+import { payrollJson } from "@/lib/money/payroll-ui";
+
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, BarChart3 } from "lucide-react";
@@ -16,6 +18,7 @@ export default function ReportDetailPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [moneyError, setMoneyError] = useState<string | null>(null);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   useDocumentTitle("Payroll · Report");
@@ -39,9 +42,10 @@ export default function ReportDetailPage() {
     const url = params.toString() ? `${endpoint}?${params}` : endpoint;
 
     fetch(url, { headers: { "x-organization-id": orgId } })
-      .then((r) => r.json())
+      .then((r) => payrollJson(r))
       .then((d) => setData(d))
       .catch(() => setData({ error: "Unable to load payroll report" }))
+      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"))
       .finally(() => setLoading(false));
   }, [type, orgId, startDate, endDate]);
 
@@ -53,6 +57,7 @@ export default function ReportDetailPage() {
   };
 
   if (loading) return <BrandLoader />;
+  if (moneyError) return <p role="alert">{moneyError}</p>;
 
   return (
     <ContentReveal className="space-y-6">

@@ -1,5 +1,7 @@
 "use client";
 
+import { payrollJson } from "@/lib/money/payroll-ui";
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -33,7 +35,7 @@ export function OffCycleDialog({ type, onClose, start, end }: { type: OffCycleTy
           const rows: unknown[] = [];
           for (let page = 1; ; page++) {
             const res = await fetch(`${path}&limit=100&page=${page}`, { headers: { "x-organization-id": orgId! }, signal: abort.signal });
-            const data = await res.json(); if (!res.ok) throw new Error(data.error || "Could not load payroll choices");
+            const data = await payrollJson(res); if (!res.ok) throw new Error(data.error || "Could not load payroll choices");
             rows.push(...data.data);
             if (page >= data.pagination.totalPages) return rows;
           }
@@ -57,7 +59,7 @@ export function OffCycleDialog({ type, onClose, start, end }: { type: OffCycleTy
         : type === "termination" ? { employeeId, payPeriodStart: periodStart, payPeriodEnd: periodEnd, includeUnusedPto: pto, notes }
         : { payPeriodStart: periodStart, payPeriodEnd: periodEnd, notes, bonuses: [{ employeeId, bonusType: "other", amountMinor: cents }] };
       const res = await fetch(`/api/v1/payroll/runs/${type}`, { method: "POST", headers: { "Content-Type": "application/json", "x-organization-id": orgId }, body: JSON.stringify(body) });
-      const data = await res.json(); if (!res.ok) throw new Error(data.error || "Could not create pay run");
+      const data = await payrollJson(res); if (!res.ok) throw new Error(data.error || "Could not create pay run");
       toast.success(data.run.status === "completed" ? "Pay run recorded" : "Pay run created; submit it for approval");
       onClose(); router.push(`/payroll/runs/${data.run.id}`);
     } catch (error) { toast.error(error instanceof Error ? error.message : "Could not create pay run"); }

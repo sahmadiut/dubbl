@@ -1,5 +1,7 @@
 "use client";
 
+import { payrollJson } from "@/lib/money/payroll-ui";
+
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, MotionConfig } from "motion/react";
@@ -18,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
-import { bankMoneyDisplay as formatMoney } from "@/lib/money/bank-display";
+import { payrollMoneyDisplay as formatMoney } from "@/lib/money/payroll-display";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { cn } from "@/lib/utils";
@@ -65,6 +67,7 @@ export default function ContractorsPage() {
 
   const [contractors, setContractors] = useState<Contractor[]>([]);
   const [initialLoad, setInitialLoad] = useState(true);
+  const [moneyError, setMoneyError] = useState<string | null>(null);
   const [refetching, setRefetching] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
@@ -109,12 +112,13 @@ export default function ContractorsPage() {
     fetch(`/api/v1/payroll/contractors?${buildParams(1)}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => payrollJson(r))
       .then((data) => {
         if (cancelled) return;
         setContractors(data.data || []);
         setTotalCount(data.pagination?.total || 0);
       })
+      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"))
       .finally(() => {
         if (!cancelled) {
           setInitialLoad(false);
@@ -135,13 +139,14 @@ export default function ContractorsPage() {
     fetch(`/api/v1/payroll/contractors?${buildParams(nextPage)}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => payrollJson(r))
       .then((data) => {
         if (data.data) {
           setContractors((prev) => [...prev, ...data.data]);
           setPage(nextPage);
         }
       })
+      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"))
       .finally(() => setLoadingMore(false));
   }, [orgId, page, buildParams, loadingMore]);
 
@@ -181,6 +186,7 @@ export default function ContractorsPage() {
   }, [debouncedSearch]);
 
   if (initialLoad) return <BrandLoader />;
+  if (moneyError) return <p role="alert">{moneyError}</p>;
 
   const activeCount = contractors.filter((c) => c.isActive).length;
   const inactiveCount = contractors.filter((c) => !c.isActive).length;

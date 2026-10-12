@@ -1,5 +1,7 @@
 "use client";
 
+import { payrollJson } from "@/lib/money/payroll-ui";
+
 import { payrollCentsInput } from "@/lib/money/payroll-input";
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
@@ -39,7 +41,6 @@ import { DataTable, type Column } from "@/components/dashboard/data-table";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { payrollMoneyDisplay as formatMoney } from "@/lib/money/payroll-display";
-import { bankMoneyDisplay } from "@/lib/money/bank-display";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 
 // ─── What payroll taxes look like by who you pay ────────────────────────────
@@ -145,9 +146,9 @@ export default function TaxLiabilitiesPage() {
 
     Promise.all([
       fetch(`/api/v1/payroll/reports/tax-liability`, { headers })
-        .then(async r => { const body = await r.json(); if (!r.ok) throw new Error(body.error || "Unable to load tax liability"); return body; }),
+        .then(async r => { const body = await payrollJson(r); if (!r.ok) throw new Error(body.error || "Unable to load tax liability"); return body; }),
       fetch(`/api/v1/payroll/tax-payments`, { headers })
-        .then(async r => { const body = await r.json(); if (!r.ok) throw new Error(body.error || "Unable to load tax payments"); return body; }),
+        .then(async r => { const body = await payrollJson(r); if (!r.ok) throw new Error(body.error || "Unable to load tax payments"); return body; }),
     ]).then(([liability, paymentsRes]) => {
       if (cancelled) return;
       setReportError(null);
@@ -221,7 +222,7 @@ export default function TaxLiabilitiesPage() {
           notes: formNotes || undefined,
         }),
       });
-      const data = await res.json();
+      const data = await payrollJson(res);
       if (!res.ok) {
         throw new Error(data?.error || "Could not record payment");
       }
@@ -320,7 +321,7 @@ export default function TaxLiabilitiesPage() {
         className: "w-28 text-right",
         render: (r) => (
           <span className="font-mono text-sm tabular-nums">
-            {bankMoneyDisplay(r.amount, r.currency || "USD")}
+            {formatMoney(r.amount, r.currency || "USD")}
           </span>
         ),
       },
@@ -470,7 +471,7 @@ export default function TaxLiabilitiesPage() {
               <CurrencyInput
                 value={formAmount}
                 onChange={setFormAmount}
-                prefix="$"
+                prefix={reportCurrency}
               />
             </div>
 

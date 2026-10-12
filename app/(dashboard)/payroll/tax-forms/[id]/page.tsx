@@ -1,5 +1,7 @@
 "use client";
 
+import { payrollJson } from "@/lib/money/payroll-ui";
+
 import { toast } from "sonner";
 import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
@@ -66,6 +68,7 @@ export default function TaxFormDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [form, setForm] = useState<TaxFormDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [moneyError, setMoneyError] = useState<string | null>(null);
   useDocumentTitle("Payroll · Tax Form Details");
 
   const orgId =
@@ -78,12 +81,12 @@ export default function TaxFormDetailPage() {
     fetch(`/api/v1/payroll/tax-forms/${id}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => payrollJson(r))
       .then((data) => {
         if (data.error) toast.error(data.error);
         if (data.id) setForm(data);
       })
-      .catch(() => toast.error("Unable to load tax form"))
+      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"))
       .finally(() => setLoading(false));
   }, [id, orgId]);
 
@@ -91,6 +94,7 @@ export default function TaxFormDetailPage() {
     loadForm();
   }, [loadForm]);
 
+  if (moneyError) return <p role="alert">{moneyError}</p>;
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">

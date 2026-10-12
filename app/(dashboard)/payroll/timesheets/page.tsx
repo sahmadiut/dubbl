@@ -1,5 +1,7 @@
 "use client";
 
+import { payrollJson } from "@/lib/money/payroll-ui";
+
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion, MotionConfig } from "motion/react";
@@ -46,6 +48,7 @@ export default function TimesheetsPage() {
   const router = useRouter();
   const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
   const [loading, setLoading] = useState(true);
+  const [moneyError, setMoneyError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search);
@@ -62,13 +65,14 @@ export default function TimesheetsPage() {
     const headers = { "x-organization-id": orgId };
 
     Promise.all([
-      fetch("/api/v1/payroll/timesheets", { headers }).then((r) => r.json()),
-      fetch("/api/v1/payroll/employees", { headers }).then((r) => r.json()),
+      fetch("/api/v1/payroll/timesheets", { headers }).then((r) => payrollJson(r)),
+      fetch("/api/v1/payroll/employees", { headers }).then((r) => payrollJson(r)),
     ])
       .then(([tsData, empData]) => {
         if (tsData.data) setTimesheets(tsData.data);
         if (empData.data) setEmployees(empData.data.map((e: { id: string; name: string }) => ({ id: e.id, name: e.name })));
       })
+      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"))
       .finally(() => setLoading(false));
   }, [orgId]);
 
@@ -93,7 +97,7 @@ export default function TimesheetsPage() {
         body: JSON.stringify(newTs),
       });
       if (res.ok) {
-        const data = await res.json();
+        const data = await payrollJson(res);
         toast.success("Timesheet created");
         setDialogOpen(false);
         router.push(`/payroll/timesheets/${data.timesheet.id}`);
@@ -106,6 +110,7 @@ export default function TimesheetsPage() {
   }
 
   if (loading) return <BrandLoader />;
+  if (moneyError) return <p role="alert">{moneyError}</p>;
 
   return (
     <ContentReveal className="space-y-6">

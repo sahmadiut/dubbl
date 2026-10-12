@@ -1,3 +1,4 @@
+import { payrollJson, payrollUiPayload } from "../../lib/money/payroll-ui";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { and, eq, sql } from "drizzle-orm";
@@ -32,7 +33,7 @@ async function mcp(ctx: AuthContext, full = false) {
   }
   return { async call(name: string, args: Args = {}) {
     const result = await client.callTool({ name, arguments: args }), text = (result.content as { text: string }[])[0].text;
-    return { isError: result.isError === true, body: text.startsWith("{") ? JSON.parse(text) : { error: text } };
+    return { isError: result.isError === true, body: text.startsWith("{") ? (result.isError ? JSON.parse(text) : payrollUiPayload(JSON.parse(text))) : { error: text } };
   }, async close() { await client.close(); await server.close(); } };
 }
 async function run() {
@@ -77,7 +78,7 @@ async function run() {
     const route = d.route as unknown as Record<string, (r: Request, p: { params: Promise<Record<string, unknown>> }) => Promise<Response>>;
     return route[d.verb](req, { params: Promise.resolve(params) });
   };
-  const data = async (response: Response, status = 200) => { const body = await response.json(); assert.equal(response.status, status, JSON.stringify(body)); return body; };
+  const data = async (response: Response, status = 200) => { const body = await payrollJson(response); assert.equal(response.status, status, JSON.stringify(body)); return body; };
   const read = async (name: string, args: Args = {}, key = keys.a) => data(await rest(name, args, key), definition(name).verb === "POST" && name.startsWith("create_") ? 201 : 200);
   const margs = (args: Args) => { const { id, ...body } = args; return id === undefined ? body : { payRunId: id, ...body }; };
   const call = async (name: string, args: Args = {}, client = ma) => { mcpSeen.add(name); const r = await client.call(name, margs(args)); assert.equal(r.isError, false, JSON.stringify(r.body)); return r.body; };

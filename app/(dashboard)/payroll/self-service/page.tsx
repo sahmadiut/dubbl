@@ -1,5 +1,7 @@
 "use client";
 
+import { payrollJson } from "@/lib/money/payroll-ui";
+
 import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { toast } from "sonner";
@@ -62,6 +64,7 @@ export default function SelfServicePage() {
   const [leaveBalances, setLeaveBalances] = useState<LeaveBalance[]>([]);
   const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
   const [loading, setLoading] = useState(true);
+  const [moneyError, setMoneyError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const [email, setEmail] = useState("");
@@ -75,10 +78,10 @@ export default function SelfServicePage() {
     const headers = { "x-organization-id": orgId };
 
     Promise.all([
-      fetch("/api/v1/payroll/self-service/profile", { headers }).then((r) => r.json()),
-      fetch("/api/v1/payroll/self-service/payslips", { headers }).then((r) => r.json()),
-      fetch("/api/v1/payroll/self-service/leave-balance", { headers }).then((r) => r.json()),
-      fetch("/api/v1/payroll/self-service/timesheets", { headers }).then((r) => r.json()),
+      fetch("/api/v1/payroll/self-service/profile", { headers }).then((r) => payrollJson(r)),
+      fetch("/api/v1/payroll/self-service/payslips", { headers }).then((r) => payrollJson(r)),
+      fetch("/api/v1/payroll/self-service/leave-balance", { headers }).then((r) => payrollJson(r)),
+      fetch("/api/v1/payroll/self-service/timesheets", { headers }).then((r) => payrollJson(r)),
     ])
       .then(([profileData, payslipData, leaveData, tsData]) => {
         if (profileData.error) toast.error(profileData.error);
@@ -93,7 +96,7 @@ export default function SelfServicePage() {
         if (leaveData.data) setLeaveBalances(leaveData.data);
         if (tsData.data) setTimesheets(tsData.data);
       })
-      .catch(() => toast.error("Unable to load self-service payroll"))
+      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"))
       .finally(() => setLoading(false));
   }, [orgId]);
 
@@ -109,13 +112,14 @@ export default function SelfServicePage() {
           bankAccountNumber: bankAccount || undefined,
         }),
       });
-      if (res.ok) toast.success("Profile updated");
+      if (res.ok) { await payrollJson(res); toast.success("Profile updated"); }
     } finally {
       setSaving(false);
     }
   }
 
   if (loading) return <BrandLoader />;
+  if (moneyError) return <p role="alert">{moneyError}</p>;
 
   if (!profile) {
     return (

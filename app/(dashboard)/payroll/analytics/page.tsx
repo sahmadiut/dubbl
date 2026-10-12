@@ -1,5 +1,7 @@
 "use client";
 
+import { payrollJson } from "@/lib/money/payroll-ui";
+
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
@@ -23,6 +25,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
+import { payrollCentsInput } from "@/lib/money/payroll-input";
 import { payrollMoneyDisplay as formatMoney } from "@/lib/money/payroll-display";
 import { downloadPayrollCsv } from "@/lib/payroll/output-client";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
@@ -81,6 +84,7 @@ export default function AnalyticsPage() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [projection, setProjection] = useState<Projection[]>([]);
   const [loading, setLoading] = useState(true);
+  const [moneyError, setMoneyError] = useState<string | null>(null);
 
   const [whatIf, setWhatIf] = useState<WhatIfResult | null>(null);
   const [whatIfLoading, setWhatIfLoading] = useState(false);
@@ -103,15 +107,15 @@ export default function AnalyticsPage() {
     const headers = { "x-organization-id": orgId };
 
     Promise.all([
-      fetch("/api/v1/payroll/reports/summary", { headers }).then((r) => r.json()),
-      fetch("/api/v1/payroll/forecasting/projection?months=12", { headers }).then((r) => r.json()),
+      fetch("/api/v1/payroll/reports/summary", { headers }).then((r) => payrollJson(r)),
+      fetch("/api/v1/payroll/forecasting/projection?months=12", { headers }).then((r) => payrollJson(r)),
     ])
       .then(([summaryRes, projRes]) => {
         if (summaryRes.error) toast.error(summaryRes.error);
         if (summaryRes.summary) setSummary(summaryRes.summary);
         if (projRes.data) setProjection(projRes.data);
       })
-      .catch(() => toast.error("Failed to load analytics data"))
+      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"))
       .finally(() => setLoading(false));
   }, [orgId]);
 
@@ -130,13 +134,13 @@ export default function AnalyticsPage() {
         body: JSON.stringify({
           salaryAdjustmentPercent: parseFloat(salaryAdj),
           newHires: parseInt(newHires),
-          avgNewHireSalary: Math.round(parseFloat(avgHireSalary) * 100),
+          avgNewHireSalaryMinor: payrollCentsInput(avgHireSalary),
           terminations: parseInt(terminations),
           months: 12,
         }),
       });
       if (res.ok) {
-        const data = await res.json();
+        const data = await payrollJson(res);
         setWhatIf(data);
       } else {
         toast.error("Scenario calculation failed");
@@ -160,6 +164,7 @@ export default function AnalyticsPage() {
   );
 
   if (loading) return <BrandLoader />;
+  if (moneyError) return <p role="alert">{moneyError}</p>;
 
   const hasData = summary && summary.totalRuns > 0;
 
@@ -377,7 +382,7 @@ export default function AnalyticsPage() {
               <div className="space-y-1">
                 <Label className="text-xs">Avg New Hire Salary</Label>
                 <CurrencyInput
-                  prefix="$"
+                  prefix={summary?.currency ?? "USD"}
                   size="sm"
                   value={avgHireSalary}
                   onChange={setAvgHireSalary}

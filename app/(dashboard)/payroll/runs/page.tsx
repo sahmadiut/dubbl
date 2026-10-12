@@ -1,5 +1,7 @@
 "use client";
 
+import { payrollJson } from "@/lib/money/payroll-ui";
+
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion, MotionConfig } from "motion/react";
@@ -45,7 +47,7 @@ import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
-import { formatMoney } from "@/lib/money";
+import { payrollMoneyDisplay as formatMoney } from "@/lib/money/payroll-display";
 import { OffCycleDialog, type OffCycleType } from "./off-cycle-dialog";
 import { cn } from "@/lib/utils";
 
@@ -108,6 +110,7 @@ export default function PayrollRunsPage() {
   const router = useRouter();
   const [runs, setRuns] = useState<PayrollRun[]>([]);
   const [loading, setLoading] = useState(true);
+  const [moneyError, setMoneyError] = useState<string | null>(null);
   const [refetching, setRefetching] = useState(false);
   const [fetchKey, setFetchKey] = useState(0);
 
@@ -145,10 +148,11 @@ export default function PayrollRunsPage() {
     fetch("/api/v1/payroll/runs", {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => payrollJson(r))
       .then((data) => {
         setRuns(data.data || []);
       })
+      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"))
       .finally(() => {
         setLoading(false);
         setRefetching(false);
@@ -217,11 +221,11 @@ export default function PayrollRunsPage() {
       });
 
       if (!res.ok) {
-        const data = await res.json();
+        const data = await payrollJson(res);
         throw new Error(data.error || "Failed to create payroll run");
       }
 
-      const data = await res.json();
+      const data = await payrollJson(res);
       toast.success("Payroll run created");
       setDialogOpen(false);
       router.push(`/payroll/runs/${data.run.id}`);
@@ -236,6 +240,7 @@ export default function PayrollRunsPage() {
 
 
   if (loading) return <BrandLoader />;
+  if (moneyError) return <p role="alert">{moneyError}</p>;
 
   if (runs.length === 0) {
     return (

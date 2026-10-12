@@ -1,5 +1,7 @@
 "use client";
 
+import { payrollJson } from "@/lib/money/payroll-ui";
+
 import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { toast } from "sonner";
@@ -12,8 +14,8 @@ import { Label } from "@/components/ui/label";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
-import { bankMoneyDisplay as formatMoney } from "@/lib/money/bank-display";
-import { parseMajor } from "@/lib/money/exact";
+import { payrollMoneyDisplay as formatMoney } from "@/lib/money/payroll-display";
+import { payrollCentsInput } from "@/lib/money/payroll-input";
 
 interface Projection {
   month: string;
@@ -39,6 +41,7 @@ const anim = (delay: number) => ({
 export default function ForecastingPage() {
   const [projection, setProjection] = useState<Projection[]>([]);
   const [loading, setLoading] = useState(true);
+  const [moneyError, setMoneyError] = useState<string | null>(null);
   const [currency, setCurrency] = useState("USD");
   const [totals, setTotals] = useState({ gross: 0, net: 0 });
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -59,12 +62,13 @@ export default function ForecastingPage() {
     fetch("/api/v1/payroll/forecasting/projection?months=12", {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => payrollJson(r))
       .then((data) => {
         if (data.error) { setLoadError(data.error); return; }
         setLoadError(null); setCurrency(data.currency); setTotals(data.totals); setProjection(data.data);
       })
       .catch(() => setLoadError("Unable to load payroll projection"))
+      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"))
       .finally(() => setLoading(false));
   }, [orgId]);
 
@@ -78,21 +82,22 @@ export default function ForecastingPage() {
         body: JSON.stringify({
           salaryAdjustmentPercent: Number(salaryAdj),
           newHires: Number(newHires),
-          avgNewHireSalaryMinor: parseMajor(avgHireSalary, currency, "reject").amountMinor.toString(),
+          avgNewHireSalaryMinor: payrollCentsInput(avgHireSalary),
           terminations: Number(terminations),
           months: 12,
         }),
       });
       if (res.ok) {
-        const data = await res.json();
+        const data = await payrollJson(res);
         setWhatIf(data);
-      } else { setWhatIf(null); toast.error((await res.json()).error); }
+      } else { setWhatIf(null); toast.error((await payrollJson(res)).error); }
     } catch (error) { toast.error(error instanceof Error ? error.message : "Unable to calculate scenario"); } finally {
       setWhatIfLoading(false);
     }
   }
 
   if (loading) return <BrandLoader />;
+  if (moneyError) return <p role="alert">{moneyError}</p>;
 
   if (loadError) return <ContentReveal><p role="alert">{loadError}</p></ContentReveal>;
   const totalGross = totals.gross;

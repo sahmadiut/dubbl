@@ -1,5 +1,7 @@
 "use client";
 
+import { payrollJson } from "@/lib/money/payroll-ui";
+
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "motion/react";
@@ -11,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
-import { bankMoneyDisplay as formatMoney } from "@/lib/money/bank-display";
+import { payrollMoneyDisplay as formatMoney } from "@/lib/money/payroll-display";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { cn } from "@/lib/utils";
 
@@ -47,6 +49,7 @@ export default function ReviewDetailPage() {
   const router = useRouter();
   const [review, setReview] = useState<ReviewDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [moneyError, setMoneyError] = useState<string | null>(null);
   useDocumentTitle("Payroll · Review Details");
 
   const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
@@ -56,12 +59,14 @@ export default function ReviewDetailPage() {
     fetch(`/api/v1/payroll/compensation/reviews/${id}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => payrollJson(r))
       .then((data) => { if (data.error) toast.error(data.error); if (data.review) setReview(data.review); })
+      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"))
       .finally(() => setLoading(false));
   }, [id, orgId]);
 
   if (loading) return <BrandLoader />;
+  if (moneyError) return <p role="alert">{moneyError}</p>;
   if (!review) {
     return (
       <ContentReveal>

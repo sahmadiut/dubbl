@@ -81,6 +81,7 @@ import { InventoryItemPicker } from "@/components/dashboard/inventory-item-picke
 import { WarehousePicker } from "@/components/dashboard/warehouse-picker";
 import { CategoryPicker } from "@/components/dashboard/category-picker";
 import { CurrencyInput } from "@/components/ui/currency-input";
+import { payrollJson } from "@/lib/money/payroll-ui";
 import { payrollCentsInput, payrollBasisPointsInput } from "@/lib/money/payroll-input";
 import { inventoryUiItem, inventoryTransferLines } from "@/lib/money/inventory-ui";
 import { catalogPriceMinor, catalogWholeInput } from "@/lib/money/catalog-input";
@@ -2506,7 +2507,7 @@ function EmployeeDrawer({ open, onClose }: { open: boolean; onClose: () => void 
         const data = await res.json();
         throw new Error(data.error || "Failed to add employee");
       }
-      const data = await res.json();
+      const data = await payrollJson(res);
       toast.success("Employee added");
       onClose();
       router.push(`/payroll/employees/${data.employee.id}`);
@@ -2562,7 +2563,7 @@ function EmployeeDrawer({ open, onClose }: { open: boolean; onClose: () => void 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Annual Salary *</Label>
-                  <CurrencyInput prefix="$" value={salary} onChange={setSalary} placeholder="75000.00" />
+                  <CurrencyInput prefix={empCurrency} value={salary} onChange={setSalary} placeholder="75000.00" />
                 </div>
                 <div className="space-y-2">
                   <Label>Pay Frequency</Label>
@@ -3777,7 +3778,7 @@ function ContractorDrawer({ open, onClose }: { open: boolean; onClose: () => voi
         const data = await res.json();
         throw new Error(data.error || "Failed to add contractor");
       }
-      const data = await res.json();
+      const data = await payrollJson(res);
       toast.success("Contractor added");
       onClose();
       router.push(`/payroll/contractors/${data.contractor.id}`);
@@ -3819,7 +3820,7 @@ function ContractorDrawer({ open, onClose }: { open: boolean; onClose: () => voi
                 </div>
                 <div className="space-y-2">
                   <Label>Default Rate</Label>
-                  <CurrencyInput prefix="$" value={cRate} onChange={setCRate} placeholder="150.00" />
+                  <CurrencyInput prefix={cCurrency} value={cRate} onChange={setCRate} placeholder="150.00" />
                 </div>
                 <div className="space-y-2">
                   <Label>Currency</Label>

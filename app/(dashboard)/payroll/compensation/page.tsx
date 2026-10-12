@@ -1,5 +1,7 @@
 "use client";
 
+import { payrollJson } from "@/lib/money/payroll-ui";
+
 import { useState, useEffect, useCallback, useMemo, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { motion, MotionConfig } from "motion/react";
@@ -41,8 +43,9 @@ import { ContentReveal } from "@/components/ui/content-reveal";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { useConfirm } from "@/lib/hooks/use-confirm";
-import { bankMoneyDisplay as formatMoney } from "@/lib/money/bank-display";
-import { parseMajor, roundRatio } from "@/lib/money/exact";
+import { payrollMoneyDisplay as formatMoney } from "@/lib/money/payroll-display";
+import { roundRatio } from "@/lib/money/exact";
+import { payrollCentsInput } from "@/lib/money/payroll-input";
 import { CurrencySelect } from "@/components/ui/currency-select";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { cn } from "@/lib/utils";
@@ -103,6 +106,7 @@ export default function CompensationPage() {
   const [bands, setBands] = useState<Band[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
+  const [moneyError, setMoneyError] = useState<string | null>(null);
 
   /* Search / filter / sort */
   const [bandSearch, setBandSearch] = useState("");
@@ -133,8 +137,8 @@ export default function CompensationPage() {
     if (!orgId) return;
     const headers = { "x-organization-id": orgId };
     Promise.all([
-      fetch("/api/v1/payroll/compensation/bands", { headers }).then((r) => r.json()),
-      fetch("/api/v1/payroll/compensation/reviews", { headers }).then((r) => r.json()),
+      fetch("/api/v1/payroll/compensation/bands", { headers }).then((r) => payrollJson(r)),
+      fetch("/api/v1/payroll/compensation/reviews", { headers }).then((r) => payrollJson(r)),
     ])
       .then(([bandsData, reviewsData]) => {
         if (bandsData.data) setBands(bandsData.data);
@@ -143,6 +147,7 @@ export default function CompensationPage() {
         if (reviewsData.data) setReviews(reviewsData.data);
         if (reviewsData.currency) setNewReview(r => ({ ...r, currency: reviewsData.currency }));
       })
+      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"))
       .finally(() => setLoading(false));
   }, [orgId]);
 
@@ -210,18 +215,19 @@ export default function CompensationPage() {
         body: JSON.stringify({
           name: newBand.name,
           level: newBand.level || undefined,
-          minSalaryMinor: parseMajor(newBand.minSalary || "0", newBand.currency, "reject").amountMinor.toString(),
-          midSalaryMinor: parseMajor(newBand.midSalary || "0", newBand.currency, "reject").amountMinor.toString(),
-          maxSalaryMinor: parseMajor(newBand.maxSalary || "0", newBand.currency, "reject").amountMinor.toString(),
+          minSalaryMinor: payrollCentsInput(newBand.minSalary || "0"),
+          midSalaryMinor: payrollCentsInput(newBand.midSalary || "0"),
+          maxSalaryMinor: payrollCentsInput(newBand.maxSalary || "0"),
           currency: newBand.currency,
         }),
       });
       if (res.ok) {
+      await payrollJson(res);
         toast.success("Band added");
         setBandSheet(false);
         setNewBand({ name: "", level: "", minSalary: "", midSalary: "", maxSalary: "", currency: "USD" });
         fetchData();
-      } else { toast.error((await res.json()).error); }
+      } else { toast.error((await payrollJson(res)).error); }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to create band");
     } finally {
@@ -240,15 +246,16 @@ export default function CompensationPage() {
         body: JSON.stringify({
           name: newReview.name,
           effectiveDate: newReview.effectiveDate,
-          totalBudgetMinor: newReview.totalBudget ? parseMajor(newReview.totalBudget, newReview.currency, "reject").amountMinor.toString() : undefined,
+          totalBudgetMinor: newReview.totalBudget ? payrollCentsInput(newReview.totalBudget) : undefined,
         }),
       });
       if (res.ok) {
+      await payrollJson(res);
         toast.success("Review created");
         setReviewSheet(false);
         setNewReview({ name: "", effectiveDate: "", totalBudget: "", currency: newReview.currency });
         fetchData();
-      } else { toast.error((await res.json()).error); }
+      } else { toast.error((await payrollJson(res)).error); }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to create review");
     } finally {
@@ -273,6 +280,7 @@ export default function CompensationPage() {
   );
 
   if (loading) return <BrandLoader />;
+  if (moneyError) return <p role="alert">{moneyError}</p>;
 
   const hasData = bands.length > 0 || reviews.length > 0;
   const activeReviews = reviews.filter((r) => r.status === "in_progress" || r.status === "draft");

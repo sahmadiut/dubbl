@@ -21,7 +21,7 @@ test("payroll master aliases retain cents, safe boundaries, nullable clearing an
 });
 test("invalid, conflicting or unsupported payroll master money is rejected", () => {
   for (const input of [{}, { salary: -1 }, { salary: 0.5 }, { salary: -0 }, { salaryMinor: "01" }, { salaryMinor: "-0" },
-    { salaryMinor: "-1" }, { salaryMinor: "1e3" }, { salaryMinor: " 1" }, { salaryMinor: "۱" }, { salary: 1, salaryMinor: "2" },
+    { salaryMinor: "-1" }, { salaryMinor: "1e3" }, { salaryMinor: " 1" }, { salaryMinor: "Û±" }, { salary: 1, salaryMinor: "2" },
     { salary: 0, hourlyRate: null, hourlyRateMinor: "0" }, { salary: 0, hourlyRate: 0, hourlyRateMinor: null }, { salaryMinor: "9223372036854775808" }]) {
     assert.throws(() => payrollMasterAmounts(employeeCreateSchema.parse({ ...base, ...input }), true));
   }
@@ -51,8 +51,8 @@ test("payroll cents editors round-trip maximum safe cents without floating-point
   assert.equal(payrollCentsInput("0.29"), "29");
   assert.equal(payrollCentsInput(payrollCentsDecimal(Number.MAX_SAFE_INTEGER)), "9007199254740991");
   assert.equal(payrollCentsDecimal(0), "0.00"); assert.equal(payrollBasisPointsInput("20.29"), 2029);
-  assert.equal(payrollCentsPreview("unfinished"), 0); assert.equal(payrollPeriodPreview(6, "monthly"), 1);
-  assert.equal(payrollPeriodPreview(Number.MAX_SAFE_INTEGER, "monthly"), Number((BigInt(Number.MAX_SAFE_INTEGER) * 2n + 12n) / 24n));
+  assert.equal(payrollCentsPreview("unfinished"), 0n); assert.equal(payrollPeriodPreview(6n, "monthly"), 1n);
+  assert.equal(payrollPeriodPreview(BigInt(Number.MAX_SAFE_INTEGER), "monthly"), (BigInt(Number.MAX_SAFE_INTEGER) * 2n + 12n) / 24n);
   assert.equal(bankMoneyDisplay(Number.MAX_SAFE_INTEGER, "USD"), "$90,071,992,547,409.91");
   for (const input of ["", "0.291", "-1", "1e3", "90071992547409.92"]) assert.throws(() => payrollCentsInput(input));
   assert.throws(() => payrollBasisPointsInput("100.01"));

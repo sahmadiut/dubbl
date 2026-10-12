@@ -1,5 +1,7 @@
 "use client";
 
+import { payrollJson } from "@/lib/money/payroll-ui";
+
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -47,6 +49,7 @@ export default function LeavePage() {
   const router = useRouter();
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [moneyError, setMoneyError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search);
@@ -65,15 +68,16 @@ export default function LeavePage() {
     const headers = { "x-organization-id": orgId };
 
     Promise.all([
-      fetch("/api/v1/payroll/leave/requests", { headers }).then((r) => r.json()),
-      fetch("/api/v1/payroll/employees", { headers }).then((r) => r.json()),
-      fetch("/api/v1/payroll/leave/policies", { headers }).then((r) => r.json()),
+      fetch("/api/v1/payroll/leave/requests", { headers }).then((r) => payrollJson(r)),
+      fetch("/api/v1/payroll/employees", { headers }).then((r) => payrollJson(r)),
+      fetch("/api/v1/payroll/leave/policies", { headers }).then((r) => payrollJson(r)),
     ])
       .then(([reqData, empData, polData]) => {
         if (reqData.data) setRequests(reqData.data);
         if (empData.data) setEmployees(empData.data.map((e: { id: string; name: string }) => ({ id: e.id, name: e.name })));
         if (polData.data) setPolicies(polData.data.map((p: { id: string; name: string }) => ({ id: p.id, name: p.name })));
       })
+      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"))
       .finally(() => setLoading(false));
   }, [orgId]);
 
@@ -101,11 +105,12 @@ export default function LeavePage() {
         }),
       });
       if (res.ok) {
+      await payrollJson(res);
         toast.success("Leave request created");
         setDialogOpen(false);
         fetchData();
       } else {
-        const data = await res.json();
+        const data = await payrollJson(res);
         toast.error(typeof data.error === "string" ? data.error : "Failed to create request");
       }
     } catch {
@@ -121,8 +126,9 @@ export default function LeavePage() {
       method: "POST",
       headers: { "x-organization-id": orgId },
     });
-    if (res.ok) { toast.success("Request approved"); fetchData(); }
-    else { const data = await res.json(); toast.error(typeof data.error === "string" ? data.error : "Request could not be approved"); }
+    if (res.ok) {
+      await payrollJson(res); toast.success("Request approved"); fetchData(); }
+    else { const data = await payrollJson(res); toast.error(typeof data.error === "string" ? data.error : "Request could not be approved"); }
   }
 
   async function handleReject(id: string) {
@@ -132,11 +138,13 @@ export default function LeavePage() {
       headers: { "Content-Type": "application/json", "x-organization-id": orgId },
       body: JSON.stringify({}),
     });
-    if (res.ok) { toast.success("Request rejected"); fetchData(); }
-    else { const data = await res.json(); toast.error(typeof data.error === "string" ? data.error : "Request could not be rejected"); }
+    if (res.ok) {
+      await payrollJson(res); toast.success("Request rejected"); fetchData(); }
+    else { const data = await payrollJson(res); toast.error(typeof data.error === "string" ? data.error : "Request could not be rejected"); }
   }
 
   if (loading) return <BrandLoader />;
+  if (moneyError) return <p role="alert">{moneyError}</p>;
 
   return (
     <ContentReveal className="space-y-6">

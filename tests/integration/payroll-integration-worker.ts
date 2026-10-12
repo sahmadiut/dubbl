@@ -1,3 +1,4 @@
+import { payrollJson, payrollUiPayload } from "../../lib/money/payroll-ui";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
@@ -55,7 +56,7 @@ async function connect(ctx: AuthContext) {
   return { tools, async raw(name: string, args: Args = {}) {
     const result = await client.callTool({ name, arguments: args });
     const text = (result.content as { text: string }[])[0].text;
-    return { error: result.isError === true, body: text.startsWith("{") ? JSON.parse(text) : { error: text } };
+    return { error: result.isError === true, body: text.startsWith("{") ? (result.isError ? JSON.parse(text) : payrollUiPayload(JSON.parse(text))) : { error: text } };
   }, async close() { await client.close(); await server.close(); } };
 }
 
@@ -88,7 +89,7 @@ async function run() {
       headers: { authorization: `Bearer ${key}`, "content-type": "application/json", "x-organization-id": b.id },
       body: ["GET", "DELETE"].includes(verb) ? undefined : JSON.stringify(body) });
     const response = await (routes[route] as unknown as Record<string, Handler>)[verb](request, { params: Promise.resolve(params) });
-    return { status: response.status, body: await response.json() };
+    return { status: response.status, body: await payrollJson(response) };
   };
   const read = async (route: keyof typeof routes, verb: string, body: Args = {}, params: Args = {}, status = 200) => {
     const result = await rest(route, verb, body, params); assert.equal(result.status, status, JSON.stringify(result.body)); return result.body;

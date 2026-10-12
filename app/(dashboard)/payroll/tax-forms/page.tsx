@@ -1,5 +1,7 @@
 "use client";
 
+import { payrollJson } from "@/lib/money/payroll-ui";
+
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -74,6 +76,7 @@ export default function TaxFormsPage() {
   const router = useRouter();
   const [generations, setGenerations] = useState<TaxGeneration[]>([]);
   const [loading, setLoading] = useState(true);
+  const [moneyError, setMoneyError] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [taxYear, setTaxYear] = useState("2025");
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -89,10 +92,11 @@ export default function TaxFormsPage() {
     fetch("/api/v1/payroll/tax-forms", {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => payrollJson(r))
       .then((data) => {
         if (data.data) setGenerations(data.data);
       })
+      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"))
       .finally(() => setLoading(false));
   }, [orgId]);
 
@@ -116,11 +120,11 @@ export default function TaxFormsPage() {
       });
 
       if (!res.ok) {
-        const data = await res.json();
+        const data = await payrollJson(res);
         throw new Error(data.error || "Failed to generate");
       }
 
-      const data = await res.json();
+      const data = await payrollJson(res);
       toast.success(
         `Generated ${data.formsGenerated} ${formType === "1099_nec" ? "1099-NEC" : "W-2"} form(s)`
       );
@@ -148,6 +152,7 @@ export default function TaxFormsPage() {
     return "-";
   }
 
+  if (moneyError) return <p role="alert">{moneyError}</p>;
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">

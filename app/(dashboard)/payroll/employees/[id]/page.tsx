@@ -1,5 +1,7 @@
 "use client";
 
+import { payrollJson, payrollShare } from "@/lib/money/payroll-ui";
+
 import { payrollCentsInput, payrollCentsDecimal, payrollBasisPointsInput, payrollCentsPreview, payrollPeriodPreview } from "@/lib/money/payroll-input";
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -21,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
-import { bankMoneyDisplay as formatMoney } from "@/lib/money/bank-display";
+import { payrollMoneyDisplay as formatMoney } from "@/lib/money/payroll-display";
 import { useConfirm } from "@/lib/hooks/use-confirm";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { CurrencySelect } from "@/components/ui/currency-select";
@@ -80,6 +82,7 @@ interface CompensationBand {
   minSalary: number;
   midSalary: number;
   maxSalary: number;
+  currency: string;
 }
 
 const anim = (delay: number) => ({
@@ -95,6 +98,7 @@ export default function EmployeeDetailPage() {
   const router = useRouter();
   const [emp, setEmp] = useState<EmployeeDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [moneyError, setMoneyError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const { confirm, dialog: confirmDialog } = useConfirm();
 
@@ -138,7 +142,7 @@ export default function EmployeeDetailPage() {
     fetch(`/api/v1/payroll/employees/${id}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => payrollJson(r))
       .then((data) => {
         if (data.employee) {
           const e = data.employee;
@@ -149,7 +153,7 @@ export default function EmployeeDetailPage() {
           setPosition(e.position || "");
           setSalary(payrollCentsDecimal(e.salary));
           setPayFrequency(e.payFrequency);
-          setTaxRate((e.taxRate / 100).toFixed(2));
+          setTaxRate(payrollCentsDecimal(e.taxRate));
           setBankAccountNumber(e.bankAccountNumber || "");
           setStartDate(e.startDate || "");
           setEndDate(e.endDate || "");
@@ -159,6 +163,7 @@ export default function EmployeeDetailPage() {
           setCurrency(e.currency || "USD");
         }
       })
+      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"))
       .finally(() => setLoading(false));
   }, [id, orgId]);
 
@@ -168,14 +173,14 @@ export default function EmployeeDetailPage() {
     const headers = { "x-organization-id": orgId };
 
     fetch(`/api/v1/payroll/employees/${id}/deductions`, { headers })
-      .then((r) => r.json())
+      .then((r) => payrollJson(r))
       .then((data) => {
         if (data.data) setDeductions(data.data);
       })
-      .catch(() => {});
+      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"));
 
     fetch(`/api/v1/payroll/employees/${id}/tax-config`, { headers })
-      .then((r) => r.json())
+      .then((r) => payrollJson(r))
       .then((data) => {
         if (data.taxConfig) {
           const tc = data.taxConfig;
@@ -186,27 +191,27 @@ export default function EmployeeDetailPage() {
           setTcAddlFederal(payrollCentsDecimal(tc.additionalWithholding ?? 0));
         }
       })
-      .catch(() => {});
+      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"));
 
     fetch(`/api/v1/payroll/employees/${id}/leave-balances`, { headers })
-      .then((r) => r.json())
+      .then((r) => payrollJson(r))
       .then((data) => {
         if (data.leaveBalances) setLeaveBalances(data.leaveBalances);
       })
-      .catch(() => {});
+      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"));
   }, [id, orgId]);
 
   // Fetch compensation band when employee loads
   useEffect(() => {
     if (!orgId || !emp?.compensationBandId) return;
-    fetch(`/api/v1/payroll/compensation-bands/${emp.compensationBandId}`, {
+    fetch(`/api/v1/payroll/compensation/bands/${emp.compensationBandId}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => payrollJson(r))
       .then((data) => {
         if (data.band) setCompensationBand(data.band);
       })
-      .catch(() => {});
+      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"));
   }, [orgId, emp?.compensationBandId]);
 
   async function handleSaveTaxConfig() {
@@ -227,11 +232,11 @@ export default function EmployeeDetailPage() {
         }),
       });
       if (res.ok) {
-        const data = await res.json();
+        const data = await payrollJson(res);
         if (data.taxConfig) setTaxConfig(data.taxConfig);
         toast.success("Tax configuration updated");
       } else {
-        const data = await res.json();
+        const data = await payrollJson(res);
         toast.error(typeof data.error === "string" ? data.error : "Failed to update tax config");
       }
     } catch {
@@ -267,11 +272,11 @@ export default function EmployeeDetailPage() {
       });
 
       if (res.ok) {
-        const data = await res.json();
+        const data = await payrollJson(res);
         setEmp(data.employee);
         toast.success("Employee updated");
       } else {
-        const data = await res.json();
+        const data = await payrollJson(res);
         toast.error(typeof data.error === "string" ? data.error : "Failed to update");
       }
     } catch (error) {
@@ -295,6 +300,7 @@ export default function EmployeeDetailPage() {
       headers: { "x-organization-id": orgId },
     });
     if (res.ok) {
+      await payrollJson(res);
       toast.success("Employee deleted");
       router.push("/payroll/employees");
     } else {
@@ -303,6 +309,7 @@ export default function EmployeeDetailPage() {
   }
 
   if (loading) return <BrandLoader />;
+  if (moneyError) return <p role="alert">{moneyError}</p>;
 
   if (!emp) {
     return (
@@ -389,15 +396,15 @@ export default function EmployeeDetailPage() {
           </p>
           <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate">
             {compensationType === "salary"
-              ? formatMoney(salaryInCents, "USD")
+              ? formatMoney(salaryInCents, currency)
               : compensationType === "hourly"
-                ? formatMoney(payrollCentsPreview(hourlyRate), "USD")
+                ? formatMoney(payrollCentsPreview(hourlyRate), currency)
                 : "-"}
           </p>
         </motion.div>
         <motion.div {...anim(0.05)} className="rounded-xl border bg-card p-4">
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Per-Period Pay</p>
-          <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate">{formatMoney(getPerPeriodPay(salaryInCents, payFrequency), "USD")}</p>
+          <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate">{formatMoney(getPerPeriodPay(salaryInCents, payFrequency), currency)}</p>
         </motion.div>
         <motion.div {...anim(0.09)} className="rounded-xl border bg-card p-4">
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Tax Rate</p>
@@ -464,7 +471,7 @@ export default function EmployeeDetailPage() {
             <div className="space-y-1.5">
               <Label className="text-xs">Annual Salary</Label>
               <CurrencyInput
-                prefix="$"
+                prefix={currency}
                 value={salary}
                 onChange={setSalary}
               />
@@ -494,7 +501,7 @@ export default function EmployeeDetailPage() {
             {compensationType === "hourly" && (
               <div className="space-y-1.5">
                 <Label className="text-xs">Hourly Rate</Label>
-                <CurrencyInput prefix="$" value={hourlyRate} onChange={setHourlyRate} />
+                <CurrencyInput prefix={currency} value={hourlyRate} onChange={setHourlyRate} />
               </div>
             )}
             <div className="space-y-1.5">
@@ -573,7 +580,7 @@ export default function EmployeeDetailPage() {
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-sm font-mono tabular-nums">
-                      {d.amount != null ? formatMoney(d.amount, "USD") : d.percent != null ? `${d.percent}%` : d.deductionType.defaultAmount != null ? formatMoney(d.deductionType.defaultAmount, "USD") : d.deductionType.defaultPercent != null ? `${d.deductionType.defaultPercent}%` : "No amount configured"}
+                      {d.amount != null ? formatMoney(d.amount, emp.currency ?? "USD") : d.percent != null ? `${d.percent}%` : d.deductionType.defaultAmount != null ? formatMoney(d.deductionType.defaultAmount, emp.currency ?? "USD") : d.deductionType.defaultPercent != null ? `${d.deductionType.defaultPercent}%` : "No amount configured"}
                     </span>
                     <Badge
                       variant="outline"
@@ -633,7 +640,7 @@ export default function EmployeeDetailPage() {
                 <div className="space-y-1.5">
                   <Label className="text-xs">Additional Withholding per Pay Period</Label>
                   <CurrencyInput
-                    prefix="$"
+                    prefix={currency}
                     value={tcAddlFederal}
                     onChange={setTcAddlFederal}
                   />
@@ -707,33 +714,23 @@ export default function EmployeeDetailPage() {
                   </div>
                   <div className="space-y-1">
                     <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Min Salary</p>
-                    <p className="text-sm font-mono tabular-nums">{formatMoney(compensationBand.minSalary, "USD")}</p>
+                    <p className="text-sm font-mono tabular-nums">{formatMoney(compensationBand.minSalary, compensationBand.currency)}</p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Mid Salary</p>
-                    <p className="text-sm font-mono tabular-nums">{formatMoney(compensationBand.midSalary, "USD")}</p>
+                    <p className="text-sm font-mono tabular-nums">{formatMoney(compensationBand.midSalary, compensationBand.currency)}</p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Max Salary</p>
-                    <p className="text-sm font-mono tabular-nums">{formatMoney(compensationBand.maxSalary, "USD")}</p>
+                    <p className="text-sm font-mono tabular-nums">{formatMoney(compensationBand.maxSalary, compensationBand.currency)}</p>
                   </div>
                 </div>
-                {compensationBand.maxSalary > compensationBand.minSalary && (
+                {compensationBand.currency === (emp.currency ?? "USD") && compensationBand.currency === (emp.currency ?? "USD") && compensationBand.maxSalary > compensationBand.minSalary && (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-[11px] text-muted-foreground">
                       <span>Range Penetration</span>
                       <span className="font-mono tabular-nums">
-                        {Math.min(
-                          100,
-                          Math.max(
-                            0,
-                            Math.round(
-                              ((salaryInCents - compensationBand.minSalary) /
-                                (compensationBand.maxSalary - compensationBand.minSalary)) *
-                                100
-                            )
-                          )
-                        )}
+                        {payrollShare(salaryInCents - BigInt(compensationBand.minSalary), BigInt(compensationBand.maxSalary) - BigInt(compensationBand.minSalary))}
                         %
                       </span>
                     </div>
@@ -741,17 +738,7 @@ export default function EmployeeDetailPage() {
                       <div
                         className="h-2 rounded-full bg-emerald-500 transition-all"
                         style={{
-                          width: `${Math.min(
-                            100,
-                            Math.max(
-                              0,
-                              Math.round(
-                                ((salaryInCents - compensationBand.minSalary) /
-                                  (compensationBand.maxSalary - compensationBand.minSalary)) *
-                                  100
-                              )
-                            )
-                          )}%`,
+                          width: `${payrollShare(salaryInCents - BigInt(compensationBand.minSalary), BigInt(compensationBand.maxSalary) - BigInt(compensationBand.minSalary))}%`,
                         }}
                       />
                     </div>

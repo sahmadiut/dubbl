@@ -1,5 +1,7 @@
 "use client";
 
+import { payrollJson } from "@/lib/money/payroll-ui";
+
 import { payrollCentsInput, payrollCentsDecimal } from "@/lib/money/payroll-input";
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -21,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
-import { bankMoneyDisplay as formatMoney } from "@/lib/money/bank-display";
+import { payrollMoneyDisplay as formatMoney } from "@/lib/money/payroll-display";
 import { CurrencySelect } from "@/components/ui/currency-select";
 import { useConfirm } from "@/lib/hooks/use-confirm";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
@@ -67,6 +69,7 @@ export default function ContractorDetailPage() {
   const router = useRouter();
   const [contractor, setContractor] = useState<ContractorDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [moneyError, setMoneyError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const { confirm, dialog: confirmDialog } = useConfirm();
 
@@ -91,7 +94,7 @@ export default function ContractorDetailPage() {
     fetch(`/api/v1/payroll/contractors/${id}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => payrollJson(r))
       .then((data) => {
         if (data.contractor) {
           const c = data.contractor;
@@ -104,6 +107,7 @@ export default function ContractorDetailPage() {
           setPaymentCurrency(c.currency || "USD");
         }
       })
+      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"))
       .finally(() => setLoading(false));
   }
 
@@ -124,8 +128,8 @@ export default function ContractorDetailPage() {
           bankAccountNumber: bankAccount || null,
         }),
       });
-      if (res.ok) toast.success("Contractor updated");
-      else { const data = await res.json(); toast.error(data.error || "Failed to update"); }
+      if (res.ok) { await payrollJson(res); toast.success("Contractor updated"); }
+      else { const data = await payrollJson(res); toast.error(data.error || "Failed to update"); }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to update");
     } finally {
@@ -147,10 +151,11 @@ export default function ContractorDetailPage() {
         }),
       });
       if (res.ok) {
+      await payrollJson(res);
         toast.success("Payment added");
         setPaymentAmount(""); setPaymentDesc(""); setPaymentInvoice("");
         fetchContractor();
-      } else { const data = await res.json(); toast.error(data.error || "Failed to add payment"); }
+      } else { const data = await payrollJson(res); toast.error(data.error || "Failed to add payment"); }
     } catch (error) { toast.error(error instanceof Error ? error.message : "Failed to add payment"); }
   }
 
@@ -168,10 +173,11 @@ export default function ContractorDetailPage() {
       headers: { "x-organization-id": orgId },
     });
     if (res.ok) {
+      await payrollJson(res);
       toast.success("Payment processed");
       fetchContractor();
     } else {
-      const data = await res.json(); toast.error(data.error || "Failed to process payment");
+      const data = await payrollJson(res); toast.error(data.error || "Failed to process payment");
     }
   }
 
@@ -189,12 +195,14 @@ export default function ContractorDetailPage() {
       headers: { "x-organization-id": orgId },
     });
     if (res.ok) {
+      await payrollJson(res);
       toast.success("Contractor deleted");
       router.push("/payroll/contractors");
     }
   }
 
   if (loading) return <BrandLoader />;
+  if (moneyError) return <p role="alert">{moneyError}</p>;
   if (!contractor) {
     return (
       <ContentReveal>
@@ -244,7 +252,7 @@ export default function ContractorDetailPage() {
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Hourly Rate</Label>
-              <CurrencyInput prefix="$" value={hourlyRate} onChange={setHourlyRate} />
+              <CurrencyInput prefix={contractor.currency ?? "USD"} value={hourlyRate} onChange={setHourlyRate} />
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Bank Account</Label>
@@ -269,7 +277,7 @@ export default function ContractorDetailPage() {
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
                 <div className="space-y-1">
                   <Label className="text-xs">Amount</Label>
-                  <CurrencyInput prefix="$" size="sm" value={paymentAmount} onChange={setPaymentAmount} />
+                  <CurrencyInput prefix={paymentCurrency || contractor.currency || "USD"} size="sm" value={paymentAmount} onChange={setPaymentAmount} />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">Currency</Label>

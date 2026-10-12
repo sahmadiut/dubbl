@@ -1,5 +1,8 @@
 "use client";
 
+import { payrollMoneyDisplay } from "@/lib/money/payroll-display";
+import { payrollJson } from "@/lib/money/payroll-ui";
+
 import { payrollCentsInput, payrollCentsDecimal, payrollBasisPointsInput } from "@/lib/money/payroll-input";
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "motion/react";
@@ -99,6 +102,7 @@ interface CompensationBand {
   minSalary: number;
   midSalary: number;
   maxSalary: number;
+  currency: string;
 }
 
 const anim = (delay: number) => ({
@@ -110,6 +114,7 @@ const anim = (delay: number) => ({
 export default function PayrollSettingsPage() {
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [loading, setLoading] = useState(true);
+  const [moneyError, setMoneyError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   // Settings
@@ -161,13 +166,13 @@ export default function PayrollSettingsPage() {
     const headers = { "x-organization-id": orgId };
 
     Promise.all([
-      fetch("/api/v1/payroll/settings", { headers }).then((r) => r.json()),
-      fetch("/api/v1/payroll/deductions/types", { headers }).then((r) => r.json()),
-      fetch("/api/v1/payroll/tax/brackets", { headers }).then((r) => r.json()),
-      fetch("/api/v1/payroll/shifts", { headers }).then((r) => r.json()),
-      fetch("/api/v1/payroll/leave/policies", { headers }).then((r) => r.json()),
-      fetch("/api/v1/payroll/approval-chains", { headers }).then((r) => r.json()),
-      fetch("/api/v1/payroll/compensation/bands", { headers }).then((r) => r.json()),
+      fetch("/api/v1/payroll/settings", { headers }).then((r) => payrollJson(r)),
+      fetch("/api/v1/payroll/deductions/types", { headers }).then((r) => payrollJson(r)),
+      fetch("/api/v1/payroll/tax/brackets", { headers }).then((r) => payrollJson(r)),
+      fetch("/api/v1/payroll/shifts", { headers }).then((r) => payrollJson(r)),
+      fetch("/api/v1/payroll/leave/policies", { headers }).then((r) => payrollJson(r)),
+      fetch("/api/v1/payroll/approval-chains", { headers }).then((r) => payrollJson(r)),
+      fetch("/api/v1/payroll/compensation/bands", { headers }).then((r) => payrollJson(r)),
     ])
       .then(([settingsData, deductionsData, bracketsData, shiftsData, leaveData, chainsData, bandsData]) => {
         if (settingsData.settings) { setSettings(settingsData.settings); setDefaultTaxPercent(payrollCentsDecimal(settingsData.settings.defaultTaxRate)); }
@@ -178,6 +183,7 @@ export default function PayrollSettingsPage() {
         if (chainsData.data) setApprovalChains(chainsData.data);
         if (bandsData.data) setCompensationBands(bandsData.data);
       })
+      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"))
       .finally(() => setLoading(false));
   }, [orgId]);
 
@@ -197,8 +203,8 @@ export default function PayrollSettingsPage() {
           bankAccountCode: settings.bankAccountCode || null, autoApprovalEnabled: settings.autoApprovalEnabled,
         }),
       });
-      if (res.ok) toast.success("Settings saved");
-      else toast.error((await res.json()).error || "Failed to save settings");
+      if (res.ok) { await payrollJson(res); toast.success("Settings saved"); }
+      else toast.error((await payrollJson(res)).error || "Failed to save settings");
     } catch {
       toast.error("Failed to save settings");
     } finally {
@@ -220,12 +226,13 @@ export default function PayrollSettingsPage() {
         }),
       });
       if (res.ok) {
+      await payrollJson(res);
         toast.success("Deduction type added");
         setDeductionDrawer(false);
         setNewDeduction({ name: "", category: "post_tax", defaultAmount: "", defaultPercent: "" });
         fetchAll();
       }
-      else toast.error((await res.json()).error || "Failed to add deduction type");
+      else toast.error((await payrollJson(res)).error || "Failed to add deduction type");
     } catch {
       toast.error("Failed to add deduction type");
     }
@@ -262,12 +269,13 @@ export default function PayrollSettingsPage() {
         }),
       });
       if (res.ok) {
+      await payrollJson(res);
         toast.success("Tax bracket added");
         setBracketDrawer(false);
         setNewBracket({ name: "", jurisdictionLevel: "federal", minIncome: "", maxIncome: "", rate: "" });
         fetchAll();
       }
-      else toast.error((await res.json()).error || "Failed to add tax bracket");
+      else toast.error((await payrollJson(res)).error || "Failed to add tax bracket");
     } catch {
       toast.error("Failed to add tax bracket");
     }
@@ -288,12 +296,13 @@ export default function PayrollSettingsPage() {
         }),
       });
       if (res.ok) {
+      await payrollJson(res);
         toast.success("Shift added");
         setShiftDrawer(false);
         setNewShift({ name: "", shiftType: "regular", startTime: "09:00", endTime: "17:00", premiumPercent: "0" });
         fetchAll();
       } else {
-        const data = await res.json();
+        const data = await payrollJson(res);
         toast.error(typeof data.error === "string" ? data.error : "Failed to add shift");
       }
     } catch {
@@ -316,12 +325,13 @@ export default function PayrollSettingsPage() {
         }),
       });
       if (res.ok) {
+      await payrollJson(res);
         toast.success("Leave policy added");
         setLeaveDrawer(false);
         setNewLeave({ name: "", leaveType: "vacation", accrualMethod: "per_pay_period", accrualRate: "0", maxBalance: "" });
         fetchAll();
       } else {
-        const data = await res.json();
+        const data = await payrollJson(res);
         toast.error(typeof data.error === "string" ? data.error : "Failed to add leave policy");
       }
     } catch {
@@ -338,12 +348,13 @@ export default function PayrollSettingsPage() {
         body: JSON.stringify({
           name: newBand.name,
           level: newBand.level,
-          minSalary: Math.round(parseFloat(newBand.minSalary || "0") * 100),
-          midSalary: Math.round(parseFloat(newBand.midSalary || "0") * 100),
-          maxSalary: Math.round(parseFloat(newBand.maxSalary || "0") * 100),
+          minSalaryMinor: payrollCentsInput(newBand.minSalary || "0"),
+          midSalaryMinor: payrollCentsInput(newBand.midSalary || "0"),
+          maxSalaryMinor: payrollCentsInput(newBand.maxSalary || "0"),
         }),
       });
       if (res.ok) {
+      await payrollJson(res);
         toast.success("Compensation band added");
         setBandDrawer(false);
         setNewBand({ name: "", level: "", minSalary: "", midSalary: "", maxSalary: "" });
@@ -371,6 +382,7 @@ export default function PayrollSettingsPage() {
   }
 
   if (loading) return <BrandLoader />;
+  if (moneyError) return <p role="alert">{moneyError}</p>;
 
   return (
     <ContentReveal className="space-y-6">
@@ -637,7 +649,7 @@ export default function PayrollSettingsPage() {
                       <div>
                         <p className="text-sm font-medium">{band.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          Level {band.level} · ${(band.minSalary / 100).toLocaleString()} - ${(band.midSalary / 100).toLocaleString()} - ${(band.maxSalary / 100).toLocaleString()}
+                          Level {band.level} · {payrollMoneyDisplay(band.minSalary, band.currency)} - {payrollMoneyDisplay(band.midSalary, band.currency)} - {payrollMoneyDisplay(band.maxSalary, band.currency)}
                         </p>
                       </div>
                       <Button size="icon" variant="ghost" className="size-7" onClick={() => handleDeleteBand(band.id)}>

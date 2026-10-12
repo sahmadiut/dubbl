@@ -17,11 +17,11 @@ export function payrollBasisPointsInput(value: string): number {
   return Number(bp);
 }
 /** Preview is advisory; invalid unfinished input has no posted value. */
-export function payrollCentsPreview(value: string): number {
-  try { return Number(BigInt(payrollCentsInput(value || "0"))); } catch { return 0; }
+export function payrollCentsPreview(value: string): bigint {
+  try { return BigInt(payrollCentsInput(value || "0")); } catch { return 0n; }
 }
-export function payrollPeriodPreview(salary: number, frequency: string): number {
+export function payrollPeriodPreview(salary: bigint, frequency: string): bigint {
   const divisor = frequency === "weekly" ? 52n : frequency === "biweekly" ? 26n : 12n;
   const cents = BigInt(salary);
-  return Number((cents * 2n + divisor) / (2n * divisor));
+  return (cents * 2n + divisor) / (2n * divisor);
 }

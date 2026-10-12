@@ -1,5 +1,7 @@
 "use client";
 
+import { payrollJson } from "@/lib/money/payroll-ui";
+
 import { toast } from "sonner";
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -67,6 +69,7 @@ export default function RunPayslipsPage() {
   const [run, setRun] = useState<RunDetail | null>(null);
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
+  const [moneyError, setMoneyError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
 
   useDocumentTitle("Payroll · Payslips");
@@ -81,7 +84,7 @@ export default function RunPayslipsPage() {
 
     // 1. Get the run so we know every employee on it (and the pay period).
     const runRes = await fetch(`/api/v1/payroll/runs/${id}`, { headers });
-    const runData = await runRes.json();
+    const runData = await payrollJson(runRes);
     const runDetail: RunDetail | undefined = runData.run;
     if (!runDetail) {
       setLoading(false);
@@ -90,7 +93,7 @@ export default function RunPayslipsPage() {
     setRun(runDetail);
 
     const psRes = await fetch(`/api/v1/payroll/runs/${id}/payslips`, { headers });
-    const psData = await psRes.json();
+    const psData = await payrollJson(psRes);
     if (!psRes.ok) { toast.error(psData.error || "Unable to load payslips"); setLoading(false); return; }
     const slips: (Payslip & { payrollItemId: string })[] = psData.payslips;
     const built: Row[] = runDetail.items.map(item => ({
@@ -105,7 +108,7 @@ export default function RunPayslipsPage() {
   }, [id]);
 
   useEffect(() => {
-    void load().catch(error => { toast.error(error.message || "Unable to load payslips"); setLoading(false); });
+    void load().catch(error => { setMoneyError(error instanceof Error ? error.message : "Unable to load payslips"); setLoading(false); });
   }, [load]);
 
   // Opening a payslip detail marks it as viewed on the server. Refresh that
@@ -122,6 +125,7 @@ export default function RunPayslipsPage() {
           headers: { "x-organization-id": orgId },
         });
         if (!response.ok) { toast.error("Unable to mark payslip viewed"); return; }
+        await payrollJson(response);
         setRows((prev) =>
           prev.map((r) =>
             r.payslip && r.payslip.id === row.payslip!.id
@@ -136,6 +140,7 @@ export default function RunPayslipsPage() {
   }
 
   if (loading) return <BrandLoader />;
+  if (moneyError) return <p role="alert">{moneyError}</p>;
 
   const generated = rows.filter((r) => r.payslip).length;
 

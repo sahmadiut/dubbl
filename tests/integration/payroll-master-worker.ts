@@ -1,3 +1,5 @@
+import { payrollCentsInput, payrollCentsDecimal } from "../../lib/money/payroll-input";
+import { payrollJson, payrollUiPayload } from "../../lib/money/payroll-ui";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
@@ -30,7 +32,7 @@ async function mcp(ctx: AuthContext, full = false) {
   }
   return { async call(name: string, args: Record<string, unknown>) {
     const result = await client.callTool({ name, arguments: args }), text = (result.content as { text: string }[])[0].text;
-    return { isError: result.isError === true, body: text.startsWith("{") ? JSON.parse(text) : { error: text } };
+    return { isError: result.isError === true, body: text.startsWith("{") ? (result.isError ? JSON.parse(text) : payrollUiPayload(JSON.parse(text))) : { error: text } };
   }, async close() { await client.close(); await server.close(); } };
 }
 async function run() {
@@ -52,7 +54,7 @@ async function run() {
   const req = (body: unknown = {}, key = keys.a, query = "") => new Request("http://fixture.test/api/v1/payroll" + query, { method: "POST",
     headers: { authorization: `Bearer ${key}`, "content-type": "application/json", "x-organization-id": b.id }, body: JSON.stringify(body) });
   const p = (id: string) => ({ params: Promise.resolve({ id }) });
-  const data = async (response: Response, status = 200) => { const body = await response.json(); assert.equal(response.status, status, JSON.stringify(body)); return body; };
+  const data = async (response: Response, status = 200) => { const body = await payrollJson(response); assert.equal(response.status, status, JSON.stringify(body)); return body; };
   const snapshot = async () => Promise.all(["payroll_employee", "contractor", "contractor_payment", "payroll_run", "payroll_item", "journal_entry", "journal_line", "audit_log"].map(t =>
     db.execute(sql.raw(`select coalesce(jsonb_agg(to_jsonb(t)::text order by t.id),'[]'::jsonb) as rows from ${t} t`)).then(r => r.rows)));
   const denied = async (fn: () => Promise<Response>, status: number) => { const before = await snapshot(); await data(await fn(), status); assert.deepEqual(await snapshot(), before); };
@@ -62,6 +64,16 @@ async function run() {
   };
   const base = { name: "Legacy", employeeNumber: "E1", startDate: "2024-02-29" };
   try {
+    for (const currency of ["USD", "JPY", "KWD"]) {
+      const created = (await data(await createEmployee(req({ ...base, currency, salaryMinor: payrollCentsInput("90071992547409.91") })), 201)).employee;
+      const saved = await db.execute(sql`select salary::text as salary from payroll_employee where id = ${created.id}`);
+      assert.equal(saved.rows[0].salary, "9007199254740991");
+      assert.equal(payrollCentsDecimal(created.salary), "90071992547409.91");
+      const edited = await ma.call("update_payroll_employee", { employeeId: created.id, salaryMinor: payrollCentsInput("0.29") });
+      assert.equal(edited.isError, false); assert.equal(edited.body.employee.salaryMinor, "29");
+      const stored = await db.execute(sql`select salary::text as salary from payroll_employee where id = ${created.id}`);
+      assert.equal(stored.rows[0].salary, "29");
+    }
     const e = (await data(await createEmployee(req({ ...base, salary: 1250, hourlyRate: 0, memberId: ownMember.id })), 201)).employee;
     assert.equal(e.organizationId, a.id); assert.equal(e.salaryMinor, "1250"); assert.equal(e.hourlyRateMinor, "0"); assert.equal(e.taxRate, 2000);
     const em = (await ma.call("create_payroll_employee", { ...base, name: "Exact", salaryMinor: "9007199254740991", hourlyRateMinor: "3000000000", currency: "KWD" })).body.employee;

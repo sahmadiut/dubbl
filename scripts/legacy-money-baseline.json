@@ -114,54 +114,6 @@
   "app/(dashboard)/inventory/valuation/page.tsx": {
     "formatMoney": 11
   },
-  "app/(dashboard)/payroll/analytics/page.tsx": {
-    "formatMoney": 8
-  },
-  "app/(dashboard)/payroll/compensation/page.tsx": {
-    "formatMoney": 6
-  },
-  "app/(dashboard)/payroll/compensation/reviews/[id]/page.tsx": {
-    "formatMoney": 6
-  },
-  "app/(dashboard)/payroll/contractors/[id]/page.tsx": {
-    "formatMoney": 2
-  },
-  "app/(dashboard)/payroll/contractors/page.tsx": {
-    "formatMoney": 2
-  },
-  "app/(dashboard)/payroll/employees/[id]/page.tsx": {
-    "formatMoney": 8
-  },
-  "app/(dashboard)/payroll/employees/page.tsx": {
-    "formatMoney": 2
-  },
-  "app/(dashboard)/payroll/forecasting/page.tsx": {
-    "formatMoney": 8
-  },
-  "app/(dashboard)/payroll/page.tsx": {
-    "formatMoney": 8
-  },
-  "app/(dashboard)/payroll/reports/[type]/page.tsx": {
-    "formatMoney": 9
-  },
-  "app/(dashboard)/payroll/reports/page.tsx": {
-    "formatMoney": 4
-  },
-  "app/(dashboard)/payroll/runs/[id]/page.tsx": {
-    "formatMoney": 12
-  },
-  "app/(dashboard)/payroll/runs/[id]/payslips/page.tsx": {
-    "formatMoney": 12
-  },
-  "app/(dashboard)/payroll/runs/page.tsx": {
-    "formatMoney": 4
-  },
-  "app/(dashboard)/payroll/self-service/page.tsx": {
-    "formatMoney": 3
-  },
-  "app/(dashboard)/payroll/tax-liabilities/page.tsx": {
-    "formatMoney": 7
-  },
   "app/(dashboard)/projects/[id]/layout.tsx": {
     "formatMoney": 3
   },

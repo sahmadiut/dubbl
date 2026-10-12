@@ -1,3 +1,4 @@
+import { payrollJson, payrollUiPayload } from "../../lib/money/payroll-ui";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
@@ -37,7 +38,7 @@ async function mcp(ctx: AuthContext, full = false) {
   }
   return { async call(name: string, args: Record<string, unknown> = {}) {
     const result = await client.callTool({ name, arguments: args }), text = (result.content as { text: string }[])[0].text;
-    return { isError: result.isError === true, body: text.startsWith("{") ? JSON.parse(text) : { error: text } };
+    return { isError: result.isError === true, body: text.startsWith("{") ? (result.isError ? JSON.parse(text) : payrollUiPayload(JSON.parse(text))) : { error: text } };
   }, async close() { await client.close(); await server.close(); } };
 }
 async function run() {
@@ -68,7 +69,7 @@ async function run() {
     const route = routes[def.routeIndex] as unknown as Record<string, (r: Request, p: { params: Promise<typeof params> }) => Promise<Response>>;
     return route[def.verb](malformed ? new Request("http://fixture.test", { method: "POST", headers: { authorization: `Bearer ${key}` }, body: "{" }) : req(body, key), { params: Promise.resolve(params) });
   };
-  const data = async (response: Response, status = 200) => { const body = await response.json(); assert.equal(response.status, status, JSON.stringify(body)); return body; };
+  const data = async (response: Response, status = 200) => { const body = await payrollJson(response); assert.equal(response.status, status, JSON.stringify(body)); return body; };
   const read = async (name: string, args: Args = {}, key = keys.a) => data(await rest(name, args, key), definition(name).verb === "POST" ? 201 : 200);
   const call = async (name: string, args: Args = {}, client = ma) => { const result = await client.call(name, args); assert.equal(result.isError, false, JSON.stringify(result.body)); return result.body; };
   const snapshot = async () => Promise.all(["payroll_settings", "deduction_type", "employee_deduction", "employee_tax_config", "tax_bracket", "tax_allowance_config", "payroll_employee", "payroll_run", "journal_entry", "journal_line", "audit_log"].map(t =>

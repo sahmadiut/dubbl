@@ -1,5 +1,7 @@
 "use client";
 
+import { payrollJson } from "@/lib/money/payroll-ui";
+
 import { useState, useEffect, useCallback, useMemo, useRef, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
@@ -263,7 +265,7 @@ export default function TimeLeavePage() {
     fetch(`/api/v1/payroll/timesheets?${buildTsParams(1)}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => payrollJson(r))
       .then((data) => {
         if (cancelled) return;
         setTimesheets(data.data || []);
@@ -295,7 +297,7 @@ export default function TimeLeavePage() {
     fetch(`/api/v1/payroll/leave/requests?${buildLeaveParams(1)}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => payrollJson(r))
       .then((data) => {
         if (cancelled) return;
         setLeaveRequests(data.data || []);
@@ -323,7 +325,7 @@ export default function TimeLeavePage() {
     const headers = { "x-organization-id": orgId };
 
     fetch("/api/v1/payroll/employees", { headers })
-      .then((r) => r.json())
+      .then((r) => payrollJson(r))
       .then((data) => {
         if (data.data)
           setEmployees(
@@ -332,7 +334,7 @@ export default function TimeLeavePage() {
       });
 
     fetch("/api/v1/payroll/leave/policies", { headers })
-      .then((r) => r.json())
+      .then((r) => payrollJson(r))
       .then((data) => {
         if (data.data)
           setPolicies(
@@ -353,7 +355,7 @@ export default function TimeLeavePage() {
     fetch(`/api/v1/payroll/timesheets?${buildTsParams(nextPage)}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => payrollJson(r))
       .then((data) => {
         if (data.data) {
           setTimesheets((prev) => [...prev, ...data.data]);
@@ -375,7 +377,7 @@ export default function TimeLeavePage() {
     fetch(`/api/v1/payroll/leave/requests?${buildLeaveParams(nextPage)}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => payrollJson(r))
       .then((data) => {
         if (data.data) {
           setLeaveRequests((prev) => [...prev, ...data.data]);
@@ -549,7 +551,7 @@ export default function TimeLeavePage() {
         body: JSON.stringify(newTs),
       });
       if (res.ok) {
-        const data = await res.json();
+        const data = await payrollJson(res);
         toast.success("Timesheet created");
         setTsDrawerOpen(false);
         setNewTs({ employeeId: "", periodStart: "", periodEnd: "" });
@@ -579,6 +581,7 @@ export default function TimeLeavePage() {
         }),
       });
       if (res.ok) {
+      await payrollJson(res);
         toast.success("Leave request created");
         setLeaveDrawerOpen(false);
         setLeaveForm({
@@ -595,7 +598,7 @@ export default function TimeLeavePage() {
         fetch(`/api/v1/payroll/leave/requests?${buildLeaveParams(1)}`, {
           headers: { "x-organization-id": orgId },
         })
-          .then((r) => r.json())
+          .then((r) => payrollJson(r))
           .then((data) => {
             setLeaveRequests(data.data || []);
             setLeaveTotalCount(data.pagination?.total || 0);
@@ -605,7 +608,7 @@ export default function TimeLeavePage() {
             setLeaveFetchKey((k) => k + 1);
           });
       } else {
-        const data = await res.json();
+        const data = await payrollJson(res);
         toast.error(typeof data.error === "string" ? data.error : "Failed to create leave request");
       }
     } catch {
@@ -622,6 +625,7 @@ export default function TimeLeavePage() {
       headers: { "x-organization-id": orgId },
     });
     if (res.ok) {
+      await payrollJson(res);
       toast.success("Request approved");
       // Refetch leave
       setLeaveRefetching(true);
@@ -629,7 +633,7 @@ export default function TimeLeavePage() {
       fetch(`/api/v1/payroll/leave/requests?${buildLeaveParams(1)}`, {
         headers: { "x-organization-id": orgId },
       })
-        .then((r) => r.json())
+        .then((r) => payrollJson(r))
         .then((data) => {
           setLeaveRequests(data.data || []);
           setLeaveTotalCount(data.pagination?.total || 0);
@@ -659,6 +663,7 @@ export default function TimeLeavePage() {
       body: JSON.stringify({}),
     });
     if (res.ok) {
+      await payrollJson(res);
       toast.success("Request rejected");
       // Refetch leave
       setLeaveRefetching(true);
@@ -666,7 +671,7 @@ export default function TimeLeavePage() {
       fetch(`/api/v1/payroll/leave/requests?${buildLeaveParams(1)}`, {
         headers: { "x-organization-id": orgId },
       })
-        .then((r) => r.json())
+        .then((r) => payrollJson(r))
         .then((data) => {
           setLeaveRequests(data.data || []);
           setLeaveTotalCount(data.pagination?.total || 0);

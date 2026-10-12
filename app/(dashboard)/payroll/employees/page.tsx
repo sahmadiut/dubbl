@@ -1,5 +1,7 @@
 "use client";
 
+import { payrollJson } from "@/lib/money/payroll-ui";
+
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion, MotionConfig } from "motion/react";
@@ -30,7 +32,7 @@ import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
-import { bankMoneyDisplay as formatMoney } from "@/lib/money/bank-display";
+import { payrollMoneyDisplay as formatMoney } from "@/lib/money/payroll-display";
 import { cn } from "@/lib/utils";
 
 interface Employee {
@@ -69,6 +71,7 @@ export default function EmployeesPage() {
   const { open: openDrawer } = useCreateDrawer();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
+  const [moneyError, setMoneyError] = useState<string | null>(null);
   const [refetching, setRefetching] = useState(false);
   const [fetchKey, setFetchKey] = useState(0);
 
@@ -90,10 +93,11 @@ export default function EmployeesPage() {
     fetch("/api/v1/payroll/employees", {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => payrollJson(r))
       .then((data) => {
         setEmployees(data.data || []);
       })
+      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"))
       .finally(() => {
         setLoading(false);
         setRefetching(false);
@@ -149,6 +153,7 @@ export default function EmployeesPage() {
   }
 
   if (loading) return <BrandLoader />;
+  if (moneyError) return <p role="alert">{moneyError}</p>;
 
   if (employees.length === 0) {
     return (

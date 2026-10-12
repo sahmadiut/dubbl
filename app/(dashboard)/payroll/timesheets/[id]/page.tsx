@@ -1,5 +1,7 @@
 "use client";
 
+import { payrollJson } from "@/lib/money/payroll-ui";
+
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "motion/react";
@@ -67,6 +69,7 @@ export default function TimesheetDetailPage() {
   const router = useRouter();
   const [ts, setTs] = useState<TimesheetDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [moneyError, setMoneyError] = useState<string | null>(null);
   const { confirm, dialog: confirmDialog } = useConfirm();
 
   // Reject dialog
@@ -89,8 +92,9 @@ export default function TimesheetDetailPage() {
     fetch(`/api/v1/payroll/timesheets/${id}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => payrollJson(r))
       .then((data) => { if (data.timesheet) setTs(data.timesheet); })
+      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"))
       .finally(() => setLoading(false));
   }
 
@@ -109,11 +113,12 @@ export default function TimesheetDetailPage() {
       }),
     });
     if (res.ok) {
+      await payrollJson(res);
       toast.success("Entry added");
       setNewDate(""); setNewHours(""); setNewDesc("");
       fetchTimesheet();
     } else {
-      const data = await res.json();
+      const data = await payrollJson(res);
       toast.error(typeof data.error === "string" ? data.error : "Failed to add entry");
     }
   }
@@ -132,7 +137,7 @@ export default function TimesheetDetailPage() {
       headers: { "x-organization-id": orgId },
     });
     if (!res.ok) {
-      const data = await res.json();
+      const data = await payrollJson(res);
       toast.error(typeof data.error === "string" ? data.error : "Failed to delete entry");
     }
     fetchTimesheet();
@@ -145,10 +150,11 @@ export default function TimesheetDetailPage() {
       headers: { "x-organization-id": orgId },
     });
     if (res.ok) {
+      await payrollJson(res);
       toast.success("Timesheet submitted");
       fetchTimesheet();
     } else {
-      const data = await res.json();
+      const data = await payrollJson(res);
       toast.error(typeof data.error === "string" ? data.error : "Failed to submit");
     }
   }
@@ -162,10 +168,11 @@ export default function TimesheetDetailPage() {
         headers: { "x-organization-id": orgId },
       });
       if (res.ok) {
+      await payrollJson(res);
         toast.success("Timesheet approved");
         fetchTimesheet();
       } else {
-        const data = await res.json().catch(() => ({}));
+        const data = await payrollJson(res).catch(() => ({}));
         toast.error(typeof data.error === "string" ? data.error : "Failed to approve");
       }
     } finally {
@@ -183,12 +190,13 @@ export default function TimesheetDetailPage() {
         body: JSON.stringify({ reason: rejectReason.trim() || undefined }),
       });
       if (res.ok) {
+      await payrollJson(res);
         toast.success("Timesheet rejected");
         setRejectOpen(false);
         setRejectReason("");
         fetchTimesheet();
       } else {
-        const data = await res.json().catch(() => ({}));
+        const data = await payrollJson(res).catch(() => ({}));
         toast.error(typeof data.error === "string" ? data.error : "Failed to reject");
       }
     } finally {
@@ -197,6 +205,7 @@ export default function TimesheetDetailPage() {
   }
 
   if (loading) return <BrandLoader />;
+  if (moneyError) return <p role="alert">{moneyError}</p>;
 
   if (!ts) {
     return (

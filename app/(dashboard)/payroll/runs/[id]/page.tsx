@@ -1,5 +1,7 @@
 "use client";
 
+import { payrollJson, payrollSum } from "@/lib/money/payroll-ui";
+
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "motion/react";
@@ -30,7 +32,7 @@ import {
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { payrollCentsInput } from "@/lib/money/payroll-input";
-import { formatMoney } from "@/lib/money";
+import { payrollMoneyDisplay as formatMoney } from "@/lib/money/payroll-display";
 import { useConfirm } from "@/lib/hooks/use-confirm";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
@@ -115,6 +117,7 @@ export default function PayrollRunDetailPage() {
   const router = useRouter();
   const [run, setRun] = useState<PayrollRunDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [moneyError, setMoneyError] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
   const [submittingApproval, setSubmittingApproval] = useState(false);
   const [approving, setApproving] = useState(false);
@@ -142,10 +145,11 @@ export default function PayrollRunDetailPage() {
     fetch(`/api/v1/payroll/runs/${id}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => payrollJson(r))
       .then((data) => {
         if (data.run) setRun(data.run);
       })
+      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"))
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -156,11 +160,11 @@ export default function PayrollRunDetailPage() {
     fetch(`/api/v1/payroll/runs/${id}/bonuses`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => payrollJson(r))
       .then((data) => {
         if (data.bonuses) setBonuses(data.bonuses);
       })
-      .catch(() => {});
+      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"));
   }, [id]);
 
   async function handleProcess() {
@@ -182,9 +186,10 @@ export default function PayrollRunDetailPage() {
         headers: { "x-organization-id": orgId },
       });
       if (!res.ok) {
-        const data = await res.json();
+        const data = await payrollJson(res);
         throw new Error(data.error || "Failed");
       }
+      await payrollJson(res);
       toast.success("Payroll finished and recorded");
       window.location.reload();
     } catch (err) {
@@ -205,9 +210,10 @@ export default function PayrollRunDetailPage() {
         headers: { "x-organization-id": orgId },
       });
       if (!res.ok) {
-        const data = await res.json();
+        const data = await payrollJson(res);
         throw new Error(data.error || "Failed");
       }
+      await payrollJson(res);
       toast.success("Sent for sign-off");
       window.location.reload();
     } catch (err) {
@@ -234,9 +240,10 @@ export default function PayrollRunDetailPage() {
         headers: { "x-organization-id": orgId },
       });
       if (!res.ok) {
-        const data = await res.json();
+        const data = await payrollJson(res);
         throw new Error(data.error || "Failed");
       }
+      await payrollJson(res);
       toast.success("Payroll approved");
       window.location.reload();
     } catch (err) {
@@ -264,9 +271,10 @@ export default function PayrollRunDetailPage() {
         headers: { "x-organization-id": orgId },
       });
       if (!res.ok) {
-        const data = await res.json();
+        const data = await payrollJson(res);
         throw new Error(data.error || "Failed");
       }
+      await payrollJson(res);
       toast.success("Payroll run rejected");
       window.location.reload();
     } catch (err) {
@@ -287,9 +295,10 @@ export default function PayrollRunDetailPage() {
         headers: { "x-organization-id": orgId },
       });
       if (!res.ok) {
-        const data = await res.json();
+        const data = await payrollJson(res);
         throw new Error(data.error || "Failed");
       }
+      await payrollJson(res);
       toast.success("Payslips generated");
       router.push(`/payroll/runs/${id}/payslips`);
     } catch (err) {
@@ -323,16 +332,16 @@ export default function PayrollRunDetailPage() {
         }),
       });
       if (!res.ok) {
-        const data = await res.json();
+        const data = await payrollJson(res);
         throw new Error(data.error || "Failed");
       }
-      const data = await res.json();
+      const data = await payrollJson(res);
       if (data.bonus) {
         const [runResponse, bonusResponse] = await Promise.all([
           fetch(`/api/v1/payroll/runs/${id}`, { headers: { "x-organization-id": orgId } }),
           fetch(`/api/v1/payroll/runs/${id}/bonuses`, { headers: { "x-organization-id": orgId } }),
         ]);
-        const [updated, listed] = await Promise.all([runResponse.json(), bonusResponse.json()]);
+        const [updated, listed] = await Promise.all([payrollJson(runResponse), payrollJson(bonusResponse)]);
         if (!runResponse.ok || !bonusResponse.ok) throw new Error(updated.error || listed.error || "Could not refresh payroll");
         setRun(updated.run); setBonuses(listed.bonuses);
       }
@@ -347,6 +356,7 @@ export default function PayrollRunDetailPage() {
   }
 
   if (loading) return <BrandLoader />;
+  if (moneyError) return <p role="alert">{moneyError}</p>;
 
   if (!run) {
     return (
@@ -595,7 +605,7 @@ export default function PayrollRunDetailPage() {
                   </div>
                   <div className="hidden sm:block text-right">
                     <p className="text-xs text-muted-foreground">Other deductions</p>
-                    <p className="text-sm font-mono tabular-nums">{formatMoney((item.preTaxDeductions ?? 0) + (item.postTaxDeductions ?? 0), item.currency ?? "USD")}</p>
+                    <p className="text-sm font-mono tabular-nums">{formatMoney(payrollSum([item.preTaxDeductions ?? 0, item.postTaxDeductions ?? 0]), item.currency ?? "USD")}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-xs text-muted-foreground">Take-home</p>

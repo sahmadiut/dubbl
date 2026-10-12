@@ -1,5 +1,7 @@
 "use client";
 
+import { payrollJson, payrollGroupedDisplay, payrollShare } from "@/lib/money/payroll-ui";
+
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
@@ -9,7 +11,7 @@ import { useCreateDrawer } from "@/components/dashboard/create-drawer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ContentReveal } from "@/components/ui/content-reveal";
-import { formatMoney } from "@/lib/money";
+import { payrollMoneyDisplay as formatMoney } from "@/lib/money/payroll-display";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 
@@ -19,6 +21,7 @@ interface Employee {
   employeeNumber: string;
   position: string | null;
   salary: number;
+  currency: string | null;
   payFrequency: string;
   isActive: boolean;
 }
@@ -31,6 +34,7 @@ interface PayrollRun {
   totalGross: number;
   totalDeductions: number;
   totalNet: number;
+  baseCurrency: string | null;
 }
 
 const statusColors: Record<string, string> = {
@@ -52,6 +56,7 @@ export default function PayrollPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [runs, setRuns] = useState<PayrollRun[]>([]);
   const [loading, setLoading] = useState(true);
+  const [moneyError, setMoneyError] = useState<string | null>(null);
   useDocumentTitle("Payroll · Overview");
 
   useEffect(() => {
@@ -64,25 +69,28 @@ export default function PayrollPage() {
     fetch("/api/v1/payroll/employees", {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => payrollJson(r))
       .then((data) => { if (data.data) setEmployees(data.data); })
+      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"))
       .finally(check);
 
     fetch("/api/v1/payroll/runs", {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => payrollJson(r))
       .then((data) => { if (data.data) setRuns(data.data); })
+      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"))
       .finally(check);
   }, []);
 
   if (loading) return <BrandLoader />;
+  if (moneyError) return <p role="alert">{moneyError}</p>;
 
   const activeEmployees = employees.filter((e) => e.isActive);
-  const totalAnnualSalary = activeEmployees.reduce((sum, e) => sum + e.salary, 0);
+  const monthlyCost = payrollGroupedDisplay(activeEmployees.map(e => ({ amount: e.salary, currency: e.currency })), 12n);
   const completedRuns = runs.filter((r) => r.status === "completed");
   const lastRun = runs.length > 0 ? runs[0] : null;
-  const ytdPaid = completedRuns.reduce((sum, r) => sum + r.totalNet, 0);
+  const ytdPaid = payrollGroupedDisplay(completedRuns.map(r => ({ amount: r.totalNet, currency: r.baseCurrency })));
   const draftRuns = runs.filter((r) => r.status === "draft");
   const hasData = employees.length > 0 || runs.length > 0;
   const recentRuns = runs.slice(0, 5);
@@ -218,8 +226,8 @@ export default function PayrollPage() {
   const breakdownRun = completedRuns.length > 0 ? completedRuns[0] : lastRun;
   const breakdownTotal = breakdownRun ? breakdownRun.totalGross : 0;
   const grossPct = breakdownTotal > 0 ? 100 : 0;
-  const deductionsPct = breakdownTotal > 0 ? (breakdownRun!.totalDeductions / breakdownTotal) * 100 : 0;
-  const netPct = breakdownTotal > 0 ? (breakdownRun!.totalNet / breakdownTotal) * 100 : 0;
+  const deductionsPct = breakdownTotal > 0 ? payrollShare(BigInt(breakdownRun!.totalDeductions), BigInt(breakdownTotal)) : 0;
+  const netPct = breakdownTotal > 0 ? payrollShare(BigInt(breakdownRun!.totalNet), BigInt(breakdownTotal)) : 0;
 
   return (
     <ContentReveal className="space-y-6">
@@ -245,7 +253,7 @@ export default function PayrollPage() {
             <span className="text-[11px] font-medium uppercase tracking-wide">Monthly Payroll Cost</span>
           </div>
           <p className="mt-2 text-2xl font-bold font-mono tabular-nums truncate">
-            {formatMoney(Math.round(totalAnnualSalary / 12))}
+            {monthlyCost}
           </p>
         </motion.div>
 
@@ -255,7 +263,7 @@ export default function PayrollPage() {
             <span className="text-[11px] font-medium uppercase tracking-wide">Paid this year</span>
           </div>
           <p className="mt-2 text-2xl font-bold font-mono tabular-nums truncate text-emerald-600 dark:text-emerald-400">
-            {formatMoney(ytdPaid)}
+            {ytdPaid}
           </p>
         </motion.div>
 
@@ -322,7 +330,7 @@ export default function PayrollPage() {
                   <div className="text-right shrink-0">
                     <p className="text-xs text-muted-foreground">Before deductions / Take-home</p>
                     <p className="text-sm font-mono tabular-nums">
-                      {formatMoney(run.totalGross)} / {formatMoney(run.totalNet)}
+                      {formatMoney(run.totalGross, run.baseCurrency ?? "USD")} / {formatMoney(run.totalNet, run.baseCurrency ?? "USD")}
                     </p>
                   </div>
                 </button>
@@ -363,7 +371,7 @@ export default function PayrollPage() {
                         <span className="text-muted-foreground">Take-home pay</span>
                       </div>
                       <span className="font-mono tabular-nums font-medium">
-                        {formatMoney(breakdownRun.totalNet)}
+                        {formatMoney(breakdownRun.totalNet, breakdownRun.baseCurrency ?? "USD")}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
@@ -372,14 +380,14 @@ export default function PayrollPage() {
                         <span className="text-muted-foreground">Taxes &amp; deductions</span>
                       </div>
                       <span className="font-mono tabular-nums font-medium">
-                        {formatMoney(breakdownRun.totalDeductions)}
+                        {formatMoney(breakdownRun.totalDeductions, breakdownRun.baseCurrency ?? "USD")}
                       </span>
                     </div>
                     <div className="h-px bg-border" />
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground font-medium">Total before deductions</span>
                       <span className="font-mono tabular-nums font-semibold">
-                        {formatMoney(breakdownRun.totalGross)}
+                        {formatMoney(breakdownRun.totalGross, breakdownRun.baseCurrency ?? "USD")}
                       </span>
                     </div>
                   </div>

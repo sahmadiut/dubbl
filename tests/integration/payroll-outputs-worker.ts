@@ -1,3 +1,4 @@
+import { payrollJson, payrollUiPayload } from "../../lib/money/payroll-ui";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
@@ -48,7 +49,7 @@ async function connect(ctx: AuthContext, all = false) {
   }
   return { async call(name: string, args: Args = {}) {
     const result = await client.callTool({ name, arguments: args }), text = (result.content as { text: string }[])[0].text;
-    return { isError: result.isError === true, body: text.startsWith("{") ? JSON.parse(text) : { error: text } };
+    return { isError: result.isError === true, body: text.startsWith("{") ? (result.isError ? JSON.parse(text) : payrollUiPayload(JSON.parse(text))) : { error: text } };
   }, async close() { await client.close(); await server.close(); } };
 }
 async function run() {
@@ -75,7 +76,7 @@ async function run() {
     const request = new Request(url, { method: verb, headers: { authorization: `Bearer ${key}`, "x-organization-id": b.id, "content-type": "application/json" }, body: verb === "GET" ? undefined : raw ?? JSON.stringify(body) });
     return (route as unknown as Record<string, (r: Request, p: unknown) => Promise<Response>>)[verb](request, { params: Promise.resolve({ id: id ?? payRunId ?? employeeId }) });
   };
-  const data = async (r: Response, status = 200) => { const body = await r.json(); assert.equal(r.status, status, JSON.stringify(body)); return body; };
+  const data = async (r: Response, status = 200) => { const body = await payrollJson(r); assert.equal(r.status, status, JSON.stringify(body)); return body; };
   const read = async (name: string, args: Args = {}, key: string = keys.a) => data(await rest(name, args, key), name === "generate_tax_forms" ? 201 : 200);
   const call = async (name: string, args: Args = {}, client = ma) => { mseen.add(name); const r = await client.call(name, args); assert.equal(r.isError, false, JSON.stringify(r.body)); return r.body; };
   const snapshot = () => Promise.all(["payslip", "tax_form", "tax_form_generation", "payroll_employee", "audit_log"].map(t => db.execute(sql.raw(`select coalesce(jsonb_agg(to_jsonb(t)::text order by t.id),'[]'::jsonb) as rows from ${t} t`)).then(r => r.rows)));

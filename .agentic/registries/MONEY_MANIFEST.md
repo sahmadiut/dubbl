@@ -2057,3 +2057,16 @@ completion and no duplicate generation. Existing payable and recurring-invoice U
 fixtures cover shared-editor regressions. MON-132/MON-129/MON-007 combined
 acceptance remains separate. No production IRR/full-int64/browser/accounting
 qualification, historical rescaling, build, dev server or deployment is claimed.
+
+## MON-155 payroll UI money cutover
+
+[PAYROLL_UI_MONEY_CUTOVER](PAYROLL_UI_MONEY_CUTOVER.md) maps all payroll pages,
+shared employee/contractor drawers and the saved DTO/input/display adapters.
+Numeric money must agree with canonical Minor aliases before adoption. Payroll
+retains two-decimal cents for every ISO currency; bigint previews/sums/ratios and
+currency-grouped overview totals preserve low digits and signed corrections.
+Hours, percentages, basis points, headcounts and historical FX keep distinct
+nonmoney units. All eight payroll integration workers validate successful REST/MCP
+DTOs with the consumer adapter, including independent UI-to-SQL master round trips.
+Scoped source guards and removed legacy-helper allowances prevent regression.
+No schema/history/unit rescaling or production change; MON-008 remains open.

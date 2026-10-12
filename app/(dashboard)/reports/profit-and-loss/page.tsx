@@ -3,61 +3,61 @@
 import { useState, useEffect } from "react";
 import { TrendingUp, TrendingDown, DollarSign } from "lucide-react";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
+import { ErrorState } from "@/components/dashboard/error-state";
+import { financialStatementJson, profitLossUi, statementUiMoney, type ProfitLossUi } from "@/lib/money/financial-statement-ui";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { DataTable, type Column } from "@/components/dashboard/data-table";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { DateRangeFilter } from "@/components/dashboard/date-range-filter";
 import { Button } from "@/components/ui/button";
-import { formatMoney } from "@/lib/money";
 import { ExportButton } from "@/components/dashboard/export-button";
 import { BackToReports, ReportHelp, BasisToggle } from "../_components";
 
-interface AccountRow {
-  accountId: string;
-  accountName: string;
-  accountCode: string;
-  balance: number;
-}
-
-const columns: Column<AccountRow>[] = [
-  { key: "code", header: "Code", className: "w-24", render: (r) => <span className="font-mono text-sm">{r.accountCode}</span> },
-  { key: "name", header: "Account", render: (r) => <span className="text-sm font-medium">{r.accountName}</span> },
-  { key: "balance", header: "Amount", className: "w-32 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{formatMoney(r.balance)}</span> },
-];
+type AccountRow = ProfitLossUi["revenue"][number];
 
 export default function ProfitAndLossPage() {
   const now = new Date();
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [startDate, setStartDate] = useState(`${now.getFullYear()}-01-01`);
   const [endDate, setEndDate] = useState(now.toISOString().slice(0, 10));
   const [basis, setBasis] = useState<"accrual" | "cash">("accrual");
+  const [currencyCode, setCurrencyCode] = useState("USD");
+  const columns: Column<AccountRow>[] = [
+    { key: "code", header: "Code", className: "w-24", render: (r) => <span className="font-mono text-sm">{r.accountCode}</span> },
+    { key: "name", header: "Account", render: (r) => <span className="text-sm font-medium">{r.accountName}</span> },
+    { key: "balance", header: "Amount", className: "w-32 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{statementUiMoney(r.balance, currencyCode)}</span> },
+  ];
+  const formatMoney = (value: bigint) => statementUiMoney(value, currencyCode);
   const [revenue, setRevenue] = useState<AccountRow[]>([]);
   const [expenses, setExpenses] = useState<AccountRow[]>([]);
-  const [totalRevenue, setTotalRevenue] = useState(0);
-  const [totalExpenses, setTotalExpenses] = useState(0);
-  const [netIncome, setNetIncome] = useState(0);
+  const [totalRevenue, setTotalRevenue] = useState(0n);
+  const [totalExpenses, setTotalExpenses] = useState(0n);
+  const [netIncome, setNetIncome] = useState(0n);
 
   useEffect(() => {
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
     let cancelled = false;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
+    setError(null);
     const params = new URLSearchParams({ startDate, endDate, basis });
     fetch(`/api/v1/reports/profit-and-loss?${params}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => financialStatementJson(r, profitLossUi))
       .then((data) => {
         if (cancelled) return;
-        setRevenue(data.revenue || []);
-        setExpenses(data.expenses || []);
-        setTotalRevenue(data.totalRevenue || 0);
-        setTotalExpenses(data.totalExpenses || 0);
-        setNetIncome(data.netIncome || 0);
+        setCurrencyCode(data.currencyCode);
+        setRevenue(data.revenue);
+        setExpenses(data.expenses);
+        setTotalRevenue(data.totalRevenue);
+        setTotalExpenses(data.totalExpenses);
+        setNetIncome(data.netIncome);
       })
+      .catch((error: Error) => { if (!cancelled) setError(error.message); })
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
@@ -68,6 +68,7 @@ export default function ProfitAndLossPage() {
   }, [startDate, endDate, basis]);
 
   if (initialLoad) return <BrandLoader />;
+  if (error) return <ErrorState message={error} onRetry={() => window.location.reload()} />;
 
   return (
     <ContentReveal className="space-y-6">
@@ -84,8 +85,8 @@ export default function ProfitAndLossPage() {
           Download PDF
         </a>
         <ExportButton
-          data={[...revenue.map((r) => ({ ...r, section: "Money in" })), ...expenses.map((e) => ({ ...e, section: "Money out" }))]}
-          columns={["section", "accountCode", "accountName", "balance"]}
+          data={[...revenue.map((r) => ({ ...r, section: "Money in", currencyCode, balanceMinor: r.balance.toString() })), ...expenses.map((e) => ({ ...e, section: "Money out", currencyCode, balanceMinor: e.balance.toString() }))]}
+          columns={["section", "accountCode", "accountName", "currencyCode", "balanceMinor"]}
           filename="profit-and-loss"
         />
       </PageHeader>

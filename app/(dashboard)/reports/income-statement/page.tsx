@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { formatMoney } from "@/lib/money";
+
 import { BrandLoader } from "@/components/dashboard/brand-loader";
+import { ErrorState } from "@/components/dashboard/error-state";
+import { financialStatementJson, incomeStatementUi, statementUiMoney, type IncomeStatementUi } from "@/lib/money/financial-statement-ui";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { BackToReports, ReportHelp } from "../_components";
@@ -15,25 +17,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-interface AccountLine {
-  code: string;
-  name: string;
-  balance: string;
-}
-
-interface IncomeData {
-  revenue: { accounts: AccountLine[]; total: string };
-  expenses: { accounts: AccountLine[]; total: string };
-  netIncome: string;
-}
-
 const CURRENT_YEAR = new Date().getFullYear();
 const YEAR_OPTIONS = [0, 1, 2, 3, 4].map((n) => CURRENT_YEAR - n);
 
 export default function IncomeStatementPage() {
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<IncomeData | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState<IncomeStatementUi | null>(null);
   const [year, setYear] = useState(CURRENT_YEAR);
 
   useEffect(() => {
@@ -42,6 +33,7 @@ export default function IncomeStatementPage() {
     let cancelled = false;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
+    setError(null);
 
     // Always request a concrete year range so the figures are "for the year",
     // not a lifetime running total.
@@ -54,11 +46,12 @@ export default function IncomeStatementPage() {
     fetch(`/api/v1/reports/income-statement?from=${from}&to=${to}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => financialStatementJson(r, incomeStatementUi))
       .then((d) => {
         if (cancelled) return;
         if (d.revenue) setData(d);
       })
+      .catch((error: Error) => { if (!cancelled) setError(error.message); })
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
@@ -69,6 +62,7 @@ export default function IncomeStatementPage() {
   }, [year]);
 
   if (initialLoad) return <BrandLoader />;
+  if (error) return <ErrorState message={error} onRetry={() => window.location.reload()} />;
 
   return (
     <ContentReveal className="space-y-6">
@@ -125,14 +119,14 @@ export default function IncomeStatementPage() {
                           <TableCell className="font-mono text-sm">{a.code}</TableCell>
                           <TableCell>{a.name}</TableCell>
                           <TableCell className="text-right font-mono tabular-nums">
-                            {formatMoney(parseFloat(a.balance) * 100)}
+                            {statementUiMoney(a.balance, data.currencyCode)}
                           </TableCell>
                         </TableRow>
                       ))}
                       <TableRow className="bg-muted/30 font-bold">
                         <TableCell colSpan={2}>Total {s.label}</TableCell>
                         <TableCell className="text-right font-mono tabular-nums">
-                          {formatMoney(parseFloat(s.section.total) * 100)}
+                          {statementUiMoney(s.section.total, data.currencyCode)}
                         </TableCell>
                       </TableRow>
                     </TableBody>
@@ -147,7 +141,7 @@ export default function IncomeStatementPage() {
                   Profit (money in minus money out)
                 </span>
                 <span className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-emerald-700 dark:text-emerald-300">
-                  {formatMoney(Math.round(parseFloat(data.netIncome) * 100))}
+                  {statementUiMoney(data.netIncome, data.currencyCode)}
                 </span>
               </div>
             </div>

@@ -169,3 +169,11 @@ Original MON-008 criteria and independent combined acceptance remain open. Sourc
 - [MON-158](../tasks/MON-158.md): Cut over auxiliary report dashboard and contact money.
 - [MON-159](../tasks/MON-159.md): Verify and cut over remaining background money consumers.
 - [MON-160](../tasks/MON-160.md): Cut over public rendering export and provider money consumers.
+
+## MON-158 bounded report and contact slices
+
+MON-158 retains its original criteria and final integration acceptance. These children trace to api-backward-compatibility and database-and-currency-migration.
+
+- [MON-161](../tasks/MON-161.md): Cut over cumulative and period financial statement UI money.
+- [MON-162](../tasks/MON-162.md): Cut over remaining auxiliary report UI money.
+- [MON-163](../tasks/MON-163.md): Cut over contact dashboard and shared report display money.

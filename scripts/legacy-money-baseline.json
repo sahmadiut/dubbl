@@ -135,9 +135,6 @@
   "app/(dashboard)/reports/cash-flow/page.tsx": {
     "formatMoney": 6
   },
-  "app/(dashboard)/reports/comparative-balance-sheet/page.tsx": {
-    "formatMoney": 4
-  },
   "app/(dashboard)/reports/consolidation/page.tsx": {
     "formatMoney": 23
   },
@@ -159,17 +156,8 @@
   "app/(dashboard)/reports/general-ledger/page.tsx": {
     "formatMoney": 7
   },
-  "app/(dashboard)/reports/income-statement/page.tsx": {
-    "formatMoney": 4
-  },
   "app/(dashboard)/reports/payment-performance/page.tsx": {
     "formatMoney": 2
-  },
-  "app/(dashboard)/reports/pnl-comparison/page.tsx": {
-    "formatMoney": 5
-  },
-  "app/(dashboard)/reports/profit-and-loss/page.tsx": {
-    "formatMoney": 8
   },
   "app/(dashboard)/reports/profitability/page.tsx": {
     "formatMoney": 10

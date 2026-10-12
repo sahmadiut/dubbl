@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { ArrowLeft, ArrowUpDown } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
+import { ErrorState } from "@/components/dashboard/error-state";
+import { financialStatementJson, pnlComparisonUi, statementChartPoint, statementUiMoney, type PnlComparisonUi } from "@/lib/money/financial-statement-ui";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { formatMoney } from "@/lib/money";
+
 import { cn } from "@/lib/utils";
 import {
   AreaChart,
@@ -20,24 +22,16 @@ import {
   Legend,
 } from "recharts";
 
-interface PeriodData {
-  label: string;
-  totalRevenue: number;
-  totalExpenses: number;
-  netIncome: number;
-  revenueChange: number;
-  revenueChangePct: number;
-  expensesChange: number;
-  expensesChangePct: number;
-  netIncomeChange: number;
-  netIncomeChangePct: number;
-}
+type PeriodData = PnlComparisonUi["periods"][number];
 
 export default function PnlComparisonPage() {
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [compareType, setCompareType] = useState("monthly");
   const [periodsCount, setPeriodsCount] = useState(6);
+  const [currencyCode, setCurrencyCode] = useState("USD");
+  const formatMoney = (value: bigint) => statementUiMoney(value, currencyCode);
   const [periods, setPeriods] = useState<PeriodData[]>([]);
 
   useEffect(() => {
@@ -46,6 +40,7 @@ export default function PnlComparisonPage() {
     let cancelled = false;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
+    setError(null);
     const params = new URLSearchParams({
       compare: compareType,
       periods: String(periodsCount),
@@ -53,11 +48,13 @@ export default function PnlComparisonPage() {
     fetch(`/api/v1/reports/pnl-comparison?${params}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => financialStatementJson(r, pnlComparisonUi))
       .then((data) => {
         if (cancelled) return;
-        setPeriods(data.periods || []);
+        setCurrencyCode(data.currencyCode);
+        setPeriods(data.periods);
       })
+      .catch((error: Error) => { if (!cancelled) setError(error.message); })
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
@@ -67,14 +64,10 @@ export default function PnlComparisonPage() {
     return () => { cancelled = true; };
   }, [compareType, periodsCount]);
 
-  const chartData = periods.map((p) => ({
-    name: p.label,
-    revenue: p.totalRevenue / 100,
-    expenses: p.totalExpenses / 100,
-    netIncome: p.netIncome / 100,
-  }));
+  const chartData = periods.map(period => statementChartPoint(period, currencyCode));
 
   if (initialLoad) return <BrandLoader />;
+  if (error) return <ErrorState message={error} onRetry={() => window.location.reload()} />;
 
   return (
     <ContentReveal className="space-y-6">
@@ -137,10 +130,10 @@ export default function PnlComparisonPage() {
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} className="text-muted-foreground" />
-                  <YAxis tick={{ fontSize: 11 }} className="text-muted-foreground" tickFormatter={(v) => `$${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`} />
+                  <YAxis tick={{ fontSize: 11 }} className="text-muted-foreground" tickFormatter={(v) => `${currencyCode} ${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`} />
                   <Tooltip
                     contentStyle={{ fontSize: 12, borderRadius: 8 }}
-                    formatter={(value) => [`$${Number(value).toFixed(2)}`]}
+                    formatter={(_value, name, item) => [statementUiMoney(item.payload[name === "Revenue" ? "revenueExact" : "expensesExact"], currencyCode), name]}
                   />
                   <Legend wrapperStyle={{ fontSize: 12 }} />
                   <Area type="monotone" dataKey="revenue" name="Revenue" stroke="#10b981" fill="url(#revenueGrad)" strokeWidth={2} />
@@ -179,7 +172,7 @@ export default function PnlComparisonPage() {
                         {i === 0 ? (
                           <span className="text-xs text-muted-foreground">-</span>
                         ) : (
-                          <ChangeCell amount={p.revenueChange} pct={p.revenueChangePct} />
+                          <ChangeCell currencyCode={currencyCode} amount={p.revenueChange} pct={p.revenueChangePct} />
                         )}
                       </td>
                     ))}
@@ -200,7 +193,7 @@ export default function PnlComparisonPage() {
                         {i === 0 ? (
                           <span className="text-xs text-muted-foreground">-</span>
                         ) : (
-                          <ChangeCell amount={p.expensesChange} pct={p.expensesChangePct} inverted />
+                          <ChangeCell currencyCode={currencyCode} amount={p.expensesChange} pct={p.expensesChangePct} inverted />
                         )}
                       </td>
                     ))}
@@ -224,7 +217,7 @@ export default function PnlComparisonPage() {
                         {i === 0 ? (
                           <span className="text-xs text-muted-foreground">-</span>
                         ) : (
-                          <ChangeCell amount={p.netIncomeChange} pct={p.netIncomeChangePct} />
+                          <ChangeCell currencyCode={currencyCode} amount={p.netIncomeChange} pct={p.netIncomeChangePct} />
                         )}
                       </td>
                     ))}
@@ -239,13 +232,13 @@ export default function PnlComparisonPage() {
   );
 }
 
-function ChangeCell({ amount, pct, inverted }: { amount: number; pct: number; inverted?: boolean }) {
+function ChangeCell({ amount, pct, inverted, currencyCode }: { amount: bigint; pct: number; inverted?: boolean; currencyCode: string }) {
   const positive = inverted ? amount < 0 : amount > 0;
-  const color = amount === 0 ? "text-muted-foreground" : positive ? "text-emerald-600" : "text-red-600";
+  const color = amount === 0n ? "text-muted-foreground" : positive ? "text-emerald-600" : "text-red-600";
 
   return (
     <div className={cn("text-xs font-mono tabular-nums", color)}>
-      <span>{amount > 0 ? "+" : ""}{formatMoney(amount)}</span>
+      <span>{amount > 0 ? "+" : ""}{statementUiMoney(amount, currencyCode)}</span>
       <span className="ml-1 text-[10px]">({pct > 0 ? "+" : ""}{pct}%)</span>
     </div>
   );

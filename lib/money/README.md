@@ -709,3 +709,14 @@ for operation maps, safe ranges and remaining qualification.
 ### Cumulative financial statements
 
 Trial balance and balance sheet now share exact GL aggregation and REST/MCP wire projection. Existing fixed two-place decimal strings coexist with exact signed integer-cent Minor aliases, bounded by the legacy safe numeric range. Currency-scaled PDF/XLSX exports preserve their existing scale; numeric spreadsheet cells reject non-round-trippable or over-15-significant-digit amounts. See [.agentic/registries/CUMULATIVE_STATEMENT_WIRE_CONTRACTS.md](../../.agentic/registries/CUMULATIVE_STATEMENT_WIRE_CONTRACTS.md) for all fields, dates, auth, ranges, export distinctions and the retained baseline trial-balance defect. Other statements remain separate MON-101 children.
+
+### Financial statement browser consumers
+
+`financial-statement-ui.ts` validates cumulative fixed-two decimal aliases and
+period numeric-minor aliases against required canonical Minor strings before
+bigint state. Report currency is explicit; only display/geometry applies ISO
+scale. Financial sums, comparative differences, CSV Minor text and tooltip values
+remain exact. Malformed/failed loads show English errors. See
+[consumer mapping](../../.agentic/registries/FINANCIAL_STATEMENT_UI_CUTOVER.md);
+MON-158/MON-008 combined acceptance and the natural-sign accounting correction
+remain separate.

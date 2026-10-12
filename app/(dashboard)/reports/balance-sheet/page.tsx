@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
+import { ErrorState } from "@/components/dashboard/error-state";
+import { financialStatementJson, balanceSheetUi, statementUiMoney, type BalanceSheetUi } from "@/lib/money/financial-statement-ui";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -17,29 +19,8 @@ import {
 } from "@/components/ui/table";
 import { BackToReports, ReportHelp } from "../_components";
 
-interface SectionAccount {
-  accountId: string;
-  code: string;
-  name: string;
-  balance: string;
-  balances?: string[];
-}
-
-interface SectionData {
-  type: string;
-  accounts: SectionAccount[];
-  total: string;
-  totals?: string[];
-}
-
-interface BalanceSheetData {
-  asAt: string;
-  dates?: string[];
-  compareDates?: string[];
-  assets: SectionData;
-  liabilities: SectionData;
-  equity: SectionData;
-}
+type SectionData = BalanceSheetUi["assets"];
+type SectionAccount = SectionData["accounts"][number];
 
 const SECTION_LABELS: Record<string, string> = {
   Assets: "What you own",
@@ -51,10 +32,11 @@ export default function BalanceSheetPage() {
   const today = new Date().toISOString().slice(0, 10);
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [asAt, setAsAt] = useState(today);
   const [compareDate, setCompareDate] = useState<string>("");
   const [showCompare, setShowCompare] = useState(false);
-  const [data, setData] = useState<BalanceSheetData | null>(null);
+  const [data, setData] = useState<BalanceSheetUi | null>(null);
 
   useEffect(() => {
     const orgId = localStorage.getItem("activeOrgId");
@@ -62,17 +44,19 @@ export default function BalanceSheetPage() {
     let cancelled = false;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
+    setError(null);
     const params = new URLSearchParams({ asAt });
     if (showCompare && compareDate) params.set("compareDate", compareDate);
 
     fetch(`/api/v1/reports/balance-sheet?${params}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => financialStatementJson(r, balanceSheetUi))
       .then((d) => {
         if (cancelled) return;
         if (d.assets) setData(d);
       })
+      .catch((error: Error) => { if (!cancelled) setError(error.message); })
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
@@ -83,6 +67,7 @@ export default function BalanceSheetPage() {
   }, [asAt, showCompare, compareDate]);
 
   if (initialLoad) return <BrandLoader />;
+  if (error) return <ErrorState message={error} onRetry={() => window.location.reload()} />;
 
   const dates = data?.dates ?? (data ? [data.asAt] : []);
   const sections: { label: string; data: SectionData }[] = data
@@ -93,10 +78,10 @@ export default function BalanceSheetPage() {
       ]
     : [];
 
-  function balancesFor(a: SectionAccount): string[] {
+  function balancesFor(a: SectionAccount): bigint[] {
     return a.balances ?? [a.balance];
   }
-  function totalsFor(s: SectionData): string[] {
+  function totalsFor(s: SectionData): bigint[] {
     return s.totals ?? [s.total];
   }
 
@@ -182,7 +167,7 @@ export default function BalanceSheetPage() {
                           </TableCell>
                           {balancesFor(a).map((bal, i) => (
                             <TableCell key={i} className="text-right font-mono tabular-nums">
-                              {parseFloat(bal).toFixed(2)}
+                              {statementUiMoney(bal, data!.currencyCode)}
                             </TableCell>
                           ))}
                         </TableRow>
@@ -191,7 +176,7 @@ export default function BalanceSheetPage() {
                         <TableCell colSpan={2}>Total {(SECTION_LABELS[section.label] || section.label).toLowerCase()}</TableCell>
                         {totalsFor(section.data).map((t, i) => (
                           <TableCell key={i} className="text-right font-mono tabular-nums">
-                            {parseFloat(t).toFixed(2)}
+                            {statementUiMoney(t, data!.currencyCode)}
                           </TableCell>
                         ))}
                       </TableRow>

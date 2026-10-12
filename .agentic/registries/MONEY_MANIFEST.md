@@ -2098,3 +2098,19 @@ physical units/basis points and REST-major versus MCP-cents loan compatibility
 remain explicit. Six real REST/MCP integration workers adopt the shared adapter,
 with UI-to-SQL low-digit/safe-max storage assertions. No rescaling, schema or
 production change; independent MON-008 acceptance remains open.
+
+## MON-161 cumulative and period statement UI money
+
+[FINANCIAL_STATEMENT_UI_CUTOVER](FINANCIAL_STATEMENT_UI_CUTOVER.md) maps six
+report pages to their existing cumulative/period REST and registered MCP services.
+Required fixed-two decimal or numeric-minor aliases agree with canonical Minor
+strings before bigint state. Saved raw units remain unchanged; explicit report
+currency controls display scale. Exact sums, differences, CSV Minor columns and
+chart tooltip source values preserve low digits; only chart geometry/axes and
+nonmoney percentages/date/count controls remain numeric. Comparative balance
+sheet reads every date in one snapshot, uses accountId and UTC month ends.
+Malformed/failed responses suppress report rows/exports with English ErrorState.
+Natural-sign trial-balance accounting correction stays PAR-008/QA-001.
+MON-158 was split into MON-161 (these pages), MON-162 (remaining report pages) and
+MON-163 (contacts/dashboard/shared display). MON-158/MON-008 acceptance remains
+open; no history rescaling, schema or production change.

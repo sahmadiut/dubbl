@@ -1577,3 +1577,19 @@ MON-090: `tests/loan-wire.test.ts` covers distinct REST major/MCP minor units, a
 - MON-008 parent combined acceptance remains open; no full build, dev server,
   Docker, provider or production actions. Source/accessibility review under DEC-005,
   no claim of live browser verification.
+
+## MON-161 financial statement UI consumer acceptance
+
+- tests/financial-statement-ui.test.ts: nine behavior/source groups for six report
+  consumers; exact low digits/negative subunits, safe-range aliases, bigint totals,
+  currency scales, aggregate/dimension/delta failures, CSV/chart source values,
+  malformed HTTP/JSON and UTC previous-month/year/leap dates.
+- tests/integration/financial-statement-ui.test.ts and worker: four USD/JPY/KWD/
+  synthetic IRR report-currency workflows, five real REST/linked MCP operations
+  through browser adapters, independent literal SQL text, exact comparison/CSV/
+  tooltip/sum behavior, foreign/denied access, corrupted DTOs, persisted overflow
+  and unchanged journal/account/audit snapshots.
+- Existing cumulative-statement, period-statement and financial-report-integration
+  fixtures retain service, query, tenant/role, history and export compatibility.
+- Source/accessibility review under DEC-005; no browser/screenshot, full build,
+  dev server, Docker, provider or production claim. MON-158/MON-008 remain open.

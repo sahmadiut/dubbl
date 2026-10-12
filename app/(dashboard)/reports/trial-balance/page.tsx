@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { Fragment, useState, useEffect } from "react";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
+import { ErrorState } from "@/components/dashboard/error-state";
+import { financialStatementJson, trialBalanceUi, trialBalanceTotals, statementUiMoney, type TrialBalanceUi } from "@/lib/money/financial-statement-ui";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -18,52 +20,37 @@ import {
 import { ExportButton } from "@/components/dashboard/export-button";
 import { BackToReports, ReportHelp } from "../_components";
 
-interface SplitBalance {
-  debitBalance: string;
-  creditBalance: string;
-  balance: string;
-}
-
-interface AccountBalance extends SplitBalance {
-  accountId: string;
-  code: string;
-  name: string;
-  type: string;
-  balances?: SplitBalance[];
-}
-
-interface TrialBalanceData {
-  asAt: string;
-  dates?: string[];
-  accounts: AccountBalance[];
-}
+type AccountBalance = TrialBalanceUi["accounts"][number];
+type SplitBalance = Pick<AccountBalance, "balance" | "debitBalance" | "creditBalance">;
 
 export default function TrialBalancePage() {
   const today = new Date().toISOString().slice(0, 10);
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [asAt, setAsAt] = useState(today);
   const [compareDate, setCompareDate] = useState("");
   const [showCompare, setShowCompare] = useState(false);
-  const [data, setData] = useState<TrialBalanceData | null>(null);
+  const [data, setData] = useState<TrialBalanceUi | null>(null);
 
   useEffect(() => {
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
     let cancelled = false;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
+    setError(null);
     const params = new URLSearchParams({ asAt });
     if (showCompare && compareDate) params.set("compareDate", compareDate);
 
     fetch(`/api/v1/reports/trial-balance?${params}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => financialStatementJson(r, trialBalanceUi))
       .then((d) => {
         if (cancelled) return;
         if (d.accounts) setData(d);
       })
+      .catch((error: Error) => { if (!cancelled) setError(error.message); })
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
@@ -74,6 +61,7 @@ export default function TrialBalancePage() {
   }, [asAt, showCompare, compareDate]);
 
   if (initialLoad) return <BrandLoader />;
+  if (error) return <ErrorState message={error} onRetry={() => window.location.reload()} />;
 
   const accounts = data?.accounts ?? [];
   const dates = data?.dates ?? (data ? [data.asAt] : []);
@@ -82,18 +70,8 @@ export default function TrialBalancePage() {
     return a.balances ?? [a];
   }
 
-  // Per-date totals of the money-in and money-out columns.
-  const totals = dates.map((_, i) => {
-    let debit = 0;
-    let credit = 0;
-    for (const a of accounts) {
-      const s = splitsFor(a)[i];
-      if (!s) continue;
-      debit += parseFloat(s.debitBalance || "0");
-      credit += parseFloat(s.creditBalance || "0");
-    }
-    return { debit, credit };
-  });
+  const totals = data ? trialBalanceTotals(data) : [];
+  const formatMoney = (value: bigint) => statementUiMoney(value, data!.currencyCode);
 
   return (
     <ContentReveal className="space-y-6">
@@ -104,8 +82,8 @@ export default function TrialBalancePage() {
         description="Every account's balance on a chosen date."
       >
         <ExportButton
-          data={accounts}
-          columns={["code", "name", "type", "debitBalance", "creditBalance"]}
+          data={accounts.map(row => ({ ...row, currencyCode: data!.currencyCode, debitBalance: row.debitBalanceMinor, creditBalance: row.creditBalanceMinor }))}
+          columns={["code", "name", "type", "currencyCode", "debitBalanceMinor", "creditBalanceMinor"]}
           filename="account-balances"
         />
       </PageHeader>
@@ -182,10 +160,10 @@ export default function TrialBalancePage() {
                     {splitsFor(a).map((s, i) => (
                       <Fragment key={i}>
                         <TableCell className="text-right font-mono tabular-nums">
-                          {parseFloat(s.debitBalance) > 0 ? parseFloat(s.debitBalance).toFixed(2) : ""}
+                          {s.debitBalance > 0n ? formatMoney(s.debitBalance) : ""}
                         </TableCell>
                         <TableCell className="text-right font-mono tabular-nums">
-                          {parseFloat(s.creditBalance) > 0 ? parseFloat(s.creditBalance).toFixed(2) : ""}
+                          {s.creditBalance > 0n ? formatMoney(s.creditBalance) : ""}
                         </TableCell>
                       </Fragment>
                     ))}
@@ -196,10 +174,10 @@ export default function TrialBalancePage() {
                   {totals.map((t, i) => (
                     <Fragment key={i}>
                       <TableCell className="text-right font-mono tabular-nums">
-                        {t.debit.toFixed(2)}
+                        {formatMoney(t.debit)}
                       </TableCell>
                       <TableCell className="text-right font-mono tabular-nums">
-                        {t.credit.toFixed(2)}
+                        {formatMoney(t.credit)}
                       </TableCell>
                     </Fragment>
                   ))}

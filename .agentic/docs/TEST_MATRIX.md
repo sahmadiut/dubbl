@@ -1,5 +1,24 @@
 # Verification matrix
 
+## MON-133 combined core UI acceptance
+
+- `tests/integration/core-ui-integration.test.ts` and worker: eight authenticated
+  REST/linked registered MCP workflows in disposable migrated PostgreSQL.
+  USD opening -> journal, taxed invoice -> bank CSV preview/import/match ->
+  payment/allocation/proof, expense/mileage -> approved cash GL, real VAT freeze/
+  settlement, exact account running pages and journal groups. EUR source/actual
+  base postings cover 0/2/3 scales without repeated FX.
+- SQL text checks every journal's balanced sides, saved FX/source units, low
+  digits and account/allocation amounts. Foreign reads, malformed/overflow/
+  conflicting writes and presentation preserve state. IRR tax filing and REST
+  different-scale legacy base display reject as before; MCP invoice-only and
+  numeric journal envelopes retain their separate contracts.
+- Jointly rerun six child UI transport suites, journal UI and combined payment/
+  expense/bank regressions; full pure/static React suite, typecheck, lint,
+  inventory/legacy guards, controller validation and diff checks.
+- DEC-005 source/layout review; no browser/build/dev/provider/production IRR or
+  independent accounting qualification. MON-129/MON-007/MON-008 remain separate.
+
 ## MON-152 account ledger and shared presentation
 
 - `tests/core-presentation-money.test.ts`: exact signed low digits and 0/2/3

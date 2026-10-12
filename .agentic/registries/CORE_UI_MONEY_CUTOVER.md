@@ -1,3 +1,61 @@
+## MON-133 combined core UI acceptance
+
+Independently verified 2026-10-12 after MON-147..152. This entry supersedes
+their earlier MON-133-pending statements; each child's detailed path ownership
+and compatibility policy below still applies. MON-129/MON-007 and auxiliary
+MON-008 acceptance remain separate. No production implementation repair was
+needed: the adopted adapters and registered REST/MCP operations compose.
+
+`tests/integration/core-ui-integration*` runs eight combined workflows, one
+REST-origin and one MCP-origin organization in USD/JPY/KWD/synthetic IRR, with
+one linked MCP session registering all core tool families per organization.
+Numeric USD opening preview/save/read feeds the explicitly USD journal view.
+A taxed invoice, bank-scale CSV preview/import and full-statement match feed
+payment/allocation views, statement proof and paginated account balances.
+Expense/mileage preview/create/submit/approve/pay preserves physical miles
+hundredths and exact cash GL. Real invoice VAT freezes through period filing
+and the same settlement preview drives cash posting in enabled currencies;
+IRR tax filing rejects without changing state. Synthetic IRR expense and bank
+workflows retain existing service behavior and do not enable production IRR.
+SQL text independently verifies low digits, allocations, every journal's sides,
+account net amounts, source tags and saved FX. Foreign reads, malformed/overflow/
+conflicting writes and presentation reads preserve organization snapshots.
+All six child transport suites and their pure/static React checks are jointly
+rerun for remaining UI contracts and negative cases.
+
+Source/base duty: a real EUR 1251-minor invoice at quote 0.3333 posts 417 USD,
+4 JPY/IRR or 4170 KWD base minor units, retaining EUR source tags. Journal UI
+uses amountCurrencyCode without repeated FX. REST's legacy invoice base-display
+envelope supports matching scales and rejects different scales with
+LEGACY_NUMERIC_RANGE; MCP retains its invoice-only envelope and source amount.
+This pre-existing read limit is retained rather than hidden by guessing units.
+Core source/base DualAmount callers pass validated bigint values; numeric
+compatibility callers outside this slice remain MON-008. Bank/base proof values
+remain separate and unlike-unit differences are withheld.
+
+MONEY_BOUNDARIES is a conservative lexical inventory. Its consumers join the
+explicit manifest/ownership rows as follows (paths under the dashboard):
+
+| Inventory consumer family | Owner / disposition |
+|---|---|
+| accounting/opening-balances and shared OpeningBalanceDrawer/form/details | MON-147; numeric USD cents exception |
+| sales/payments, accounting/banking/batches and scheduled | MON-148; cash allocations, sample groups, batch/remittance/schedule |
+| purchases/expenses ordinary/detail/recurring and ExpenseDrawer | MON-149; claim currency, physical mileage, recurring fixed-two gross exception |
+| accounting/banking account/detail/imports/transactions/reconcile, _components, bank account/transfer drawers; settings/bank-rules | MON-150; explicit bank/base currencies and raw rule minor units |
+| tax dashboard/periods/reports/currencies; settings/approval-workflows, general page and procurement | MON-151; exact money/rate/threshold controls, nonmoney configuration |
+| accounting journal list/detail; accounts list/detail/layout/settings; dashboard recent journals and AccountPicker | MON-152; exact amounts, grouped units, metadata-only pickers/settings |
+| Shared InvoiceAmountInput, DualAmount, SendDocumentDialog and document create-drawer sections | Existing MON-134..146 domain ownership; core callers use explicit currency/bigint; no standalone cash drawer |
+| settings advisors/API keys/cost centers/members/notifications/pipelines/reminders/roles/tags/trash/webhooks and navigation/layout | Metadata, permissions, dates, counts, IDs and nonmoney configuration; existing domain services |
+| settings audit-log/backups/import-export/document-templates/billing/integrations/stripe; remaining report/dashboard/auxiliary drawers | MON-008 and existing opaque/export/provider/domain contracts; outside core cash/tax/account closure |
+
+Recorded exceptions remain: safe numeric business coexistence, current-base raw
+GL aggregates/history, fixed-two REST journal aliases versus numeric MCP minor
+units, USD opening cents, fixed-two recurring payable prices, raw rule/approval
+thresholds and report mixed-currency rejection. No history is rescaled or amount
+inferred from locale/magnitude. English labels, alerts, decimal keyboard input,
+preview gating, org/request guards, scrolling and wrapping are preserved by
+source/static rendering review under DEC-005; no live browser effects claim.
+
 ## MON-152 account ledger and shared presentation
 
 Source verified 2026-10-12. `lib/money/core-presentation.ts` validates required

@@ -1,5 +1,14 @@
 # Exact money core
 
+MON-133 independently verifies the opening/payment/expense/bank/tax/account
+adapters through combined real REST, linked registered MCP and SQL fixtures.
+Source units, actual converted base postings and raw ledger views stay explicit;
+different-scale legacy REST invoice base display still rejects while MCP retains
+its invoice-only envelope. No production implementation or unit policy changed.
+See CORE_UI_MONEY_CUTOVER MON-133 for ownership and retained exceptions. This
+supersedes earlier MON-133-pending notes below; MON-129/MON-007/MON-008 and
+production financial qualification remain separate.
+
 MON-152 adopts account ledger/detail and journal list/dashboard/detail through
 `core-presentation.ts`: required agreeing Minor aliases, bigint loaded totals and
 explicit currency groups. `journal-presentation.ts` adds shared REST/MCP amount

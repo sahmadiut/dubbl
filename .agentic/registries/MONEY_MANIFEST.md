@@ -1,3 +1,14 @@
+## MON-133 combined core UI acceptance
+
+Independent combined REST/MCP/SQL acceptance joins MON-147..152 ownership and
+exact adapters without new operations or storage changes. Eight workflows cover
+USD/JPY/KWD/synthetic IRR opening, bank match/payment, expense/mileage cash GL,
+real VAT filing/settlement, account pages and journal groups, plus actual EUR
+source/base FX posting. See CORE_UI_MONEY_CUTOVER MON-133 for the inventory join
+and retained safe numeric, USD opening, recurring fixed-two, raw GL/history and
+cross-scale REST base-display exceptions. Earlier MON-133-pending prose is
+superseded; MON-129/MON-007/MON-008 and production qualification remain separate.
+
 ## MON-152 account ledger and shared presentation
 
 Account detail/ledger and journal list/dashboard/detail use core-presentation.ts

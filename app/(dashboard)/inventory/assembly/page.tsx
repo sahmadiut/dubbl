@@ -1,5 +1,6 @@
 "use client";
 
+import { inventoryUiAssembly } from "@/lib/money/inventory-ui";
 import { useState, useEffect } from "react";
 import { Cog, Play, CheckCircle2, XCircle, ClipboardList, ArrowRightLeft, BarChart3, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
@@ -33,6 +34,7 @@ const STATUS_BADGE: Record<string, string> = {
 export default function AssemblyOrdersPage() {
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [orders, setOrders] = useState<AssemblyOrder[]>([]);
+  const [readError, setReadError] = useState("");
   const [loading, setLoading] = useState(true);
   useDocumentTitle("Inventory · Assembly");
 
@@ -45,7 +47,9 @@ export default function AssemblyOrdersPage() {
     try {
       const res = await fetch("/api/v1/inventory/assembly-orders", { headers: getHeaders() });
       const data = await res.json();
-      if (data.data) setOrders(data.data);
+      if (data.data) setOrders(data.data.map(inventoryUiAssembly));
+    } catch {
+      setReadError("Unable to verify saved assembly data. Reload to retry.");
     } finally {
       setLoading(false);
     }
@@ -86,6 +90,7 @@ export default function AssemblyOrdersPage() {
   }
 
   if (loading) return <BrandLoader />;
+  if (readError) return <p role="alert">{readError}</p>;
 
   return (
     <ContentReveal>

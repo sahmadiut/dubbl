@@ -126,7 +126,7 @@ export async function listInventoryItems(ctx: AuthContext, input: unknown) {
     }).from(inventoryItem).where(itemScope(ctx));
     const totalValue = legacyMinor(BigInt(s.totalValue));
     const result = { data: items, pagination: { page: p.page, limit: p.limit, total: count.count, totalPages: Math.ceil(count.count / p.limit) },
-      categories: categories.map(c => c.category).filter(Boolean), summary: { totalItems: s.totalItems, totalValue, totalValueMinor: String(totalValue), lowStockCount: s.lowStockCount, avgMargin: Number(s.avgMargin) } };
+      categories: categories.map(c => c.category).filter(Boolean), summary: { totalItems: s.totalItems, totalValue, totalValueMinor: String(totalValue), lowStockCount: s.lowStockCount, avgMargin: Number(s.avgMargin), avgMarginExact: s.avgMargin } };
     stringifyWire(result); return result;
   }, { isolationLevel: "repeatable read", accessMode: "read only" });
 }

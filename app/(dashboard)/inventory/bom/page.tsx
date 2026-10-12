@@ -1,5 +1,6 @@
 "use client";
 
+import { inventoryUiBom } from "@/lib/money/inventory-ui";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Package, Plus, Trash2, MoreHorizontal, ExternalLink, Layers, Calculator, ListChecks } from "lucide-react";
@@ -35,6 +36,7 @@ export default function BOMListPage() {
   const router = useRouter();
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [boms, setBoms] = useState<BOM[]>([]);
+  const [readError, setReadError] = useState("");
   const [loading, setLoading] = useState(true);
   useDocumentTitle("Inventory · Bills of Materials");
 
@@ -46,7 +48,8 @@ export default function BOMListPage() {
   useEffect(() => {
     fetch("/api/v1/inventory/bom", { headers: getHeaders() })
       .then((r) => r.json())
-      .then((data) => { if (data.data) setBoms(data.data); })
+      .then((data) => { if (data.data) setBoms(data.data.map(inventoryUiBom)); })
+      .catch(() => setReadError("Unable to verify saved inventory data. Reload to retry."))
       .finally(() => setLoading(false));
   }, []);
 
@@ -66,6 +69,7 @@ export default function BOMListPage() {
   }
 
   if (loading) return <BrandLoader />;
+  if (readError) return <p role="alert">{readError}</p>;
 
   return (
     <ContentReveal>

@@ -10,7 +10,7 @@ import { createInventoryItem, getInventoryItem, updateInventoryItem, deleteInven
 export function registerInventoryMasterTools(server: McpServer, ctx: AuthContext) {
   const id = { inventoryItemId: catalogId.describe("Live organization-owned inventory item UUID") };
   const cents = "Prices are nonnegative integer cents or matching canonical *Minor strings, max 9007199254740991. Outputs retain numeric money and add *Minor strings; quantities are whole physical units. ";
-  server.registerTool("list_inventory_items", { description: "List owned live inventory items. " + cents + "Returns items, total, page, limit, categories and unfiltered summary; summary.totalValue is quantity times purchasePrice, not book value. Active-only default preserved.",
+  server.registerTool("list_inventory_items", { description: "List owned live inventory items. " + cents + "Returns items, total, page, limit, categories and unfiltered summary; summary.totalValue is quantity times purchasePrice, not book value. summary.avgMarginExact is SQL decimal percent text for exact rounding; avgMargin remains the numeric compatibility alias. Active-only default preserved.",
     inputSchema: itemListSchema.extend({ activeOnly: z.boolean().default(true).describe("Default true filters active items when status is omitted; false includes inactive") }) }, args => wrapTool(ctx, async () => {
       const { activeOnly, ...p } = args; const r = await listInventoryItems(ctx, { ...p, status: p.status ?? (activeOnly ? "active" : undefined) });
       return { items: r.data, total: r.pagination.total, page: r.pagination.page, limit: r.pagination.limit, categories: r.categories, summary: r.summary };

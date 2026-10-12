@@ -22,6 +22,7 @@ import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { cn } from "@/lib/utils";
+import { inventoryUiValuation, inventoryPercent, inventoryShare, inventoryValuationMarginCompare } from "@/lib/money/inventory-ui";
 import { money, toMajorDecimal } from "@/lib/money/exact";
 import { motion } from "motion/react";
 
@@ -32,20 +33,30 @@ interface ValuationItem {
   category: string | null;
   quantityOnHand: number;
   unitCost: number;
+  unitCostMinor: string;
   salePrice: number;
+  salePriceMinor: string;
   totalCost: number;
+  totalCostMinor: string;
   totalValue: number;
+  totalValueMinor: string;
   marginPercent: number;
+  margin: number; marginMinor: string;
+  averageCost: number; averageCostMinor: string;
   carryingValue: number;
+  carryingValueMinor: string;
   currencyCode: string;
 }
 
 interface ValuationSummary {
   totalItems: number;
   totalCost: number;
+  totalCostMinor: string;
   totalValue: number;
+  totalValueMinor: string;
   totalMargin: number;
   carryingValue: number;
+  carryingValueMinor: string;
   currencyCode: string;
 }
 
@@ -79,12 +90,13 @@ export default function InventoryValuationPage() {
   const [items, setItems] = useState<ValuationItem[]>([]);
   const [summary, setSummary] = useState<ValuationSummary>({
     totalItems: 0,
-    totalCost: 0,
-    totalValue: 0,
+    totalCost: 0, totalCostMinor: "0",
+    totalValue: 0, totalValueMinor: "0",
     totalMargin: 0,
-    carryingValue: 0,
+    carryingValue: 0, carryingValueMinor: "0",
     currencyCode: "USD",
   });
+  const [readError, setReadError] = useState("");
   const [loading, setLoading] = useState(true);
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
@@ -106,9 +118,12 @@ export default function InventoryValuationPage() {
       .then((r) => r.json())
       .then((data) => {
         if (cancelled) return;
-        if (data.items) setItems(data.items);
-        if (data.summary) setSummary(data.summary);
+        inventoryUiValuation(data);
+        setItems(data.items);
+        setSummary(data.summary);
+        setReadError("");
       })
+      .catch(() => { if (!cancelled) setReadError("Unable to verify saved inventory valuation. Reload to retry."); })
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
@@ -141,6 +156,9 @@ export default function InventoryValuationPage() {
   });
 
   const sortedItems = [...filteredItems].sort((a, b) => {
+    if (sortKey === "marginPercent") {
+      return inventoryValuationMarginCompare(a, b) * (sortOrder === "asc" ? 1 : -1);
+    }
     const aVal = a[sortKey];
     const bVal = b[sortKey];
     const dir = sortOrder === "asc" ? 1 : -1;
@@ -152,7 +170,7 @@ export default function InventoryValuationPage() {
     if (typeof aVal === "string" && typeof bVal === "string") {
       return aVal.localeCompare(bVal) * dir;
     }
-    return ((aVal as number) - (bVal as number)) * dir;
+    return (aVal < bVal ? -1 : aVal > bVal ? 1 : 0) * dir;
   });
 
   function exportCsv() {
@@ -174,13 +192,13 @@ export default function InventoryValuationPage() {
       i.name,
       i.category || "",
       i.quantityOnHand,
-      toMajorDecimal(money(BigInt(i.unitCost), i.currencyCode)),
-      toMajorDecimal(money(BigInt(i.totalCost), i.currencyCode)),
-      toMajorDecimal(money(BigInt(i.carryingValue), i.currencyCode)),
+      toMajorDecimal(money(BigInt(i.unitCostMinor), i.currencyCode)),
+      toMajorDecimal(money(BigInt(i.totalCostMinor), i.currencyCode)),
+      toMajorDecimal(money(BigInt(i.carryingValueMinor), i.currencyCode)),
       i.currencyCode,
-      toMajorDecimal(money(BigInt(i.salePrice), i.currencyCode)),
-      toMajorDecimal(money(BigInt(i.totalValue), i.currencyCode)),
-      i.marginPercent.toFixed(1),
+      toMajorDecimal(money(BigInt(i.salePriceMinor), i.currencyCode)),
+      toMajorDecimal(money(BigInt(i.totalValueMinor), i.currencyCode)),
+      inventoryPercent(BigInt(i.marginMinor), BigInt(i.totalCostMinor)),
     ]);
     const csv = [headers, ...rows]
       .map((r) =>
@@ -198,19 +216,20 @@ export default function InventoryValuationPage() {
   }
 
   if (loading) return <BrandLoader />;
+  if (readError) return <p role="alert">{readError}</p>;
 
   const formatMoney = (amount: number | bigint) => `${summary.currencyCode} ${toMajorDecimal(money(BigInt(amount), summary.currencyCode))}`;
-  const profitAmount = BigInt(summary.totalValue) - BigInt(summary.totalCost);
+  const profitAmount = BigInt(summary.totalValueMinor) - BigInt(summary.totalCostMinor);
 
   const stats = [
     { label: "Total Items", value: String(summary.totalItems), icon: Package },
-    { label: "Book value", value: formatMoney(summary.carryingValue), icon: DollarSign },
-    { label: "What it could sell for", value: formatMoney(summary.totalValue), icon: BarChart3, color: "text-emerald-600 dark:text-emerald-400" },
+    { label: "Book value", value: formatMoney(BigInt(summary.carryingValueMinor)), icon: DollarSign },
+    { label: "What it could sell for", value: formatMoney(BigInt(summary.totalValueMinor)), icon: BarChart3, color: "text-emerald-600 dark:text-emerald-400" },
     {
       label: "Avg profit margin",
-      value: summary.totalMargin > 0 ? `${summary.totalMargin.toFixed(1)}%` : "-",
+      value: (BigInt(summary.totalCostMinor) > 0n && profitAmount > 0n) ? `${inventoryPercent(profitAmount, BigInt(summary.totalCostMinor))}%` : "-",
       icon: TrendingUp,
-      color: summary.totalMargin > 0 ? "text-emerald-600 dark:text-emerald-400" : undefined,
+      color: (BigInt(summary.totalCostMinor) > 0n && profitAmount > 0n) ? "text-emerald-600 dark:text-emerald-400" : undefined,
     },
   ];
 
@@ -261,11 +280,11 @@ export default function InventoryValuationPage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-xs text-muted-foreground mb-0.5">Purchase price value</p>
-              <p className="text-2xl font-bold font-mono tabular-nums truncate">{formatMoney(summary.totalCost)}</p>
+              <p className="text-2xl font-bold font-mono tabular-nums truncate">{formatMoney(BigInt(summary.totalCostMinor))}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground mb-0.5">What it could sell for</p>
-              <p className="text-2xl font-bold font-mono tabular-nums truncate text-emerald-600 dark:text-emerald-400">{formatMoney(summary.totalValue)}</p>
+              <p className="text-2xl font-bold font-mono tabular-nums truncate text-emerald-600 dark:text-emerald-400">{formatMoney(BigInt(summary.totalValueMinor))}</p>
             </div>
           </div>
           {/* Margin bar */}
@@ -274,17 +293,17 @@ export default function InventoryValuationPage() {
               <div className="flex h-2 rounded-full overflow-hidden bg-muted">
                 <div
                   className="bg-emerald-500 transition-all duration-500"
-                  style={{ width: `${Math.min((summary.totalCost / summary.totalValue) * 100, 100)}%` }}
+                  style={{ width: `${inventoryShare(BigInt(summary.totalCostMinor), BigInt(summary.totalValueMinor))}%` }}
                 />
                 {profitAmount > 0 && (
                   <div
                     className="bg-emerald-300 dark:bg-emerald-700 transition-all duration-500"
-                    style={{ width: `${(Number(profitAmount) / summary.totalValue) * 100}%` }}
+                    style={{ width: `${inventoryShare(profitAmount, BigInt(summary.totalValueMinor))}%` }}
                   />
                 )}
               </div>
               <div className="flex items-center gap-4 text-[11px] text-muted-foreground">
-                <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-emerald-500" />Cost ({formatMoney(summary.totalCost)})</span>
+                <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-emerald-500" />Cost ({formatMoney(BigInt(summary.totalCostMinor))})</span>
                 <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-emerald-300 dark:bg-emerald-700" />Profit ({formatMoney(profitAmount)})</span>
               </div>
             </div>
@@ -425,31 +444,31 @@ export default function InventoryValuationPage() {
                     {item.quantityOnHand}
                   </td>
                   <td className="px-4 py-3 text-right font-mono tabular-nums">
-                    {formatMoney(item.unitCost)}
+                    {formatMoney(BigInt(item.unitCostMinor))}
                   </td>
                   <td className="px-4 py-3 text-right font-mono tabular-nums">
-                    {formatMoney(item.totalCost)}
+                    {formatMoney(BigInt(item.totalCostMinor))}
                   </td>
                   <td className="px-4 py-3 text-right font-mono tabular-nums">
-                    {formatMoney(item.carryingValue)}
+                    {formatMoney(BigInt(item.carryingValueMinor))}
                   </td>
                   <td className="px-4 py-3 text-right font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
-                    {formatMoney(item.salePrice)}
+                    {formatMoney(BigInt(item.salePriceMinor))}
                   </td>
                   <td className="px-4 py-3 text-right font-mono tabular-nums font-medium">
-                    {formatMoney(item.totalValue)}
+                    {formatMoney(BigInt(item.totalValueMinor))}
                   </td>
                   <td
                     className={cn(
                       "px-4 py-3 text-right font-mono tabular-nums",
-                      item.marginPercent > 0
+                      (BigInt(item.totalCostMinor) > 0n && BigInt(item.marginMinor) > 0n)
                         ? "text-emerald-600 dark:text-emerald-400"
-                        : item.marginPercent < 0
+                        : (BigInt(item.totalCostMinor) > 0n && BigInt(item.marginMinor) < 0n)
                           ? "text-red-600 dark:text-red-400"
                           : "text-muted-foreground"
                     )}
                   >
-                    {item.marginPercent.toFixed(1)}%
+                    {inventoryPercent(BigInt(item.marginMinor), BigInt(item.totalCostMinor))}%
                   </td>
                 </tr>
               ))}

@@ -1545,3 +1545,20 @@ MON-090: `tests/loan-wire.test.ts` covers distinct REST major/MCP minor units, a
   fixtures retain permission/tenant/period/cost-method negative coverage.
 - English source accessibility/large-value wrapping review; no live browser claim,
   production IRR, modernized inventory currency or full-int64 business scope.
+
+## MON-154 remaining inventory UI consumers
+
+- tests/inventory-ui-money.test.ts: required canonical/safe agreeing saved money,
+  distinct book/projections and low digits, nullable/signed aliases, exact products
+  and summary/currency validation, signed half-away ties, clamped chart shares,
+  SQL decimal average margin, BOM physical-decimal cost composition, strict inputs
+  and scoped source guards for every adopted consumer.
+- tests/integration/inventory-ui-money.test.ts and worker: real authenticated REST,
+  linked registered MCP and SQL-text assertions across six USD/JPY/KWD workflows,
+  both create origins; list summary, valuation, variant/supplier/history, BOM and
+  assembly, stock-take applied signed costs, rejected alias-conflict snapshots and
+  balanced GL. Existing catalog/master/movements/valuation/assembly regressions
+  cover tenant/role/period/FIFO/atomicity/range policy. Disposable loopback only.
+- MON-008 parent combined acceptance remains open; no full build, dev server,
+  Docker, provider or production actions. Source/accessibility review under DEC-005,
+  no claim of live browser verification.

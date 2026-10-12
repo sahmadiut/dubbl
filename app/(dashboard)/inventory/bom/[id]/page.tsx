@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { inventoryUiBomDetail } from "@/lib/money/inventory-ui";
+import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { Package, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -44,8 +45,14 @@ interface BOMDetail {
 export default function BOMDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [data, setData] = useState<BOMDetail | null>(null);
+  const [readError, setReadError] = useState("");
   const [loading, setLoading] = useState(true);
   useDocumentTitle("Inventory · BOM Details");
+
+  const adoptBom = useCallback((result: BOMDetail) => {
+    try { setData(inventoryUiBomDetail(result)); setReadError(""); }
+    catch { setData(null); setReadError("Unable to verify saved BOM money. Reload to retry."); }
+  }, []);
 
   function getHeaders() {
     const orgId = localStorage.getItem("activeOrgId") || "";
@@ -55,9 +62,10 @@ export default function BOMDetailPage() {
   useEffect(() => {
     fetch(`/api/v1/inventory/bom/${id}`, { headers: getHeaders() })
       .then((r) => r.json())
-      .then((result) => { if (result.bom) setData(result); else toast.error(result.error || "Unable to load BOM"); })
+      .then((result) => { if (result.bom) adoptBom(result); else toast.error(result.error || "Unable to load BOM"); })
+      .catch(() => setReadError("Unable to verify saved BOM money. Reload to retry."))
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, adoptBom]);
 
   async function removeComponent(componentId: string) {
     const removal = await fetch(`/api/v1/inventory/bom/${id}/components?componentId=${componentId}`, {
@@ -69,10 +77,11 @@ export default function BOMDetailPage() {
     // Refetch
     const res = await fetch(`/api/v1/inventory/bom/${id}`, { headers: getHeaders() });
     const result = await res.json();
-    if (result.bom) setData(result); else toast.error(result.error || "Unable to reload BOM");
+    if (result.bom) adoptBom(result); else toast.error(result.error || "Unable to reload BOM");
   }
 
   if (loading) return <BrandLoader />;
+  if (readError) return <p role="alert">{readError}</p>;
   if (!data) return <div className="py-20 text-center text-sm text-muted-foreground">BOM not found</div>;
 
   const { bom, costBreakdown } = data;

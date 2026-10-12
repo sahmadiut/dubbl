@@ -1,3 +1,13 @@
+## MON-154 remaining inventory consumer cutover
+
+[INVENTORY_UI_CUTOVER](INVENTORY_UI_CUTOVER.md) maps list/detail/history/catalog,
+valuation/BOM/assembly, stock-take/transfer and shared drawer/picker consumers to
+validated exact aliases, bigint monetary arithmetic and retained unit exceptions.
+The list adds shared REST/MCP SQL decimal avgMarginExact; valuation sorts/rounds
+ratios and charts exactly, and book value never falls back to a price projection.
+Six real REST/MCP/SQL workflows plus inventory regressions verify raw USD/JPY/KWD
+units and negative cases. MON-008 retains independent combined acceptance.
+
 ## MON-153 inventory detail/write-down consumer cutover
 
 [INVENTORY_DETAIL_UI_CUTOVER](INVENTORY_DETAIL_UI_CUTOVER.md) maps the item layout,

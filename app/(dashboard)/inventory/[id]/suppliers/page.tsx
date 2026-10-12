@@ -1,5 +1,6 @@
 "use client";
 
+import { inventoryUiCatalog } from "@/lib/money/inventory-ui";
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
@@ -29,6 +30,7 @@ export default function InventoryItemSuppliersPage() {
   const { id } = useParams<{ id: string }>();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [suppliers, setSuppliers] = useState<any[]>([]);
+  const [readError, setReadError] = useState("");
   const [loading, setLoading] = useState(true);
   const { confirm, dialog: confirmDialog } = useConfirm();
 
@@ -48,7 +50,8 @@ export default function InventoryItemSuppliersPage() {
       headers: { "x-organization-id": orgId },
     })
       .then((r) => r.json())
-      .then((data) => { if (data.data) setSuppliers(data.data); })
+      .then((data) => { if (data.data) setSuppliers(data.data.map(inventoryUiCatalog)); })
+      .catch(() => setReadError("Unable to verify saved inventory data. Reload to retry."))
       .finally(() => setLoading(false));
   }
 
@@ -121,6 +124,7 @@ export default function InventoryItemSuppliersPage() {
   }
 
   if (loading) return <BrandLoader />;
+  if (readError) return <p role="alert">{readError}</p>;
 
   return (
     <>

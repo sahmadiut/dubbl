@@ -18,6 +18,8 @@ import {
   SheetDescription,
   SheetFooter,
 } from "@/components/ui/sheet";
+import { inventoryUiItem } from "@/lib/money/inventory-ui";
+import { inventoryDetailMoney } from "@/lib/money/inventory-detail-ui";
 import { catalogPriceMinor, catalogWholeInput } from "@/lib/money/catalog-input";
 import { toMajorDecimal } from "@/lib/money/exact";
 import { bankMoneyDisplay } from "@/lib/money/bank-display";
@@ -44,8 +46,8 @@ export default function InventoryItemDetailsPage() {
   const { item, setItem } = useInventoryItem();
   const [saving, setSaving] = useState(false);
   const [categoryId, setCategoryId] = useState(item.categoryId || "");
-  const [invPurchasePrice, setInvPurchasePrice] = useState(toMajorDecimal({ amountMinor: BigInt(item.purchasePrice), currency: "USD" }));
-  const [invSalePrice, setInvSalePrice] = useState(toMajorDecimal({ amountMinor: BigInt(item.salePrice), currency: "USD" }));
+  const [invPurchasePrice, setInvPurchasePrice] = useState(toMajorDecimal({ amountMinor: BigInt(item.purchasePriceMinor), currency: "USD" }));
+  const [invSalePrice, setInvSalePrice] = useState(toMajorDecimal({ amountMinor: BigInt(item.salePriceMinor), currency: "USD" }));
   const [warehouseStocks, setWarehouseStocks] = useState<WarehouseStockEntry[]>([]);
   // "Revalue stock" sheet: set the book value directly (mark-to-market) without
   // changing the count.
@@ -95,7 +97,8 @@ export default function InventoryItemDetailsPage() {
 
       if (!res.ok) throw new Error("Failed to update");
       const data = await res.json();
-      setItem(() => data.inventoryItem);
+      const updated = inventoryUiItem(data.inventoryItem);
+      setItem(() => updated);
       setEntityTitle(data.inventoryItem.name);
       toast.success("Item updated");
     } catch {
@@ -123,7 +126,7 @@ export default function InventoryItemDetailsPage() {
     router.push("/inventory");
   }
 
-  const currentBookValue = item.totalValue ?? BigInt(item.quantityOnHand) * BigInt(item.purchasePrice);
+  const currentBookValue = inventoryDetailMoney(item).carrying;
 
   function openRevalue() {
     // Pre-fill with the current value so the user adjusts from a known starting point.
@@ -168,7 +171,8 @@ export default function InventoryItemDetailsPage() {
         throw new Error(data.error || "Couldn't revalue the stock");
       }
       const data = await res.json();
-      setItem(() => data.inventoryItem);
+      const updated = inventoryUiItem(data.inventoryItem);
+      setItem(() => updated);
       setRevalueOpen(false);
       setRevalueValue("");
       setRevalueReason("");

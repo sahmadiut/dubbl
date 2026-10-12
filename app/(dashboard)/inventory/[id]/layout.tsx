@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/sheet";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
+import { catalogWholeInput } from "@/lib/money/catalog-input";
 import { inventoryDetailMoney, inventoryWriteDown } from "@/lib/money/inventory-detail-ui";
 import { bankMoneyDisplay } from "@/lib/money/bank-display";
 const formatMoney = (value: number | bigint) => bankMoneyDisplay(value, "USD");
@@ -139,7 +140,9 @@ function InventoryItemWorkspace({ children, id, orgId }: { children: React.React
 
   async function handleAdjust() {
     if (!orgId) return;
-    const adj = parseInt(adjustment);
+    let adj: number | undefined;
+    try { adj = catalogWholeInput(adjustment, true); }
+    catch { toast.error("Enter a signed whole-unit adjustment"); return; }
     if (!adj || !adjustReason.trim()) {
       toast.error("Enter a valid adjustment and reason");
       return;

@@ -1,5 +1,6 @@
 "use client";
 
+import { inventoryUiStockTake, inventoryUiStockTakeLine } from "@/lib/money/inventory-ui";
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence, MotionConfig } from "motion/react";
@@ -208,6 +209,7 @@ export default function StockTakeDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [stockTake, setStockTake] = useState<StockTakeDetail | null>(null);
+  const [readError, setReadError] = useState("");
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [blindMode, setBlindMode] = useState(false);
@@ -234,8 +236,9 @@ export default function StockTakeDetailPage() {
     })
       .then((r) => r.json())
       .then((data) => {
-        if (data.stockTake) setStockTake(data.stockTake);
+        if (data.stockTake) setStockTake(inventoryUiStockTake(data.stockTake));
       })
+      .catch(() => setReadError("Unable to verify saved stock take data. Reload to retry."))
       .finally(() => setLoading(false));
   }, [id, orgId]);
 
@@ -253,7 +256,7 @@ export default function StockTakeDetailPage() {
       });
       if (!res.ok) throw new Error("Failed to start count");
       const data = await res.json();
-      setStockTake(data.stockTake);
+      setStockTake(inventoryUiStockTake(data.stockTake));
       toast.success("Stock take started");
     } catch (err) {
       toast.error(
@@ -293,9 +296,9 @@ export default function StockTakeDetailPage() {
       });
       if (refetch.ok) {
         const fresh = await refetch.json();
-        if (fresh.stockTake) setStockTake(fresh.stockTake);
+        if (fresh.stockTake) setStockTake(inventoryUiStockTake(fresh.stockTake));
       } else if (data.stockTake) {
-        setStockTake(data.stockTake);
+        setStockTake(inventoryUiStockTake(data.stockTake));
       }
 
       const count = typeof data.adjustedCount === "number" ? data.adjustedCount : 0;
@@ -335,7 +338,7 @@ export default function StockTakeDetailPage() {
       });
       if (!res.ok) throw new Error("Failed to cancel");
       const data = await res.json();
-      setStockTake(data.stockTake);
+      setStockTake(inventoryUiStockTake(data.stockTake));
       toast.success("Stock take cancelled");
     } catch (err) {
       toast.error(
@@ -410,6 +413,7 @@ export default function StockTakeDetailPage() {
       );
       if (!res.ok) throw new Error("Failed to update line");
       const data = await res.json();
+      inventoryUiStockTakeLine(data.line);
 
       setStockTake((prev) => {
         if (!prev) return prev;
@@ -436,7 +440,7 @@ export default function StockTakeDetailPage() {
       })
         .then((r) => r.json())
         .then((data) => {
-          if (data.stockTake) setStockTake(data.stockTake);
+          if (data.stockTake) setStockTake(inventoryUiStockTake(data.stockTake));
         });
     } finally {
       setSavingLines((prev) => {
@@ -523,6 +527,7 @@ export default function StockTakeDetailPage() {
   }, [lines, debouncedSearch, lineFilter, sortBy, sortOrder]);
 
   if (loading) return <BrandLoader />;
+  if (readError) return <p role="alert">{readError}</p>;
 
   if (!stockTake) {
     return (

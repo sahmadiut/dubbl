@@ -1,5 +1,6 @@
 "use client";
 
+import { inventoryUiCatalog } from "@/lib/money/inventory-ui";
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
@@ -27,6 +28,7 @@ export default function InventoryItemVariantsPage() {
   const { id } = useParams<{ id: string }>();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [variants, setVariants] = useState<any[]>([]);
+  const [readError, setReadError] = useState("");
   const [loading, setLoading] = useState(true);
 
   const [addOpen, setAddOpen] = useState(false);
@@ -45,7 +47,8 @@ export default function InventoryItemVariantsPage() {
       headers: { "x-organization-id": orgId },
     })
       .then((r) => r.json())
-      .then((data) => { if (data.data) setVariants(data.data); })
+      .then((data) => { if (data.data) setVariants(data.data.map(inventoryUiCatalog)); })
+      .catch(() => setReadError("Unable to verify saved inventory data. Reload to retry."))
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -75,7 +78,8 @@ export default function InventoryItemVariantsPage() {
       }
 
       const data = await res.json();
-      setVariants((prev) => [...prev, data.inventoryVariant]);
+      const variant = inventoryUiCatalog(data.inventoryVariant);
+      setVariants((prev) => [...prev, variant]);
       setAddOpen(false);
       setName("");
       setSku("");
@@ -89,6 +93,7 @@ export default function InventoryItemVariantsPage() {
   }
 
   if (loading) return <BrandLoader />;
+  if (readError) return <p role="alert">{readError}</p>;
 
   return (
     <>

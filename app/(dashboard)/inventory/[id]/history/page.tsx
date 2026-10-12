@@ -1,5 +1,6 @@
 "use client";
 
+import { inventoryUiMovement } from "@/lib/money/inventory-ui";
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { Clock, ArrowUpDown } from "lucide-react";
@@ -25,6 +26,7 @@ export default function InventoryItemHistoryPage() {
   const { id } = useParams<{ id: string }>();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [movements, setMovements] = useState<any[]>([]);
+  const [readError, setReadError] = useState("");
   const [loading, setLoading] = useState(true);
   useDocumentTitle("Inventory · Stock History");
 
@@ -36,11 +38,13 @@ export default function InventoryItemHistoryPage() {
       headers: { "x-organization-id": orgId },
     })
       .then((r) => r.json())
-      .then((data) => { if (data.data) setMovements(data.data); })
+      .then((data) => { if (data.data) setMovements(data.data.map(inventoryUiMovement)); })
+      .catch(() => setReadError("Unable to verify saved inventory data. Reload to retry."))
       .finally(() => setLoading(false));
   }, [id]);
 
   if (loading) return <BrandLoader />;
+  if (readError) return <p role="alert">{readError}</p>;
 
   if (movements.length === 0) {
     return (

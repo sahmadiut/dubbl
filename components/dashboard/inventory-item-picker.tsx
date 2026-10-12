@@ -1,5 +1,6 @@
 "use client";
 
+import { inventoryUiItem } from "@/lib/money/inventory-ui";
 import { useState, useEffect, useRef } from "react";
 import { Check, ChevronsUpDown, Loader2, Package } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -35,8 +36,11 @@ interface InventoryItemPickerProps {
 
 export function InventoryItemPicker({ value, onChange, placeholder = "Select item..." }: InventoryItemPickerProps) {
   const [open, setOpen] = useState(false);
+  const [itemsOrg, setItemsOrg] = useState<string | null>(null);
+  const [selectedOrg, setSelectedOrg] = useState<string | null>(null);
   const [items, setItems] = useState<InventoryItemOption[]>([]);
   const [selected, setSelected] = useState<InventoryItemOption | null>(null);
+  const [readError, setReadError] = useState("");
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search);
@@ -48,6 +52,7 @@ export function InventoryItemPicker({ value, onChange, placeholder = "Select ite
   useEffect(() => {
     if (!open || !orgId) return;
     const id = ++fetchIdRef.current;
+    let cancelled = false;
     const params = new URLSearchParams({ limit: "50" });
     if (debouncedSearch) params.set("search", debouncedSearch);
     // Only show loading for search changes, not the initial open (handled by onOpenChange)
@@ -56,37 +61,45 @@ export function InventoryItemPicker({ value, onChange, placeholder = "Select ite
     })
       .then((r) => r.json())
       .then((data) => {
-        if (id === fetchIdRef.current && data.data) {
-          setItems(data.data);
+        if (!cancelled && id === fetchIdRef.current) {
+          if (!Array.isArray(data.data)) throw new Error("Items unavailable");
+          setItems(data.data.map(inventoryUiItem));
+          setItemsOrg(orgId);
+          setReadError("");
           setLoading(false);
         }
       })
       .catch(() => {
-        if (id === fetchIdRef.current) setLoading(false);
+        if (!cancelled && id === fetchIdRef.current) { setLoading(false); setItems([]); setReadError("Unable to verify inventory items."); }
       });
+    return () => { cancelled = true; };
   }, [open, debouncedSearch, orgId]);
 
   // Resolve the selected item label if we have a value but no match yet
-  const resolvedRef = useRef<string | null>(null);
   useEffect(() => {
     if (!value || !orgId) return;
-    if (items.find((i) => i.id === value)) return;
-    if (resolvedRef.current === value) return;
+    if (itemsOrg === orgId && items.find((i) => i.id === value)) return;
+    if (selectedOrg === orgId && selected?.id === value) return;
     let cancelled = false;
-    resolvedRef.current = value;
     fetch(`/api/v1/inventory/${value}`, {
       headers: { "x-organization-id": orgId },
     })
       .then((r) => r.json())
       .then((data) => {
-        if (!cancelled && data.inventoryItem) setSelected(data.inventoryItem);
+        if (!cancelled) {
+          if (!data.inventoryItem) throw new Error("Item unavailable");
+          setSelected(inventoryUiItem(data.inventoryItem));
+          setSelectedOrg(orgId);
+          setReadError("");
+        }
       })
-      .catch(() => {});
+      .catch(() => { if (!cancelled) { setSelected(null); setReadError("Unable to verify selected item."); } });
     return () => { cancelled = true; };
-  }, [value, items, orgId]);
+  }, [value, items, itemsOrg, orgId, selected, selectedOrg]);
 
   // Derive selected from items list or keep the fetched resolution
-  const selectedItem = !value ? null : items.find((i) => i.id === value) || selected;
+  const availableItems = itemsOrg === orgId ? items : [];
+  const selectedItem = !value ? null : availableItems.find((i) => i.id === value) || (selectedOrg === orgId && selected?.id === value ? selected : null);
 
   function handleOpenChange(nextOpen: boolean) {
     setOpen(nextOpen);
@@ -124,11 +137,12 @@ export function InventoryItemPicker({ value, onChange, placeholder = "Select ite
             onValueChange={(v) => { setSearch(v); setLoading(true); }}
           />
           <CommandList>
+            {readError && <p role="alert" className="p-3 text-sm">{readError}</p>}
             {loading ? (
               <div className="flex items-center justify-center py-6">
                 <Loader2 className="size-4 animate-spin text-muted-foreground" />
               </div>
-            ) : items.length === 0 ? (
+            ) : availableItems.length === 0 ? (
               <CommandEmpty>
                 <div className="flex flex-col items-center gap-1.5 py-2">
                   <Package className="size-4 text-muted-foreground" />
@@ -139,7 +153,7 @@ export function InventoryItemPicker({ value, onChange, placeholder = "Select ite
               </CommandEmpty>
             ) : (
               <CommandGroup>
-                {items.map((item) => (
+                {availableItems.map((item) => (
                   <CommandItem
                     key={item.id}
                     value={item.id}

@@ -1,5 +1,6 @@
 "use client";
 
+import { inventoryUiItem, inventoryUiListSummary, inventoryAverageMargin } from "@/lib/money/inventory-ui";
 import { catalogWholeInput } from "@/lib/money/catalog-input";
 import { toMajorDecimal, money } from "@/lib/money/exact";
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -74,7 +75,9 @@ interface InventoryItem {
   category: string | null;
   sku: string | null;
   purchasePrice: number;
+  purchasePriceMinor: string;
   salePrice: number;
+  salePriceMinor: string;
   quantityOnHand: number;
   reorderPoint: number;
   isActive: boolean;
@@ -99,13 +102,14 @@ export default function InventoryPage() {
   const { open: openDrawer } = useCreateDrawer();
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [items, setItems] = useState<InventoryItem[]>([]);
+  const [readError, setReadError] = useState("");
   const [loading, setLoading] = useState(true);
   const [refetching, setRefetching] = useState(false);
   const [fetchKey, setFetchKey] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
-  const [summary, setSummary] = useState({ totalItems: 0, totalValue: 0, lowStockCount: 0, avgMargin: 0 });
+  const [summary, setSummary] = useState({ totalItems: 0, totalValue: 0, totalValueMinor: "0", lowStockCount: 0, avgMargin: 0, avgMarginExact: "0" });
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<FilterTab>("all");
   const [sortBy, setSortBy] = useState<SortKey>("createdAt");
@@ -201,14 +205,16 @@ export default function InventoryPage() {
       .then((r) => r.json())
       .then((data) => {
         if (cancelled) return;
+        setReadError("");
         if (data.data) {
-          setItems(data.data);
+          setItems(data.data.map(inventoryUiItem));
           setTotalCount(data.pagination?.total || 0);
           setHasMore((data.pagination?.page || 1) < (data.pagination?.totalPages || 1));
         }
         if (data.categories) setCategories(data.categories);
-        if (data.summary) setSummary(data.summary);
+        if (data.summary) setSummary(inventoryUiListSummary(data.summary));
       })
+      .catch(() => { if (!cancelled) setReadError("Unable to verify saved inventory money. Reload to retry."); })
       .finally(() => { if (!cancelled) { setLoading(false); setRefetching(false); setFetchKey((k) => k + 1); } });
 
     return () => { cancelled = true; };
@@ -225,11 +231,12 @@ export default function InventoryPage() {
       .then((r) => r.json())
       .then((data) => {
         if (data.data) {
-          setItems((prev) => [...prev, ...data.data]);
+          setItems((prev) => [...prev, ...data.data.map(inventoryUiItem)]);
           pageRef.current = nextPage;
           setHasMore(nextPage < (data.pagination?.totalPages || 1));
         }
       })
+      .catch(() => setReadError("Unable to verify saved inventory money. Reload to retry."))
       .finally(() => setLoadingMore(false));
   }, [orgId, loadingMore, hasMore, buildUrl]);
 
@@ -293,12 +300,12 @@ export default function InventoryPage() {
       const refreshRes = await fetch(buildUrl(1), { headers: { "x-organization-id": orgId } });
       const refreshData = await refreshRes.json();
       if (refreshData.data) {
-        setItems(refreshData.data);
+        setItems(refreshData.data.map(inventoryUiItem));
         setTotalCount(refreshData.pagination?.total || 0);
         setHasMore((refreshData.pagination?.page || 1) < (refreshData.pagination?.totalPages || 1));
       }
       if (refreshData.categories) setCategories(refreshData.categories);
-      if (refreshData.summary) setSummary(refreshData.summary);
+      if (refreshData.summary) setSummary(inventoryUiListSummary(refreshData.summary));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Bulk action failed");
     } finally {
@@ -325,8 +332,8 @@ export default function InventoryPage() {
       i.sku || "",
       i.quantityOnHand,
       i.reorderPoint,
-      toMajorDecimal(money(BigInt(i.purchasePrice), "USD")),
-      toMajorDecimal(money(BigInt(i.salePrice), "USD")),
+      toMajorDecimal(money(BigInt(i.purchasePriceMinor), "USD")),
+      toMajorDecimal(money(BigInt(i.salePriceMinor), "USD")),
       i.isActive ? "Active" : "Inactive",
     ]);
     const csv = [headers, ...rows].map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
@@ -361,12 +368,12 @@ export default function InventoryPage() {
       const refreshRes = await fetch(buildUrl(1), { headers: { "x-organization-id": orgId } });
       const refreshData = await refreshRes.json();
       if (refreshData.data) {
-        setItems(refreshData.data);
+        setItems(refreshData.data.map(inventoryUiItem));
         setTotalCount(refreshData.pagination?.total || 0);
         setHasMore((refreshData.pagination?.page || 1) < (refreshData.pagination?.totalPages || 1));
       }
       if (refreshData.categories) setCategories(refreshData.categories);
-      if (refreshData.summary) setSummary(refreshData.summary);
+      if (refreshData.summary) setSummary(inventoryUiListSummary(refreshData.summary));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Import failed");
     } finally {
@@ -379,6 +386,7 @@ export default function InventoryPage() {
   }
 
   if (loading) return <BrandLoader />;
+  if (readError) return <p role="alert">{readError}</p>;
 
   const pendingSearch = search !== debouncedSearch;
 
@@ -414,7 +422,7 @@ export default function InventoryPage() {
             <DollarSign className="size-3.5" />
             <span className="text-[11px] font-medium uppercase tracking-wide">Value of stock</span>
           </div>
-          <p className="mt-2 text-2xl font-bold font-mono tabular-nums truncate">{formatMoney(summary.totalValue)}</p>
+          <p className="mt-2 text-2xl font-bold font-mono tabular-nums truncate">{formatMoney(BigInt(summary.totalValueMinor))}</p>
         </div>
         <div
           className="rounded-xl border bg-card p-4 cursor-pointer hover:bg-muted/40 transition-colors"
@@ -437,7 +445,7 @@ export default function InventoryPage() {
             <span className="text-[11px] font-medium uppercase tracking-wide">Avg. profit margin</span>
           </div>
           <p className="mt-2 text-2xl font-bold font-mono tabular-nums truncate">
-            {summary.avgMargin > 0 ? `${summary.avgMargin.toFixed(1)}%` : "-"}
+            {summary.avgMargin > 0 ? `${inventoryAverageMargin(summary.avgMarginExact)}%` : "-"}
           </p>
         </div>
       </div>
@@ -732,8 +740,8 @@ export default function InventoryPage() {
 
                 {/* Prices */}
                 <div className="hidden md:flex flex-col items-end gap-0.5 w-24">
-                  <span className="text-xs font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{formatMoney(item.salePrice)}</span>
-                  <span className="text-[11px] font-mono tabular-nums text-muted-foreground">Cost {formatMoney(item.purchasePrice)}</span>
+                  <span className="text-xs font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{formatMoney(BigInt(item.salePriceMinor))}</span>
+                  <span className="text-[11px] font-mono tabular-nums text-muted-foreground">Cost {formatMoney(BigInt(item.purchasePriceMinor))}</span>
                 </div>
 
                 {/* Value */}

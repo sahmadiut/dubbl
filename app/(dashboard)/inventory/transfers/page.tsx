@@ -1,5 +1,6 @@
 "use client";
 
+import { inventoryUiItem } from "@/lib/money/inventory-ui";
 import { useState, useEffect, useCallback } from "react";
 import { motion, MotionConfig } from "motion/react";
 import {
@@ -155,7 +156,8 @@ export default function TransfersPage() {
     if (!orgId) return;
     fetch("/api/v1/inventory?limit=200", { headers: { "x-organization-id": orgId } })
       .then((r) => r.json())
-      .then((data) => setItems(data.data || []));
+      .then((data) => setItems((data.data || []).map(inventoryUiItem)))
+      .catch(() => { setItems([]); toast.error("Unable to verify inventory items for transfer"); });
   }, [orgId]);
 
   useEffect(() => {

@@ -82,6 +82,7 @@ import { WarehousePicker } from "@/components/dashboard/warehouse-picker";
 import { CategoryPicker } from "@/components/dashboard/category-picker";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { payrollCentsInput, payrollBasisPointsInput } from "@/lib/money/payroll-input";
+import { inventoryUiItem, inventoryTransferLines } from "@/lib/money/inventory-ui";
 import { catalogPriceMinor, catalogWholeInput } from "@/lib/money/catalog-input";
 import { formatMoney } from "@/lib/money";
 
@@ -1121,9 +1122,10 @@ function InventoryDrawer({ open, onClose }: { open: boolean; onClose: () => void
         throw new Error(data.error || "Failed to create item");
       }
       const data = await res.json();
+      const item = inventoryUiItem(data.inventoryItem);
       toast.success("Inventory item created");
       onClose();
-      router.push(`/inventory/${data.inventoryItem.id}`);
+      router.push(`/inventory/${item.id}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to create item");
     } finally {
@@ -3435,25 +3437,25 @@ function CategoryDrawer({ open, onClose }: { open: boolean; onClose: () => void 
 // ---------------------------------------------------------------------------
 function TransferDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [saving, setSaving] = useState(false);
-  const [lines, setLines] = useState<{ inventoryItemId: string; quantity: number }[]>([{ inventoryItemId: "", quantity: 1 }]);
+  const [lines, setLines] = useState<{ inventoryItemId: string; quantity: string }[]>([{ inventoryItemId: "", quantity: "1" }]);
   const [fromWarehouseId, setFromWarehouseId] = useState("");
   const [toWarehouseId, setToWarehouseId] = useState("");
 
   function resetState() {
-    setLines([{ inventoryItemId: "", quantity: 1 }]);
+    setLines([{ inventoryItemId: "", quantity: "1" }]);
     setFromWarehouseId("");
     setToWarehouseId("");
   }
 
   function addLine() {
-    setLines((prev) => [...prev, { inventoryItemId: "", quantity: 1 }]);
+    setLines((prev) => [...prev, { inventoryItemId: "", quantity: "1" }]);
   }
 
   function removeLine(idx: number) {
     setLines((prev) => prev.filter((_, i) => i !== idx));
   }
 
-  function updateLine(idx: number, field: "inventoryItemId" | "quantity", value: string | number) {
+  function updateLine(idx: number, field: "inventoryItemId" | "quantity", value: string) {
     setLines((prev) => prev.map((l, i) => i === idx ? { ...l, [field]: value } : l));
   }
 
@@ -3469,7 +3471,14 @@ function TransferDrawer({ open, onClose }: { open: boolean; onClose: () => void 
       return;
     }
 
-    const validLines = lines.filter((l) => l.inventoryItemId && l.quantity > 0);
+    let validLines: { inventoryItemId: string; quantity: number }[];
+    try {
+      validLines = inventoryTransferLines(lines);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Invalid transfer quantity");
+      setSaving(false);
+      return;
+    }
     if (validLines.length === 0) {
       toast.error("Add at least one item");
       setSaving(false);
@@ -3546,10 +3555,11 @@ function TransferDrawer({ open, onClose }: { open: boolean; onClose: () => void 
                       />
                     </div>
                     <Input
-                      type="number"
-                      min={1}
+                      type="text"
+                      inputMode="numeric"
+                      aria-label="Whole-unit transfer quantity"
                       value={line.quantity}
-                      onChange={(e) => updateLine(idx, "quantity", parseInt(e.target.value) || 1)}
+                      onChange={(e) => updateLine(idx, "quantity", e.target.value)}
                       className="w-20 shrink-0"
                       placeholder="Qty"
                     />

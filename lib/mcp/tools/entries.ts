@@ -14,11 +14,12 @@ import { wrapTool } from "@/lib/mcp/errors";
 import { checkMonthlyLimit } from "@/lib/api/check-limit";
 import { logAudit } from "@/lib/api/audit";
 import type { AuthContext } from "@/lib/api/auth-context";
+import { journalPresentation, journalDebitGroups } from "@/lib/api/journal-presentation";
 
 export function registerEntryTools(server: McpServer, ctx: AuthContext) {
   server.tool(
     "list_entries",
-    "List journal entries with optional filters. Returns totalDebit as a safe stored minor-unit number and totalDebitMinor as its exact integer string. Mixed line currencies retain the raw stored sum, not a converted economic total.",
+    "List journal entries with optional filters. Returns legacy safe raw totalDebit/totalDebitMinor and debitTotals grouped by explicit amount currency with numeric/minor aliases. Manual/template tags own their units; automated amounts use organization base currency; reversals inherit their origin. Opening balances retain USD cents. Mixed currencies are never converted or summed economically.",
     {
       status: z
         .enum(["draft", "posted", "void"])
@@ -80,7 +81,8 @@ export function registerEntryTools(server: McpServer, ctx: AuthContext) {
           .from(journalEntry)
           .where(and(...conditions));
 
-        const result = entries.map((e) => {
+        const presentation = await journalPresentation(ctx);
+        const result = await Promise.all(entries.map(async (e) => {
           const totalDebit = journalTotalDebit(e.lines);
           return {
             id: e.id,
@@ -91,9 +93,10 @@ export function registerEntryTools(server: McpServer, ctx: AuthContext) {
             status: e.status,
             totalDebit,
             totalDebitMinor: BigInt(totalDebit).toString(),
+            debitTotals: journalDebitGroups(e.lines, await presentation.currency(e)),
             createdAt: e.createdAt,
           };
-        });
+        }));
 
         return {
           entries: result,
@@ -106,7 +109,7 @@ export function registerEntryTools(server: McpServer, ctx: AuthContext) {
 
   server.tool(
     "get_entry",
-    "Get a single journal entry by ID with all its line items. Returns legacy safe minor-unit numbers plus debitAmountMinor/creditAmountMinor strings and saved rateExact metadata. Automated postings store base amounts; currencyCode can tag the original document. No rescaling or second conversion.",
+    "Get a single journal entry by ID with all its line items. Returns safe minor-unit numbers, matching Minor strings and saved FX. amountCurrencyCode explicitly owns stored units; currencyCode remains the source tag. Manual/template amounts use tags, automated amounts use organization base currency, opening balances retain USD cents and reversals inherit their origin. No rescaling or second conversion.",
     {
       entryId: z.string().describe("The UUID of the journal entry"),
     },
@@ -128,12 +131,15 @@ export function registerEntryTools(server: McpServer, ctx: AuthContext) {
 
         if (!entry) throw new Error("Entry not found");
         assertJournalAccountScope(ctx.organizationId, entry.lines);
+        const presentation = await journalPresentation(ctx);
+        const amountCurrency = await presentation.currency(entry);
 
         return {
           entry: {
             ...entry,
             lines: entry.lines.map((l) => ({
               ...journalLineDto(l),
+              amountCurrencyCode: amountCurrency ?? l.currencyCode,
               account: undefined,
               id: l.id,
               accountId: l.accountId,

@@ -1,3 +1,43 @@
+## MON-152 account ledger and shared presentation
+
+Source verified 2026-10-12. `lib/money/core-presentation.ts` validates required
+numeric/Minor aliases before bigint display and validates grouped journal sums
+against their retained raw fixed-two REST total. Invalid reads suppress amounts
+and expose English alerts. `lib/api/journal-presentation.ts` supplies additive
+REST/MCP amount-currency metadata without changing stored amounts or FX.
+
+| Consumer | Ownership and compatible wire policy |
+|---|---|
+| accounting/accounts/[id]/layout.tsx | Account detail numeric balance/debit/credit fields are already minor units; the old multiply-by-100 error is removed. Required aliases agree, sign stays natural, GL amountCurrencyCode and account currencyCode are separately labeled. |
+| accounting/accounts/[id]/page.tsx | Validated numeric/Minor row debit, credit and deterministic running balance; exact signed English currency display, pagination/filter/sort retained. Removed an unused floating loaded-row summary. |
+| accounting/accounts/page.tsx; AccountPicker; account settings | Source inspection confirms metadata/count/search/currency selections, no monetary totals/input. Settings preserve validated detail amounts across metadata patches and then refetch. Existing account REST/MCP list/create/update operations retained. |
+| accounting/page.tsx and dashboard/page.tsx recent journals | debitTotals groups explicitly own their amount currency; bigint loaded posted totals remain grouped. Amount sorting orders currency groups then exact like-unit values. Legacy raw totalDebit/totalDebitMinor remain compatible, never displayed as an inferred USD economic total. Other dashboard report widgets remain MON-008. |
+| accounting/[id]/page.tsx | Saved lines validate fixed-two decimal/Minor aliases and explicit amountCurrencyCode. Per-line and footer totals use that currency; source currencyCode and saved FX remain intact. Manual edits retain tag-scale input/preview/Minor writes from MON-130. Post/void refresh the validated GET representation. |
+| accounts/[id] REST and get_account MCP | Shared accountDetail reads posted/non-deleted raw stored GL units using SQL text/bigint with guarded numeric/Minor output and current organization base amountCurrencyCode. Account metadata tags do not own aggregate units. |
+| entries REST list/detail and list_entries/get_entry MCP | Shared policy: manual/null/recurring_journal use saved line tags; opening_balance retains USD fixed cents; other automated sources use current organization base, regardless of source-document tags. Linked reversals inherit the original source policy; missing/foreign/cyclic/overlong origin chains fail closed. Lists add grouped safe numeric/Minor totals; detail adds amountCurrencyCode. |
+
+Compatibility exceptions: raw GL account aggregates still sum stored units under
+the existing organization-base reporting convention. Manual mixed/tagged journals,
+identity foreign recurring templates and USD opening balances are not normalized
+or converted by this UI work. Organization base currency is current configuration,
+not a newly invented historical snapshot; changed-base historical remediation
+and independent accounting/migration qualification remain separate. Retained
+legacy maintenance/domain automated amounts share that convention, even when
+their line tag defaults to USD. No second FX conversion or history rewrite occurs.
+Legacy raw mixed-unit list totals and fixed-two REST aliases are preserved only
+for compatibility; displayed grouped totals have explicit units. Safe Number
+transport range is retained, though loaded-list sums use bigint. MON-133/MON-129/
+MON-007 remain open for independent integration; auxiliary reports stay MON-008.
+
+The focused migrated fixture covers actual manual REST/MCP writes and UI preview,
+posted account/ledger pages, mixed-currency totals and manual reversals, retained
+automated FX posting with EUR tags/base amounts, USD opening balance exceptions,
+tenant/auth failures, bad/cyclic origins and unchanged SQL source amounts across
+USD/JPY/IRR/KWD. Pure checks cover low digits, negative signs, missing/malformed/
+disagreeing/out-of-range aliases and exact large loaded totals. DEC-005 source
+layout review preserves keyboard order, labels, scrollable tables and English;
+no live browser, production IRR, full-int64 workflow or accounting approval claim.
+
 ## MON-151 tax and core settings UI
 
 Source verified 2026-10-12. `lib/money/tax-ui.ts` validates retained safe numeric
@@ -278,7 +318,7 @@ The original MON-133 acceptance and all remaining consumers are preserved.
 | MON-149 | Expense list/detail/edit/pay amount, ExpenseDrawer/mileage, recurring expense controls; expense-ui.ts, recurring-expense-ui.ts, ExpenseAmountInput | Exact text/Minor writes, bigint previews and validated saved aliases; organization/claim currency, miles hundredths and independently rounded per-mile rate; recurring payable fixed-two gross policy retained |
 | MON-150 | Banking/statements/import/reconciliation/transfers/settings/rules, bank drawers | Validated Minor reads, bigint sums/tax/splits and bank-scale exact writes; grouped currency balances and separate bank/base reconciliation; raw bank minor-unit rule exception |
 | MON-151 | Tax dashboard/period/reports/settlement/currencies and core settings/approvals; tax-ui.ts and TaxSettlementPreview | Checked Minor reads, bigint report totals, explicit base/source currencies, exact settlement/rate inputs and canonical raw approval thresholds; nonmoney basis points/settings retained |
-| MON-152 | Accounts list/detail/layout and untagged journal totals/automated detail | Pending source/base presentation closure |
+| MON-152 | Accounts list/detail/layout and raw journal totals/automated detail | Checked numeric/Minor account/ledger reads, bigint presentation and currency-grouped journal totals; explicit GL/base vs source metadata; linked reversals inherit original amount units |
 
 Opening balance UI uses strict nonnegative major text with two decimal places;
 blank cells are zero. Malformed/negative/fractional-cent/orphan amounts and
@@ -537,15 +577,12 @@ scrolling is retained; saved edit columns accommodate currency codes.
   for JPY/KWD tags. The exact alias is checked against that legacy spelling,
   then raw units drive calculations. Fallback fixed-two reads support legacy
   data without exact aliases; conflicting or unsafe aliases fail closed.
-- Journal list/dashboard total fields are raw sums without a currency. Their
-  historical USD/fixed-two display remains exact compatibility presentation;
-  it is not an FX-converted economic total. Currency-rich aggregate presentation
-  belongs to MON-133/MON-129 acceptance. No new currency is inferred from amount.
-- Automated GL amount currency may differ from its source-document currency tag.
-  Only manual/null-source and recurring_journal detail use saved tag scales.
-  Other source types retain their prior fixed-two presentation explicitly through
-  journalDisplayCurrency; MON-133 owns resolving those source/base distinctions.
-  No second FX conversion or rescaling occurs here.
+- MON-152 supersedes the former journal list/dashboard USD presentation:
+  compatible raw totals remain, but explicit currency-grouped debitTotals own
+  display and loaded-list sums. No currency is inferred from magnitude.
+- MON-152 supersedes the former automated fixed-two fallback with explicit
+  amountCurrencyCode and linked reversal inheritance; see the current ownership
+  and historical/base-policy exceptions above. No second FX conversion occurs.
 - Saved manual detail totals are grouped by currency; currency groups are not
   implicitly converted or summed into one display currency. Raw-unit balance
   status still matches the existing manual API policy. Saved rates are not edited.

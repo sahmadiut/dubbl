@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { chartAccount, journalEntry, journalLine } from "@/lib/db/schema";
 import { AuthError, type AuthContext } from "./auth-context";
 import { legacyMinor } from "@/lib/money/wire";
+import { journalPresentation } from "./journal-presentation";
 
 export const accountDetailSchema = z.strictObject({
   accountId: z.string().uuid().describe("Organization-owned account UUID"),
@@ -19,6 +20,7 @@ export async function accountDetail(ctx: AuthContext, id: string, includeLedger 
       where: and(eq(chartAccount.id, id), eq(chartAccount.organizationId, ctx.organizationId)),
     });
     if (!account) throw new AuthError("Account not found", 404);
+    const { baseCurrencyCode: amountCurrencyCode } = await journalPresentation(ctx, tx);
     const rows = await tx.select({ entryId: journalEntry.id, entryNumber: journalEntry.entryNumber,
       date: journalEntry.date, description: journalEntry.description,
       debit: sql<string>`${journalLine.debitAmount}::text`, credit: sql<string>`${journalLine.creditAmount}::text`,
@@ -33,10 +35,10 @@ export async function accountDetail(ctx: AuthContext, id: string, includeLedger 
       // Reject unsafe retained source values even when they cancel in totals.
       legacyMinor(d); legacyMinor(c);
       totalDebits += d; totalCredits += c;
-      return includeLedger ? [{ ...row, ...amount("debitAmount", d), ...amount("creditAmount", c),
+      return includeLedger ? [{ ...row, amountCurrencyCode, ...amount("debitAmount", d), ...amount("creditAmount", c),
         ...amount("balance", debitNormal ? totalDebits - totalCredits : totalCredits - totalDebits) }] : [];
     });
-    return { account: { ...account, ...amount("totalDebits", totalDebits), ...amount("totalCredits", totalCredits),
+    return { account: { ...account, amountCurrencyCode, ...amount("totalDebits", totalDebits), ...amount("totalCredits", totalCredits),
       ...amount("balance", debitNormal ? totalDebits - totalCredits : totalCredits - totalDebits) }, ledger, entryCount: rows.length };
   }, { isolationLevel: "repeatable read", accessMode: "read only" });
 }

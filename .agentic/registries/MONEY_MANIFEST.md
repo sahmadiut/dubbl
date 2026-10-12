@@ -1,3 +1,16 @@
+## MON-152 account ledger and shared presentation
+
+Account detail/ledger and journal list/dashboard/detail use core-presentation.ts
+for required agreeing numeric/Minor aliases, bigint sums and explicit currency
+presentation. journal-presentation.ts supplies shared REST/MCP amountCurrencyCode
+and grouped debitTotals, preserving all old aliases and stored FX/units. Natural
+account signs, pagination and metadata/currency selection stay unchanged. Manual
+and recurring tags own their amount scale; automated source tags remain separate
+from base amounts, opening balances retain USD cents and reversals inherit origin
+policy. Current-base raw GL aggregate/history exceptions are documented in
+CORE_UI_MONEY_CUTOVER. Auxiliary reports remain MON-008 and MON-133 retains
+independent acceptance; no schema/migration or production IRR enablement.
+
 ## MON-151 tax and settings UI
 
 Tax reports, frozen return lines and settlements use tax-ui.ts for checked numeric/

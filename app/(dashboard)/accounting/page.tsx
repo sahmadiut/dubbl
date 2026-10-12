@@ -27,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { journalRestMinor, journalMoney } from "@/lib/money/journal-display";
+import { coreJournalSummary, coreDebitDisplay, coreDebitCompare, type DebitGroup } from "@/lib/money/core-presentation";
 import { devDelay } from "@/lib/dev-delay";
 import { useCreateDrawer } from "@/components/dashboard/create-drawer";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
@@ -44,6 +44,7 @@ interface Entry {
   status: "draft" | "posted" | "void";
   totalDebit: string;
   totalDebitMinor: string;
+  debitTotals: DebitGroup[];
   createdAt: string;
 }
 
@@ -106,7 +107,7 @@ const columns: Column<Entry>[] = [
     className: "w-28 text-right",
     render: (r) => (
       <span className="font-mono text-sm tabular-nums">
-        {journalMoney(journalRestMinor(r.totalDebit, r.totalDebitMinor))}
+        {coreDebitDisplay([r])}
       </span>
     ),
   },
@@ -117,6 +118,7 @@ export default function TransactionsPage() {
   const { open: openDrawer } = useCreateDrawer();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search);
@@ -133,21 +135,19 @@ export default function TransactionsPage() {
     fetch("/api/v1/entries", {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then(async (r) => { if (!r.ok) throw new Error("Could not load journals"); return r.json(); })
       .then((data) => {
-        if (data.entries) setEntries(data.entries);
+        setEntries(data.entries.map(coreJournalSummary));
       })
       .then(() => devDelay())
+      .catch(() => { setEntries([]); setError("Could not load valid journal amounts. Please try again."); })
       .finally(() => setLoading(false));
   }, []);
 
   const posted = entries.filter((e) => e.status === "posted");
   const drafts = entries.filter((e) => e.status === "draft");
   const voids = entries.filter((e) => e.status === "void");
-  const totalPosted = posted.reduce(
-    (sum, e) => sum + journalRestMinor(e.totalDebit, e.totalDebitMinor),
-    0n
-  );
+  const totalPosted = coreDebitDisplay(posted);
 
   const filtered = useMemo(() => {
     let result = entries;
@@ -185,8 +185,7 @@ export default function TransactionsPage() {
       } else if (key === "number") {
         cmp = a.entryNumber - b.entryNumber;
       } else if (key === "amount") {
-        const left = journalRestMinor(a.totalDebit, a.totalDebitMinor), right = journalRestMinor(b.totalDebit, b.totalDebitMinor);
-        cmp = left < right ? -1 : left > right ? 1 : 0;
+        cmp = coreDebitCompare(a, b);
       }
       return order === "asc" ? cmp : -cmp;
     });
@@ -204,6 +203,7 @@ export default function TransactionsPage() {
   }, [debouncedSearch, statusFilter, sortBy]);
 
   if (loading) return <BrandLoader />;
+  if (error) return <p role="alert" className="text-sm text-destructive">{error}</p>;
 
   if (!loading && entries.length === 0) {
     return (
@@ -336,7 +336,7 @@ export default function TransactionsPage() {
               Total in your books
             </p>
             <p className="mt-1 font-mono text-lg font-semibold tabular-nums">
-              {journalMoney(totalPosted)}
+              {totalPosted}
             </p>
           </div>
 

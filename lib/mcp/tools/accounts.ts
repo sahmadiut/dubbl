@@ -88,7 +88,7 @@ export function registerAccountTools(server: McpServer, ctx: AuthContext) {
   server.registerTool(
     "get_account",
     {
-      description: "Get an organization-owned account UUID with total debits, total credits and natural-sign balance from posted, non-deleted journals. Money is stored base-currency minor units, with safe numeric fields and matching Minor strings. Unsafe source or aggregate values fail with LEGACY_NUMERIC_RANGE; counts and account metadata retain their units.",
+      description: "Get an organization-owned account UUID with total debits, total credits and natural-sign balance from posted, non-deleted journals. Money is raw stored GL minor units, with safe numeric fields and matching Minor strings. amountCurrencyCode is the current organization base presentation currency; account currencyCode remains account metadata. No conversion or historical rescaling occurs. Unsafe source or aggregate values fail with LEGACY_NUMERIC_RANGE; counts retain their units.",
       inputSchema: accountDetailSchema,
     },
     (params) =>

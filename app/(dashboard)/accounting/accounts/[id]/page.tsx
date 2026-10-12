@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { useParams } from "next/navigation";
 import { Search, X } from "lucide-react";
@@ -18,15 +18,14 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
+import { coreLedgerMoney, coreStoredMinor, type LedgerMoney } from "@/lib/money/core-presentation";
+import { journalMoney } from "@/lib/money/journal-display";
 
-interface LedgerEntry {
+interface LedgerEntry extends LedgerMoney {
   entryId: string;
   entryNumber: number;
   date: string;
   description: string;
-  debitAmount: string;
-  creditAmount: string;
-  balance: string;
 }
 
 const ledgerColumns: Column<LedgerEntry>[] = [
@@ -60,7 +59,7 @@ const ledgerColumns: Column<LedgerEntry>[] = [
     className: "w-28 text-right",
     render: (r) => (
       <span className="font-mono text-sm tabular-nums">
-        {parseFloat(r.debitAmount) > 0 ? parseFloat(r.debitAmount).toFixed(2) : ""}
+        {r.debitAmountMinor !== "0" ? journalMoney(coreStoredMinor(r.debitAmount, r.debitAmountMinor), r.amountCurrencyCode) : ""}
       </span>
     ),
   },
@@ -70,7 +69,7 @@ const ledgerColumns: Column<LedgerEntry>[] = [
     className: "w-28 text-right",
     render: (r) => (
       <span className="font-mono text-sm tabular-nums">
-        {parseFloat(r.creditAmount) > 0 ? parseFloat(r.creditAmount).toFixed(2) : ""}
+        {r.creditAmountMinor !== "0" ? journalMoney(coreStoredMinor(r.creditAmount, r.creditAmountMinor), r.amountCurrencyCode) : ""}
       </span>
     ),
   },
@@ -80,7 +79,7 @@ const ledgerColumns: Column<LedgerEntry>[] = [
     className: "w-28 text-right",
     render: (r) => (
       <span className="font-mono text-sm font-medium tabular-nums">
-        {parseFloat(r.balance).toFixed(2)}
+        {journalMoney(coreStoredMinor(r.balance, r.balanceMinor), r.amountCurrencyCode)}
       </span>
     ),
   },
@@ -90,6 +89,7 @@ export default function AccountLedgerPage() {
   const { id } = useParams<{ id: string }>();
   const [ledger, setLedger] = useState<LedgerEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
 
   const [search, setSearch] = useState("");
@@ -137,15 +137,17 @@ export default function AccountLedgerPage() {
     fetch(`/api/v1/accounts/${id}?${buildParams(1)}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then(async (r) => { if (!r.ok) throw new Error("Could not load ledger"); return r.json(); })
       .then((data) => {
         if (cancelled) return;
-        if (data.data) setLedger(data.data);
+        setLedger(data.data.map(coreLedgerMoney));
+        setError(null);
         if (data.pagination) {
           setTotal(data.pagination.total);
           setHasMore(data.pagination.page < data.pagination.totalPages);
         }
       })
+      .catch(() => { if (!cancelled) { setLedger([]); setHasMore(false); setError("Could not load valid ledger amounts. Please try again."); } })
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
@@ -166,15 +168,18 @@ export default function AccountLedgerPage() {
     fetch(`/api/v1/accounts/${id}?${buildParams(nextPage)}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then(async (r) => { if (!r.ok) throw new Error("Could not load ledger"); return r.json(); })
       .then((data) => {
-        if (data.data) setLedger((prev) => [...prev, ...data.data]);
+        const rows: LedgerEntry[] = data.data.map(coreLedgerMoney);
+        setLedger((prev) => [...prev, ...rows]);
+        setError(null);
         if (data.pagination) {
           setPage(data.pagination.page);
           setTotal(data.pagination.total);
           setHasMore(data.pagination.page < data.pagination.totalPages);
         }
       })
+      .catch(() => { setLedger([]); setHasMore(false); setError("Could not load valid ledger amounts. Please try again."); })
       .finally(() => setLoadingMore(false));
   }, [loadingMore, hasMore, page, id, orgId, buildParams]);
 
@@ -189,16 +194,11 @@ export default function AccountLedgerPage() {
     return () => observer.disconnect();
   }, [loadMore]);
 
-  const summary = useMemo(() => {
-    const totalDebits = ledger.reduce((s, e) => s + parseFloat(e.debitAmount), 0);
-    const totalCredits = ledger.reduce((s, e) => s + parseFloat(e.creditAmount), 0);
-    return { totalDebits, totalCredits };
-  }, [ledger]);
-
   const hasFilters = search || dateFrom || dateTo || entryType !== "all";
 
   return (
     <div className="space-y-3">
+      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold">Transactions</h3>
         <span className="text-xs text-muted-foreground tabular-nums">{total} entries</span>

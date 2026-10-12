@@ -33,13 +33,6 @@ export function journalMoney(amount: bigint, currency = "USD") {
   return bankMoneyDisplay(amount, currency);
 }
 
-/** Automated GL tags may name the source document, not the stored amount currency.
- * Retain their historical fixed-two display until MON-133 resolves base presentation.
- */
-export function journalDisplayCurrency(sourceType: string | null, lineCurrency: string) {
-  return sourceType === null || sourceType === "manual" || sourceType === "recurring_journal" ? lineCurrency : "USD";
-}
-
 export type JournalEditorRow = {
   accountId: string; description?: string; debit: string; credit: string;
   currencyCode?: string; exchangeRate?: number; costCenterId?: string | null; projectId?: string | null;

@@ -11,6 +11,7 @@ import { logAudit } from "@/lib/api/audit";
 import { assertNotLocked } from "@/lib/api/period-lock";
 import { checkMonthlyLimit } from "@/lib/api/check-limit";
 import { z } from "zod";
+import { journalPresentation, journalDebitGroups } from "@/lib/api/journal-presentation";
 
 const createSchema = z.object({
   date: z.iso.date(),
@@ -38,15 +39,17 @@ export async function GET(request: Request) {
       },
     });
 
-    const result = entries.map((e) => {
+    const presentation = await journalPresentation(ctx);
+    const result = await Promise.all(entries.map(async (e) => {
       const totalDebit = journalTotalDebit(e.lines);
       return {
         ...e,
         lines: undefined,
         totalDebit: journalLegacyDecimal(totalDebit),
         totalDebitMinor: BigInt(totalDebit).toString(),
+        debitTotals: journalDebitGroups(e.lines, await presentation.currency(e)),
       };
-    });
+    }));
 
     return jsonResponse({
       entries: result,

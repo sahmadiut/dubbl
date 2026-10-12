@@ -6,22 +6,20 @@ import { ArrowLeft, ArrowDownRight, ArrowUpRight, BookOpen, Hash, Settings2 } fr
 import { Badge } from "@/components/ui/badge";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
-import { formatMoney } from "@/lib/money";
+import { coreAccountMoney, coreStoredMinor, type AccountMoney } from "@/lib/money/core-presentation";
+import { journalMoney } from "@/lib/money/journal-display";
 import { cn } from "@/lib/utils";
 
-interface AccountDetail {
+interface AccountDetail extends AccountMoney {
   id: string;
   code: string;
   name: string;
   type: string;
-  balance: string;
   subType?: string | null;
   description?: string | null;
   currencyCode?: string;
   isActive?: boolean;
   isSystem?: boolean;
-  totalDebits?: number;
-  totalCredits?: number;
   entryCount?: number;
 }
 
@@ -93,6 +91,7 @@ export default function AccountDetailLayout({ children }: { children: React.Reac
   const pathname = usePathname();
   const [account, setAccount] = useState<AccountDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
 
@@ -101,10 +100,12 @@ export default function AccountDetailLayout({ children }: { children: React.Reac
     fetch(`/api/v1/accounts/${id}?limit=1`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then(async (r) => { if (!r.ok) throw new Error("Could not load account"); return r.json(); })
       .then((data) => {
-        if (data.account) setAccount(data.account);
+        setAccount(coreAccountMoney(data.account));
+        setError(null);
       })
+      .catch(() => { setAccount(null); setError("Could not load valid account amounts. Please try again."); })
       .finally(() => setLoading(false));
   }, [id, orgId]);
 
@@ -115,14 +116,14 @@ export default function AccountDetailLayout({ children }: { children: React.Reac
   if (loading) return <BrandLoader />;
 
   if (!account) {
-    return <p className="text-muted-foreground">Account not found.</p>;
+    return <p role="alert" className="text-muted-foreground">{error ?? "Account not found."}</p>;
   }
 
-  const bal = parseFloat(account.balance || "0");
-  const cur = account.currencyCode || "USD";
+  const bal = coreStoredMinor(account.balance, account.balanceMinor);
+  const cur = account.amountCurrencyCode;
   const typeConfig = TYPE_CONFIG[account.type];
-  const totalDebits = account.totalDebits || 0;
-  const totalCredits = account.totalCredits || 0;
+  const totalDebits = coreStoredMinor(account.totalDebits, account.totalDebitsMinor);
+  const totalCredits = coreStoredMinor(account.totalCredits, account.totalCreditsMinor);
   const entryCount = account.entryCount || 0;
 
   return (
@@ -152,7 +153,8 @@ export default function AccountDetailLayout({ children }: { children: React.Reac
                 <Badge variant="outline" className={typeConfig?.badgeClass || ""}>
                   {typeConfig?.label || account.type}
                 </Badge>
-                <Badge variant="outline" className="text-[10px]">{cur}</Badge>
+                <Badge variant="outline" className="text-[10px]">GL {cur}</Badge>
+                {account.currencyCode !== cur && <Badge variant="outline" className="text-[10px]">Account {account.currencyCode}</Badge>}
                 {account.isActive === false && (
                   <Badge variant="outline" className="text-muted-foreground">Inactive</Badge>
                 )}
@@ -171,7 +173,7 @@ export default function AccountDetailLayout({ children }: { children: React.Reac
           <div>
             <p className="text-[11px] text-muted-foreground">Balance</p>
             <p className="mt-0.5 font-mono text-xl font-semibold tabular-nums">
-              {formatMoney(Math.round(bal * 100), cur)}
+              {journalMoney(bal, cur)}
             </p>
           </div>
           <div>
@@ -180,7 +182,7 @@ export default function AccountDetailLayout({ children }: { children: React.Reac
               Total Debits
             </p>
             <p className="mt-0.5 font-mono text-lg font-semibold tabular-nums text-emerald-600">
-              {totalDebits > 0 ? formatMoney(Math.round(totalDebits * 100), cur) : "-"}
+              {totalDebits > 0n ? journalMoney(totalDebits, cur) : "-"}
             </p>
           </div>
           <div>
@@ -189,7 +191,7 @@ export default function AccountDetailLayout({ children }: { children: React.Reac
               Total Credits
             </p>
             <p className="mt-0.5 font-mono text-lg font-semibold tabular-nums text-red-600">
-              {totalCredits > 0 ? formatMoney(Math.round(totalCredits * 100), cur) : "-"}
+              {totalCredits > 0n ? journalMoney(totalCredits, cur) : "-"}
             </p>
           </div>
           <div>

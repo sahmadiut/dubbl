@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { journalDisplayCurrency, journalInputMinor, journalRestMinor, journalStoredMinor, journalDecimal, journalMoney, journalEditorPreview, journalSideDisplay } from "../lib/money/journal-display";
+import { journalInputMinor, journalRestMinor, journalStoredMinor, journalDecimal, journalMoney, journalEditorPreview, journalSideDisplay } from "../lib/money/journal-display";
 import { journalLineInput, journalTotals, journalLineDto } from "../lib/api/journal-wire";
 import { recurringJournalLegs } from "../lib/api/recurring-journal-wire";
 
@@ -56,11 +56,6 @@ test("fixed-two REST aliases never rescale stored JPY/KWD amounts; conflicts fai
   assert.throws(() => journalStoredMinor(Number.MAX_SAFE_INTEGER + 1));
   assert.equal(journalDecimal(1250n, "JPY"), "1250");
   assert.equal(journalDecimal(1250n, "KWD"), "1.250");
-  assert.equal(journalDisplayCurrency("manual", "KWD"), "KWD");
-  assert.equal(journalDisplayCurrency("recurring_journal", "JPY"), "JPY");
-  assert.equal(journalDisplayCurrency(null, "IRR"), "IRR");
-  // The automated tag can be the source document; keep its legacy presentation.
-  assert.equal(journalDisplayCurrency("invoice", "KWD"), "USD");
 });
 
 test("English money displays exact fractions, negative zero and separate currency totals", () => {

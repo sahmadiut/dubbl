@@ -12,6 +12,7 @@ import { requireRole } from "@/lib/api/require-role";
 import { assertNotLocked } from "@/lib/api/period-lock";
 import { logAudit } from "@/lib/api/audit";
 import { z } from "zod";
+import { journalPresentation } from "@/lib/api/journal-presentation";
 
 const updateSchema = z.object({
   date: z.iso.date(),
@@ -49,11 +50,14 @@ export async function GET(
       return jsonResponse({ error: "Not found" }, { status: 404 });
     }
     assertJournalAccountScope(ctx.organizationId, entry.lines);
+    const presentation = await journalPresentation(ctx);
+    const amountCurrency = await presentation.currency(entry);
 
     const result = {
       ...entry,
       lines: entry.lines.map((l) => ({
         ...journalLineDto(l, true),
+        amountCurrencyCode: amountCurrency ?? l.currencyCode,
         account: undefined,
         id: l.id,
         accountId: l.accountId,

@@ -119,6 +119,9 @@ async function run() {
           }
           foreignInvoiceId = invoiceId;
           const firstRead = await ok(await GET_INVOICE(req(), params(invoiceId)));
+          // Quote conversion deliberately uses today's issue date, while direct and
+          // scheduled origins retain their supplied date. Settle against saved history.
+          const settlementDate = firstRead.invoice.issueDate as string;
           const saved = invoiceUiDocument(firstRead.invoice);
           assert.equal(saved.total, expected); assert.equal(saved.lines![1].amount, expected - 3000000001n);
           assert.equal(saved.lines![1].unitPrice, 1n); assert.equal(saved.lines![1].quantity, 300);
@@ -129,14 +132,22 @@ async function run() {
           if (transport === "rest") await ok(await EDIT(req("PATCH", { lines: copiedLines }), params(invoiceId)));
           else await call("update_invoice", { invoiceId, lines: copiedLines });
           await call("send_invoice", { invoiceId });
-          const payment = { ...invoiceUiAmount(invoiceUiDecimal(1n, currencyCode), currencyCode), date, method: "cash" };
+          const priorDate = new Date(new Date(`${settlementDate}T00:00:00Z`).getTime() - 86400000).toISOString().slice(0, 10);
+          const beforeEarlyPayment = await snapshot();
+          const early = { amountMinor: "1", date: priorDate, method: "cash" };
+          const earlyResponse = await PAY(req("POST", early), params(invoiceId));
+          assert.equal(earlyResponse.status, 400);
+          assert.match((await earlyResponse.json()).error, /cannot predate document recognition/);
+          await badCall("pay_invoice", { invoiceId, ...early });
+          assert.deepEqual(await snapshot(), beforeEarlyPayment);
+          const payment = { ...invoiceUiAmount(invoiceUiDecimal(1n, currencyCode), currencyCode), date: settlementDate, method: "cash" };
           if (transport === "rest") await ok(await PAY(req("POST", payment), params(invoiceId)));
           else await call("pay_invoice", { invoiceId, ...payment });
-          const prepaidPayload = { contactId: customer.id, currencyCode, date, sourceType: "prepayment", depositAccountId: cash.id,
+          const prepaidPayload = { contactId: customer.id, currencyCode, date: settlementDate, sourceType: "prepayment", depositAccountId: cash.id,
             ...customerPrepaymentAmount(invoiceUiDecimal(1250n, currencyCode), currencyCode) };
           const prepaid = (transport === "rest" ? await ok(await PREPAYMENT(req("POST", prepaidPayload))) : await call("create_customer_credit", prepaidPayload)).customerCredit;
-          if (transport === "rest") await ok(await APPLY_PREPAYMENT(req("POST", { invoiceId, amountMinor: "1", date }), params(prepaid.id)));
-          else await call("apply_customer_credit", { customerCreditId: prepaid.id, invoiceId, amountMinor: "1", date });
+          if (transport === "rest") await ok(await APPLY_PREPAYMENT(req("POST", { invoiceId, amountMinor: "1", date: settlementDate }), params(prepaid.id)));
+          else await call("apply_customer_credit", { customerCreditId: prepaid.id, invoiceId, amountMinor: "1", date: settlementDate });
           const copiedCredit = copiedLines[1];
           const creditPayload = { contactId: customer.id, currencyCode, issueDate: date, lines: [{ description: copiedCredit.description,
             quantity: copiedCredit.quantity, unitPriceExact: copiedCredit.unitPriceExact, accountId: copiedCredit.accountId,
@@ -173,8 +184,8 @@ async function run() {
           assert.equal((await CREATE(req("POST", malformed))).ok, false); await badCall("create_invoice", malformed);
           assert.equal((await PAY(req("POST", { ...payment, amountMinor: "3000000001" }), params(invoiceId))).ok, false);
           await badCall("pay_invoice", { invoiceId, ...payment, amountMinor: "3000000001" });
-          assert.equal((await APPLY_PREPAYMENT(req("POST", { invoiceId, amountMinor: "1250", date }), params(prepaid.id))).ok, false);
-          await badCall("apply_customer_credit", { customerCreditId: prepaid.id, invoiceId, amountMinor: "1250", date });
+          assert.equal((await APPLY_PREPAYMENT(req("POST", { invoiceId, amountMinor: "1250", date: settlementDate }), params(prepaid.id))).ok, false);
+          await badCall("apply_customer_credit", { customerCreditId: prepaid.id, invoiceId, amountMinor: "1250", date: settlementDate });
           assert.deepEqual(await snapshot(), before);
           if (transport === "rest") await ok(await VOID_CREDIT(req("POST"), params(credit.id)));
           else await call("void_credit_note", { creditNoteId: credit.id });

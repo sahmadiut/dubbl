@@ -1,5 +1,14 @@
 # Exact money core
 
+MON-152 adopts account ledger/detail and journal list/dashboard/detail through
+`core-presentation.ts`: required agreeing Minor aliases, bigint loaded totals and
+explicit currency groups. `journal-presentation.ts` adds shared REST/MCP amount
+currency metadata, separating source tags from automated base amounts and tracing
+reversals to their original policy. Opening balances retain USD cents. Account
+amounts are already integer minor units and must never be multiplied by 100.
+Current-base raw GL/history exceptions and MON-133 independent acceptance are
+documented in CORE_UI_MONEY_CUTOVER; no conversion or historical rewrite occurs.
+
 MON-151 adopts tax reports, frozen returns/settlements, currencies and approval
 settings through `tax-ui.ts`. Saved numeric amounts must agree with canonical
 Minor aliases; bigint totals and explicit source/base currency preserve units.

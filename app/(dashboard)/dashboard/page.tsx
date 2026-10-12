@@ -27,7 +27,7 @@ import { DataTable, type Column } from "@/components/dashboard/data-table";
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { journalRestMinor, journalMoney } from "@/lib/money/journal-display";
+import { coreJournalSummary, coreDebitDisplay, type DebitGroup } from "@/lib/money/core-presentation";
 import { formatMoney } from "@/lib/money";
 import { devDelay } from "@/lib/dev-delay";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
@@ -105,6 +105,7 @@ interface Entry {
   status: "draft" | "posted" | "void";
   totalDebit: string;
   totalDebitMinor: string;
+  debitTotals: DebitGroup[];
 }
 
 interface PnLAccount {
@@ -177,7 +178,7 @@ const columns: Column<Entry>[] = [
     className: "w-28 text-right",
     render: (r) => (
       <span className="font-mono text-sm tabular-nums">
-        {journalMoney(journalRestMinor(r.totalDebit, r.totalDebitMinor))}
+        {coreDebitDisplay([r])}
       </span>
     ),
   },
@@ -320,12 +321,7 @@ export default function DashboardPage() {
     ])
       .then(([entriesData, pnlData, arData, apData]) => {
         if (entriesData.entries) {
-          setEntries(
-            entriesData.entries.map((e: Record<string, string | number>) => ({
-              ...e,
-              totalDebit: (e.totalDebit as string) || "0.00",
-            }))
-          );
+          setEntries(entriesData.entries.map(coreJournalSummary));
         }
         if (pnlData) {
           setPnl({

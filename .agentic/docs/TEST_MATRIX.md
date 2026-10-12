@@ -1,5 +1,21 @@
 # Verification matrix
 
+## MON-152 account ledger and shared presentation
+
+- `tests/core-presentation-money.test.ts`: exact signed low digits and 0/2/3
+  scales, required/malformed/range/disagreeing aliases, grouped list totals,
+  like-currency sorting and bigint sums beyond safe numeric aggregate range.
+- `tests/integration/core-presentation-money.test.ts`: real authenticated manual
+  REST/MCP writes/preview, migrated SQL, posted account totals and paginated running
+  balances, mixed journal groups, manual reversal inheritance, automated source/
+  base FX amounts, fixed USD openings, auth/tenant/bad/cyclic origin rejection.
+- Focused journal/core-accounting/opening UI regressions retain lifecycle/wire
+  behavior. Typecheck/lint and source/accessibility review under DEC-005; no browser,
+  full build, dev server, production IRR or accounting qualification claim.
+- Authorized CI repair: receivable-document-ui-worker settles on saved issueDate
+  rather than a hardcoded date for converted quotes; 24 REST/MCP workflows retain
+  explicit early-payment rejection and unchanged-state assertions.
+
 ## MON-151 tax and settings UI money
 
 - `tests/tax-ui-money.test.ts`: saved alias/range/currency rejection, 0/2/3 scale

@@ -42,7 +42,8 @@ import { AccountPicker } from "@/components/dashboard/account-picker";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { currencyMetadata } from "@/lib/money/exact";
-import { journalDisplayCurrency, journalRestMinor, journalStoredMinor, journalMoney, journalDecimal, journalEditorPreview, journalSideDisplay } from "@/lib/money/journal-display";
+import { coreJournalDetail } from "@/lib/money/core-presentation";
+import { journalRestMinor, journalStoredMinor, journalMoney, journalDecimal, journalEditorPreview, journalSideDisplay } from "@/lib/money/journal-display";
 import { useConfirm } from "@/lib/hooks/use-confirm";
 import { useEntityTitle } from "@/lib/hooks/use-entity-title";
 import { ContentReveal } from "@/components/ui/content-reveal";
@@ -61,6 +62,7 @@ interface Line {
   debitAmountMinor: string;
   creditAmountMinor: string;
   currencyCode: string;
+  amountCurrencyCode: string;
   exchangeRate: number;
   costCenterId: string | null;
   projectId: string | null;
@@ -134,6 +136,7 @@ export default function EntryDetailPage() {
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [entry, setEntry] = useState<Entry | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [voidReason, setVoidReason] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -148,10 +151,12 @@ export default function EntryDetailPage() {
     fetch(`/api/v1/entries/${id}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then(async (r) => { if (!r.ok) throw new Error("Could not load journal"); return r.json(); })
       .then((data) => {
-        if (data.entry) setEntry(data.entry);
+        setEntry(coreJournalDetail(data.entry));
+        setError(null);
       })
+      .catch(() => { setEntry(null); setError("Could not load valid journal amounts. Please try again."); })
       .finally(() => setLoading(false));
   }
 
@@ -169,8 +174,7 @@ export default function EntryDetailPage() {
         headers: { "x-organization-id": orgId },
       });
       if (!res.ok) throw new Error((await res.json()).error);
-      const data = await res.json();
-      setEntry(data.entry);
+      loadEntry();
       toast.success("Entry finalized and added to your books");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Couldn't finalize this entry");
@@ -192,8 +196,7 @@ export default function EntryDetailPage() {
         body: JSON.stringify({ reason: voidReason }),
       });
       if (!res.ok) throw new Error((await res.json()).error);
-      const data = await res.json();
-      setEntry(data.entry);
+      loadEntry();
       setVoidReason("");
       toast.success("Entry cancelled");
     } catch (err) {
@@ -246,7 +249,7 @@ export default function EntryDetailPage() {
         </Button>
         <div className="flex flex-col items-center gap-3 py-20 text-center">
           <FileText className="size-10 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">Journal entry not found.</p>
+          <p role="alert" className="text-sm text-muted-foreground">{error ?? "Journal entry not found."}</p>
           <Button variant="outline" size="sm" asChild>
             <Link href="/accounting">Back to Transactions</Link>
           </Button>
@@ -258,7 +261,7 @@ export default function EntryDetailPage() {
   const sc = statusConfig[entry.status] || statusConfig.draft;
 
   const savedLines = entry.lines.map(line => ({ ...line,
-    currencyCode: journalDisplayCurrency(entry.sourceType, line.currencyCode),
+    currencyCode: line.amountCurrencyCode,
     debitAmountMinor: String(journalRestMinor(line.debitAmount, line.debitAmountMinor)),
     creditAmountMinor: String(journalRestMinor(line.creditAmount, line.creditAmountMinor)),
   }));
@@ -484,14 +487,14 @@ export default function EntryDetailPage() {
                       </td>
                       <td className="px-6 py-3 text-right font-mono tabular-nums">
                         {debit > 0n ? (
-                          <span className="font-medium">{journalMoney(debit, journalDisplayCurrency(entry.sourceType, line.currencyCode))}</span>
+                          <span className="font-medium">{journalMoney(debit, line.amountCurrencyCode)}</span>
                         ) : (
                           <span className="text-muted-foreground/30">-</span>
                         )}
                       </td>
                       <td className="px-6 py-3 text-right font-mono tabular-nums">
                         {credit > 0n ? (
-                          <span className="font-medium">{journalMoney(credit, journalDisplayCurrency(entry.sourceType, line.currencyCode))}</span>
+                          <span className="font-medium">{journalMoney(credit, line.amountCurrencyCode)}</span>
                         ) : (
                           <span className="text-muted-foreground/30">-</span>
                         )}

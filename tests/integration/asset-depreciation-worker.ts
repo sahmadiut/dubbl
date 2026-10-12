@@ -1,3 +1,4 @@
+import { assetLoanUiPayload, assetLoanJson } from "../../lib/money/asset-loan-ui";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { eq, desc, sql } from "drizzle-orm";
@@ -26,7 +27,9 @@ async function connect(ctx: AuthContext) {
   }
   return { async call(name: string, args: Record<string, unknown>) {
     const result = await client.callTool({ name, arguments: args }), text = (result.content as { text: string }[])[0].text;
-    return { isError: result.isError === true, body: text.startsWith("{") ? JSON.parse(text) : { error: text } };
+    const body = text.startsWith("{") ? JSON.parse(text) : { error: text };
+    if (!result.isError) assetLoanUiPayload(body);
+    return { isError: result.isError === true, body };
   }, async close() { await client.close(); await server.close(); } };
 }
 async function run() {
@@ -44,7 +47,7 @@ async function run() {
   const staff = await connect({ ...ctx, role: "member", permissions: ["manage:assets"] });
   const req = (body: unknown = {}, key = keys.a) => new Request("http://fixture.test", { method: "POST", headers: { authorization: `Bearer ${key}`, "content-type": "application/json", "x-organization-id": b.id }, body: JSON.stringify(body) });
   const p = (id: string) => ({ params: Promise.resolve({ id }) });
-  const data = async (r: Response, status = 200) => { const body = await r.json(); assert.equal(r.status, status, JSON.stringify(body)); return body; };
+  const data = async (r: Response, status = 200) => { const body = await assetLoanJson(r); assert.equal(r.status, status, JSON.stringify(body)); return body; };
   async function snapshot() {
     const result = await db.execute(sql.raw("select jsonb_build_object('assets',(select jsonb_agg(to_jsonb(t) order by id) from fixed_asset t),'depreciation',(select jsonb_agg(to_jsonb(t) order by id) from depreciation_entry t),'journals',(select jsonb_agg(to_jsonb(t) order by id) from journal_entry t),'lines',(select jsonb_agg(to_jsonb(t) order by id) from journal_line t),'audit',(select jsonb_agg(to_jsonb(t) order by id) from audit_log t)) as state"));
     return JSON.stringify(result.rows[0].state);

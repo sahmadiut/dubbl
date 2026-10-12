@@ -12,10 +12,6 @@
   "app/(dashboard)/accounting/accruals/page.tsx": {
     "formatMoney": 3
   },
-  "app/(dashboard)/accounting/asset-categories/page.tsx": {
-    "formatMoney": 2,
-    "parseMoney": 2
-  },
   "app/(dashboard)/accounting/banking/[id]/(detail)/layout.tsx": {
     "formatMoney": 4
   },
@@ -37,12 +33,6 @@
   },
   "app/(dashboard)/accounting/budgets/page.tsx": {
     "formatMoney": 10
-  },
-  "app/(dashboard)/accounting/fixed-assets/[id]/page.tsx": {
-    "formatMoney": 13
-  },
-  "app/(dashboard)/accounting/fixed-assets/page.tsx": {
-    "formatMoney": 9
   },
   "app/(dashboard)/accounting/page.tsx": {
     "formatMoney": 3

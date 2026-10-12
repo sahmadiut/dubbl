@@ -2070,3 +2070,15 @@ nonmoney units. All eight payroll integration workers validate successful REST/M
 DTOs with the consumer adapter, including independent UI-to-SQL master round trips.
 Scoped source guards and removed legacy-helper allowances prevent regression.
 No schema/history/unit rescaling or production change; MON-008 remains open.
+
+## MON-156 asset and loan UI consumer cutover
+
+See [ASSET_LOAN_UI_MONEY_CUTOVER](ASSET_LOAN_UI_MONEY_CUTOVER.md) for the scoped
+list/detail/category/create-drawer mapping. Successful saved/mutation DTOs validate
+safe numeric cents against canonical Minor aliases before adoption. Existing
+bigint totals and exact inputs are retained; detail depreciation ratios and
+valuation magnitudes use bigint. Fixed cents, USD presentation, nonmoney life/
+physical units/basis points and REST-major versus MCP-cents loan compatibility
+remain explicit. Six real REST/MCP integration workers adopt the shared adapter,
+with UI-to-SQL low-digit/safe-max storage assertions. No rescaling, schema or
+production change; independent MON-008 acceptance remains open.

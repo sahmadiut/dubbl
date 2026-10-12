@@ -295,7 +295,10 @@ def generate():
         payroll_ui = path.startswith("app/(dashboard)/payroll/") or path in {
             "lib/money/payroll-ui.ts", "lib/money/payroll-input.ts", "lib/money/payroll-display.ts"
         }
-        if payroll_ui:
+        asset_loan_ui = path.startswith(("app/(dashboard)/accounting/fixed-assets/", "app/(dashboard)/accounting/asset-categories/", "app/(dashboard)/accounting/loans/")) or path in {"lib/money/asset-loan-ui.ts", "lib/money/asset-display.ts"}
+        if asset_loan_ui:
+            owner = "MON-156 asset/loan UI cents cutover; MON-008 independent integration; LOC-003 formatting/input"
+        elif payroll_ui:
             owner = "MON-155 payroll UI cents cutover; MON-008 independent integration; LOC-003 formatting/input"
         elif path.startswith(("app/api/", "lib/mcp/")):
             owner = "MON-006 contracts; MON-007 core/MON-008 auxiliary arithmetic"
@@ -310,8 +313,8 @@ def generate():
         else:
             owner = "MON-007 core/MON-008 auxiliary; MON-006 serialization"
         consumers.append(dict(path=path, sha256=hashlib.sha256(source.replace("\r\n", "\n").encode()).hexdigest(),
-                              table_references=sorted(refs), units="legacy payroll cents independent of ISO scale; hours, percentages and FX are separate units" if payroll_ui else "currency-tagged bigint minor units; rational operands have explicit units" if path.startswith("lib/money/") else "per referenced column; mixed money/FX/quantity/percent; legacy Number candidates require inspection",
-                              range="saved money safe integer +/-9007199254740991 with canonical Minor aliases; bigint UI sums and rational intermediates" if payroll_ui else "signed int64 final amounts; arbitrary-precision intermediate ratios" if path.startswith("lib/money/") else "Number safe integer +/-9007199254740991; DB money columns bigint via guarded safe-number bridge; intermediates/SQL casts may narrow",
+                              table_references=sorted(refs), units="asset/loan legacy fixed cents; life, physical units and basis-point rates are separate units" if asset_loan_ui else "legacy payroll cents independent of ISO scale; hours, percentages and FX are separate units" if payroll_ui else "currency-tagged bigint minor units; rational operands have explicit units" if path.startswith("lib/money/") else "per referenced column; mixed money/FX/quantity/percent; legacy Number candidates require inspection",
+                              range="saved money safe integer +/-9007199254740991 with canonical Minor aliases; bigint UI sums and rational intermediates" if payroll_ui or asset_loan_ui else "signed int64 final amounts; arbitrary-precision intermediate ratios" if path.startswith("lib/money/") else "Number safe integer +/-9007199254740991; DB money columns bigint via guarded safe-number bridge; intermediates/SQL casts may narrow",
                               currency_sources={t: tables[t] for t in sorted(refs)},
                               currency_resolution="explicit currency props/arguments or organization context; absent currency defaults must be reviewed, never infer from locale",
                               migration_owner=owner, occurrences=matches))

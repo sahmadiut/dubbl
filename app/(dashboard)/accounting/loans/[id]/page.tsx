@@ -1,5 +1,7 @@
 "use client";
 
+import { assetLoanJson } from "@/lib/money/asset-loan-ui";
+
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
@@ -52,6 +54,7 @@ export default function LoanDetailPage() {
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [ln, setLn] = useState<LoanDetail | null>(null);
   const [schedule, setSchedule] = useState<ScheduleEntry[]>([]);
+  const [readError, setReadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [posting, setPosting] = useState(false);
 
@@ -64,11 +67,12 @@ export default function LoanDetailPage() {
     fetch(`/api/v1/loans/${id}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => assetLoanJson(r))
       .then((data) => {
         if (data.loan) setLn(data.loan);
         if (data.schedule) setSchedule(data.schedule);
       })
+      .catch((error) => setReadError(error instanceof Error ? error.message : "Could not load saved money"))
       .finally(() => setLoading(false));
   }
 
@@ -94,18 +98,23 @@ export default function LoanDetailPage() {
             body: JSON.stringify({ scheduleEntryId: nextEntry.id }),
           });
           if (res.ok) {
+            await assetLoanJson(res);
             toast.success("Payment recorded");
             load();
           } else {
-            const data = await res.json();
+            const data = await assetLoanJson(res);
             toast.error(typeof data.error === "string" ? data.error : "Couldn't record the payment");
           }
+        } catch (error) {
+          toast.error(error instanceof Error ? error.message : "Could not record the payment");
         } finally {
           setPosting(false);
         }
       },
     });
   }
+
+  if (readError) return <p role="alert" className="text-sm text-destructive">{readError}</p>;
 
   if (loading) return <div className="space-y-6"><PageHeader title="Loading..." /></div>;
   if (!ln) return <div className="space-y-6"><PageHeader title="Loan not found" /></div>;

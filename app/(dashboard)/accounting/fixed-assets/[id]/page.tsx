@@ -1,5 +1,7 @@
 "use client";
 
+import { assetLoanJson } from "@/lib/money/asset-loan-ui";
+
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -36,7 +38,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { assetMoneyDisplay as formatMoney, assetCentsInput } from "@/lib/money/asset-display";
+import { assetMoneyDisplay as formatMoney, assetCentsInput, assetPercent } from "@/lib/money/asset-display";
 import { useConfirm } from "@/lib/hooks/use-confirm";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import Link from "next/link";
@@ -114,6 +116,7 @@ export default function FixedAssetDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [asset, setAsset] = useState<AssetDetail | null>(null);
+  const [readError, setReadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [disposeOpen, setDisposeOpen] = useState(false);
   const [disposeAmount, setDisposeAmount] = useState("");
@@ -156,26 +159,27 @@ export default function FixedAssetDetailPage() {
     fetch(`/api/v1/fixed-assets/${id}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => assetLoanJson(r))
       .then((data) => {
         if (data.asset) setAsset(data.asset);
       })
+      .catch((error) => setReadError(error instanceof Error ? error.message : "Could not load saved money"))
       .finally(() => setLoading(false));
     // Construction costs are served by their own endpoint so the history is
     // reliable regardless of what the asset GET embeds.
     fetch(`/api/v1/fixed-assets/${id}/cwip-cost`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => (r.ok ? r.json() : { costs: [] }))
+      .then((r) => (r.ok ? assetLoanJson(r) : { costs: [] }))
       .then((data) => setCwipCosts(data.costs ?? []))
-      .catch(() => setCwipCosts([]));
+      .catch((error) => setReadError(error instanceof Error ? error.message : "Could not load construction costs"));
   }, [id, orgId]);
 
   async function reloadAsset() {
     if (!orgId) return;
     const data = await fetch(`/api/v1/fixed-assets/${id}`, {
       headers: { "x-organization-id": orgId },
-    }).then((r) => r.json());
+    }).then((r) => assetLoanJson(r));
     if (data.asset) setAsset(data.asset);
   }
 
@@ -184,23 +188,27 @@ export default function FixedAssetDetailPage() {
     const data = await fetch(`/api/v1/fixed-assets/${id}/cwip-cost`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => (r.ok ? r.json() : { costs: [] }))
-      .catch(() => ({ costs: [] }));
+      .then((r) => (r.ok ? assetLoanJson(r) : { costs: [] }));
     setCwipCosts(data.costs ?? []);
   }
 
   async function handleDepreciate() {
     if (!orgId) return;
-    const res = await fetch(`/api/v1/fixed-assets/${id}/depreciate`, {
-      method: "POST",
-      headers: { "x-organization-id": orgId },
-    });
-    if (res.ok) {
-      toast.success("Value drop recorded for this period");
-      await reloadAsset();
-    } else {
-      const data = await res.json();
-      toast.error(typeof data.error === "string" ? data.error : "Couldn't record the value drop");
+    try {
+      const res = await fetch(`/api/v1/fixed-assets/${id}/depreciate`, {
+        method: "POST",
+        headers: { "x-organization-id": orgId },
+      });
+      if (res.ok) {
+        await assetLoanJson(res);
+        toast.success("Value drop recorded for this period");
+        await reloadAsset();
+      } else {
+        const data = await assetLoanJson(res);
+        toast.error(typeof data.error === "string" ? data.error : "Couldn't record the value drop");
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not update the asset");
     }
   }
 
@@ -221,16 +229,19 @@ export default function FixedAssetDetailPage() {
           body: JSON.stringify({ depreciationEntryId: asset?.depreciationEntries.at(-1)?.id }) }
       );
       if (res.ok) {
+        await assetLoanJson(res);
         toast.success("Last value drop undone");
         await reloadAsset();
       } else {
-        const data = await res.json();
+        const data = await assetLoanJson(res);
         toast.error(
           typeof data.error === "string"
             ? data.error
             : "Couldn't undo the last value drop"
         );
       }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not update the asset");
     } finally {
       setBusy(false);
     }
@@ -256,19 +267,22 @@ export default function FixedAssetDetailPage() {
         }),
       });
       if (res.ok) {
+        await assetLoanJson(res);
         setRevalueOpen(false);
         setRevalueAmount("");
         setRevalueNotes("");
         toast.success("New, higher value recorded");
         await reloadAsset();
       } else {
-        const data = await res.json();
+        const data = await assetLoanJson(res);
         toast.error(
           typeof data.error === "string"
             ? data.error
             : "Couldn't record the new value"
         );
       }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not update the asset");
     } finally {
       setBusy(false);
     }
@@ -294,19 +308,22 @@ export default function FixedAssetDetailPage() {
         }),
       });
       if (res.ok) {
+        await assetLoanJson(res);
         setImpairOpen(false);
         setImpairAmount("");
         setImpairNotes("");
         toast.success("Lower value recorded");
         await reloadAsset();
       } else {
-        const data = await res.json();
+        const data = await assetLoanJson(res);
         toast.error(
           typeof data.error === "string"
             ? data.error
             : "Couldn't write down the value"
         );
       }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not update the asset");
     } finally {
       setBusy(false);
     }
@@ -325,18 +342,21 @@ export default function FixedAssetDetailPage() {
         body: JSON.stringify({ date: capitalizeDate }),
       });
       if (res.ok) {
+        await assetLoanJson(res);
         setCapitalizeOpen(false);
         toast.success("Item brought into use");
         await reloadAsset();
         await reloadCwipCosts();
       } else {
-        const data = await res.json();
+        const data = await assetLoanJson(res);
         toast.error(
           typeof data.error === "string"
             ? data.error
             : "Couldn't bring this item into use"
         );
       }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not update the asset");
     } finally {
       setBusy(false);
     }
@@ -372,6 +392,7 @@ export default function FixedAssetDetailPage() {
         }),
       });
       if (res.ok) {
+        await assetLoanJson(res);
         setCostOpen(false);
         setCostAmount("");
         setCostDescription("");
@@ -380,13 +401,15 @@ export default function FixedAssetDetailPage() {
         await reloadAsset();
         await reloadCwipCosts();
       } else {
-        const data = await res.json();
+        const data = await assetLoanJson(res);
         toast.error(
           typeof data.error === "string"
             ? data.error
             : "Couldn't add the construction cost"
         );
       }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not update the asset");
     } finally {
       setBusy(false);
     }
@@ -398,23 +421,27 @@ export default function FixedAssetDetailPage() {
     try { amount = assetCentsInput(disposeAmount || "0"); }
     catch (error) { toast.error((error as Error).message); return; }
 
-    const res = await fetch(`/api/v1/fixed-assets/${id}/dispose`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-organization-id": orgId,
-      },
-      body: JSON.stringify({ disposalAmountMinor: amount, date: disposeDate }),
-    });
+    try {
+      const res = await fetch(`/api/v1/fixed-assets/${id}/dispose`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-organization-id": orgId,
+        },
+        body: JSON.stringify({ disposalAmountMinor: amount, date: disposeDate }),
+      });
 
-    if (res.ok) {
-      const data = await res.json();
-      setAsset((prev) => (prev ? { ...prev, ...data.asset, depreciationEntries: prev.depreciationEntries } : prev));
-      setDisposeOpen(false);
-      toast.success("Item recorded as sold or written off");
-    } else {
-      const data = await res.json();
-      toast.error(typeof data.error === "string" ? data.error : "Couldn't record the sale or write-off");
+      if (res.ok) {
+        const data = await assetLoanJson(res);
+        setAsset((prev) => (prev ? { ...prev, ...data.asset, depreciationEntries: prev.depreciationEntries } : prev));
+        setDisposeOpen(false);
+        toast.success("Item recorded as sold or written off");
+      } else {
+        const data = await assetLoanJson(res);
+        toast.error(typeof data.error === "string" ? data.error : "Couldn't record the sale or write-off");
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not update the asset");
     }
   }
 
@@ -432,12 +459,15 @@ export default function FixedAssetDetailPage() {
       headers: { "x-organization-id": orgId },
     });
     if (res.ok) {
+      await assetLoanJson(res);
       toast.success("Asset deleted");
       router.push("/accounting/fixed-assets");
     } else {
       toast.error("Failed to delete asset");
     }
   }
+
+  if (readError) return <p role="alert" className="text-sm text-destructive">{readError}</p>;
 
   if (loading)
     return (
@@ -455,7 +485,7 @@ export default function FixedAssetDetailPage() {
   const depPercent =
     asset.purchasePrice > 0
       ? Math.round(
-          (asset.accumulatedDepreciation / asset.purchasePrice) * 100
+          assetPercent(asset.accumulatedDepreciation, asset.purchasePrice)
         )
       : 0;
 
@@ -1037,7 +1067,7 @@ export default function FixedAssetDetailPage() {
                   }`}
                 >
                   {rev.changeAmount < 0 ? "-" : "+"}
-                  {formatMoney(Math.abs(rev.changeAmount))}
+                  {formatMoney(BigInt(rev.changeAmount) < 0n ? -BigInt(rev.changeAmount) : BigInt(rev.changeAmount))}
                 </span>
                 <span className="text-right text-sm text-muted-foreground">
                   {rev.journalEntry

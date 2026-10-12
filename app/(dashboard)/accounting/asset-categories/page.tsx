@@ -1,5 +1,7 @@
 "use client";
 
+import { assetLoanJson } from "@/lib/money/asset-loan-ui";
+
 import { useState, useEffect, useCallback } from "react";
 import { Plus, Layers, Loader2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -133,6 +135,7 @@ export default function AssetCategoriesPage() {
     typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
 
   const [categories, setCategories] = useState<AssetCategory[]>([]);
+  const [readError, setReadError] = useState<string | null>(null);
   const [initialLoad, setInitialLoad] = useState(true);
   const [refetching, setRefetching] = useState(false);
 
@@ -148,10 +151,11 @@ export default function AssetCategoriesPage() {
     fetch(`/api/v1/asset-categories?limit=200`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => assetLoanJson(r))
       .then((data) => {
         setCategories(data.data || []);
       })
+      .catch((error) => setReadError(error instanceof Error ? error.message : "Could not load saved money"))
       .finally(() => {
         setInitialLoad(false);
         setRefetching(false);
@@ -213,10 +217,11 @@ export default function AssetCategoriesPage() {
         body: JSON.stringify(payload),
       });
       if (!res.ok) {
-        const data = await res.json().catch(() => null);
+        const data = await assetLoanJson(res).catch(() => null);
         setError(data?.error || "Could not save the template. Please try again.");
         return;
       }
+      await assetLoanJson(res);
       setDialogOpen(false);
       load();
     } catch (error) {
@@ -300,6 +305,8 @@ export default function AssetCategoriesPage() {
       ),
     },
   ];
+
+  if (readError) return <p role="alert" className="text-sm text-destructive">{readError}</p>;
 
   if (initialLoad) return <BrandLoader />;
 

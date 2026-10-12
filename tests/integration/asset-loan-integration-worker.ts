@@ -1,3 +1,4 @@
+import { assetLoanUiPayload, assetLoanJson } from "../../lib/money/asset-loan-ui";
 // Invoked only by the migrated, disposable parent-integration fixture.
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -42,7 +43,9 @@ async function connect(ctx: AuthContext) {
   return { async call(name: string, args: Record<string, unknown>) {
     const result = await client.callTool({ name, arguments: args });
     const text = (result.content as { text: string }[])[0].text;
-    return { isError: result.isError === true, body: text.startsWith("{") ? JSON.parse(text) : { error: text } };
+    const body = text.startsWith("{") ? JSON.parse(text) : { error: text };
+    if (!result.isError) assetLoanUiPayload(body);
+    return { isError: result.isError === true, body };
   }, async close() { await client.close(); await server.close(); } };
 }
 async function run() {
@@ -66,7 +69,7 @@ async function run() {
   }
   const p = (id: string) => ({ params: Promise.resolve({ id }) });
   const data = async (response: Response, status = 200) => {
-    const body = await response.json(); assert.equal(response.status, status, JSON.stringify(body)); return body;
+    const body = await assetLoanJson(response); assert.equal(response.status, status, JSON.stringify(body)); return body;
   };
   async function snapshot() {
     const tables = ["organization", "fixed_asset", "asset_category", "cwip_cost", "depreciation_entry", "asset_revaluation", "loan", "loan_schedule", "chart_account", "bank_account", "journal_entry", "journal_line", "audit_log"];

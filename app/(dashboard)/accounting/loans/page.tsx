@@ -1,5 +1,7 @@
 "use client";
 
+import { assetLoanJson } from "@/lib/money/asset-loan-ui";
+
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { useRouter } from "next/navigation";
@@ -97,6 +99,7 @@ export default function LoansPage() {
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
   const [loans, setLoans] = useState<Loan[]>([]);
+  const [readError, setReadError] = useState<string | null>(null);
   const [initialLoad, setInitialLoad] = useState(true);
   const [refetching, setRefetching] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -132,13 +135,14 @@ export default function LoansPage() {
     fetch(`/api/v1/loans?${buildParams(1)}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => assetLoanJson(r))
       .then((data) => {
         if (cancelled) return;
         setLoans(data.data || []);
         setTotalCount(data.pagination?.total || 0);
       })
       .then(() => devDelay())
+      .catch((error) => setReadError(error instanceof Error ? error.message : "Could not load saved money"))
       .finally(() => { if (!cancelled) { setInitialLoad(false); setRefetching(false); setFetchKey((k) => k + 1); } });
 
     return () => { cancelled = true; };
@@ -153,13 +157,14 @@ export default function LoansPage() {
     fetch(`/api/v1/loans?${buildParams(nextPage)}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => assetLoanJson(r))
       .then((data) => {
         if (data.data) {
           setLoans((prev) => [...prev, ...data.data]);
           setPage(nextPage);
         }
       })
+      .catch((error) => setReadError(error instanceof Error ? error.message : "Could not load saved money"))
       .finally(() => setLoadingMore(false));
   }, [orgId, page, buildParams, loadingMore]);
 
@@ -203,6 +208,8 @@ export default function LoansPage() {
     () => loans.reduce((sum, l) => sum + (l.status === "active" ? BigInt(l.monthlyPayment) : 0n), 0n),
     [loans]
   );
+
+  if (readError) return <p role="alert" className="text-sm text-destructive">{readError}</p>;
 
   if (initialLoad) return <BrandLoader />;
 

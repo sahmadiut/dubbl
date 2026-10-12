@@ -1,5 +1,7 @@
 "use client";
 
+import { assetLoanJson } from "@/lib/money/asset-loan-ui";
+
 import { useState, useEffect, useMemo } from "react";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { useRouter } from "next/navigation";
@@ -193,6 +195,7 @@ export default function FixedAssetsPage() {
   const { open: openDrawer } = useCreateDrawer();
   const [assets, setAssets] = useState<FixedAsset[]>([]);
   const [allAssets, setAllAssets] = useState<FixedAsset[]>([]);
+  const [readError, setReadError] = useState<string | null>(null);
   const [initialLoad, setInitialLoad] = useState(true);
   const [refetching, setRefetching] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
@@ -213,10 +216,11 @@ export default function FixedAssetsPage() {
     fetch(`/api/v1/fixed-assets`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => assetLoanJson(r))
       .then((data) => {
         if (data.data) setAllAssets(data.data);
-      });
+      })
+      .catch((error) => setReadError(error instanceof Error ? error.message : "Could not load saved assets"));
   }, []);
 
   // Fetch filtered assets
@@ -232,7 +236,7 @@ export default function FixedAssetsPage() {
     fetch(`/api/v1/fixed-assets?${params}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => assetLoanJson(r))
       .then((data) => {
         if (cancelled) return;
         if (data.data) {
@@ -242,6 +246,7 @@ export default function FixedAssetsPage() {
         }
       })
       .then(() => devDelay())
+      .catch((error) => setReadError(error instanceof Error ? error.message : "Could not load saved money"))
       .finally(() => {
         if (!cancelled) {
           setInitialLoad(false);
@@ -264,7 +269,7 @@ export default function FixedAssetsPage() {
         method: "POST",
         headers: { "x-organization-id": orgId },
       });
-      const data = await res.json();
+      const data = await assetLoanJson(res);
       if (res.ok) {
         toast.success(
           `Value drops recorded for ${data.processed} item${data.processed === 1 ? "" : "s"}`
@@ -321,6 +326,8 @@ export default function FixedAssetsPage() {
   }, [allAssets]);
 
   const pendingSearch = search !== debouncedSearch;
+
+  if (readError) return <p role="alert" className="text-sm text-destructive">{readError}</p>;
 
   if (initialLoad) return <BrandLoader />;
 

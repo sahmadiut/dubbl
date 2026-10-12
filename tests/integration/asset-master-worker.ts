@@ -1,3 +1,5 @@
+import { assetCentsInput } from "../../lib/money/asset-display";
+import { assetLoanUiPayload, assetLoanJson } from "../../lib/money/asset-loan-ui";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
@@ -30,7 +32,9 @@ async function mcp(ctx: AuthContext, full = false) {
   }
   return { async call(name: string, args: Record<string, unknown>) {
     const result = await client.callTool({ name, arguments: args }), text = (result.content as { text: string }[])[0].text;
-    return { isError: result.isError === true, body: text.startsWith("{") ? JSON.parse(text) : { error: text } };
+    const body = text.startsWith("{") ? JSON.parse(text) : { error: text };
+    if (!result.isError) assetLoanUiPayload(body);
+    return { isError: result.isError === true, body };
   }, async close() { await client.close(); await server.close(); } };
 }
 async function run() {
@@ -53,7 +57,7 @@ async function run() {
   const req = (body: unknown = {}, key = keys.a, query = "") => new Request("http://fixture.test/api/v1/assets" + query, { method: "POST",
     headers: { authorization: `Bearer ${key}`, "content-type": "application/json", "x-organization-id": b.id }, body: JSON.stringify(body) });
   const p = (id: string) => ({ params: Promise.resolve({ id }) });
-  const data = async (response: Response, status = 200) => { const body = await response.json(); assert.equal(response.status, status, JSON.stringify(body)); return body; };
+  const data = async (response: Response, status = 200) => { const body = await assetLoanJson(response); assert.equal(response.status, status, JSON.stringify(body)); return body; };
   const snapshot = async () => Promise.all(["asset_category", "fixed_asset", "depreciation_entry", "asset_revaluation", "cwip_cost", "journal_entry", "journal_line", "audit_log"].map(t =>
     db.execute(sql.raw(`select coalesce(jsonb_agg(to_jsonb(t)::text order by t.id),'[]'::jsonb) as rows from ${t} t`)).then(r => r.rows)));
   const denied = async (fn: () => Promise<Response>, status: number) => { const before = await snapshot(); await data(await fn(), status); assert.deepEqual(await snapshot(), before); };
@@ -72,8 +76,15 @@ async function run() {
     assert.equal((await data(await patchCategory(req({ defaultResidualValueMinor: "3000000000", defaultUsefulLifeMonths: null, isActive: false }), p(cm.id)))).category.defaultResidualValue, 3000000000);
     const e = (await data(await createAsset(req({ ...base, purchasePrice: 3000000000, categoryId: c.id })), 201)).asset;
     assert.equal(e.purchasePriceMinor, "3000000000"); assert.equal(e.residualValue, 1250); assert.equal(e.assetAccountId, own.id);
-    const em = (await ma.call("create_fixed_asset", { name: "Exact", assetNumber: "A2", purchaseDate: "2024-02-29", purchasePriceMinor: "9007199254740991", categoryId: c.id, assetAccountId: null })).body.asset;
+    const em = (await ma.call("create_fixed_asset", { name: "Exact", assetNumber: "A2", purchaseDate: "2024-02-29", purchasePriceMinor: assetCentsInput("90071992547409.91"), categoryId: c.id, assetAccountId: null })).body.asset;
     assert.equal(em.purchasePrice, Number.MAX_SAFE_INTEGER); assert.equal(em.usefulLifeMonths, 60); assert.equal(em.residualValue, 1250); assert.equal(em.assetAccountId, null);
+    const exactSql = await db.execute(sql`select purchase_price::text as amount from fixed_asset where id = ${em.id}`);
+    assert.equal(exactSql.rows[0].amount, "9007199254740991");
+    const uiLow = (await data(await createAsset(req({ ...base, assetNumber: "UI-LOW", purchasePriceMinor: assetCentsInput("0.29") })), 201)).asset;
+    const lowSql = await db.execute(sql`select purchase_price::text as amount from fixed_asset where id = ${uiLow.id}`);
+    assert.equal(lowSql.rows[0].amount, "29");
+    await data(await removeAsset(req(), p(uiLow.id)));
+
     await data(await createAsset(req({ ...base, purchasePrice: 29, purchasePriceMinor: "29", residualValueMinor: "0" })), 201);
     const zero = (await ma.call("create_fixed_asset", { ...base, purchasePriceMinor: "0", isCwip: true })).body.asset;
     assert.equal(zero.status, "in_progress"); assert.equal(zero.revaluedAmountMinor, null);

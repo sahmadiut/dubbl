@@ -1,3 +1,5 @@
+import { assetCentsInput } from "../../lib/money/asset-display";
+import { assetLoanUiPayload, assetLoanJson } from "../../lib/money/asset-loan-ui";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
@@ -24,7 +26,9 @@ async function connect(ctx: AuthContext) {
   }
   return { async call(name: string, args: Record<string, unknown>) {
     const r = await client.callTool({ name, arguments: args }), text = (r.content as { text: string }[])[0].text;
-    return { isError: r.isError === true, body: text.startsWith("{") ? JSON.parse(text) : { error: text } };
+    const body = text.startsWith("{") ? JSON.parse(text) : { error: text };
+    if (!r.isError) assetLoanUiPayload(body);
+    return { isError: r.isError === true, body };
   }, async close() { await client.close(); await server.close(); } };
 }
 async function run() {
@@ -59,7 +63,7 @@ async function run() {
   const req = (body: unknown = {}, key: string = keys.a, query = "") => new Request("http://fixture.test/loans" + query,
     { method: "POST", headers: { authorization: `Bearer ${key}`, "content-type": "application/json", "x-organization-id": b.id }, body: JSON.stringify(body) });
   const p = (id: string) => ({ params: Promise.resolve({ id }) });
-  const data = async (r: Response, status = 200) => { const body = await r.json(); assert.equal(r.status, status, JSON.stringify(body)); return body; };
+  const data = async (r: Response, status = 200) => { const body = await assetLoanJson(r); assert.equal(r.status, status, JSON.stringify(body)); return body; };
   const base = { name: "Loan", principalAmount: 10000, interestRate: 500, termMonths: 12, startDate: "2024-01-01",
     bankAccountId: bank.id, principalAccountId: liability.id, interestAccountId: expense.id };
   async function snapshot() {
@@ -155,7 +159,14 @@ async function run() {
     await db.delete(periodLock).where(eq(periodLock.id, lock.id));
     const [fy] = await db.insert(fiscalYear).values({ organizationId: a.id, name: "Closed", startDate: "2024-03-01", endDate: "2024-03-31", isClosed: true }).returning();
     await denied(() => post(req(), p(locked.loan.id)), 422); await mdenied("post_loan_payment", { loanId: locked.loan.id }, ma, 422); await db.delete(fiscalYear).where(eq(fiscalYear.id, fy.id));
-    const max = await fresh({ principalAmount: undefined, principalAmountMinor: "9007199254740991", termMonths: 1, interestRate: 0 });
+    const max = await fresh({ principalAmount: undefined, principalAmountMinor: assetCentsInput("90071992547409.91"), termMonths: 1, interestRate: 0 });
+    const maxSql = await db.execute(sql`select principal_amount::text as amount from loan where id = ${max.loan.id}`);
+    assert.equal(maxSql.rows[0].amount, "9007199254740991");
+    const low = await fresh({ name: "UI low digit", principalAmount: undefined, principalAmountMinor: assetCentsInput("0.29"), interestRate: 0, termMonths: 1 });
+    assert.equal(low.schedule[0].principalAmountMinor, "29");
+    const lowSql = await db.execute(sql`select principal_amount::text as amount from loan where id = ${low.loan.id}`);
+    assert.equal(lowSql.rows[0].amount, "29");
+
     const maxPayment = await ma.call("post_loan_payment", { loanId: max.loan.id }); assert.equal(maxPayment.isError, false); assert.equal(maxPayment.body.entry.totalPaymentMinor, "9007199254740991");
     // Stored unsafe/corrupt schedule, foreign history and bank references fail closed.
     const corrupt = await fresh(); const corruptDetail = await data(await get(req(), p(corrupt.loan.id)));

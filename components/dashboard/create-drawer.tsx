@@ -1,4 +1,6 @@
 "use client";
+
+import { assetLoanJson } from "@/lib/money/asset-loan-ui";
 import { currencyMetadata } from "@/lib/money/exact";
 import { bankUiTransfer, bankUiAccount, bankUiMoney } from "@/lib/money/bank-ui";
 
@@ -1947,8 +1949,9 @@ function FixedAssetDrawer({ open, onClose }: { open: boolean; onClose: () => voi
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
     fetch("/api/v1/accounts", { headers: { "x-organization-id": orgId } })
-      .then((r) => r.json())
-      .then((data) => { if (data.accounts) setAccounts(data.accounts); });
+      .then((r) => assetLoanJson(r))
+      .then((data) => { if (data.accounts) setAccounts(data.accounts); })
+      .catch((error) => toast.error(error instanceof Error ? error.message : "Could not load accounts"));
   }, [open]);
 
   const assetAccounts = accounts.filter((a) => a.type === "asset");
@@ -1980,10 +1983,10 @@ function FixedAssetDrawer({ open, onClose }: { open: boolean; onClose: () => voi
         }),
       });
       if (!res.ok) {
-        const data = await res.json();
+        const data = await assetLoanJson(res);
         throw new Error(data.error || "Failed to create asset");
       }
-      const data = await res.json();
+      const data = await assetLoanJson(res);
       toast.success("Fixed asset created");
       onClose();
       router.push(`/accounting/fixed-assets/${data.asset.id}`);
@@ -4403,7 +4406,7 @@ function LoanDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
     fetch("/api/v1/bank-accounts", { headers: { "x-organization-id": orgId } })
-      .then((r) => r.json())
+      .then((r) => assetLoanJson(r))
       .then((data) => { if (data.bankAccounts) setBankAccounts(data.bankAccounts); })
       .catch(() => {});
   }, [open]);
@@ -4434,10 +4437,10 @@ function LoanDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
         }),
       });
       if (!res.ok) {
-        const data = await res.json();
+        const data = await assetLoanJson(res);
         throw new Error(data.error || "Failed to create loan");
       }
-      const data = await res.json();
+      const data = await assetLoanJson(res);
       toast.success("Loan created");
       onClose();
       router.push(`/accounting/loans/${data.loan.id}`);

@@ -14,7 +14,8 @@ import {
 } from "@/components/ui/select";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { cn } from "@/lib/utils";
-import { formatMoney } from "@/lib/money";
+import { displayMoney as formatMoney, displayJson, contactActivityUi } from "@/lib/money/contact-dashboard-ui";
+import { toast } from "sonner";
 import { DatePicker } from "@/components/ui/date-picker";
 import { useContactContext, getOrgId, activityTypeConfig } from "../layout";
 import type { ActivityItem } from "../layout";
@@ -57,7 +58,7 @@ export default function ContactActivityPage() {
       fetch(`/api/v1/contacts/${id}/activity?${params}`, {
         headers: { "x-organization-id": orgId },
       })
-        .then((r) => r.json())
+        .then((r) => displayJson(r, contactActivityUi))
         .then((data) => {
           if (data.activity) {
             setActivityItems((prev) => isLoadMore ? [...prev, ...data.activity] : data.activity);
@@ -65,7 +66,7 @@ export default function ContactActivityPage() {
           setActivityHasMore(data.hasMore ?? false);
           setActivityCursor(data.nextCursor ?? null);
         })
-        .catch(() => {})
+        .catch(() => { setActivityItems([]); toast.error("Unable to load valid activity amounts"); })
         .finally(() => {
           setActivityLoading(false);
           setActivityLoadingMore(false);

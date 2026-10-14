@@ -1,3 +1,4 @@
+import { contactDetailUi, contactListUi, contactCreditDecimal, contactCreditInput } from "../../lib/money/contact-dashboard-ui";
 // Invoked only against a disposable migrated database by contact-wire.test.ts.
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -143,6 +144,10 @@ async function run() {
   assert.equal(edgeBalance.owesYou, Number.MAX_SAFE_INTEGER);
   assert.equal(edgeBalance.owesYouMinor, "9007199254740991");
   assert.equal(edgeBalance.overdueMinor, "9007199254740991");
+  assert.equal(contactListUi(edgeBalance).owesYou, 9007199254740991n);
+  const edgeSql = (await db.execute(sql`select sum(amount_due)::text as amount from invoice where contact_id = ${edge.id}`)).rows[0];
+  assert.equal(contactListUi(edgeBalance).owesYou.toString(), edgeSql.amount);
+  assert.throws(() => contactListUi({ ...edgeBalance, owesYouMinor: "9007199254740990" }));
 
   // Actual registered tools validate before writes and maintain numeric/string compatibility.
   let mcpId = "";
@@ -150,6 +155,9 @@ async function run() {
     const saved = await callA("create_contact", { name: "MCP fixture", currencyCode: " usd ", ...fields });
     assert.equal(saved.isError, undefined);
     assert.equal(saved.body.contact.currencyCode, "USD");
+    const adopted = contactDetailUi(saved.body.contact);
+    assert.deepEqual(contactCreditInput(contactCreditDecimal(adopted.creditLimit, adopted.currencyCode), adopted.currencyCode ?? ""),
+      { creditLimitMinor: saved.body.contact.creditLimitMinor });
     mcpId = saved.body.contact.id;
     assert.equal(saved.body.contact.creditLimitMinor, saved.body.contact.creditLimit === null ? null : String(saved.body.contact.creditLimit));
   }

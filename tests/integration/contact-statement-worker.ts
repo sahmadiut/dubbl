@@ -1,3 +1,4 @@
+import { contactStatementUi, contactActivityUi } from "../../lib/money/contact-dashboard-ui";
 import assert from "node:assert/strict";
 import { createHash, randomUUID } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
@@ -89,6 +90,8 @@ async function run() {
     const json = await (await statement(request("statement"), params())).json();
     assert.equal(json.openingBalanceMinor, "400"); assert.equal(json.closingBalanceMinor, "2450");
     assert.equal(json.totalDebitMinor, "2600"); assert.equal(json.totalCreditMinor, "550");
+    assert.equal(contactStatementUi(json).closingBalance, 2450n);
+    assert.throws(() => contactStatementUi({ ...json, closingBalanceMinor: "2451" }));
     assert.equal(json.transactions.length, 7); assert.deepEqual((await ma.call("get_contact_statement", { contactId: c.id, ...period })).body, json);
     const ap = await (await supplier(request("supplier-statement"), params())).json();
     assert.equal(ap.openingBalanceMinor, "400"); assert.equal(ap.closingBalanceMinor, "700"); assert.equal(ap.totalBilledMinor, "400"); assert.equal(ap.totalPaidOrCreditedMinor, "100");
@@ -98,6 +101,8 @@ async function run() {
     assert.equal((await ma.call("export_contact_statement", { contactId: c.id, ...period })).body.html, html);
     const feed = await (await activity(request("activity", "?startDate=2024-02-01&endDate=2024-02-29&limit=100"), params())).json();
     assert.deepEqual((await ma.call("get_contact_activity", { contactId: c.id, ...period, limit: 100 })).body, feed);
+    const adoptedFeed = contactActivityUi(feed);
+    for (const item of adoptedFeed.activity) assert.equal(item.amount.toString(), feed.activity.find((row: { id: string }) => row.id === item.id).amountMinor);
     assert.ok(feed.activity.some((r: { type: string; amountMinor: string }) => r.type === "quote" && r.amountMinor === "99"));
     const page = await (await activity(request("activity", "?limit=1"), params())).json(); assert.equal(page.activity.length, 1); assert.equal(page.hasMore, true);
     assert.equal((await activity(request("activity", `?cursor=${encodeURIComponent(page.nextCursor)}&limit=1`), params())).status, 200);
@@ -144,7 +149,7 @@ async function run() {
     assert.equal((await email(request("statement/email", "", keys.a, period), params())).status, 422);
     assert.equal((await ma.call("get_contact_statement", { contactId: c.id, ...period })).body.code, "LEGACY_NUMERIC_RANGE");
     assert.equal((await ma.call("email_contact_statement", { contactId: c.id, ...period })).body.code, "LEGACY_NUMERIC_RANGE");
-    const filtered = await (await statement(request("statement", query + "&currencyCode=JPY"), params())).json(); assert.equal(filtered.closingBalanceMinor, "1250"); assert.equal(filtered.currencyCode, "JPY");
+    const filtered = await (await statement(request("statement", query + "&currencyCode=JPY"), params())).json(); assert.equal(filtered.closingBalanceMinor, "1250"); assert.equal(filtered.currencyCode, "JPY"); assert.equal(contactStatementUi(filtered).closingBalance, 1250n);
     assert.match(await (await print(request("statement/pdf", query + "&currencyCode=JPY"), params())).text(), /1,250/);
     for (const [currencyCode, pattern] of [["IRR", /1,250/], ["KWD", /1\.250/]] as const) {
       await db.update(invoice).set({ currencyCode }).where(eq(invoice.id, jpy.id));
@@ -174,7 +179,10 @@ async function run() {
     await db.execute(sql`update ${invoice} set total = 9223372036854775807 where id = ${edge.id}`);
     for (const handler of [statement, activity]) assert.equal((await handler(request("statement", ""), params())).status, 422);
     await db.execute(sql`update ${invoice} set total = -9007199254740991 where id = ${edge.id}`);
-    assert.equal((await (await statement(request("statement"), params())).json()).closingBalanceMinor, "-9007199254740991");
+    const signedStatement = contactStatementUi(await (await statement(request("statement"), params())).json());
+    assert.equal(signedStatement.closingBalance, -9007199254740991n);
+    const signedSql = (await db.execute(sql`select total::text as amount from invoice where id = ${edge.id}`)).rows[0];
+    assert.equal(signedStatement.closingBalance.toString(), signedSql.amount);
     await assert.rejects(getContactStatement({ ...ctx, permissions: [] }, c.id, {}), { status: 403 });
     await db.update(contact).set({ deletedAt: new Date() }).where(eq(contact.id, c.id));
     assert.equal((await statement(request("statement"), params())).status, 404); assert.equal((await activity(request("activity", ""), params())).status, 404);

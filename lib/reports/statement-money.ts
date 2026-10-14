@@ -1,15 +1,15 @@
-import { currencyMetadata, money, toMajorDecimal } from "@/lib/money/exact";
+import { checkedMinor, currencyMetadata, money, toMajorDecimal } from "@/lib/money/exact";
 import { WireCompatibilityError } from "@/lib/money/wire";
 import { reportStoredMinor } from "./statement-wire";
 
-function exportAmount(value: number, currency: string) {
-  const amount = reportStoredMinor(value);
+function exportAmount(value: number | bigint, currency: string) {
+  const amount = typeof value === "bigint" ? checkedMinor(value) : reportStoredMinor(value);
   try { return money(amount, currency); }
   catch { throw new WireCompatibilityError("Unsupported statement currency or amount"); }
 }
 
 /** Numeric XLSX cells require both decimal round-trip and Excel's 15-digit precision. */
-export function statementCellNumber(value: number, currency: string): number {
+export function statementCellNumber(value: number | bigint, currency: string): number {
   const amount = exportAmount(value, currency);
   const decimal = toMajorDecimal(amount);
   const significant = (amount.amountMinor < 0n ? -amount.amountMinor : amount.amountMinor).toString().replace(/0+$/, "");
@@ -21,7 +21,7 @@ export function statementCellNumber(value: number, currency: string): number {
 }
 
 /** Format the integer and fractional parts separately, retaining every stored minor unit. */
-export function statementMoneyText(value: number, currency: string): string {
+export function statementMoneyText(value: number | bigint, currency: string): string {
   const amount = exportAmount(value, currency);
   const [whole, fraction] = toMajorDecimal(amount).split(".");
   const scale = currencyMetadata(currency).minorUnits;

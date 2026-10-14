@@ -12,25 +12,9 @@ import {
   Legend,
 } from "recharts";
 import { TrendingUp, TrendingDown, ArrowRight } from "lucide-react";
-import { formatMoney } from "@/lib/money";
+import { displayMoney, displayJson, cashForecastUi, forecastChartPoint, type CashForecastUi } from "@/lib/money/contact-dashboard-ui";
+import { CurrencySelect } from "@/components/ui/currency-select";
 import { cn } from "@/lib/utils";
-
-interface ForecastWeek {
-  weekOf: string;
-  inflows: number;
-  outflows: number;
-  net: number;
-  entryCount: number;
-  cumulativeNet: number;
-}
-
-interface ForecastData {
-  forecastPeriod: { start: string; end: string; weeks: number };
-  totalInflows: number;
-  totalOutflows: number;
-  netForecast: number;
-  weeks: ForecastWeek[];
-}
 
 const periods = [
   { label: "30 days", weeks: 4 },
@@ -38,7 +22,7 @@ const periods = [
   { label: "90 days", weeks: 13 },
 ];
 
-function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: { dataKey: string; value: number }[]; label?: string }) {
+function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: { dataKey: "inflows" | "outflows" | "balance"; payload: ReturnType<typeof forecastChartPoint> }[]; label?: string }) {
   if (!active || !payload?.length) return null;
   return (
     <div className="rounded-lg border bg-card p-3 shadow-md">
@@ -61,11 +45,7 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
                 : ""
             )}
           >
-            $
-            {entry.value.toLocaleString("en-US", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
+            {displayMoney(entry.payload[`${entry.dataKey}Exact`], entry.payload.currencyCode)}
           </span>
         </div>
       ))}
@@ -74,8 +54,10 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
 }
 
 export function CashFlowWidget() {
+  const [currencyCode, setCurrencyCode] = useState("");
   const [weeks, setWeeks] = useState(4);
-  const [forecast, setForecast] = useState<ForecastData | null>(null);
+  const [forecast, setForecast] = useState<CashForecastUi | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -84,33 +66,26 @@ export function CashFlowWidget() {
     let active = true;
     const controller = new AbortController();
     setLoading(true);
+    setForecast(null);
+    setError(null);
     (async () => {
       try {
-        const r = await fetch(`/api/v1/reports/cash-flow-forecast?weeks=${weeks}`, {
+        const r = await fetch(`/api/v1/reports/cash-flow-forecast?weeks=${weeks}${currencyCode ? `&currencyCode=${currencyCode}` : ""}`, {
           headers: { "x-organization-id": id },
           signal: controller.signal,
         });
-        const data = await r.json();
+        const data = await displayJson(r, cashForecastUi);
         if (active) setForecast(data);
       } catch {
-        if (active) setForecast(null);
+        if (active) { setForecast(null); setError("Unable to load this cash-flow forecast. Select a currency if documents use multiple currencies."); }
       } finally {
         if (active) setLoading(false);
       }
     })();
     return () => { active = false; controller.abort(); };
-  }, [weeks]);
+  }, [weeks, currencyCode]);
 
-  const chartData =
-    forecast?.weeks?.map((w) => ({
-      name: new Date(w.weekOf).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      }),
-      inflows: w.inflows / 100,
-      outflows: w.outflows / 100,
-      balance: w.cumulativeNet / 100,
-    })) ?? [];
+  const chartData = forecast?.weeks.map(week => forecastChartPoint(week, forecast.currencyCode)) ?? [];
 
   return (
     <div className="rounded-lg border bg-card p-5">
@@ -136,6 +111,7 @@ export function CashFlowWidget() {
         </div>
       </div>
 
+      <div className="mb-4"><CurrencySelect value={currencyCode} onValueChange={setCurrencyCode} compact /></div>
       {loading ? (
         <div className="space-y-3">
           <div className="h-[220px] rounded-md bg-muted animate-pulse" />
@@ -195,7 +171,7 @@ export function CashFlowWidget() {
                   tick={{ fontSize: 11 }}
                   className="text-muted-foreground"
                   tickFormatter={(v) =>
-                    `$${(v / 1000).toFixed(0)}k`
+                    new Intl.NumberFormat("en-US", { style: "currency", currency: forecast.currencyCode, notation: "compact" }).format(v)
                   }
                 />
                 <Tooltip content={<CustomTooltip />} />
@@ -233,13 +209,13 @@ export function CashFlowWidget() {
             <div className="text-center">
               <p className="text-xs text-muted-foreground">Expected In</p>
               <p className="text-sm font-bold font-mono tabular-nums text-emerald-600">
-                {formatMoney(forecast.totalInflows)}
+                {displayMoney(forecast.totalInflows, forecast.currencyCode)}
               </p>
             </div>
             <div className="text-center">
               <p className="text-xs text-muted-foreground">Expected Out</p>
               <p className="text-sm font-bold font-mono tabular-nums text-red-600">
-                {formatMoney(forecast.totalOutflows)}
+                {displayMoney(forecast.totalOutflows, forecast.currencyCode)}
               </p>
             </div>
             <div className="text-center">
@@ -252,12 +228,12 @@ export function CashFlowWidget() {
                     : "text-red-600"
                 )}
               >
-                {formatMoney(forecast.netForecast)}
+                {displayMoney(forecast.netForecast, forecast.currencyCode)}
               </p>
             </div>
           </div>
         </>
-      ) : null}
+      ) : error ? <p role="alert" className="text-sm text-red-600">{error}</p> : null}
     </div>
   );
 }

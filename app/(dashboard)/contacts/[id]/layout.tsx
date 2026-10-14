@@ -34,7 +34,7 @@ import { cn } from "@/lib/utils";
 import { useEntityTitle } from "@/lib/hooks/use-entity-title";
 import { useConfirm } from "@/lib/hooks/use-confirm";
 import { useCreateDrawer } from "@/components/dashboard/create-drawer";
-import { centsToDecimal } from "@/lib/money";
+import { displayJson, contactDetailUi, contactCreditDecimal } from "@/lib/money/contact-dashboard-ui";
 
 // ---------------------------------------------------------------------------
 // Shared interfaces
@@ -58,7 +58,7 @@ export interface ContactDetail {
   taxNumber: string | null;
   type: "customer" | "supplier" | "both";
   paymentTermsDays: number;
-  creditLimit: number | null;
+  creditLimit: bigint | null;
   isTaxExempt: boolean;
   is1099Vendor: boolean;
   currencyCode: string | null;
@@ -101,7 +101,7 @@ export interface ActivityItem {
   type: "invoice" | "quote" | "credit_note" | "payment" | "bill";
   number: string;
   status: string;
-  amount: number;
+  amount: bigint;
   currencyCode: string;
   date: string;
   createdAt: string;
@@ -320,7 +320,7 @@ export default function ContactDetailLayout({ children }: { children: React.Reac
       const res = await fetch(`/api/v1/contacts/${id}`, {
         headers: { "x-organization-id": orgId },
       });
-      const data = await res.json();
+      const data = await displayJson(res, body => ({ contact: contactDetailUi((body as { contact: ContactDetail }).contact) }));
       if (data.contact) {
         const c = data.contact as ContactDetail;
         setContact(c);
@@ -330,11 +330,12 @@ export default function ContactDetailLayout({ children }: { children: React.Reac
         setFormTaxRateId(c.defaultTaxRateId || "none");
         setFormTaxExempt(c.isTaxExempt);
         setForm1099Vendor(c.is1099Vendor ?? false);
-        setFormCreditLimit(c.creditLimit != null ? centsToDecimal(c.creditLimit) : "");
+        setFormCreditLimit(c.creditLimit != null ? contactCreditDecimal(c.creditLimit, c.currencyCode) : "");
         setFormCurrencyCode(c.currencyCode || "");
       }
     } catch {
-      toast.error("Failed to load contact");
+      setContact(null);
+      toast.error("Unable to load valid contact amounts");
     } finally {
       setLoading(false);
     }

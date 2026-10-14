@@ -14,7 +14,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ContentReveal } from "@/components/ui/content-reveal";
-import { formatMoney } from "@/lib/money";
+import { displayMoney, displayJson, contactStatementUi, type ContactStatementUi } from "@/lib/money/contact-dashboard-ui";
+import { CurrencySelect } from "@/components/ui/currency-select";
 import { DatePicker } from "@/components/ui/date-picker";
 import { useContactContext, getOrgId } from "../layout";
 
@@ -22,18 +23,14 @@ export default function ContactStatementPage() {
   const { id } = useParams<{ id: string }>();
   const { contact } = useContactContext();
 
-  const [statementData, setStatementData] = useState<{
-    contact: { id: string; name: string; email: string | null; type: string };
-    startDate: string;
-    endDate: string;
-    openingBalance: number;
-    transactions: { date: string; type: string; documentNumber: string; description: string; debit: number; credit: number; balance: number }[];
-    closingBalance: number;
-  } | null>(null);
+  const [statementData, setStatementData] = useState<ContactStatementUi | null>(null);
   const [statementLoading, setStatementLoading] = useState(false);
   const [statementStartDate, setStatementStartDate] = useState("");
   const [statementEndDate, setStatementEndDate] = useState("");
+  const [statementCurrency, setStatementCurrency] = useState("");
   const [sendingStatement, setSendingStatement] = useState(false);
+
+  const formatMoney = (amount: bigint) => displayMoney(amount, statementData!.currencyCode);
 
   const statementTypeLabels: Record<string, string> = {
     invoice: "Invoice",
@@ -43,32 +40,40 @@ export default function ContactStatementPage() {
     debit_note: "Debit note (extra charge)",
   };
 
-  const fetchStatement = useCallback(async () => {
+  const fetchStatement = useCallback(async (signal: AbortSignal) => {
     const orgId = getOrgId();
     if (!orgId) return;
 
     setStatementLoading(true);
+    setStatementData(null);
     try {
       const params = new URLSearchParams();
       if (statementStartDate) params.set("startDate", statementStartDate);
       if (statementEndDate) params.set("endDate", statementEndDate);
+      if (statementCurrency) params.set("currencyCode", statementCurrency);
 
       const res = await fetch(`/api/v1/contacts/${id}/statement?${params}`, {
         headers: { "x-organization-id": orgId },
+        signal,
       });
-      const data = await res.json();
-      if (data.contact) {
+      const data = await displayJson(res, contactStatementUi);
+      if (!signal.aborted) {
         setStatementData(data);
       }
     } catch {
-      toast.error("Failed to load statement");
+      if (!signal.aborted) {
+        setStatementData(null);
+        toast.error("Unable to load valid statement amounts. Select a currency if documents use multiple currencies.");
+      }
     } finally {
-      setStatementLoading(false);
+      if (!signal.aborted) setStatementLoading(false);
     }
-  }, [id, statementStartDate, statementEndDate]);
+  }, [id, statementStartDate, statementEndDate, statementCurrency]);
 
   useEffect(() => {
-    fetchStatement();
+    const controller = new AbortController();
+    fetchStatement(controller.signal);
+    return () => controller.abort();
   }, [fetchStatement]);
 
   function applyStatementPreset(preset: string) {
@@ -114,6 +119,7 @@ export default function ContactStatementPage() {
     const params = new URLSearchParams({ orgId });
     if (statementStartDate) params.set("startDate", statementStartDate);
     if (statementEndDate) params.set("endDate", statementEndDate);
+    if (statementCurrency) params.set("currencyCode", statementCurrency);
     window.open(`/api/v1/contacts/${id}/statement/pdf?${params}`, "_blank");
   }
 
@@ -132,6 +138,7 @@ export default function ContactStatementPage() {
         body: JSON.stringify({
           startDate: statementStartDate || undefined,
           endDate: statementEndDate || undefined,
+          currencyCode: statementCurrency || undefined,
         }),
       });
 
@@ -177,7 +184,8 @@ export default function ContactStatementPage() {
             placeholder="To date"
             className="w-36 h-8 text-sm"
           />
-          {(statementStartDate || statementEndDate) && (
+          <CurrencySelect value={statementCurrency} onValueChange={setStatementCurrency} compact />
+          {(statementStartDate || statementEndDate || statementCurrency) && (
             <Button
               variant="ghost"
               size="sm"
@@ -185,6 +193,7 @@ export default function ContactStatementPage() {
               onClick={() => {
                 setStatementStartDate("");
                 setStatementEndDate("");
+                setStatementCurrency("");
               }}
             >
               <X className="mr-1 size-3" />
@@ -198,7 +207,7 @@ export default function ContactStatementPage() {
               size="sm"
               className="h-8"
               onClick={handleDownloadPdf}
-              disabled={statementLoading}
+              disabled={statementLoading || !statementData}
             >
               <Download className="mr-1.5 size-3.5" />
               PDF
@@ -208,7 +217,7 @@ export default function ContactStatementPage() {
               size="sm"
               className="h-8"
               onClick={handleEmailStatement}
-              disabled={statementLoading || sendingStatement || !contact.email}
+              disabled={statementLoading || !statementData || sendingStatement || !contact.email}
               title={!contact.email ? "Contact has no email address" : undefined}
             >
               {sendingStatement ? (
@@ -244,13 +253,13 @@ export default function ContactStatementPage() {
                 <div className="rounded-lg border p-3">
                   <p className="text-[10px] uppercase tracking-wide text-muted-foreground" title="New invoices and charges added this period">Total charged</p>
                   <p className="mt-1 text-sm font-semibold tabular-nums font-mono">
-                    {formatMoney(statementData.transactions.reduce((s, t) => s + t.debit, 0))}
+                    {formatMoney(statementData.totalDebit)}
                   </p>
                 </div>
                 <div className="rounded-lg border p-3">
                   <p className="text-[10px] uppercase tracking-wide text-muted-foreground" title="Payments and credits applied this period">Total paid</p>
                   <p className="mt-1 text-sm font-semibold tabular-nums font-mono">
-                    {formatMoney(statementData.transactions.reduce((s, t) => s + t.credit, 0))}
+                    {formatMoney(statementData.totalCredit)}
                   </p>
                 </div>
                 <div className="rounded-lg border p-3">

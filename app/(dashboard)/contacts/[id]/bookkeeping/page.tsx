@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ContentReveal } from "@/components/ui/content-reveal";
-import { decimalToCents } from "@/lib/money";
+import { displayJson, contactDetailUi, contactCreditInput } from "@/lib/money/contact-dashboard-ui";
 import { useContactContext, getOrgId } from "../layout";
 import type { Account, TaxRate, ContactDetail } from "../layout";
 
@@ -91,9 +91,7 @@ export default function ContactBookkeepingPage() {
           taxNumber: contact.taxNumber || null,
           type: formType,
           paymentTermsDays: contact.paymentTermsDays,
-          creditLimit: formCreditLimit
-            ? decimalToCents(formCreditLimit)
-            : null,
+          ...contactCreditInput(formCreditLimit, formCurrencyCode),
           isTaxExempt: formTaxExempt,
           currencyCode: formCurrencyCode || null,
           defaultRevenueAccountId: formRevenueAccountId !== "none" ? formRevenueAccountId : null,
@@ -104,8 +102,7 @@ export default function ContactBookkeepingPage() {
       });
 
       if (!res.ok) throw new Error("Failed to update");
-      const data = await res.json();
-      const c = data.contact as ContactDetail;
+      const c = await displayJson(res, body => contactDetailUi((body as { contact: ContactDetail }).contact));
       setContact(c);
       setFormType(c.type);
       setFormRevenueAccountId(c.defaultRevenueAccountId || "none");

@@ -28,27 +28,6 @@
   "app/(dashboard)/accounting/recurring-journals/[id]/page.tsx": {
     "formatMoney": 6
   },
-  "app/(dashboard)/contacts/[id]/activity/page.tsx": {
-    "formatMoney": 2
-  },
-  "app/(dashboard)/contacts/[id]/bookkeeping/page.tsx": {
-    "decimalToCents": 2
-  },
-  "app/(dashboard)/contacts/[id]/layout.tsx": {
-    "centsToDecimal": 2
-  },
-  "app/(dashboard)/contacts/[id]/page.tsx": {
-    "decimalToCents": 2
-  },
-  "app/(dashboard)/contacts/[id]/statement/page.tsx": {
-    "formatMoney": 10
-  },
-  "app/(dashboard)/contacts/page.tsx": {
-    "formatMoney": 5
-  },
-  "app/(dashboard)/dashboard/page.tsx": {
-    "formatMoney": 17
-  },
   "app/(dashboard)/inventory/[id]/layout.tsx": {
     "formatMoney": 7
   },
@@ -288,9 +267,6 @@
   },
   "app/portal/[token]/invoices/page.tsx": {
     "formatMoney": 2
-  },
-  "components/dashboard/cash-flow-widget.tsx": {
-    "formatMoney": 4
   },
   "components/dashboard/entry-form.tsx": {
     "decimalToCents": 3

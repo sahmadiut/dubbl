@@ -23,7 +23,7 @@ import {
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { motion, MotionConfig } from "motion/react";
-import { formatMoney } from "@/lib/money";
+import { displayMoney as formatMoney, displayJson, contactListUi } from "@/lib/money/contact-dashboard-ui";
 import { devDelay } from "@/lib/dev-delay";
 import { useCreateDrawer } from "@/components/dashboard/create-drawer";
 import { useConfirm } from "@/lib/hooks/use-confirm";
@@ -42,14 +42,14 @@ interface Contact {
   taxNumber: string | null;
   type: "customer" | "supplier" | "both";
   paymentTermsDays: number;
-  creditLimit: number | null;
+  creditLimit: bigint | null;
   isTaxExempt: boolean;
   is1099Vendor: boolean;
   currencyCode: string | null;
   createdAt: string;
-  owesYou?: number; // customer outstanding (cents)
-  youOwe?: number; // supplier outstanding (cents)
-  overdue?: number; // total overdue across customer + supplier (cents)
+  owesYou: bigint; // customer outstanding (cents)
+  youOwe: bigint; // supplier outstanding (cents)
+  overdue: bigint; // total overdue across customer + supplier (cents)
 }
 
 const typeLabel: Record<Contact["type"], string> = {
@@ -311,7 +311,11 @@ export default function ContactsPage() {
     fetch(`/api/v1/contacts?${params}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => displayJson(r, body => {
+        const data = body as { data: Contact[]; pagination: { page: number; total: number; totalPages: number } };
+        if (!Array.isArray(data.data)) throw new Error("Missing contacts");
+        return { ...data, data: data.data.map(contactListUi) };
+      }))
       .then((data) => {
         if (cancelled) return;
         if (data.data) setContacts(data.data);
@@ -321,6 +325,7 @@ export default function ContactsPage() {
         }
       })
       .then(() => devDelay())
+      .catch(() => { if (!cancelled) { setContacts([]); toast.error("Unable to load valid contact balances"); } })
       .finally(() => { if (!cancelled) { setLoading(false); setRefetching(false); setFetchKey((k) => k + 1); } });
 
     return () => { cancelled = true; };
@@ -349,7 +354,11 @@ export default function ContactsPage() {
     fetch(`/api/v1/contacts?${params}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => displayJson(r, body => {
+        const data = body as { data: Contact[]; pagination: { page: number; total: number; totalPages: number } };
+        if (!Array.isArray(data.data)) throw new Error("Missing contacts");
+        return { ...data, data: data.data.map(contactListUi) };
+      }))
       .then((data) => {
         if (data.data) setContacts((prev) => [...prev, ...data.data]);
         if (data.pagination) {
@@ -358,6 +367,7 @@ export default function ContactsPage() {
           setHasMore(data.pagination.page < data.pagination.totalPages);
         }
       })
+      .catch(() => { setContacts([]); toast.error("Unable to load valid contact balances"); })
       .finally(() => setLoadingMore(false));
   }, [loadingMore, hasMore, page, debouncedSearch, typeFilter, sortBy, sortOrder, dateFrom, dateTo]);
 

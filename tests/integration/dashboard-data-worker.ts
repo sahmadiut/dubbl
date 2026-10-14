@@ -1,3 +1,4 @@
+import { dashboardAlertsUi } from "../../lib/money/contact-dashboard-ui";
 import assert from "node:assert/strict";
 import { createHash, randomUUID } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
@@ -62,7 +63,9 @@ async function run() {
   const parity = async (kind: string, suffix = "", args = {}, client = ma, key = keys.a) => {
     const res = await response(kind, suffix, key); assert.equal(res.status, 200, await res.clone().text());
     const body = await res.json(); const tool = operations.find(([type]) => type === kind)![1];
-    const result = await client.call(tool, args); assert.equal(result.isError, false); assert.deepEqual(result.body, body); return body;
+    const result = await client.call(tool, args); assert.equal(result.isError, false); assert.deepEqual(result.body, body);
+    if (kind === "alerts") assert.deepEqual(dashboardAlertsUi(result.body), dashboardAlertsUi(body));
+    return body;
   };
   const snapshot = async () => {
     const result: Record<string, unknown> = {};

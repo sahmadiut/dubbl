@@ -28,7 +28,10 @@ import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { coreJournalSummary, coreDebitDisplay, type DebitGroup } from "@/lib/money/core-presentation";
-import { formatMoney } from "@/lib/money";
+import { displayMoney as formatMoney, displayJson, displayPercent, dashboardAlertsUi, dashboardTrendsUi } from "@/lib/money/contact-dashboard-ui";
+import { profitLossUi, type ProfitLossUi } from "@/lib/money/financial-statement-ui";
+import { receivablesUi, payablesUi, type AgingUi } from "@/lib/money/ledger-aging-ui";
+import { budgetUiPayload, budgetMoney, budgetPercent } from "@/lib/money/budget-ui";
 import { devDelay } from "@/lib/dev-delay";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ErrorState } from "@/components/dashboard/error-state";
@@ -108,28 +111,9 @@ interface Entry {
   debitTotals: DebitGroup[];
 }
 
-interface PnLAccount {
-  accountName: string;
-  balance: number;
-}
-
-interface PnLData {
-  totalRevenue: number;
-  totalExpenses: number;
-  netIncome: number;
-  expenses: PnLAccount[];
-}
-
-interface AgingBucket {
-  label: string;
-  total: number;
-  count: number;
-}
-
-interface AgingData {
-  buckets: AgingBucket[];
-  grandTotal: number;
-}
+type PnLData = Pick<ProfitLossUi, "totalRevenue" | "totalExpenses" | "netIncome" | "expenses" | "currencyCode">;
+type AgingBucket = Pick<AgingUi["buckets"][number], "label" | "total" | "count">;
+type AgingData = { buckets: AgingBucket[]; grandTotal: bigint; currencyCode: string };
 
 const columns: Column<Entry>[] = [
   {
@@ -196,28 +180,30 @@ function AgingColumn({
   title,
   total,
   buckets,
+  currencyCode,
 }: {
   title: string;
-  total: number;
+  total: bigint;
   buckets: AgingBucket[];
+  currencyCode: string;
 }) {
-  const maxBucket = Math.max(...buckets.map((b) => b.total), 1);
+  const maxBucket = buckets.reduce((max, bucket) => bucket.total > max ? bucket.total : max, 1n);
 
   return (
     <div>
       <p className="text-sm font-medium">{title}</p>
       <p className="mt-0.5 font-mono text-lg font-bold tabular-nums">
-        {formatMoney(total)}
+        {formatMoney(total, currencyCode)}
       </p>
       <div className="mt-3 space-y-2">
         {buckets.map((bucket, i) => {
-          const pct = (bucket.total / maxBucket) * 100;
+          const pct = displayPercent(bucket.total, maxBucket);
           return (
             <div key={bucket.label} className="space-y-1">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">{bucket.label}</span>
                 <span className="font-mono tabular-nums">
-                  {formatMoney(bucket.total)}
+                  {formatMoney(bucket.total, currencyCode)}
                 </span>
               </div>
               <div className="h-1.5 rounded-full bg-muted">
@@ -259,18 +245,21 @@ export default function DashboardPage() {
   const [greeting] = useState(() => pickGreeting());
   const [entries, setEntries] = useState<Entry[]>([]);
   const [pnl, setPnl] = useState<PnLData>({
-    totalRevenue: 0,
-    totalExpenses: 0,
-    netIncome: 0,
+    totalRevenue: 0n,
+    totalExpenses: 0n,
+    netIncome: 0n,
     expenses: [],
+    currencyCode: "USD",
   });
   const [receivables, setReceivables] = useState<AgingData>({
     buckets: [],
-    grandTotal: 0,
+    currencyCode: "USD",
+    grandTotal: 0n,
   });
   const [payables, setPayables] = useState<AgingData>({
     buckets: [],
-    grandTotal: 0,
+    currencyCode: "USD",
+    grandTotal: 0n,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -280,7 +269,7 @@ export default function DashboardPage() {
     netIncome: number[];
   }>({ revenue: [], expenses: [], netIncome: [] });
   const [budgetAlerts, setBudgetAlerts] = useState<
-    { accountName: string; pct: number; budgeted: number; actual: number }[]
+    { accountName: string; pct: number; budgeted: bigint; actual: bigint; currencyCode: string }[]
   >([]);
   const [ratios, setRatios] = useState<{
     currentRatio: number | null;
@@ -290,12 +279,7 @@ export default function DashboardPage() {
     dso: number | null;
     dpo: number | null;
   } | null>(null);
-  const [actionAlerts, setActionAlerts] = useState<{
-    overdueInvoices: { count: number; total: number };
-    overdueBills: { count: number; total: number };
-    uncategorizedTransactions: number;
-    accountsNeedingReconciliation: { bankAccountName: string; lastReconDate: string | null }[];
-  } | null>(null);
+  const [actionAlerts, setActionAlerts] = useState<ReturnType<typeof dashboardAlertsUi> | null>(null);
   // Getting-started checklist: show while the org has never completed onboarding.
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [dismissingOnboarding, setDismissingOnboarding] = useState(false);
@@ -310,68 +294,52 @@ export default function DashboardPage() {
     Promise.all([
       fetch("/api/v1/entries?limit=10", { headers }).then((r) => r.json()),
       fetch("/api/v1/reports/profit-and-loss", { headers })
-        .then((r) => r.json())
-        .catch(() => null),
+        .then((r) => displayJson(r, profitLossUi)),
       fetch("/api/v1/reports/aged-receivables", { headers })
-        .then((r) => r.json())
-        .catch(() => null),
+        .then((r) => displayJson(r, receivablesUi)),
       fetch("/api/v1/reports/aged-payables", { headers })
-        .then((r) => r.json())
-        .catch(() => null),
+        .then((r) => displayJson(r, payablesUi)),
     ])
       .then(([entriesData, pnlData, arData, apData]) => {
         if (entriesData.entries) {
           setEntries(entriesData.entries.map(coreJournalSummary));
         }
-        if (pnlData) {
-          setPnl({
-            totalRevenue: pnlData.totalRevenue || 0,
-            totalExpenses: pnlData.totalExpenses || 0,
-            netIncome: pnlData.netIncome || 0,
-            expenses: pnlData.expenses || [],
-          });
-        }
+        setPnl(pnlData);
         if (arData?.buckets) setReceivables(arData);
         if (apData?.buckets) setPayables(apData);
       })
       .then(() => devDelay())
-      .catch(() => setError("Failed to load dashboard data. Please check your connection."))
+      .catch(() => setError("Unable to load valid dashboard amounts. If documents use multiple currencies, use the currency filters in Reports."))
       .finally(() => setLoading(false));
 
     // Load sparkline trends in background
     fetch("/api/v1/reports/monthly-trends?months=6", { headers })
-      .then((r) => r.json())
+      .then((r) => displayJson(r, dashboardTrendsUi))
       .then((data) => {
-        if (data.revenueSparkline) {
-          setSparklines({
-            revenue: data.revenueSparkline,
-            expenses: data.expenseSparkline,
-            netIncome: data.netIncomeSparkline,
-          });
-        }
+        setSparklines(data);
       })
-      .catch(() => {});
+      .catch(() => setError("Unable to load valid dashboard report amounts."));
 
     // Load budget alerts in background
     fetch("/api/v1/reports/budget-vs-actual", { headers })
-      .then((r) => r.json())
+      .then((r) => displayJson(r, body => budgetUiPayload(body as { currencyCode: string; comparisons: { accountName: string; budgeted: number; actual: number; variance: number; budgetedMinor: string; actualMinor: string; varianceMinor: string }[]; totalBudgeted: number; totalActual: number; totalVariance: number; totalBurnRate: number })))
       .then((data) => {
         if (data.comparisons) {
           const alerts = data.comparisons
             .filter(
-              (c: { budgeted: number; actual: number }) =>
-                c.budgeted > 0 && c.actual / c.budgeted >= 0.9
+              (c) => c.budgeted > 0n && c.actual * 10n >= c.budgeted * 9n
             )
-            .map((c: { accountName: string; budgeted: number; actual: number }) => ({
+            .map((c) => ({
               accountName: c.accountName,
-              pct: Math.round((c.actual / c.budgeted) * 100),
+              pct: budgetPercent(c.actual, c.budgeted),
+              currencyCode: data.currencyCode,
               budgeted: c.budgeted,
               actual: c.actual,
             }));
           setBudgetAlerts(alerts);
         }
       })
-      .catch(() => {});
+      .catch(() => setError("Unable to load valid dashboard report amounts."));
 
     // Load financial ratios in background
     fetch("/api/v1/reports/financial-ratios", { headers })
@@ -379,13 +347,13 @@ export default function DashboardPage() {
       .then((data) => {
         if (data.ratios) setRatios(data.ratios);
       })
-      .catch(() => {});
+      .catch(() => setError("Unable to load valid dashboard report amounts."));
 
     // Load action alerts in background
     fetch("/api/v1/dashboard/alerts", { headers })
-      .then((r) => r.json())
+      .then((r) => displayJson(r, dashboardAlertsUi))
       .then((data) => setActionAlerts(data))
-      .catch(() => {});
+      .catch(() => setError("Unable to load valid dashboard alert amounts."));
 
     // Decide whether to show the getting-started checklist (org never onboarded).
     fetch("/api/v1/organization", { headers })
@@ -423,12 +391,12 @@ export default function DashboardPage() {
     0
   );
 
-  const maxRevExp = Math.max(pnl.totalRevenue, pnl.totalExpenses, 1);
-  const revenuePct = (pnl.totalRevenue / maxRevExp) * 100;
-  const expensesPct = (pnl.totalExpenses / maxRevExp) * 100;
+  const maxRevExp = [pnl.totalRevenue, pnl.totalExpenses].reduce((max, amount) => amount > max ? amount : max, 1n);
+  const revenuePct = displayPercent(pnl.totalRevenue, maxRevExp);
+  const expensesPct = displayPercent(pnl.totalExpenses, maxRevExp);
 
   const topExpenses = [...pnl.expenses]
-    .sort((a, b) => b.balance - a.balance)
+    .sort((a, b) => a.balance === b.balance ? 0 : a.balance > b.balance ? -1 : 1)
     .slice(0, 4);
 
   return (
@@ -622,7 +590,7 @@ export default function DashboardPage() {
                             : "text-amber-700 dark:text-amber-400"
                         )}
                       >
-                        {alert.pct}% used ({formatMoney(alert.actual)} / {formatMoney(alert.budgeted)})
+                        {alert.pct}% used ({budgetMoney(alert.actual, alert.currencyCode)} / {budgetMoney(alert.budgeted, alert.currencyCode)})
                       </span>
                     </div>
                   ))}
@@ -634,33 +602,33 @@ export default function DashboardPage() {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
               <StatCard
                 title="Revenue"
-                value={formatMoney(pnl.totalRevenue)}
+                value={formatMoney(pnl.totalRevenue, pnl.currencyCode)}
                 icon={TrendingUp}
                 sparklineData={sparklines.revenue.length > 1 ? sparklines.revenue : undefined}
               />
               <StatCard
                 title="Expenses"
-                value={formatMoney(pnl.totalExpenses)}
+                value={formatMoney(pnl.totalExpenses, pnl.currencyCode)}
                 icon={TrendingDown}
                 sparklineData={sparklines.expenses.length > 1 ? sparklines.expenses : undefined}
               />
               <StatCard
                 title="Net Income"
-                value={formatMoney(pnl.netIncome)}
+                value={formatMoney(pnl.netIncome, pnl.currencyCode)}
                 icon={DollarSign}
                 changeType={pnl.netIncome >= 0 ? "positive" : "negative"}
                 sparklineData={sparklines.netIncome.length > 1 ? sparklines.netIncome : undefined}
               />
               <StatCard
                 title="Receivables"
-                value={formatMoney(receivables.grandTotal)}
+                value={formatMoney(receivables.grandTotal, receivables.currencyCode)}
                 icon={ArrowDownLeft}
                 change={`${receivablesCount} outstanding`}
                 changeType="neutral"
               />
               <StatCard
                 title="Payables"
-                value={formatMoney(payables.grandTotal)}
+                value={formatMoney(payables.grandTotal, payables.currencyCode)}
                 icon={ArrowUpRight}
                 change={`${payablesCount} outstanding`}
                 changeType="neutral"
@@ -679,7 +647,7 @@ export default function DashboardPage() {
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">Revenue</span>
                       <span className="font-mono text-sm tabular-nums font-medium">
-                        {formatMoney(pnl.totalRevenue)}
+                        {formatMoney(pnl.totalRevenue, pnl.currencyCode)}
                       </span>
                     </div>
                     <div className="h-2 rounded-full bg-muted">
@@ -693,7 +661,7 @@ export default function DashboardPage() {
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">Expenses</span>
                       <span className="font-mono text-sm tabular-nums font-medium">
-                        {formatMoney(pnl.totalExpenses)}
+                        {formatMoney(pnl.totalExpenses, pnl.currencyCode)}
                       </span>
                     </div>
                     <div className="h-2 rounded-full bg-muted">
@@ -715,7 +683,7 @@ export default function DashboardPage() {
                           : "text-red-600 dark:text-red-400"
                       )}
                     >
-                      {formatMoney(pnl.netIncome)}
+                      {formatMoney(pnl.netIncome, pnl.currencyCode)}
                     </span>
                   </div>
                 </div>
@@ -734,7 +702,7 @@ export default function DashboardPage() {
                             {exp.accountName}
                           </span>
                           <span className="ml-2 shrink-0 font-mono text-xs tabular-nums">
-                            {formatMoney(exp.balance)}
+                            {formatMoney(exp.balance, pnl.currencyCode)}
                           </span>
                         </div>
                       ))}
@@ -753,11 +721,13 @@ export default function DashboardPage() {
                     title="Receivables"
                     total={receivables.grandTotal}
                     buckets={receivables.buckets}
+                    currencyCode={receivables.currencyCode}
                   />
                   <AgingColumn
                     title="Payables"
                     total={payables.grandTotal}
                     buckets={payables.buckets}
+                    currencyCode={payables.currencyCode}
                   />
                 </div>
               </div>
@@ -808,7 +778,7 @@ export default function DashboardPage() {
                   >
                     <p className="text-xs font-medium text-red-800 dark:text-red-300">Overdue Invoices</p>
                     <p className="text-lg font-bold font-mono tabular-nums text-red-600 mt-0.5">{actionAlerts.overdueInvoices.count}</p>
-                    <p className="text-[11px] text-red-600/70 font-mono tabular-nums">{formatMoney(actionAlerts.overdueInvoices.total)} outstanding</p>
+                    <p className="text-[11px] text-red-600/70 font-mono tabular-nums">{formatMoney(actionAlerts.overdueInvoices.total, actionAlerts.overdueInvoices.currencyCode)} outstanding</p>
                   </button>
                 )}
                 {actionAlerts.overdueBills?.count > 0 && (
@@ -818,7 +788,7 @@ export default function DashboardPage() {
                   >
                     <p className="text-xs font-medium text-orange-800 dark:text-orange-300">Overdue Bills</p>
                     <p className="text-lg font-bold font-mono tabular-nums text-orange-600 mt-0.5">{actionAlerts.overdueBills.count}</p>
-                    <p className="text-[11px] text-orange-600/70 font-mono tabular-nums">{formatMoney(actionAlerts.overdueBills.total)} to pay</p>
+                    <p className="text-[11px] text-orange-600/70 font-mono tabular-nums">{formatMoney(actionAlerts.overdueBills.total, actionAlerts.overdueBills.currencyCode)} to pay</p>
                   </button>
                 )}
                 {actionAlerts.uncategorizedTransactions > 0 && (

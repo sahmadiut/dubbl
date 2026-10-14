@@ -1627,3 +1627,9 @@ MON-090: `tests/loan-wire.test.ts` covers distinct REST major/MCP minor units, a
 - `tests/ledger-aging-ui.test.ts`: saved alias failures, low digits, natural signs, opening-inclusive running balance, page drift/duplicate/discontinuity, aging currency/count/sums, cash-flow negative outflows, USD/JPY/KWD/IRR display, exact CSV and error adoption/source guards.
 - `tests/integration/ledger-aging-ui.test.ts`: four actual authenticated REST and registered MCP operations into browser adapters with independent SQL text, stable 50+2 ledger page append, direct/indirect cash flow, historical aging, four currency scales, tenant/permission/auth failures, persisted overflow and unchanged SQL snapshots.
 - Existing `ledger-detail`, `cash-flow` and `aging` suites remain backend regression gates. No browser/PDF-layout or production IRR qualification.
+
+## MON-163 contact dashboard shared display
+
+- `tests/contact-dashboard-ui.test.ts`: saved alias/currency/sum failures, safe-max low digits, contact credit round-trip and null clearing, signed statements, forecast exact tooltips, alert groups/trend aliases, USD/JPY/KWD/synthetic IRR, CSV/XLSX precision, failed HTTP and source guards.
+- Contact-wire, contact-statement, forecast-fx, dashboard-data and kpi-analytics integration workers adopt the shared UI adapter through actual authenticated REST and registered direct-DB MCP. Independent SQL-text comparisons retain safe-max contact/forecast and signed statement amounts; read-only snapshots and tenant/permission/persisted-overflow negatives remain.
+- Financial-statement-ui, ledger-aging-ui and budget-project-crm-ui integrations cover reused dashboard adapters. Shared CSV/export and bank decimal helpers retain existing exact contracts. No browser/layout/production qualification; MON-158/MON-162/MON-008 stay independent.

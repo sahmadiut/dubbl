@@ -730,3 +730,13 @@ opaque/provider contracts retain documented unit exceptions. See the
 [MON-160 consumer mapping](../../.agentic/registries/PUBLIC_RENDER_EXPORT_UI_CUTOVER.md).
 
 `ledger-aging-ui.ts` validates general ledger, cash-flow and receivable/payable aging numeric/Minor response aliases before state adoption. It checks exact running, opening/closing, page snapshot, section/bucket/document totals and currencies; bigint display uses explicit currency and CSV retains Minor strings. Nonmoney counts/offsets/dates stay numeric. Existing backend safe-range and natural-sign/period-only conventions remain; MON-162/158/008 final acceptance is independent.
+
+### Contact and dashboard display
+
+`contact-dashboard-ui.ts` checks exact numeric/Minor aliases and explicit currencies
+before contact, statement, dashboard alert/trend and forecast state adoption.
+Statements and forecasts check bigint running/net/totals. Contact credit inputs
+round-trip saved ISO scales via `creditLimitMinor`; dashboard budgets retain their
+fixed-two cents contract. Chart geometry/axes are approximate, while tooltips and
+shared report text stay exact. Failed responses suppress financial rows/output.
+See [consumer mapping](../../.agentic/registries/CONTACT_DASHBOARD_UI_CUTOVER.md).

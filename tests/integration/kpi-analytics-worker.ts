@@ -1,3 +1,4 @@
+import { dashboardTrendsUi } from "../../lib/money/contact-dashboard-ui";
 import assert from "node:assert/strict";
 import { createHash, randomUUID } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
@@ -78,7 +79,8 @@ async function run() {
   try {
     for (const [handler, tool, input, suffix] of [[expense, "expense_analytics", args, query], [executive, "executive_summary", args, query],
       [profitability, "contact_profitability", args, query], [monthly, "monthly_trends", { months: 3 }, "?months=3"]] as const) {
-      const empty = await body(handler, suffix); assert.deepEqual((await ma.call(tool, input)).body, empty);
+      const empty = await body(handler, suffix);
+      if (tool === "monthly_trends") dashboardTrendsUi(empty); assert.deepEqual((await ma.call(tool, input)).body, empty);
       assert.deepEqual((await ma.call(tool)).body, await body(handler, ""));
       assert.equal((await handler(request(suffix, "dk_kpi_invalid"))).status, 401);
       assert.equal((await handler(request(suffix, keys.denied))).status, 403); assert.equal((await noRead.call(tool, input)).body.status, 403);
@@ -133,6 +135,9 @@ async function run() {
     await clear();
     const now = new Date(), month = now.toISOString().slice(0, 7), today = now.toISOString().slice(0, 10);
     await entry(rev.id, 1250, today, { credit: true }); await entry(exp.id, 250, today);
+    const trendDto = await body(monthly, "?months=6");
+    assert.deepEqual(dashboardTrendsUi((await ma.call("monthly_trends", { months: 6 })).body), dashboardTrendsUi(trendDto));
+    assert.equal(dashboardTrendsUi(trendDto).revenue.at(-1), 12.5);
     const trend = await body(monthly, "?months=3"); assert.equal(trend.months.length, 3); assert.equal(trend.months[2].month, month);
     assert.equal(trend.months[2].netIncomeMinor, "1000"); assert.deepEqual(trend.netIncomeSparklineMinor, ["0", "0", "1000"]);
     assert.deepEqual((await ma.call("monthly_trends", { months: 3 })).body, trend);

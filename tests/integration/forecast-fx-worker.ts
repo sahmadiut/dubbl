@@ -1,3 +1,4 @@
+import { cashForecastUi, forecastChartPoint } from "../../lib/money/contact-dashboard-ui";
 import assert from "node:assert/strict";
 import { createHash, randomUUID } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
@@ -128,6 +129,9 @@ async function run() {
     for (const currency of ["IRR", "JPY", "KWD"]) {
       const id = await seed(false, 1250, { currency }); await range();
       body = await read(false, `?currencyCode=${currency}`); assert.equal(body.totalInflowsMinor, "1250"); assert.equal(body.currencyCode, currency);
+      const adopted = cashForecastUi(body);
+      assert.equal(adopted.totalInflows, 1250n);
+      assert.equal(forecastChartPoint(adopted.weeks[0], currency).currencyCode, currency);
       assert.deepEqual((await ma.call("cash_flow_forecast", { currencyCode: currency })).body, body);
       await db.delete(invoice).where(eq(invoice.id, id));
     }
@@ -151,7 +155,11 @@ async function run() {
     await db.insert(recurringTemplateLine).values({ templateId: linesOverflow, description: "Overflows subtotal", unitPrice: 1 });
     await range(); await clear();
     await template("invoice", 1, { next: "0001-01-01" }); await range(); await clear();
-    await seed(false, Number.MAX_SAFE_INTEGER); assert.equal((await read()).totalInflowsMinor, "9007199254740991");
+    const exactInvoice = await seed(false, Number.MAX_SAFE_INTEGER);
+    const exactForecast = cashForecastUi(await read());
+    const forecastSql = (await db.execute(sql`select amount_due::text as amount from invoice where id = ${exactInvoice}`)).rows[0];
+    assert.equal(exactForecast.totalInflows.toString(), forecastSql.amount);
+    assert.equal(exactForecast.totalInflows, 9007199254740991n);
     await seed(false, 1); await range(); await clear();
     await seed(false, -Number.MAX_SAFE_INTEGER); assert.equal((await read()).totalOutflowsMinor, "9007199254740991"); await clear();
     const unsafe = await seed(false, 1); await db.execute(sql`update ${invoice} set amount_due=9223372036854775807 where id=${unsafe}`); await range(); await clear();

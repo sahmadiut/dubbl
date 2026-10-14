@@ -17,7 +17,8 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ContentReveal } from "@/components/ui/content-reveal";
-import { decimalToCents } from "@/lib/money";
+import { displayJson, contactDetailUi, contactCreditInput, contactCreditDecimal } from "@/lib/money/contact-dashboard-ui";
+import { currencyMetadata } from "@/lib/money/exact";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { CurrencySelect } from "@/components/ui/currency-select";
 import { useContactContext, getOrgId } from "./layout";
@@ -105,9 +106,7 @@ export default function ContactDetailsPage() {
           type: formType,
           paymentTermsDays:
             parseInt(form.get("paymentTermsDays") as string) || 30,
-          creditLimit: creditLimitValue
-            ? decimalToCents(creditLimitValue)
-            : null,
+          ...contactCreditInput(creditLimitValue, formCurrencyCode),
           isTaxExempt: formTaxExempt,
           is1099Vendor: form1099Vendor,
           currencyCode: formCurrencyCode || null,
@@ -119,8 +118,7 @@ export default function ContactDetailsPage() {
       });
 
       if (!res.ok) throw new Error("Failed to update");
-      const data = await res.json();
-      const c = data.contact as ContactDetail;
+      const c = await displayJson(res, body => contactDetailUi((body as { contact: ContactDetail }).contact));
       setContact(c);
       setFormType(c.type);
       setFormRevenueAccountId(c.defaultRevenueAccountId || "none");
@@ -128,7 +126,7 @@ export default function ContactDetailsPage() {
       setFormTaxRateId(c.defaultTaxRateId || "none");
       setFormTaxExempt(c.isTaxExempt);
       setForm1099Vendor(c.is1099Vendor ?? false);
-      setFormCreditLimit(c.creditLimit != null ? String(c.creditLimit / 100) : "");
+      setFormCreditLimit(c.creditLimit != null ? contactCreditDecimal(c.creditLimit, c.currencyCode) : "");
       setFormCurrencyCode(c.currencyCode || "");
       toast.success("Contact updated");
     } catch {
@@ -228,7 +226,8 @@ export default function ContactDetailsPage() {
               <div className="space-y-1.5">
                 <Label className="text-xs">Credit limit</Label>
                 <CurrencyInput
-                  prefix="$"
+                  prefix={formCurrencyCode || undefined}
+                  fractionDigits={formCurrencyCode ? currencyMetadata(formCurrencyCode).minorUnits : 2}
                   value={formCreditLimit}
                   onChange={setFormCreditLimit}
                   placeholder="No limit"

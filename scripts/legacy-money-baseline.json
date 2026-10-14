@@ -117,12 +117,6 @@
   "app/(dashboard)/reports/1099/page.tsx": {
     "formatMoney": 4
   },
-  "app/(dashboard)/reports/aged-payables/page.tsx": {
-    "formatMoney": 4
-  },
-  "app/(dashboard)/reports/aged-receivables/page.tsx": {
-    "formatMoney": 4
-  },
   "app/(dashboard)/reports/bank-cash-flow/page.tsx": {
     "formatMoney": 11
   },
@@ -131,9 +125,6 @@
   },
   "app/(dashboard)/reports/cash-flow-forecast/page.tsx": {
     "formatMoney": 8
-  },
-  "app/(dashboard)/reports/cash-flow/page.tsx": {
-    "formatMoney": 6
   },
   "app/(dashboard)/reports/consolidation/page.tsx": {
     "formatMoney": 23
@@ -152,9 +143,6 @@
   },
   "app/(dashboard)/reports/financial-ratios/page.tsx": {
     "formatMoney": 2
-  },
-  "app/(dashboard)/reports/general-ledger/page.tsx": {
-    "formatMoney": 7
   },
   "app/(dashboard)/reports/payment-performance/page.tsx": {
     "formatMoney": 2

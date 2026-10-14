@@ -327,3 +327,11 @@ MON-159 retains original criteria and independent final integration acceptance.
 
 - [MON-164](../tasks/MON-164.md): Cut over scheduled bookkeeping and auto-reversal money consumers.
 - [MON-165](../tasks/MON-165.md): Cut over FX revaluation and verify remaining background composition.
+
+## MON-162 report contract slices
+
+Parent criteria remain open; all children cover api-backward-compatibility and database-and-currency-migration.
+
+- [MON-166](../tasks/MON-166.md): Cut over ledger cash-flow and aging UI money.
+- [MON-167](../tasks/MON-167.md): Cut over tax tracking consolidation and custom report UI money.
+- [MON-168](../tasks/MON-168.md): Cut over analytical and bank report UI money.

@@ -1621,3 +1621,9 @@ MON-090: `tests/loan-wire.test.ts` covers distinct REST major/MCP minor units, a
 - tests/background-bookkeeping.test.ts guards adopted exact services, absence of
   duplicate floating money writers, saved metadata and actual Trigger delegates.
 - No provider/production action; MON-159/165/008 qualification remains separate.
+
+## MON-166 ledger cash-flow aging UI
+
+- `tests/ledger-aging-ui.test.ts`: saved alias failures, low digits, natural signs, opening-inclusive running balance, page drift/duplicate/discontinuity, aging currency/count/sums, cash-flow negative outflows, USD/JPY/KWD/IRR display, exact CSV and error adoption/source guards.
+- `tests/integration/ledger-aging-ui.test.ts`: four actual authenticated REST and registered MCP operations into browser adapters with independent SQL text, stable 50+2 ledger page append, direct/indirect cash flow, historical aging, four currency scales, tenant/permission/auth failures, persisted overflow and unchanged SQL snapshots.
+- Existing `ledger-detail`, `cash-flow` and `aging` suites remain backend regression gates. No browser/PDF-layout or production IRR qualification.

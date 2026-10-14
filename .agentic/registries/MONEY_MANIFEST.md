@@ -2138,3 +2138,7 @@ Natural-sign trial-balance accounting correction stays PAR-008/QA-001.
 MON-158 was split into MON-161 (these pages), MON-162 (remaining report pages) and
 MON-163 (contacts/dashboard/shared display). MON-158/MON-008 acceptance remains
 open; no history rescaling, schema or production change.
+
+## MON-166 ledger cash-flow and aging UI
+
+[LEDGER_AGING_UI_CUTOVER](LEDGER_AGING_UI_CUTOVER.md) maps four pages and their shared validation adapter. Saved numeric aliases must agree with canonical Minor strings and explicit currency; bigint natural-sign running/opening/closing checks, page snapshot context, cash-flow sums and aging bucket/document totals fail closed. Currency-scale display and exact Minor CSV preserve low digits. Existing direct-DB report tools remain unchanged. MON-162 is split into MON-166/167/168 and retains combined acceptance; MON-158/MON-008 stay open.

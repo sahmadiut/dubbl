@@ -9,31 +9,18 @@ import { PageHeader } from "@/components/dashboard/page-header";
 import { DataTable, type Column } from "@/components/dashboard/data-table";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { DatePicker } from "@/components/ui/date-picker";
-import { formatMoney } from "@/lib/money";
+import { ledgerAgingJson, payablesUi, reportUiMoney, agingExportRows, type AgingUi, type AgingItemUi } from "@/lib/money/ledger-aging-ui";
+import { ErrorState } from "@/components/dashboard/error-state";
 import { ExportButton } from "@/components/dashboard/export-button";
 
-interface BillRow {
-  id: string;
-  billNumber: string;
-  contactName: string;
-  dueDate: string;
-  amountDue: number;
-  daysOverdue: number;
-}
+type DocumentRow = AgingItemUi;
 
-interface AgingBucket {
-  label: string;
-  total: number;
-  count: number;
-  bills: BillRow[];
-}
-
-const columns: Column<BillRow>[] = [
+const columns: Column<DocumentRow>[] = [
   { key: "number", header: "Bill", className: "w-32", render: (r) => <span className="font-mono text-sm">{r.billNumber}</span> },
   { key: "contact", header: "Supplier", render: (r) => <span className="text-sm font-medium">{r.contactName}</span> },
   { key: "due", header: "Due Date", className: "w-28", render: (r) => <span className="text-sm">{r.dueDate}</span> },
   { key: "days", header: "Days Overdue", className: "w-28", render: (r) => <span className="text-sm tabular-nums">{r.daysOverdue}</span> },
-  { key: "amount", header: "Amount Due", className: "w-32 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{formatMoney(r.amountDue)}</span> },
+  { key: "amount", header: "Amount Due", className: "w-32 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{reportUiMoney(r.amountDue, r.currencyCode)}</span> },
 ];
 
 export default function AgedPayablesPage() {
@@ -41,25 +28,25 @@ export default function AgedPayablesPage() {
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(true);
   const [asAt, setAsAt] = useState(today);
-  const [buckets, setBuckets] = useState<AgingBucket[]>([]);
-  const [grandTotal, setGrandTotal] = useState(0);
+  const [data, setData] = useState<AgingUi | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
     let cancelled = false;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
+    setError(null);
     const params = new URLSearchParams({ asAt });
     fetch(`/api/v1/reports/aged-payables?${params}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => ledgerAgingJson(r, payablesUi))
       .then((data) => {
         if (cancelled) return;
-        setBuckets(data.buckets || []);
-        setGrandTotal(data.grandTotal || 0);
+        setData(data);
       })
+      .catch((error: Error) => { if (!cancelled) setError(error.message); })
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
@@ -69,11 +56,11 @@ export default function AgedPayablesPage() {
     return () => { cancelled = true; };
   }, [asAt]);
 
-  const allBills = buckets.flatMap((b) =>
-    b.bills.map((bill) => ({ ...bill, bucket: b.label }))
-  );
-
   if (initialLoad) return <BrandLoader />;
+  if (error) return <ErrorState message={error} onRetry={() => window.location.reload()} />;
+  const buckets = data?.buckets ?? [], grandTotal = data?.grandTotal ?? 0n;
+  const allBills = buckets.flatMap(b => b.items.map(row => ({ ...row, bucket: b.label })));
+  const formatMoney = (amount: bigint) => reportUiMoney(amount, data!.currencyCode);
 
   return (
     <ContentReveal className="space-y-6">
@@ -86,8 +73,8 @@ export default function AgedPayablesPage() {
         description="Unpaid supplier bills, grouped by how soon they're due."
       >
         <ExportButton
-          data={allBills}
-          columns={["billNumber", "contactName", "dueDate", "daysOverdue", "amountDue", "bucket"]}
+          data={data ? agingExportRows(data) : []}
+          columns={["billNumber", "contactName", "dueDate", "daysOverdue", "currencyCode", "amountDueMinor", "bucket"]}
           filename="aged-payables"
         />
       </PageHeader>

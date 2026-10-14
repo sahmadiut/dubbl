@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { BookOpen, ChevronDown, ChevronRight } from "lucide-react";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
@@ -9,40 +9,19 @@ import { DataTable, type Column } from "@/components/dashboard/data-table";
 import { DateRangeFilter } from "@/components/dashboard/date-range-filter";
 import { ExportButton } from "@/components/dashboard/export-button";
 import { Button } from "@/components/ui/button";
-import { formatMoney } from "@/lib/money";
+import { ledgerAgingJson, generalLedgerUi, ledgerPageUi, appendLedgerPage, reportUiMoney, ledgerExportRows, type GeneralLedgerUi, type LedgerEntryUi } from "@/lib/money/ledger-aging-ui";
+import { ErrorState } from "@/components/dashboard/error-state";
 import { cn } from "@/lib/utils";
 import { BackToReports, ReportHelp } from "../_components";
 
-interface LedgerEntry {
-  date: string;
-  entryNumber: number;
-  description: string;
-  reference: string | null;
-  debit: number;
-  credit: number;
-  runningBalance: number;
-}
-
-interface AccountLedger {
-  accountId: string;
-  accountName: string;
-  accountCode: string;
-  accountType: string;
-  entries: LedgerEntry[];
-  totalEntries: number;
-  totalDebit: number;
-  totalCredit: number;
-  balance: number;
-}
-
-const entryColumns: Column<LedgerEntry>[] = [
+const entryColumns: Column<LedgerEntryUi>[] = [
   { key: "date", header: "Date", className: "w-28", render: (r) => <span className="text-sm">{new Date(r.date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span> },
   { key: "entry", header: "Entry #", className: "w-24", render: (r) => <span className="font-mono text-sm">{r.entryNumber}</span> },
   { key: "desc", header: "Description", render: (r) => <span className="text-sm">{r.description}</span> },
   { key: "ref", header: "Reference", className: "w-28", render: (r) => <span className="text-sm text-muted-foreground">{r.reference || "-"}</span> },
-  { key: "debit", header: "In (debit)", className: "w-28 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{r.debit ? formatMoney(r.debit) : ""}</span> },
-  { key: "credit", header: "Out (credit)", className: "w-28 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{r.credit ? formatMoney(r.credit) : ""}</span> },
-  { key: "balance", header: "Running balance", className: "w-28 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{formatMoney(r.runningBalance)}</span> },
+  { key: "debit", header: "In (debit)", className: "w-28 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{r.debit ? reportUiMoney(r.debit, r.currencyCode) : ""}</span> },
+  { key: "credit", header: "Out (credit)", className: "w-28 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{r.credit ? reportUiMoney(r.credit, r.currencyCode) : ""}</span> },
+  { key: "balance", header: "Running balance", className: "w-28 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{reportUiMoney(r.runningBalance, r.currencyCode)}</span> },
 ];
 
 /**
@@ -75,7 +54,12 @@ export default function GeneralLedgerPage() {
   const [startDate, setStartDate] = useState(drilldown.startDate || `${now.getFullYear()}-01-01`);
   const [endDate, setEndDate] = useState(drilldown.endDate || now.toISOString().slice(0, 10));
   const [dimension] = useState<Record<string, string>>(() => drilldown.dimension || {});
-  const [accounts, setAccounts] = useState<AccountLedger[]>([]);
+  const [data, setData] = useState<GeneralLedgerUi | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const requestVersion = useRef(0);
+  const reportRef = useRef<GeneralLedgerUi | null>(null);
+  const accounts = data?.accounts ?? [];
+  const formatMoney = (amount: bigint) => reportUiMoney(amount, data!.currencyCode);
   const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(new Set());
   const [loadingMore, setLoadingMore] = useState<Set<string>>(new Set());
 
@@ -91,8 +75,10 @@ export default function GeneralLedgerPage() {
   const loadMoreEntries = useCallback(async (accountId: string) => {
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
-    const acct = accounts.find((a) => a.accountId === accountId);
-    if (!acct) return;
+    const snapshot = reportRef.current;
+    const acct = snapshot?.accounts.find(a => a.accountId === accountId);
+    if (!snapshot || !acct || loading || loadingMore.has(accountId)) return;
+    const version = requestVersion.current;
 
     setLoadingMore((prev) => new Set(prev).add(accountId));
     try {
@@ -101,39 +87,40 @@ export default function GeneralLedgerPage() {
       const res = await fetch(`/api/v1/reports/general-ledger?${params}`, {
         headers: { "x-organization-id": orgId },
       });
-      const data = await res.json();
-      if (data.entries?.length) {
-        setAccounts((prev) => prev.map((a) =>
-          a.accountId === accountId
-            ? { ...a, entries: [...a.entries, ...data.entries] }
-            : a
-        ));
-      }
+      const page = await ledgerAgingJson(res, ledgerPageUi);
+      if (version !== requestVersion.current) return;
+      const updated = appendLedgerPage(reportRef.current!, accountId, page);
+      reportRef.current = updated;
+      setData(updated);
+    } catch (error) {
+      if (version === requestVersion.current) setError(error instanceof Error ? error.message : "Unable to load ledger entries.");
     } finally {
-      setLoadingMore((prev) => {
+      if (version === requestVersion.current) setLoadingMore((prev) => {
         const next = new Set(prev);
         next.delete(accountId);
         return next;
       });
     }
-  }, [accounts, startDate, endDate, dimension]);
+  }, [startDate, endDate, dimension, loading, loadingMore]);
 
   useEffect(() => {
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
     let cancelled = false;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    requestVersion.current += 1;
     setLoading(true);
+    setError(null);
+    setLoadingMore(new Set());
     const params = new URLSearchParams({ startDate, endDate, ...dimension });
     fetch(`/api/v1/reports/general-ledger?${params}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => ledgerAgingJson(r, generalLedgerUi))
       .then((data) => {
         if (!cancelled) {
-          const accts = data.accounts || [];
-          setAccounts(accts);
-          setExpandedAccounts(new Set(accts.map((a: AccountLedger) => a.accountId)));
+          reportRef.current = data;
+          setData(data);
+          setExpandedAccounts(new Set(data.accounts.map(a => a.accountId)));
           // When arriving from a drill-down link (#accountId), scroll to it.
           const focus = drilldown.focusAccountId;
           if (focus) {
@@ -143,16 +130,18 @@ export default function GeneralLedgerPage() {
           }
         }
       })
+      .catch((error: Error) => { if (!cancelled) setError(error.message); })
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
           setInitialLoad(false);
         }
       });
-    return () => { cancelled = true; };
+    return () => { cancelled = true; requestVersion.current += 1; };
   }, [startDate, endDate, dimension, drilldown.focusAccountId]);
 
   if (initialLoad) return <BrandLoader />;
+  if (error) return <ErrorState message={error} onRetry={() => window.location.reload()} />;
 
   return (
     <ContentReveal className="space-y-6">
@@ -164,8 +153,8 @@ export default function GeneralLedgerPage() {
       >
         {accounts.length > 0 && (
           <ExportButton
-            data={accounts.flatMap((a) => a.entries.map((e) => ({ account: a.accountCode, accountName: a.accountName, ...e })))}
-            columns={["account", "accountName", "date", "entryNumber", "description", "reference", "debit", "credit", "runningBalance"]}
+            data={data ? ledgerExportRows(data) : []}
+            columns={["account", "accountName", "date", "entryNumber", "description", "reference", "currencyCode", "debitMinor", "creditMinor", "runningBalanceMinor", "ledgerBalanceMinor"]}
             filename="general-ledger"
           />
         )}
@@ -254,7 +243,7 @@ export default function GeneralLedgerPage() {
                   </button>
                   {isExpanded && (
                     <div>
-                      <DataTable columns={entryColumns} data={acct.entries} emptyMessage="No entries." />
+                      <DataTable columns={entryColumns} data={acct.entries.map(entry => ({ ...entry, currencyCode: data!.currencyCode }))} emptyMessage="No entries." />
                       {hasMore && (
                         <div className="border-t px-4 py-2 text-center">
                           <Button variant="ghost" size="sm" className="text-xs h-7" disabled={isLoading} onClick={() => loadMoreEntries(acct.accountId)}>

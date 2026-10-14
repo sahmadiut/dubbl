@@ -728,3 +728,5 @@ payment/portal state adoption; statement currencies and totals are checked with
 bigint. Email labels require saved currency. Existing rendering, CSV/backup/
 opaque/provider contracts retain documented unit exceptions. See the
 [MON-160 consumer mapping](../../.agentic/registries/PUBLIC_RENDER_EXPORT_UI_CUTOVER.md).
+
+`ledger-aging-ui.ts` validates general ledger, cash-flow and receivable/payable aging numeric/Minor response aliases before state adoption. It checks exact running, opening/closing, page snapshot, section/bucket/document totals and currencies; bigint display uses explicit currency and CSV retains Minor strings. Nonmoney counts/offsets/dates stay numeric. Existing backend safe-range and natural-sign/period-only conventions remain; MON-162/158/008 final acceptance is independent.

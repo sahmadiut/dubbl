@@ -8,19 +8,16 @@ import { PageHeader } from "@/components/dashboard/page-header";
 import { DataTable, type Column } from "@/components/dashboard/data-table";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { DateRangeFilter } from "@/components/dashboard/date-range-filter";
-import { formatMoney } from "@/lib/money";
+import { ledgerAgingJson, cashFlowUi, reportUiMoney, type CashFlowUi } from "@/lib/money/ledger-aging-ui";
+import { ErrorState } from "@/components/dashboard/error-state";
 import { BackToReports, ReportHelp } from "../_components";
 
-interface CashFlowRow {
-  accountName: string;
-  accountCode: string;
-  amount: number;
-}
+type CashFlowRow = CashFlowUi["operating"][number] & { currencyCode: string };
 
 const columns: Column<CashFlowRow>[] = [
   { key: "code", header: "Code", className: "w-24", render: (r) => <span className="font-mono text-sm">{r.accountCode}</span> },
   { key: "name", header: "Account", render: (r) => <span className="text-sm font-medium">{r.accountName}</span> },
-  { key: "amount", header: "Amount", className: "w-32 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{formatMoney(r.amount)}</span> },
+  { key: "amount", header: "Amount", className: "w-32 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{reportUiMoney(r.amount, r.currencyCode)}</span> },
 ];
 
 export default function CashFlowPage() {
@@ -29,35 +26,25 @@ export default function CashFlowPage() {
   const [loading, setLoading] = useState(true);
   const [startDate, setStartDate] = useState(`${now.getFullYear()}-01-01`);
   const [endDate, setEndDate] = useState(now.toISOString().slice(0, 10));
-  const [operating, setOperating] = useState<CashFlowRow[]>([]);
-  const [investing, setInvesting] = useState<CashFlowRow[]>([]);
-  const [financing, setFinancing] = useState<CashFlowRow[]>([]);
-  const [totalOperating, setTotalOperating] = useState(0);
-  const [totalInvesting, setTotalInvesting] = useState(0);
-  const [totalFinancing, setTotalFinancing] = useState(0);
-  const [netCashFlow, setNetCashFlow] = useState(0);
+  const [data, setData] = useState<CashFlowUi | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
     let cancelled = false;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
+    setError(null);
     const params = new URLSearchParams({ startDate, endDate });
     fetch(`/api/v1/reports/cash-flow?${params}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => ledgerAgingJson(r, cashFlowUi))
       .then((data) => {
         if (cancelled) return;
-        setOperating(data.operating || []);
-        setInvesting(data.investing || []);
-        setFinancing(data.financing || []);
-        setTotalOperating(data.totalOperating || 0);
-        setTotalInvesting(data.totalInvesting || 0);
-        setTotalFinancing(data.totalFinancing || 0);
-        setNetCashFlow(data.netCashFlow || 0);
+        setData(data);
       })
+      .catch((error: Error) => { if (!cancelled) setError(error.message); })
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
@@ -66,6 +53,13 @@ export default function CashFlowPage() {
       });
     return () => { cancelled = true; };
   }, [startDate, endDate]);
+
+  const currencyCode = data?.currencyCode ?? "USD";
+  const rows = (items: CashFlowUi["operating"]) => items.map(row => ({ ...row, currencyCode }));
+  const operating = rows(data?.operating ?? []), investing = rows(data?.investing ?? []), financing = rows(data?.financing ?? []);
+  const totalOperating = data?.totalOperating ?? 0n, totalInvesting = data?.totalInvesting ?? 0n;
+  const totalFinancing = data?.totalFinancing ?? 0n, netCashFlow = data?.netCashFlow ?? 0n;
+  const formatMoney = (amount: bigint) => reportUiMoney(amount, currencyCode);
 
   const sections = [
     {
@@ -92,6 +86,7 @@ export default function CashFlowPage() {
   ];
 
   if (initialLoad) return <BrandLoader />;
+  if (error) return <ErrorState message={error} onRetry={() => window.location.reload()} />;
 
   return (
     <ContentReveal className="space-y-6">
@@ -127,14 +122,14 @@ export default function CashFlowPage() {
                   title={s.title}
                   value={formatMoney(s.total)}
                   icon={s.icon}
-                  changeType={s.total >= 0 ? "positive" : "negative"}
+                  changeType={s.total >= 0n ? "positive" : "negative"}
                 />
               ))}
               <StatCard
                 title="Change in cash"
                 value={formatMoney(netCashFlow)}
                 icon={DollarSign}
-                changeType={netCashFlow >= 0 ? "positive" : "negative"}
+                changeType={netCashFlow >= 0n ? "positive" : "negative"}
               />
             </div>
 

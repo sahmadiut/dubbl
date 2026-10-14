@@ -307,9 +307,6 @@
   "components/dashboard/entry-form.tsx": {
     "decimalToCents": 3
   },
-  "components/dashboard/send-document-dialog.tsx": {
-    "formatMoney": 2
-  },
   "components/ui/dual-amount.tsx": {
     "formatMoney": 3
   },

@@ -1,6 +1,9 @@
 "use client";
 
-import { documentMoneyText as fmtMoney, documentSum } from "@/lib/documents/render-wire";
+import { publicPaymentSchema } from "@/lib/money/public-ui";
+import { clientJson, clientPdf, downloadBlob } from "@/lib/api/client-response";
+
+import { documentMoneyText as fmtMoney, documentSum, documentHundredths } from "@/lib/documents/render-wire";
 
 import { useState, useEffect, Suspense } from "react";
 import { useParams, useSearchParams } from "next/navigation";
@@ -44,25 +47,22 @@ function PaymentPageContent() {
   const [paying, setPaying] = useState(false);
 
   useEffect(() => {
+    let active = true;
+    setLoading(true); setError(null); setData(null);
     async function fetchInvoice() {
       try {
         const res = await fetch(`/api/pay/${token}`);
-        const json = await res.json();
-
-        if (!res.ok) {
-          setError(json.error || "Failed to load invoice");
-          return;
-        }
-
-        setData(json);
+        const json = publicPaymentSchema.parse(await clientJson(res, "Failed to load invoice"));
+        if (active) setData(json);
       } catch {
-        setError("Failed to load invoice");
+        if (active) setError("Failed to load invoice safely. Please contact the sender.");
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     }
 
-    fetchInvoice();
+    void fetchInvoice();
+    return () => { active = false; };
   }, [token]);
 
   async function handlePay() {
@@ -77,9 +77,8 @@ function PaymentPageContent() {
         return;
       }
 
-      if (json.checkoutUrl) {
-        window.location.href = json.checkoutUrl;
-      }
+      if (typeof json.checkoutUrl !== "string" || !json.checkoutUrl) throw new Error("Checkout URL missing");
+      window.location.href = json.checkoutUrl;
     } catch {
       setError("Failed to create checkout session");
       setPaying(false);
@@ -145,8 +144,9 @@ function PaymentPageContent() {
     );
   }
 
-  const inv = data?.invoice as InvoiceData;
-  const currency = inv?.currencyCode || "USD";
+  if (!data || data.status !== "pending") return null;
+  const inv = data.invoice as InvoiceData;
+  const currency = inv.currencyCode;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center p-4">
@@ -202,7 +202,7 @@ function PaymentPageContent() {
                 <tr key={i}>
                   <td className="py-1.5">{line.description}</td>
                   <td className="text-right py-1.5">
-                    {(line.quantity / 100).toFixed(2)}
+                    {documentHundredths(line.quantity)}
                   </td>
                   <td className="text-right py-1.5">
                     {fmtMoney(line.unitPrice, currency)}
@@ -246,14 +246,18 @@ function PaymentPageContent() {
         </button>
 
         {/* Download Invoice PDF */}
-        <a
-          href={`/api/pay/${token}/pdf`}
-          download
+        <button
+          onClick={async () => {
+            try {
+              const blob = await clientPdf(await fetch(`/api/pay/${token}/pdf`));
+              downloadBlob(blob, `${inv.invoiceNumber}.pdf`);
+            } catch { setError("Unable to download invoice. Please try again."); }
+          }}
           className="mt-3 w-full flex items-center justify-center gap-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 font-medium py-2.5 px-4 transition-colors text-sm"
         >
           <Download className="h-4 w-4" />
           Download Invoice
-        </a>
+        </button>
 
         <p className="mt-4 text-center text-xs text-gray-400 dark:text-gray-500">
           Secure payment powered by Stripe

@@ -1,5 +1,8 @@
 "use client";
 
+import { portalInvoicesSchema } from "@/lib/money/public-ui";
+import { clientJson, clientPdf, downloadBlob } from "@/lib/api/client-response";
+
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { FileText, Download, ArrowLeft, CreditCard } from "lucide-react";
@@ -41,12 +44,17 @@ export default function PortalInvoicesPage() {
   const { token } = useParams<{ token: string }>();
   const [invoices, setInvoices] = useState<PortalInvoice[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let active = true;
+    queueMicrotask(() => { if (active) { setLoading(true); setError(null); setInvoices([]); } });
     fetch(`/api/portal/${token}/invoices`)
-      .then((r) => r.json())
-      .then((data) => { if (data.data) setInvoices(data.data); })
-      .finally(() => setLoading(false));
+      .then(r => clientJson(r, "Unable to load invoices"))
+      .then(value => { const data = portalInvoicesSchema.parse(value); if (active) setInvoices(data.data); })
+      .catch(() => { if (active) setError("Unable to load invoices safely. Please try again or contact the sender."); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
   }, [token]);
 
   return (
@@ -63,6 +71,8 @@ export default function PortalInvoicesPage() {
       <main className="mx-auto max-w-3xl px-6 py-8">
         {loading ? (
           <p className="text-sm text-gray-500">Loading invoices...</p>
+        ) : error ? (
+          <p role="alert" className="text-sm text-red-600">{error}</p>
         ) : invoices.length === 0 ? (
           <div className="text-center py-16">
             <FileText className="size-8 text-gray-300 mx-auto" />
@@ -88,16 +98,14 @@ export default function PortalInvoicesPage() {
                   <span className="text-sm font-mono tabular-nums font-medium text-gray-900">
                     {formatMoney(inv.total, inv.currencyCode)}
                   </span>
-                  <a
-                    href={`/api/portal/${token}/invoices/${inv.id}/pdf`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <Button variant="outline" size="sm" className="h-7 text-xs gap-1">
-                      <Download className="size-3" />
-                      PDF
-                    </Button>
-                  </a>
+                  <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={async () => {
+                    try {
+                      const blob = await clientPdf(await fetch(`/api/portal/${token}/invoices/${inv.id}/pdf`));
+                      downloadBlob(blob, `${inv.invoiceNumber}.pdf`);
+                    } catch { setError("Unable to download invoice. Please try again."); }
+                  }}>
+                    <Download className="size-3" />PDF
+                  </Button>
                   {PAYABLE_STATUSES.has(inv.status) && inv.paymentLinkToken && (
                     <a href={`/pay/${inv.paymentLinkToken}`}>
                       <Button size="sm" className="h-7 text-xs gap-1">

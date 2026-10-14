@@ -1,5 +1,8 @@
 "use client";
 
+import { portalStatementSchema } from "@/lib/money/public-ui";
+import { clientJson, clientPdf, downloadBlob } from "@/lib/api/client-response";
+
 import { documentMoneyText as formatMoney } from "@/lib/documents/render-wire";
 
 import { useState, useEffect } from "react";
@@ -33,37 +36,41 @@ export default function PortalStatementsPage() {
   const [totalOutstanding, setTotalOutstanding] = useState(0);
   const [currencyCode, setCurrencyCode] = useState("USD");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let active = true;
+    queueMicrotask(() => { if (active) { setLoading(true); setError(null); setLines([]); } });
     fetch(`/api/v1/portal/${token}/statements`)
-      .then(r => r.json())
-      .then(data => {
-        setLines(data.lines || []);
-        setTotalOutstanding(data.totalOutstanding || 0);
-        setCurrencyCode(data.currencyCode || "USD");
+      .then(r => clientJson(r, "Unable to load statement"))
+      .then(value => {
+        const data = portalStatementSchema.parse(value);
+        if (active) { setLines(data.lines); setTotalOutstanding(data.totalOutstanding); setCurrencyCode(data.currencyCode); }
       })
-      .finally(() => setLoading(false));
+      .catch(() => { if (active) setError("Unable to load statement safely. Please try again or contact the sender."); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
   }, [token]);
 
   if (loading) {
     return <div className="flex min-h-[400px] items-center justify-center"><p className="text-sm text-gray-500">Loading...</p></div>;
   }
 
+  if (error) return <p role="alert" className="text-sm text-red-600">{error}</p>;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Statement of Account</h2>
         <div className="flex items-center gap-4">
-          <a
-            href={`/api/portal/${token}/statements/pdf?format=pdf`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Button variant="outline" size="sm" className="gap-1">
-              <Download className="size-4" />
-              Download statement (PDF)
-            </Button>
-          </a>
+          <Button variant="outline" size="sm" className="gap-1" onClick={async () => {
+            try {
+              const blob = await clientPdf(await fetch(`/api/portal/${token}/statements/pdf?format=pdf`));
+              downloadBlob(blob, "statement.pdf");
+            } catch { setError("Unable to download statement. Please try again."); }
+          }}>
+            <Download className="size-4" />Download statement (PDF)
+          </Button>
           <div className="text-right">
             <p className="text-sm text-gray-500">Total Outstanding</p>
             <p className="text-xl font-bold">{formatMoney(totalOutstanding, currencyCode)}</p>

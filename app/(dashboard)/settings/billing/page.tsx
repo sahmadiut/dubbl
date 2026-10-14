@@ -1,5 +1,7 @@
 "use client";
 
+import { requireClientResponse } from "@/lib/api/client-response";
+
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
@@ -51,22 +53,25 @@ export default function BillingPage() {
   const [billing, setBilling] = useState<BillingInfo | null>(null);
   const [selfHosted, setSelfHosted] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
   const [interval, setInterval] = useState<"monthly" | "annual">("monthly");
 
   useEffect(() => {
     const orgId = localStorage.getItem("activeOrgId");
-    if (!orgId) return;
+    if (!orgId) { setError("Select an organization to view billing"); setLoading(false); return; }
 
     fetch("/api/v1/billing", {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then(async r => (await requireClientResponse(r, "Unable to load billing")).json())
       .then((data) => {
         if (data.billing) setBilling(data.billing);
         if (data.selfHosted) setSelfHosted(true);
+        if (!data.billing && !data.selfHosted) throw new Error("Billing information missing");
       })
+      .catch(() => setError("Unable to load billing. Please try again."))
       .finally(() => setLoading(false));
   }, []);
 
@@ -84,7 +89,7 @@ export default function BillingPage() {
         },
         body: JSON.stringify({ type, plan, interval }),
       });
-      const data = await res.json();
+      const data = await (await requireClientResponse(res, "Unable to start checkout")).json();
       if (data.url) window.location.href = data.url;
       else if (data.updated) {
         toast.success("Plan updated successfully");
@@ -106,8 +111,9 @@ export default function BillingPage() {
         method: "POST",
         headers: { "x-organization-id": orgId },
       });
-      const data = await res.json();
-      if (data.url) window.location.href = data.url;
+      const data = await (await requireClientResponse(res, "Unable to open billing portal")).json();
+      if (typeof data.url !== "string" || !data.url) throw new Error("Billing portal URL missing");
+      window.location.href = data.url;
     } catch {
       toast.error("Failed to open billing portal");
       setPortalLoading(false);
@@ -120,6 +126,7 @@ export default function BillingPage() {
   const isPro = currentPlan === "pro";
 
   if (loading) return <BrandLoader />;
+  if (error) return <p role="alert" className="text-sm text-destructive">{error}</p>;
 
   if (selfHosted) {
     return (

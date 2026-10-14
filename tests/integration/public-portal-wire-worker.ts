@@ -17,6 +17,9 @@ import { GET as getStatement } from "../../app/api/v1/portal/[token]/statements/
 import { POST as accept } from "../../app/api/v1/portal/[token]/quotes/[id]/accept/route";
 import { POST as approve } from "../../app/api/portal/[token]/invoices/[id]/approve/route";
 
+import { publicPaymentSchema, portalInvoicesSchema, portalPaymentsSchema, portalQuotesSchema, portalStatementSchema, acceptedQuoteSchema } from "../../lib/money/public-ui";
+import { clientJson } from "../../lib/api/client-response";
+
 async function mcp(ctx: AuthContext) {
   const server = new McpServer({ name: "Public portal fixture", version: "1.0.0" });
   registerPublicPortalTools(server, ctx);
@@ -107,6 +110,23 @@ async function run() {
   assert.equal(body.totalOutstanding, 1000); assert.equal(body.totalOutstandingMinor, "1000");
   assert.equal(body.currencyCode, "USD"); assert.equal(body.lines[0].runningBalanceMinor, "1000");
 
+  // MON-160: actual REST and registered MCP envelopes feed the same consumer validators.
+  for (const [get, name, schema, token] of [
+    [getPay, "get_payment_link", publicPaymentSchema, "pay-a"],
+    [getInvoices, "list_portal_invoices", portalInvoicesSchema, ta.token],
+    [getPayments, "list_portal_payments", portalPaymentsSchema, ta.token],
+    [getQuotes, "list_portal_quotes", portalQuotesSchema, ta.token],
+    [getStatement, "get_portal_statement", portalStatementSchema, ta.token],
+  ] as const) {
+    const rest = schema.parse(await clientJson(await get(req(), params(token)), "Unavailable"));
+    const tool = schema.parse((await callA.call(name, { token })).body);
+    assert.deepEqual(rest, tool);
+    const invalid = await get(req(), params("missing"));
+    await assert.rejects(clientJson(invalid, "Unavailable"));
+    const deniedBody = (await callA.call(name, { token: "missing" })).body;
+    assert.throws(() => schema.parse(deniedBody));
+  }
+
   // Public bearer token is the grant; arbitrary organization headers cannot change it.
   assert.equal((await (await getInvoices(req(), params(tb.token))).json()).data[0].id, foreign.id);
   for (const get of [getIdentity, getInvoices, getPayments, getQuotes, getStatement]) {
@@ -177,7 +197,7 @@ async function run() {
   await db.execute(sql`drop trigger portal_activity_failure on portal_activity_log`);
   await db.execute(sql`drop function fail_portal_activity()`);
   response = await accept(req("POST", {}), params(ta.token, q1.id));
-  assert.equal(response.status, 200); body = await response.json(); assert.equal(body.status, "accepted"); assert.equal(body.totalMinor, "1250");
+  assert.equal(response.status, 200); body = await response.json(); assert.equal(body.status, "accepted"); assert.equal(acceptedQuoteSchema.parse(body).totalMinor, "1250");
   response = await approve(req("POST"), params(ta.token, q2.id));
   assert.equal(response.status, 200); assert.deepEqual(await response.json(), { quote: { id: q2.id, status: "accepted" } });
   assert.equal((await callA.call("accept_portal_quote", { token: ta.token, quoteId: q3.id })).body.totalMinor, "1250");
@@ -198,11 +218,18 @@ async function run() {
   await db.update(contact).set({ deletedAt: null }).where(eq(contact.id, ca.id));
 
   // Signed/large values and multi-currency statements retain units, with no precision recovery guesses.
-  for (const currencyCode of ["IRR", "JPY", "KWD"]) {
-    await db.update(invoice).set({ currencyCode, total: 2147483648, amountDue: -1250 }).where(eq(invoice.id, inv.id));
+  for (const currencyCode of ["USD", "IRR", "JPY", "KWD"]) {
+    await db.update(invoice).set({ currencyCode, total: 3000000001, amountDue: -1251 }).where(eq(invoice.id, inv.id));
     body = await (await getPay(req(), params("pay-a"))).json();
-    assert.equal(body.invoice.totalMinor, "2147483648"); assert.equal(body.invoice.amountDueMinor, "-1250");
-    assert.equal((await callA.call("get_portal_statement", { token: ta.token })).body.totalOutstandingMinor, "-1250");
+    const adopted = publicPaymentSchema.parse(body);
+    assert.equal(adopted.status, "pending");
+    if (adopted.status !== "pending") throw new Error("Expected pending invoice");
+    assert.equal(adopted.invoice.totalMinor, "3000000001"); assert.equal(adopted.invoice.amountDueMinor, "-1251");
+    const statement = portalStatementSchema.parse((await callA.call("get_portal_statement", { token: ta.token })).body);
+    assert.equal(statement.totalOutstandingMinor, "-1251");
+    const raw = (await db.execute(sql`select total::text, amount_due::text, currency_code from invoice where id = ${inv.id}`)).rows[0];
+    assert.deepEqual(raw, { total: "3000000001", amount_due: "-1251", currency_code: currencyCode });
+    assert.throws(() => publicPaymentSchema.parse({ ...body, invoice: { ...body.invoice, totalMinor: "3000000000" } }));
   }
   await db.update(invoice).set({ currencyCode: "USD", amountDue: Number.MAX_SAFE_INTEGER, total: Number.MAX_SAFE_INTEGER }).where(eq(invoice.id, inv.id));
   assert.equal((await (await getStatement(req(), params(ta.token))).json()).totalOutstandingMinor, "9007199254740991");

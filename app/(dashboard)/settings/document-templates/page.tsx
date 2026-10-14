@@ -1,5 +1,7 @@
 "use client";
 
+import { requireClientResponse, clientPdf, downloadBlob } from "@/lib/api/client-response";
+
 import { useState, useEffect } from "react";
 import {
   Plus,
@@ -210,28 +212,24 @@ export default function DocumentTemplatesPage() {
   }
 
   async function handlePreview(t: Template) {
-    setPreviewTemplateId(t.id);
-    const res = await fetch(`/api/v1/document-templates/${t.id}/preview`, {
-      method: "POST",
-      headers: getHeaders(),
-    });
-    const html = await res.text();
-    setPreviewHtml(html);
+    setPreviewHtml(null); setPreviewTemplateId(null);
+    try {
+      const res = await requireClientResponse(await fetch(`/api/v1/document-templates/${t.id}/preview`, {
+        method: "POST", headers: getHeaders(),
+      }), "Unable to preview template");
+      if (!res.headers.get("content-type")?.startsWith("text/html")) throw new Error("Invalid template preview");
+      setPreviewHtml(await res.text()); setPreviewTemplateId(t.id);
+    } catch { toast.error("Unable to preview template safely"); }
   }
 
   async function handleDownloadSamplePdf() {
     if (!previewTemplateId) return;
-    const res = await fetch(`/api/v1/document-templates/${previewTemplateId}/preview?format=pdf`, {
-      method: "POST",
-      headers: getHeaders(),
-    });
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "sample-invoice.pdf";
-    a.click();
-    URL.revokeObjectURL(url);
+    try {
+      const blob = await clientPdf(await fetch(`/api/v1/document-templates/${previewTemplateId}/preview?format=pdf`, {
+        method: "POST", headers: getHeaders(),
+      }));
+      downloadBlob(blob, "sample-invoice.pdf");
+    } catch { toast.error("Unable to download sample PDF"); }
   }
 
   if (loading) return <BrandLoader />;

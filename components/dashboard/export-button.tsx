@@ -3,6 +3,7 @@
 import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { generateCSV } from "@/lib/import-export/csv-utils";
+import { toast } from "sonner";
 
 interface ExportButtonProps {
   data: object[];
@@ -14,7 +15,9 @@ export function ExportButton({ data, columns, filename = "export" }: ExportButto
   const handleExport = () => {
     if (data.length === 0) return;
 
-    const csv = generateCSV(data.map(row => Object.fromEntries(Object.entries(row))), columns);
+    let csv: string;
+    try { csv = generateCSV(data.map(row => Object.fromEntries(Object.entries(row))), columns); }
+    catch { toast.error("Unable to export these values safely"); return; }
 
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);

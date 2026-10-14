@@ -1,8 +1,11 @@
 "use client";
 
+import { portalQuotesSchema, acceptedQuoteSchema } from "@/lib/money/public-ui";
+import { clientJson } from "@/lib/api/client-response";
+
 import { documentMoneyText as formatMoney } from "@/lib/documents/render-wire";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import {
   Table,
@@ -30,19 +33,32 @@ export default function PortalQuotesPage() {
   const { token } = useParams<{ token: string }>();
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [accepting, setAccepting] = useState<string | null>(null);
 
-  const loadQuotes = () => {
-    fetch(`/api/v1/portal/${token}/quotes`)
-      .then(r => r.json())
-      .then(data => setQuotes(data.data || []))
-      .finally(() => setLoading(false));
-  };
+  const loadQuotes = useCallback(async (active: () => boolean = () => true) => {
+    if (active()) { setLoading(true); setError(null); setQuotes([]); }
+    try {
+      const data = portalQuotesSchema.parse(await clientJson(await fetch(`/api/v1/portal/${token}/quotes`), "Unable to load quotes"));
+      if (active()) setQuotes(data.data);
+    } catch { if (active()) setError("Unable to load quotes safely. Please try again or contact the sender."); }
+    finally { if (active()) setLoading(false); }
+  }, [token]);
 
-  useEffect(() => { loadQuotes(); }, [token]);
+  useEffect(() => {
+    let active = true;
+    void loadQuotes(() => active);
+    return () => { active = false; };
+  }, [loadQuotes]);
 
   const handleAccept = async (id: string) => {
-    await fetch(`/api/v1/portal/${token}/quotes/${id}/accept`, { method: "POST" });
-    loadQuotes();
+    if (accepting) return;
+    setAccepting(id); setError(null);
+    try {
+      acceptedQuoteSchema.parse(await clientJson(await fetch(`/api/v1/portal/${token}/quotes/${id}/accept`, { method: "POST" }), "Unable to accept quote"));
+      await loadQuotes();
+    } catch { setError("Unable to accept quote. Please reload and try again."); }
+    finally { setAccepting(null); }
   };
 
   if (loading) {
@@ -52,6 +68,7 @@ export default function PortalQuotesPage() {
   return (
     <div className="space-y-6">
       <h2 className="text-lg font-semibold">Quotes</h2>
+      {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
 
       <div className="rounded-lg border">
         <Table>
@@ -66,7 +83,7 @@ export default function PortalQuotesPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {quotes.length === 0 ? (
+            {error && quotes.length === 0 ? null : quotes.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center text-sm text-gray-500 py-8">
                   No quotes found
@@ -86,7 +103,7 @@ export default function PortalQuotesPage() {
                   </TableCell>
                   <TableCell>
                     {q.status === "sent" && (
-                      <Button size="sm" variant="outline" onClick={() => handleAccept(q.id)}>
+                      <Button size="sm" variant="outline" disabled={!!accepting || !!error} onClick={() => handleAccept(q.id)}>
                         Accept
                       </Button>
                     )}

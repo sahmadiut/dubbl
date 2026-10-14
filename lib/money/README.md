@@ -720,3 +720,11 @@ remain exact. Malformed/failed loads show English errors. See
 [consumer mapping](../../.agentic/registries/FINANCIAL_STATEMENT_UI_CUTOVER.md);
 MON-158/MON-008 combined acceptance and the natural-sign accounting correction
 remain separate.
+
+### Public, rendering, export and provider consumers
+
+`public-ui.ts` validates matching canonical saved Minor aliases before public
+payment/portal state adoption; statement currencies and totals are checked with
+bigint. Email labels require saved currency. Existing rendering, CSV/backup/
+opaque/provider contracts retain documented unit exceptions. See the
+[MON-160 consumer mapping](../../.agentic/registries/PUBLIC_RENDER_EXPORT_UI_CUTOVER.md).

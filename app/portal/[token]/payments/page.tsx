@@ -1,5 +1,8 @@
 "use client";
 
+import { portalPaymentsSchema } from "@/lib/money/public-ui";
+import { clientJson } from "@/lib/api/client-response";
+
 import { documentMoneyText as formatMoney } from "@/lib/documents/render-wire";
 
 import { useState, useEffect } from "react";
@@ -29,17 +32,24 @@ export default function PortalPaymentsPage() {
   const { token } = useParams<{ token: string }>();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let active = true;
+    queueMicrotask(() => { if (active) { setLoading(true); setError(null); setPayments([]); } });
     fetch(`/api/v1/portal/${token}/payments`)
-      .then(r => r.json())
-      .then(data => setPayments(data.data || []))
-      .finally(() => setLoading(false));
+      .then(r => clientJson(r, "Unable to load payments"))
+      .then(value => { const data = portalPaymentsSchema.parse(value); if (active) setPayments(data.data); })
+      .catch(() => { if (active) setError("Unable to load payments safely. Please try again or contact the sender."); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
   }, [token]);
 
   if (loading) {
     return <div className="flex min-h-[400px] items-center justify-center"><p className="text-sm text-gray-500">Loading...</p></div>;
   }
+
+  if (error) return <p role="alert" className="text-sm text-red-600">{error}</p>;
 
   return (
     <div className="space-y-6">

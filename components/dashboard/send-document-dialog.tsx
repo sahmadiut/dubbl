@@ -22,8 +22,8 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
-import { formatMoney } from "@/lib/money";
-import { bankMoneyDisplay } from "@/lib/money/bank-display";
+import { publicEmailMoney } from "@/lib/money/public-ui";
+import { clientPdf } from "@/lib/api/client-response";
 
 interface SendDocumentDialogProps {
   open: boolean;
@@ -109,8 +109,9 @@ export function SendDocumentDialog({
   const canPreviewDocument = Boolean(renderRoute && documentId);
   const showAttachPdf = documentType === "invoice";
   const isInvoice = documentType === "invoice";
-  const amountFormatted = amountDue == null ? undefined : currencyCode
-    ? bankMoneyDisplay(amountDue, currencyCode) : typeof amountDue === "number" ? formatMoney(amountDue) : undefined;
+  let amountFormatted: string | undefined, moneyError: string | undefined;
+  try { amountFormatted = publicEmailMoney(amountDue, currencyCode); }
+  catch { moneyError = "Unable to display the saved document amount safely"; }
   const dueDateFormatted = formatDateDisplay(dueDate);
   const issueDateFormatted = formatDateDisplay(issueDate);
 
@@ -161,10 +162,10 @@ export function SendDocumentDialog({
 
   const getPreviewButton = useCallback(() => {
     if (isInvoice && includePaymentLink) {
-      return { viewUrl: "#", buttonLabel: "Pay invoice" };
+      return { viewUrl: "https://example.test/document", buttonLabel: "Pay invoice" };
     }
     if (documentType === "quote") {
-      return { viewUrl: "#", buttonLabel: "View quote" };
+      return { viewUrl: "https://example.test/document", buttonLabel: "View quote" };
     }
     return {};
   }, [isInvoice, includePaymentLink, documentType]);
@@ -182,6 +183,7 @@ export function SendDocumentDialog({
   }), [organizationName, contactName, documentType, documentNumber, personalMessage, amountFormatted, dueDateFormatted, issueDateFormatted, getPreviewButton]);
 
   async function handlePreview() {
+    if (moneyError) { toast.error(moneyError); return; }
     if (!orgId) return;
     setPreviewing(true);
     setPreviewLoading(true);
@@ -225,7 +227,7 @@ export function SendDocumentDialog({
         setDocPreviewError(true);
         return;
       }
-      const blob = await res.blob();
+      const blob = await clientPdf(res);
       const url = URL.createObjectURL(blob);
       // Replace any previous URL (effect cleanup revokes the old one).
       setDocPreviewUrl(url);
@@ -237,6 +239,7 @@ export function SendDocumentDialog({
   }
 
   async function handleSendEmail() {
+    if (moneyError) { toast.error(moneyError); return; }
     if (!orgId || !recipientEmail) {
       toast.error("Recipient email is required");
       return;
@@ -388,6 +391,7 @@ export function SendDocumentDialog({
           ) : (
             /* ---- Compose Form ---- */
             <div className="space-y-5 px-4 py-4 sm:px-6 sm:py-5">
+              {moneyError && <p role="alert" className="text-sm text-destructive">{moneyError}</p>}
               {/* Recipient */}
               <div className="space-y-2">
                 <Label className="text-xs">To</Label>
@@ -539,7 +543,7 @@ export function SendDocumentDialog({
           <Button
             onClick={handleSendEmail}
             loading={sending}
-            disabled={markingAsSent || !recipientEmail}
+            disabled={markingAsSent || !recipientEmail || !!moneyError}
             className="flex-1 bg-emerald-600 hover:bg-emerald-700"
           >
             <Send className="mr-2 size-4" />

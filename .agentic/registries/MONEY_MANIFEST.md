@@ -1,3 +1,17 @@
+## MON-160 public, rendering, export and provider consumers
+
+[PUBLIC_RENDER_EXPORT_UI_CUTOVER](PUBLIC_RENDER_EXPORT_UI_CUTOVER.md) maps public
+payment/portal/signing, HTML/PDF/email/templates, generic import/export/backup/
+opaque and provider/billing consumers to their existing exact REST/MCP boundaries.
+Public saved numeric amounts must agree with canonical Minor strings before state
+adoption. Statements validate currencies and bigint running/total sums; quantity
+hundredths remain independent of currency scale. Failed reads/actions/downloads
+have explicit error states. Shared email labels require saved currency, with the
+legacy USD fallback removed. Existing fixed-two CSV prices, opaque literal text,
+byte-preserving backups and bounded provider units retain their contracts.
+Pure behavior and actual REST/MCP/SQL regressions verify signed low digits and
+negative cases. MON-008 retains independent integration acceptance.
+
 ## MON-157 budget, project and CRM consumer cutover
 
 [BUDGET_PROJECT_CRM_UI_CUTOVER](BUDGET_PROJECT_CRM_UI_CUTOVER.md) maps scoped

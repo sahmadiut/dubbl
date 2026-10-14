@@ -1,5 +1,7 @@
 "use client";
 
+import { requireClientResponse } from "@/lib/api/client-response";
+
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -79,6 +81,7 @@ export default function StripeIntegrationPage() {
   const [integrations, setIntegrations] = useState<IntegrationItem[]>([]);
   const [connected, setConnected] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [statusError, setStatusError] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
@@ -86,14 +89,17 @@ export default function StripeIntegrationPage() {
   const [bankAccounts, setBankAccounts] = useState<BankAccountItem[]>([]);
 
   const fetchStatus = useCallback(async () => {
+    setStatusError(null);
     try {
       const res = await fetch("/api/v1/integrations/stripe/status", {
         headers: orgHeaders(),
       });
-      const json = await res.json();
+      const json = await (await requireClientResponse(res, "Unable to load Stripe integration status")).json();
+      if (typeof json.connected !== "boolean" || !Array.isArray(json.integrations)) throw new Error("Invalid integration status");
       setConnected(json.connected ?? false);
       setIntegrations(json.integrations || []);
     } catch {
+      setStatusError("Unable to load Stripe integration status. Please try again.");
       toast.error("Failed to load Stripe integration status");
     } finally {
       setLoading(false);
@@ -232,6 +238,8 @@ export default function StripeIntegrationPage() {
       </div>
     );
   }
+
+  if (statusError) return <p role="alert" className="text-sm text-destructive">{statusError}</p>;
 
   if (!connected) {
     return (

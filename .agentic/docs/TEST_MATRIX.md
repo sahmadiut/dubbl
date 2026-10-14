@@ -1,5 +1,20 @@
 # Verification matrix
 
+## MON-160 public, rendering, export and provider UI consumers
+
+- `tests/public-ui.test.ts`: six behavior/static groups verify required saved aliases,
+  low digits, negative values, currency scales, hidden amounts, exact statement
+  running/total sums, malformed HTTP/data/PDF responses and explicit email currency.
+- `tests/integration/public-portal-wire*`: actual public REST and linked registered
+  MCP envelopes feed consumer adapters; independent SQL text checks signed low
+  digits in USD/JPY/KWD/synthetic IRR. Existing invalid grants, tenant/contact
+  isolation, rollback, repeated acceptance and unsafe history cases remain.
+- Document-rendering, generic-import-export, backups, stripe-contract,
+  opaque-public-integration and public-boundaries-integration fixtures jointly
+  reverify preserved rendering/export/backup/provider contracts. No live provider
+  delivery or browser qualification. See the
+  [consumer mapping](../registries/PUBLIC_RENDER_EXPORT_UI_CUTOVER.md).
+
 ## MON-157 budget, project and CRM UI money
 
 - `tests/budget-project-crm-ui.test.ts`: eight behavior/static groups, signed/safe-max

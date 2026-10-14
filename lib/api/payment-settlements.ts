@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { z } from "zod";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { organization, invoice, bill, contact, bankAccount, chartAccount, payment, paymentAllocation,
+import { organization, invoice, bill, billLine, contact, bankAccount, chartAccount, payment, paymentAllocation,
   journalEntry, journalLine, numberSequence, auditLog, creditNote, debitNote, customerCredit } from "@/lib/db/schema";
 import { AuthError, type AuthContext } from "./auth-context";
 import { requireRole } from "./require-role";
@@ -17,9 +17,10 @@ import { lifecycleDto } from "./invoice-lifecycle-wire";
 import { billWriteDto } from "./bill-write-wire";
 import { safeInvoiceMinor, invoiceRound } from "./invoice-write-wire";
 import { creditAmount } from "./credit-wire";
-import { publicMoneyDto } from "./public-money-wire";
+import { publicMoneyDto, publicLineDto } from "./public-money-wire";
 import { paymentReadDto } from "./payment-read-wire";
 import { journalLineDto } from "./journal-wire";
+import { assertJournalReferences } from "./journal-references";
 import { receivableAccount } from "./invoice-lifecycle";
 import { ensureBankLedgerAccount } from "./bank-ledger";
 import { paymentCreateSchema, paymentPaySchema, paymentAllocations, paymentCashBase, paymentCarryingBase } from "./payment-settlement-wire";
@@ -142,6 +143,52 @@ async function previousCarrying(tx: Tx, ctx: AuthContext, row: Document, alloc: 
   }
   if (paid !== BigInt(row.amountPaid) || carrying !== invoiceRound(BigInt(original) * paid, BigInt(payable)))
     unsupported("Document paid balance and saved settlement carrying history disagree");
+}
+
+/** Internal period-end consumer: qualify the saved base GL and its cumulative releases.
+ * GL legs already contain base minor units; never convert them a second time.
+ */
+export async function revaluationExposure(tx: Tx, ctx: AuthContext, row: Document, kind: "invoice" | "bill", base: string, asOfDate: string) {
+  lifecycleDto(row); currencyCodeSchema.parse(row.currencyCode); rateDateSchema.parse(row.issueDate);
+  const statuses = kind === "invoice" ? ["sent", "partial", "overdue", "paid"] : ["received", "partial", "overdue", "paid"];
+  if (row.organizationId !== ctx.organizationId || row.deletedAt || !statuses.includes(row.status) || row.amountPaid < 0 || row.amountDue < 0)
+    unsupported("Revaluation requires recognized nonnegative outstanding documents");
+  // Current balances cannot stand in for an earlier period after a later release.
+  // Include paid documents in this guard, so a later full settlement cannot disappear.
+  const later = await tx.select({ id: payment.id }).from(paymentAllocation).innerJoin(payment, eq(payment.id, paymentAllocation.paymentId))
+    .where(and(eq(paymentAllocation.documentId, row.id), eq(paymentAllocation.documentType, kind), isNull(payment.deletedAt), sql`${payment.date} > ${asOfDate}`)).limit(1);
+  if (later.length) unsupported("Revaluation cannot reconstruct balances after a later settlement");
+  if (row.amountDue === 0) return null;
+  const [party] = await tx.select().from(contact).where(and(eq(contact.id, row.contactId), eq(contact.organizationId, ctx.organizationId))).for("share");
+  if (!party || party.deletedAt) unsupported("Revaluation contact is unavailable in this organization");
+  const control = await receivableAccount(tx, ctx.organizationId, kind === "invoice" ? "1200" : "2100");
+  if (control.currencyCode !== base || control.type !== (kind === "invoice" ? "asset" : "liability")) unsupported("Unqualified revaluation control account");
+  const snapshot = "senderSnapshot" in row ? row.senderSnapshot as { baseCurrencyCode?: string } | null : null;
+  if (snapshot?.baseCurrencyCode && snapshot.baseCurrencyCode !== base) unsupported("Base currency changed after recognition");
+  const saved = await recognition(tx, ctx, row, kind);
+  if (saved.entry.date !== row.issueDate) unsupported("Recognition date disagrees with document issue date");
+  await assertJournalReferences(ctx.organizationId, saved.lines, saved.entry.fiscalYearId, true, tx);
+  if (saved.lines.some(line => line.rateProvenance !== "legacy_scaled_1e6:transaction")) unsupported("Recognition FX provenance is unqualified");
+  const original = safeInvoiceMinor(saved.lines.filter(line => line.accountId === control.id).reduce((sum, line) => sum + (kind === "invoice"
+    ? BigInt(line.debitAmount) - BigInt(line.creditAmount) : BigInt(line.creditAmount) - BigInt(line.debitAmount)), 0n));
+  const payable = safeInvoiceMinor(BigInt(row.amountPaid) + BigInt(row.amountDue));
+  if (original <= 0 || payable <= 0 || (kind === "invoice" && (payable !== row.total || original !== paymentCashBase(payable, row.currencyCode, base, saved.rateExact))))
+    unsupported("Recognition and outstanding total are inconsistent");
+  if (kind === "bill") {
+    const lines = await tx.select().from(billLine).where(eq(billLine.billId, row.id));
+    lines.forEach(publicLineDto);
+    const subtotal = safeInvoiceMinor(lines.reduce((sum, line) => sum + BigInt(line.amount), 0n));
+    const tax = safeInvoiceMinor(lines.reduce((sum, line) => sum + BigInt(line.taxAmount), 0n));
+    // Bills do not save the original supplier-payable/tax-kind snapshot. Only
+    // total-payable history with a matching single conversion is unambiguous.
+    // Reverse-charge and split-GRNI rounding exceptions must not be inferred.
+    if (!lines.length || subtotal !== row.subtotal || tax !== row.taxTotal || safeInvoiceMinor(BigInt(subtotal) + BigInt(tax)) !== row.total ||
+      payable !== row.total || original !== paymentCashBase(payable, row.currencyCode, base, saved.rateExact))
+      unsupported("Bill revaluation requires qualified original supplier payable and control rounding");
+  }
+  await previousCarrying(tx, ctx, row, { documentId: row.id, documentType: kind, amount: row.amountDue }, control.id, original, payable, base, saved.rateExact);
+  return { accountId: control.id, rateExact: saved.rateExact,
+    carrying: safeInvoiceMinor(BigInt(original) - invoiceRound(BigInt(original) * BigInt(row.amountPaid), BigInt(payable))) };
 }
 async function nextNumber(tx: Tx, ctx: AuthContext) {
   const [sequence] = await tx.select().from(numberSequence).where(and(eq(numberSequence.organizationId, ctx.organizationId), eq(numberSequence.entityType, "payment"))).for("update");

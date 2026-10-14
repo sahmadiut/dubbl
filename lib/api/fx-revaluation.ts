@@ -1,270 +1,144 @@
-import { sql, eq, and, isNull, ne } from "drizzle-orm";
+import { sql, eq, and, isNull, ne, lte } from "drizzle-orm";
 import { db } from "@/lib/db";
-import {
-  organization,
-  chartAccount,
-  journalEntry,
-  journalLine,
-  invoice,
-  bill,
-} from "@/lib/db/schema";
-import { getExchangeRate, convertAmount } from "@/lib/currency/converter";
-import {
-  revaluationLegs,
-  reverseLegs,
-  type SettlementLeg,
-} from "@/lib/currency/convert-entry";
-import { assertNotLocked, PeriodLockedError } from "@/lib/api/period-lock";
+import { organization, chartAccount, journalEntry, journalLine, invoice, bill, auditLog } from "@/lib/db/schema";
+import { createHistoricalRateResolver } from "@/lib/currency/historical-rate";
+import { MissingExchangeRateError } from "@/lib/currency/converter";
+import { currencyCodeSchema } from "@/lib/currency/zod";
+import { rateDateSchema } from "@/lib/currency/rate-policy";
+import { revaluationLegs, reverseLegs } from "@/lib/currency/convert-entry";
+import { assertNotLocked, PeriodLockedError } from "./period-lock";
+import { maintenanceContext } from "./maintenance-context";
+import { revaluationExposure } from "./payment-settlements";
+import { paymentCashBase } from "./payment-settlement-wire";
+import { safeInvoiceMinor } from "./invoice-write-wire";
+import { WireCompatibilityError } from "@/lib/money/wire";
+import { auditTax, type TaxTx } from "./tax-config-transaction";
+import { journalLineDto } from "./journal-wire";
+import { assertJournalReferences } from "./journal-references";
 
-/** Either the pool or an open transaction. */
-type Exec = typeof db | Parameters<Parameters<(typeof db)["transaction"]>[0]>[0];
+function fail(message: string): never { throw new WireCompatibilityError(message); }
+async function account(tx: TaxTx, orgId: string, code: string, base: string, type: "revenue" | "expense") {
+  await tx.insert(chartAccount).values({ organizationId: orgId, code, currencyCode: base, type,
+    name: type === "revenue" ? "Unrealised Currency Gains" : "Unrealised Currency Losses", subType: "non_operating" })
+    .onConflictDoNothing({ target: [chartAccount.organizationId, chartAccount.code] });
+  const [row] = await tx.select().from(chartAccount).where(and(eq(chartAccount.organizationId, orgId), eq(chartAccount.code, code))).for("share");
+  if (!row || row.deletedAt || !row.isActive || row.type !== type || row.currencyCode !== base) fail("Unqualified unrealised FX account");
+  return row.id;
+}
 
-/**
- * Period-end unrealised FX revaluation (reverse-and-rebook).
- *
- * For each org, revalue open foreign-currency receivables (invoices) and
- * payables (bills) from their issue-date rate to the period-end rate, post the
- * unrealised gain/loss to the GL dated `asOfDate`, and post a reversing entry
- * dated `reversalDate` so the adjustment doesn't permanently accumulate. Posts
- * to Unrealised Currency Gains (4920) / Losses (5940), distinct from realised.
- *
- * No-op for single-currency orgs and when no rate movement is found.
+/** Saved recognition GL is already in base minor units. Qualify its cumulative
+ * releases, convert only outstanding document units at period end, and reverse
+ * the new adjustment verbatim. Nothing reprices recognition history.
  */
-
-const UNREALISED_GAIN = {
-  code: "4920",
-  name: "Unrealised Currency Gains",
-  type: "revenue" as const,
-  subType: "non_operating",
-};
-const UNREALISED_LOSS = {
-  code: "5940",
-  name: "Unrealised Currency Losses",
-  type: "expense" as const,
-  subType: "non_operating",
-};
-
-type AccountDef = {
-  code: string;
-  name: string;
-  type: "revenue" | "expense";
-  subType: string;
-};
-
-async function findAccount(orgId: string, code: string) {
-  return db.query.chartAccount.findFirst({
-    where: and(
-      eq(chartAccount.organizationId, orgId),
-      eq(chartAccount.code, code)
-    ),
-  });
-}
-
-async function ensureAccount(orgId: string, def: AccountDef, base: string) {
-  const existing = await findAccount(orgId, def.code);
-  if (existing) return existing;
-  await db
-    .insert(chartAccount)
-    .values({
-      organizationId: orgId,
-      code: def.code,
-      name: def.name,
-      type: def.type,
-      subType: def.subType,
-      currencyCode: base,
-    })
-    .onConflictDoNothing({
-      target: [chartAccount.organizationId, chartAccount.code],
-    });
-  return findAccount(orgId, def.code);
-}
-
-async function nextEntryNumber(orgId: string, exec: Exec = db) {
-  const [m] = await exec
-    .select({
-      max: sql<number>`coalesce(max(${journalEntry.entryNumber}), 0)`,
-    })
-    .from(journalEntry)
-    .where(eq(journalEntry.organizationId, orgId));
-  return (m?.max || 0) + 1;
-}
-
-/** Sum the period-end-minus-issue base-value delta over a set of open docs. */
-async function aggregateDelta(
-  orgId: string,
-  base: string,
-  docs: { currencyCode: string; issueDate: string; amountDue: number }[],
-  asOfDate: string
-): Promise<number> {
-  let delta = 0;
-  for (const d of docs) {
-    const issueRate = await getExchangeRate(orgId, d.currencyCode, base, d.issueDate);
-    const currentRate = await getExchangeRate(orgId, d.currencyCode, base, asOfDate);
-    if (issueRate == null || currentRate == null) continue;
-    delta +=
-      convertAmount(d.amountDue, currentRate) -
-      convertAmount(d.amountDue, issueRate);
-  }
-  return delta;
-}
-
-export async function processFxRevaluationForOrg(
-  orgId: string,
-  asOfDate: string,
-  reversalDate: string
-): Promise<{ posted: boolean; reason?: string }> {
-  const org = await db.query.organization.findFirst({
-    where: eq(organization.id, orgId),
-    columns: { defaultCurrency: true },
-  });
-  const base = org?.defaultCurrency ?? "USD";
-
-  const openConditions = (table: typeof invoice | typeof bill) =>
-    and(
-      eq(table.organizationId, orgId),
-      isNull(table.deletedAt),
-      ne(table.status, "void"),
-      ne(table.status, "paid"),
-      ne(table.status, "draft"),
-      ne(table.currencyCode, base)
-    );
-
-  const invoices = await db.query.invoice.findMany({ where: openConditions(invoice) });
-  const bills = await db.query.bill.findMany({ where: openConditions(bill) });
-  if (invoices.length === 0 && bills.length === 0) return { posted: false };
-
-  const arDelta = await aggregateDelta(orgId, base, invoices, asOfDate);
-  const apDelta = await aggregateDelta(orgId, base, bills, asOfDate);
-
-  const arLegs = revaluationLegs("receivable", arDelta);
-  const apLegs = revaluationLegs("payable", apDelta);
-  if (arLegs.length === 0 && apLegs.length === 0) return { posted: false };
-
-  // Idempotency: if a revaluation for this period-end already exists, don't
-  // post again. The scheduled job retries on failure, so without this a retry
-  // (or a re-run) would double-book the unrealised gain/loss.
-  const already = await db.query.journalEntry.findFirst({
-    where: and(
-      eq(journalEntry.organizationId, orgId),
-      eq(journalEntry.sourceType, "fx_revaluation"),
-      eq(journalEntry.date, asOfDate),
-      isNull(journalEntry.deletedAt)
-    ),
-    columns: { id: true },
-  });
-  if (already) return { posted: false, reason: "already posted" };
-
-  // Don't revalue into a locked/closed period.
+export async function processFxRevaluationForOrg(orgId: string, asOfDate: string, reversalDate: string): Promise<{ posted: boolean; reason?: string }> {
+  rateDateSchema.parse(asOfDate); rateDateSchema.parse(reversalDate);
+  if (reversalDate <= asOfDate) fail("Revaluation reversal must follow the period-end date");
   try {
-    await assertNotLocked(orgId, asOfDate);
-  } catch (err) {
-    if (err instanceof PeriodLockedError) return { posted: false, reason: "period locked" };
-    throw err;
+    return await db.transaction(async tx => {
+      // Same organization lock/order as document settlement and period writers.
+      // NO KEY UPDATE still serializes domain writers, while allowing a lock-row
+      // insertion's FK KEY SHARE check to finish before our shared table lock.
+      const [org] = await tx.select().from(organization).where(and(eq(organization.id, orgId), isNull(organization.deletedAt))).for("no key update");
+      if (!org) return { posted: false, reason: "organization unavailable" };
+      const ctx = await maintenanceContext(orgId, tx);
+      if (!ctx) return { posted: false, reason: "owner unavailable" };
+      const base = currencyCodeSchema.parse(org.defaultCurrency ?? "USD");
+      const prior = await tx.select().from(journalEntry).where(and(eq(journalEntry.organizationId, orgId),
+        eq(journalEntry.sourceType, "fx_revaluation"), eq(journalEntry.date, asOfDate)));
+      if (prior.length) {
+        const original = prior[0];
+        const [reverse] = original.reversedByEntryId ? await tx.select().from(journalEntry).where(and(eq(journalEntry.id, original.reversedByEntryId), eq(journalEntry.organizationId, orgId))) : [];
+        if (prior.length !== 1 || original.deletedAt || original.status !== "posted" || !reverse || reverse.deletedAt || reverse.status !== "posted" ||
+          reverse.sourceType !== "fx_revaluation_reversal" || reverse.reversesEntryId !== original.id || reverse.date !== reversalDate)
+          fail("Existing revaluation has an incompatible or incomplete reversal");
+        const [audit] = await tx.select().from(auditLog).where(and(eq(auditLog.organizationId, orgId), eq(auditLog.entityType, "fx_revaluation"),
+          eq(auditLog.entityId, original.id), eq(auditLog.action, "post")));
+        const saved = audit?.changes as { baseCurrencyCode?: string; reversalEntryId?: string; asOfDate?: string; reversalDate?: string } | null;
+        if (!saved?.baseCurrencyCode || saved.reversalEntryId !== reverse.id || saved.asOfDate !== asOfDate || saved.reversalDate !== reversalDate)
+          fail("Existing revaluation lacks qualified posting provenance");
+        const lines = await tx.select().from(journalLine).where(eq(journalLine.journalEntryId, original.id));
+        const mirrors = await tx.select().from(journalLine).where(eq(journalLine.journalEntryId, reverse.id));
+        for (const line of [...lines, ...mirrors]) {
+          journalLineDto(line);
+          if (line.currencyCode !== saved.baseCurrencyCode || line.rateExact !== "1" || line.rateMigrationStatus !== "exact" || line.rateFormatVersion !== 1 ||
+            line.rateProvenance !== "legacy_scaled_1e6:transaction" || line.debitAmount < 0 || line.creditAmount < 0 || (line.debitAmount && line.creditAmount))
+            fail("Existing revaluation has unqualified base-currency legs");
+        }
+        await assertJournalReferences(orgId, [...lines, ...mirrors], undefined, true, tx);
+        const debit = safeInvoiceMinor(lines.reduce((sum, line) => sum + BigInt(line.debitAmount), 0n));
+        const credit = safeInvoiceMinor(lines.reduce((sum, line) => sum + BigInt(line.creditAmount), 0n));
+        const signature = (rows: typeof lines, reversing: boolean) => rows.map(line => JSON.stringify([line.accountId, line.description,
+          reversing ? line.creditAmount : line.debitAmount, reversing ? line.debitAmount : line.creditAmount, line.costCenterId, line.projectId])).sort();
+        if (!debit || debit !== credit || JSON.stringify(signature(lines, true)) !== JSON.stringify(signature(mirrors, false)))
+          fail("Existing revaluation reversal does not mirror balanced saved legs");
+        return { posted: false, reason: "already posted" };
+      }
+      // Existing lock/fiscal-year writers do not all take the org lock. A short
+      // shared table lock also protects absent rows and concurrent close/replace.
+      await tx.execute(sql`lock table period_lock, fiscal_year in share mode`);
+      await assertNotLocked(orgId, asOfDate, undefined, tx);
+      await assertNotLocked(orgId, reversalDate, undefined, tx);
+      const conditions = (table: typeof invoice | typeof bill) => and(eq(table.organizationId, orgId), isNull(table.deletedAt),
+        ne(table.status, "draft"), ne(table.status, "void"), ne(table.currencyCode, base), lte(table.issueDate, asOfDate));
+      const invoices = await tx.select().from(invoice).where(conditions(invoice)).orderBy(invoice.id).for("update");
+      const bills = await tx.select().from(bill).where(conditions(bill)).orderBy(bill.id).for("update");
+      const resolve = createHistoricalRateResolver(orgId, tx);
+      const deltas = new Map<string, { kind: "receivable" | "payable"; delta: bigint }>();
+      const exposures = [];
+      for (const kind of ["invoice", "bill"] as const) {
+        for (const row of kind === "invoice" ? invoices : bills) {
+          const saved = await revaluationExposure(tx, ctx, row, kind, base, asOfDate);
+          if (!saved) continue;
+          const current = await resolve(row.currencyCode, base, asOfDate);
+          if (!current) throw new MissingExchangeRateError(row.currencyCode, base, asOfDate);
+          const value = paymentCashBase(row.amountDue, row.currencyCode, base, current.rateExact);
+          const delta = BigInt(value) - BigInt(saved.carrying);
+          const group = deltas.get(saved.accountId) ?? { kind: kind === "invoice" ? "receivable" : "payable", delta: 0n };
+          group.delta += delta; deltas.set(saved.accountId, group);
+          exposures.push({ documentId: row.id, kind, amountDueMinor: String(row.amountDue), carryingMinor: String(saved.carrying),
+            currentMinor: String(value), recognitionRateExact: saved.rateExact, currentRateExact: current.rateExact, effectiveDate: current.effectiveDate });
+        }
+      }
+      const groups = [...deltas].map(([id, group]) => ({ id, legs: revaluationLegs(group.kind, safeInvoiceMinor(group.delta)) })).filter(g => g.legs.length);
+      if (!groups.length) return { posted: false };
+      safeInvoiceMinor(groups.reduce((sum, g) => sum + g.legs.reduce((s, leg) => s + BigInt(leg.debit), 0n), 0n));
+      safeInvoiceMinor(groups.reduce((sum, g) => sum + g.legs.reduce((s, leg) => s + BigInt(leg.credit), 0n), 0n));
+      const gain = await account(tx, orgId, "4920", base, "revenue"), loss = await account(tx, orgId, "5940", base, "expense");
+      const build = (entryId: string, reversing: boolean) => groups.flatMap(g => (reversing ? reverseLegs(g.legs) : g.legs).map(leg => ({
+        journalEntryId: entryId, accountId: leg.role === "counter" ? g.id : leg.role === "fxGain" ? gain : loss,
+        description: `Unrealised FX ${asOfDate}`, debitAmount: leg.debit, creditAmount: leg.credit, currencyCode: base,
+        exchangeRate: 1000000, rateExact: "1", rateDirection: "quote_per_base", rateFormatVersion: 1,
+        rateMigrationStatus: "exact", rateProvenance: "legacy_scaled_1e6:transaction",
+      })));
+      const [maximum] = await tx.select({ value: sql<string>`coalesce(max(${journalEntry.entryNumber}), 0)::text` }).from(journalEntry).where(eq(journalEntry.organizationId, orgId));
+      const number = BigInt(maximum.value) + 1n;
+      if (number + 1n > 2147483647n) fail("Revaluation journal numbering exceeds int32 capacity");
+      const [entry] = await tx.insert(journalEntry).values({ organizationId: orgId, entryNumber: Number(number), date: asOfDate,
+        description: `Unrealised FX revaluation ${asOfDate}`, reference: `FX ${asOfDate}`, sourceType: "fx_revaluation", status: "posted", postedAt: new Date(), createdBy: ctx.userId }).returning();
+      await tx.insert(journalLine).values(build(entry.id, false));
+      const [reverse] = await tx.insert(journalEntry).values({ organizationId: orgId, entryNumber: Number(number + 1n), date: reversalDate,
+        description: `Reverse unrealised FX revaluation ${asOfDate}`, reference: `FX ${asOfDate}`, sourceType: "fx_revaluation_reversal", sourceId: entry.id,
+        reversesEntryId: entry.id, status: "posted", postedAt: new Date(), createdBy: ctx.userId }).returning();
+      await tx.insert(journalLine).values(build(reverse.id, true));
+      await tx.update(journalEntry).set({ reversedByEntryId: reverse.id }).where(eq(journalEntry.id, entry.id));
+      await auditTax(tx, orgId, "fx_revaluation", entry.id, "post", { asOfDate, reversalDate, baseCurrencyCode: base, reversalEntryId: reverse.id, exposures }, ctx);
+      return { posted: true };
+    });
+  } catch (error) {
+    if (error instanceof PeriodLockedError) return { posted: false, reason: "period locked" };
+    throw error;
   }
-
-  const [arAccount, apAccount, gainAccount, lossAccount] = await Promise.all([
-    findAccount(orgId, "1200"),
-    findAccount(orgId, "2100"),
-    ensureAccount(orgId, UNREALISED_GAIN, base),
-    ensureAccount(orgId, UNREALISED_LOSS, base),
-  ]);
-  if (!arAccount || !apAccount || !gainAccount || !lossAccount) {
-    return { posted: false, reason: "missing accounts" };
-  }
-
-  const accountIdFor = (role: SettlementLeg["role"], counterId: string) =>
-    role === "counter"
-      ? counterId
-      : role === "fxGain"
-      ? gainAccount.id
-      : lossAccount.id;
-
-  const buildLines = (
-    entryId: string,
-    legs: SettlementLeg[],
-    counterId: string,
-    desc: string
-  ) =>
-    legs.map((l) => ({
-      journalEntryId: entryId,
-      accountId: accountIdFor(l.role, counterId),
-      description: desc,
-      debitAmount: l.debit,
-      creditAmount: l.credit,
-      currencyCode: base,
-    }));
-
-  // Post the revaluation and its reversal atomically, so a crash between them
-  // can never leave a revaluation without its offsetting reversal.
-  await db.transaction(async (tx) => {
-    await postEntry(
-      tx,
-      orgId,
-      asOfDate,
-      "fx_revaluation",
-      `Unrealised FX revaluation ${asOfDate}`,
-      (entryId, desc) => [
-        ...buildLines(entryId, arLegs, arAccount.id, desc),
-        ...buildLines(entryId, apLegs, apAccount.id, desc),
-      ]
-    );
-
-    await postEntry(
-      tx,
-      orgId,
-      reversalDate,
-      "fx_revaluation_reversal",
-      `Reverse unrealised FX revaluation ${asOfDate}`,
-      (entryId, desc) => [
-        ...buildLines(entryId, reverseLegs(arLegs), arAccount.id, desc),
-        ...buildLines(entryId, reverseLegs(apLegs), apAccount.id, desc),
-      ]
-    );
-  });
-
-  return { posted: true };
 }
 
-async function postEntry(
-  exec: Exec,
-  orgId: string,
-  date: string,
-  sourceType: string,
-  description: string,
-  lines: (entryId: string, desc: string) => (typeof journalLine.$inferInsert)[]
-) {
-  const entryNumber = await nextEntryNumber(orgId, exec);
-  const [entry] = await exec
-    .insert(journalEntry)
-    .values({
-      organizationId: orgId,
-      entryNumber,
-      date,
-      description,
-      reference: description,
-      status: "posted",
-      sourceType,
-      postedAt: new Date(),
-    })
-    .returning();
-  await exec.insert(journalLine).values(lines(entry.id, description));
-  return entry;
-}
-
-/** Revalue every organization. Intended to run from a scheduled job. */
-export async function processFxRevaluation(
-  asOfDate: string,
-  reversalDate: string
-): Promise<{ orgs: number; posted: number }> {
-  const orgs = await db.select({ id: organization.id }).from(organization);
+/** Trusted scheduled sweep; one invalid organization cannot suppress another. */
+export async function processFxRevaluation(asOfDate: string, reversalDate: string): Promise<{ orgs: number; posted: number }> {
+  rateDateSchema.parse(asOfDate); rateDateSchema.parse(reversalDate);
+  if (reversalDate <= asOfDate) fail("Revaluation reversal must follow the period-end date");
+  const orgs = await db.select({ id: organization.id }).from(organization).where(isNull(organization.deletedAt));
   let posted = 0;
-  for (const o of orgs) {
-    try {
-      const res = await processFxRevaluationForOrg(o.id, asOfDate, reversalDate);
-      if (res.posted) posted++;
-    } catch (err) {
-      console.error(`fx-revaluation failed for org ${o.id}`, err);
-    }
+  for (const org of orgs) {
+    try { if ((await processFxRevaluationForOrg(org.id, asOfDate, reversalDate)).posted) posted++; }
+    catch (error) { console.error(`fx-revaluation failed for org ${org.id}`, error); }
   }
   return { orgs: orgs.length, posted };
 }

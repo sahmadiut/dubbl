@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
-import { recurringTemplate, recurringTemplateLine, journalEntry, journalLine } from "@/lib/db/schema";
-import { eq, and, lte, inArray } from "drizzle-orm";
+import { recurringTemplate, recurringTemplateLine, journalEntry, journalLine, organization, member } from "@/lib/db/schema";
+import { eq, and, lte, inArray, isNull, sql } from "drizzle-orm";
 import { notDeleted } from "@/lib/db/soft-delete";
 import { getNextEntryNumber } from "@/lib/api/journal-automation";
 import { assertNotLocked, PeriodLockedError } from "@/lib/api/period-lock";
@@ -11,6 +11,7 @@ import { WireCompatibilityError } from "@/lib/money/wire";
 import { z } from "zod";
 import { processRecurringPayableTemplate } from "./recurring-payable";
 import { processRecurringInvoiceTemplate } from "./recurring-invoice-generate";
+import { auditTax } from "./tax-config-transaction";
 
 /**
  * Advance a date by the given frequency.
@@ -43,8 +44,14 @@ function advanceDate(date: string, frequency: string): string {
 /** Serialize a template's entire catch-up with edits/runs, committing schedule and entries together. */
 async function processJournalTemplate(organizationId: string, id: string, today: string): Promise<number> {
   return db.transaction(async tx => {
+    const [org] = await tx.select({ id: organization.id }).from(organization)
+      .where(and(eq(organization.id, organizationId), isNull(organization.deletedAt))).for("no key update");
+    if (!org) return 0;
     const [tmpl] = await tx.select().from(recurringTemplate).where(recurringJournalScope(id, organizationId)).for("update");
     if (!tmpl || tmpl.status !== "active" || tmpl.nextRunDate > today) return 0;
+    const [creator] = tmpl.createdBy ? await tx.select({ userId: member.userId, role: member.role }).from(member)
+      .where(and(eq(member.organizationId, organizationId), eq(member.userId, tmpl.createdBy))).for("share") : [];
+    if (!creator) throw new WireCompatibilityError("Recurring journal creator must remain an organization member");
     recurringJournalDto(tmpl); // Validate saved currency, never fetch or infer a new FX rate.
     recurringJournalCreateHeader.parse(tmpl);
     z.number().int().min(0).max(2147483647).parse(tmpl.occurrencesGenerated);
@@ -53,19 +60,21 @@ async function processJournalTemplate(organizationId: string, id: string, today:
     const lines = await tx.select().from(recurringTemplateLine).where(eq(recurringTemplateLine.templateId, id));
     const legs = recurringJournalLegs(lines.map(line => ({ description: line.description, accountId: line.accountId,
       debitAmount: line.debitAmount, creditAmount: line.creditAmount, costCenterId: line.costCenterId })), tmpl.currencyCode);
-    await assertJournalReferences(organizationId, legs);
+    await assertJournalReferences(organizationId, legs, undefined, false, tx);
+    await tx.execute(sql`lock table period_lock, fiscal_year in share mode`);
     let nextRun = tmpl.nextRunDate, occurrences = tmpl.occurrencesGenerated;
     const dates: string[] = [];
     // Preflight the whole catch-up before writing entries or consuming the schedule.
     while (nextRun <= today && (tmpl.maxOccurrences === null || occurrences < tmpl.maxOccurrences) && (!tmpl.endDate || nextRun <= tmpl.endDate)) {
       if (occurrences >= 2147483647 || occurrences < 0) throw new WireCompatibilityError("Recurring occurrence count exceeds int32 range");
-      try { await assertNotLocked(organizationId, nextRun); dates.push(nextRun); }
+      try { await assertNotLocked(organizationId, nextRun, undefined, tx); dates.push(nextRun); }
       catch (err) { if (!(err instanceof PeriodLockedError)) throw err; } // Preserve locked-date skip policy.
       const advanced = advanceDate(nextRun, tmpl.frequency);
       z.iso.date().parse(advanced);
       if (advanced <= nextRun) throw new Error("Recurring schedule must advance");
       nextRun = advanced; occurrences++;
     }
+    const journalIds = [];
     for (const runDate of dates) {
       const entryNumber = await getNextEntryNumber(organizationId, tx);
       const [entry] = await tx.insert(journalEntry).values({ organizationId, entryNumber, date: runDate,
@@ -75,10 +84,13 @@ async function processJournalTemplate(organizationId: string, id: string, today:
         description: leg.description, debitAmount: leg.debitAmount, creditAmount: leg.creditAmount, currencyCode: tmpl.currencyCode,
         exchangeRate: 1000000, rateExact: "1", rateDirection: "quote_per_base", rateMigrationStatus: "exact",
         rateProvenance: "recurring_journal_identity", costCenterId: leg.costCenterId ?? null, sortOrder })));
+      journalIds.push(entry.id);
     }
     const completed = (tmpl.maxOccurrences !== null && occurrences >= tmpl.maxOccurrences) || (tmpl.endDate !== null && nextRun > tmpl.endDate);
     await tx.update(recurringTemplate).set({ nextRunDate: nextRun, lastRunDate: today, occurrencesGenerated: occurrences,
       status: completed ? "completed" : "active", updatedAt: new Date() }).where(recurringJournalScope(id, organizationId));
+    await auditTax(tx, organizationId, "recurring_journal", id, "generate", { journalIds, occurrencesGenerated: occurrences, nextRunDate: nextRun },
+      { organizationId, userId: creator.userId, role: creator.role });
     return dates.length;
   });
 }

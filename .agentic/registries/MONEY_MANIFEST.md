@@ -28,6 +28,18 @@ low digits and signed values in USD/JPY/KWD; domain regressions retain negative,
 scope, retry and rollback coverage. Scoped inventory ownership and 19 removed
 legacy allowances are current. MON-008 independent acceptance remains open.
 
+## MON-165 FX revaluation and remaining background composition
+
+[BACKGROUND_COMPOSITION_CUTOVER](BACKGROUND_COMPOSITION_CUTOVER.md) maps actual
+Trigger recurrence/revaluation/report/alert delegates and authenticated payroll/
+accrual/payment-schedule/stock-costing services. Saved recognition and cumulative
+carrying releases replace issue-reference-rate repricing; exact currency-scale
+conversion, bigint aggregates, atomic pair/audit and replay/period/tenant guards
+preserve base GL history. Later releases and unqualified legacy history reject
+unchanged. Recurring numbering/reference/period/audit and bank-alert concurrent
+deduplication have real REST/MCP/SQL/provider-free fixtures. MON-159/MON-008 retain
+independent acceptance; no new autonomous payroll/accrual/costing worker.
+
 ## MON-164 scheduled bookkeeping and auto-reversal consumers
 
 [BACKGROUND_BOOKKEEPING_CUTOVER](BACKGROUND_BOOKKEEPING_CUTOVER.md) maps actual

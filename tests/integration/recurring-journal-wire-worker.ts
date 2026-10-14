@@ -203,6 +203,16 @@ async function run() {
     assert.equal((await pause(request(), params(catchup.id))).status, 200);
     const concurrent = await Promise.all([processRecurringJournals(a.id), processRecurringJournals(a.id)]);
     assert.equal(concurrent.reduce((sum, value) => sum + value, 0), 3); assert.equal((await journalRows(catchup.id)).length, 3);
+    // Separate templates still share journal numbering; overlapping org sweeps serialize them.
+    const parallelA = await make(), parallelB = await make();
+    const separate = await Promise.all([processRecurringJournals(a.id), processRecurringJournals(a.id)]);
+    assert.equal(separate.reduce((sum, count) => sum + count, 0), 2);
+    assert.equal((await journalRows(parallelA.id)).length, 1); assert.equal((await journalRows(parallelB.id)).length, 1);
+    const noCreator = await make();
+    await db.update(recurringTemplate).set({ createdBy: null }).where(eq(recurringTemplate.id, noCreator.id));
+    { const before = await snapshot(); await assert.rejects(processRecurringJournals(a.id)); assert.deepEqual(await snapshot(), before); }
+    await db.update(recurringTemplate).set({ createdBy: owner.id }).where(eq(recurringTemplate.id, noCreator.id));
+    assert.equal(await processRecurringJournals(a.id), 1);
     // Existing policy consumes locked/closed occurrences without writing journals.
     const locked = await make();
     await db.insert(periodLock).values({ organizationId: a.id, lockDate: today });

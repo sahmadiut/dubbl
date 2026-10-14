@@ -1,5 +1,13 @@
 # Recurring journal wire contracts (MON-037)
 
+MON-165 amendment, 2026-10-14: generator locks a live organization before the
+template, serializing numbering across different templates. Saved creator must
+remain an organization member. Reference/period checks use the transaction,
+including shared table guards against concurrent period configuration writes.
+Generated IDs, occurrence count and next date are audited with actual creator
+in the same transaction. Identity-FX/tagged units and locked/closed skip-and-advance
+semantics remain. See [background composition](BACKGROUND_COMPOSITION_CUTOVER.md).
+
 2026-10-03, Asia/Tehran. Bounded REST/MCP/generation adoption, not MON-007 domain
 cutover or production IRR qualification. Source: actual recurring schema, journal
 generator, REST routes, registered MCP tools and disposable PostgreSQL fixtures.

@@ -1609,6 +1609,23 @@ MON-090: `tests/loan-wire.test.ts` covers distinct REST major/MCP minor units, a
 - Source/accessibility review under DEC-005; no browser/screenshot, full build,
   dev server, Docker, provider or production claim. MON-158/MON-008 remain open.
 
+## MON-165 FX revaluation and remaining background composition
+
+- fx-revaluation.test.ts: actual REST/MCP recognition/settlement -> period-end
+  worker -> entry reads/independent SQL text. Partial carrying/rounding, edited
+  reference rates, currency scales, low digits, bigint cancellation and overflow.
+  Concurrent replay/absent-row period insertion, both-date locks/closed years,
+  tenant/owner/FX/history negatives, later releases and reversal/audit rollback.
+- recurring-journal-wire.test.ts races separate templates sharing numbering;
+  transaction references/period checks and generation audit.
+- bank-accounts.test.ts overlaps exact signed cached-balance alert sweeps; one
+  UTC-day in-app alert per recipient/account and full-int64 body formatting.
+- Joint recurrence/payroll-integration/accrual-schedules/scheduled-payments/
+  report-schedules/budget-alerts/inventory-integration/background-bookkeeping/
+  payment-settlements fixtures verify actual composition without provider calls.
+- background-composition.test.ts guards exact/shared delegates and actual Trigger
+  boundaries. BACKGROUND_COMPOSITION_CUTOVER maps scope; MON-159/MON-008 stay open.
+
 ## MON-164 scheduled bookkeeping and auto-reversal consumers
 
 - tests/integration/background-bookkeeping.test.ts and worker: actual maintenance

@@ -740,3 +740,16 @@ round-trip saved ISO scales via `creditLimitMinor`; dashboard budgets retain the
 fixed-two cents contract. Chart geometry/axes are approximate, while tooltips and
 shared report text stay exact. Failed responses suppress financial rows/output.
 See [consumer mapping](../../.agentic/registries/CONTACT_DASHBOARD_UI_CUTOVER.md).
+
+### FX revaluation and remaining background composition
+
+Period-end revaluation qualifies saved recognition and cumulative settlement
+carrying values. Base GL is never converted again; only outstanding document
+minor units convert at exact period-end FX with explicit source/base scales.
+Bigint aggregates feed safe numeric identity-FX paired journals and actual-owner
+audit in one transaction. Both periods, scoped history and atomic replay are
+checked; later-period releases/unqualified history reject unchanged. Recurring
+journal numbering/reference/period/audit and low-balance alert deduplication are
+transactional. Actual Trigger/domain ownership and unit exceptions are mapped in
+[background composition](../../.agentic/registries/BACKGROUND_COMPOSITION_CUTOVER.md).
+MON-159 and MON-008 retain independent final acceptance.

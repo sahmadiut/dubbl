@@ -177,6 +177,11 @@ async function run() {
       const row = await newBank({ currencyCode, balanceMinor: balance }); await data(await alert(req({ thresholdMinor: threshold }), params(row.id)));
       await checkLowBankBalances(); const [notice] = await db.select().from(notification).where(eq(notification.entityId, row.id)); assert.ok(notice.body?.includes(text));
     }
+    const racingAlert = await newBank({ balanceMinor: "-3000000001" });
+    await data(await alert(req({ thresholdMinor: "0" }), params(racingAlert.id)));
+    const overlapping = await Promise.all([checkLowBankBalances(), checkLowBankBalances()]);
+    assert.equal(overlapping.reduce((sum, result) => sum + result.alerted, 0), 1);
+    assert.equal((await db.select().from(notification).where(eq(notification.entityId, racingAlert.id))).length, 1);
     const firstNotices = await db.select().from(notification); await checkLowBankBalances(); assert.equal((await db.select().from(notification)).length, firstNotices.length);
     assert.ok(firstNotices.every(n => n.organizationId === a.id && n.userId === owner.id));
     for (const fields of [{ isActive: false }, { deletedAt: new Date() }]) {

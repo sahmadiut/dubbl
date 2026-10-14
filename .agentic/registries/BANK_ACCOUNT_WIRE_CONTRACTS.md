@@ -1,5 +1,12 @@
 # Bank account contracts (MON-062)
 
+MON-165 amendment, 2026-10-14: low-balance sweeps lock/recheck live organization
+and bank rows; cached balance/threshold stay SQL-text int64 values. Per-recipient
+UTC-day deduplication and in-app rows commit together, optional email follows
+commit. Concurrent sweeps create one notice; malformed currency/failed insert
+skips only that account and remains retryable. No balance recalculation or new
+public operation. See [background composition](BACKGROUND_COMPOSITION_CUTOVER.md).
+
 2026-10-04, Asia/Tehran. Actual source: bank-account-wire.ts, bank-accounts.ts,
 four bank account route files, bank-accounts MCP tools, bank-ledger.ts and
 bank-balance-alerts.ts. ADR-006 numeric coexistence applies. This is a bounded

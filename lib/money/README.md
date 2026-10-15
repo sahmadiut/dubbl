@@ -1,5 +1,14 @@
 # Exact money core
 
+MON-159 independently accepts background service composition after MON-164/165.
+`tests/integration/background-cutover-acceptance*` joins real REST/MCP origins,
+bookkeeping/recurrence/FX, saved reversal and in-app alerts on one tenant. SQL-text
+assertions preserve low digits, numbering, original history, period/corruption
+rollback and complete repeat snapshots. See
+[background integration acceptance](../../.agentic/registries/BACKGROUND_CUTOVER_ACCEPTANCE.md)
+for complete ownership, retained unit exceptions and limits. Earlier MON-159-pending
+notes are superseded; MON-008 and production/financial qualification remain open.
+
 MON-007 independently accepts the final core posting/editor/presentation
 composition. `tests/integration/core-cutover-acceptance*` verifies taxed documents,
 settlement/replay, bank matching/unmatch, locked operations and saved reversals

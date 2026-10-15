@@ -1,3 +1,14 @@
+## MON-159 background integration acceptance
+
+[BACKGROUND_CUTOVER_ACCEPTANCE](BACKGROUND_CUTOVER_ACCEPTANCE.md) independently
+composes both background children on one tenant through actual REST/MCP services,
+concurrent bookkeeping/recurrence/revaluation, saved reversal, in-app alerts and
+independent SQL-text assertions. Preserved raw units/low digits, unique numbering,
+original history, shared period/corruption rejection and complete repeat snapshots
+are verified. Complete job/domain/provider ownership and legacy unit exceptions
+are mapped; no new autonomous workers or public operations are introduced.
+This supersedes MON-159-pending notes below. MON-008 remains independently open.
+
 ## MON-160 public, rendering, export and provider consumers
 
 [PUBLIC_RENDER_EXPORT_UI_CUTOVER](PUBLIC_RENDER_EXPORT_UI_CUTOVER.md) maps public

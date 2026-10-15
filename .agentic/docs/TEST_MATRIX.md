@@ -1645,6 +1645,20 @@ MON-090: `tests/loan-wire.test.ts` covers distinct REST major/MCP minor units, a
 - `tests/integration/ledger-aging-ui.test.ts`: four actual authenticated REST and registered MCP operations into browser adapters with independent SQL text, stable 50+2 ledger page append, direct/indirect cash flow, historical aging, four currency scales, tenant/permission/auth failures, persisted overflow and unchanged SQL snapshots.
 - Existing `ledger-detail`, `cash-flow` and `aging` suites remain backend regression gates. No browser/PDF-layout or production IRR qualification.
 
+## MON-159 background parent integration acceptance
+
+- background-cutover-acceptance.test.ts and worker: one migrated tenant, real
+  authenticated REST/registered MCP, concurrent bookkeeping/recurrence/FX and
+  saved auto-reversal. Literal SQL totals, seven distinct journal numbers,
+  unchanged original legs, nonempty in-app balance alert and final FX net zero.
+- Shared period locks and corrupt saved asset/invoice history reject without
+  financial writes; repair permits retry. Full repeat/transport-read snapshots
+  retain raw 3000000001 low digits and REST/MCP unit envelopes.
+- Joint child/domain fixtures verify the complete BACKGROUND_CUTOVER_ACCEPTANCE
+  mapping, scales, scope/role, concurrency and atomicity. Existing background
+  source guards and source-hash inventory remain required. This supersedes earlier
+  MON-159-pending notes; MON-008 acceptance remains open.
+
 ## MON-163 contact dashboard shared display
 
 - `tests/contact-dashboard-ui.test.ts`: saved alias/currency/sum failures, safe-max low digits, contact credit round-trip and null clearing, signed statements, forecast exact tooltips, alert groups/trend aliases, USD/JPY/KWD/synthetic IRR, CSV/XLSX precision, failed HTTP and source guards.

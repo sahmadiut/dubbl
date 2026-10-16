@@ -1,3 +1,10 @@
+MON-158 independently accepts combined statement, report, contact and dashboard
+consumers with shared-history REST/registered MCP/UI/SQL reconciliation across
+four separate currency-scale tenants. Exact low digits, credit input, CSV and
+signed totals survive composition; invalid/foreign/denied and persisted-overflow
+reads preserve history. See [complete ownership and retained units](../../.agentic/registries/REPORT_CONTACT_CUTOVER_ACCEPTANCE.md).
+This supersedes MON-158-pending notes below. MON-008 remains independently open.
+
 MON-162 independently accepts the combined auxiliary report UI cutover through
 shared-history authenticated REST, registered MCP, UI adapters and SQL text.
 Twelve operations reconcile exact low digits across USD/JPY/KWD/synthetic IRR;

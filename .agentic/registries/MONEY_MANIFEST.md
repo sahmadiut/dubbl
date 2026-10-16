@@ -1,3 +1,14 @@
+## MON-158 report, contact and dashboard combined acceptance
+
+[REPORT_CONTACT_CUTOVER_ACCEPTANCE](REPORT_CONTACT_CUTOVER_ACCEPTANCE.md) joins
+all MON-161/162/163 consumers, existing core ownership and retained unit
+exceptions. Independent shared-history REST/registered MCP/UI/SQL assertions
+reconcile financial statements, auxiliary reports, contacts and widgets across
+four separate currency-scale tenants. Exact credit input/display/CSV, signed
+movement, denied/foreign reads, malformed adoption, repeated snapshots and
+persisted cross-family overflow are covered. This supersedes MON-158-pending
+notes below. MON-008 retains independent final acceptance.
+
 ## MON-162 auxiliary report UI combined acceptance
 
 [AUXILIARY_REPORT_UI_ACCEPTANCE](AUXILIARY_REPORT_UI_ACCEPTANCE.md) joins every

@@ -1,5 +1,20 @@
 # Verification matrix
 
+## MON-158 report, contact and dashboard combined acceptance
+
+- `tests/integration/report-contact-cutover-acceptance.test.ts` and worker join
+  actual authenticated REST/linked SDK MCP, UI adapters and independent SQL text
+  across separate USD/JPY/KWD/synthetic IRR tenants. Common posted/document
+  history reconciles statement, ledger, tracking, aging, contact, forecast and
+  dashboard trend values; exact scale/CSV/credit round-trips preserve low digits.
+- Negative cases cover malformed adoption, unauthorized/denied/foreign reads,
+  persisted aggregate overflow across nine operations, and complete unchanged
+  financial/audit snapshots. See [ownership and retained units](../registries/REPORT_CONTACT_CUTOVER_ACCEPTANCE.md).
+- Joint child/domain fixtures, full unit/static suite, typecheck, focused/full
+  lint, money inventory/legacy guards, local links, controller validation and
+  diff checks qualify this slice. MON-008 remains independently open; no full
+  build, dev server, browser, hosted CI or production qualification.
+
 ## MON-162 auxiliary report UI combined acceptance
 
 - `tests/integration/auxiliary-ui-cutover-acceptance.test.ts`: twelve real

@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { currency } from "@/lib/db/schema";
 import { ensureCurrencies } from "@/lib/currency/ensure-currencies";
-import { isValidCurrencyCode } from "@/lib/currency/iso4217";
+import { getCurrencyMinorUnits, isValidCurrencyCode } from "@/lib/currency/iso4217";
 import { getAuthContext } from "@/lib/api/auth-context";
 import { requireRole } from "@/lib/api/require-role";
 import { handleError } from "@/lib/api/response";
@@ -52,13 +52,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (normalized === "IRR" && decimalPlaces !== undefined && decimalPlaces !== getCurrencyMinorUnits("IRR")) {
+      return NextResponse.json({ error: "IRR uses zero fractional digits; alternative units require a verified currency regime" }, { status: 400 });
+    }
+
     const [created] = await db
       .insert(currency)
       .values({
         code: normalized,
         name,
         symbol,
-        decimalPlaces: typeof decimalPlaces === "number" ? decimalPlaces : 2,
+        decimalPlaces: typeof decimalPlaces === "number" ? decimalPlaces : getCurrencyMinorUnits(normalized),
       })
       .onConflictDoNothing({ target: currency.code })
       .returning();

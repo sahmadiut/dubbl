@@ -211,7 +211,9 @@ def classify(table, field, typ, source):
         return "allocation_basis", "by_value: money; by_quantity/by_weight: quantity/weight basis (method-dependent)", "MON-003; MON-008 preserve method"
     if typ == "jsonb":
         return "non_money", "structured non-money metadata; retain schema contract", "retain; MON-001 exclusions"
-    if table == "currency" and field == "decimalPlaces":
+    if table == "currencyRegime" and field == "scaleToPrevious":
+        return "metadata", "exact previous major units per regime major unit; not FX or an amount", "MON-009"
+    if (table == "currency" and field == "decimalPlaces") or (table == "currencyRegime" and field == "displayMinorUnits"):
         return "metadata", "currency display exponent; not an amount", "MON-009; LOC-003"
     if "basis points" in source or "basis_points" in source or field.endswith(("Bp", "BasisPoints")) or key in {
         "chartAccount.taxDisallowedPercent", "taxRate.recoverablePercent", "organization.interestRate",

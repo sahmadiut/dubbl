@@ -1,6 +1,7 @@
 export * from "./auth";
 export * from "./billing";
 export * from "./bookkeeping";
+export * from "./currency-regimes";
 export * from "./contacts";
 export * from "./invoicing";
 export * from "./bills";

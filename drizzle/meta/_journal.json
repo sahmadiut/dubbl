@@ -85,6 +85,13 @@
       "when": 1791243646581,
       "tag": "0011_hesitant_roxanne_simpson",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1792165364120,
+      "tag": "0012_currency_regimes",
+      "breakpoints": true
     }
   ]
 }

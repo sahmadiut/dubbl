@@ -3,11 +3,15 @@
  *
  * The list is derived from the platform's own ICU data via `Intl` so that
  * codes, display names, symbols and — crucially — minor units (decimal places)
- * stay correct without a hand-maintained table. ICU knows that JPY/KRW have 0
+ * stay correct without a hand-maintained table. IRR has an explicit verified
+ * fallback so stripped or drifting ICU data cannot change its display policy.
+ * ICU knows that JPY/KRW have 0
  * decimals and KWD/BHD/OMR have 3, which a hardcoded `× 100` gets wrong.
  *
  * This module is dependency-free and safe to import on both server and client.
  */
+
+import { IRR_METADATA } from "./irr-metadata";
 
 export interface IsoCurrency {
   code: string;
@@ -30,6 +34,7 @@ const EXCLUDED = new Set([
  * (very old runtimes). Minor units are hand-checked for the non-2 exceptions.
  */
 const FALLBACK: IsoCurrency[] = [
+  IRR_METADATA,
   { code: "USD", name: "US Dollar", symbol: "$", decimalPlaces: 2 },
   { code: "EUR", name: "Euro", symbol: "€", decimalPlaces: 2 },
   { code: "GBP", name: "British Pound", symbol: "£", decimalPlaces: 2 },
@@ -64,11 +69,13 @@ function buildList(): IsoCurrency[] {
   const codes = intlSupportedCurrencies();
   if (codes.length === 0) return [...FALLBACK].sort((a, b) => a.code.localeCompare(b.code));
 
-  const names = new Intl.DisplayNames(["en"], { type: "currency" });
+  let names: Intl.DisplayNames | undefined;
+  try { names = new Intl.DisplayNames(["en"], { type: "currency" }); } catch { /* Minimal ICU. */ }
   const list: IsoCurrency[] = [];
 
-  for (const code of codes) {
+  for (const code of new Set([...codes, "IRR"])) {
     if (EXCLUDED.has(code)) continue;
+    if (code === "IRR") { list.push({ ...IRR_METADATA }); continue; }
 
     let decimalPlaces = 2;
     let symbol = code;
@@ -91,7 +98,7 @@ function buildList(): IsoCurrency[] {
 
     let name = code;
     try {
-      name = names.of(code) ?? code;
+      name = names?.of(code) ?? code;
     } catch {
       // keep code as name
     }
@@ -120,10 +127,11 @@ export function isValidCurrencyCode(code: string | null | undefined): boolean {
 }
 
 /**
- * Minor units (decimal places) for a currency, straight from ICU.
+ * Minor units (decimal places) from ICU, with the verified zero-decimal IRR policy.
  * Returns 2 for unknown codes. Use this anywhere money is scaled or formatted.
  */
 export function getCurrencyMinorUnits(code: string): number {
+  if (code.toUpperCase() === "IRR") return IRR_METADATA.decimalPlaces;
   try {
     return (
       new Intl.NumberFormat("en", { style: "currency", currency: code })

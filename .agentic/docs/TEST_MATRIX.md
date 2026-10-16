@@ -1,5 +1,26 @@
 # Verification matrix
 
+## MON-009 IRR metadata and currency-regime expansion
+
+- `tests/currency-regimes.test.ts`: explicit zero-decimal IRR matches the frozen
+  ledger scale and exact large-amount display; missing, throwing and partial ICU
+  enumeration, missing DisplayNames and drifting runtime IRR fraction metadata
+  cannot remove IRR or change its display scale. No IRT alias is admitted.
+- `tests/integration/currency-regimes.test.ts` and worker: actual upgrade and replay,
+  old/new organization baseline seeding, real REST/registered MCP catalogue parity,
+  tenant/permission/unknown-field negatives, synthetic future coexistence,
+  exact-factor SQL checks, immutable metadata and complete posted-row snapshots.
+  Existing currency creation defaults IRR to zero and rejects conflicting scale;
+  both currency listing transports retain that policy.
+- Current joint migration, bigint, FX/history and backup fixtures retain financial
+  checksums, exact stored values, rollback/retry and restored-database behavior.
+  See [currency registry](../registries/CURRENCY_REGIMES.md) and
+  [attempt evidence](../evidence/MON-009-attempt-1.md).
+- This is metadata expansion; no ledger regime is switched or guessed/backfilled.
+  Future effective dates/factors occur only in labelled disposable fixtures.
+  Production cutover, Persian UI qualification and human financial review remain
+  separate. The application rollout guard remains false.
+
 ## MON-008 final auxiliary and public consumer acceptance
 
 - `tests/integration/auxiliary-public-cutover-acceptance.test.ts` and worker join
@@ -783,7 +804,7 @@ These are required product checks, not results. Every result is initially NOT RU
 | LOCK-01 | Locked periods reject equivalent English/Persian API/UI submissions. | MON-007 / DATA-004 | NOT RUN |
 | TENANT-01 | Organization A cannot access B branch, credit, FX, view or import objects. | PAR-007 / QA-002 | NOT RUN |
 | MIGRATE-01 | Per-org/currency trial balance, AR, AP, bank and retained earnings reconcile before/after; row counts, nullability and checksums match. | MON-010 / QA-005 | NOT RUN |
-| REDENOM-01 | Current/future regimes coexist without historical value rewrites. | MON-009 | NOT RUN |
+| REDENOM-01 | Current/future regimes coexist without historical value rewrites. | MON-009 | PASS: synthetic metadata coexistence and complete posted-row SQL snapshots; no production cutover |
 | API-01 | Legacy safe numeric and new exact string contracts preserve semantics and reject unsafe legacy values. | MON-006 | NOT RUN |
 | IMPORT-01 | Dry-run/errors/batch retries do not duplicate or partially corrupt postings. | DATA-001 | NOT RUN |
 | EXPORT-01 | CSV/XLSX maintain exact large values, safe formula handling and authorized scope. | DATA-002 | NOT RUN |

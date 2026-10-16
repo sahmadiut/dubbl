@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   ArrowLeft,
   BarChart3,
@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { DataTable, type Column } from "@/components/dashboard/data-table";
 import { PageHeader } from "@/components/dashboard/page-header";
+import { reportResultJson, customReportUiConfig, customReportUi, customReportCell } from "@/lib/money/report-result-ui";
 import { useConfirm } from "@/lib/hooks/use-confirm";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 
@@ -91,6 +92,8 @@ export default function SavedReportsPage() {
   // Run-inline state
   const [runOpen, setRunOpen] = useState(false);
   const [runReportItem, setRunReportItem] = useState<SavedReport | null>(null);
+  const runRequest = useRef(0);
+  const [runError, setRunError] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
   const [results, setResults] = useState<Record<string, unknown>[] | null>(null);
 
@@ -142,31 +145,24 @@ export default function SavedReportsPage() {
     setRunReportItem(report);
     setResults(null);
     setRunOpen(true);
+    const requestId = ++runRequest.current;
+    setRunError(null);
+    setResults(null);
     setRunning(true);
     try {
+      const config = customReportUiConfig(report.config);
       const res = await fetch("/api/v1/reports/run", {
-        method: "POST",
-        headers: getHeaders(),
-        body: JSON.stringify({
-          dataSource: report.config.dataSource,
-          columns: report.config.columns,
-          filters: report.config.filters || [],
-          groupBy: report.config.groupBy || [],
-          ...(report.config.dateRange ? { dateRange: report.config.dateRange } : {}),
-        }),
+        method: "POST", headers: getHeaders(), body: JSON.stringify(config),
       });
-      const data = await res.json();
-      if (!res.ok) {
-        toast.error(data?.error || "Failed to run report");
-        setResults([]);
-      } else {
-        setResults(data.data || []);
+      const rows = await reportResultJson(res, body => customReportUi(body, config));
+      if (requestId === runRequest.current) setResults(rows);
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : "Unable to run report.";
+      if (requestId === runRequest.current) {
+        setResults(null); setRunError(message); toast.error(message);
       }
-    } catch {
-      toast.error("Failed to run report");
-      setResults([]);
     } finally {
-      setRunning(false);
+      if (requestId === runRequest.current) setRunning(false);
     }
   }
 
@@ -367,6 +363,8 @@ export default function SavedReportsPage() {
               )}
             </div>
 
+            {runError && <p role="alert" className="text-sm text-destructive">{runError}</p>}
+            <p className="text-xs text-muted-foreground">Amounts use each row&apos;s currency. Columns ending in Minor and CSV amounts use raw minor units.</p>
             {running ? (
               <BrandLoader className="h-48" />
             ) : results && runReportItem ? (
@@ -389,7 +387,7 @@ export default function SavedReportsPage() {
                       <tr key={i} className="border-b last:border-0">
                         {runReportItem.config.columns.map((col) => (
                           <td key={col} className="px-3 py-2 text-xs whitespace-nowrap">
-                            {String(row[col] ?? "-")}
+                            {customReportCell(row, col)}
                           </td>
                         ))}
                       </tr>

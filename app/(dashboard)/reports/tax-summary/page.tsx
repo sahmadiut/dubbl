@@ -8,23 +8,10 @@ import { PageHeader } from "@/components/dashboard/page-header";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { DateRangeFilter } from "@/components/dashboard/date-range-filter";
 import { Button } from "@/components/ui/button";
-import { formatMoney } from "@/lib/money";
+import { reportResultJson, reportResultMoney, taxSummaryUi, type TaxSummaryUi } from "@/lib/money/report-result-ui";
+import { taxUiAbs } from "@/lib/money/tax-ui";
 import { cn } from "@/lib/utils";
 import { BackToReports, ReportHelp } from "../_components";
-
-interface TaxRateSummary {
-  taxRateId: string;
-  taxRateName: string;
-  rate: number;
-  type: string;
-  outputTax: number;
-  outputNet: number;
-  outputTransactions: number;
-  inputTax: number;
-  inputNet: number;
-  inputTransactions: number;
-  netTax: number;
-}
 
 /** Honor ?startDate/&endDate when arriving from a tax-return drill-down link. */
 function initialDates() {
@@ -44,29 +31,27 @@ export default function TaxSummaryPage() {
   const [loading, setLoading] = useState(true);
   const [startDate, setStartDate] = useState(dates.start);
   const [endDate, setEndDate] = useState(dates.end);
-  const [rates, setRates] = useState<TaxRateSummary[]>([]);
-  const [totalOutputTax, setTotalOutputTax] = useState(0);
-  const [totalInputTax, setTotalInputTax] = useState(0);
-  const [netTaxPayable, setNetTaxPayable] = useState(0);
+  const [data, setData] = useState<TaxSummaryUi | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const { rates = [], totalOutputTax = 0n, totalInputTax = 0n, netTaxPayable = 0n } = data ?? {};
 
   useEffect(() => {
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
     let cancelled = false;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
+    setData(null);
+    setError(null);
     const params = new URLSearchParams({ startDate, endDate });
     fetch(`/api/v1/reports/tax-summary?${params}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => reportResultJson(r, taxSummaryUi))
       .then((data) => {
         if (cancelled) return;
-        setRates(data.rates || []);
-        setTotalOutputTax(data.totalOutputTax || 0);
-        setTotalInputTax(data.totalInputTax || 0);
-        setNetTaxPayable(data.netTaxPayable || 0);
+        setData(data);
       })
+      .catch((cause: Error) => { if (!cancelled) { setData(null); setError(cause.message); } })
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
@@ -103,27 +88,28 @@ export default function TaxSummaryPage() {
         onDateChange={(s, e) => { setStartDate(s); setEndDate(e); }}
       />
 
+      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
       {loading ? (
         <BrandLoader className="h-48" />
-      ) : (
+      ) : !data ? null : (
         <ContentReveal>
           <div className="space-y-6">
             <div className="grid gap-4 sm:grid-cols-3">
               <StatCard
                 title="Tax you charged on sales"
-                value={formatMoney(totalOutputTax)}
+                value={reportResultMoney(totalOutputTax, data.currencyCode)}
                 icon={ArrowUpRight}
                 changeType="neutral"
               />
               <StatCard
                 title="Tax you paid on purchases"
-                value={formatMoney(totalInputTax)}
+                value={reportResultMoney(totalInputTax, data.currencyCode)}
                 icon={ArrowDownLeft}
                 changeType="neutral"
               />
               <StatCard
                 title={netTaxPayable >= 0 ? "You'll owe the tax office" : "You'll get a refund"}
-                value={formatMoney(Math.abs(netTaxPayable))}
+                value={reportResultMoney(taxUiAbs(netTaxPayable), data.currencyCode)}
                 icon={Receipt}
                 changeType={netTaxPayable > 0 ? "negative" : "positive"}
               />
@@ -154,15 +140,15 @@ export default function TaxSummaryPage() {
                         <td className="px-4 py-2.5 text-right font-mono tabular-nums text-muted-foreground">
                           {(r.rate / 100).toFixed(2)}%
                         </td>
-                        <td className="px-4 py-2.5 text-right font-mono tabular-nums">{formatMoney(r.outputNet)}</td>
-                        <td className="px-4 py-2.5 text-right font-mono tabular-nums text-blue-600">{formatMoney(r.outputTax)}</td>
-                        <td className="px-4 py-2.5 text-right font-mono tabular-nums">{formatMoney(r.inputNet)}</td>
-                        <td className="px-4 py-2.5 text-right font-mono tabular-nums text-orange-600">{formatMoney(r.inputTax)}</td>
+                        <td className="px-4 py-2.5 text-right font-mono tabular-nums">{reportResultMoney(r.outputNet, data.currencyCode)}</td>
+                        <td className="px-4 py-2.5 text-right font-mono tabular-nums text-blue-600">{reportResultMoney(r.outputTax, data.currencyCode)}</td>
+                        <td className="px-4 py-2.5 text-right font-mono tabular-nums">{reportResultMoney(r.inputNet, data.currencyCode)}</td>
+                        <td className="px-4 py-2.5 text-right font-mono tabular-nums text-orange-600">{reportResultMoney(r.inputTax, data.currencyCode)}</td>
                         <td className={cn(
                           "px-4 py-2.5 text-right font-mono tabular-nums font-medium",
                           r.netTax >= 0 ? "text-red-600" : "text-emerald-600"
                         )}>
-                          {formatMoney(Math.abs(r.netTax))}
+                          {reportResultMoney(taxUiAbs(r.netTax), data.currencyCode)}
                           {r.netTax < 0 ? " refund" : " due"}
                         </td>
                       </tr>
@@ -171,14 +157,14 @@ export default function TaxSummaryPage() {
                   <tfoot>
                     <tr className="border-t bg-muted/30">
                       <td className="px-4 py-2.5 font-semibold" colSpan={3}>Total</td>
-                      <td className="px-4 py-2.5 text-right font-mono tabular-nums font-semibold text-blue-600">{formatMoney(totalOutputTax)}</td>
+                      <td className="px-4 py-2.5 text-right font-mono tabular-nums font-semibold text-blue-600">{reportResultMoney(totalOutputTax, data.currencyCode)}</td>
                       <td className="px-4 py-2.5 text-right font-mono tabular-nums font-semibold" />
-                      <td className="px-4 py-2.5 text-right font-mono tabular-nums font-semibold text-orange-600">{formatMoney(totalInputTax)}</td>
+                      <td className="px-4 py-2.5 text-right font-mono tabular-nums font-semibold text-orange-600">{reportResultMoney(totalInputTax, data.currencyCode)}</td>
                       <td className={cn(
                         "px-4 py-2.5 text-right font-mono tabular-nums font-semibold",
                         netTaxPayable >= 0 ? "text-red-600" : "text-emerald-600"
                       )}>
-                        {formatMoney(Math.abs(netTaxPayable))}
+                        {reportResultMoney(taxUiAbs(netTaxPayable), data.currencyCode)}
                         {netTaxPayable < 0 ? " refund" : " due"}
                       </td>
                     </tr>

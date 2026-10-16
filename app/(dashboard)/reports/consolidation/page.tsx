@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   ArrowLeft,
   Building2,
@@ -11,7 +11,6 @@ import {
   TrendingDown,
   DollarSign,
   ChevronsUpDown,
-  Check,
 } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { StatCard } from "@/components/dashboard/stat-card";
@@ -43,7 +42,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatMoney } from "@/lib/money";
+import { reportResultJson, reportResultMoney, consolidationReportUi, consolidationReportExport, type ConsolidationReportUi } from "@/lib/money/report-result-ui";
 import { cn } from "@/lib/utils";
 
 interface UserOrg {
@@ -68,50 +67,8 @@ interface ConsolidationGroup {
   createdAt: string;
 }
 
-interface EntityPnL {
-  orgId: string;
-  label: string;
-  revenue: number;
-  expenses: number;
-  netIncome: number;
-}
-
-interface EntityBS {
-  orgId: string;
-  label: string;
-  assets: number;
-  liabilities: number;
-  equity: number;
-}
-
-interface AccountRow {
-  type: string;
-  name: string;
-  code: string;
-  total: number;
-  byEntity: Record<string, number>;
-}
-
-interface ConsolidatedReport {
-  group: { id: string; name: string };
-  members: { orgId: string; label: string; orgName: string }[];
-  startDate: string;
-  endDate: string;
-  consolidatedPnL: {
-    totalRevenue: number;
-    totalExpenses: number;
-    netIncome: number;
-    byEntity: EntityPnL[];
-    accounts: AccountRow[];
-  };
-  consolidatedBalanceSheet: {
-    totalAssets: number;
-    totalLiabilities: number;
-    totalEquity: number;
-    byEntity: EntityBS[];
-    accounts: AccountRow[];
-  };
-}
+type ConsolidatedReport = ConsolidationReportUi;
+type AccountRow = ConsolidatedReport["consolidatedPnL"]["accounts"][number];
 
 function getOrgId() {
   return typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
@@ -132,10 +89,12 @@ function apiFetch(url: string, options: RequestInit = {}) {
 export default function ConsolidationPage() {
   const now = new Date();
   const [initialLoad, setInitialLoad] = useState(true);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [groups, setGroups] = useState<ConsolidationGroup[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [report, setReport] = useState<ConsolidatedReport | null>(null);
+  const [reportError, setReportError] = useState<string | null>(null);
+  const reportRequest = useRef({ id: 0 });
   const [reportLoading, setReportLoading] = useState(false);
   const [tab, setTab] = useState<"pnl" | "balance-sheet">("pnl");
 
@@ -177,14 +136,22 @@ export default function ConsolidationPage() {
 
   const fetchReport = useCallback(async () => {
     if (!selectedGroupId) return;
+    const requestId = ++reportRequest.current.id;
+    setReport(null);
+    setReportError(null);
     setReportLoading(true);
     try {
       const params = new URLSearchParams({ startDate, endDate });
       const res = await apiFetch(`/api/v1/consolidation/groups/${selectedGroupId}/report?${params}`);
-      const data = await res.json();
-      setReport(data);
+      const data = await reportResultJson(res, consolidationReportUi);
+      if (requestId === reportRequest.current.id) setReport(data);
+    } catch (cause) {
+      if (requestId === reportRequest.current.id) {
+        setReport(null);
+        setReportError(cause instanceof Error ? cause.message : "Unable to load this report.");
+      }
     } finally {
-      setReportLoading(false);
+      if (requestId === reportRequest.current.id) setReportLoading(false);
     }
   }, [selectedGroupId, startDate, endDate]);
 
@@ -194,6 +161,8 @@ export default function ConsolidationPage() {
 
   useEffect(() => {
     if (selectedGroupId) fetchReport();
+    const requests = reportRequest.current;
+    return () => { requests.id++; };
   }, [selectedGroupId, fetchReport]);
 
   const createGroup = async () => {
@@ -253,45 +222,8 @@ export default function ConsolidationPage() {
     );
   }, [userOrgs, activeOrgId, selectedGroup?.members]);
 
-  // Build export data
-  const exportData = useMemo(() => {
-    if (!report) return [];
-    if (tab === "pnl" && pnl) {
-      return pnl.accounts.map((a) => {
-        const row: Record<string, string | number> = {
-          type: a.type,
-          code: a.code,
-          name: a.name,
-          total: a.total,
-        };
-        for (const m of report.members) {
-          row[m.label] = a.byEntity[m.orgId] || 0;
-        }
-        return row;
-      });
-    }
-    if (tab === "balance-sheet" && bs) {
-      return bs.accounts.map((a) => {
-        const row: Record<string, string | number> = {
-          type: a.type,
-          code: a.code,
-          name: a.name,
-          total: a.total,
-        };
-        for (const m of report.members) {
-          row[m.label] = a.byEntity[m.orgId] || 0;
-        }
-        return row;
-      });
-    }
-    return [];
-  }, [report, tab, pnl, bs]);
-
-  const exportColumns = useMemo(() => {
-    if (!report) return [];
-    const memberCols = report.members.map((m) => m.label);
-    return ["type", "code", "name", ...memberCols, "total"];
-  }, [report]);
+  // Raw-unit CSV columns retain currency and uniquely identify each entity.
+  const reportExport = useMemo(() => report ? consolidationReportExport(report, tab) : { data: [], columns: [] }, [report, tab]);
 
   if (initialLoad) return <BrandLoader />;
 
@@ -305,10 +237,10 @@ export default function ConsolidationPage() {
         title="Combined company reports"
         description="One set of reports that adds up several of your businesses together. Sales and bills between those businesses are removed so you don't count them twice, and amounts in other currencies are converted into one currency."
       >
-        {report && exportData.length > 0 && (
+        {report && reportExport.data.length > 0 && (
           <ExportButton
-            data={exportData}
-            columns={exportColumns}
+            data={reportExport.data}
+            columns={reportExport.columns}
             filename={`consolidation-${tab}`}
           />
         )}
@@ -503,6 +435,7 @@ export default function ConsolidationPage() {
             </button>
           </div>
 
+          {reportError && <p role="alert" className="text-sm text-destructive">{reportError}</p>}
           {reportLoading ? (
             <BrandLoader className="h-48" />
           ) : (
@@ -512,11 +445,11 @@ export default function ConsolidationPage() {
                 <div className="space-y-6">
                   {/* Stats */}
                   <div className="grid gap-4 sm:grid-cols-3">
-                    <StatCard title="Total Revenue" value={formatMoney(pnl.totalRevenue)} icon={TrendingUp} changeType="positive" />
-                    <StatCard title="Total Expenses" value={formatMoney(pnl.totalExpenses)} icon={TrendingDown} changeType="negative" />
+                    <StatCard title="Total Revenue" value={reportResultMoney(pnl.totalRevenue, report!.presentationCurrency)} icon={TrendingUp} changeType="positive" />
+                    <StatCard title="Total Expenses" value={reportResultMoney(pnl.totalExpenses, report!.presentationCurrency)} icon={TrendingDown} changeType="negative" />
                     <StatCard
                       title="Net Income"
-                      value={formatMoney(pnl.netIncome)}
+                      value={reportResultMoney(pnl.netIncome, report!.presentationCurrency)}
                       icon={DollarSign}
                       changeType={pnl.netIncome >= 0 ? "positive" : "negative"}
                     />
@@ -540,19 +473,19 @@ export default function ConsolidationPage() {
                         {pnl.byEntity.map((e) => (
                           <TableRow key={e.orgId} className="border-border/30">
                             <TableCell className="px-4 py-3 font-medium">{e.label}</TableCell>
-                            <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{formatMoney(e.revenue)}</TableCell>
-                            <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{formatMoney(e.expenses)}</TableCell>
+                            <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(e.revenue, report!.presentationCurrency)}</TableCell>
+                            <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(e.expenses, report!.presentationCurrency)}</TableCell>
                             <TableCell className={cn("px-4 py-3 text-right font-mono tabular-nums", e.netIncome >= 0 ? "text-emerald-600" : "text-red-600")}>
-                              {formatMoney(e.netIncome)}
+                              {reportResultMoney(e.netIncome, report!.presentationCurrency)}
                             </TableCell>
                           </TableRow>
                         ))}
                         <TableRow className="bg-muted/30 font-semibold">
                           <TableCell className="px-4 py-3">Total</TableCell>
-                          <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{formatMoney(pnl.totalRevenue)}</TableCell>
-                          <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{formatMoney(pnl.totalExpenses)}</TableCell>
+                          <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(pnl.totalRevenue, report!.presentationCurrency)}</TableCell>
+                          <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(pnl.totalExpenses, report!.presentationCurrency)}</TableCell>
                           <TableCell className={cn("px-4 py-3 text-right font-mono tabular-nums", pnl.netIncome >= 0 ? "text-emerald-600" : "text-red-600")}>
-                            {formatMoney(pnl.netIncome)}
+                            {reportResultMoney(pnl.netIncome, report!.presentationCurrency)}
                           </TableCell>
                         </TableRow>
                       </TableBody>
@@ -562,6 +495,7 @@ export default function ConsolidationPage() {
                   {/* Account Detail */}
                   <AccountDetailTable
                     title="Account breakdown"
+                    currencyCode={report!.presentationCurrency}
                     accounts={pnl.accounts}
                     members={report!.members}
                   />
@@ -573,9 +507,9 @@ export default function ConsolidationPage() {
                 <div className="space-y-6">
                   {/* Stats */}
                   <div className="grid gap-4 sm:grid-cols-3">
-                    <StatCard title="Total Assets" value={formatMoney(bs.totalAssets)} icon={TrendingUp} changeType="positive" />
-                    <StatCard title="Total Liabilities" value={formatMoney(bs.totalLiabilities)} icon={TrendingDown} changeType="negative" />
-                    <StatCard title="Total Equity" value={formatMoney(bs.totalEquity)} icon={DollarSign} changeType="positive" />
+                    <StatCard title="Total Assets" value={reportResultMoney(bs.totalAssets, report!.presentationCurrency)} icon={TrendingUp} changeType="positive" />
+                    <StatCard title="Total Liabilities" value={reportResultMoney(bs.totalLiabilities, report!.presentationCurrency)} icon={TrendingDown} changeType="negative" />
+                    <StatCard title="Total Equity" value={reportResultMoney(bs.totalEquity, report!.presentationCurrency)} icon={DollarSign} changeType="positive" />
                   </div>
 
                   {/* Per Entity Summary */}
@@ -596,16 +530,16 @@ export default function ConsolidationPage() {
                         {bs.byEntity.map((e) => (
                           <TableRow key={e.orgId} className="border-border/30">
                             <TableCell className="px-4 py-3 font-medium">{e.label}</TableCell>
-                            <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{formatMoney(e.assets)}</TableCell>
-                            <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{formatMoney(e.liabilities)}</TableCell>
-                            <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{formatMoney(e.equity)}</TableCell>
+                            <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(e.assets, report!.presentationCurrency)}</TableCell>
+                            <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(e.liabilities, report!.presentationCurrency)}</TableCell>
+                            <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(e.equity, report!.presentationCurrency)}</TableCell>
                           </TableRow>
                         ))}
                         <TableRow className="bg-muted/30 font-semibold">
                           <TableCell className="px-4 py-3">Total</TableCell>
-                          <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{formatMoney(bs.totalAssets)}</TableCell>
-                          <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{formatMoney(bs.totalLiabilities)}</TableCell>
-                          <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{formatMoney(bs.totalEquity)}</TableCell>
+                          <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(bs.totalAssets, report!.presentationCurrency)}</TableCell>
+                          <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(bs.totalLiabilities, report!.presentationCurrency)}</TableCell>
+                          <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(bs.totalEquity, report!.presentationCurrency)}</TableCell>
                         </TableRow>
                       </TableBody>
                     </Table>
@@ -614,6 +548,7 @@ export default function ConsolidationPage() {
                   {/* Account Detail */}
                   <AccountDetailTable
                     title="Account breakdown"
+                    currencyCode={report!.presentationCurrency}
                     accounts={bs.accounts}
                     members={report!.members}
                   />
@@ -630,10 +565,12 @@ export default function ConsolidationPage() {
 function AccountDetailTable({
   title,
   accounts,
+  currencyCode,
   members,
 }: {
   title: string;
   accounts: AccountRow[];
+  currencyCode: string;
   members: { orgId: string; label: string; orgName: string }[];
 }) {
   if (accounts.length === 0) return null;
@@ -673,7 +610,7 @@ function AccountDetailTable({
         </TableHeader>
         <TableBody>
           {Array.from(grouped.entries()).map(([type, typeAccounts]) => (
-            <GroupSection key={type} type={type} label={typeLabels[type] || type} accounts={typeAccounts} members={members} />
+            <GroupSection key={type} type={type} label={typeLabels[type] || type} accounts={typeAccounts} members={members} currencyCode={currencyCode} />
           ))}
         </TableBody>
       </Table>
@@ -684,17 +621,19 @@ function AccountDetailTable({
 function GroupSection({
   label,
   accounts,
+  currencyCode,
   members,
 }: {
   type: string;
   label: string;
   accounts: AccountRow[];
+  currencyCode: string;
   members: { orgId: string; label: string; orgName: string }[];
 }) {
-  const groupTotal = accounts.reduce((sum, a) => sum + a.total, 0);
-  const entityTotals: Record<string, number> = {};
+  const groupTotal = accounts.reduce((sum, a) => sum + a.total, 0n);
+  const entityTotals: Record<string, bigint> = {};
   for (const m of members) {
-    entityTotals[m.orgId] = accounts.reduce((sum, a) => sum + (a.byEntity[m.orgId] || 0), 0);
+    entityTotals[m.orgId] = accounts.reduce((sum, a) => sum + (a.byEntity[m.orgId] ?? 0n), 0n);
   }
 
   return (
@@ -712,11 +651,11 @@ function GroupSection({
           </TableCell>
           {members.map((m) => (
             <TableCell key={m.orgId} className="px-4 py-2.5 text-right font-mono tabular-nums">
-              {formatMoney(a.byEntity[m.orgId] || 0)}
+              {reportResultMoney(a.byEntity[m.orgId] ?? 0n, currencyCode)}
             </TableCell>
           ))}
           <TableCell className="px-4 py-2.5 text-right font-mono tabular-nums font-medium">
-            {formatMoney(a.total)}
+            {reportResultMoney(a.total, currencyCode)}
           </TableCell>
         </TableRow>
       ))}
@@ -724,11 +663,11 @@ function GroupSection({
         <TableCell className="px-4 py-2 font-semibold text-sm">Total {label}</TableCell>
         {members.map((m) => (
           <TableCell key={m.orgId} className="px-4 py-2 text-right font-mono tabular-nums font-semibold">
-            {formatMoney(entityTotals[m.orgId] || 0)}
+            {reportResultMoney(entityTotals[m.orgId] ?? 0n, currencyCode)}
           </TableCell>
         ))}
         <TableCell className="px-4 py-2 text-right font-mono tabular-nums font-semibold">
-          {formatMoney(groupTotal)}
+          {reportResultMoney(groupTotal, currencyCode)}
         </TableCell>
       </TableRow>
     </>

@@ -1,3 +1,4 @@
+import { consolidationReportUi } from "../../lib/money/report-result-ui";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { and, eq, sql } from "drizzle-orm";
@@ -53,7 +54,7 @@ async function run() {
     method: "POST", headers: { authorization: `Bearer ${key}`, "x-organization-id": c.id },
   });
   const p = (id = g.id) => ({ params: Promise.resolve({ id }) });
-  const data = async (r: Response, status = 200) => { const body = await r.json(); assert.equal(r.status, status, JSON.stringify(body)); return body; };
+  const data = async (r: Response, status = 200) => { const body = await r.json(); assert.equal(r.status, status, JSON.stringify(body)); if (r.status === 200 && body.consolidatedPnL) consolidationReportUi(body); return body; };
   async function snapshot() {
     const r = await db.execute(sql.raw("select jsonb_build_object('entries',(select jsonb_agg(to_jsonb(t) order by id) from consolidation_elimination_entry t),'audit',(select jsonb_agg(to_jsonb(t) order by id) from audit_log t),'gl',(select jsonb_agg(to_jsonb(t) order by id) from journal_line t)) as state"));
     return JSON.stringify(r.rows[0].state);
@@ -90,6 +91,8 @@ async function run() {
   try {
     const before = await snapshot(), report = await data(await GET(req(), p()));
     assert.deepEqual(report, (await mc.call("get_consolidation_report", args)).body); assert.equal(await snapshot(), before);
+    assert.deepEqual(consolidationReportUi(report), consolidationReportUi((await mc.call("get_consolidation_report", args)).body));
+    assert.throws(() => consolidationReportUi({ ...report, presentationCurrency: "usd" }));
     assert.equal(report.consolidatedPnL.totalRevenue, 450); assert.equal(report.consolidatedPnL.totalRevenueMinor, "450");
     assert.equal(report.translation.totalCta, 950); assert.equal(report.translation.totalCtaMinor, "950");
     assert.equal(report.consolidatedBalanceSheet.totalAssets, 2600); assert.equal(report.consolidatedBalanceSheet.balanceCheckMinor, "0");
@@ -127,6 +130,9 @@ async function run() {
     const wide = await account(d.id, "1020", "asset", 9007199254730001, 0);
     const wideReport = await data(await GET(req(), p(unitGroup.id)));
     assert.equal(wideReport.consolidatedBalanceSheet.accounts.find((r: { code: string }) => r.code === "1020").totalMinor, "9007190247530746");
+    const translatedSql = (await db.execute(sql`select round((debit_amount-credit_amount)::numeric * 0.999999,0)::text as total
+      from journal_line where id=${wide.line.id}`)).rows[0].total as string;
+    assert.equal(consolidationReportUi(wideReport).consolidatedBalanceSheet.accounts.find(row => row.code === "1020")!.total, BigInt(translatedSql));
     assert.deepEqual(wideReport, (await mc.call("get_consolidation_report", { groupId: unitGroup.id, ...dates })).body);
     await db.delete(journalLine).where(eq(journalLine.journalEntryId, wide.entry.id));
     // CTA entity adjustments survive cancellation of the group's total CTA.

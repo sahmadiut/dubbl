@@ -1,3 +1,4 @@
+import { customReportUiConfig, customReportUi, customReportCell } from "../../lib/money/report-result-ui";
 import assert from "node:assert/strict";
 import { createHash, randomUUID } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
@@ -103,6 +104,11 @@ async function run() {
     const ids: string[] = [];
     for (const config of configs) {
       const before = await snapshot();
+      const uiConfig = customReportUiConfig(config);
+      const uiRest = await body(await runReport(req("POST", uiConfig)));
+      const uiMcp = (await ma.call("run_custom_report", uiConfig)).body;
+      assert.deepEqual(customReportUi(uiRest, config), customReportUi(uiMcp, config));
+      assert.throws(() => customReportUi({ ...uiRest, total: -1 }, config));
       const result = await body(await runReport(req("POST", config)));
       assert.deepEqual((await ma.call("run_custom_report", config)).body, result);
       assert.equal(result.total, config.dataSource === "invoices" ? 2 : 1); assert.ok(!JSON.stringify(result).includes("secret"));
@@ -193,10 +199,16 @@ async function run() {
       const original = (await db.execute(sql.raw(`select ${column}::text as value from ${table} where id = '${id}'`))).rows[0].value as string;
       for (const value of ["9007199254740991", "-9007199254740991"]) {
         await db.execute(sql.raw(`update ${table} set ${column} = ${value} where id = '${id}'`));
-        const input = { ...config, filters: [] };
+        const input = customReportUiConfig({ ...config, filters: [] });
         const result = await body(await runReport(req("POST", input)));
         assert.equal(result.data[0][field], Number(value)); assert.equal(result.data[0][`${field}Minor`], value);
-        assert.deepEqual((await ma.call("run_custom_report", input)).body, result);
+        const mcpBody = (await ma.call("run_custom_report", input)).body;
+        assert.deepEqual(mcpBody, result);
+        const adopted = customReportUi(result, input), toolAdopted = customReportUi(mcpBody, input);
+        assert.deepEqual(adopted, toolAdopted);
+        const storedSql = (await db.execute(sql.raw(`select ${column}::text as value from ${table} where id = '${id}'`))).rows[0].value as string;
+        assert.equal(adopted[0][field], BigInt(storedSql));
+        assert.equal(customReportCell(adopted[0], `${field}Minor`), value);
       }
       for (const value of ["9007199254740992", "-9007199254740992", "9223372036854775807"]) {
         await db.execute(sql.raw(`update ${table} set ${column} = ${value} where id = '${id}'`)); before = await snapshot();

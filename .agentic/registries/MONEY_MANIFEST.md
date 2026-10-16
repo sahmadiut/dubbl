@@ -1,3 +1,16 @@
+## MON-167 tax, tracking, consolidation and custom result UI
+
+[REPORT_RESULT_UI_CUTOVER](REPORT_RESULT_UI_CUTOVER.md) maps seven result pages
+to their existing shared tax/compound/consolidation/custom REST and registered
+MCP contracts. Required safe numeric/canonical Minor aliases and explicit saved
+currency are validated before state adoption. Bigint totals preserve low digits;
+tracking aligns its column arrays, consolidation retains pre/post-elimination
+semantics, and custom/saved reads request hidden carriers/currency. CSV and
+explicit Minor columns retain raw integer units. HTTP/malformed failures expose
+alerts; superseded runs cannot replace current results. Behavior and actual
+REST/MCP/SQL regressions, scoped inventory ownership and removed legacy
+allowances are current. MON-162, MON-158 and MON-008 remain independently open.
+
 ## MON-159 background integration acceptance
 
 [BACKGROUND_CUTOVER_ACCEPTANCE](BACKGROUND_CUTOVER_ACCEPTANCE.md) independently

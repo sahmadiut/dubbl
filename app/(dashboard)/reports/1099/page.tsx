@@ -15,32 +15,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ExportButton } from "@/components/dashboard/export-button";
-import { formatMoney } from "@/lib/money";
+import { reportResultJson, reportResultMoney, report1099Ui, type Report1099Ui } from "@/lib/money/report-result-ui";
 import { cn } from "@/lib/utils";
 import { BackToReports, ReportHelp } from "../_components";
 
-interface Vendor1099 {
-  contactId: string;
-  name: string;
-  taxIdentifier: string | null;
-  w9TaxClassification: string | null;
-  backupWithholding: boolean;
-  totalPaid: number;
-  paymentCount: number;
-  reportable: boolean;
-}
-
-interface Report1099 {
-  taxYear: number;
-  threshold: number;
-  vendors: Vendor1099[];
-  reportableCount: number;
-  reportableTotal: number;
-  grandTotal: number;
-}
+type Report1099 = Report1099Ui;
 
 export default function Form1099Page() {
   const now = new Date();
+  const [error, setError] = useState<string | null>(null);
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(true);
   const [year, setYear] = useState(now.getFullYear() - 1);
@@ -52,15 +35,17 @@ export default function Form1099Page() {
     let cancelled = false;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
+    setError(null);
+    setData(null);
     fetch(`/api/v1/reports/1099?year=${year}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => reportResultJson(r, report1099Ui))
       .then((d) => {
         if (cancelled) return;
-        if (d.vendors) setData(d);
-        else setData(null);
+        setData(d);
       })
+      .catch((cause: Error) => { if (!cancelled) { setData(null); setError(cause.message); } })
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
@@ -84,8 +69,8 @@ export default function Form1099Page() {
       >
         {data && (
           <ExportButton
-            data={data.vendors}
-            columns={["name", "taxIdentifier", "totalPaid", "paymentCount", "reportable"]}
+            data={data.vendors.map(row => ({ ...row, totalPaid: row.totalPaid.toString(), currencyCode: data.currencyCode }))}
+            columns={["name", "taxIdentifier", "totalPaid", "paymentCount", "reportable", "currencyCode"]}
             filename={`1099-${year}`}
           />
         )}
@@ -112,9 +97,11 @@ export default function Form1099Page() {
         ))}
       </div>
 
+      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+
       {loading ? (
         <BrandLoader className="h-48" />
-      ) : !data || data.vendors.length === 0 ? (
+      ) : error ? null : !data || data.vendors.length === 0 ? (
         <ContentReveal>
           <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16 px-6 text-center">
             <div className="flex size-12 items-center justify-center rounded-lg bg-muted">
@@ -137,11 +124,11 @@ export default function Form1099Page() {
               </div>
               <div className="rounded-xl border bg-card/80 p-4">
                 <p className="text-xs text-muted-foreground">Total paid to those contractors</p>
-                <p className="mt-1 text-xl font-bold font-mono tabular-nums">{formatMoney(data.reportableTotal)}</p>
+                <p className="mt-1 text-xl font-bold font-mono tabular-nums">{reportResultMoney(data.reportableTotal, data.currencyCode)}</p>
               </div>
               <div className="rounded-xl border bg-card/80 p-4">
                 <p className="text-xs text-muted-foreground">Reporting threshold</p>
-                <p className="mt-1 text-xl font-bold font-mono tabular-nums">{formatMoney(data.threshold)}</p>
+                <p className="mt-1 text-xl font-bold font-mono tabular-nums">{reportResultMoney(data.threshold, data.currencyCode)}</p>
               </div>
             </div>
 
@@ -171,7 +158,7 @@ export default function Form1099Page() {
                         {v.taxIdentifier || <span className="text-amber-600">missing</span>}
                       </TableCell>
                       <TableCell className="text-right font-mono tabular-nums">{v.paymentCount}</TableCell>
-                      <TableCell className="text-right font-mono tabular-nums">{formatMoney(v.totalPaid)}</TableCell>
+                      <TableCell className="text-right font-mono tabular-nums">{reportResultMoney(v.totalPaid, data.currencyCode)}</TableCell>
                       <TableCell>
                         <span className={cn(
                           "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",

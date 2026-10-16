@@ -1,5 +1,12 @@
 # Exact money core
 
+MON-167 adopts tax/tracking/consolidation/custom/saved report results through
+`report-result-ui.ts`: required numeric/Minor agreement, explicit currency,
+bigint sums, aligned tracking totals, pre/post-elimination consolidation and
+currency-aware custom cells. Explicit Minor columns and CSV exports preserve raw
+integer units. See the [consumer mapping](../../.agentic/registries/REPORT_RESULT_UI_CUTOVER.md).
+MON-162, MON-158 and MON-008 retain independent integration acceptance.
+
 MON-159 independently accepts background service composition after MON-164/165.
 `tests/integration/background-cutover-acceptance*` joins real REST/MCP origins,
 bookkeeping/recurrence/FX, saved reversal and in-app alerts on one tenant. SQL-text

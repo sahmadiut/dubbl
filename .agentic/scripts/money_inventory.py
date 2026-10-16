@@ -305,6 +305,11 @@ def generate():
                 "trial-balance", "balance-sheet", "comparative-balance-sheet", "profit-and-loss", "income-statement", "pnl-comparison"
             )
         }
+        report_result_ui = path == "lib/money/report-result-ui.ts" or path in {
+            f"app/(dashboard)/reports/{name}/page.tsx" for name in (
+                "1099", "tax-summary", "vat-return", "tracking", "consolidation", "custom", "saved"
+            )
+        }
         ledger_aging_ui = path == "lib/money/ledger-aging-ui.ts" or path in {
             f"app/(dashboard)/reports/{name}/page.tsx" for name in (
                 "general-ledger", "cash-flow", "aged-receivables", "aged-payables"
@@ -327,6 +332,8 @@ def generate():
             owner = "MON-163 contact/dashboard/shared display; MON-007 journal core retained; MON-158/MON-008 independent integration; LOC-003 formatting/input"
         elif public_render_export_ui:
             owner = "MON-160 public/render/export/provider consumers; MON-008 independent integration; existing MON-030..034 contracts"
+        elif report_result_ui:
+            owner = "MON-167 tax/tracking/consolidation/custom report UI; MON-162/MON-158/MON-008 independent integration; LOC-003 formatting/input"
         elif ledger_aging_ui:
             owner = "MON-166 ledger/cash-flow/aging UI; MON-162/MON-158/MON-008 independent integration; LOC-003 formatting/input"
         elif financial_statement_ui:

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   ArrowLeft,
   BarChart3,
@@ -11,8 +11,6 @@ import {
   Download,
   Trash2,
   MoreHorizontal,
-  X,
-  FileSpreadsheet,
 } from "lucide-react";
 import { toast } from "sonner";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
@@ -33,7 +31,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   DropdownMenu,
@@ -41,8 +38,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { DataTable, type Column } from "@/components/dashboard/data-table";
 import { PageHeader } from "@/components/dashboard/page-header";
+import { reportResultJson, customReportUiConfig, customReportUi, customReportCell } from "@/lib/money/report-result-ui";
 import { useConfirm } from "@/lib/hooks/use-confirm";
 
 interface SavedReport {
@@ -91,6 +88,8 @@ export default function CustomReportsPage() {
   const [dataSource, setDataSource] = useState("invoices");
   const [selectedColumns, setSelectedColumns] = useState<string[]>([]);
   const [results, setResults] = useState<Record<string, unknown>[] | null>(null);
+  const runRequest = useRef(0);
+  const [runError, setRunError] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
 
   function getHeaders() {
@@ -98,8 +97,7 @@ export default function CustomReportsPage() {
     return { "x-organization-id": orgId, "Content-Type": "application/json" };
   }
 
-  function fetchReports() {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+  const fetchReports = useCallback(() => {
     setLoading(true);
     fetch("/api/v1/reports/saved", { headers: getHeaders() })
       .then((r) => r.json())
@@ -108,11 +106,16 @@ export default function CustomReportsPage() {
         setLoading(false);
         setInitialLoad(false);
       });
+  }, []);
+
+  useEffect(() => { fetchReports(); }, [fetchReports]);
+
+  function invalidateRun() {
+    runRequest.current++; setRunning(false); setResults(null); setRunError(null);
   }
 
-  useEffect(() => { fetchReports(); }, []);
-
   function openBuilder() {
+    invalidateRun();
     setReportName("");
     setDataSource("invoices");
     setSelectedColumns(DATA_SOURCES.invoices.columns.slice(0, 5));
@@ -121,24 +124,24 @@ export default function CustomReportsPage() {
   }
 
   async function runReport() {
+    const requestId = ++runRequest.current;
+    setRunError(null);
+    setResults(null);
     setRunning(true);
     try {
+      const config = customReportUiConfig({ dataSource, columns: selectedColumns, filters: [], groupBy: [] });
       const res = await fetch("/api/v1/reports/run", {
-        method: "POST",
-        headers: getHeaders(),
-        body: JSON.stringify({
-          dataSource,
-          columns: selectedColumns,
-          filters: [],
-          groupBy: [],
-        }),
+        method: "POST", headers: getHeaders(), body: JSON.stringify(config),
       });
-      const data = await res.json();
-      setResults(data.data || []);
-    } catch {
-      toast.error("Failed to run report");
+      const rows = await reportResultJson(res, body => customReportUi(body, config));
+      if (requestId === runRequest.current) setResults(rows);
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : "Unable to run report.";
+      if (requestId === runRequest.current) {
+        setResults(null); setRunError(message); toast.error(message);
+      }
     } finally {
-      setRunning(false);
+      if (requestId === runRequest.current) setRunning(false);
     }
   }
 
@@ -279,6 +282,7 @@ export default function CustomReportsPage() {
               <div className="space-y-1.5">
                 <Label>Data Source</Label>
                 <Select value={dataSource} onValueChange={(v) => {
+                  invalidateRun();
                   setDataSource(v);
                   setSelectedColumns(DATA_SOURCES[v]?.columns.slice(0, 5) || []);
                   setResults(null);
@@ -302,6 +306,7 @@ export default function CustomReportsPage() {
                     <button
                       key={col}
                       onClick={() => {
+                        invalidateRun();
                         setSelectedColumns((prev) =>
                           selected ? prev.filter((c) => c !== col) : [...prev, col]
                         );
@@ -330,6 +335,8 @@ export default function CustomReportsPage() {
               </Button>
             </div>
 
+            {runError && <p role="alert" className="text-sm text-destructive">{runError}</p>}
+            <p className="text-xs text-muted-foreground">Amounts use each row&apos;s currency. Columns ending in Minor and CSV amounts use raw minor units.</p>
             {results && (
               <div className="border rounded-lg overflow-x-auto">
                 <table className="w-full text-sm">
@@ -347,7 +354,7 @@ export default function CustomReportsPage() {
                       <tr key={i} className="border-b last:border-0">
                         {selectedColumns.map((col) => (
                           <td key={col} className="px-3 py-2 text-xs">
-                            {String(row[col] ?? "-")}
+                            {customReportCell(row, col)}
                           </td>
                         ))}
                       </tr>

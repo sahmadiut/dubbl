@@ -1,5 +1,21 @@
 # Verification matrix
 
+## MON-167 tax, tracking, consolidation and custom result UI
+
+- `tests/report-result-ui.test.ts`: six behavior/static groups verify required
+  saved aliases, four currency scales, signed refunds, exact totals and array
+  alignment, malformed HTTP/JSON rejection, consolidation elimination semantics,
+  raw CSV strings/unique company columns and custom nullable/Minor projections.
+- `tests/integration/{tax-report,compound,consolidation-report,custom-reports}.test.ts`:
+  four disposable migrated PostgreSQL fixtures now feed actual authenticated
+  REST and registered MCP envelopes into the UI adapters, with independent
+  SQL-text amount assertions. Existing scope, invalid input, unsafe history,
+  rollback, repeat, concurrency and server export checks remain.
+- Typecheck, changed-file/full lint, pure/static suite, inventory/legacy guards,
+  controller validation and diff checks qualify this child; no browser, physical
+  printing, full build or production qualification. See the
+  [consumer mapping](../registries/REPORT_RESULT_UI_CUTOVER.md).
+
 ## MON-160 public, rendering, export and provider UI consumers
 
 - `tests/public-ui.test.ts`: six behavior/static groups verify required saved aliases,

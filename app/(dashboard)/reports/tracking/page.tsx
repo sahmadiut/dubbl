@@ -16,41 +16,18 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatMoney } from "@/lib/money";
+import { reportResultJson, reportResultMoney, trackingReportUi, type TrackingReportUi } from "@/lib/money/report-result-ui";
 import { BackToReports, ReportHelp, BasisToggle } from "../_components";
 
-interface ColumnDesc {
-  key: string;
-  label: string;
-  dimensionValue: string | null;
-}
-
-interface AccountRow {
-  accountId: string;
-  accountCode: string;
-  accountName: string;
-  accountType: string;
-  amounts: number[];
-  total: number;
-}
-
-interface SectionData {
-  label: string;
-  accounts: AccountRow[];
-  totals: number[];
-  total: number;
-}
-
-interface TrackingResponse {
-  columns: ColumnDesc[];
-  sections: SectionData[];
-  netIncome?: { byColumn: number[]; total: number };
-}
+type TrackingResponse = TrackingReportUi;
+type ColumnDesc = TrackingReportUi["columns"][number];
+type SectionData = TrackingReportUi["sections"][number];
 
 type Dimension = "costCenterId" | "projectId";
 
 export default function TrackingReportPage() {
   const now = new Date();
+  const [error, setError] = useState<string | null>(null);
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(true);
   const [startDate, setStartDate] = useState(`${now.getFullYear()}-01-01`);
@@ -65,16 +42,18 @@ export default function TrackingReportPage() {
     let cancelled = false;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
+    setError(null);
+    setData(null);
     const params = new URLSearchParams({ startDate, endDate, basis, dimension, mode: "pnl" });
     fetch(`/api/v1/reports/tracking-category?${params}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => reportResultJson(r, trackingReportUi))
       .then((d) => {
         if (cancelled) return;
-        if (d.columns) setData(d);
-        else setData(null);
+        setData(d);
       })
+      .catch((cause: Error) => { if (!cancelled) { setData(null); setError(cause.message); } })
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
@@ -149,9 +128,11 @@ export default function TrackingReportPage() {
         </div>
       </div>
 
+      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+
       {loading ? (
         <BrandLoader className="h-48" />
-      ) : !data || columns.length === 0 ? (
+      ) : error ? null : !data || columns.length === 0 ? (
         <ContentReveal>
           <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16 px-6 text-center">
             <div className="flex size-12 items-center justify-center rounded-lg bg-muted">
@@ -181,6 +162,7 @@ export default function TrackingReportPage() {
                   <RenderSection
                     key={section.label}
                     section={section}
+                    currencyCode={data.currencyCode}
                     columns={columns}
                     ledgerHref={ledgerHref}
                   />
@@ -190,11 +172,11 @@ export default function TrackingReportPage() {
                     <TableCell>Profit (money in minus costs)</TableCell>
                     {data.netIncome.byColumn.map((amt, i) => (
                       <TableCell key={i} className="text-right font-mono tabular-nums">
-                        {formatMoney(amt)}
+                        {reportResultMoney(amt, data!.currencyCode)}
                       </TableCell>
                     ))}
                     <TableCell className="text-right font-mono tabular-nums">
-                      {formatMoney(data.netIncome.total)}
+                      {reportResultMoney(data.netIncome.total, data!.currencyCode)}
                     </TableCell>
                   </TableRow>
                 )}
@@ -209,10 +191,12 @@ export default function TrackingReportPage() {
 
 function RenderSection({
   section,
+  currencyCode,
   columns,
   ledgerHref,
 }: {
   section: SectionData;
+  currencyCode: string;
   columns: ColumnDesc[];
   ledgerHref: (accountId: string, col: ColumnDesc) => string;
 }) {
@@ -231,24 +215,24 @@ function RenderSection({
           </TableCell>
           {columns.map((c, i) => (
             <TableCell key={c.key} className="text-right font-mono tabular-nums">
-              {a.amounts[i] !== 0 ? (
+              {a.amounts[i] !== 0n ? (
                 <Link href={ledgerHref(a.accountId, c)} className="hover:text-emerald-600 hover:underline">
-                  {formatMoney(a.amounts[i])}
+                  {reportResultMoney(a.amounts[i], currencyCode)}
                 </Link>
               ) : (
-                <span className="text-muted-foreground/50">{formatMoney(0)}</span>
+                <span className="text-muted-foreground/50">{reportResultMoney(0n, currencyCode)}</span>
               )}
             </TableCell>
           ))}
-          <TableCell className="text-right font-mono tabular-nums">{formatMoney(a.total)}</TableCell>
+          <TableCell className="text-right font-mono tabular-nums">{reportResultMoney(a.total, currencyCode)}</TableCell>
         </TableRow>
       ))}
       <TableRow className="font-semibold">
         <TableCell>Total {section.label.toLowerCase()}</TableCell>
         {section.totals.map((t, i) => (
-          <TableCell key={i} className="text-right font-mono tabular-nums">{formatMoney(t)}</TableCell>
+          <TableCell key={i} className="text-right font-mono tabular-nums">{reportResultMoney(t, currencyCode)}</TableCell>
         ))}
-        <TableCell className="text-right font-mono tabular-nums">{formatMoney(section.total)}</TableCell>
+        <TableCell className="text-right font-mono tabular-nums">{reportResultMoney(section.total, currencyCode)}</TableCell>
       </TableRow>
     </>
   );

@@ -1,3 +1,4 @@
+import { report1099Ui, taxSummaryUi, vatReturnUi } from "../../lib/money/report-result-ui";
 import assert from "node:assert/strict";
 import { createHash, randomUUID } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
@@ -54,6 +55,14 @@ async function run() {
     const response = await handler(request(path, args)); assert.equal(response.status, status, `${path}: ${await response.clone().text()}`);
     const body = await response.json(), result = await ma.call(name, args);
     if (status === 200) assert.deepEqual(result.body, body); else { assert.equal(result.isError, true); assert.equal(result.body.status, status); }
+    if (status === 200) {
+      const parser = path === "1099" ? report1099Ui : path === "tax-summary" ? taxSummaryUi : path === "vat-return" ? vatReturnUi : null;
+      if (parser) {
+        assert.deepEqual(parser(body), parser(result.body));
+        const corrupt = { ...body, currencyCode: "usd" };
+        assert.throws(() => parser(corrupt));
+      }
+    }
     return body;
   };
   const [vendor, unpaid, foreign] = await db.insert(contact).values([
@@ -118,6 +127,12 @@ async function run() {
     await entry([{ accountId: returns.id, credit: 100 }]);
     const before = await snapshot();
     const r1099 = await check(...pairs[0]); assert.equal(r1099.grandTotalMinor, "60010"); assert.equal(r1099.reportableCount, 1);
+    const paidSql = (await db.execute(sql`select coalesce(sum(p.amount),0)::text as total
+      from payment p join contact c on c.id=p.contact_id and c.organization_id=p.organization_id
+      where p.organization_id=${a.id} and c.is_1099_vendor=true and c.deleted_at is null
+        and p.deleted_at is null and p.type='made' and p.method <> 'card'
+        and p.date between '2024-01-01' and '2024-12-31'`)).rows[0].total as string;
+    assert.equal(report1099Ui(r1099).grandTotal, BigInt(paidSql));
     assert.equal(r1099.vendors.find((v: { contactId: string }) => v.contactId === unpaid.id).totalPaidMinor, "0");
     assert.equal((await check(...pairs[0], { year: 2024, thresholdMinor: "60011" })).reportableCount, 0);
     const taxSummary = await check(...pairs[1]); assert.equal(taxSummary.totalOutputTaxMinor, "2001"); assert.equal(taxSummary.rates[0].outputNetMinor, "10033");

@@ -1,3 +1,4 @@
+import { trackingReportUi } from "../../lib/money/report-result-ui";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
@@ -84,6 +85,10 @@ async function run() {
   const parity = async (handler: typeof tracking, name: string, input: Record<string, unknown> = args, q = query, client = ma, key = keys.a) => {
     const body = await get(handler, q + (handler === pack ? `${q ? "&" : "?"}format=json` : ""), key);
     const tool = await client.call(name, input); assert.equal(tool.isError, false); assert.deepEqual(tool.body, body);
+    if (handler === tracking) {
+      assert.deepEqual(trackingReportUi(body), trackingReportUi(tool.body));
+      assert.throws(() => trackingReportUi({ ...body, currencyCode: null }));
+    }
     return body;
   };
   const rangeFailure = async (handler: typeof tracking, name: string, input = args, q = query) => {
@@ -118,6 +123,11 @@ async function run() {
     await db.insert(invoice).values({ organizationId: a.id, contactId: customer.id, invoiceNumber: "deleted", issueDate: "2024-01-01", dueDate: "2024-02-01", status: "sent", amountDue: 999, deletedAt: new Date(), currencyCode: "BAD" });
     const saved = await snapshot();
     const tr = await parity(tracking, "tracking_category_report");
+    const netSql = (await db.execute(sql`select coalesce(sum(l.credit_amount-l.debit_amount),0)::text as total
+      from journal_line l join journal_entry e on e.id=l.journal_entry_id join chart_account a on a.id=l.account_id
+      where e.organization_id=${a.id} and a.organization_id=${a.id} and e.status='posted' and e.deleted_at is null
+        and a.type in ('revenue','expense') and e.date between '2024-01-01' and '2024-01-31'`)).rows[0].total as string;
+    assert.equal(trackingReportUi(tr).netIncome!.total, BigInt(netSql));
     assert.deepEqual(tr.columns.map((column: { label: string }) => column.label), ["A Alpha", "B Beta", "Unassigned"]);
     assert.deepEqual(tr.netIncome.byColumnMinor, ["1250", "-250", "-1"]); assert.equal(tr.netIncome.total, 999);
     assert.deepEqual(tr.sections[0].accounts[0].amountsMinor, ["1250", "0", "-1"]);

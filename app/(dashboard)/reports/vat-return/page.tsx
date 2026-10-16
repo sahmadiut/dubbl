@@ -8,20 +8,10 @@ import { ContentReveal } from "@/components/ui/content-reveal";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { DateRangeFilter } from "@/components/dashboard/date-range-filter";
 import { Button } from "@/components/ui/button";
-import { formatMoney } from "@/lib/money";
+import { reportResultJson, reportResultMoney, vatReturnUi, type VatReturnUi } from "@/lib/money/report-result-ui";
 import { BackToReports, ReportHelp, BasisToggle } from "../_components";
 
-interface Box {
-  box: string;
-  label: string;
-  amount: number;
-}
-
-interface VatResponse {
-  boxes: Box[];
-  period: { startDate: string; endDate: string };
-  basis: string;
-}
+type VatResponse = VatReturnUi;
 
 /**
  * Plain-language explanation for each box, plus where to look to see what's
@@ -42,6 +32,7 @@ const BOX_PLAIN: Record<string, { title: string; help: string; drill?: "tax-summ
 
 export default function VatReturnPage() {
   const now = new Date();
+  const [error, setError] = useState<string | null>(null);
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(true);
   const [startDate, setStartDate] = useState(`${now.getFullYear()}-01-01`);
@@ -56,16 +47,18 @@ export default function VatReturnPage() {
     let cancelled = false;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
+    setError(null);
+    setData(null);
     const params = new URLSearchParams({ startDate, endDate, basis });
     fetch(`/api/v1/reports/vat-return?${params}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => reportResultJson(r, vatReturnUi))
       .then((d) => {
         if (cancelled) return;
-        if (d.boxes) setData(d);
-        else setData(null);
+        setData(d);
       })
+      .catch((cause: Error) => { if (!cancelled) { setData(null); setError(cause.message); } })
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
@@ -126,9 +119,11 @@ export default function VatReturnPage() {
         <BasisToggle basis={basis} onChange={setBasis} />
       </div>
 
+      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+
       {loading ? (
         <BrandLoader className="h-48" />
-      ) : !data ? (
+      ) : error ? null : !data ? (
         <p className="text-sm text-muted-foreground">No tax figures for this period.</p>
       ) : (
         <ContentReveal>
@@ -153,7 +148,7 @@ export default function VatReturnPage() {
                       </span>
                     </div>
                     <span className="font-mono tabular-nums text-sm font-semibold shrink-0">
-                      {formatMoney(b.amount)}
+                      {reportResultMoney(b.amount, data.currencyCode)}
                     </span>
                   </button>
                   {isOpen && (

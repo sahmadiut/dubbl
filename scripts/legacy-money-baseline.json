@@ -93,9 +93,6 @@
   "app/(dashboard)/purchases/requisitions/page.tsx": {
     "formatMoney": 2
   },
-  "app/(dashboard)/reports/1099/page.tsx": {
-    "formatMoney": 4
-  },
   "app/(dashboard)/reports/bank-cash-flow/page.tsx": {
     "formatMoney": 11
   },
@@ -104,9 +101,6 @@
   },
   "app/(dashboard)/reports/cash-flow-forecast/page.tsx": {
     "formatMoney": 8
-  },
-  "app/(dashboard)/reports/consolidation/page.tsx": {
-    "formatMoney": 23
   },
   "app/(dashboard)/reports/duplicate-detection/page.tsx": {
     "formatMoney": 2
@@ -128,15 +122,6 @@
   },
   "app/(dashboard)/reports/profitability/page.tsx": {
     "formatMoney": 10
-  },
-  "app/(dashboard)/reports/tax-summary/page.tsx": {
-    "formatMoney": 12
-  },
-  "app/(dashboard)/reports/tracking/page.tsx": {
-    "formatMoney": 8
-  },
-  "app/(dashboard)/reports/vat-return/page.tsx": {
-    "formatMoney": 2
   },
   "app/(dashboard)/reports/vendor-spend/page.tsx": {
     "formatMoney": 4

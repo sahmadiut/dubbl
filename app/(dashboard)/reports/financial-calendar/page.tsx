@@ -1,5 +1,6 @@
 "use client";
 
+import { financialCalendarUi, analyticalReportJson } from "@/lib/money/analytical-report-ui";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
@@ -7,19 +8,10 @@ import { PageHeader } from "@/components/dashboard/page-header";
 import { Button } from "@/components/ui/button";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
-import { statementMoneyText as formatMoney } from "@/lib/reports/statement-money";
+import { analyticalMoney as formatMoney } from "@/lib/money/analytical-report-ui";
 import { cn } from "@/lib/utils";
 
-interface CalendarEvent {
-  date: string;
-  type: "invoice_due" | "bill_due" | "recurring_generation" | "budget_period_start";
-  title: string;
-  amount?: number;
-  amountMinor?: string;
-  currencyCode: string;
-  id?: string;
-  status?: string;
-}
+type CalendarEvent = ReturnType<typeof financialCalendarUi>["events"][number];
 
 const typeColors: Record<string, { bg: string; text: string; dot: string }> = {
   invoice_due: { bg: "bg-emerald-50 dark:bg-emerald-950/30", text: "text-emerald-700 dark:text-emerald-300", dot: "bg-emerald-500" },
@@ -59,13 +51,9 @@ export default function FinancialCalendarPage() {
     fetch(`/api/v1/reports/financial-calendar?startDate=${startDate}&endDate=${endDate}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then(async (r) => {
-        const data = await r.json();
-        if (!r.ok) throw new Error(data.error || "Unable to load financial calendar.");
-        return data;
-      })
+      .then((r) => analyticalReportJson(r, financialCalendarUi))
       .then((data) => {
-        if (!cancelled) { setEvents(data.events || []); setError(null); }
+        if (!cancelled) { setEvents(data.events); setError(null); }
       })
       .catch((err: Error) => { if (!cancelled) { setEvents([]); setError(err.message); } })
       .finally(() => {

@@ -1,3 +1,4 @@
+import { financialCalendarUi, duplicateDetectionUi } from "../../lib/money/analytical-report-ui";
 import assert from "node:assert/strict";
 import { createHash, randomUUID } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
@@ -25,7 +26,10 @@ async function mcp(ctx: AuthContext) {
   }
   return { async call(name: string, args: Record<string, unknown> = {}) {
     const result = await client.callTool({ name, arguments: args }); const text = (result.content as { text: string }[])[0].text;
-    return { isError: result.isError === true, body: text.startsWith("{") ? JSON.parse(text) : { error: text } };
+    const body = text.startsWith("{") ? JSON.parse(text) : { error: text };
+    if (!result.isError && name === "financial_calendar") financialCalendarUi(body);
+    if (!result.isError && name === "duplicate_detection") duplicateDetectionUi(body);
+    return { isError: result.isError === true, body };
   }, async close() { await client.close(); await server.close(); } };
 }
 
@@ -53,7 +57,7 @@ async function run() {
   };
   const read = async (handler: typeof calendar, suffix = "", key = keys.a) => {
     const response = await handler(request(suffix, key)); assert.equal(response.status, 200);
-    const body = await response.json(); aliases(body); return body;
+    const body = await response.json(); aliases(body); if (handler === calendar) financialCalendarUi(body); if (handler === duplicates) duplicateDetectionUi(body); return body;
   };
   const dates = { startDate: "2024-01-01", endDate: "2024-03-31" }, query = "?startDate=2024-01-01&endDate=2024-03-31";
   const snapshot = async () => {
@@ -168,6 +172,9 @@ async function run() {
     const [line] = await db.insert(budgetLine).values({ budgetId: bud.id, accountId: account.id }).returning();
     const [period] = await db.insert(budgetPeriod).values({ budgetLineId: line.id, startDate: "2024-01-01", endDate: "2024-01-31", label: "Jan", amount: 1250 }).returning();
     const before = await snapshot(), cal = await read(calendar, query);
+    const budgetSql = (await db.execute(sql`select amount::text as total from budget_period where id=${period.id}`)).rows[0].total as string;
+    assert.equal(financialCalendarUi(cal).events.find(row => row.type === "budget_period_start")!.amount, BigInt(budgetSql));
+
     assert.equal(cal.events.filter((e: { id: string }) => e.id === weekly).length, 13);
     assert.deepEqual(cal.events.filter((e: { id: string }) => e.id === month).map((e: { date: string }) => e.date), ["2024-01-31", "2024-03-02"]);
     assert.ok(cal.events.some((e: { type: string; amountMinor: string }) => e.type === "recurring_generation" && e.amountMinor === "0"));

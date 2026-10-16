@@ -1,5 +1,6 @@
 "use client";
 
+import { profitabilityUi, analyticalReportJson } from "@/lib/money/analytical-report-ui";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { ArrowLeft, TrendingUp, TrendingDown, DollarSign } from "lucide-react";
@@ -8,21 +9,12 @@ import { StatCard } from "@/components/dashboard/stat-card";
 import { DateRangeFilter } from "@/components/dashboard/date-range-filter";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
-import { statementMoneyText } from "@/lib/reports/statement-money";
+import { analyticalMoney as statementMoneyText } from "@/lib/money/analytical-report-ui";
 import { CurrencySelect } from "@/components/ui/currency-select";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-interface ProfitabilityEntry {
-  contactId: string;
-  contactName: string;
-  revenue: number;
-  costs: number;
-  profit: number;
-  margin: number;
-  invoiceCount: number;
-  billCount: number;
-}
+type ProfitabilityEntry = ReturnType<typeof profitabilityUi>["entries"][number];
 
 export default function ProfitabilityPage() {
   const now = new Date();
@@ -34,39 +26,34 @@ export default function ProfitabilityPage() {
   const [endDate, setEndDate] = useState(now.toISOString().slice(0, 10));
   const [currencyFilter, setCurrencyFilter] = useState("");
   const [entries, setEntries] = useState<ProfitabilityEntry[]>([]);
-  const [totalRevenue, setTotalRevenue] = useState(0);
-  const [totalCosts, setTotalCosts] = useState(0);
-  const [totalProfit, setTotalProfit] = useState(0);
+  const [totalRevenue, setTotalRevenue] = useState(0n);
+  const [totalCosts, setTotalCosts] = useState(0n);
+  const [totalProfit, setTotalProfit] = useState(0n);
   const [overallMargin, setOverallMargin] = useState(0);
 
   useEffect(() => {
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
     let cancelled = false;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     const params = new URLSearchParams({ startDate, endDate, groupBy: "contact" });
     if (currencyFilter) params.set("currencyCode", currencyFilter);
     fetch(`/api/v1/reports/profitability?${params}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then(async (r) => {
-        const data = await r.json();
-        if (!r.ok) throw new Error(data.error || "Unable to load profitability.");
-        return data;
-      })
+      .then((r) => analyticalReportJson(r, profitabilityUi))
       .then((data) => {
         if (cancelled) return;
         setCurrencyCode(data.currencyCode);
         setError(null);
         setEntries(data.entries || []);
-        setTotalRevenue(data.totalRevenue || 0);
-        setTotalCosts(data.totalCosts || 0);
-        setTotalProfit(data.totalProfit || 0);
+        setTotalRevenue(data.totalRevenue);
+        setTotalCosts(data.totalCosts);
+        setTotalProfit(data.totalProfit);
         setOverallMargin(data.overallMargin || 0);
       })
       .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Unable to load profitability.");
+        if (!cancelled) { setEntries([]); setTotalRevenue(0n); setTotalCosts(0n); setTotalProfit(0n); setError(err instanceof Error ? err.message : "Unable to load profitability."); }
       })
       .finally(() => {
         if (!cancelled) {

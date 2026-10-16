@@ -1,3 +1,4 @@
+import { financialRatiosUi } from "../../lib/money/analytical-report-ui";
 import { trackingReportUi } from "../../lib/money/report-result-ui";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -26,7 +27,9 @@ async function mcp(ctx: AuthContext) {
   return { async call(name: string, args: Record<string, unknown> = {}) {
     const result = await client.callTool({ name, arguments: args });
     const text = (result.content as { text: string }[])[0].text;
-    return { isError: result.isError === true, body: text.startsWith("{") ? JSON.parse(text) : { error: text } };
+    const body = text.startsWith("{") ? JSON.parse(text) : { error: text };
+    if (!result.isError && name === "financial_ratios") financialRatiosUi(body);
+    return { isError: result.isError === true, body };
   }, async close() { await client.close(); await server.close(); } };
 }
 
@@ -89,6 +92,7 @@ async function run() {
       assert.deepEqual(trackingReportUi(body), trackingReportUi(tool.body));
       assert.throws(() => trackingReportUi({ ...body, currencyCode: null }));
     }
+    if (handler === ratios) assert.deepEqual(financialRatiosUi(body), financialRatiosUi(tool.body));
     return body;
   };
   const rangeFailure = async (handler: typeof tracking, name: string, input = args, q = query) => {
@@ -145,6 +149,7 @@ async function run() {
     assert.equal(standaloneBalance.equity.totalMinor, rp.statements[0].sections[2].subtotalMinor);
     assert.equal((await get(profitLoss, query)).netIncomeMinor, rp.statements[1].grandTotalMinor);
     const ra = await parity(ratios, "financial_ratios");
+    assert.equal(financialRatiosUi(ra).balances.netIncome, BigInt(netSql));
     assert.equal(ra.balances.totalAssetsMinor, "1399"); assert.equal(ra.balances.receivablesDueMinor, "50");
     assert.equal(ra.balances.payablesDueMinor, "25"); assert.equal(ra.ratios.currentRatio, 11.99); assert.equal(ra.ratiosExact.currentRatio, "11.99");
     assert.equal(ra.ratios.dso, 1); assert.equal(ra.ratios.dpo, 3);

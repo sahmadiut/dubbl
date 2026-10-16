@@ -1,3 +1,4 @@
+import { bankCashFlowUi, bankStatusUi } from "../../lib/money/analytical-report-ui";
 import assert from "node:assert/strict";
 import { createHash, randomUUID } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
@@ -24,7 +25,10 @@ async function mcp(ctx: AuthContext) {
   return { async call(name: string, args: Record<string, unknown> = {}) {
     const result = await client.callTool({ name, arguments: args });
     const text = (result.content as { text: string }[])[0].text;
-    return { isError: result.isError === true, body: text.startsWith("{") ? JSON.parse(text) : { error: text } };
+    const body = text.startsWith("{") ? JSON.parse(text) : { error: text };
+    if (!result.isError && name === "bank_cash_flow") bankCashFlowUi(body);
+    if (!result.isError && name === "bank_reconciliation_status") bankStatusUi(body);
+    return { isError: result.isError === true, body };
   }, async close() { await client.close(); await server.close(); } };
 }
 
@@ -42,7 +46,7 @@ async function run() {
   const ma = await mcp(ctx), mb = await mcp({ ...ctx, organizationId: b.id }), noRead = await mcp({ ...ctx, permissions: [] });
   const args = { startDate: "2024-02-01", endDate: "2024-03-31" }, query = "?startDate=2024-02-01&endDate=2024-03-31";
   const request = (suffix = "", key = keys.a) => new Request(`http://fixture.test/report${suffix}`, { headers: { authorization: `Bearer ${key}`, "x-organization-id": b.id } });
-  const body = async (handler: typeof status, suffix = "") => { const r = await handler(request(suffix)); assert.equal(r.status, 200); return r.json(); };
+  const body = async (handler: typeof status, suffix = "") => { const r = await handler(request(suffix)); assert.equal(r.status, 200); const dto = await r.json(); (handler === cashFlow ? bankCashFlowUi : bankStatusUi)(dto); return dto; };
   const seed = async (org: string, name: string, options: { deleted?: boolean; inactive?: boolean; currency?: string } = {}) =>
     (await db.insert(bankAccount).values({ organizationId: org, accountName: name, currencyCode: options.currency ?? "USD",
       isActive: !options.inactive, deletedAt: options.deleted ? new Date() : null }).returning())[0];
@@ -82,6 +86,12 @@ async function run() {
     const cash = await body(cashFlow, query); assert.equal(cash.totals.inflowsMinor, "1750"); assert.equal(cash.totals.outflowsMinor, "-350"); assert.equal(cash.totals.netMinor, "1400");
     assert.equal(cash.periods[0].endDate, "2024-02-29"); assert.equal(cash.periods[1].balanceMinor, "1400");
     assert.deepEqual((await ma.call("bank_cash_flow", args)).body, cash);
+    const sqlNet = (await db.execute(sql`select sum(t.amount)::text as total from bank_transaction t
+      join bank_account ba on ba.id=t.bank_account_id where ba.organization_id=${a.id} and ba.deleted_at is null
+      and t.status <> 'excluded' and t.date between '2024-02-01' and '2024-03-31'`)).rows[0].total as string;
+    assert.equal(bankCashFlowUi(cash).totals.net, BigInt(sqlNet));
+    assert.throws(() => bankCashFlowUi({ ...cash, currencyCode: null }));
+
     for (const groupBy of ["day", "week"])
       assert.deepEqual((await ma.call("bank_cash_flow", { ...args, groupBy })).body, await body(cashFlow, query + `&groupBy=${groupBy}`));
     const foreignCash = await (await cashFlow(request(query, keys.b))).json(); assert.equal(foreignCash.totals.netMinor, "777");

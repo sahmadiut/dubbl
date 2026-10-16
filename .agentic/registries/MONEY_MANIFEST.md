@@ -1,3 +1,13 @@
+## MON-168 analytical and bank report UI
+
+[ANALYTICAL_REPORT_UI_CUTOVER](ANALYTICAL_REPORT_UI_CUTOVER.md) maps eleven
+result pages to existing bank/document/KPI/operational/compound/forecast REST
+and registered MCP contracts. Required saved aliases/currencies validate before
+bigint state, exact totals, chart tooltips and exports. Ratios retain separate
+exact decimal aliases; bank totals group by currency. Failed responses clear
+results and show alerts. Pack/schedules contain no client money; budget-vs-actual
+retains MON-157 adoption. MON-162/MON-158/MON-008 acceptance remains separate.
+
 ## MON-167 tax, tracking, consolidation and custom result UI
 
 [REPORT_RESULT_UI_CUTOVER](REPORT_RESULT_UI_CUTOVER.md) maps seven result pages

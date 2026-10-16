@@ -1,3 +1,4 @@
+import { paymentPerformanceUi } from "../../lib/money/analytical-report-ui";
 import assert from "node:assert/strict";
 import { createHash, randomUUID } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
@@ -21,7 +22,9 @@ async function mcp(ctx: AuthContext) {
   return { async call(args: Record<string, unknown> = {}) {
     const result = await client.callTool({ name: "payment_performance", arguments: args });
     const text = (result.content as { text: string }[])[0].text;
-    return { isError: result.isError === true, body: text.startsWith("{") ? JSON.parse(text) : { error: text } };
+    const body = text.startsWith("{") ? JSON.parse(text) : { error: text };
+    if (!result.isError) paymentPerformanceUi(body);
+    return { isError: result.isError === true, body };
   }, async close() { await client.close(); await server.close(); } };
 }
 
@@ -65,7 +68,7 @@ async function run() {
     await db.delete(invoice).where(eq(invoice.organizationId, a.id)); await db.delete(bill).where(eq(bill.organizationId, a.id));
   };
   const report = async (suffix = query) => {
-    const response = await GET(request(suffix)); assert.equal(response.status, 200); return response.json();
+    const response = await GET(request(suffix)); assert.equal(response.status, 200); const dto = await response.json(); paymentPerformanceUi(dto); return dto;
   };
   const parity = async (suffix = query, input: Record<string, unknown> = args) => {
     const before = await snapshot(); const body = await report(suffix);
@@ -97,6 +100,10 @@ async function run() {
       await seed(kind, 800, { org: b.id, contactId: foreign.id });
     }
     const body = await parity(); assert.ok(!JSON.stringify(body).includes("secret"));
+    const collected = (await db.execute(sql`select sum(total)::text as total from invoice where organization_id=${a.id}
+      and deleted_at is null and status='paid' and paid_at is not null and issue_date between '2024-01-01' and '2024-12-31'`)).rows[0].total as string;
+    assert.equal(paymentPerformanceUi(body).receivables.reduce((sum, row) => sum + row.totalCollected, 0n), BigInt(collected));
+
     assert.deepEqual((await customRead.call(args)).body, body);
     assert.deepEqual(body.receivables.find((r: { contactId: string }) => r.contactId === local.id), {
       contactId: local.id, contactName: "Local", avgDays: 1, avgTermDays: 1, lateCount: 1, onTimeRate: 67,

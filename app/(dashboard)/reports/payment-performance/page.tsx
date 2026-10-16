@@ -1,5 +1,6 @@
 "use client";
 
+import { paymentPerformanceUi, analyticalReportJson } from "@/lib/money/analytical-report-ui";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { ArrowLeft, TrendingUp, TrendingDown } from "lucide-react";
@@ -21,9 +22,9 @@ interface PerformanceEntry {
   avgTermDays: number;
   invoiceCount?: number;
   billCount?: number;
-  totalCollected?: number;
+  totalCollected?: bigint;
   totalCollectedMinor?: string;
-  totalPaid?: number;
+  totalPaid?: bigint;
   totalPaidMinor?: string;
   lateCount: number;
   onTimeRate: number;
@@ -54,11 +55,7 @@ export default function PaymentPerformancePage() {
     fetch(`/api/v1/reports/payment-performance?${params}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then(async (r) => {
-        const data = await r.json();
-        if (!r.ok) throw new Error(data.error || "Unable to load payment performance.");
-        return data;
-      })
+      .then((r) => analyticalReportJson(r, paymentPerformanceUi))
       .then((data) => {
         if (cancelled) return;
         setReceivables(data.receivables || []);

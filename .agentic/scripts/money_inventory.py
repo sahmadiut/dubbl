@@ -305,6 +305,13 @@ def generate():
                 "trial-balance", "balance-sheet", "comparative-balance-sheet", "profit-and-loss", "income-statement", "pnl-comparison"
             )
         }
+        analytical_report_ui = path == "lib/money/analytical-report-ui.ts" or path in {
+            f"app/(dashboard)/reports/{name}/page.tsx" for name in (
+                "bank-cash-flow", "bank-reconciliation-status", "cash-flow-forecast", "duplicate-detection",
+                "executive-summary", "expense-analytics", "financial-calendar", "financial-ratios",
+                "payment-performance", "profitability", "vendor-spend"
+            )
+        }
         report_result_ui = path == "lib/money/report-result-ui.ts" or path in {
             f"app/(dashboard)/reports/{name}/page.tsx" for name in (
                 "1099", "tax-summary", "vat-return", "tracking", "consolidation", "custom", "saved"
@@ -332,6 +339,8 @@ def generate():
             owner = "MON-163 contact/dashboard/shared display; MON-007 journal core retained; MON-158/MON-008 independent integration; LOC-003 formatting/input"
         elif public_render_export_ui:
             owner = "MON-160 public/render/export/provider consumers; MON-008 independent integration; existing MON-030..034 contracts"
+        elif analytical_report_ui:
+            owner = "MON-168 analytical/bank report UI; MON-162/MON-158/MON-008 independent integration; LOC-003 formatting/input"
         elif report_result_ui:
             owner = "MON-167 tax/tracking/consolidation/custom report UI; MON-162/MON-158/MON-008 independent integration; LOC-003 formatting/input"
         elif ledger_aging_ui:
@@ -357,8 +366,8 @@ def generate():
         else:
             owner = "MON-007 core/MON-008 auxiliary; MON-006 serialization"
         consumers.append(dict(path=path, sha256=hashlib.sha256(source.replace("\r\n", "\n").encode()).hexdigest(),
-                              table_references=sorted(refs), units="contact/report currency minor integers and agreeing Minor aliases; dashboard budget cents retain fixed-two display; counts/basis points and chart geometry nonmonetary; no stored rescaling" if contact_dashboard_ui else "saved currency minor integers and agreeing Minor aliases; physical hundredths/basis points/counts separate; CSV fixed-two prices, opaque literal text and provider native units retain mapped exceptions" if public_render_export_ui else "report raw minor units; cumulative/income REST decimals are fixed-two aliases independent of ISO scale; period REST/MCP numbers are minor units; explicit report currency display; percentages/chart geometry are nonmonetary" if financial_statement_ui else "signed budget and nonnegative project/CRM legacy fixed cents; minutes, counts, percent and chart geometry are nonmonetary" if budget_project_crm_ui else "asset/loan legacy fixed cents; life, physical units and basis-point rates are separate units" if asset_loan_ui else "legacy payroll cents independent of ISO scale; hours, percentages and FX are separate units" if payroll_ui else "currency-tagged bigint minor units; rational operands have explicit units" if path.startswith("lib/money/") else "per referenced column; mixed money/FX/quantity/percent; legacy Number candidates require inspection",
-                              range="saved aliases safe integer +/-9007199254740991; shared statement text checked int64; bigint sums and ratios; numeric XLSX exact decimal and 15-digit gate" if contact_dashboard_ui else "saved money safe integer +/-9007199254740991 with canonical Minor aliases; bigint UI sums and rational intermediates" if public_render_export_ui or financial_statement_ui or payroll_ui or asset_loan_ui or budget_project_crm_ui else "signed int64 final amounts; arbitrary-precision intermediate ratios" if path.startswith("lib/money/") else "Number safe integer +/-9007199254740991; DB money columns bigint via guarded safe-number bridge; intermediates/SQL casts may narrow",
+                              table_references=sorted(refs), units="saved report raw minor integers and required agreeing Minor aliases; explicit currency; exact bigint totals/tooltips/CSV; ratiosExact decimal ratios and counts/percent/chart geometry nonmonetary" if analytical_report_ui else "contact/report currency minor integers and agreeing Minor aliases; dashboard budget cents retain fixed-two display; counts/basis points and chart geometry nonmonetary; no stored rescaling" if contact_dashboard_ui else "saved currency minor integers and agreeing Minor aliases; physical hundredths/basis points/counts separate; CSV fixed-two prices, opaque literal text and provider native units retain mapped exceptions" if public_render_export_ui else "report raw minor units; cumulative/income REST decimals are fixed-two aliases independent of ISO scale; period REST/MCP numbers are minor units; explicit report currency display; percentages/chart geometry are nonmonetary" if financial_statement_ui else "signed budget and nonnegative project/CRM legacy fixed cents; minutes, counts, percent and chart geometry are nonmonetary" if budget_project_crm_ui else "asset/loan legacy fixed cents; life, physical units and basis-point rates are separate units" if asset_loan_ui else "legacy payroll cents independent of ISO scale; hours, percentages and FX are separate units" if payroll_ui else "currency-tagged bigint minor units; rational operands have explicit units" if path.startswith("lib/money/") else "per referenced column; mixed money/FX/quantity/percent; legacy Number candidates require inspection",
+                              range="saved aliases safe integer +/-9007199254740991; shared statement text checked int64; bigint sums and ratios; numeric XLSX exact decimal and 15-digit gate" if contact_dashboard_ui else "saved money safe integer +/-9007199254740991 with canonical Minor aliases; bigint UI sums and rational intermediates" if analytical_report_ui or public_render_export_ui or financial_statement_ui or payroll_ui or asset_loan_ui or budget_project_crm_ui else "signed int64 final amounts; arbitrary-precision intermediate ratios" if path.startswith("lib/money/") else "Number safe integer +/-9007199254740991; DB money columns bigint via guarded safe-number bridge; intermediates/SQL casts may narrow",
                               currency_sources={t: tables[t] for t in sorted(refs)},
                               currency_resolution="explicit currency props/arguments or organization context; absent currency defaults must be reviewed, never infer from locale",
                               migration_owner=owner, occurrences=matches))

@@ -93,39 +93,6 @@
   "app/(dashboard)/purchases/requisitions/page.tsx": {
     "formatMoney": 2
   },
-  "app/(dashboard)/reports/bank-cash-flow/page.tsx": {
-    "formatMoney": 11
-  },
-  "app/(dashboard)/reports/bank-reconciliation-status/page.tsx": {
-    "formatMoney": 4
-  },
-  "app/(dashboard)/reports/cash-flow-forecast/page.tsx": {
-    "formatMoney": 8
-  },
-  "app/(dashboard)/reports/duplicate-detection/page.tsx": {
-    "formatMoney": 2
-  },
-  "app/(dashboard)/reports/executive-summary/page.tsx": {
-    "formatMoney": 3
-  },
-  "app/(dashboard)/reports/expense-analytics/page.tsx": {
-    "formatMoney": 4
-  },
-  "app/(dashboard)/reports/financial-calendar/page.tsx": {
-    "formatMoney": 3
-  },
-  "app/(dashboard)/reports/financial-ratios/page.tsx": {
-    "formatMoney": 2
-  },
-  "app/(dashboard)/reports/payment-performance/page.tsx": {
-    "formatMoney": 2
-  },
-  "app/(dashboard)/reports/profitability/page.tsx": {
-    "formatMoney": 10
-  },
-  "app/(dashboard)/reports/vendor-spend/page.tsx": {
-    "formatMoney": 4
-  },
   "app/(dashboard)/sales/[id]/page.tsx": {
     "formatMoney": 14,
     "minorUnitsToDecimal": 2

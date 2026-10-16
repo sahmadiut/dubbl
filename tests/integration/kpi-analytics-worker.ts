@@ -1,3 +1,4 @@
+import { expenseAnalyticsUi, executiveSummaryUi, profitabilityUi } from "../../lib/money/analytical-report-ui";
 import { dashboardTrendsUi } from "../../lib/money/contact-dashboard-ui";
 import assert from "node:assert/strict";
 import { createHash, randomUUID } from "node:crypto";
@@ -27,7 +28,11 @@ async function mcp(ctx: AuthContext) {
   return { async call(name: string, args: Record<string, unknown> = {}) {
     const result = await client.callTool({ name, arguments: args });
     const text = (result.content as { text: string }[])[0].text;
-    return { isError: result.isError === true, body: text.startsWith("{") ? JSON.parse(text) : { error: text } };
+    const body = text.startsWith("{") ? JSON.parse(text) : { error: text };
+    if (!result.isError && name === "expense_analytics") expenseAnalyticsUi(body);
+    if (!result.isError && name === "executive_summary") executiveSummaryUi(body);
+    if (!result.isError && name === "contact_profitability") profitabilityUi(body);
+    return { isError: result.isError === true, body };
   }, async close() { await client.close(); await server.close(); } };
 }
 
@@ -69,7 +74,11 @@ async function run() {
   const ma = await mcp(ctx), mb = await mcp({ ...ctx, organizationId: b.id }), noRead = await mcp({ ...ctx, permissions: [] });
   const args = { startDate: "2024-03-01", endDate: "2024-03-31" }, query = "?startDate=2024-03-01&endDate=2024-03-31";
   const request = (suffix = query, key = keys.a) => new Request(`http://fixture.test/api/v1/reports/kpi${suffix}`, { headers: { authorization: `Bearer ${key}`, "x-organization-id": b.id } });
-  const body = async (handler: typeof expense, suffix = query) => { const response = await handler(request(suffix)); assert.equal(response.status, 200); return response.json(); };
+  const body = async (handler: typeof expense, suffix = query) => { const response = await handler(request(suffix)); assert.equal(response.status, 200); const dto = await response.json();
+    if (handler === expense) expenseAnalyticsUi(dto);
+    if (handler === executive) executiveSummaryUi(dto);
+    if (handler === profitability) profitabilityUi(dto);
+    return dto; };
   const snapshot = async () => {
     const result: Record<string, unknown> = {};
     for (const table of ["journal_entry", "journal_line", "chart_account", "invoice", "bill", "invoice_line", "bill_line", "audit_log"])
@@ -107,7 +116,12 @@ async function run() {
     for (const options of [{ status: "draft" as const }, { status: "void" as const }, { deleted: true }, { org: b.id }]) await entry(exp.id, 900, "2024-03-10", options);
     await entry(foreignExp.id, 900);
     await entry(foreignExp.id, 777, "2024-03-10", { org: b.id });
+    const expenseSql = (await db.execute(sql`select sum(l.debit_amount-l.credit_amount)::text as total
+      from journal_line l join journal_entry e on e.id=l.journal_entry_id join chart_account ca on ca.id=l.account_id
+      where e.organization_id=${a.id} and ca.organization_id=${a.id} and e.status='posted' and e.deleted_at is null
+      and ca.type='expense' and e.date between '2024-03-01' and '2024-03-31'`)).rows[0].total as string;
     const expenses = await body(expense); assert.equal(expenses.totalExpensesMinor, "302"); assert.equal(expenses.monthlyAverageMinor, "302");
+    assert.equal(expenseAnalyticsUi(expenses).totalExpenses, BigInt(expenseSql));
     assert.equal(expenses.categories.find((row: { accountId: string }) => row.accountId === exp.id).transactions, 2);
     assert.deepEqual((await ma.call("expense_analytics", args)).body, expenses); assert.ok(!JSON.stringify(expenses).includes("secret"));
     const foreignExpenses = await (await expense(request(query, keys.b))).json();

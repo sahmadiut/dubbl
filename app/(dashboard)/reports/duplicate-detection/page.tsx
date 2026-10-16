@@ -1,5 +1,6 @@
 "use client";
 
+import { duplicateDetectionUi, analyticalReportJson } from "@/lib/money/analytical-report-ui";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -8,23 +9,9 @@ import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Badge } from "@/components/ui/badge";
-import { statementMoneyText as formatMoney } from "@/lib/reports/statement-money";
+import { analyticalMoney as formatMoney } from "@/lib/money/analytical-report-ui";
 
-interface DuplicateItem {
-  id: string;
-  number: string;
-  date: string;
-  status: string;
-}
-
-interface DuplicateGroup {
-  type: "invoice" | "bill";
-  contactName: string;
-  amount: number;
-  amountMinor: string;
-  currencyCode: string;
-  items: DuplicateItem[];
-}
+type DuplicateGroup = ReturnType<typeof duplicateDetectionUi>["duplicateGroups"][number];
 
 export default function DuplicateDetectionPage() {
   const router = useRouter();
@@ -42,14 +29,10 @@ export default function DuplicateDetectionPage() {
     fetch("/api/v1/reports/duplicate-detection", {
       headers: { "x-organization-id": orgId },
     })
-      .then(async (r) => {
-        const data = await r.json();
-        if (!r.ok) throw new Error(data.error || "Unable to load duplicate detection.");
-        return data;
-      })
+      .then((r) => analyticalReportJson(r, duplicateDetectionUi))
       .then((data) => {
         if (cancelled) return;
-        setGroups(data.duplicateGroups || []);
+        setGroups(data.duplicateGroups);
         setError(null);
       })
       .catch((err: Error) => { if (!cancelled) { setGroups([]); setError(err.message); } })

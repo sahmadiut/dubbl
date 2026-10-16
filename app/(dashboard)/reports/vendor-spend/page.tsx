@@ -1,5 +1,6 @@
 "use client";
 
+import { vendorSpendUi, analyticalReportJson } from "@/lib/money/analytical-report-ui";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { ArrowLeft, TrendingDown } from "lucide-react";
@@ -8,19 +9,13 @@ import { ContentReveal } from "@/components/ui/content-reveal";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { DateRangeFilter } from "@/components/dashboard/date-range-filter";
-import { formatMoney } from "@/lib/money";
+import { analyticalMoney as formatMoney } from "@/lib/money/analytical-report-ui";
+import { CurrencySelect } from "@/components/ui/currency-select";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ExportButton } from "@/components/dashboard/export-button";
 
-interface Vendor {
-  contactId: string;
-  contactName: string;
-  totalSpend: number;
-  billCount: number;
-  avgBillAmount: number;
-  lastBillDate: string;
-  percentage: number;
-}
+type Vendor = ReturnType<typeof vendorSpendUi>["vendors"][number];
 
 const BAR_COLORS = [
   "bg-red-500", "bg-orange-500", "bg-amber-500", "bg-yellow-500",
@@ -35,24 +30,30 @@ export default function VendorSpendPage() {
   const [startDate, setStartDate] = useState(`${now.getFullYear()}-01-01`);
   const [endDate, setEndDate] = useState(now.toISOString().slice(0, 10));
   const [vendors, setVendors] = useState<Vendor[]>([]);
-  const [totalSpend, setTotalSpend] = useState(0);
+  const [totalSpend, setTotalSpend] = useState(0n);
+  const [currencyCode, setCurrencyCode] = useState("USD");
+  const [currencyFilter, setCurrencyFilter] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
     let cancelled = false;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     const params = new URLSearchParams({ startDate, endDate });
+    if (currencyFilter) params.set("currencyCode", currencyFilter);
     fetch(`/api/v1/reports/vendor-spend?${params}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => analyticalReportJson(r, vendorSpendUi))
       .then((data) => {
         if (cancelled) return;
-        setVendors(data.vendors || []);
-        setTotalSpend(data.totalSpend || 0);
+        setVendors(data.vendors);
+        setCurrencyCode(data.currencyCode);
+        setError(null);
+        setTotalSpend(data.totalSpend);
       })
+      .catch((err: unknown) => { if (!cancelled) { setVendors([]); setTotalSpend(0n); setError(err instanceof Error ? err.message : "Unable to load vendor spend."); } })
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
@@ -60,7 +61,7 @@ export default function VendorSpendPage() {
         }
       });
     return () => { cancelled = true; };
-  }, [startDate, endDate]);
+  }, [startDate, endDate, currencyFilter]);
 
   if (initialLoad) return <BrandLoader />;
 
@@ -72,20 +73,26 @@ export default function VendorSpendPage() {
 
       <PageHeader title="Who you spend the most with" description="Your biggest suppliers, ranked by total spend for the period.">
         <ExportButton
-          data={vendors}
-          columns={["contactName", "totalSpend", "billCount", "avgBillAmount", "lastBillDate", "percentage"]}
+          data={loading || error ? [] : vendors.map(row => ({ ...row, currencyCode }))}
+          columns={["contactName", "currencyCode", "totalSpend", "billCount", "avgBillAmount", "lastBillDate", "percentage"]}
           filename="vendor-spend"
         />
       </PageHeader>
 
       <DateRangeFilter startDate={startDate} endDate={endDate} onDateChange={(s, e) => { setStartDate(s); setEndDate(e); }} />
 
+      <div className="flex items-center gap-3">
+        <span className="text-sm">Document currency</span>
+        <CurrencySelect value={currencyFilter} onValueChange={setCurrencyFilter} compact />
+        {currencyFilter && <Button variant="ghost" size="sm" onClick={() => setCurrencyFilter("")}>Clear filter</Button>}
+      </div>
+
       {loading ? (
         <BrandLoader className="h-48" />
-      ) : (
+      ) : error ? <p role="alert" className="text-sm text-destructive">{error}</p> : (
         <ContentReveal>
           <div className="grid gap-4 sm:grid-cols-2">
-            <StatCard title="Total spent with suppliers" value={formatMoney(totalSpend)} icon={TrendingDown} changeType="negative" />
+            <StatCard title="Total spent with suppliers" value={formatMoney(totalSpend, currencyCode)} icon={TrendingDown} changeType="negative" />
             <StatCard title="Suppliers" value={String(vendors.length)} icon={TrendingDown} changeType="neutral" change={`${vendors.length} active`} />
           </div>
 
@@ -123,9 +130,9 @@ export default function VendorSpendPage() {
                             <span className="font-medium">{v.contactName}</span>
                           </div>
                         </td>
-                        <td className="px-4 py-2.5 text-right font-mono tabular-nums font-medium">{formatMoney(v.totalSpend)}</td>
+                        <td className="px-4 py-2.5 text-right font-mono tabular-nums font-medium">{formatMoney(v.totalSpend, currencyCode)}</td>
                         <td className="px-4 py-2.5 text-right text-muted-foreground">{v.billCount}</td>
-                        <td className="px-4 py-2.5 text-right font-mono tabular-nums text-muted-foreground">{formatMoney(v.avgBillAmount)}</td>
+                        <td className="px-4 py-2.5 text-right font-mono tabular-nums text-muted-foreground">{formatMoney(v.avgBillAmount, currencyCode)}</td>
                         <td className="px-4 py-2.5 text-right text-muted-foreground">{new Date(v.lastBillDate + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</td>
                         <td className="px-4 py-2.5 text-right font-mono tabular-nums text-muted-foreground">{v.percentage}%</td>
                       </tr>

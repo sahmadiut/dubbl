@@ -1,5 +1,6 @@
 "use client";
 
+import { cashForecastUi, analyticalReportJson } from "@/lib/money/analytical-report-ui";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { ArrowLeft, TrendingUp, TrendingDown, DollarSign } from "lucide-react";
@@ -8,7 +9,7 @@ import { StatCard } from "@/components/dashboard/stat-card";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { statementMoneyText } from "@/lib/reports/statement-money";
+import { analyticalMoney as statementMoneyText } from "@/lib/money/analytical-report-ui";
 import { money, toMajorDecimal } from "@/lib/money/exact";
 import { CurrencySelect } from "@/components/ui/currency-select";
 import { cn } from "@/lib/utils";
@@ -24,14 +25,7 @@ import {
   ReferenceLine,
 } from "recharts";
 
-interface ForecastWeek {
-  weekOf: string;
-  inflows: number;
-  outflows: number;
-  net: number;
-  cumulativeNet: number;
-  entryCount: number;
-}
+type ForecastWeek = ReturnType<typeof cashForecastUi>["weeks"][number];
 
 export default function CashFlowForecastPage() {
   const [initialLoad, setInitialLoad] = useState(true);
@@ -41,37 +35,32 @@ export default function CashFlowForecastPage() {
   const [error, setError] = useState<string | null>(null);
   const [weeksAhead, setWeeksAhead] = useState(12);
   const [weeks, setWeeks] = useState<ForecastWeek[]>([]);
-  const [totalInflows, setTotalInflows] = useState(0);
-  const [totalOutflows, setTotalOutflows] = useState(0);
-  const [netForecast, setNetForecast] = useState(0);
+  const [totalInflows, setTotalInflows] = useState(0n);
+  const [totalOutflows, setTotalOutflows] = useState(0n);
+  const [netForecast, setNetForecast] = useState(0n);
 
   useEffect(() => {
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
     let cancelled = false;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     const params = new URLSearchParams({ weeks: String(weeksAhead) });
     if (currencyFilter) params.set("currencyCode", currencyFilter);
     fetch(`/api/v1/reports/cash-flow-forecast?${params}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then(async (r) => {
-        const data = await r.json();
-        if (!r.ok) throw new Error(data.error || "Unable to load cash forecast.");
-        return data;
-      })
+      .then((r) => analyticalReportJson(r, cashForecastUi))
       .then((data) => {
         if (cancelled) return;
         setError(null);
         setCurrencyCode(data.currencyCode);
         setWeeks(data.weeks || []);
-        setTotalInflows(data.totalInflows || 0);
-        setTotalOutflows(data.totalOutflows || 0);
-        setNetForecast(data.netForecast || 0);
+        setTotalInflows(data.totalInflows);
+        setTotalOutflows(data.totalOutflows);
+        setNetForecast(data.netForecast);
       })
       .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Unable to load cash forecast.");
+        if (!cancelled) { setWeeks([]); setTotalInflows(0n); setTotalOutflows(0n); setNetForecast(0n); setError(err instanceof Error ? err.message : "Unable to load cash forecast."); }
       })
       .finally(() => {
         if (!cancelled) {

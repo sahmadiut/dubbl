@@ -1,5 +1,6 @@
 "use client";
 
+import { bankCashFlowUi, bankAccountPickerUi, analyticalReportJson, analyticalAbs } from "@/lib/money/analytical-report-ui";
 import { useState, useEffect } from "react";
 import { ArrowDownToLine, ArrowUpFromLine, Wallet } from "lucide-react";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
@@ -16,24 +17,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { statementMoneyText as formatMoney } from "@/lib/reports/statement-money";
+import { analyticalMoney as formatMoney } from "@/lib/money/analytical-report-ui";
 import { BackToReports, ReportHelp } from "../_components";
 
-interface Period {
-  label: string;
-  startDate: string;
-  endDate: string;
-  inflows: number;
-  outflows: number;
-  net: number;
-  balance: number;
-}
-
-interface BankCashFlowData {
-  currencyCode: string;
-  periods: Period[];
-  totals: { inflows: number; outflows: number; net: number };
-}
+type BankCashFlowData = ReturnType<typeof bankCashFlowUi>;
 
 interface BankAccount {
   id: string;
@@ -67,11 +54,12 @@ export default function BankCashFlowPage() {
     fetch("/api/v1/bank-accounts", {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => analyticalReportJson(r, bankAccountPickerUi))
       .then((d) => {
         if (cancelled) return;
-        if (d.bankAccounts) setAccounts(d.bankAccounts);
-      });
+        setAccounts(d.bankAccounts);
+      })
+      .catch(() => { if (!cancelled) setAccounts([]); });
     return () => {
       cancelled = true;
     };
@@ -81,22 +69,17 @@ export default function BankCashFlowPage() {
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
     let cancelled = false;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     const params = new URLSearchParams({ startDate, endDate, groupBy });
     if (bankAccountId) params.set("bankAccountId", bankAccountId);
     fetch(`/api/v1/reports/bank-cash-flow?${params}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then(async (r) => {
-        const result = await r.json();
-        if (!r.ok) throw new Error(result.error || "Unable to load bank cash flow.");
-        return result;
-      })
+      .then((r) => analyticalReportJson(r, bankCashFlowUi))
       .then((d) => {
         if (cancelled) return;
         setError(null);
-        if (d.periods) setData(d);
+        setData(d);
       })
       .catch((err: unknown) => {
         if (!cancelled) { setData(null); setError(err instanceof Error ? err.message : "Unable to load bank cash flow."); }
@@ -115,7 +98,7 @@ export default function BankCashFlowPage() {
   if (initialLoad) return <BrandLoader />;
 
   const periods = data?.periods ?? [];
-  const totals = data?.totals ?? { inflows: 0, outflows: 0, net: 0 };
+  const totals = data?.totals ?? { inflows: 0n, outflows: 0n, net: 0n };
   const currency = data?.currencyCode ?? "USD";
 
   return (
@@ -127,7 +110,7 @@ export default function BankCashFlowPage() {
         description="Cash that actually moved through your bank accounts, period by period."
       >
         <ExportButton
-          data={periods.map(p => ({ ...p, currencyCode: currency }))}
+          data={(loading || error ? [] : periods).map(p => ({ ...p, currencyCode: currency }))}
           columns={["label", "currencyCode", "inflows", "outflows", "net", "balance"]}
           filename="bank-cash-flow"
         />
@@ -194,7 +177,7 @@ export default function BankCashFlowPage() {
             />
             <StatCard
               title="Money out"
-              value={formatMoney(Math.abs(totals.outflows), currency)}
+              value={formatMoney(analyticalAbs(totals.outflows), currency)}
               icon={ArrowUpFromLine}
             />
             <StatCard
@@ -233,7 +216,7 @@ export default function BankCashFlowPage() {
                         {formatMoney(p.inflows, currency)}
                       </TableCell>
                       <TableCell className="text-right font-mono text-sm tabular-nums text-rose-600">
-                        {formatMoney(Math.abs(p.outflows), currency)}
+                        {formatMoney(analyticalAbs(p.outflows), currency)}
                       </TableCell>
                       <TableCell className="text-right font-mono text-sm tabular-nums">
                         {formatMoney(p.net, currency)}
@@ -253,7 +236,7 @@ export default function BankCashFlowPage() {
                       {formatMoney(totals.inflows, currency)}
                     </TableCell>
                     <TableCell className="text-right font-mono text-sm tabular-nums">
-                      {formatMoney(Math.abs(totals.outflows), currency)}
+                      {formatMoney(analyticalAbs(totals.outflows), currency)}
                     </TableCell>
                     <TableCell className="text-right font-mono text-sm tabular-nums">
                       {formatMoney(totals.net, currency)}

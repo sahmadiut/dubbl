@@ -1,4 +1,5 @@
-import { cashForecastUi, forecastChartPoint } from "../../lib/money/contact-dashboard-ui";
+import { cashForecastUi } from "../../lib/money/analytical-report-ui";
+import { forecastChartPoint } from "../../lib/money/contact-dashboard-ui";
 import assert from "node:assert/strict";
 import { createHash, randomUUID } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
@@ -25,7 +26,9 @@ async function mcp(ctx: AuthContext) {
   return { async call(name: string, args: Record<string, unknown> = {}) {
     const result = await client.callTool({ name, arguments: args });
     const text = (result.content as { text: string }[])[0].text;
-    return { isError: result.isError === true, body: text.startsWith("{") ? JSON.parse(text) : { error: text } };
+    const body = text.startsWith("{") ? JSON.parse(text) : { error: text };
+    if (!result.isError && name === "cash_flow_forecast") cashForecastUi(body);
+    return { isError: result.isError === true, body };
   }, async close() { await client.close(); await server.close(); } };
 }
 
@@ -47,7 +50,7 @@ async function run() {
   const request = (fx = false, query = "", key = keys.a) => new Request(`http://fixture.test/api/v1/reports/${fx ? "unrealized-gains-losses" : "cash-flow-forecast"}${query}`, {
     headers: { authorization: `Bearer ${key}`, "x-organization-id": b.id },
   });
-  const read = async (fx = false, query = "") => { const r = await (fx ? unrealized : forecast)(request(fx, query)); assert.equal(r.status, 200); return r.json(); };
+  const read = async (fx = false, query = "") => { const r = await (fx ? unrealized : forecast)(request(fx, query)); assert.equal(r.status, 200); const dto = await r.json(); if (!fx) cashForecastUi(dto); return dto; };
   const snapshot = async () => {
     const result: Record<string, unknown> = {};
     for (const table of ["invoice", "invoice_line", "bill", "bill_line", "recurring_template", "recurring_template_line", "exchange_rate", "journal_entry", "journal_line", "audit_log"])

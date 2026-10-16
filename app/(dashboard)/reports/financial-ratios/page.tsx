@@ -1,5 +1,6 @@
 "use client";
 
+import { financialRatiosUi, analyticalReportJson } from "@/lib/money/analytical-report-ui";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { ArrowLeft, Gauge } from "lucide-react";
@@ -7,36 +8,14 @@ import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { DateRangeFilter } from "@/components/dashboard/date-range-filter";
-import { formatMoney } from "@/lib/money";
+import { analyticalMoney as formatMoney } from "@/lib/money/analytical-report-ui";
 import { cn } from "@/lib/utils";
 
-interface Ratios {
-  currentRatio: number | null;
-  quickRatio: number | null;
-  debtToEquity: number | null;
-  grossMargin: number | null;
-  netMargin: number | null;
-  dso: number | null;
-  dpo: number | null;
-  returnOnAssets: number | null;
-  returnOnEquity: number | null;
-}
+type Ratios = ReturnType<typeof financialRatiosUi>["ratios"];
 
-interface Balances {
-  totalAssets: number;
-  currentAssets: number;
-  totalLiabilities: number;
-  currentLiabilities: number;
-  totalEquity: number;
-  inventory: number;
-  totalRevenue: number;
-  totalExpenses: number;
-  netIncome: number;
-  receivablesDue: number;
-  payablesDue: number;
-}
+type Balances = ReturnType<typeof financialRatiosUi>["balances"];
 
-const ratioInfo: Record<string, { label: string; description: string; format: (v: number) => string; goodWhen: (v: number) => boolean }> = {
+const ratioInfo: Record<string, { label: string; description: string; format: (v: string) => string; goodWhen: (v: number) => boolean }> = {
   currentRatio: {
     label: "Current Ratio",
     description: "Current assets / current liabilities. Measures short-term liquidity.",
@@ -101,6 +80,9 @@ export default function FinancialRatiosPage() {
   const [endDate, setEndDate] = useState(now.toISOString().slice(0, 10));
   const [ratios, setRatios] = useState<Ratios | null>(null);
   const [balances, setBalances] = useState<Balances | null>(null);
+  const [ratiosExact, setRatiosExact] = useState<ReturnType<typeof financialRatiosUi>["ratiosExact"] | null>(null);
+  const [currencyCode, setCurrencyCode] = useState("USD");
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const orgId = localStorage.getItem("activeOrgId");
@@ -112,12 +94,16 @@ export default function FinancialRatiosPage() {
     fetch(`/api/v1/reports/financial-ratios?${params}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => analyticalReportJson(r, financialRatiosUi))
       .then((data) => {
         if (cancelled) return;
-        setRatios(data.ratios || null);
-        setBalances(data.balances || null);
+        setRatios(data.ratios);
+        setRatiosExact(data.ratiosExact);
+        setCurrencyCode(data.currencyCode);
+        setError(null);
+        setBalances(data.balances);
       })
+      .catch((err: unknown) => { if (!cancelled) { setRatios(null); setBalances(null); setRatiosExact(null); setError(err instanceof Error ? err.message : "Unable to load financial ratios."); } })
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
@@ -148,7 +134,7 @@ export default function FinancialRatiosPage() {
 
       {loading ? (
         <BrandLoader className="h-48" />
-      ) : !ratios ? (
+      ) : error ? <p role="alert" className="text-sm text-destructive">{error}</p> : !ratios ? (
         <ContentReveal>
           <div className="rounded-xl border border-dashed py-12 text-center">
             <p className="text-sm text-muted-foreground">No financial data available.</p>
@@ -172,7 +158,7 @@ export default function FinancialRatiosPage() {
                     "text-2xl font-bold font-mono tabular-nums truncate",
                     good ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
                   )}>
-                    {info.format(value)}
+                    {info.format(ratiosExact![key as keyof Ratios]!)}
                   </p>
                   <p className="text-[11px] text-muted-foreground leading-tight">{info.description}</p>
                 </div>
@@ -187,7 +173,7 @@ export default function FinancialRatiosPage() {
               <div className="rounded-lg border overflow-hidden">
                 <table className="w-full text-sm">
                   <tbody>
-                    {[
+                    {([
                       ["Total Assets", balances.totalAssets],
                       ["Current Assets", balances.currentAssets],
                       ["Inventory", balances.inventory],
@@ -199,11 +185,11 @@ export default function FinancialRatiosPage() {
                       ["Net Income (Period)", balances.netIncome],
                       ["Receivables Due", balances.receivablesDue],
                       ["Payables Due", balances.payablesDue],
-                    ].map(([label, value]) => (
+                    ] as const).map(([label, value]) => (
                       <tr key={label as string} className="border-b last:border-b-0">
                         <td className="px-4 py-2 text-muted-foreground">{label as string}</td>
                         <td className="px-4 py-2 text-right font-mono tabular-nums font-medium">
-                          {formatMoney(value as number)}
+                          {formatMoney(value, currencyCode)}
                         </td>
                       </tr>
                     ))}

@@ -1,5 +1,6 @@
 "use client";
 
+import { expenseAnalyticsUi, analyticalReportJson } from "@/lib/money/analytical-report-ui";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { ArrowLeft, PieChart, TrendingDown } from "lucide-react";
@@ -8,7 +9,7 @@ import { ContentReveal } from "@/components/ui/content-reveal";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { DateRangeFilter } from "@/components/dashboard/date-range-filter";
-import { statementMoneyText } from "@/lib/reports/statement-money";
+import { analyticalMoney as statementMoneyText } from "@/lib/money/analytical-report-ui";
 import { money, toMajorDecimal } from "@/lib/money/exact";
 import { cn } from "@/lib/utils";
 import {
@@ -21,19 +22,9 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-interface Category {
-  accountId: string;
-  accountName: string;
-  accountCode: string;
-  total: number;
-  transactions: number;
-  percentage: number;
-}
+type Category = ReturnType<typeof expenseAnalyticsUi>["categories"][number];
 
-interface MonthlyPoint {
-  month: string;
-  total: number;
-}
+type MonthlyPoint = ReturnType<typeof expenseAnalyticsUi>["monthlyTrend"][number];
 
 const CATEGORY_COLORS = [
   "bg-red-500",
@@ -58,35 +49,30 @@ export default function ExpenseAnalyticsPage() {
   const [endDate, setEndDate] = useState(now.toISOString().slice(0, 10));
   const [categories, setCategories] = useState<Category[]>([]);
   const [monthlyTrend, setMonthlyTrend] = useState<MonthlyPoint[]>([]);
-  const [totalExpenses, setTotalExpenses] = useState(0);
-  const [monthlyAverage, setMonthlyAverage] = useState(0);
+  const [totalExpenses, setTotalExpenses] = useState(0n);
+  const [monthlyAverage, setMonthlyAverage] = useState(0n);
 
   useEffect(() => {
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
     let cancelled = false;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     const params = new URLSearchParams({ startDate, endDate });
     fetch(`/api/v1/reports/expense-analytics?${params}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then(async (r) => {
-        const data = await r.json();
-        if (!r.ok) throw new Error(data.error || "Unable to load expense analytics.");
-        return data;
-      })
+      .then((r) => analyticalReportJson(r, expenseAnalyticsUi))
       .then((data) => {
         if (cancelled) return;
         setCurrencyCode(data.currencyCode);
         setError(null);
         setCategories(data.categories || []);
         setMonthlyTrend(data.monthlyTrend || []);
-        setTotalExpenses(data.totalExpenses || 0);
-        setMonthlyAverage(data.monthlyAverage || 0);
+        setTotalExpenses(data.totalExpenses);
+        setMonthlyAverage(data.monthlyAverage);
       })
       .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Unable to load expense analytics.");
+        if (!cancelled) { setCategories([]); setMonthlyTrend([]); setTotalExpenses(0n); setMonthlyAverage(0n); setError(err instanceof Error ? err.message : "Unable to load expense analytics."); }
       })
       .finally(() => {
         if (!cancelled) {

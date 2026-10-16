@@ -1,3 +1,4 @@
+import { vendorSpendUi } from "../../lib/money/analytical-report-ui";
 import assert from "node:assert/strict";
 import { createHash, randomUUID } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
@@ -24,7 +25,9 @@ async function mcp(ctx: AuthContext) {
   return { async call(name: string, args: Record<string, unknown> = {}) {
     const result = await client.callTool({ name, arguments: args });
     const text = (result.content as { text: string }[])[0].text;
-    return { isError: result.isError === true, body: text.startsWith("{") ? JSON.parse(text) : { error: text } };
+    const body = text.startsWith("{") ? JSON.parse(text) : { error: text };
+    if (!result.isError && name === "vendor_spend") vendorSpendUi(body);
+    return { isError: result.isError === true, body };
   }, async close() { await client.close(); await server.close(); } };
 }
 
@@ -74,7 +77,7 @@ async function run() {
   try {
     for (const [kind, handler, tool] of [["vendor-spend", vendorSpend, "vendor_spend"], ["sales-by-customer", customerSales, "sales_by_customer"], ["sales-by-item", itemSales, "sales_by_item"]] as const) {
       const report = async (suffix = query) => {
-        const response = await handler(request(kind, suffix)); assert.equal(response.status, 200); return response.json();
+        const response = await handler(request(kind, suffix)); assert.equal(response.status, 200); const dto = await response.json(); if (kind === "vendor-spend") vendorSpendUi(dto); return dto;
       };
       const empty = await report(); assert.equal(empty.currencyCode, "USD"); assert.deepEqual((await ma.call(tool, args)).body, empty);
       assert.deepEqual((await ma.call(tool)).body, await report(""));
@@ -95,6 +98,10 @@ async function run() {
       const body = await report(); assert.deepEqual((await ma.call(tool, args)).body, body);
       assert.ok(!JSON.stringify(body).includes("secret"));
       if (kind === "vendor-spend") {
+        const stored = (await db.execute(sql`select sum(total)::text as total from bill where organization_id=${a.id}
+          and deleted_at is null and status not in ('draft','void') and issue_date between '2024-01-01' and '2024-12-31'`)).rows[0].total as string;
+        assert.equal(vendorSpendUi(body).totalSpend, BigInt(stored));
+        assert.throws(() => vendorSpendUi({ ...body, totalSpendMinor: "4519" }));
         assert.equal(body.totalSpend, 4518); assert.equal(body.totalSpendMinor, "4518"); assert.equal(body.vendorCount, 4);
         const v = body.vendors.find((v: { contactId: string }) => v.contactId === local.id);
         assert.equal(v.totalSpendMinor, "4503"); assert.equal(v.billCount, 4); assert.equal(v.avgBillAmountMinor, "1126");

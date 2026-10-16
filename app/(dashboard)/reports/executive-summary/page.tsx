@@ -1,23 +1,17 @@
 "use client";
 
+import { executiveSummaryUi, analyticalReportJson, analyticalAbs } from "@/lib/money/analytical-report-ui";
 import { useState, useEffect } from "react";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { DateRangeFilter } from "@/components/dashboard/date-range-filter";
-import { statementMoneyText } from "@/lib/reports/statement-money";
+import { analyticalMoney as statementMoneyText } from "@/lib/money/analytical-report-ui";
 import { cn } from "@/lib/utils";
 import { BackToReports, ReportHelp, BasisToggle } from "../_components";
 
-interface Kpi {
-  key: string;
-  label: string;
-  current: number;
-  prior: number;
-  delta: number;
-  deltaPercent: number | null;
-}
+type Kpi = ReturnType<typeof executiveSummaryUi>["kpis"][number];
 
 /** Plain-language relabelling of the API's accounting terms. */
 const FRIENDLY_LABELS: Record<string, string> = {
@@ -52,11 +46,7 @@ export default function ExecutiveSummaryPage() {
     fetch(`/api/v1/reports/executive-summary?${params}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then(async (r) => {
-        const data = await r.json();
-        if (!r.ok) throw new Error(data.error || "Unable to load executive summary.");
-        return data;
-      })
+      .then((r) => analyticalReportJson(r, executiveSummaryUi))
       .then((data) => {
         if (cancelled) return;
         setCurrencyCode(data.currencyCode);
@@ -65,7 +55,7 @@ export default function ExecutiveSummaryPage() {
         setPriorPeriod(data.priorPeriod || null);
       })
       .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Unable to load executive summary.");
+        if (!cancelled) { setKpis([]); setPriorPeriod(null); setError(err instanceof Error ? err.message : "Unable to load executive summary."); }
       })
       .finally(() => {
         if (!cancelled) {
@@ -136,7 +126,7 @@ export default function ExecutiveSummaryPage() {
                   <div className="mt-2 flex items-center gap-1.5 text-xs">
                     <Icon className={cn("size-3.5", up && "text-emerald-600", down && "text-red-600", !up && !down && "text-muted-foreground")} />
                     <span className={cn("font-medium", up && "text-emerald-600", down && "text-red-600", !up && !down && "text-muted-foreground")}>
-                      {k.delta >= 0 ? "+" : "-"}{statementMoneyText(Math.abs(k.delta), currencyCode)}
+                      {k.delta >= 0 ? "+" : "-"}{statementMoneyText(analyticalAbs(k.delta), currencyCode)}
                       {k.deltaPercent !== null && ` (${k.deltaPercent >= 0 ? "+" : ""}${k.deltaPercent}%)`}
                     </span>
                     <span className="text-muted-foreground">vs last period</span>

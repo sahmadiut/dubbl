@@ -1,5 +1,19 @@
 # Verification matrix
 
+## MON-168 analytical and bank report UI
+
+- `tests/analytical-report-ui.test.ts`: eight behavior/static groups cover signed
+  low digits, USD/JPY/KWD/synthetic IRR, required aliases/currency, exact CSV,
+  totals beyond safe Number range, forecast/KPI identities, calendar/duplicate
+  grouping, payment pairs, ratio decimal aliases and failed HTTP/JSON.
+- `tests/integration/{bank-analytics,kpi-analytics,document-analytics,operational-reports,forecast-fx,payment-performance,compound}.test.ts`:
+  seven migrated disposable PostgreSQL fixtures feed authenticated REST and
+  registered MCP envelopes into UI adapters, with independent SQL-text assertions.
+  Existing scope, permissions, unsafe history and server-export checks remain.
+- Pack/schedules/budget-vs-actual inspection and unit exceptions are documented
+  in the [consumer mapping](../registries/ANALYTICAL_REPORT_UI_CUTOVER.md).
+  MON-162/MON-158/MON-008 acceptance remains open. No full build or dev server.
+
 ## MON-167 tax, tracking, consolidation and custom result UI
 
 - `tests/report-result-ui.test.ts`: six behavior/static groups verify required

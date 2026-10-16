@@ -1,5 +1,6 @@
 "use client";
 
+import { bankStatusUi, analyticalReportJson } from "@/lib/money/analytical-report-ui";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
@@ -15,45 +16,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ExportButton } from "@/components/dashboard/export-button";
-import { statementMoneyText as formatMoney } from "@/lib/reports/statement-money";
+import { analyticalMoney as formatMoney } from "@/lib/money/analytical-report-ui";
 import { money, toMajorDecimal } from "@/lib/money/exact";
 import { bankTotalDecimal } from "@/lib/reports/bank-analytics-display";
 import { BackToReports, ReportHelp } from "../_components";
 
-interface AgingBucket {
-  count: number;
-  total: number;
-}
-
-interface AccountStatus {
-  id: string;
-  accountName: string;
-  currencyCode: string;
-  balance: number;
-  balanceDiscrepancy: number;
-  unreconciled: {
-    total: number;
-    count: number;
-    aging: {
-      week: AgingBucket;
-      month: AgingBucket;
-      twoMonths: AgingBucket;
-      older: AgingBucket;
-    };
-  };
-  lastImport: { date: string; fileName: string } | null;
-  lastReconciliation: { endDate: string; status: string } | null;
-  gaps: {
-    hasGap: boolean;
-    gapStart: string | null;
-    gapEnd: string | null;
-    gapDays: number | null;
-  };
-}
-
-interface StatusData {
-  accounts: AccountStatus[];
-}
+type StatusData = ReturnType<typeof bankStatusUi>;
 
 function fmtDate(d: string | null | undefined): string {
   if (!d) return "—";
@@ -75,15 +43,11 @@ export default function BankReconciliationStatusPage() {
     fetch(`/api/v1/reports/bank-reconciliation-status`, {
       headers: { "x-organization-id": orgId },
     })
-      .then(async (r) => {
-        const result = await r.json();
-        if (!r.ok) throw new Error(result.error || "Unable to load bank reconciliation status.");
-        return result;
-      })
+      .then((r) => analyticalReportJson(r, bankStatusUi))
       .then((d) => {
         if (cancelled) return;
         setError(null);
-        if (d.accounts) setData(d);
+        setData(d);
       })
       .catch((err: unknown) => {
         if (!cancelled) { setData(null); setError(err instanceof Error ? err.message : "Unable to load bank reconciliation status."); }
@@ -128,7 +92,7 @@ export default function BankReconciliationStatusPage() {
         description="Which accounts are fully checked off, and what's still waiting to be reviewed."
       >
         <ExportButton
-          data={exportRows}
+          data={loading || error ? [] : exportRows}
           columns={[
             "accountName",
             "currencyCode",

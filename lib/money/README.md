@@ -1,3 +1,9 @@
+MON-168 adopts eleven analytical/bank report UIs through
+`analytical-report-ui.ts`, reusing MON-163 forecast validation. Required saved
+numeric/Minor pairs and currencies validate before bigint state, exact totals,
+CSV and chart tooltip display. RatiosExact strings remain decimal ratios.
+See the [consumer mapping](../../.agentic/registries/ANALYTICAL_REPORT_UI_CUTOVER.md).
+
 # Exact money core
 
 MON-167 adopts tax/tracking/consolidation/custom/saved report results through

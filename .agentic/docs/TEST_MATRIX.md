@@ -1,5 +1,21 @@
 # Verification matrix
 
+## MON-162 auxiliary report UI combined acceptance
+
+- `tests/integration/auxiliary-ui-cutover-acceptance.test.ts`: twelve real
+  authenticated REST/registered MCP operations on shared stored history for four
+  currency-scale tenants; independent SQL-text reconciliation, exact UI/CSV,
+  repeated-read snapshots, malformed adoption, auth/permission/foreign-ID and
+  persisted aggregate-overflow failures. See
+  [complete ownership and limits](../registries/AUXILIARY_REPORT_UI_ACCEPTANCE.md).
+- Joint existing ledger-aging-ui, tax-report, compound, consolidation-report,
+  custom-reports, bank-analytics, kpi-analytics, document-analytics,
+  operational-reports, forecast-fx, payment-performance, budget-report and
+  report-schedules integrations retain all scoped family regressions.
+- Full unit/static suite, typecheck, focused/full lint, money inventory/legacy
+  guards, local links, controller validation and diff checks. No full build or
+  unrequested dev server; MON-158/MON-008 acceptance remains separate.
+
 ## MON-168 analytical and bank report UI
 
 - `tests/analytical-report-ui.test.ts`: eight behavior/static groups cover signed

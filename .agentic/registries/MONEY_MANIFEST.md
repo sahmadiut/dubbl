@@ -1,3 +1,14 @@
+## MON-162 auxiliary report UI combined acceptance
+
+[AUXILIARY_REPORT_UI_ACCEPTANCE](AUXILIARY_REPORT_UI_ACCEPTANCE.md) joins every
+report page outside MON-161 to its child/shared contract and retained unit
+exceptions. An independent twelve-operation REST/MCP/UI/SQL fixture reconciles
+shared saved amounts across four separate currency-scale tenants, checks exact
+display/CSV, read-only repeat snapshots, denied reads, foreign IDs, malformed
+adoption and persisted overflow. Existing complete child/domain suites run
+together. This supersedes MON-162-pending notes below; MON-158 and MON-008
+independent acceptance remains open.
+
 ## MON-168 analytical and bank report UI
 
 [ANALYTICAL_REPORT_UI_CUTOVER](ANALYTICAL_REPORT_UI_CUTOVER.md) maps eleven

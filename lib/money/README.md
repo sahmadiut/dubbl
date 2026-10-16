@@ -1,3 +1,10 @@
+MON-162 independently accepts the combined auxiliary report UI cutover through
+shared-history authenticated REST, registered MCP, UI adapters and SQL text.
+Twelve operations reconcile exact low digits across USD/JPY/KWD/synthetic IRR;
+malformed adoption, denied/foreign reads and aggregate overflow fail unchanged.
+See [combined ownership and retained units](../../.agentic/registries/AUXILIARY_REPORT_UI_ACCEPTANCE.md).
+This supersedes MON-162-pending notes below; MON-158/MON-008 remain independent.
+
 MON-168 adopts eleven analytical/bank report UIs through
 `analytical-report-ui.ts`, reusing MON-163 forecast validation. Required saved
 numeric/Minor pairs and currencies validate before bigint state, exact totals,

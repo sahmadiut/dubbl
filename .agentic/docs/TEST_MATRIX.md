@@ -1,5 +1,24 @@
 # Verification matrix
 
+## MON-008 final auxiliary and public consumer acceptance
+
+- `tests/integration/auxiliary-public-cutover-acceptance.test.ts` and worker join
+  authenticated REST creation, registered MCP recognition, scheduled journal
+  posting, PnL UI adoption, public payment/statement, HTML/email labels and CSV
+  export against independent literal SQL text in USD/JPY/KWD/synthetic IRR.
+  Locked occurrences retain their consume-without-posting policy. Repeated
+  worker/reads, denied/foreign/invalid calls, malformed adoption and persisted
+  unsafe public/render money preserve the applicable financial snapshots.
+- Joint child/intermediate/domain fixtures retain inventory, payroll, asset/loan,
+  budget/project/CRM/accrual, reports/contact/dashboard, background FX/history and
+  signing/provider/import/export/backup coverage. See the complete mapping in
+  [AUXILIARY_PUBLIC_CUTOVER_ACCEPTANCE](../registries/AUXILIARY_PUBLIC_CUTOVER_ACCEPTANCE.md)
+  and actual commands/results in [attempt evidence](../evidence/MON-008-attempt-1.md).
+- Unit/source guards, lint's no-new-legacy negative regressions, source inventory,
+  Drizzle verification, typecheck, controller and diff checks qualify the owned
+  changes. This supersedes MON-008-pending notes below. No full build/dev server,
+  browser, live provider, hosted CI or production qualification is inferred.
+
 ## MON-158 report, contact and dashboard combined acceptance
 
 - `tests/integration/report-contact-cutover-acceptance.test.ts` and worker join

@@ -292,6 +292,15 @@ def generate():
         refs = [t for t in tables if t in tokens and (t in MONEY or t in {"exchangeRate", "consolidationRate"})]
         if not matches and not refs:
             continue
+        inventory_ui = path.startswith("app/(dashboard)/inventory/") or path in {
+            "lib/money/inventory-detail-ui.ts", "lib/money/inventory-ui.ts", "lib/money/catalog-input.ts",
+            "components/dashboard/inventory-item-picker.tsx"
+        }
+        background = path.startswith("trigger/") or path in {
+            "lib/api/bookkeeping-maintenance.ts", "lib/api/auto-reverse.ts", "lib/api/recurring-generate.ts",
+            "lib/api/recurring-invoice-generate.ts", "lib/api/recurring-payable.ts", "lib/api/fx-revaluation.ts",
+            "lib/api/invoicing-maintenance.ts", "lib/api/bank-balance-alerts.ts", "lib/api/budget-alerts.ts"
+        }
         payroll_ui = path.startswith("app/(dashboard)/payroll/") or path in {
             "lib/money/payroll-ui.ts", "lib/money/payroll-input.ts", "lib/money/payroll-display.ts"
         }
@@ -335,7 +344,11 @@ def generate():
             "app/(dashboard)/dashboard/page.tsx", "components/dashboard/cash-flow-widget.tsx",
             "lib/money/contact-dashboard-ui.ts", "lib/reports/statement-money.ts", "lib/reports/bank-analytics-display.ts"
         }
-        if contact_dashboard_ui:
+        if inventory_ui:
+            owner = "MON-153/154 inventory consumers; MON-008 combined acceptance; LOC-003 formatting/input"
+        elif background:
+            owner = "MON-159/160 scheduled domain/provider delegates; MON-008 combined acceptance"
+        elif contact_dashboard_ui:
             owner = "MON-163 contact/dashboard/shared display; MON-007 journal core retained; MON-158/MON-008 independent integration; LOC-003 formatting/input"
         elif public_render_export_ui:
             owner = "MON-160 public/render/export/provider consumers; MON-008 independent integration; existing MON-030..034 contracts"

@@ -1,3 +1,12 @@
+MON-008 independently accepts the complete auxiliary/public consumer composition.
+Four-scale REST/registered MCP/background/UI/HTML/CSV/SQL regression joins saved
+recognition and recurring cost to reports and public output; joint domain suites
+retain all child families and financial negative cases. See
+[complete ownership and reviewed unit exceptions](../../.agentic/registries/AUXILIARY_PUBLIC_CUTOVER_ACCEPTANCE.md).
+This supersedes every MON-008-pending note below. Accounting/migration, production
+IRR, full-int64 business expansion, localization/RTL and release gates remain
+independent. No saved units, public operation, schema or flag changes.
+
 MON-158 independently accepts combined statement, report, contact and dashboard
 consumers with shared-history REST/registered MCP/UI/SQL reconciliation across
 four separate currency-scale tenants. Exact low digits, credit input, CSV and

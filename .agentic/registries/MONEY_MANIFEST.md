@@ -1,3 +1,16 @@
+## MON-008 final auxiliary and public consumer acceptance
+
+[AUXILIARY_PUBLIC_CUTOVER_ACCEPTANCE](AUXILIARY_PUBLIC_CUTOVER_ACCEPTANCE.md)
+joins every remaining inventory, payroll, asset/loan, budget/project/CRM,
+report/contact/dashboard, background and public/render/export/provider family to
+its adopted domain and consumer contracts. Independent four-scale shared-history
+REST/registered MCP/background/UI/HTML/CSV/SQL regression and joint domain suites
+verify low digits, preserved units, locks/replay, scope and malformed/unsafe output.
+Reviewed nonmoney and compatibility exceptions remain explicit. This current
+acceptance supersedes all MON-008-pending notes below; historical evidence stays
+unchanged. Accounting/migration/production/full-int64/localization/release
+qualification remains independent; no runtime operation or flag is introduced.
+
 ## MON-158 report, contact and dashboard combined acceptance
 
 [REPORT_CONTACT_CUTOVER_ACCEPTANCE](REPORT_CONTACT_CUTOVER_ACCEPTANCE.md) joins

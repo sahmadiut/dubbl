@@ -786,10 +786,10 @@ These are required product checks, not results. Every result is initially NOT RU
 
 | Case | Expected invariant | Owning tasks | Initial result |
 |---|---|---|---|
-| MONEY-IRR-01 | Persian-digit representation of 123456789 parses exactly to IRR 123456789 minor units. | MON-002 / LOC-003 | FAIL: MON-010 probe; canonical parser rejects Persian digits; LOC-003 remains required |
+| MONEY-IRR-01 | Persian-digit representation of 123456789 parses exactly to IRR 123456789 minor units. | MON-002 / LOC-003 | PASS at input boundary: MON-010 localized-money tests and historical migration fixture persist Persian input as literal SQL 123456789; UI adoption remains LOC-003 |
 | MONEY-IRR-02 | IRR formatting has zero fractional digits in Persian UI under approved metadata. | LOC-003 / MON-009 | PASS at adapter level: MON-010 Persian formatter probe; complete UI integration remains LOC-003 |
 | MONEY-USD-01 | Existing stored USD 1250 remains USD 12.50 after widening. | MON-003 | PASS: MON-010 historical migration/replay and exact-money unit tests |
-| MONEY-MIX-01 | Mixed numeral scripts and malformed separators follow explicit strict validation; unknown characters are not silently stripped. | LOC-003 | NOT SATISFIED: MON-010 probe; localized boundary absent and deprecated parser strips unknown characters |
+| MONEY-MIX-01 | Mixed numeral scripts and malformed separators follow explicit strict validation; unknown characters are not silently stripped. | LOC-003 | PASS at input boundary: localized-money rejects mixed scripts, invalid grouping, unknown characters and bidi controls; explicit separator policy, no guessing; UI adoption remains LOC-003 |
 | MONEY-BOUND-01 | Negative, zero, bigint/int32 boundaries, currencies with 0/2/3 units, rounding ties and overflow are exact. | MON-002 | PASS at primitive/storage boundaries: MON-010 joint unit and bigint fixtures; no general full-int64 v1 claim |
 | FX-01 | High-magnitude USD-to-IRR rates do not overflow int32 or pass through binary float. | MON-004 / MON-005 | PASS: MON-010 exact FX unit/storage suite; unsafe legacy writers fail closed |
 | FX-02 | Inverse and triangulated rates preserve configured precision and explicit direction. | MON-005 | PASS: MON-010 exact-rate and triangulation unit suites |

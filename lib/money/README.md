@@ -29,6 +29,13 @@ See the [consumer mapping](../../.agentic/registries/ANALYTICAL_REPORT_UI_CUTOVE
 
 # Exact money core
 
+`localized.ts` is the strict UI input normalization boundary required by MON-010
+qualification. It accepts one Latin/Persian/Arabic-Indic numeral script per value,
+explicit ASCII or Arabic separators and validated grouping, then delegates to
+`parseMajor` with explicit currency/rounding and int64 bounds. Unknown characters,
+bidi controls and mixed scripts reject. Machine-facing exact parsing remains
+canonical ASCII. LOC-003 retains UI adoption, formatting and numeral preferences.
+
 MON-167 adopts tax/tracking/consolidation/custom/saved report results through
 `report-result-ui.ts`: required numeric/Minor agreement, explicit currency,
 bigint sums, aligned tracking totals, pre/post-elimination consolidation and

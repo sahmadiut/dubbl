@@ -2,12 +2,32 @@
 
 ## Gate status
 
-**Not passed.** Automated preservation checks are available, but the first
-acceptance criterion also requires localized MONEY cases whose implementation
-is assigned to LOC-003. That task depends on MON-010. This is an ordering conflict,
-not permission to mark a failing requirement passed. MON-010 also requires actual
-human accounting/database review. Neither tracker edits nor this registry may
-enable production IRR; `lib/currency/rollout.ts` retains its false financial gate.
+**Awaiting human accounting/database review.** MON-010 now implements the minimum
+strict localized-input boundary required by its MONEY cases, resolving the
+previous automated qualification failure without removing any requirement.
+LOC-003 retains product-wide UI adoption, localized formatting and numeral
+preference integration. The canonical machine-facing parser remains ASCII-only.
+Neither tracker edits nor this registry may enable production IRR;
+`lib/currency/rollout.ts` retains its false financial gate.
+
+## Localized qualification boundary
+
+`lib/money/localized.ts` accepts Latin, Persian or Arabic-Indic digits, with one
+script per value and explicit `ascii` or `arabic` separators. Optional groups
+must have three digits after a 1-3 digit first group. ASCII leading signs are
+allowed. Whitespace, bidi controls, currency labels, exponents, misplaced signs,
+malformed grouping and unknown characters fail; no arbitrary characters are
+stripped. Exact `parseMajor` then applies the selected currency scale, explicit
+rounding and signed int64 bounds. No input path infers rial/toman conversion.
+
+`tests/localized-money.test.ts` verifies the grammar, script equivalence, signed
+int64/safe-number edges, 0/2/3 currency scales, rounding and malformed inputs.
+The historical migration fixture now seeds its IRR opening from Persian input;
+its independent SQL oracle still requires literal 123456789 before/after replay.
+This is boundary qualification, not a claim of completed Persian UI integration.
+The deprecated `lib/money.ts` parser is preserved for compatibility and is not
+the localized boundary. A source search finds no product call sites for it;
+the separate import/export parser retains its own existing strict contracts.
 
 ## Reproducible preservation oracle
 
@@ -47,10 +67,10 @@ selection fixtures. It does not replace their independent assertions.
 
 | Case | Current result | Evidence / remaining work |
 |---|---|---|
-| MONEY-IRR-01 | FAIL | `parseMajor` accepts canonical ASCII only; equivalent Persian digits throw. Strict normalization belongs to LOC-003. |
+| MONEY-IRR-01 | PASS, boundary/persistence | Strict `parseLocalizedMajor` yields 123456789 for Latin/Persian/Arabic-Indic digits; historical IRR fixture persists Persian input and verifies independent literal SQL balances across migration/replay. |
 | MONEY-IRR-02 | PASS, adapter-level | Persian `formatMoney` output has zero fractional parts; full Persian UI integration remains LOC-003. |
 | MONEY-USD-01 | PASS | Historical USD 1250 and row values survive actual widening/replay; decimal display remains 12.50. |
-| MONEY-MIX-01 | NOT SATISFIED | Canonical exact parser rejects malformed input, but the deprecated `lib/money.ts` parser accepts `12oops` as 1200. No shared localized boundary/script policy is implemented. This is not a claim that current endpoints call that deprecated parser. |
+| MONEY-MIX-01 | PASS, boundary | Explicit separator and single-script grammar rejects malformed/unknown/bidi/mixed input before exact conversion. Canonical wire parsing and deprecated unused compatibility helper remain separate. |
 | MONEY-BOUND-01 | PASS, primitive/storage scope | Existing exact-money and bigint fixtures cover signed int64, safe numeric rejection, 0/2/3 scales, rounding and overflow. General v1 full-int64 operation support is not implied. |
 | FX-01..03 | See attempt evidence | Exact FX and provider/history fixtures; synthetic providers only. |
 | MIGRATE-01 | PASS, synthetic rehearsal | New per-org/currency financial oracle plus existing widening, migration and backup fixtures. |
@@ -58,14 +78,14 @@ selection fixtures. It does not replace their independent assertions.
 
 ## Review and next action
 
-Read [attempt evidence](../evidence/MON-010-attempt-1.md) and
-[implementing-agent findings](../evidence/MON-010-review-1.md).
-Resolve the localized-input ordering conflict explicitly: either implement the
-required boundary before this gate or approve a planning correction that retains
-those cases under LOC-003 before locale/IRR release. No requirement is waived by
-this document. Re-run the affected checks, then obtain attributable human
-accounting/database review before closing MON-010. Production IRR enablement is
-a separate reviewed code/configuration change, even after tracker completion.
+Read the original [attempt evidence](../evidence/MON-010-attempt-1.md) and
+[findings](../evidence/MON-010-review-1.md) as historical failed-gate evidence.
+The new [attempt](../evidence/MON-010-attempt-2.md) and
+[self-review](../evidence/MON-010-review-2.md) record the corrective boundary and
+actual rerun results. No requirement or review is waived. Obtain attributable
+human accounting/database review before closing MON-010. Production IRR
+enablement is a separate reviewed code/configuration change, even after tracker
+completion.
 
 No production database, build, dev server, browser, live provider, official
 redenomination activation, independent human sign-off or hosted CI is qualified

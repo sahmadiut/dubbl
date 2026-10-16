@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { test } from "node:test";
 import type pg from "pg";
 import { applyCurrent, historicalSchema, withDatabase } from "./fixtures";
+import { parseLocalizedMajor } from "../../lib/money/localized";
 
 // Independent SQL oracle: no report service, ORM monetary mapping or Number sums.
 // Synthetic historical records qualify preservation, not production accounting policy.
@@ -22,6 +23,11 @@ const quote = (value: string) => {
 
 async function seed(pool: pg.Pool) {
   for (const [slug, currency, opening] of tenants) {
+    // Exercise the localized boundary before persistence; the SQL oracle below
+    // still uses independent literal expected balances, not parser output.
+    const openingMinor = currency === "IRR"
+      ? parseLocalizedMajor("۱۲۳۴۵۶۷۸۹", currency, "reject", "ascii").amountMinor.toString()
+      : opening;
     const { rows: [org] } = await pool.query(`INSERT INTO organization (name, slug, default_currency)
       VALUES ('Migration qualification', $1, $2) RETURNING id`, [slug, currency]);
     const accounts: Record<string, string> = {};
@@ -43,7 +49,7 @@ async function seed(pool: pg.Pool) {
         VALUES ($1, $2, $3, $4, $5, 1000000)`, [entry.id, accounts[code], debit, credit, currency]);
       return entry.id;
     };
-    await post([["1000", opening, "0"], ["3000", "0", opening]]);
+    await post([["1000", openingMinor, "0"], ["3000", "0", openingMinor]]);
     const invoiceEntry = await post([["1100", "22001", "0"], ["4000", "0", "22001"]]);
     const receiptEntry = await post([["1000", "1001", "0"], ["1100", "0", "1001"]]);
     const billEntry = await post([["5000", "7003", "0"], ["2000", "0", "7003"]]);

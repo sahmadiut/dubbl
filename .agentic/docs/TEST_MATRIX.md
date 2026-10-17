@@ -803,7 +803,7 @@ These are required product checks, not results. Every result is initially NOT RU
 | CREDIT-01 | Vendor allocation cannot exceed available credit or bill balance, including concurrent retries. | PAR-002 | NOT RUN |
 | LOCK-01 | Locked periods reject equivalent English/Persian API/UI submissions. | MON-007 / DATA-004 | NOT RUN |
 | TENANT-01 | Organization A cannot access B branch, credit, FX, view or import objects. | PAR-007 / QA-002 | NOT RUN |
-| MIGRATE-01 | Per-org/currency trial balance, AR, AP, bank and retained earnings reconcile before/after; row counts, nullability and checksums match. | MON-010 / QA-005 | PASS on synthetic PostgreSQL18: MON-010 independent financial oracle plus all-column/restore fixtures; human/production rehearsal remains open |
+| MIGRATE-01 | Per-org/currency trial balance, AR, AP, bank and retained earnings reconcile before/after; row counts, nullability and checksums match. | MON-010 / QA-005 | PASS on synthetic PostgreSQL18: MON-010 independent financial oracle plus all-column/restore fixtures; owner-authorized self-review under DEC-007; production rehearsal remains open |
 | REDENOM-01 | Current/future regimes coexist without historical value rewrites. | MON-009 | PASS: synthetic metadata coexistence and complete posted-row SQL snapshots; no production cutover |
 | API-01 | Legacy safe numeric and new exact string contracts preserve semantics and reject unsafe legacy values. | MON-006 | NOT RUN |
 | IMPORT-01 | Dry-run/errors/batch retries do not duplicate or partially corrupt postings. | DATA-001 | NOT RUN |

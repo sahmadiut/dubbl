@@ -52,6 +52,16 @@ The [owner review packet](AUD-005-OWNER-REVIEW.md) is accepted as the planning b
 
 Preparation evidence: `../evidence/AUD-005-attempt-1.md`; closure evidence: `../evidence/AUD-005-attempt-2.md`. Schedule ranges remain estimates, with no committed start or due dates. This owner review does not qualify financial outputs, provider availability or production readiness. Future inclusion requires an explicit scope change; deferred optional tasks must be reopened. Both baseline defects retain their remediation and QA tasks.
 
+## DEC-007 — MON-010 self-review authorized by owner
+
+Date: 2026-10-17 (Asia/Tehran). Owner: project owner (actual user in this conversation). Status: accepted.
+
+After Codex explained that MON-010 was awaiting human accounting/database review and linked its completed qualification evidence, the owner directed Codex to perform the check and proceed. English translation of the owner's Persian instruction: "I don't feel up to it; check it yourself and go ahead."
+
+Chosen behavior: replace the human-review requirement for MON-010 only with an honestly attributed Codex self-review. Set that task's `human_review` metadata to false, preserve its financial acceptance criteria and historical evidence, and use the normal controller review/done transitions. This is owner authorization to delegate review, not evidence that the owner performed technical accounting/database review. Other tasks' human-review requirements remain unchanged.
+
+Production IRR enablement, production-data/volume/PostgreSQL16 qualification and later QA/release gates remain separate. The application financial readiness constant stays false. Evidence and fresh checks: [MON-010 review 3](../evidence/MON-010-review-3.md).
+
 ## Remaining open scope decisions
 
 | Decision | Owner | Task | Initial state |

@@ -2,7 +2,7 @@
 
 ## Gate status
 
-**Awaiting human accounting/database review.** MON-010 now implements the minimum
+**Qualified with owner-authorized Codex self-review (DEC-007).** MON-010 implements the minimum
 strict localized-input boundary required by its MONEY cases, resolving the
 previous automated qualification failure without removing any requirement.
 LOC-003 retains product-wide UI adoption, localized formatting and numeral
@@ -82,10 +82,13 @@ Read the original [attempt evidence](../evidence/MON-010-attempt-1.md) and
 [findings](../evidence/MON-010-review-1.md) as historical failed-gate evidence.
 The new [attempt](../evidence/MON-010-attempt-2.md) and
 [self-review](../evidence/MON-010-review-2.md) record the corrective boundary and
-actual rerun results. No requirement or review is waived. Obtain attributable
-human accounting/database review before closing MON-010. Production IRR
-enablement is a separate reviewed code/configuration change, even after tracker
-completion.
+actual rerun results. The owner subsequently delegated the remaining review to
+Codex under [DEC-007](../docs/DECISIONS.md#dec-007--mon-010-self-review-authorized-by-owner).
+[Review 3](../evidence/MON-010-review-3.md) records that instruction, source review
+and fresh focused checks. Only MON-010's human-review requirement is replaced
+with self-review; financial acceptance criteria and other tasks' review gates
+remain unchanged. Production IRR enablement is a separate reviewed
+code/configuration change, even after tracker completion.
 
 No production database, build, dev server, browser, live provider, official
 redenomination activation, independent human sign-off or hosted CI is qualified

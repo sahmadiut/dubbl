@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Database, Download, RotateCcw, Trash2, Upload, Plus, HardDriveDownload } from "lucide-react";
+import { Upload, Plus, HardDriveDownload } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -14,39 +13,16 @@ import {
 } from "@/components/ui/dialog";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
+import { useTranslations } from "next-intl";
+import { BackupList, BackupRestoreDescription, BackupDeleteDescription, type Backup } from "@/components/settings/data-management-content";
 import { toast } from "sonner";
-
-interface Backup {
-  id: string;
-  type: "scheduled" | "manual" | "uploaded";
-  status: "pending" | "completed" | "failed";
-  sizeBytes: number | null;
-  entityCounts: Record<string, number> | null;
-  createdAt: string;
-  expiresAt: string | null;
-}
-
-function formatSize(bytes: number | null): string {
-  if (!bytes) return "-";
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function formatEntitySummary(counts: Record<string, number> | null): string {
-  if (!counts) return "-";
-  const entries = Object.entries(counts)
-    .filter(([, v]) => v > 0)
-    .slice(0, 3);
-  if (entries.length === 0) return "-";
-  return entries.map(([k, v]) => `${v} ${k}`).join(", ");
-}
 
 function getOrgId(): string | null {
   return localStorage.getItem("activeOrgId");
 }
 
 export default function BackupsPage() {
+  const t = useTranslations("SettingsBackups");
   const [backups, setBackups] = useState<Backup[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -78,7 +54,7 @@ export default function BackupsPage() {
         setTotal(data.total || 0);
       })
       .catch(() => {
-        toast.error("Failed to load backups");
+        toast.error(t("failedToLoadBackups"));
       })
       .finally(() => setLoading(false));
   }
@@ -98,14 +74,13 @@ export default function BackupsPage() {
         headers: { "x-organization-id": orgId },
       });
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed");
+        throw new Error();
       }
-      toast.success("Backup created");
+      toast.success(t("backupCreated"));
       setCreateOpen(false);
       fetchBackups();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create backup");
+    } catch {
+      toast.error(t("failedToCreateBackup"));
     } finally {
       setCreating(false);
     }
@@ -120,8 +95,7 @@ export default function BackupsPage() {
         headers: { "x-organization-id": orgId },
       });
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed");
+        throw new Error();
       }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -132,9 +106,9 @@ export default function BackupsPage() {
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-      toast.success("Snapshot downloaded");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to download snapshot");
+      toast.success(t("snapshotDownloaded"));
+    } catch {
+      toast.error(t("failedToDownloadSnapshot"));
     } finally {
       setDownloading(false);
     }
@@ -152,10 +126,10 @@ export default function BackupsPage() {
         body: form,
       });
       if (!res.ok) throw new Error();
-      toast.success("Backup uploaded");
+      toast.success(t("backupUploaded"));
       fetchBackups();
     } catch {
-      toast.error("Failed to upload backup");
+      toast.error(t("failedToUploadBackup"));
     }
   }
 
@@ -177,7 +151,7 @@ export default function BackupsPage() {
       a.remove();
       URL.revokeObjectURL(url);
     } catch {
-      toast.error("Failed to download backup");
+      toast.error(t("failedToDownloadBackup"));
     }
   }
 
@@ -196,11 +170,11 @@ export default function BackupsPage() {
         body: JSON.stringify({ confirm: true }),
       });
       if (!res.ok) throw new Error();
-      toast.success("Backup restored. A snapshot of your previous data was saved automatically.");
+      toast.success(t("backupRestoredASnapshotOfYourPreviousDataWasSavedAutomatically"));
       setRestoreBackup(null);
       fetchBackups();
     } catch {
-      toast.error("Failed to restore backup");
+      toast.error(t("failedToRestoreBackup"));
     } finally {
       setRestoringId(null);
     }
@@ -217,11 +191,11 @@ export default function BackupsPage() {
         headers: { "x-organization-id": orgId },
       });
       if (!res.ok) throw new Error();
-      toast.success("Backup deleted");
+      toast.success(t("backupDeleted"));
       setDeleteBackup(null);
       fetchBackups();
     } catch {
-      toast.error("Failed to delete backup");
+      toast.error(t("failedToDeleteBackup"));
     } finally {
       setDeletingId(null);
     }
@@ -234,10 +208,8 @@ export default function BackupsPage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h2 className="text-lg font-semibold">Backups</h2>
-          <p className="text-sm text-muted-foreground">
-            Automated daily snapshots of your organization data
-          </p>
+          <h2 className="text-lg font-semibold">{t("backups")}</h2>
+          <p className="text-sm text-muted-foreground">{t("automatedDailySnapshotsOfYourOrganizationData")}</p>
         </div>
         <div className="flex items-center gap-2">
           <input
@@ -259,7 +231,7 @@ export default function BackupsPage() {
             onClick={handleDownloadSnapshot}
           >
             <HardDriveDownload className="mr-1.5 size-3.5" />
-            {downloading ? "Downloading..." : "Download Snapshot"}
+            {downloading ? t("downloading") : t("downloadSnapshot")}
           </Button>
           <Button
             variant="outline"
@@ -268,7 +240,7 @@ export default function BackupsPage() {
             onClick={() => fileInputRef.current?.click()}
           >
             <Upload className="mr-1.5 size-3.5" />
-            Upload Backup
+            {t("uploadBackup")}
           </Button>
           <Button
             size="sm"
@@ -277,163 +249,25 @@ export default function BackupsPage() {
             onClick={() => setCreateOpen(true)}
           >
             <Plus className="mr-1.5 size-3.5" />
-            Create Backup
+            {t("createBackup")}
           </Button>
         </div>
       </div>
 
       {/* Table */}
-      {backups.length === 0 ? (
-        <div className="flex flex-col items-center py-16 text-center">
-          <div className="flex size-12 items-center justify-center rounded-xl bg-muted mb-3">
-            <Database className="size-6 text-muted-foreground" />
-          </div>
-          <p className="text-sm font-medium">No backups yet</p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Create a backup or enable scheduled backups to get started.
-          </p>
-        </div>
-      ) : (
-        <>
-          <div className="rounded-lg border">
-            {/* Table header */}
-            <div className="grid grid-cols-[1fr_1fr_80px_1.5fr_1fr_auto] gap-3 px-4 py-2.5 border-b bg-muted/40">
-              <span className="text-xs font-medium text-muted-foreground">Type</span>
-              <span className="text-xs font-medium text-muted-foreground">Date</span>
-              <span className="text-xs font-medium text-muted-foreground">Size</span>
-              <span className="text-xs font-medium text-muted-foreground">Entities</span>
-              <span className="text-xs font-medium text-muted-foreground">Expires</span>
-              <span className="text-xs font-medium text-muted-foreground">Actions</span>
-            </div>
-
-            {/* Table rows */}
-            {backups.map((backup) => (
-              <div
-                key={backup.id}
-                className="grid grid-cols-[1fr_1fr_80px_1.5fr_1fr_auto] gap-3 px-4 py-2.5 border-b last:border-b-0 items-center hover:bg-muted/30 transition-colors"
-              >
-                <div>
-                  <Badge
-                    variant="outline"
-                    className={
-                      backup.type === "manual"
-                        ? "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-300"
-                        : backup.type === "uploaded"
-                          ? "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-800 dark:bg-violet-950 dark:text-violet-300"
-                          : ""
-                    }
-                  >
-                    {backup.type}
-                  </Badge>
-                </div>
-
-                <span className="text-sm tabular-nums">
-                  {new Date(backup.createdAt).toLocaleDateString(undefined, {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
-                </span>
-
-                <span className="text-xs text-muted-foreground tabular-nums">
-                  {formatSize(backup.sizeBytes)}
-                </span>
-
-                <span className="text-xs text-muted-foreground truncate">
-                  {formatEntitySummary(backup.entityCounts)}
-                </span>
-
-                <span className="text-xs text-muted-foreground tabular-nums">
-                  {backup.expiresAt
-                    ? new Date(backup.expiresAt).toLocaleDateString(undefined, {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })
-                    : "-"}
-                </span>
-
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 w-7 p-0"
-                    onClick={() => handleDownload(backup)}
-                    title="Download"
-                  >
-                    <Download className="size-3.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 w-7 p-0"
-                    disabled={restoringId === backup.id}
-                    onClick={() => setRestoreBackup(backup)}
-                    title="Restore"
-                  >
-                    <RotateCcw className={`size-3.5 ${restoringId === backup.id ? "animate-spin" : ""}`} />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                    disabled={deletingId === backup.id}
-                    onClick={() => setDeleteBackup(backup)}
-                    title="Delete"
-                  >
-                    <Trash2 className="size-3.5" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between pt-2">
-              <p className="text-[11px] text-muted-foreground tabular-nums">
-                Page {page} of {totalPages}
-              </p>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-7 text-xs"
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => p - 1)}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-7 text-xs"
-                  disabled={page >= totalPages}
-                  onClick={() => setPage((p) => p + 1)}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          )}
-        </>
-      )}
+      <BackupList {...{ backups, page, totalPages, restoringId, deletingId, handleDownload, setRestoreBackup, setDeleteBackup, setPage }} />
 
       {/* Create backup confirmation */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create backup?</DialogTitle>
-            <DialogDescription>
-              This will create a full snapshot of all your organization data.
-              The backup can be used to restore your data later.
-            </DialogDescription>
+            <DialogTitle>{t("createBackupQuestion")}</DialogTitle>
+            <DialogDescription>{t("thisWillCreateAFullSnapshotOfAllYourOrganizationDataTheBackupCanBeUsedToRestoreYourDataLater")}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={creating}>
-              Cancel
-            </Button>
+            <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={creating}>{t("cancel")}</Button>
             <Button onClick={confirmCreate} disabled={creating}>
-              {creating ? "Creating..." : "Create backup"}
+              {creating ? t("creating") : t("createBackupAction")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -443,19 +277,15 @@ export default function BackupsPage() {
       <Dialog open={!!restoreBackup} onOpenChange={(o) => !o && setRestoreBackup(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Restore from backup?</DialogTitle>
+            <DialogTitle>{t("restoreFromBackupQuestion")}</DialogTitle>
             <DialogDescription>
-              This will replace all current data with the snapshot from{" "}
-              {restoreBackup && new Date(restoreBackup.createdAt).toLocaleString()}.
-              A snapshot of your current data will be saved automatically before restoring.
+              <BackupRestoreDescription date={restoreBackup ? new Date(restoreBackup.createdAt).toLocaleString() : ""} />
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRestoreBackup(null)} disabled={!!restoringId}>
-              Cancel
-            </Button>
+            <Button variant="outline" onClick={() => setRestoreBackup(null)} disabled={!!restoringId}>{t("cancel")}</Button>
             <Button variant="destructive" onClick={confirmRestore} disabled={!!restoringId}>
-              {restoringId ? "Restoring..." : "Restore backup"}
+              {restoringId ? t("restoring") : t("restoreBackupAction")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -465,19 +295,15 @@ export default function BackupsPage() {
       <Dialog open={!!deleteBackup} onOpenChange={(o) => !o && setDeleteBackup(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete backup?</DialogTitle>
+            <DialogTitle>{t("deleteBackupQuestion")}</DialogTitle>
             <DialogDescription>
-              This backup from{" "}
-              {deleteBackup && new Date(deleteBackup.createdAt).toLocaleString()}{" "}
-              will be moved to trash. You can restore it within 30 days.
+              <BackupDeleteDescription date={deleteBackup ? new Date(deleteBackup.createdAt).toLocaleString() : ""} />
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteBackup(null)} disabled={!!deletingId}>
-              Cancel
-            </Button>
+            <Button variant="outline" onClick={() => setDeleteBackup(null)} disabled={!!deletingId}>{t("cancel")}</Button>
             <Button variant="destructive" onClick={confirmDelete} disabled={!!deletingId}>
-              {deletingId ? "Deleting..." : "Delete backup"}
+              {deletingId ? t("deleting") : t("deleteBackupAction")}
             </Button>
           </DialogFooter>
         </DialogContent>

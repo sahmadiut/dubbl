@@ -1,0 +1,538 @@
+{
+  "requests": {
+    "app/(dashboard)/settings/import-export/page.tsx": [
+      "fetch(\"/api/v1/bulk/import-jobs?\" + new URLSearchParams({ limit: \"20\" }), { headers: { \"x-organization-id\": orgId }, })",
+      "params.set(\"startDate\", exportDateFrom)",
+      "params.set(\"endDate\", exportDateTo)",
+      "fetch(`/api/v1/export/all?${params}`, { headers: { \"x-organization-id\": orgId }, })",
+      "downloadBlob(blob, \"dubbl-export.zip\")",
+      "params.set(\"startDate\", exportDateFrom)",
+      "params.set(\"endDate\", exportDateTo)",
+      "fetch(`/api/v1/export/${key}?${params}`, { headers: { \"x-organization-id\": orgId }, })",
+      "downloadBlob(blob, `${key}.csv`)",
+      "a.download = filename"
+    ],
+    "app/(dashboard)/settings/backups/page.tsx": [
+      "fetch(`/api/v1/backups?page=${p}&limit=${limit}`, { headers: { \"x-organization-id\": orgId }, })",
+      "fetch(\"/api/v1/backups\", { method: \"POST\", headers: { \"x-organization-id\": orgId }, })",
+      "fetch(\"/api/v1/backups/download-snapshot\", { headers: { \"x-organization-id\": orgId }, })",
+      "a.download = `dubbl-snapshot-${new Date().toISOString().slice(0, 10)}.json`",
+      "form.append(\"file\", file)",
+      "fetch(\"/api/v1/backups/upload\", { method: \"POST\", headers: { \"x-organization-id\": orgId }, body: form, })",
+      "fetch(`/api/v1/backups/${backup.id}/download`, { headers: { \"x-organization-id\": orgId }, })",
+      "a.download = `backup-${new Date(backup.createdAt).toISOString().slice(0, 10)}.json`",
+      "fetch(`/api/v1/backups/${restoreBackup.id}/restore`, { method: \"POST\", headers: { \"x-organization-id\": orgId, \"Content-Type\": \"application/json\", }, body: JSON.stringify({ confirm: true }), })",
+      "JSON.stringify({ confirm: true })",
+      "fetch(`/api/v1/backups/${deleteBackup.id}`, { method: \"DELETE\", headers: { \"x-organization-id\": orgId }, })"
+    ],
+    "app/(dashboard)/settings/trash/page.tsx": [
+      "params.set(\"entityType\", typeFilter)",
+      "params.set(\"search\", search.trim())",
+      "fetch(`/api/v1/trash?${params}`, { headers: { \"x-organization-id\": orgId }, })",
+      "fetch(`/api/v1/trash/${item.id}/restore`, { method: \"POST\", headers: { \"Content-Type\": \"application/json\", \"x-organization-id\": orgId, }, body: JSON.stringify({ entityType: item.entityType }), })",
+      "JSON.stringify({ entityType: item.entityType })",
+      "fetch(`/api/v1/trash/${deleteItem.id}`, { method: \"DELETE\", headers: { \"Content-Type\": \"application/json\", \"x-organization-id\": orgId, }, body: JSON.stringify({ entityType: deleteItem.entityType }), })",
+      "JSON.stringify({ entityType: deleteItem.entityType })",
+      "fetch(\"/api/v1/trash/empty\", { method: \"POST\", headers: { \"x-organization-id\": orgId }, })"
+    ],
+    "components/bulk-import-wizard.tsx": [
+      "fetch(previewEndpoint, { method: \"POST\", headers: { \"Content-Type\": \"application/json\", \"x-organization-id\": orgId }, body: JSON.stringify({ rows: mappedRows, source }), })",
+      "JSON.stringify({ rows: mappedRows, source })",
+      "fetch(importEndpoint, { method: \"POST\", headers: { \"Content-Type\": \"application/json\", \"x-organization-id\": orgId }, body: JSON.stringify({ fileName, rows: mappedRows, source }), })",
+      "JSON.stringify({ fileName, rows: mappedRows, source })",
+      "JSON.stringify(p.data)"
+    ]
+  },
+  "options": {
+    "SOURCES": [
+      {
+        "key": "quickbooks",
+        "label": "QuickBooks"
+      },
+      {
+        "key": "xero",
+        "label": "Xero"
+      },
+      {
+        "key": "freshbooks",
+        "label": "FreshBooks"
+      },
+      {
+        "key": "wave",
+        "label": "Wave"
+      },
+      {
+        "key": "custom",
+        "label": "Custom CSV"
+      }
+    ],
+    "ENTITIES": [
+      {
+        "key": "accounts",
+        "label": "Chart of Accounts",
+        "note": "No dependencies",
+        "previewEndpoint": "/api/v1/bulk/accounts/preview",
+        "importEndpoint": "/api/v1/bulk/accounts/import",
+        "targetFields": [
+          {
+            "key": "code",
+            "label": "Code",
+            "required": true
+          },
+          {
+            "key": "name",
+            "label": "Name",
+            "required": true
+          },
+          {
+            "key": "type",
+            "label": "Type",
+            "required": true
+          },
+          {
+            "key": "subType",
+            "label": "Sub Type"
+          },
+          {
+            "key": "description",
+            "label": "Description"
+          },
+          {
+            "key": "isActive",
+            "label": "Active (true/false)"
+          }
+        ]
+      },
+      {
+        "key": "contacts",
+        "label": "Contacts",
+        "note": "No dependencies",
+        "previewEndpoint": "/api/v1/bulk/contacts/preview",
+        "importEndpoint": "/api/v1/bulk/contacts/import",
+        "targetFields": [
+          {
+            "key": "name",
+            "label": "Name",
+            "required": true
+          },
+          {
+            "key": "email",
+            "label": "Email"
+          },
+          {
+            "key": "phone",
+            "label": "Phone"
+          },
+          {
+            "key": "type",
+            "label": "Type"
+          },
+          {
+            "key": "taxNumber",
+            "label": "Tax Number"
+          },
+          {
+            "key": "billingLine1",
+            "label": "Billing Address"
+          },
+          {
+            "key": "billingCity",
+            "label": "Billing City"
+          },
+          {
+            "key": "billingState",
+            "label": "Billing State"
+          },
+          {
+            "key": "billingPostalCode",
+            "label": "Billing Postal Code"
+          },
+          {
+            "key": "billingCountry",
+            "label": "Billing Country"
+          }
+        ]
+      },
+      {
+        "key": "products",
+        "label": "Products",
+        "note": "Import accounts first",
+        "previewEndpoint": "/api/v1/bulk/products/preview",
+        "importEndpoint": "/api/v1/bulk/products/import",
+        "targetFields": [
+          {
+            "key": "name",
+            "label": "Name",
+            "required": true
+          },
+          {
+            "key": "sku",
+            "label": "SKU"
+          },
+          {
+            "key": "description",
+            "label": "Description"
+          },
+          {
+            "key": "unitPrice",
+            "label": "Unit Price (decimal)"
+          },
+          {
+            "key": "costPrice",
+            "label": "Cost Price (decimal)"
+          },
+          {
+            "key": "unitPriceMinor",
+            "label": "Unit Price (minor units)"
+          },
+          {
+            "key": "costPriceMinor",
+            "label": "Cost Price (minor units)"
+          },
+          {
+            "key": "currencyCode",
+            "label": "Currency (must match organization)"
+          },
+          {
+            "key": "quantityOnHand",
+            "label": "Quantity On Hand"
+          }
+        ]
+      },
+      {
+        "key": "invoices",
+        "label": "Invoices",
+        "note": "Import contacts + accounts first",
+        "previewEndpoint": "/api/v1/bulk/invoices/preview",
+        "importEndpoint": "/api/v1/bulk/invoices/import",
+        "targetFields": [
+          {
+            "key": "contactId",
+            "label": "Contact ID",
+            "required": true
+          },
+          {
+            "key": "issueDate",
+            "label": "Issue Date",
+            "required": true
+          },
+          {
+            "key": "dueDate",
+            "label": "Due Date",
+            "required": true
+          },
+          {
+            "key": "reference",
+            "label": "Reference"
+          },
+          {
+            "key": "invoiceNumber",
+            "label": "Invoice Group"
+          },
+          {
+            "key": "currencyCode",
+            "label": "Currency (default USD)"
+          },
+          {
+            "key": "lineDescription",
+            "label": "Line Description",
+            "required": true
+          },
+          {
+            "key": "lineQuantity",
+            "label": "Line Quantity"
+          },
+          {
+            "key": "lineUnitPrice",
+            "label": "Unit Price (decimal)"
+          },
+          {
+            "key": "lineUnitPriceMinor",
+            "label": "Unit Price (minor units)"
+          },
+          {
+            "key": "lineAccountId",
+            "label": "Revenue Account ID"
+          }
+        ]
+      },
+      {
+        "key": "bills",
+        "label": "Bills",
+        "note": "Import contacts + accounts first",
+        "previewEndpoint": "/api/v1/bulk/bills/preview",
+        "importEndpoint": "/api/v1/bulk/bills/import",
+        "targetFields": [
+          {
+            "key": "billNumber",
+            "label": "Bill Group"
+          },
+          {
+            "key": "contactName",
+            "label": "Contact Name",
+            "required": true
+          },
+          {
+            "key": "issueDate",
+            "label": "Issue Date",
+            "required": true
+          },
+          {
+            "key": "dueDate",
+            "label": "Due Date",
+            "required": true
+          },
+          {
+            "key": "lineDescription",
+            "label": "Line Description",
+            "required": true
+          },
+          {
+            "key": "lineQuantity",
+            "label": "Line Quantity"
+          },
+          {
+            "key": "currencyCode",
+            "label": "Currency (default USD)"
+          },
+          {
+            "key": "lineUnitPrice",
+            "label": "Unit Price (decimal)"
+          },
+          {
+            "key": "lineUnitPriceExact",
+            "label": "Exact Unit Price (decimal)"
+          },
+          {
+            "key": "lineUnitPriceMinor",
+            "label": "Unit Price (minor units)"
+          },
+          {
+            "key": "lineAmount",
+            "label": "Line Amount (decimal)"
+          },
+          {
+            "key": "lineAmountExact",
+            "label": "Exact Line Amount (decimal)"
+          },
+          {
+            "key": "lineAmountMinor",
+            "label": "Line Amount (minor units)"
+          },
+          {
+            "key": "lineAccountCode",
+            "label": "Line Account Code"
+          }
+        ]
+      },
+      {
+        "key": "entries",
+        "label": "Journal Entries",
+        "note": "Import accounts first",
+        "previewEndpoint": "/api/v1/bulk/entries/preview",
+        "importEndpoint": "/api/v1/bulk/entries/import",
+        "targetFields": [
+          {
+            "key": "entryNumber",
+            "label": "Entry Number"
+          },
+          {
+            "key": "date",
+            "label": "Date",
+            "required": true
+          },
+          {
+            "key": "description",
+            "label": "Description",
+            "required": true
+          },
+          {
+            "key": "reference",
+            "label": "Reference"
+          },
+          {
+            "key": "lineAccountCode",
+            "label": "Account Code",
+            "required": true
+          },
+          {
+            "key": "debit",
+            "label": "Debit"
+          },
+          {
+            "key": "credit",
+            "label": "Credit"
+          },
+          {
+            "key": "debitAmountMinor",
+            "label": "Debit (minor units)"
+          },
+          {
+            "key": "creditAmountMinor",
+            "label": "Credit (minor units)"
+          }
+        ]
+      },
+      {
+        "key": "bank-transactions",
+        "label": "Bank Transactions",
+        "note": "Import accounts first",
+        "previewEndpoint": "/api/v1/bulk/bank-transactions/preview",
+        "importEndpoint": "/api/v1/bulk/bank-transactions/import",
+        "targetFields": [
+          {
+            "key": "date",
+            "label": "Date",
+            "required": true
+          },
+          {
+            "key": "description",
+            "label": "Description",
+            "required": true
+          },
+          {
+            "key": "amount",
+            "label": "Amount",
+            "required": true
+          },
+          {
+            "key": "reference",
+            "label": "Reference"
+          },
+          {
+            "key": "bankAccountCode",
+            "label": "Bank Account",
+            "required": true
+          },
+          {
+            "key": "debit",
+            "label": "Debit"
+          },
+          {
+            "key": "credit",
+            "label": "Credit"
+          }
+        ]
+      }
+    ],
+    "EXPORT_ENTITIES": [
+      {
+        "key": "accounts",
+        "label": "Chart of Accounts",
+        "transactional": false
+      },
+      {
+        "key": "contacts",
+        "label": "Contacts",
+        "transactional": false
+      },
+      {
+        "key": "invoices",
+        "label": "Invoices",
+        "transactional": true
+      },
+      {
+        "key": "bills",
+        "label": "Bills",
+        "transactional": true
+      },
+      {
+        "key": "entries",
+        "label": "Journal Entries",
+        "transactional": true
+      },
+      {
+        "key": "products",
+        "label": "Products",
+        "transactional": false
+      },
+      {
+        "key": "bank-transactions",
+        "label": "Bank Transactions",
+        "transactional": true
+      }
+    ]
+  },
+  "types": [
+    {
+      "value": "contact",
+      "label": "Contact"
+    },
+    {
+      "value": "invoice",
+      "label": "Invoice"
+    },
+    {
+      "value": "bill",
+      "label": "Bill"
+    },
+    {
+      "value": "account",
+      "label": "Account"
+    },
+    {
+      "value": "journal_entry",
+      "label": "Journal Entry"
+    },
+    {
+      "value": "product",
+      "label": "Product"
+    },
+    {
+      "value": "expense",
+      "label": "Expense"
+    },
+    {
+      "value": "quote",
+      "label": "Quote"
+    },
+    {
+      "value": "credit_note",
+      "label": "Credit Note"
+    },
+    {
+      "value": "debit_note",
+      "label": "Debit Note"
+    },
+    {
+      "value": "purchase_order",
+      "label": "Purchase Order"
+    },
+    {
+      "value": "bank_account",
+      "label": "Bank Account"
+    },
+    {
+      "value": "payment",
+      "label": "Payment"
+    },
+    {
+      "value": "recurring_template",
+      "label": "Recurring Template"
+    },
+    {
+      "value": "project",
+      "label": "Project"
+    },
+    {
+      "value": "fixed_asset",
+      "label": "Fixed Asset"
+    },
+    {
+      "value": "budget",
+      "label": "Budget"
+    },
+    {
+      "value": "loan",
+      "label": "Loan"
+    },
+    {
+      "value": "document",
+      "label": "Document"
+    },
+    {
+      "value": "document_template",
+      "label": "Template"
+    }
+  ]
+}

@@ -54,6 +54,9 @@ are not accepted by this task.
   LOC-019 document-template extraction is recorded in
   [document settings scope](SETTINGS_DOCUMENT_CATALOGS.md), including the
   pre-existing CRUD MCP coverage gap for parent integration review.
+  LOC-020 data-management extraction, technical exceptions and pre-existing
+  export/trash integration findings are recorded in
+  [data settings scope](SETTINGS_DATA_CATALOGS.md).
 - LOC-012: independent combined settings acceptance after all four children.
 - LOC-006 / LOC-002: independent shell/settings and product-wide catalog acceptance.
 

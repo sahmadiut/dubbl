@@ -5,215 +5,27 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DatePicker } from "@/components/ui/date-picker";
 import { BulkImportWizard } from "@/components/bulk-import-wizard";
 import { getMapping, aliasesToRecord } from "@/lib/import-export/mappings";
-import type { SourceSystem, ImportEntity } from "@/lib/import-export/types";
+import type { SourceSystem } from "@/lib/import-export/types";
 import {
   Download,
   Upload,
-  FileSpreadsheet,
-  Users,
-  Receipt,
-  ClipboardList,
-  BookOpen,
-  Package,
-  Landmark,
   ArrowRight,
-  CheckCircle2,
-  XCircle,
-  Clock,
   Info,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { richTextTags } from "@/i18n/rich-text";
+import { importOptions } from "@/components/settings/import-options";
+import { ImportJobHistory, type ImportJob } from "@/components/settings/data-management-content";
 import { toast } from "sonner";
 
-const SOURCES: { key: SourceSystem; label: string }[] = [
-  { key: "quickbooks", label: "QuickBooks" },
-  { key: "xero", label: "Xero" },
-  { key: "freshbooks", label: "FreshBooks" },
-  { key: "wave", label: "Wave" },
-  { key: "custom", label: "Custom CSV" },
-];
-
-const ENTITIES: {
-  key: ImportEntity;
-  label: string;
-  icon: typeof FileSpreadsheet;
-  note: string;
-  previewEndpoint: string;
-  importEndpoint: string;
-  targetFields: { key: string; label: string; required?: boolean }[];
-}[] = [
-  {
-    key: "accounts",
-    label: "Chart of Accounts",
-    icon: BookOpen,
-    note: "No dependencies",
-    previewEndpoint: "/api/v1/bulk/accounts/preview",
-    importEndpoint: "/api/v1/bulk/accounts/import",
-    targetFields: [
-      { key: "code", label: "Code", required: true },
-      { key: "name", label: "Name", required: true },
-      { key: "type", label: "Type", required: true },
-      { key: "subType", label: "Sub Type" },
-      { key: "description", label: "Description" },
-      { key: "isActive", label: "Active (true/false)" },
-    ],
-  },
-  {
-    key: "contacts",
-    label: "Contacts",
-    icon: Users,
-    note: "No dependencies",
-    previewEndpoint: "/api/v1/bulk/contacts/preview",
-    importEndpoint: "/api/v1/bulk/contacts/import",
-    targetFields: [
-      { key: "name", label: "Name", required: true },
-      { key: "email", label: "Email" },
-      { key: "phone", label: "Phone" },
-      { key: "type", label: "Type" },
-      { key: "taxNumber", label: "Tax Number" },
-      { key: "billingLine1", label: "Billing Address" },
-      { key: "billingCity", label: "Billing City" },
-      { key: "billingState", label: "Billing State" },
-      { key: "billingPostalCode", label: "Billing Postal Code" },
-      { key: "billingCountry", label: "Billing Country" },
-    ],
-  },
-  {
-    key: "products",
-    label: "Products",
-    icon: Package,
-    note: "Import accounts first",
-    previewEndpoint: "/api/v1/bulk/products/preview",
-    importEndpoint: "/api/v1/bulk/products/import",
-    targetFields: [
-      { key: "name", label: "Name", required: true },
-      { key: "sku", label: "SKU" },
-      { key: "description", label: "Description" },
-      { key: "unitPrice", label: "Unit Price (decimal)" },
-      { key: "costPrice", label: "Cost Price (decimal)" },
-      { key: "unitPriceMinor", label: "Unit Price (minor units)" },
-      { key: "costPriceMinor", label: "Cost Price (minor units)" },
-      { key: "currencyCode", label: "Currency (must match organization)" },
-      { key: "quantityOnHand", label: "Quantity On Hand" },
-    ],
-  },
-  {
-    key: "invoices",
-    label: "Invoices",
-    icon: Receipt,
-    note: "Import contacts + accounts first",
-    previewEndpoint: "/api/v1/bulk/invoices/preview",
-    importEndpoint: "/api/v1/bulk/invoices/import",
-    targetFields: [
-      { key: "contactId", label: "Contact ID", required: true },
-      { key: "issueDate", label: "Issue Date", required: true },
-      { key: "dueDate", label: "Due Date", required: true },
-      { key: "reference", label: "Reference" },
-      { key: "invoiceNumber", label: "Invoice Group" },
-      { key: "currencyCode", label: "Currency (default USD)" },
-      { key: "lineDescription", label: "Line Description", required: true },
-      { key: "lineQuantity", label: "Line Quantity" },
-      { key: "lineUnitPrice", label: "Unit Price (decimal)" },
-      { key: "lineUnitPriceMinor", label: "Unit Price (minor units)" },
-      { key: "lineAccountId", label: "Revenue Account ID" },
-    ],
-  },
-  {
-    key: "bills",
-    label: "Bills",
-    icon: ClipboardList,
-    note: "Import contacts + accounts first",
-    previewEndpoint: "/api/v1/bulk/bills/preview",
-    importEndpoint: "/api/v1/bulk/bills/import",
-    targetFields: [
-      { key: "billNumber", label: "Bill Group" },
-      { key: "contactName", label: "Contact Name", required: true },
-      { key: "issueDate", label: "Issue Date", required: true },
-      { key: "dueDate", label: "Due Date", required: true },
-      { key: "lineDescription", label: "Line Description", required: true },
-      { key: "lineQuantity", label: "Line Quantity" },
-      { key: "currencyCode", label: "Currency (default USD)" },
-      { key: "lineUnitPrice", label: "Unit Price (decimal)" },
-      { key: "lineUnitPriceExact", label: "Exact Unit Price (decimal)" },
-      { key: "lineUnitPriceMinor", label: "Unit Price (minor units)" },
-      { key: "lineAmount", label: "Line Amount (decimal)" },
-      { key: "lineAmountExact", label: "Exact Line Amount (decimal)" },
-      { key: "lineAmountMinor", label: "Line Amount (minor units)" },
-      { key: "lineAccountCode", label: "Line Account Code" },
-    ],
-  },
-  {
-    key: "entries",
-    label: "Journal Entries",
-    icon: FileSpreadsheet,
-    note: "Import accounts first",
-    previewEndpoint: "/api/v1/bulk/entries/preview",
-    importEndpoint: "/api/v1/bulk/entries/import",
-    targetFields: [
-      { key: "entryNumber", label: "Entry Number" },
-      { key: "date", label: "Date", required: true },
-      { key: "description", label: "Description", required: true },
-      { key: "reference", label: "Reference" },
-      { key: "lineAccountCode", label: "Account Code", required: true },
-      { key: "debit", label: "Debit" },
-      { key: "credit", label: "Credit" },
-      { key: "debitAmountMinor", label: "Debit (minor units)" },
-      { key: "creditAmountMinor", label: "Credit (minor units)" },
-    ],
-  },
-  {
-    key: "bank-transactions",
-    label: "Bank Transactions",
-    icon: Landmark,
-    note: "Import accounts first",
-    previewEndpoint: "/api/v1/bulk/bank-transactions/preview",
-    importEndpoint: "/api/v1/bulk/bank-transactions/import",
-    targetFields: [
-      { key: "date", label: "Date", required: true },
-      { key: "description", label: "Description", required: true },
-      { key: "amount", label: "Amount", required: true },
-      { key: "reference", label: "Reference" },
-      { key: "bankAccountCode", label: "Bank Account", required: true },
-      { key: "debit", label: "Debit" },
-      { key: "credit", label: "Credit" },
-    ],
-  },
-];
-
-const EXPORT_ENTITIES = [
-  { key: "accounts", label: "Chart of Accounts", transactional: false },
-  { key: "contacts", label: "Contacts", transactional: false },
-  { key: "invoices", label: "Invoices", transactional: true },
-  { key: "bills", label: "Bills", transactional: true },
-  { key: "entries", label: "Journal Entries", transactional: true },
-  { key: "products", label: "Products", transactional: false },
-  { key: "bank-transactions", label: "Bank Transactions", transactional: true },
-];
-
-interface ImportJob {
-  id: string;
-  type: string;
-  fileName: string;
-  status: string;
-  totalRows: number;
-  processedRows: number;
-  errorRows: number;
-  createdAt: string;
-}
-
 export default function ImportExportPage() {
+  const t = useTranslations("SettingsImportExport");
+  const { SOURCES, ENTITIES, EXPORT_ENTITIES } = importOptions(t);
   const [source, setSource] = useState<SourceSystem>("quickbooks");
   const [wizardOpen, setWizardOpen] = useState(false);
   const [activeEntity, setActiveEntity] = useState<typeof ENTITIES[number] | null>(null);
@@ -260,7 +72,7 @@ export default function ImportExportPage() {
     try {
       const entities = entityKey ? [entityKey] : Array.from(selectedExports);
       if (entities.length === 0) {
-        toast.error("Select at least one entity to export");
+        toast.error(t("selectAtLeastOneEntityToExport"));
         return;
       }
 
@@ -272,7 +84,7 @@ export default function ImportExportPage() {
         const res = await fetch(`/api/v1/export/all?${params}`, {
           headers: { "x-organization-id": orgId },
         });
-        if (!res.ok) throw new Error("Export failed");
+        if (!res.ok) throw new Error(t("exportFailed"));
         const blob = await res.blob();
         downloadBlob(blob, "dubbl-export.zip");
       } else {
@@ -286,13 +98,13 @@ export default function ImportExportPage() {
         const res = await fetch(`/api/v1/export/${key}?${params}`, {
           headers: { "x-organization-id": orgId },
         });
-        if (!res.ok) throw new Error("Export failed");
+        if (!res.ok) throw new Error(t("exportFailed"));
         const blob = await res.blob();
         downloadBlob(blob, `${key}.csv`);
       }
-      toast.success("Export downloaded");
+      toast.success(t("exportDownloaded"));
     } catch {
-      toast.error("Export failed");
+      toast.error(t("exportFailed"));
     } finally {
       setExporting(false);
     }
@@ -321,10 +133,8 @@ export default function ImportExportPage() {
         {/* Header */}
         <div className="flex items-start justify-between">
           <div>
-            <h2 className="text-lg font-semibold">Import & Export</h2>
-            <p className="text-sm text-muted-foreground">
-              Migrate data from other bookkeeping tools or export your Dubbl data
-            </p>
+            <h2 className="text-lg font-semibold">{t("importExport")}</h2>
+            <p className="text-sm text-muted-foreground">{t("migrateDataFromOtherBookkeepingToolsOrExportYourDubblData")}</p>
           </div>
         </div>
 
@@ -332,12 +142,12 @@ export default function ImportExportPage() {
         <div className="space-y-5">
           <div className="flex items-center gap-2">
             <Upload className="size-4 text-muted-foreground" />
-            <h3 className="text-sm font-semibold">Import Data</h3>
+            <h3 className="text-sm font-semibold">{t("importData")}</h3>
           </div>
 
           {/* Source selector */}
           <div className="rounded-lg border p-4 space-y-3">
-            <p className="text-sm text-muted-foreground">Select your source system</p>
+            <p className="text-sm text-muted-foreground">{t("selectYourSourceSystem")}</p>
             <div className="flex flex-wrap gap-2">
               {SOURCES.map(s => (
                 <Button
@@ -380,13 +190,7 @@ export default function ImportExportPage() {
           <div className="flex items-start gap-2.5 rounded-lg border border-dashed bg-muted/40 p-3.5">
             <Info className="size-4 shrink-0 text-muted-foreground mt-0.5" />
             <p className="text-[12px] leading-relaxed text-muted-foreground">
-              Importing an actual <span className="font-medium text-foreground">bank statement</span>?
-              Use the per-account{" "}
-              <span className="font-medium text-foreground">Statement Importer</span> on the bank
-              account page (<span className="font-medium text-foreground">Banking → your account → &ldquo;Import statement&rdquo;</span>).
-              It auto-detects the format (CSV, OFX/QFX/QBO, CAMT, MT940, BAI2, &amp; more) and
-              de-duplicates against existing transactions, so you won&rsquo;t get stuck mapping a
-              custom CSV here. Use Bank Transactions below only for plain ledger-style rows.
+              {t.rich("bankStatementHelp", richTextTags)}
             </p>
           </div>
 
@@ -397,64 +201,7 @@ export default function ImportExportPage() {
                 <Skeleton key={i} className="h-10 w-full" />
               ))}
             </div>
-          ) : importJobs.length > 0 && (
-            <div className="space-y-3">
-              <h4 className="text-sm font-medium text-muted-foreground">Recent Imports</h4>
-              <div className="rounded-lg border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Type</TableHead>
-                      <TableHead>File</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Rows</TableHead>
-                      <TableHead className="text-right">Errors</TableHead>
-                      <TableHead>Date</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {importJobs.map(job => (
-                      <TableRow key={job.id}>
-                        <TableCell>
-                          <Badge variant="secondary" className="text-xs capitalize">
-                            {job.type}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="max-w-[200px] truncate text-xs text-muted-foreground">
-                          {job.fileName}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1.5">
-                            {job.status === "completed" ? (
-                              <CheckCircle2 className="size-3.5 text-emerald-500" />
-                            ) : job.status === "failed" ? (
-                              <XCircle className="size-3.5 text-destructive" />
-                            ) : (
-                              <Clock className="size-3.5 text-muted-foreground" />
-                            )}
-                            <span className="text-xs capitalize">{job.status}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums text-xs">
-                          {job.processedRows}/{job.totalRows}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums text-xs text-muted-foreground">
-                          {job.errorRows || "-"}
-                        </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
-                          {new Date(job.createdAt).toLocaleDateString(undefined, {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          })}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
-          )}
+          ) : <ImportJobHistory jobs={importJobs} />}
         </div>
 
         {/* Divider */}
@@ -464,19 +211,19 @@ export default function ImportExportPage() {
         <div className="space-y-5">
           <div className="flex items-center gap-2">
             <Download className="size-4 text-muted-foreground" />
-            <h3 className="text-sm font-semibold">Export Data</h3>
+            <h3 className="text-sm font-semibold">{t("exportData")}</h3>
           </div>
 
           <div className="rounded-lg border p-4 space-y-4">
             <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">Select entities to export as CSV</p>
+              <p className="text-sm text-muted-foreground">{t("selectEntitiesToExportAsCSV")}</p>
               <Button
                 variant="ghost"
                 size="sm"
                 className="h-7 text-xs text-muted-foreground"
                 onClick={selectAllExports}
               >
-                Select all
+                {t("selectAll")}
               </Button>
             </div>
 
@@ -492,9 +239,7 @@ export default function ImportExportPage() {
                   />
                   <span>{entity.label}</span>
                   {entity.transactional && (
-                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-normal text-muted-foreground">
-                      date range
-                    </Badge>
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-normal text-muted-foreground">{t("dateRange")}</Badge>
                   )}
                 </Label>
               ))}
@@ -504,20 +249,20 @@ export default function ImportExportPage() {
             {hasTransactionalSelected && (
               <div className="flex items-end gap-3 pt-1">
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">From</Label>
+                  <Label className="text-xs text-muted-foreground">{t("from")}</Label>
                   <DatePicker
                     value={exportDateFrom}
                     onChange={setExportDateFrom}
-                    placeholder="Start date"
+                    placeholder={t("startDate")}
                     className="w-[180px]"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">To</Label>
+                  <Label className="text-xs text-muted-foreground">{t("to")}</Label>
                   <DatePicker
                     value={exportDateTo}
                     onChange={setExportDateTo}
-                    placeholder="End date"
+                    placeholder={t("endDate")}
                     className="w-[180px]"
                   />
                 </div>
@@ -532,7 +277,7 @@ export default function ImportExportPage() {
                 disabled={exporting || selectedExports.size === 0}
               >
                 <Download className="mr-1.5 size-3.5" />
-                {exporting ? "Exporting..." : "Export Selected"}
+                {exporting ? t("exporting") : t("exportSelected")}
               </Button>
               <Button
                 variant="outline"
@@ -544,7 +289,7 @@ export default function ImportExportPage() {
                 }}
                 disabled={exporting}
               >
-                Export All as ZIP
+                {t("exportAllAsZIP")}
               </Button>
             </div>
           </div>
@@ -555,7 +300,7 @@ export default function ImportExportPage() {
           <BulkImportWizard
             open={wizardOpen}
             onOpenChange={setWizardOpen}
-            title={`Import ${activeEntity.label} from ${SOURCES.find(s => s.key === source)?.label || source}`}
+            title={t("wizardTitle", { entity: activeEntity.label, source: SOURCES.find(s => s.key === source)?.label || source })}
             targetFields={activeEntity.targetFields}
             previewEndpoint={activeEntity.previewEndpoint}
             importEndpoint={activeEntity.importEndpoint}

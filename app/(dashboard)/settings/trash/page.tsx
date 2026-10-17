@@ -1,10 +1,9 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { Trash2, Search, RotateCcw, X } from "lucide-react";
+import { Trash2, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -12,14 +11,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -30,58 +21,14 @@ import {
 } from "@/components/ui/dialog";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useTranslations } from "next-intl";
+import { trashEntityLabel, trashEntityOptions } from "@/i18n/data-presentation";
+import { TrashList, TrashDeleteDescription, TrashEmptyDescription, type TrashItem } from "@/components/settings/data-management-content";
 import { toast } from "sonner";
 
-interface TrashItem {
-  id: string;
-  name: string | null;
-  entityType: string;
-  label: string;
-  deletedAt: string;
-}
-
-const ENTITY_TYPES = [
-  { value: "contact", label: "Contact" },
-  { value: "invoice", label: "Invoice" },
-  { value: "bill", label: "Bill" },
-  { value: "account", label: "Account" },
-  { value: "journal_entry", label: "Journal Entry" },
-  { value: "product", label: "Product" },
-  { value: "expense", label: "Expense" },
-  { value: "quote", label: "Quote" },
-  { value: "credit_note", label: "Credit Note" },
-  { value: "debit_note", label: "Debit Note" },
-  { value: "purchase_order", label: "Purchase Order" },
-  { value: "bank_account", label: "Bank Account" },
-  { value: "payment", label: "Payment" },
-  { value: "recurring_template", label: "Recurring Template" },
-  { value: "project", label: "Project" },
-  { value: "fixed_asset", label: "Fixed Asset" },
-  { value: "budget", label: "Budget" },
-  { value: "loan", label: "Loan" },
-  { value: "document", label: "Document" },
-  { value: "document_template", label: "Template" },
-];
-
-function getRelativeTime(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diff = now.getTime() - date.getTime();
-  const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
-  return date.toLocaleDateString();
-}
-
-function getEntityLabel(entityType: string): string {
-  return ENTITY_TYPES.find((e) => e.value === entityType)?.label || entityType;
-}
-
 export default function TrashPage() {
+  const t = useTranslations("SettingsTrash");
+  const ENTITY_TYPES = trashEntityOptions(t);
   const [items, setItems] = useState<TrashItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -103,8 +50,9 @@ export default function TrashPage() {
     })
       .then((r) => r.json())
       .then((data) => setItems(data.data || []))
+      .catch(() => toast.error(t("failedToLoadTrash")))
       .finally(() => setLoading(false));
-  }, [typeFilter, search]);
+  }, [typeFilter, search, t]);
 
   useEffect(() => {
     fetchItems();
@@ -129,15 +77,14 @@ export default function TrashPage() {
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        toast.error(data.error || "Failed to restore item");
+        toast.error(t("failedToRestoreItem"));
         return;
       }
 
-      toast.success(`${item.label} restored`);
+      toast.success(t("restored", { entity: trashEntityLabel(t, item.entityType) }));
       fetchItems();
     } catch {
-      toast.error("Failed to restore item");
+      toast.error(t("failedToRestoreItem"));
     }
   };
 
@@ -158,16 +105,15 @@ export default function TrashPage() {
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        toast.error(data.error || "Failed to delete item");
+        toast.error(t("failedToDeleteItem"));
         return;
       }
 
-      toast.success(`${deleteItem.label} permanently deleted`);
+      toast.success(t("permanentlyDeleted", { entity: trashEntityLabel(t, deleteItem.entityType) }));
       setDeleteItem(null);
       fetchItems();
     } catch {
-      toast.error("Failed to delete item");
+      toast.error(t("failedToDeleteItem"));
     } finally {
       setActing(false);
     }
@@ -185,16 +131,15 @@ export default function TrashPage() {
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        toast.error(data.error || "Failed to empty trash");
+        toast.error(t("failedToEmptyTrash"));
         return;
       }
 
-      toast.success("Trash emptied");
+      toast.success(t("trashEmptied"));
       setEmptyOpen(false);
       fetchItems();
     } catch {
-      toast.error("Failed to empty trash");
+      toast.error(t("failedToEmptyTrash"));
     } finally {
       setActing(false);
     }
@@ -205,10 +150,8 @@ export default function TrashPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold">Trash</h2>
-            <p className="text-sm text-muted-foreground">
-              Deleted items are kept for 30 days before permanent removal
-            </p>
+            <h2 className="text-lg font-semibold">{t("trash")}</h2>
+            <p className="text-sm text-muted-foreground">{t("deletedItemsAreKeptFor30DaysBeforePermanentRemoval")}</p>
           </div>
           {filteredItems.length > 0 && (
             <Button
@@ -218,7 +161,7 @@ export default function TrashPage() {
               onClick={() => setEmptyOpen(true)}
             >
               <Trash2 className="size-3.5" />
-              Empty Trash
+              {t("emptyTrash")}
             </Button>
           )}
         </div>
@@ -227,7 +170,7 @@ export default function TrashPage() {
           <div className="relative flex-1">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
             <Input
-              placeholder="Search deleted items..."
+              placeholder={t("searchDeletedItems")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-8 h-8 text-sm"
@@ -235,10 +178,10 @@ export default function TrashPage() {
           </div>
           <Select value={typeFilter} onValueChange={setTypeFilter}>
             <SelectTrigger className="w-[180px] h-8 text-sm">
-              <SelectValue placeholder="All types" />
+              <SelectValue placeholder={t("allTypes")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All types</SelectItem>
+              <SelectItem value="all">{t("allTypes")}</SelectItem>
               {ENTITY_TYPES.map((type) => (
                 <SelectItem key={type.value} value={type.value}>
                   {type.label}
@@ -254,87 +197,22 @@ export default function TrashPage() {
               <Skeleton key={i} className="h-12 w-full" />
             ))}
           </div>
-        ) : filteredItems.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="rounded-full bg-muted p-3 mb-3">
-              <Trash2 className="size-6 text-muted-foreground" />
-            </div>
-            <p className="text-sm font-medium">Trash is empty</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Deleted items will appear here
-            </p>
-          </div>
-        ) : (
-          <div className="rounded-lg border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Deleted</TableHead>
-                  <TableHead className="w-[120px]" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredItems.map((item) => (
-                  <TableRow key={`${item.entityType}-${item.id}`}>
-                    <TableCell className="font-medium text-sm">
-                      {item.name || "-"}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className="text-xs">
-                        {getEntityLabel(item.entityType)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {getRelativeTime(item.deletedAt)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="size-7"
-                          title="Restore"
-                          onClick={() => handleRestore(item)}
-                        >
-                          <RotateCcw className="size-3.5" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="size-7 text-red-600"
-                          title="Delete permanently"
-                          onClick={() => setDeleteItem(item)}
-                        >
-                          <X className="size-3.5" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
+        ) : <TrashList items={filteredItems} {...{ handleRestore, setDeleteItem }} />}
       </div>
 
       {/* Permanent delete confirmation */}
       <Dialog open={!!deleteItem} onOpenChange={(o) => !o && setDeleteItem(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete permanently?</DialogTitle>
+            <DialogTitle>{t("deletePermanentlyQuestion")}</DialogTitle>
             <DialogDescription>
-              This will permanently delete &quot;{deleteItem?.name || deleteItem?.label}&quot;.
-              This action cannot be undone.
+              <TrashDeleteDescription item={deleteItem} />
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteItem(null)} disabled={acting}>
-              Cancel
-            </Button>
+            <Button variant="outline" onClick={() => setDeleteItem(null)} disabled={acting}>{t("cancel")}</Button>
             <Button variant="destructive" onClick={confirmDeletePermanently} disabled={acting}>
-              {acting ? "Deleting..." : "Delete permanently"}
+              {acting ? t("deleting") : t("deletePermanently")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -344,18 +222,15 @@ export default function TrashPage() {
       <Dialog open={emptyOpen} onOpenChange={setEmptyOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Empty trash?</DialogTitle>
+            <DialogTitle>{t("emptyTrashQuestion")}</DialogTitle>
             <DialogDescription>
-              This will permanently delete all {filteredItems.length} items in trash.
-              This action cannot be undone.
+              <TrashEmptyDescription count={filteredItems.length} />
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEmptyOpen(false)} disabled={acting}>
-              Cancel
-            </Button>
+            <Button variant="outline" onClick={() => setEmptyOpen(false)} disabled={acting}>{t("cancel")}</Button>
             <Button variant="destructive" onClick={confirmEmptyTrash} disabled={acting}>
-              {acting ? "Emptying..." : "Empty trash"}
+              {acting ? t("emptying") : t("emptyTrashAction")}
             </Button>
           </DialogFooter>
         </DialogContent>

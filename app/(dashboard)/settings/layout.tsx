@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -24,62 +26,63 @@ interface NavGroup {
   items: NavItem[];
 }
 
-const GROUPS: NavGroup[] = [
-  {
-    label: "Organization",
-    items: [
-      { href: "/settings", label: "General", icon: Settings, exact: true },
-      { href: "/settings/members", label: "Members", icon: Users },
-      { href: "/settings/roles", label: "Roles", icon: ShieldCheck },
-      { href: "/settings/billing", label: "Billing", icon: CreditCard },
-      { href: "/settings/advisors", label: "Advisors", icon: Shield },
-      { href: "/settings/document-templates", label: "Templates", icon: PaintbrushVertical },
-      { href: "/settings/import-export", label: "Import & Export", icon: ArrowLeftRight },
-      { href: "/settings/trash", label: "Trash", icon: Trash2 },
-      { href: "/settings/backups", label: "Backups", icon: Database },
-    ],
-  },
-  {
-    label: "Automation",
-    items: [
-      { href: "/settings/pipelines", label: "Pipelines", icon: Target },
-      { href: "/settings/bank-rules", label: "Bank Rules", icon: ListFilter },
-      { href: "/settings/approval-workflows", label: "Approvals", icon: CheckCircle2 },
-      { href: "/settings/procurement", label: "Bill Matching", icon: PackageCheck },
-      { href: "/settings/webhooks", label: "Webhooks", icon: Webhook },
-    ],
-  },
-  {
-    label: "Integrations",
-    items: [
-      { href: "/settings/integrations/stripe", label: "Stripe", icon: Zap },
-    ],
-  },
-  {
-    label: "Preferences",
-    items: [
-      { href: "/settings/notifications", label: "Notifications", icon: BellRing },
-      { href: "/settings/reminders", label: "Reminders", icon: Bell },
-      { href: "/settings/cost-centers", label: "Cost Centers", icon: GitBranch },
-      { href: "/settings/tags", label: "Tags", icon: Tags },
-    ],
-  },
-  {
-    label: "Developer",
-    items: [
-      { href: "/settings/api-keys", label: "API Keys", icon: Key },
-      { href: "/settings/audit-log", label: "Audit Log", icon: ScrollText },
-    ],
-  },
-];
-
-const ALL_ITEMS = GROUPS.flatMap((g) => g.items);
-
 export default function SettingsLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const st = useTranslations("SettingsNavigation");
+  const GROUPS: NavGroup[] = [
+    {
+      label: st("organization"),
+      items: [
+        { href: "/settings", label: st("general"), icon: Settings, exact: true },
+        { href: "/settings/members", label: st("members"), icon: Users },
+        { href: "/settings/roles", label: st("roles"), icon: ShieldCheck },
+        { href: "/settings/billing", label: st("billing"), icon: CreditCard },
+        { href: "/settings/advisors", label: st("advisors"), icon: Shield },
+        { href: "/settings/document-templates", label: st("templates"), icon: PaintbrushVertical },
+        { href: "/settings/import-export", label: st("importExport"), icon: ArrowLeftRight },
+        { href: "/settings/trash", label: st("trash"), icon: Trash2 },
+        { href: "/settings/backups", label: st("backups"), icon: Database },
+      ],
+    },
+    {
+      label: st("automation"),
+      items: [
+        { href: "/settings/pipelines", label: st("pipelines"), icon: Target },
+        { href: "/settings/bank-rules", label: st("bankRules"), icon: ListFilter },
+        { href: "/settings/approval-workflows", label: st("approvals"), icon: CheckCircle2 },
+        { href: "/settings/procurement", label: st("billMatching"), icon: PackageCheck },
+        { href: "/settings/webhooks", label: st("webhooks"), icon: Webhook },
+      ],
+    },
+    {
+      label: st("integrations"),
+      items: [
+        { href: "/settings/integrations/stripe", label: st("stripe"), icon: Zap },
+      ],
+    },
+    {
+      label: st("preferences"),
+      items: [
+        { href: "/settings/notifications", label: st("notifications"), icon: BellRing },
+        { href: "/settings/reminders", label: st("reminders"), icon: Bell },
+        { href: "/settings/cost-centers", label: st("costCenters"), icon: GitBranch },
+        { href: "/settings/tags", label: st("tags"), icon: Tags },
+      ],
+    },
+    {
+      label: st("developer"),
+      items: [
+        { href: "/settings/api-keys", label: st("apiKeys"), icon: Key },
+        { href: "/settings/audit-log", label: st("auditLog"), icon: ScrollText },
+      ],
+    },
+  ];
+
+  const ALL_ITEMS = GROUPS.flatMap((g) => g.items);
+
   const pathname = usePathname();
 
   const isDetailPage =

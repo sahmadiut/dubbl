@@ -216,3 +216,15 @@ Source inspection separates authentication/onboarding, shared shell, settings an
 - [LOC-011](../tasks/LOC-011.md): Extract shared shell and UI primitive catalogs.
 - [LOC-012](../tasks/LOC-012.md): Extract settings configuration catalogs.
 - [LOC-013](../tasks/LOC-013.md): Extract teams administration and notification catalogs.
+
+## LOC-012 settings extraction split
+
+Source inspection found 23 settings TSX files totaling over 10,000 lines. LOC-012,
+LOC-006 and LOC-002 retain independent integration acceptance. All children trace
+to farsi-i18nl10n-strategy and
+required-configuration-files-resource-examples-and-testing-ready-implementation-details.
+
+- [LOC-014](../tasks/LOC-014.md): Core navigation, general, procurement, cost centers and tags.
+- [LOC-015](../tasks/LOC-015.md): Settings automation and notification preferences.
+- [LOC-016](../tasks/LOC-016.md): Settings access and audit.
+- [LOC-017](../tasks/LOC-017.md): Settings providers, documents and data management.

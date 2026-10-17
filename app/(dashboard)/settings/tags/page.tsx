@@ -1,9 +1,11 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useState, useEffect, useCallback } from "react";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { TagFields } from "@/components/settings/tag-fields";
 import {
   Table,
   TableBody,
@@ -24,6 +26,7 @@ import { ContentReveal } from "@/components/ui/content-reveal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, Pencil, Trash2, Tags } from "lucide-react";
 import { toast } from "sonner";
+import { settingsErrorMessage } from "@/i18n/settings-errors";
 
 interface Tag {
   id: string;
@@ -33,20 +36,9 @@ interface Tag {
   createdAt: string;
 }
 
-const TAG_COLORS = [
-  { label: "Gray", value: "#6b7280" },
-  { label: "Red", value: "#ef4444" },
-  { label: "Orange", value: "#f97316" },
-  { label: "Amber", value: "#f59e0b" },
-  { label: "Green", value: "#22c55e" },
-  { label: "Teal", value: "#14b8a6" },
-  { label: "Blue", value: "#3b82f6" },
-  { label: "Indigo", value: "#6366f1" },
-  { label: "Purple", value: "#a855f7" },
-  { label: "Pink", value: "#ec4899" },
-];
-
 export default function TagsPage() {
+  const st = useTranslations("SettingsTags");
+  const errors = useTranslations("SettingsErrors");
   const [tags, setTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -55,7 +47,7 @@ export default function TagsPage() {
   const [color, setColor] = useState("#6b7280");
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
-  useDocumentTitle("Settings · Tags");
+  useDocumentTitle(st("settingsTags"));
 
   const fetchTags = useCallback(() => {
     const orgId = localStorage.getItem("activeOrgId");
@@ -105,11 +97,11 @@ export default function TagsPage() {
 
       if (!res.ok) {
         const data = await res.json();
-        toast.error(data.error || "Failed to save tag");
+        toast.error(settingsErrorMessage(errors, data.error, st("failedToSaveTag"), res.status));
         return;
       }
 
-      toast.success(editingTag ? "Tag updated" : "Tag created");
+      toast.success(editingTag ? st("tagUpdated") : st("tagCreated"));
       setSheetOpen(false);
       fetchTags();
     } finally {
@@ -127,10 +119,10 @@ export default function TagsPage() {
     });
 
     if (res.ok) {
-      toast.success("Tag deleted");
+      toast.success(st("tagDeleted"));
       fetchTags();
     } else {
-      toast.error("Failed to delete tag");
+      toast.error(st("failedToDeleteTag"));
     }
   };
 
@@ -139,14 +131,14 @@ export default function TagsPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold">Tags</h2>
+            <h2 className="text-lg font-semibold">{st("tags")}</h2>
             <p className="text-sm text-muted-foreground">
-              Create tags to categorize transactions, invoices, bills, and contacts.
+              {st("createTagsToCategorizeTransactionsInvoicesBillsAndContacts")}
             </p>
           </div>
           <Button size="sm" className="h-8 text-xs gap-1.5" onClick={openCreate}>
             <Plus className="size-3.5" />
-            Add Tag
+            {st("addTag")}
           </Button>
         </div>
 
@@ -159,12 +151,12 @@ export default function TagsPage() {
         ) : tags.length === 0 ? (
           <EmptyState
             icon={Tags}
-            title="No tags yet"
-            description="Tags help you categorize and filter transactions across your organization."
+            title={st("noTagsYet")}
+            description={st("tagsHelpYouCategorizeAndFilterTransactionsAcrossYourOrganization")}
           >
             <Button size="sm" className="h-8 text-xs gap-1.5 mt-3" onClick={openCreate}>
               <Plus className="size-3.5" />
-              Create Tag
+              {st("createTag")}
             </Button>
           </EmptyState>
         ) : (
@@ -172,9 +164,9 @@ export default function TagsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Color</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Description</TableHead>
+                  <TableHead>{st("color")}</TableHead>
+                  <TableHead>{st("name")}</TableHead>
+                  <TableHead>{st("description")}</TableHead>
                   <TableHead className="w-[100px]" />
                 </TableRow>
               </TableHeader>
@@ -198,6 +190,7 @@ export default function TagsPage() {
                           size="icon"
                           className="size-7"
                           onClick={() => openEdit(tag)}
+                          aria-label={st("editTag")}
                         >
                           <Pencil className="size-3.5" />
                         </Button>
@@ -206,6 +199,7 @@ export default function TagsPage() {
                           size="icon"
                           className="size-7 text-red-600"
                           onClick={() => handleDelete(tag.id)}
+                          aria-label={st("deleteTag")}
                         >
                           <Trash2 className="size-3.5" />
                         </Button>
@@ -222,46 +216,13 @@ export default function TagsPage() {
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetContent>
           <SheetHeader>
-            <SheetTitle>{editingTag ? "Edit Tag" : "New Tag"}</SheetTitle>
+            <SheetTitle>{editingTag ? st("editTag") : st("newTag")}</SheetTitle>
           </SheetHeader>
-          <div className="space-y-4 px-4 py-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Name</label>
-              <Input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Q1 2026, Marketing, Recurring"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Color</label>
-              <div className="flex flex-wrap gap-2">
-                {TAG_COLORS.map((c) => (
-                  <button
-                    key={c.value}
-                    type="button"
-                    className={`size-7 rounded-full transition-all ${
-                      color === c.value ? "ring-2 ring-offset-2 ring-primary" : "hover:scale-110"
-                    }`}
-                    style={{ backgroundColor: c.value }}
-                    onClick={() => setColor(c.value)}
-                    title={c.label}
-                  />
-                ))}
-              </div>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Description</label>
-              <Input
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Optional description"
-              />
-            </div>
-          </div>
+          <TagFields name={name} color={color} description={description}
+            onNameChange={setName} onColorChange={setColor} onDescriptionChange={setDescription} />
           <SheetFooter>
             <Button onClick={handleSave} disabled={saving || !name.trim()} className="w-full">
-              {saving ? "Saving..." : editingTag ? "Update" : "Create"}
+              {saving ? st("saving") : editingTag ? st("update") : st("create")}
             </Button>
           </SheetFooter>
         </SheetContent>

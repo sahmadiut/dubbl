@@ -3,8 +3,8 @@
 LOC-005 is the validation/preference slice of LOC-002. The parent remains open
 for full extraction and independent integration acceptance. Current coverage is
 `LocalePreferences`, LOC-010 authentication/onboarding/invitation namespaces and
-LOC-011 shared shell/UI namespaces in `messages/en-US.json` and `messages/fa-IR.json`
-(see [auth scope](AUTH_CATALOGS.md) and [shell scope](SHELL_CATALOGS.md));
+LOC-011 shared shell/UI and LOC-014 core settings namespaces in `messages/en-US.json` and `messages/fa-IR.json`
+(see [auth scope](AUTH_CATALOGS.md), [shell scope](SHELL_CATALOGS.md) and [settings scope](SETTINGS_CATALOGS.md));
 passing key parity does not mean that the rest of the product is localized.
 
 ## Catalog and authoring contract
@@ -76,6 +76,10 @@ Extraction ownership:
 | LOC-011 | LOC-006 child: shared shell and UI primitives |
 | LOC-012 | LOC-006 child: settings configuration |
 | LOC-013 | LOC-006 child: teams, administration and notifications |
+| LOC-014 | LOC-012 child: navigation, general, procurement, cost centers and tags |
+| LOC-015 | LOC-012 child: settings automation and notification preferences |
+| LOC-016 | LOC-012 child: settings access and audit |
+| LOC-017 | LOC-012 child: settings providers, documents and data management |
 | LOC-007 | Accounting, sales, purchasing, contacts, tax and associated shared UI/errors |
 | LOC-008 | Inventory, payroll, projects, CRM, reports, dashboard and documents |
 | LOC-009 | Public surfaces, landing/help, email/PDF and user-visible background content; remaining source audit |

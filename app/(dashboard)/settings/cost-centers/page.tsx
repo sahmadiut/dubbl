@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,7 +32,6 @@ import {
 } from "@/components/ui/sheet";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { ContentReveal } from "@/components/ui/content-reveal";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Plus,
   Pencil,
@@ -39,6 +40,7 @@ import {
   Network,
 } from "lucide-react";
 import { toast } from "sonner";
+import { CostCenterDeleteDescription } from "@/components/settings/cost-center-delete-description";
 
 interface CostCenter {
   id: string;
@@ -87,6 +89,8 @@ function flattenTree(nodes: TreeNode[], depth = 0): { node: TreeNode; depth: num
 }
 
 export default function CostCentersPage() {
+  const st = useTranslations("SettingsCostCenters");
+
   const [costCenters, setCostCenters] = useState<CostCenter[]>([]);
   const [loading, setLoading] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -177,14 +181,14 @@ export default function CostCentersPage() {
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error("Failed");
+      if (!res.ok) throw new Error(st("failed"));
 
-      toast.success(editing ? "Cost center updated" : "Cost center created");
+      toast.success(editing ? st("costCenterUpdated") : st("costCenterCreated"));
       closeDrawer();
       await fetchCostCenters();
     } catch {
       toast.error(
-        editing ? "Failed to update cost center" : "Failed to create cost center"
+        editing ? st("failedToUpdateCostCenter") : st("failedToCreateCostCenter")
       );
     } finally {
       setSaving(false);
@@ -199,12 +203,12 @@ export default function CostCentersPage() {
         method: "DELETE",
         headers: { "x-organization-id": orgId },
       });
-      if (!res.ok) throw new Error("Failed");
-      toast.success("Cost center deleted");
+      if (!res.ok) throw new Error(st("failed"));
+      toast.success(st("costCenterDeleted"));
       setDeleting(null);
       await fetchCostCenters();
     } catch {
-      toast.error("Failed to delete cost center");
+      toast.error(st("failedToDeleteCostCenter"));
     } finally {
       setSaving(false);
     }
@@ -241,7 +245,7 @@ export default function CostCentersPage() {
           <div className="flex items-center gap-2.5">
             <Network className="size-5 text-muted-foreground" />
             <h2 className="text-lg font-semibold tracking-tight">
-              Cost Centers
+              {st("costCenters")}
             </h2>
             {!loading && costCenters.length > 0 && (
               <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
@@ -250,8 +254,7 @@ export default function CostCentersPage() {
             )}
           </div>
           <p className="text-[13px] text-muted-foreground">
-            Manage departments and cost centers for tracking expenses and
-            revenue by category.
+            {st("manageDepartmentsAndCostCentersForTrackingExpensesAndRevenueByCategory")}
           </p>
         </div>
         <Button
@@ -260,7 +263,7 @@ export default function CostCentersPage() {
           onClick={openCreate}
         >
           <Plus className="mr-1.5 size-3.5" />
-          New Cost Center
+          {st("newCostCenter")}
         </Button>
       </div>
 
@@ -283,19 +286,19 @@ export default function CostCentersPage() {
       ) : costCenters.length === 0 ? (
         <EmptyState
           icon={Network}
-          title="No cost centers"
-          description="Create cost centers to track expenses and revenue by department or category."
+          title={st("noCostCenters")}
+          description={st("createCostCentersToTrackExpensesAndRevenueByDepartmentOrCategory")}
         />
       ) : (
         <div className="rounded-xl border bg-card overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[140px]">Code</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead className="w-[160px]">Parent</TableHead>
-                <TableHead className="w-[100px]">Status</TableHead>
-                <TableHead className="w-[100px] text-right">Actions</TableHead>
+                <TableHead className="w-[140px]">{st("code")}</TableHead>
+                <TableHead>{st("name")}</TableHead>
+                <TableHead className="w-[160px]">{st("parent")}</TableHead>
+                <TableHead className="w-[100px]">{st("status")}</TableHead>
+                <TableHead className="w-[100px] text-right">{st("actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -335,7 +338,7 @@ export default function CostCentersPage() {
                           : "text-[11px]"
                       }
                     >
-                      {node.isActive ? "Active" : "Inactive"}
+                      {node.isActive ? st("active") : st("inactive")}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
@@ -345,6 +348,7 @@ export default function CostCentersPage() {
                         size="icon"
                         className="size-7 text-muted-foreground hover:text-foreground"
                         onClick={() => openEdit(node)}
+                        aria-label={st("editCostCenter")}
                       >
                         <Pencil className="size-3" />
                       </Button>
@@ -353,6 +357,7 @@ export default function CostCentersPage() {
                         size="icon"
                         className="size-7 text-muted-foreground hover:text-destructive"
                         onClick={() => setDeleting(node)}
+                        aria-label={st("deleteCostCenter")}
                       >
                         <Trash2 className="size-3" />
                       </Button>
@@ -370,36 +375,36 @@ export default function CostCentersPage() {
         <SheetContent>
           <SheetHeader>
             <SheetTitle>
-              {editing ? "Edit Cost Center" : "New Cost Center"}
+              {editing ? st("editCostCenter") : st("newCostCenter")}
             </SheetTitle>
           </SheetHeader>
           <form onSubmit={handleSave} className="space-y-4 px-4 py-4">
             <div className="space-y-2">
-              <Label>Code</Label>
+              <Label>{st("code")}</Label>
               <Input
                 value={formCode}
                 onChange={(e) => setFormCode(e.target.value)}
-                placeholder="e.g. DEPT-ENG"
+                placeholder={st("eGDEPTENG")}
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label>Name</Label>
+              <Label>{st("name")}</Label>
               <Input
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
-                placeholder="e.g. Engineering"
+                placeholder={st("eGEngineering")}
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label>Parent Cost Center</Label>
+              <Label>{st("parentCostCenter")}</Label>
               <Select value={formParentId} onValueChange={setFormParentId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="None (top-level)" />
+                  <SelectValue placeholder={st("noneTopLevel")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">None (top-level)</SelectItem>
+                  <SelectItem value="none">{st("noneTopLevel")}</SelectItem>
                   {availableParents.map((cc) => (
                     <SelectItem key={cc.id} value={cc.id}>
                       {cc.code} · {cc.name}
@@ -410,7 +415,7 @@ export default function CostCentersPage() {
             </div>
             {editing && (
               <div className="flex items-center justify-between rounded-lg border px-4 py-3">
-                <Label className="text-sm font-normal">Active</Label>
+                <Label className="text-sm font-normal">{st("active")}</Label>
                 <Switch
                   checked={formIsActive}
                   onCheckedChange={setFormIsActive}
@@ -420,7 +425,7 @@ export default function CostCentersPage() {
           </form>
           <SheetFooter>
             <Button variant="outline" onClick={closeDrawer}>
-              Cancel
+              {st("cancel")}
             </Button>
             <Button
               onClick={handleSave}
@@ -429,11 +434,11 @@ export default function CostCentersPage() {
             >
               {saving
                 ? editing
-                  ? "Saving..."
-                  : "Creating..."
+                  ? st("saving")
+                  : st("creating")
                 : editing
-                  ? "Save Changes"
-                  : "Create"}
+                  ? st("saveChanges")
+                  : st("create")}
             </Button>
           </SheetFooter>
         </SheetContent>
@@ -443,34 +448,20 @@ export default function CostCentersPage() {
       <Sheet open={!!deleting} onOpenChange={(v) => { if (!v) setDeleting(null); }}>
         <SheetContent>
           <SheetHeader>
-            <SheetTitle>Delete Cost Center</SheetTitle>
+            <SheetTitle>{st("deleteCostCenter")}</SheetTitle>
           </SheetHeader>
-          <div className="space-y-4 px-4 py-4">
-            <p className="text-sm text-muted-foreground">
-              Are you sure you want to delete{" "}
-              <span className="font-medium text-foreground">
-                {deleting?.code} · {deleting?.name}
-              </span>
-              ? This action cannot be undone.
-            </p>
-            {deleting &&
-              costCenters.some((c) => c.parentId === deleting.id) && (
-                <p className="text-sm text-amber-600">
-                  Warning: This cost center has children. Deleting it will
-                  orphan its child entries.
-                </p>
-              )}
-          </div>
+          <CostCenterDeleteDescription code={deleting?.code ?? ""} name={deleting?.name ?? ""}
+            hasChildren={!!deleting && costCenters.some(c => c.parentId === deleting.id)} />
           <SheetFooter>
             <Button variant="outline" onClick={() => setDeleting(null)}>
-              Cancel
+              {st("cancel")}
             </Button>
             <Button
               variant="destructive"
               onClick={handleDelete}
               disabled={saving}
             >
-              {saving ? "Deleting..." : "Delete"}
+              {saving ? st("deleting") : st("delete")}
             </Button>
           </SheetFooter>
         </SheetContent>

@@ -10,6 +10,12 @@
     "save": "ذخیره تنظیمات",
     "saving": "در حال ذخیره…",
     "error": "بارگیری یا ذخیره تنظیمات انجام نشد. دوباره تلاش کنید.",
-    "organizationLanguage": "زبان پیش‌فرض سازمان"
+    "organizationLanguage": "زبان پیش‌فرض سازمان",
+    "english": "English (US)",
+    "persian": "فارسی",
+    "latinNumerals": "0123456789",
+    "persianNumerals": "۰۱۲۳۴۵۶۷۸۹",
+    "gregorianCalendar": "میلادی",
+    "persianCalendar": "هجری شمسی"
   }
 }

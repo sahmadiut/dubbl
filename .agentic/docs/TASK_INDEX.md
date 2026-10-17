@@ -335,3 +335,18 @@ Parent criteria remain open; all children cover api-backward-compatibility and d
 - [MON-166](../tasks/MON-166.md): Cut over ledger cash-flow and aging UI money.
 - [MON-167](../tasks/MON-167.md): Cut over tax tracking consolidation and custom report UI money.
 - [MON-168](../tasks/MON-168.md): Cut over analytical and bank report UI money.
+
+## LOC-002 catalog extraction split
+
+Original parent criteria and independent integration acceptance remain open. All
+children trace to farsi-i18nl10n-strategy and
+required-configuration-files-resource-examples-and-testing-ready-implementation-details.
+
+- [LOC-005](../tasks/LOC-005.md): Catalog validation and complete preference messages.
+- [LOC-006](../tasks/LOC-006.md): Shell, authentication and settings extraction.
+- [LOC-007](../tasks/LOC-007.md): Accounting, sales and purchasing extraction.
+- [LOC-008](../tasks/LOC-008.md): Operations and reporting extraction.
+- [LOC-009](../tasks/LOC-009.md): Public, document and background extraction.
+
+See [catalog contracts](../registries/MESSAGE_CATALOGS.md) for current coverage and
+limits. Later native terminology and RTL workflow acceptance stay with L10N/RTL.

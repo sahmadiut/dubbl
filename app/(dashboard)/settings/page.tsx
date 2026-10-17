@@ -230,8 +230,8 @@ export default function SettingsPage() {
           <select id="organization-language" className="h-9 w-full rounded-md border bg-background px-3 text-sm"
             value={form.defaultLanguage} onChange={event => setForm({ ...form, defaultLanguage: event.target.value })}>
             <option value="">{t("inherit")}</option>
-            <option value="en-US">English (US)</option>
-            <option value="fa-IR">فارسی</option>
+            <option value="en-US">{t("english")}</option>
+            <option value="fa-IR">{t("persian")}</option>
           </select>
         </div>
         <div className="space-y-1.5">

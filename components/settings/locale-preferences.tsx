@@ -54,14 +54,14 @@ export function LocalePreferences() {
   return <Section title={t("title")} description={t("description")}>
     {error && <p role="alert">{t("error")}</p>}
     <div className="grid gap-4 sm:grid-cols-2">
-      {select("language", [["en-US", "English (US)"], ["fa-IR", "فارسی"]])}
+      {select("language", [["en-US", t("english")], ["fa-IR", t("persian")]])}
       <div className="space-y-1.5">
         <Label htmlFor="locale-timezone">{t("timeZone")}</Label>
         <Input id="locale-timezone" dir="ltr" value={form?.timeZone ?? ""} placeholder="UTC" disabled={!form || saving}
           onChange={event => setForm(form && { ...form, timeZone: event.target.value || null })} />
       </div>
-      {select("numerals", [["latn", "0123456789"], ["arabext", "۰۱۲۳۴۵۶۷۸۹"]])}
-      {select("calendar", [["gregory", "Gregorian"], ["persian", "Persian / هجری شمسی"]])}
+      {select("numerals", [["latn", t("latinNumerals")], ["arabext", t("persianNumerals")]])}
+      {select("calendar", [["gregory", t("gregorianCalendar")], ["persian", t("persianCalendar")]])}
     </div>
     <Button onClick={save} disabled={!form || saving}>{t(saving ? "saving" : "save")}</Button>
   </Section>;

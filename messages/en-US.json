@@ -10,6 +10,12 @@
     "save": "Save preferences",
     "saving": "Saving…",
     "error": "Could not load or save preferences. Please try again.",
-    "organizationLanguage": "Organization default language"
+    "organizationLanguage": "Organization default language",
+    "english": "English (US)",
+    "persian": "فارسی",
+    "latinNumerals": "0123456789",
+    "persianNumerals": "۰۱۲۳۴۵۶۷۸۹",
+    "gregorianCalendar": "Gregorian",
+    "persianCalendar": "Persian / هجری شمسی"
   }
 }

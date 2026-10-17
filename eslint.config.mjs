@@ -3,12 +3,23 @@ import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 import { readFileSync } from "node:fs";
 import { legacyMoneyRule } from "./scripts/eslint-legacy-money.mjs";
+import { safeTranslationsRule } from "./scripts/eslint-safe-translations.mjs";
 
 const legacyMoneyBaseline = JSON.parse(readFileSync(new URL("./scripts/legacy-money-baseline.json", import.meta.url), "utf8"));
 
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  {
+    files: ["app/**/*.{ts,tsx}", "components/**/*.{ts,tsx}", "i18n/**/*.{ts,tsx}", "lib/**/*.{ts,tsx}"],
+    plugins: { i18n: { rules: { "safe-translations": safeTranslationsRule } } },
+    rules: { "i18n/safe-translations": "error" },
+  },
+  {
+    files: ["app/layout.tsx"],
+    // Root provider transports catalogs; HTML and raw rendering are still forbidden.
+    rules: { "i18n/safe-translations": ["error", { allowCatalogAccess: true }] },
+  },
   {
     files: ["**/*.ts", "**/*.tsx"],
     plugins: { money: { rules: { "no-new-legacy": legacyMoneyRule(legacyMoneyBaseline) } } },

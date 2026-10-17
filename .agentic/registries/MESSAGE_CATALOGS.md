@@ -1,0 +1,89 @@
+# Message catalog foundation
+
+LOC-005 is the validation/preference slice of LOC-002. The parent remains open
+for full extraction and independent integration acceptance. Current coverage is
+the `LocalePreferences` namespace in `messages/en-US.json` and `messages/fa-IR.json`;
+passing key parity does not mean that the rest of the product is localized.
+
+## Catalog and authoring contract
+
+- English is the compile-time key schema (`i18n/types.d.ts`). `useTranslations`
+  and `getTranslations` reject unknown namespaces and keys during typecheck.
+  Use literal keys or finite typed unions; do not erase key types with casts.
+- Both JSON files use module namespaces. Add matching keys in both locales;
+  adding further module namespaces is owned by LOC-006 through LOC-009. The
+  existing request loader/provider still supplies the selected catalog only.
+- `pnpm i18n:check` parses every message with the pinned FormatJS ICU parser,
+  checks nonempty tree/string leaves, safe identifier keys, exact key parity,
+  argument kinds/formats, rich tags, select choices, exact plural cases and
+  offsets. All runtime plural categories must exist; irrelevant categories fail.
+  Locale-specific plural category differences are allowed (notably ordinals).
+- The parser is a development dependency, imported only by validation tooling
+  and tests. No application import loads it or adds it to the client provider.
+- The gate is an explicit CI test-job step, alongside the full unit suite.
+  Typecheck and ESLint separately enforce typed production keys and safe API use.
+  JSON files are reviewed source assets, not remotely editable content.
+
+## Rendering and plural rules
+
+Use ordinary `t(key, values)` for text and `t.rich(key, {...richTextTags, ...values})`
+with `i18n/rich-text.tsx` for structured emphasis/code. Only `strong`, `em` and
+`code` tags are approved. Catalog HTML attributes, unknown tags, comments and
+ICU-quoted HTML are rejected. URLs and attributes belong in reviewed application
+code; adding a new structural tag requires validator/renderer/test review.
+
+The ESLint guard rejects raw/markup access, catalog-access imports and HTML sinks
+in modules importing next-intl/use-intl. The root layout alone may import
+`getMessages` for provider transport; it retains the HTML/raw restrictions. This
+is a developer guard, not a sandbox against adversarial JavaScript, computed
+indirection or deliberately bypassed types. Review remains required.
+
+Tests use real next-intl/React rendering and adversarial interpolation. They
+exercise cardinal 0/1/2 and fractions, ordinal branches and explicit `=0` cases.
+Persian cardinal 0 and 1 select `one`, 2 selects `other`; Persian ordinals select
+`other`. English cardinal zero selects `other`. Counts use runtime ICU; no
+English `count === 1` branching is introduced. Money/date presentation adapters
+remain separate tasks; count formatting here does not format financial amounts.
+
+Official sources checked 2026-10-17:
+
+- [next-intl translation and rich text APIs](https://next-intl.dev/docs/usage/translations)
+- [next-intl message typing](https://next-intl.dev/docs/workflows/typescript)
+- [FormatJS ICU parser](https://formatjs.github.io/docs/icu-messageformat-parser/)
+- [Unicode CLDR 48 plural rules](https://www.unicode.org/cldr/charts/48/supplemental/language_plural_rules.html#fa)
+
+## Preference scope and remaining extraction
+
+The existing preference title/description/labels/error/actions and all language,
+numeral and calendar option labels now come from catalogs, including the
+organization language selector. `UTC` remains a technical IANA placeholder.
+Language autonyms and numeral samples intentionally remain identical across
+locales. Persian calendar labels are provisional, not a native terminology approval.
+Existing en-US labels, select values, request bodies, reload behavior, URLs and
+organization permissions are preserved. No new user operation or REST route was
+introduced; existing `get_locale_preferences`/`update_locale_preferences` and
+organization tools still provide the same operations via their shared services.
+
+Extraction ownership:
+
+| Task | Scope |
+|---|---|
+| LOC-005 | Validation foundation and complete locale preference labels |
+| LOC-006 | Shared shell, auth/onboarding, settings, teams, admin, notifications |
+| LOC-007 | Accounting, sales, purchasing, contacts, tax and associated shared UI/errors |
+| LOC-008 | Inventory, payroll, projects, CRM, reports, dashboard and documents |
+| LOC-009 | Public surfaces, landing/help, email/PDF and user-visible background content; remaining source audit |
+| LOC-002 | Independent combined key coverage, plural and safe rendering acceptance |
+
+Later L10N/RTL tasks retain native-reviewed financial wording, complete Persian
+workflows and layout qualification. Do not use English placeholders or parity
+alone as proof of completed Persian translation.
+
+## Verification
+
+[Catalog tests](../../tests/message-catalogs.test.ts) cover production key parity,
+negative ICU/shape/placeholder/format/tag cases, real plural and escaping behavior,
+rendered preference controls, and lint rejection. Compile-time negative probes
+ensure missing namespaces/keys fail typecheck. Existing
+[locale tests](../../tests/locale.test.ts) cover preference precedence and provider
+payload serialization. No DB/API/schema change is part of LOC-005.

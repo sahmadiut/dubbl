@@ -17,11 +17,13 @@ const coverage = JSON.parse(await readFile(".agentic/registries/MONEY_BIGINT_MIG
 };
 const money = coverage.columns.filter(c => c.before !== c.after);
 const tables = [...new Set(money.map(c => c.table))];
-const payrollSnapshotColumns: Record<string, string[]> = {
+const nullableExpansionColumns: Record<string, string[]> = {
   compensation_review: ["currency"],
   contractor_payment: ["base_amount", "base_currency", "rate_exact", "payment_date"],
   payroll_run: ["base_currency", "termination_employee_id", "termination_pto_hours"],
   payroll_item_deduction: ["employee_deduction_id", "liability_account_code"],
+  organization: ["default_language"],
+  users: ["language", "time_zone", "numerals", "calendar"],
 };
 const quote = (name: string) => {
   assert.match(name, /^[a-z_]+$/);
@@ -42,7 +44,7 @@ async function assertTypes(pool: pg.Pool, upgraded: boolean) {
     const type = upgraded ? column.after : column.before;
     assert.equal(match.udt_name, ({ integer: "int4", bigint: "int8", real: "float4" } as Record<string, string>)[type] ?? type);
   }
-  if (upgraded) for (const [table, columns] of Object.entries(payrollSnapshotColumns)) {
+  if (upgraded) for (const [table, columns] of Object.entries(nullableExpansionColumns)) {
     for (const column of columns) {
       const match = actual.find(c => c.table_name === table && c.column_name === column);
       assert.ok(match, `${table}.${column}`);
@@ -51,7 +53,7 @@ async function assertTypes(pool: pg.Pool, upgraded: boolean) {
     }
     const { rows: [row] } = await pool.query(`SELECT count(*)::int AS populated FROM ${quote(table)}
       WHERE ${columns.map(column => `${quote(column)} IS NOT NULL`).join(" OR ")}`);
-    assert.equal(row.populated, 0, `${table} historical snapshot fields must remain null`);
+    assert.equal(row.populated, 0, `${table} historical nullable fields must remain null`);
   }
 }
 
@@ -108,10 +110,10 @@ async function checksums(pool: pg.Pool) {
   const result: Record<string, unknown> = {};
   // Hash historical row values, including non-money columns, dates and org IDs.
   for (const table of tables) {
-    // MON-077/082/083 add nullable fields; compare every original column and separately
-    // assert the new payroll snapshots stay null in assertTypes after upgrading.
+    // Payroll and LOC-001 add nullable fields; compare every original column and
+    // separately assert the new fields stay null in assertTypes after upgrading.
     const addedColumns = table === "inventory_cost_layer" ? ["remaining_value"]
-      : table === "inventory_layer_consumption" ? ["value"] : payrollSnapshotColumns[table] ?? [];
+      : table === "inventory_layer_consumption" ? ["value"] : nullableExpansionColumns[table] ?? [];
     result[table] = (await pool.query(`SELECT count(*)::text AS count,
       md5(string_agg(row_data::text, ',' ORDER BY row_data::text)) AS checksum
       FROM (SELECT to_jsonb(t) - ARRAY['rate_exact','rate_format_version','rate_direction','rate_provenance','rate_migration_status',
@@ -155,6 +157,19 @@ test("MON-003 widens all 195 columns, preserving every table checksum, nullabili
       .map(c => [c.table_name, c.column_name, c.is_nullable, c.column_default]),
       beforeMeta.map(c => [c.table_name, c.column_name, c.is_nullable, c.column_default]));
     applyCurrent(url);
+    assert.deepEqual(await checksums(pool), before);
+    // Excluding an added column from historical hashes must not permit a
+    // migration to populate it, or stop detecting changes to original fields.
+    await pool.query("BEGIN");
+    try {
+      await pool.query("UPDATE organization SET default_language = 'fa-IR'");
+      await assert.rejects(assertTypes(pool, true), /organization historical nullable fields must remain null/);
+    } finally { await pool.query("ROLLBACK"); }
+    await pool.query("BEGIN");
+    try {
+      await pool.query("UPDATE organization SET name = name || '_rewritten'");
+      assert.notDeepEqual(await checksums(pool), before, "Historical non-money fields must remain protected");
+    } finally { await pool.query("ROLLBACK"); }
     assert.deepEqual(await checksums(pool), before);
     const afterSize = (await pool.query("SELECT pg_database_size(current_database())::text AS bytes")).rows[0].bytes;
     console.log(JSON.stringify({ task: "MON-003", columns: money.length, tables: tables.length, elapsedMs, beforeSize, afterSize }));

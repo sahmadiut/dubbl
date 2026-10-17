@@ -1,5 +1,10 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { authErrorMessage } from "@/i18n/auth-errors";
+import { invitationRole } from "@/i18n/invitation-role";
+import { richTextTags } from "@/i18n/rich-text";
+
 import { setActiveOrganization } from "@/i18n/organization-client";
 
 import { useState, useEffect } from "react";
@@ -18,6 +23,8 @@ interface InviteInfo {
 }
 
 export default function InviteAcceptPage() {
+  const t = useTranslations("Invitation");
+  const te = useTranslations("AuthErrors");
   const { token } = useParams<{ token: string }>();
   const router = useRouter();
   const [state, setState] = useState<State>("loading");
@@ -41,7 +48,7 @@ export default function InviteAcceptPage() {
             setState("ready");
           } else {
             const data = await res.json().catch(() => ({}));
-            setError(data.error || "Invalid invite link");
+            setError(authErrorMessage(te, data.error, t("invalidLink"), res.status));
             setState("error");
           }
         } else {
@@ -53,17 +60,17 @@ export default function InviteAcceptPage() {
             setState("ready");
           } else {
             const data = await res.json().catch(() => ({}));
-            setError(data.error || "Invalid invitation");
+            setError(authErrorMessage(te, data.error, t("invalid"), res.status));
             setState("error");
           }
         }
       } catch {
-        setError("Failed to load invitation");
+        setError(t("loadFailed"));
         setState("error");
       }
     }
     loadInfo();
-  }, [token, isLinkToken]);
+  }, [token, isLinkToken, t, te]);
 
   async function handleAccept() {
     setState("accepting");
@@ -76,14 +83,14 @@ export default function InviteAcceptPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Failed to accept invitation");
+        setError(authErrorMessage(te, data.error, t("acceptFailed"), res.status));
         setState("error");
         return;
       }
       setOrgId(data.organizationId);
       setState("success");
     } catch {
-      setError("Something went wrong");
+      setError(t("failed"));
       setState("error");
     }
   }
@@ -108,7 +115,7 @@ export default function InviteAcceptPage() {
           {state === "loading" && (
             <div className="flex flex-col items-center py-8">
               <Loader2 className="size-8 text-muted-foreground animate-spin" />
-              <p className="mt-4 text-sm text-muted-foreground">Loading invitation...</p>
+              <p className="mt-4 text-sm text-muted-foreground">{t("loading")}</p>
             </div>
           )}
 
@@ -116,13 +123,12 @@ export default function InviteAcceptPage() {
             <div className="space-y-6">
               <div>
                 <h1 className="text-xl font-semibold tracking-tight">
-                  Join {info.orgName}
+                  {t("join", { organization: info.orgName })}
                 </h1>
                 <p className="mt-2 text-sm text-muted-foreground">
                   {info.type === "email" && info.inviterName
-                    ? `${info.inviterName} invited you to join as a `
-                    : "You've been invited to join as a "}
-                  <span className="font-medium text-foreground">{info.role}</span>.
+                    ? t.rich("invitedBy", { ...richTextTags, inviter: info.inviterName, role: invitationRole(t, info.role) })
+                    : t.rich("invited", { ...richTextTags, role: invitationRole(t, info.role) })}
                 </p>
               </div>
 
@@ -132,7 +138,7 @@ export default function InviteAcceptPage() {
                 </div>
                 <div>
                   <p className="text-sm font-medium">{info.orgName}</p>
-                  <p className="text-xs text-muted-foreground capitalize">Role: {info.role}</p>
+                  <p className="text-xs text-muted-foreground capitalize">{t("role", { role: invitationRole(t, info.role) })}</p>
                 </div>
               </div>
 
@@ -141,7 +147,7 @@ export default function InviteAcceptPage() {
                 className="w-full bg-emerald-600 hover:bg-emerald-700"
                 size="lg"
               >
-                Accept Invitation
+                {t("accept")}
               </Button>
             </div>
           )}
@@ -149,7 +155,7 @@ export default function InviteAcceptPage() {
           {state === "accepting" && (
             <div className="flex flex-col items-center py-8">
               <Loader2 className="size-8 text-emerald-600 animate-spin" />
-              <p className="mt-4 text-sm text-muted-foreground">Joining organization...</p>
+              <p className="mt-4 text-sm text-muted-foreground">{t("joining")}</p>
             </div>
           )}
 
@@ -159,9 +165,9 @@ export default function InviteAcceptPage() {
                 <div className="flex size-12 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-950/50">
                   <CheckCircle2 className="size-6 text-emerald-600" />
                 </div>
-                <h1 className="mt-4 text-xl font-semibold">You&apos;re in!</h1>
+                <h1 className="mt-4 text-xl font-semibold">{t("success")}</h1>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  You&apos;ve joined {info?.orgName || "the organization"} successfully.
+                  {t("joined", { organization: info?.orgName || t("organization") })}
                 </p>
               </div>
               <Button
@@ -169,7 +175,7 @@ export default function InviteAcceptPage() {
                 className="w-full bg-emerald-600 hover:bg-emerald-700"
                 size="lg"
               >
-                Go to Dashboard
+                {t("dashboard")}
               </Button>
             </div>
           )}
@@ -180,15 +186,15 @@ export default function InviteAcceptPage() {
                 <div className="flex size-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-950/50">
                   <XCircle className="size-6 text-red-600" />
                 </div>
-                <h1 className="mt-4 text-xl font-semibold">Something went wrong</h1>
+                <h1 className="mt-4 text-xl font-semibold">{t("failed")}</h1>
                 <p className="mt-2 text-sm text-muted-foreground">{error}</p>
               </div>
               <div className="flex gap-3">
                 <Button variant="outline" className="flex-1" onClick={() => router.push("/")}>
-                  Go Home
+                  {t("home")}
                 </Button>
                 <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700" onClick={() => router.push("/sign-in")}>
-                  Sign In
+                  {t("signIn")}
                 </Button>
               </div>
             </div>

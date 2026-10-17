@@ -1,5 +1,9 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { authErrorMessage, AuthPresentationError } from "@/i18n/auth-errors";
+import { countryName, industryName, referralName } from "@/i18n/onboarding-options";
+
 import { setActiveOrganization } from "@/i18n/organization-client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -32,15 +36,6 @@ import {
 import { INDUSTRIES, type Industry } from "@/lib/data/industries";
 import { REFERRAL_SOURCES, type ReferralSource } from "@/lib/data/referral-sources";
 
-const STEPS = [
-  { label: "Organization", icon: Building2 },
-  { label: "Country", icon: Globe },
-  { label: "Business Type", icon: Briefcase },
-  { label: "Industry", icon: Factory },
-  { label: "Referral", icon: Megaphone },
-  { label: "Review", icon: ClipboardCheck },
-];
-
 interface OrgData {
   id: string;
   name: string;
@@ -51,6 +46,17 @@ interface OrgData {
 }
 
 export function OnboardingWizard() {
+  const t = useTranslations("Onboarding");
+  const te = useTranslations("AuthErrors");
+  const STEPS = [
+    { label: t("organization"), icon: Building2 },
+    { label: t("country"), icon: Globe },
+    { label: t("businessType"), icon: Briefcase },
+    { label: t("industry"), icon: Factory },
+    { label: t("referral"), icon: Megaphone },
+    { label: t("review"), icon: ClipboardCheck },
+  ];
+
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -168,7 +174,7 @@ export function OnboardingWizard() {
 
         if (!createRes.ok) {
           const data = await createRes.json();
-          throw new Error(data.error || "Failed to create organization");
+          throw new AuthPresentationError(authErrorMessage(te, data.error, t("createFailed"), createRes.status));
         }
 
         const createData = await createRes.json();
@@ -205,12 +211,12 @@ export function OnboardingWizard() {
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || "Failed to update organization");
+        throw new AuthPresentationError(authErrorMessage(te, data.error, t("updateFailed"), res.status));
       }
 
       window.location.href = "/dashboard";
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Something went wrong");
+      toast.error(err instanceof AuthPresentationError ? err.message : t("failed"));
       setSubmitting(false);
     }
   }
@@ -234,7 +240,7 @@ export function OnboardingWizard() {
           className="mb-4 flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowUpRight className="size-3.5" />
-          Back to Dashboard
+          {t("dashboard")}
         </button>
       )}
       {/* Step content */}
@@ -346,13 +352,13 @@ export function OnboardingWizard() {
             className="gap-1.5"
           >
             <ArrowLeft className="size-4" />
-            Back
+            {t("back")}
           </Button>
 
           <div className="flex items-center gap-2">
             {isOptionalStep() && (
               <Button variant="ghost" onClick={goNext} className="text-muted-foreground">
-                Skip
+                {t("skip")}
               </Button>
             )}
             {step < STEPS.length - 1 ? (
@@ -361,7 +367,7 @@ export function OnboardingWizard() {
                 disabled={!canProceed()}
                 className="gap-1.5 bg-emerald-600 shadow-md shadow-emerald-600/15 hover:bg-emerald-500"
               >
-                Next
+                {t("next")}
                 <ArrowRight className="size-4" />
               </Button>
             ) : (
@@ -370,7 +376,7 @@ export function OnboardingWizard() {
                 disabled={submitting}
                 className="gap-1.5 bg-emerald-600 shadow-md shadow-emerald-600/15 hover:bg-emerald-500"
               >
-                {submitting ? "Setting up..." : "Complete Setup"}
+                {submitting ? t("settingUp") : t("complete")}
                 {!submitting && <Check className="size-4" />}
               </Button>
             )}
@@ -383,31 +389,32 @@ export function OnboardingWizard() {
 
 // ── Step 1: Organization Name ──
 
-function StepOrgName({
+export function StepOrgName({
   name,
   onNameChange,
 }: {
   name: string;
   onNameChange: (v: string) => void;
 }) {
+  const t = useTranslations("Onboarding");
   return (
     <div>
       <h2 className="text-xl font-bold tracking-tight text-foreground">
-        Name your organization
+        {t("nameTitle")}
       </h2>
       <p className="mt-1.5 text-sm text-muted-foreground">
-        This is how your organization will appear across dubbl.
+        {t("nameDescription")}
       </p>
       <div className="mt-6">
         <div className="space-y-2">
           <Label htmlFor="org-name" className="text-xs font-medium">
-            Organization Name
+            {t("name")}
           </Label>
           <Input
             id="org-name"
             value={name}
             onChange={(e) => onNameChange(e.target.value)}
-            placeholder="My Company"
+            placeholder={t("nameExample")}
             autoFocus
             className="h-11 rounded-lg"
           />
@@ -419,37 +426,39 @@ function StepOrgName({
 
 // ── Step 2: Country ──
 
-function StepCountry({
+export function StepCountry({
   selected,
   onSelect,
 }: {
   selected: string;
   onSelect: (code: string) => void;
 }) {
+  const t = useTranslations("Onboarding");
+  const options = useTranslations("OnboardingOptions");
   const [search, setSearch] = useState("");
 
   const filtered = useMemo(() => {
     if (!search.trim()) return COUNTRIES;
     const q = search.toLowerCase();
     return COUNTRIES.filter(
-      (c) => c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q)
+      (c) => countryName(options, c).toLowerCase().includes(q) || c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q)
     );
-  }, [search]);
+  }, [search, options]);
 
   return (
     <div>
       <h2 className="text-xl font-bold tracking-tight text-foreground">
-        Where is your business based?
+        {t("countryTitle")}
       </h2>
       <p className="mt-1.5 text-sm text-muted-foreground">
-        This sets your default currency and available business types.
+        {t("countryDescription")}
       </p>
       <div className="relative mt-5">
         <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search countries..."
+          placeholder={t("searchCountries")}
           className="h-10 rounded-lg pl-9"
           autoFocus
         />
@@ -466,7 +475,7 @@ function StepCountry({
             }`}
           >
             <span className="text-lg">{c.flag}</span>
-            <span className="font-medium">{c.name}</span>
+            <span className="font-medium">{countryName(options, c)}</span>
             <span className="ml-auto text-xs text-muted-foreground">
               {c.defaultCurrency}
             </span>
@@ -474,7 +483,7 @@ function StepCountry({
         ))}
         {filtered.length === 0 && (
           <p className="py-6 text-center text-sm text-muted-foreground">
-            No countries found
+            {t("noCountries")}
           </p>
         )}
       </div>
@@ -484,7 +493,7 @@ function StepCountry({
 
 // ── Step 3: Business Type ──
 
-function StepBusinessType({
+export function StepBusinessType({
   countryCode,
   selected,
   onSelect,
@@ -493,6 +502,8 @@ function StepBusinessType({
   selected: string;
   onSelect: (code: string) => void;
 }) {
+  const t = useTranslations("Onboarding");
+  const options = useTranslations("OnboardingOptions");
   const types = useMemo(
     () => getBusinessTypesForCountry(countryCode),
     [countryCode]
@@ -503,10 +514,10 @@ function StepBusinessType({
   return (
     <div>
       <h2 className="text-xl font-bold tracking-tight text-foreground">
-        What type of business?
+        {t("typeTitle")}
       </h2>
       <p className="mt-1.5 text-sm text-muted-foreground">
-        Business entity types available in {country?.name ?? "your country"}.
+        {t("availableTypes", { country: country ? countryName(options, country) : t("yourCountry") })}
       </p>
       <div className="mt-5 max-h-[320px] space-y-1 overflow-y-auto rounded-lg">
         {types.map((t) => (
@@ -534,20 +545,22 @@ function StepBusinessType({
 
 // ── Step 4: Industry ──
 
-function StepIndustry({
+export function StepIndustry({
   selected,
   onSelect,
 }: {
   selected: string;
   onSelect: (code: string) => void;
 }) {
+  const t = useTranslations("Onboarding");
+  const options = useTranslations("OnboardingOptions");
   return (
     <div>
       <h2 className="text-xl font-bold tracking-tight text-foreground">
-        What industry are you in?
+        {t("industryTitle")}
       </h2>
       <p className="mt-1.5 text-sm text-muted-foreground">
-        This helps us tailor your experience. Optional.
+        {t("industryDescription")}
       </p>
       <div className="mt-5 grid grid-cols-2 gap-2">
         {INDUSTRIES.map((ind) => (
@@ -560,7 +573,7 @@ function StepIndustry({
                 : "hover:bg-muted/60"
             }`}
           >
-            {ind.name}
+            {industryName(options, ind)}
           </button>
         ))}
       </div>
@@ -570,7 +583,7 @@ function StepIndustry({
 
 // ── Step 5: Referral ──
 
-function StepReferral({
+export function StepReferral({
   selected,
   other,
   onSelect,
@@ -581,13 +594,15 @@ function StepReferral({
   onSelect: (code: string) => void;
   onOtherChange: (v: string) => void;
 }) {
+  const t = useTranslations("Onboarding");
+  const options = useTranslations("OnboardingOptions");
   return (
     <div>
       <h2 className="text-xl font-bold tracking-tight text-foreground">
-        How did you hear about us?
+        {t("referralTitle")}
       </h2>
       <p className="mt-1.5 text-sm text-muted-foreground">
-        This helps us grow. Optional.
+        {t("referralDescription")}
       </p>
       <div className="mt-5 grid grid-cols-2 gap-2">
         {REFERRAL_SOURCES.map((src) => (
@@ -600,20 +615,20 @@ function StepReferral({
                 : "hover:bg-muted/60"
             }`}
           >
-            {src.name}
+            {referralName(options, src)}
           </button>
         ))}
       </div>
       {selected === "other" && (
         <div className="mt-4 space-y-2">
           <Label htmlFor="referral-other" className="text-xs font-medium">
-            Please specify
+            {t("specify")}
           </Label>
           <Input
             id="referral-other"
             value={other}
             onChange={(e) => onOtherChange(e.target.value)}
-            placeholder="Tell us more..."
+            placeholder={t("more")}
             className="h-10 rounded-lg"
             autoFocus
           />
@@ -625,7 +640,7 @@ function StepReferral({
 
 // ── Step 6: Review ──
 
-function StepReview({
+export function StepReview({
   orgName,
   countryCode,
   businessType,
@@ -640,6 +655,8 @@ function StepReview({
   referralSource: string;
   referralOther: string;
 }) {
+  const t = useTranslations("Onboarding");
+  const options = useTranslations("OnboardingOptions");
   const country = COUNTRIES.find((c) => c.code === countryCode);
   const types = getBusinessTypesForCountry(countryCode);
   const bt = types.find((t) => t.code === businessType);
@@ -647,30 +664,30 @@ function StepReview({
   const ref = REFERRAL_SOURCES.find((r) => r.code === referralSource);
 
   const items: { label: string; value: string }[] = [
-    { label: "Organization", value: orgName },
+    { label: t("organization"), value: orgName },
     {
-      label: "Country",
-      value: country ? `${country.flag} ${country.name}` : "-",
+      label: t("country"),
+      value: country ? `${country.flag} ${countryName(options, country)}` : "-",
     },
-    { label: "Currency", value: country?.defaultCurrency ?? "-" },
-    { label: "Business Type", value: bt?.localName ?? "-" },
-    { label: "Industry", value: ind?.name ?? "-" },
+    { label: t("currency"), value: country?.defaultCurrency ?? "-" },
+    { label: t("businessType"), value: bt?.localName ?? "-" },
+    { label: t("industry"), value: ind ? industryName(options, ind) : "-" },
     {
-      label: "Referral",
+      label: t("referral"),
       value:
         referralSource === "other" && referralOther
           ? referralOther
-          : ref?.name ?? "-",
+          : ref ? referralName(options, ref) : "-",
     },
   ];
 
   return (
     <div>
       <h2 className="text-xl font-bold tracking-tight text-foreground">
-        You&apos;re all set
+        {t("ready")}
       </h2>
       <p className="mt-1.5 text-sm text-muted-foreground">
-        Review your details before getting started.
+        {t("reviewDescription")}
       </p>
       <div className="mt-6 space-y-3">
         {items.map((item) => (
@@ -688,7 +705,7 @@ function StepReview({
       <div className="mt-4 flex items-start gap-2.5 rounded-lg bg-amber-50 px-3.5 py-3 dark:bg-amber-950/30">
         <Info className="mt-0.5 size-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
         <p className="text-xs text-amber-700 dark:text-amber-300">
-          A default chart of accounts for your country will be created. We recommend reviewing it with your accountant to ensure it meets local regulatory requirements.
+          {t("chartNotice")}
         </p>
       </div>
     </div>

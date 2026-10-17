@@ -207,3 +207,12 @@ required-configuration-files-resource-examples-and-testing-ready-implementation-
 
 See [catalog contracts](../registries/MESSAGE_CATALOGS.md) for current coverage and
 limits. Later native terminology and RTL workflow acceptance stay with L10N/RTL.
+
+## LOC-006 extraction split
+
+Source inspection separates authentication/onboarding, shared shell, settings and administration into reviewable slices. LOC-006 retains combined acceptance.
+
+- [LOC-010](../tasks/LOC-010.md): Extract authentication onboarding and invitation catalogs.
+- [LOC-011](../tasks/LOC-011.md): Extract shared shell and UI primitive catalogs.
+- [LOC-012](../tasks/LOC-012.md): Extract settings configuration catalogs.
+- [LOC-013](../tasks/LOC-013.md): Extract teams administration and notification catalogs.

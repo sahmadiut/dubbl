@@ -2,7 +2,8 @@
 
 LOC-005 is the validation/preference slice of LOC-002. The parent remains open
 for full extraction and independent integration acceptance. Current coverage is
-the `LocalePreferences` namespace in `messages/en-US.json` and `messages/fa-IR.json`;
+`LocalePreferences` plus the LOC-010 authentication/onboarding/invitation namespaces
+in `messages/en-US.json` and `messages/fa-IR.json` (see [scope and exceptions](AUTH_CATALOGS.md));
 passing key parity does not mean that the rest of the product is localized.
 
 ## Catalog and authoring contract
@@ -70,6 +71,10 @@ Extraction ownership:
 |---|---|
 | LOC-005 | Validation foundation and complete locale preference labels |
 | LOC-006 | Shared shell, auth/onboarding, settings, teams, admin, notifications |
+| LOC-010 | LOC-006 child: authentication/onboarding/invitations and MCP consent |
+| LOC-011 | LOC-006 child: shared shell and UI primitives |
+| LOC-012 | LOC-006 child: settings configuration |
+| LOC-013 | LOC-006 child: teams, administration and notifications |
 | LOC-007 | Accounting, sales, purchasing, contacts, tax and associated shared UI/errors |
 | LOC-008 | Inventory, payroll, projects, CRM, reports, dashboard and documents |
 | LOC-009 | Public surfaces, landing/help, email/PDF and user-visible background content; remaining source audit |

@@ -1,5 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { AuthPresentationError } from "@/i18n/auth-errors";
+
 import { setActiveOrganization } from "@/i18n/organization-client";
 import { authDestination } from "@/i18n/navigation";
 
@@ -64,6 +67,7 @@ interface ProvidersConfig {
 }
 
 function SignInContent() {
+  const t = useTranslations("Auth");
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
   const [email, setEmail] = useState("");
@@ -105,9 +109,9 @@ function SignInContent() {
         setNeedsTotp(true);
         setError("");
       } else if (needsTotp) {
-        setError("Invalid authentication code");
+        setError(t("invalidCode"));
       } else {
-        setError("Invalid email or password");
+        setError(t("invalidCredentials"));
       }
       setLoading(false);
     } else {
@@ -121,7 +125,7 @@ function SignInContent() {
 
     try {
       const seedRes = await fetch("/api/auth/dev-login", { method: "POST" });
-      if (!seedRes.ok) throw new Error("Failed to seed dev user");
+      if (!seedRes.ok) throw new AuthPresentationError(t("seedFailed"));
       const { credentials, organizationId } = await seedRes.json();
 
       setActiveOrganization(organizationId);
@@ -133,12 +137,12 @@ function SignInContent() {
       });
 
       if (res?.error) {
-        throw new Error("Dev sign-in failed");
+        throw new AuthPresentationError(t("devSignInFailed"));
       }
 
       window.location.href = "/dashboard";
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Dev login failed");
+      setError(err instanceof AuthPresentationError ? err.message : t("devLoginFailed"));
       setDevLoading(false);
     }
   }
@@ -152,10 +156,10 @@ function SignInContent() {
         transition={{ duration: 0.4 }}
       >
         <h1 className="text-[28px] font-extrabold tracking-tight text-foreground">
-          Welcome back
+          {t("welcome")}
         </h1>
         <p className="mt-1.5 text-sm text-muted-foreground">
-          Sign in to your account
+          {t("signInDescription")}
         </p>
       </motion.div>
 
@@ -172,11 +176,11 @@ function SignInContent() {
             onClick={handleDevLogin}
             disabled={devLoading}
           >
-            {devLoading ? "Setting up..." : "Dev Login (test account)"}
+            {devLoading ? t("settingUp") : t("devLogin")}
           </Button>
           <div className="my-5 flex items-center gap-3">
             <Separator className="flex-1" />
-            <span className="text-[11px] text-muted-foreground">or</span>
+            <span className="text-[11px] text-muted-foreground">{t("or")}</span>
             <Separator className="flex-1" />
           </div>
         </motion.div>
@@ -218,7 +222,7 @@ function SignInContent() {
           <div className="my-5 flex items-center gap-3">
             <Separator className="flex-1" />
             <span className="text-[11px] text-muted-foreground">
-              or continue with email
+              {t("continueEmail")}
             </span>
             <Separator className="flex-1" />
           </div>
@@ -240,7 +244,7 @@ function SignInContent() {
 
         <div className="space-y-2">
           <Label htmlFor="email" className="text-xs font-medium">
-            Email
+            {t("email")}
           </Label>
           <Input
             id="email"
@@ -256,14 +260,14 @@ function SignInContent() {
 
         <div className="space-y-2">
           <Label htmlFor="password" className="text-xs font-medium">
-            Password
+            {t("password")}
           </Label>
           <Input
             id="password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Your password"
+            placeholder={t("passwordPlaceholder")}
             required
             className="h-11 rounded-lg"
           />
@@ -272,7 +276,7 @@ function SignInContent() {
         {needsTotp && (
           <div className="space-y-2">
             <Label htmlFor="totp" className="text-xs font-medium">
-              Authentication code
+              {t("authCode")}
             </Label>
             <Input
               id="totp"
@@ -281,13 +285,13 @@ function SignInContent() {
               autoComplete="one-time-code"
               value={totp}
               onChange={(e) => setTotp(e.target.value)}
-              placeholder="6-digit code or backup code"
+              placeholder={t("codePlaceholder")}
               required
               autoFocus
               className="h-11 rounded-lg"
             />
             <p className="text-xs text-muted-foreground">
-              Enter the code from your authenticator app, or a backup code.
+              {t("codeHint")}
             </p>
           </div>
         )}
@@ -298,10 +302,10 @@ function SignInContent() {
           disabled={loading}
         >
           {loading ? (
-            "Signing in..."
+            t("signingIn")
           ) : (
             <span className="inline-flex items-center gap-2">
-              Sign in
+              {t("signIn")}
               <ArrowRight className="size-4" />
             </span>
           )}
@@ -315,12 +319,12 @@ function SignInContent() {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.4, delay: 0.2 }}
         >
-          Don&apos;t have an account?{" "}
+          {t("noAccount")}{" "}
           <Link
             href="/sign-up"
             className="font-medium text-emerald-600 transition-colors hover:text-emerald-500 dark:text-emerald-400 dark:hover:text-emerald-300"
           >
-            Sign up
+            {t("signUp")}
           </Link>
         </motion.p>
       )}
@@ -331,7 +335,7 @@ function SignInContent() {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.4, delay: 0.25 }}
       >
-        Open source &middot; Self-hosted option &middot; Apache 2.0
+        {t("openSource")}
       </motion.p>
     </div>
   );

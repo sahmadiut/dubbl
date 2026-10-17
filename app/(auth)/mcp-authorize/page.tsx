@@ -1,5 +1,9 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { authErrorMessage, AuthPresentationError } from "@/i18n/auth-errors";
+import { richTextTags } from "@/i18n/rich-text";
+
 import { Suspense, useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion } from "motion/react";
@@ -27,9 +31,11 @@ interface OrgOption {
 }
 
 function McpAuthorizeContent() {
+  const t = useTranslations("Consent");
+  const te = useTranslations("AuthErrors");
   const router = useRouter();
   const searchParams = useSearchParams();
-  const clientName = searchParams.get("client_name") || "MCP Client";
+  const clientName = searchParams.get("client_name") || t("client");
   const clientId = searchParams.get("client_id") || "";
   const redirectUri = searchParams.get("redirect_uri") || "";
   const codeChallenge = searchParams.get("code_challenge") || "";
@@ -52,12 +58,12 @@ function McpAuthorizeContent() {
           setSelectedOrg(orgs[0].id);
         }
       })
-      .catch(() => setError("Failed to load organizations"));
-  }, []);
+      .catch(() => setError(t("loadFailed")));
+  }, [t]);
 
   async function handleApprove() {
     if (!selectedOrg) {
-      setError("Please select an organization");
+      setError(t("selectRequired"));
       return;
     }
     setError("");
@@ -80,13 +86,13 @@ function McpAuthorizeContent() {
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || "Authorization failed");
+        throw new AuthPresentationError(authErrorMessage(te, data.error, t("failed"), res.status));
       }
 
       const data = await res.json();
       router.push(data.redirect_url);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Authorization failed");
+      setError(err instanceof AuthPresentationError ? err.message : t("failed"));
       setLoading(false);
     }
   }
@@ -112,11 +118,10 @@ function McpAuthorizeContent() {
           <Shield className="size-6 text-emerald-600 dark:text-emerald-400" />
         </div>
         <h1 className="text-[28px] font-extrabold tracking-tight text-foreground">
-          Authorize MCP Access
+          {t("title")}
         </h1>
         <p className="mt-1.5 text-sm text-muted-foreground">
-          <span className="font-medium text-foreground">{clientName}</span>{" "}
-          wants to access your dubbl data via MCP
+          {t.rich("request", { ...richTextTags, client: clientName })}
         </p>
       </motion.div>
 
@@ -134,22 +139,22 @@ function McpAuthorizeContent() {
 
         <div className="rounded-lg border bg-muted/30 p-4">
           <p className="text-xs font-medium text-muted-foreground mb-2">
-            This application will be able to:
+            {t("permissions")}
           </p>
           <ul className="space-y-1.5 text-sm">
-            <li>Read and manage your chart of accounts</li>
-            <li>Create and manage journal entries</li>
-            <li>Read and manage contacts, invoices, and bills</li>
-            <li>Generate financial reports</li>
+            <li>{t("accounts")}</li>
+            <li>{t("journals")}</li>
+            <li>{t("documents")}</li>
+            <li>{t("reports")}</li>
           </ul>
         </div>
 
         {organizations.length > 1 && (
           <div className="space-y-2">
-            <label className="text-xs font-medium">Select Organization</label>
+            <label className="text-xs font-medium">{t("selectOrg")}</label>
             <Select value={selectedOrg} onValueChange={setSelectedOrg}>
               <SelectTrigger className="h-11 rounded-lg">
-                <SelectValue placeholder="Choose an organization" />
+                <SelectValue placeholder={t("chooseOrg")} />
               </SelectTrigger>
               <SelectContent>
                 {organizations.map((org) => (
@@ -164,8 +169,7 @@ function McpAuthorizeContent() {
 
         {organizations.length === 1 && (
           <div className="rounded-lg border bg-muted/30 p-3 text-sm">
-            Organization:{" "}
-            <span className="font-medium">{organizations[0].name}</span>
+            {t.rich("organization", { ...richTextTags, name: organizations[0].name })}
           </div>
         )}
 
@@ -177,19 +181,19 @@ function McpAuthorizeContent() {
             disabled={loading}
           >
             <X className="mr-1.5 size-4" />
-            Deny
+            {t("deny")}
           </Button>
           <Button
             className="h-11 flex-1 rounded-lg bg-emerald-600 shadow-md shadow-emerald-600/15 transition-all hover:bg-emerald-500 hover:shadow-lg hover:shadow-emerald-600/20 active:scale-[0.98]"
             onClick={handleApprove}
             disabled={loading || !selectedOrg}
           >
-            {loading ? "Authorizing..." : "Authorize"}
+            {loading ? t("authorizing") : t("authorize")}
           </Button>
         </div>
 
         <p className="text-center text-[11px] text-muted-foreground/60">
-          OAuth 2.1 with PKCE &middot; Pro/Business plan required
+          {t("planNotice")}
         </p>
       </motion.div>
     </div>

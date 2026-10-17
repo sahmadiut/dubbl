@@ -1,5 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { authErrorMessage, AuthPresentationError } from "@/i18n/auth-errors";
+
 import { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -51,6 +54,8 @@ interface ProvidersConfig {
 }
 
 export default function SignUpPage() {
+  const t = useTranslations("Auth");
+  const te = useTranslations("AuthErrors");
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -87,7 +92,7 @@ export default function SignUpPage() {
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || "Registration failed");
+        throw new AuthPresentationError(authErrorMessage(te, data.error, t("registrationFailed"), res.status));
       }
 
       const signInRes = await signIn("credentials", {
@@ -97,12 +102,12 @@ export default function SignUpPage() {
       });
 
       if (signInRes?.error) {
-        throw new Error("Failed to sign in after registration");
+        throw new AuthPresentationError(t("postRegistrationFailed"));
       }
 
       window.location.href = "/onboarding";
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Registration failed");
+      setError(err instanceof AuthPresentationError ? err.message : t("registrationFailed"));
       setLoading(false);
     }
   }
@@ -116,10 +121,10 @@ export default function SignUpPage() {
         transition={{ duration: 0.4 }}
       >
         <h1 className="text-[28px] font-extrabold tracking-tight text-foreground">
-          Create your account
+          {t("createTitle")}
         </h1>
         <p className="mt-1.5 text-sm text-muted-foreground">
-          Get started with dubbl for free
+          {t("createDescription")}
         </p>
       </motion.div>
 
@@ -131,7 +136,7 @@ export default function SignUpPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.03 }}
         >
-          Registration is by invitation only. You need an invite to create an account.
+          {t("inviteOnlyNotice")}
         </motion.div>
       )}
       {providers?.allowedDomains && (
@@ -141,7 +146,7 @@ export default function SignUpPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.03 }}
         >
-          Registration is limited to: {providers.allowedDomains.split(",").join(", ")}
+          {t("allowedDomains", { domains: providers.allowedDomains.split(",").join(", ") })}
         </motion.div>
       )}
 
@@ -181,7 +186,7 @@ export default function SignUpPage() {
           <div className="my-5 flex items-center gap-3">
             <Separator className="flex-1" />
             <span className="text-[11px] text-muted-foreground">
-              or continue with email
+              {t("continueEmail")}
             </span>
             <Separator className="flex-1" />
           </div>
@@ -203,13 +208,13 @@ export default function SignUpPage() {
 
         <div className="space-y-2">
           <Label htmlFor="name" className="text-xs font-medium">
-            Name
+            {t("name")}
           </Label>
           <Input
             id="name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Your name"
+            placeholder={t("yourName")}
             required
             autoFocus
             className="h-11 rounded-lg"
@@ -218,7 +223,7 @@ export default function SignUpPage() {
 
         <div className="space-y-2">
           <Label htmlFor="email" className="text-xs font-medium">
-            Email
+            {t("email")}
           </Label>
           <Input
             id="email"
@@ -233,14 +238,14 @@ export default function SignUpPage() {
 
         <div className="space-y-2">
           <Label htmlFor="password" className="text-xs font-medium">
-            Password
+            {t("password")}
           </Label>
           <Input
             id="password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="At least 8 characters"
+            placeholder={t("passwordHint")}
             required
             minLength={8}
             className="h-11 rounded-lg"
@@ -253,10 +258,10 @@ export default function SignUpPage() {
           disabled={loading}
         >
           {loading ? (
-            "Creating account..."
+            t("creating")
           ) : (
             <span className="inline-flex items-center gap-2">
-              Create account
+              {t("create")}
               <ArrowRight className="size-4" />
             </span>
           )}
@@ -269,12 +274,12 @@ export default function SignUpPage() {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.4, delay: 0.2 }}
       >
-        Already have an account?{" "}
+        {t("hasAccount")}{" "}
         <Link
           href="/sign-in"
           className="font-medium text-emerald-600 transition-colors hover:text-emerald-500 dark:text-emerald-400 dark:hover:text-emerald-300"
         >
-          Sign in
+          {t("signIn")}
         </Link>
       </motion.p>
 
@@ -284,7 +289,7 @@ export default function SignUpPage() {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.4, delay: 0.25 }}
       >
-        Open source &middot; Self-hosted option &middot; Apache 2.0
+        {t("openSource")}
       </motion.p>
     </div>
   );

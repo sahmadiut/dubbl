@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import Link from "next/link";
 import { motion } from "motion/react";
 import { Logo } from "@/components/shared/logo";
@@ -8,29 +10,6 @@ import { Container } from "@/components/shared/container";
 import { OrbitalDecoration } from "@/components/shared/orbital-decoration";
 import { GrainGradient } from "@paper-design/shaders-react";
 import { BookOpen, Server, Code2, ArrowUpRight } from "lucide-react";
-
-const features = [
-  { text: "Double-entry", icon: BookOpen },
-  { text: "Self-hosted", icon: Server },
-  { text: "API-first", icon: Code2 },
-];
-
-const networkNodes = [
-  { label: "Invoices", x: 10, y: 10 },
-  { label: "Accounts", x: 30, y: 6 },
-  { label: "Contacts", x: 8, y: 38 },
-  { label: "Expenses", x: 28, y: 44 },
-  { label: "P&L Report", x: 52, y: 12 },
-  { label: "Tax filing", x: 75, y: 8 },
-  { label: "Clients", x: 88, y: 16 },
-  { label: "Bills", x: 70, y: 40 },
-  { label: "Payroll", x: 10, y: 72 },
-  { label: "Receipts", x: 45, y: 75 },
-  { label: "Inventory", x: 78, y: 72 },
-  { label: "Multi-currency", x: 88, y: 52 },
-  { label: "Balance sheet", x: 55, y: 50 },
-  { label: "Journal entries", x: 18, y: 24 },
-];
 
 const networkEdges = [
   [0, 1], [0, 13], [1, 4], [2, 3], [2, 8], [3, 12],
@@ -43,6 +22,30 @@ export default function AuthLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const t = useTranslations("AuthLayout");
+  const features = [
+    { text: t("doubleEntry"), icon: BookOpen },
+    { text: t("selfHosted"), icon: Server },
+    { text: t("apiFirst"), icon: Code2 },
+  ];
+
+  const networkNodes = [
+    { label: t("invoices"), x: 10, y: 10 },
+    { label: t("accounts"), x: 30, y: 6 },
+    { label: t("contacts"), x: 8, y: 38 },
+    { label: t("expenses"), x: 28, y: 44 },
+    { label: t("profitLoss"), x: 52, y: 12 },
+    { label: t("taxFiling"), x: 75, y: 8 },
+    { label: t("clients"), x: 88, y: 16 },
+    { label: t("bills"), x: 70, y: 40 },
+    { label: t("payroll"), x: 10, y: 72 },
+    { label: t("receipts"), x: 45, y: 75 },
+    { label: t("inventory"), x: 78, y: 72 },
+    { label: t("multiCurrency"), x: 88, y: 52 },
+    { label: t("balanceSheet"), x: 55, y: 50 },
+    { label: t("journals"), x: 18, y: 24 },
+  ];
+
   return (
     <div className="relative flex min-h-screen flex-col bg-background">
       {/* Background effects */}
@@ -117,7 +120,7 @@ export default function AuthLayout({
                   dubbl
                 </span>
                 <p className="text-xs text-white/60">
-                  Open source bookkeeping, done right
+                  {t("tagline")}
                 </p>
               </div>
             </div>
@@ -271,11 +274,11 @@ export default function AuthLayout({
               href="/"
               className="inline-flex items-center gap-0.5 transition-colors hover:text-foreground"
             >
-              Home
+              {t("home")}
               <ArrowUpRight className="size-3" />
             </Link>
             <span className="text-border">&middot;</span>
-            <span>Trusted by teams worldwide</span>
+            <span>{t("trusted")}</span>
           </div>
         </Container>
       </main>

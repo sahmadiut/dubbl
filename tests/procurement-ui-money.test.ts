@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { randomUUID } from "node:crypto";
 import { createElement } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderToStaticMarkup } from "./helpers/presentation";
 import { procurementEditorLines, procurementPreview, procurementDocument, procurementList, procurementReceipt,
   procurementMoney, procurementOverview, procurementQuantityText, procurementReceiveLines, procurementEditPrice, procurementFilter } from "../lib/money/procurement-ui";
 import { purchaseOrderCreateSchema, purchaseOrderUpdateSchema, purchaseOrderTotals } from "../lib/api/purchase-order-wire";

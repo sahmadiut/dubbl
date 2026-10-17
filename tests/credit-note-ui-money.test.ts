@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { createElement } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderToStaticMarkup } from "./helpers/presentation";
 import { creditNoteEditorLines, creditNoteUiHeader, creditNoteUiDocument, creditNoteUiSummary, creditNoteUiInvoice,
   creditNoteUiApplication, creditNoteUiInvoiceEligible, creditNoteUiMoney } from "../lib/money/credit-note-ui";
 import { documentEditorPreview } from "../lib/money/document-editor";

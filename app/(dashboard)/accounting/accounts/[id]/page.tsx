@@ -1,5 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { requireAccountResponse, accountFailureMessage } from "@/i18n/account-presentation";
+
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { useParams } from "next/navigation";
@@ -28,64 +31,65 @@ interface LedgerEntry extends LedgerMoney {
   description: string;
 }
 
-const ledgerColumns: Column<LedgerEntry>[] = [
-  {
-    key: "number",
-    header: "#",
-    className: "w-16",
-    render: (r) => (
-      <a
-        href={`/accounting/${r.entryId}`}
-        className="font-mono text-xs text-emerald-600 hover:underline"
-      >
-        {r.entryNumber}
-      </a>
-    ),
-  },
-  {
-    key: "date",
-    header: "Date",
-    className: "w-28",
-    render: (r) => <span className="text-sm">{r.date}</span>,
-  },
-  {
-    key: "description",
-    header: "Description",
-    render: (r) => <span className="text-sm">{r.description}</span>,
-  },
-  {
-    key: "debit",
-    header: "Debit",
-    className: "w-28 text-right",
-    render: (r) => (
-      <span className="font-mono text-sm tabular-nums">
-        {r.debitAmountMinor !== "0" ? journalMoney(coreStoredMinor(r.debitAmount, r.debitAmountMinor), r.amountCurrencyCode) : ""}
-      </span>
-    ),
-  },
-  {
-    key: "credit",
-    header: "Credit",
-    className: "w-28 text-right",
-    render: (r) => (
-      <span className="font-mono text-sm tabular-nums">
-        {r.creditAmountMinor !== "0" ? journalMoney(coreStoredMinor(r.creditAmount, r.creditAmountMinor), r.amountCurrencyCode) : ""}
-      </span>
-    ),
-  },
-  {
-    key: "balance",
-    header: "Balance",
-    className: "w-28 text-right",
-    render: (r) => (
-      <span className="font-mono text-sm font-medium tabular-nums">
-        {journalMoney(coreStoredMinor(r.balance, r.balanceMinor), r.amountCurrencyCode)}
-      </span>
-    ),
-  },
-];
-
 export default function AccountLedgerPage() {
+  const t = useTranslations("Accounts");
+  const errors = useTranslations("AccountErrors");
+  const ledgerColumns: Column<LedgerEntry>[] = [
+    {
+      key: "number",
+      header: "#",
+      className: "w-16",
+      render: (r) => (
+        <a
+          href={`/accounting/${r.entryId}`}
+          className="font-mono text-xs text-emerald-600 hover:underline"
+        >
+          {r.entryNumber}
+        </a>
+      ),
+    },
+    {
+      key: "date",
+      header: t("date"),
+      className: "w-28",
+      render: (r) => <span className="text-sm">{r.date}</span>,
+    },
+    {
+      key: "description",
+      header: t("description"),
+      render: (r) => <span className="text-sm">{r.description}</span>,
+    },
+    {
+      key: "debit",
+      header: t("debit"),
+      className: "w-28 text-right",
+      render: (r) => (
+        <span className="font-mono text-sm tabular-nums">
+          {r.debitAmountMinor !== "0" ? journalMoney(coreStoredMinor(r.debitAmount, r.debitAmountMinor), r.amountCurrencyCode) : ""}
+        </span>
+      ),
+    },
+    {
+      key: "credit",
+      header: t("credit"),
+      className: "w-28 text-right",
+      render: (r) => (
+        <span className="font-mono text-sm tabular-nums">
+          {r.creditAmountMinor !== "0" ? journalMoney(coreStoredMinor(r.creditAmount, r.creditAmountMinor), r.amountCurrencyCode) : ""}
+        </span>
+      ),
+    },
+    {
+      key: "balance",
+      header: t("balance"),
+      className: "w-28 text-right",
+      render: (r) => (
+        <span className="font-mono text-sm font-medium tabular-nums">
+          {journalMoney(coreStoredMinor(r.balance, r.balanceMinor), r.amountCurrencyCode)}
+        </span>
+      ),
+    },
+  ];
   const { id } = useParams<{ id: string }>();
   const [ledger, setLedger] = useState<LedgerEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -108,7 +112,7 @@ export default function AccountLedgerPage() {
 
   const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
 
-  useDocumentTitle("Accounting \u00B7 Account Details");
+  useDocumentTitle(t("ledgerTitle"));
 
   const pendingSearch = search !== debouncedSearch;
 
@@ -137,7 +141,7 @@ export default function AccountLedgerPage() {
     fetch(`/api/v1/accounts/${id}?${buildParams(1)}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then(async (r) => { if (!r.ok) throw new Error("Could not load ledger"); return r.json(); })
+      .then(async (r) => { return (await requireAccountResponse(r, errors, t("invalidLedgerAmounts"))).json(); })
       .then((data) => {
         if (cancelled) return;
         setLedger(data.data.map(coreLedgerMoney));
@@ -147,7 +151,7 @@ export default function AccountLedgerPage() {
           setHasMore(data.pagination.page < data.pagination.totalPages);
         }
       })
-      .catch(() => { if (!cancelled) { setLedger([]); setHasMore(false); setError("Could not load valid ledger amounts. Please try again."); } })
+      .catch((err) => { if (!cancelled) { setLedger([]); setHasMore(false); setError(accountFailureMessage(err, t("invalidLedgerAmounts"))); } })
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
@@ -168,7 +172,7 @@ export default function AccountLedgerPage() {
     fetch(`/api/v1/accounts/${id}?${buildParams(nextPage)}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then(async (r) => { if (!r.ok) throw new Error("Could not load ledger"); return r.json(); })
+      .then(async (r) => { return (await requireAccountResponse(r, errors, t("invalidLedgerAmounts"))).json(); })
       .then((data) => {
         const rows: LedgerEntry[] = data.data.map(coreLedgerMoney);
         setLedger((prev) => [...prev, ...rows]);
@@ -179,9 +183,9 @@ export default function AccountLedgerPage() {
           setHasMore(data.pagination.page < data.pagination.totalPages);
         }
       })
-      .catch(() => { setLedger([]); setHasMore(false); setError("Could not load valid ledger amounts. Please try again."); })
+      .catch((err) => { setLedger([]); setHasMore(false); setError(accountFailureMessage(err, t("invalidLedgerAmounts"))); })
       .finally(() => setLoadingMore(false));
-  }, [loadingMore, hasMore, page, id, orgId, buildParams]);
+  }, [loadingMore, hasMore, page, id, orgId, buildParams, t, errors]);
 
   useEffect(() => {
     const el = sentinelRef.current;
@@ -200,24 +204,24 @@ export default function AccountLedgerPage() {
     <div className="space-y-3">
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold">Transactions</h3>
-        <span className="text-xs text-muted-foreground tabular-nums">{total} entries</span>
+        <h3 className="text-sm font-semibold">{t("transactions")}</h3>
+        <span className="text-xs text-muted-foreground tabular-nums">{t("entryCount", { count: total })}</span>
       </div>
 
       <Tabs value={entryType} onValueChange={setEntryType}>
         <TabsList>
-          <TabsTrigger value="all">All</TabsTrigger>
+          <TabsTrigger value="all">{t("all")}</TabsTrigger>
           <TabsTrigger
             value="debits"
-            title="The left column. For cash and what you're owed, this is money in; for income and what you owe, it's money out."
+            title={t("debitHint")}
           >
-            Debits
+            {t("debits")}
           </TabsTrigger>
           <TabsTrigger
             value="credits"
-            title="The right column. For cash and what you're owed, this is money out; for income and what you owe, it's money in."
+            title={t("creditHint")}
           >
-            Credits
+            {t("credits")}
           </TabsTrigger>
         </TabsList>
       </Tabs>
@@ -226,41 +230,41 @@ export default function AccountLedgerPage() {
         <div className="relative w-full sm:max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <Input
-            placeholder="Search description or entry #..."
+            placeholder={t("searchLedger")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
           />
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="text-xs text-muted-foreground shrink-0">From</span>
+          <span className="text-xs text-muted-foreground shrink-0">{t("from")}</span>
           <DatePicker
             value={dateFrom}
             onChange={(v) => setDateFrom(v)}
-            placeholder="Start date"
+            placeholder={t("startDate")}
             className="h-8 w-40 text-xs"
           />
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="text-xs text-muted-foreground shrink-0">To</span>
+          <span className="text-xs text-muted-foreground shrink-0">{t("to")}</span>
           <DatePicker
             value={dateTo}
             onChange={(v) => setDateTo(v)}
-            placeholder="End date"
+            placeholder={t("endDate")}
             className="h-8 w-40 text-xs"
           />
         </div>
         <Select value={sort} onValueChange={setSort}>
           <SelectTrigger className="h-8 w-44 text-xs">
-            <SelectValue placeholder="Sort by..." />
+            <SelectValue placeholder={t("sortBy")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="date:desc">Newest first</SelectItem>
-            <SelectItem value="date:asc">Oldest first</SelectItem>
-            <SelectItem value="number:desc">Entry # (high-low)</SelectItem>
-            <SelectItem value="number:asc">Entry # (low-high)</SelectItem>
-            <SelectItem value="amount:desc">Largest amount</SelectItem>
-            <SelectItem value="amount:asc">Smallest amount</SelectItem>
+            <SelectItem value="date:desc">{t("newestFirst")}</SelectItem>
+            <SelectItem value="date:asc">{t("oldestFirst")}</SelectItem>
+            <SelectItem value="number:desc">{t("numberDesc")}</SelectItem>
+            <SelectItem value="number:asc">{t("numberAsc")}</SelectItem>
+            <SelectItem value="amount:desc">{t("largestAmount")}</SelectItem>
+            <SelectItem value="amount:asc">{t("smallestAmount")}</SelectItem>
           </SelectContent>
         </Select>
         {hasFilters && (
@@ -276,14 +280,14 @@ export default function AccountLedgerPage() {
             }}
           >
             <X className="mr-1 size-3" />
-            Clear filters
+            {t("clearFilters")}
           </Button>
         )}
       </div>
 
       {refetching || pendingSearch ? (
         <div className="flex items-center justify-center py-20">
-          <div className="brand-loader" aria-label="Loading">
+          <div className="brand-loader" aria-label={t("loading")}>
             <div className="brand-loader-circle brand-loader-circle-1" />
             <div className="brand-loader-circle brand-loader-circle-2" />
           </div>
@@ -301,7 +305,7 @@ export default function AccountLedgerPage() {
             <DataTable
               columns={ledgerColumns}
               data={ledger}
-              emptyMessage={hasFilters ? "No entries match your filters." : "No transactions in this account yet."}
+              emptyMessage={hasFilters ? t("noMatchingEntries") : t("noTransactions")}
             />
           </motion.div>
         </MotionConfig>
@@ -310,7 +314,7 @@ export default function AccountLedgerPage() {
       {hasMore && !refetching && <div ref={sentinelRef} className="h-1" />}
       {loadingMore && (
         <div className="flex items-center justify-center py-4">
-          <div className="brand-loader" aria-label="Loading more">
+          <div className="brand-loader" aria-label={t("loadingMore")}>
             <div className="brand-loader-circle brand-loader-circle-1" />
             <div className="brand-loader-circle brand-loader-circle-2" />
           </div>

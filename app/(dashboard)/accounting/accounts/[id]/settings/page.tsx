@@ -1,5 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { requireAccountResponse, accountFailureMessage, accountTypeLabel } from "@/i18n/account-presentation";
+
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Lock } from "lucide-react";
@@ -20,6 +23,8 @@ import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { useAccountContext } from "../layout";
 
 export default function AccountSettingsPage() {
+  const t = useTranslations("Accounts");
+  const errors = useTranslations("AccountErrors");
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { confirm, dialog: confirmDialog } = useConfirm();
@@ -28,7 +33,7 @@ export default function AccountSettingsPage() {
 
   const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
 
-  useDocumentTitle("Accounting \u00B7 Account Settings");
+  useDocumentTitle(t("settingsTitle"));
 
   if (!account) return null;
 
@@ -61,14 +66,14 @@ export default function AccountSettingsPage() {
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error((await res.json()).error);
+      await requireAccountResponse(res, errors, t("updateAccountFailed"));
       const data = await res.json();
       setAccount(() => data.account ? { ...account, ...data.account } : account);
-      toast.success("Account updated");
+      toast.success(t("accountUpdated"));
       window.dispatchEvent(new CustomEvent("accounts-changed"));
       refetch();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to update");
+      toast.error(accountFailureMessage(err, t("updateAccountFailed")));
     } finally {
       setSaving(false);
     }
@@ -78,24 +83,27 @@ export default function AccountSettingsPage() {
     if (!orgId || !account) return;
     const willDeactivate = account.isActive !== false;
     await confirm({
-      title: willDeactivate ? "Deactivate this account?" : "Reactivate this account?",
+      title: willDeactivate ? t("deactivateTitle") : t("reactivateTitle"),
       description: willDeactivate
-        ? "Inactive accounts won't appear in dropdowns when creating entries. Existing transactions are not affected."
-        : "This account will appear in dropdowns again.",
-      confirmLabel: willDeactivate ? "Deactivate" : "Reactivate",
+        ? t("deactivateDescription")
+        : t("reactivateDescription"),
+      confirmLabel: willDeactivate ? t("deactivate") : t("reactivate"),
+      cancelLabel: t("cancel"),
       destructive: willDeactivate,
       onConfirm: async () => {
-        const res = await fetch(`/api/v1/accounts/${id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json", "x-organization-id": orgId },
-          body: JSON.stringify({ isActive: !willDeactivate }),
-        });
-        if (res.ok) {
-          toast.success(willDeactivate ? "Account deactivated" : "Account reactivated");
+        try {
+          const res = await fetch(`/api/v1/accounts/${id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json", "x-organization-id": orgId },
+            body: JSON.stringify({ isActive: !willDeactivate }),
+          });
+          await requireAccountResponse(res, errors, t("updateAccountFailed"));
+          toast.success(willDeactivate ? t("accountDeactivated") : t("accountReactivated"));
           window.dispatchEvent(new CustomEvent("accounts-changed"));
           refetch();
-        } else {
-          toast.error("Failed to update account");
+        } catch (err) {
+          toast.error(accountFailureMessage(err, t("updateAccountFailed")));
+          throw err;
         }
       },
     });
@@ -104,22 +112,24 @@ export default function AccountSettingsPage() {
   async function handleDelete() {
     if (!orgId) return;
     await confirm({
-      title: "Delete this account?",
-      description: "This will permanently delete the account. Accounts with existing transactions cannot be deleted.",
-      confirmLabel: "Delete Account",
+      title: t("deleteTitle"),
+      description: t("deleteDescription"),
+      confirmLabel: t("deleteAccountConfirm"),
+      cancelLabel: t("cancel"),
       destructive: true,
       onConfirm: async () => {
-        const res = await fetch(`/api/v1/accounts/${id}`, {
-          method: "DELETE",
-          headers: { "x-organization-id": orgId },
-        });
-        if (res.ok) {
-          toast.success("Account deleted");
+        try {
+          const res = await fetch(`/api/v1/accounts/${id}`, {
+            method: "DELETE",
+            headers: { "x-organization-id": orgId },
+          });
+          await requireAccountResponse(res, errors, t("deleteFailed"));
+          toast.success(t("accountDeleted"));
           window.dispatchEvent(new CustomEvent("accounts-changed"));
           router.push("/accounting/accounts");
-        } else {
-          const data = await res.json();
-          toast.error(typeof data.error === "string" ? data.error : "Failed to delete account");
+        } catch (err) {
+          toast.error(accountFailureMessage(err, t("deleteFailed")));
+          throw err;
         }
       },
     });
@@ -132,9 +142,7 @@ export default function AccountSettingsPage() {
           <div className="flex items-start gap-2.5 rounded-md border border-border bg-muted/40 px-4 py-3">
             <Lock className="size-4 mt-0.5 shrink-0 text-muted-foreground" />
             <p className="text-[12px] leading-relaxed text-muted-foreground">
-              This is a <span className="font-medium text-foreground">built-in category</span>. It&apos;s kept up to date for you,
-              so its name and code can&apos;t be changed and it can&apos;t be deleted. You can still hide it (mark it inactive) or
-              set its tax defaults. Need something different? <span className="font-medium text-foreground">Create your own category</span> instead.
+              {t.rich("systemNotice", { strong: chunks => <span className="font-medium text-foreground">{chunks}</span> })}
             </p>
           </div>
         )}
@@ -142,32 +150,32 @@ export default function AccountSettingsPage() {
         {/* General */}
         <div className="grid gap-6 sm:grid-cols-[200px_1fr] sm:gap-10">
           <div className="shrink-0">
-            <p className="text-sm font-medium">General</p>
+            <p className="text-sm font-medium">{t("general")}</p>
             <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
-              {isSystem ? "Description for this built-in category. Name and code are fixed." : "Account name, code, and description."}
+              {isSystem ? t("systemGeneralDescription") : t("generalDescription")}
             </p>
           </div>
           <div className="min-w-0 space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label className="text-xs">Account Code</Label>
+                <Label className="text-xs">{t("accountCode")}</Label>
                 <Input name="code" required defaultValue={account.code} className="font-mono" readOnly={isSystem} disabled={isSystem} />
                 <p className="text-[11px] text-muted-foreground">
-                  {isSystem ? "Built-in category codes are fixed." : "Changing the code won’t affect existing journal entries."}
+                  {isSystem ? t("systemCodeNotice") : t("codeNotice")}
                 </p>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Account Name</Label>
+                <Label className="text-xs">{t("accountName")}</Label>
                 <Input name="name" required defaultValue={account.name} readOnly={isSystem} disabled={isSystem} />
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Sub Type</Label>
-              <Input name="subType" defaultValue={account.subType || ""} placeholder="e.g. Current Asset, Fixed Asset..." />
+              <Label className="text-xs">{t("subType")}</Label>
+              <Input name="subType" defaultValue={account.subType || ""} placeholder={t("subTypePlaceholder")} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Description</Label>
-              <Textarea name="description" defaultValue={account.description || ""} placeholder="Optional notes about this account" rows={3} />
+              <Label className="text-xs">{t("description")}</Label>
+              <Textarea name="description" defaultValue={account.description || ""} placeholder={t("notesPlaceholder")} rows={3} />
             </div>
           </div>
         </div>
@@ -177,15 +185,15 @@ export default function AccountSettingsPage() {
         {/* Status */}
         <div className="grid gap-6 sm:grid-cols-[200px_1fr] sm:gap-10">
           <div className="shrink-0">
-            <p className="text-sm font-medium">Status</p>
-            <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">Control whether this account appears in dropdowns.</p>
+            <p className="text-sm font-medium">{t("status")}</p>
+            <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">{t("statusDescription")}</p>
           </div>
           <div className="min-w-0">
             <Select name="isActive" defaultValue={account.isActive === false ? "false" : "true"} key={String(account.isActive)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="true">Active</SelectItem>
-                <SelectItem value="false">Inactive</SelectItem>
+                <SelectItem value="true">{t("active")}</SelectItem>
+                <SelectItem value="false">{t("inactive")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -196,16 +204,16 @@ export default function AccountSettingsPage() {
         {/* Read-only info */}
         <div className="grid gap-6 sm:grid-cols-[200px_1fr] sm:gap-10">
           <div className="shrink-0">
-            <p className="text-sm font-medium">Info</p>
-            <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">These fields cannot be changed after creation.</p>
+            <p className="text-sm font-medium">{t("info")}</p>
+            <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">{t("infoDescription")}</p>
           </div>
           <div className="min-w-0 grid gap-4 sm:grid-cols-2">
             <div>
-              <p className="text-[11px] text-muted-foreground">Type</p>
-              <p className="text-sm capitalize mt-0.5">{account.type}</p>
+              <p className="text-[11px] text-muted-foreground">{t("type")}</p>
+              <p className="text-sm capitalize mt-0.5">{accountTypeLabel(t, account.type)}</p>
             </div>
             <div>
-              <p className="text-[11px] text-muted-foreground">Currency</p>
+              <p className="text-[11px] text-muted-foreground">{t("currency")}</p>
               <p className="text-sm mt-0.5">{cur}</p>
             </div>
           </div>
@@ -215,7 +223,7 @@ export default function AccountSettingsPage() {
 
         <div className="flex justify-end">
           <Button type="submit" size="sm" loading={saving} className="bg-emerald-600 hover:bg-emerald-700">
-            Save changes
+            {t("saveChanges")}
           </Button>
         </div>
 
@@ -224,19 +232,19 @@ export default function AccountSettingsPage() {
         {/* Danger zone */}
         <div className="grid gap-6 sm:grid-cols-[200px_1fr] sm:gap-10">
           <div className="shrink-0">
-            <p className="text-sm font-medium text-red-600">Danger zone</p>
-            <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">Irreversible actions.</p>
+            <p className="text-sm font-medium text-red-600">{t("dangerZone")}</p>
+            <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">{t("irreversible")}</p>
           </div>
           <div className="min-w-0 space-y-3">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-md border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/50 dark:bg-amber-950/20">
               <div>
                 <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
-                  {account.isActive !== false ? "Deactivate account" : "Reactivate account"}
+                  {account.isActive !== false ? t("deactivateAccount") : t("reactivateAccount")}
                 </p>
                 <p className="text-[12px] text-muted-foreground">
                   {account.isActive !== false
-                    ? "Hide from dropdowns. Existing transactions stay intact."
-                    : "Make this account available in dropdowns again."}
+                    ? t("hideNotice")
+                    : t("showNotice")}
                 </p>
               </div>
               <Button
@@ -246,25 +254,25 @@ export default function AccountSettingsPage() {
                 onClick={handleDeactivate}
                 className="border-amber-300 text-amber-700 hover:bg-amber-100 dark:border-amber-800 dark:text-amber-400 dark:hover:bg-amber-950"
               >
-                {account.isActive !== false ? "Deactivate" : "Reactivate"}
+                {account.isActive !== false ? t("deactivate") : t("reactivate")}
               </Button>
             </div>
 
             {isSystem ? (
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-md border px-4 py-3">
                 <div>
-                  <p className="text-sm font-medium">Delete account</p>
-                  <p className="text-[12px] text-muted-foreground">Built-in categories can&apos;t be deleted. Mark it inactive above to hide it.</p>
+                  <p className="text-sm font-medium">{t("deleteAccount")}</p>
+                  <p className="text-[12px] text-muted-foreground">{t("systemDeleteNotice")}</p>
                 </div>
-                <Button variant="outline" size="sm" type="button" disabled>Delete</Button>
+                <Button variant="outline" size="sm" type="button" disabled>{t("delete")}</Button>
               </div>
             ) : (
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-md border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900/50 dark:bg-red-950/20">
                 <div>
-                  <p className="text-sm font-medium text-red-600 dark:text-red-400">Delete account</p>
-                  <p className="text-[12px] text-muted-foreground">Accounts with existing transactions cannot be deleted.</p>
+                  <p className="text-sm font-medium text-red-600 dark:text-red-400">{t("deleteAccount")}</p>
+                  <p className="text-[12px] text-muted-foreground">{t("transactionsPreventDelete")}</p>
                 </div>
-                <Button variant="destructive" size="sm" type="button" onClick={handleDelete}>Delete</Button>
+                <Button variant="destructive" size="sm" type="button" onClick={handleDelete}>{t("delete")}</Button>
               </div>
             )}
           </div>

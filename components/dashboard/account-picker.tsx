@@ -1,5 +1,9 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { requireAccountResponse, accountFailureMessage } from "@/i18n/account-presentation";
+import { accountTypeGroupLabel } from "@/i18n/account-presentation";
+
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { Check, ChevronsUpDown, Loader2, Plus, Wallet } from "lucide-react";
@@ -40,14 +44,6 @@ interface AccountPickerProps {
   allowCreate?: boolean;
 }
 
-// Human labels + a sensible accounting display order for the account-type groups.
-const TYPE_LABELS: Record<string, string> = {
-  asset: "Assets",
-  liability: "Liabilities",
-  equity: "Equity",
-  revenue: "Income",
-  expense: "Expenses",
-};
 const TYPE_ORDER = ["expense", "revenue", "asset", "liability", "equity"];
 
 export function AccountPicker({
@@ -56,11 +52,14 @@ export function AccountPicker({
   typeFilter,
   currencyFilter,
   subTypeFilter,
-  placeholder = "Select account...",
+  placeholder,
   allowCreate = false,
 }: AccountPickerProps) {
+  const t = useTranslations("Accounts");
+  const errors = useTranslations("AccountErrors");
   const [open, setOpen] = useState(false);
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   // typeFilter is often an inline array literal (new identity each render); join to a
   // stable string so the effect doesn't refetch on every parent render, and derive
@@ -75,18 +74,19 @@ export function AccountPicker({
         const orgId = localStorage.getItem("activeOrgId");
         if (!orgId) return;
         const res = await fetch("/api/v1/accounts", { headers: { "x-organization-id": orgId } });
-        const data = await res.json();
+        const data = await (await requireAccountResponse(res, errors, t("loadAccountsFailed"))).json();
         if (!cancelled && data.accounts) {
+          setError(null);
           setAccounts(data.accounts.filter((a: Account) => (!allow || allow.includes(a.type)) && (!currencyFilter || a.currencyCode === currencyFilter) && (!subTypeFilter || a.subType === subTypeFilter)));
         }
-      } catch {
-        // leave accounts empty on failure
+      } catch (err) {
+        if (!cancelled) { setAccounts([]); setError(accountFailureMessage(err, t("loadAccountsFailed"))); }
       } finally {
         if (!cancelled) setLoading(false);
       }
     })();
     return () => { cancelled = true; };
-  }, [typeKey, currencyFilter, subTypeFilter]);
+  }, [typeKey, currencyFilter, subTypeFilter, t, errors]);
 
   // Group accounts by type, in accounting display order, each group sorted by code.
   const groups = useMemo(() => {
@@ -102,10 +102,10 @@ export function AccountPicker({
     ];
     return ordered.map((type) => ({
       type,
-      label: TYPE_LABELS[type] || type,
+      label: accountTypeGroupLabel(t, type),
       items: (byType.get(type) || []).sort((a, b) => a.code.localeCompare(b.code)),
     }));
-  }, [accounts]);
+  }, [accounts, t]);
 
   const selected = accounts.find((a) => a.id === value);
 
@@ -125,14 +125,14 @@ export function AccountPicker({
               {selected.name}
             </span>
           ) : (
-            <span className="text-muted-foreground">{placeholder}</span>
+            <span className="text-muted-foreground">{placeholder ?? t("selectAccount")}</span>
           )}
           <ChevronsUpDown className="ml-auto size-3.5 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] min-w-72 p-0" align="start">
         <Command>
-          <CommandInput placeholder="Search by name or code..." />
+          <CommandInput placeholder={t("searchAccounts")} />
           <CommandList>
             {loading ? (
               <div className="flex items-center justify-center py-6">
@@ -143,7 +143,7 @@ export function AccountPicker({
                 <CommandEmpty>
                   <div className="flex flex-col items-center gap-1.5 py-2">
                     <Wallet className="size-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">No accounts found</span>
+                    <span className="text-muted-foreground">{error ?? t("noAccounts")}</span>
                   </div>
                 </CommandEmpty>
                 {groups.map((group) => (
@@ -176,8 +176,7 @@ export function AccountPicker({
                   className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground transition-colors"
                 >
                   <Plus className="size-4 text-muted-foreground" />
-                  Manage chart of accounts
-                </Link>
+                  {t("manageAccounts")}</Link>
               </div>
             </>
           )}

@@ -1,5 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { requireAccountResponse, accountFailureMessage } from "@/i18n/account-presentation";
+
 import { assetLoanJson } from "@/lib/money/asset-loan-ui";
 import { currencyMetadata } from "@/lib/money/exact";
 import { bankUiTransfer, bankUiAccount, bankUiMoney } from "@/lib/money/bank-ui";
@@ -183,23 +186,27 @@ function DrawerFooter({
   saving,
   label,
   disabled = false,
+  cancelLabel = "Cancel",
+  creatingLabel = "Creating...",
 }: {
   onClose: () => void;
   saving: boolean;
   label: string;
   disabled?: boolean;
+  cancelLabel?: string;
+  creatingLabel?: string;
 }) {
   return (
     <div className="sticky bottom-0 z-10 flex items-center justify-end gap-3 border-t bg-background/80 px-4 py-3 sm:px-6 sm:py-4 backdrop-blur-sm">
       <Button type="button" variant="outline" onClick={onClose}>
-        Cancel
+        {cancelLabel}
       </Button>
       <Button
         type="submit"
         disabled={saving || disabled}
         className="bg-emerald-600 hover:bg-emerald-700"
       >
-        {saving ? "Creating..." : label}
+        {saving ? creatingLabel : label}
       </Button>
     </div>
   );
@@ -2919,7 +2926,9 @@ function RecurringDrawer({ open, onClose }: { open: boolean; onClose: () => void
 // ---------------------------------------------------------------------------
 // Account Drawer
 // ---------------------------------------------------------------------------
-function AccountDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function AccountDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useTranslations("Accounts");
+  const errors = useTranslations("AccountErrors");
   const [saving, setSaving] = useState(false);
   const [acctCurrency, setAcctCurrency] = useState("USD");
 
@@ -2945,15 +2954,12 @@ function AccountDrawer({ open, onClose }: { open: boolean; onClose: () => void }
           currencyCode: acctCurrency,
         }),
       });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to create account");
-      }
-      toast.success("Account created");
+      await requireAccountResponse(res, errors, t("createFailed"));
+      toast.success(t("accountCreated"));
       onClose();
       window.dispatchEvent(new CustomEvent("accounts-changed"));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create account");
+      toast.error(accountFailureMessage(err, t("createFailed")));
     } finally {
       setSaving(false);
     }
@@ -2966,43 +2972,43 @@ function AccountDrawer({ open, onClose }: { open: boolean; onClose: () => void }
           <div className="flex items-center gap-3">
             <DrawerIcon><BookOpen className="size-5" /></DrawerIcon>
             <div>
-              <SheetTitle className="text-lg">New Account</SheetTitle>
-              <SheetDescription>Add an account to your chart of accounts.</SheetDescription>
+              <SheetTitle className="text-lg">{t("newAccountTitle")}</SheetTitle>
+              <SheetDescription>{t("createDescription")}</SheetDescription>
             </div>
           </div>
         </SheetHeader>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
             <div className="space-y-4">
-              <SectionLabel>Account Details</SectionLabel>
+              <SectionLabel>{t("accountDetails")}</SectionLabel>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="drawer-account-code">Code *</Label>
+                  <Label htmlFor="drawer-account-code">{t("codeRequired")}</Label>
                   <Input id="drawer-account-code" name="code" required placeholder="1000" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="drawer-account-name">Name *</Label>
-                  <Input id="drawer-account-name" name="name" required placeholder="Cash" />
+                  <Label htmlFor="drawer-account-name">{t("nameRequired")}</Label>
+                  <Input id="drawer-account-name" name="name" required placeholder={t("cash")} />
                 </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Type</Label>
+                  <Label>{t("type")}</Label>
                   <Select name="type" defaultValue="asset">
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="asset">Asset</SelectItem>
-                      <SelectItem value="liability">Liability</SelectItem>
-                      <SelectItem value="equity">Equity</SelectItem>
-                      <SelectItem value="revenue">Revenue</SelectItem>
-                      <SelectItem value="expense">Expense</SelectItem>
+                      <SelectItem value="asset">{t("asset")}</SelectItem>
+                      <SelectItem value="liability">{t("liability")}</SelectItem>
+                      <SelectItem value="equity">{t("equity")}</SelectItem>
+                      <SelectItem value="revenue">{t("revenue")}</SelectItem>
+                      <SelectItem value="expense">{t("expense")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="drawer-account-currency">Currency</Label>
+                  <Label htmlFor="drawer-account-currency">{t("currency")}</Label>
                   <CurrencySelect value={acctCurrency} onValueChange={setAcctCurrency} />
                 </div>
               </div>
@@ -3011,14 +3017,14 @@ function AccountDrawer({ open, onClose }: { open: boolean; onClose: () => void }
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Optional</SectionLabel>
+              <SectionLabel>{t("optional")}</SectionLabel>
               <div className="space-y-2">
-                <Label htmlFor="drawer-account-description">Description</Label>
-                <Textarea id="drawer-account-description" name="description" placeholder="Account description..." rows={2} />
+                <Label htmlFor="drawer-account-description">{t("description")}</Label>
+                <Textarea id="drawer-account-description" name="description" placeholder={t("accountDescriptionPlaceholder")} rows={2} />
               </div>
             </div>
           </div>
-          <DrawerFooter onClose={onClose} saving={saving} label="Create Account" />
+          <DrawerFooter onClose={onClose} saving={saving} label={t("createAccount")} cancelLabel={t("cancel")} creatingLabel={t("creating")} />
         </form>
       </SheetContent>
     </Sheet>

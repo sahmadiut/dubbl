@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { randomUUID } from "node:crypto";
 import { createElement } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderToStaticMarkup } from "./helpers/presentation";
 import { recurringBillEditorPayload, recurringBillEditorPreview, recurringBillUiDocument, recurringBillUiUpcoming } from "../lib/money/recurring-bill-ui";
 import { recurringPayableStoredLines, recurringPayableTotals } from "../lib/api/recurring-payable-wire";
 import { invoiceUiMoney } from "../lib/money/invoice-ui";

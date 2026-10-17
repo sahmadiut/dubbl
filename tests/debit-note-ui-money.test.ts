@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { createElement } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderToStaticMarkup } from "./helpers/presentation";
 import { debitNoteEditorLines, debitNoteUiHeader, debitNoteUiDocument, debitNoteUiOverview, debitNoteUiBill,
   debitNoteUiApplication, debitNoteUiBillEligible, debitNoteUiMoney } from "../lib/money/debit-note-ui";
 import { documentEditorPreview } from "../lib/money/document-editor";

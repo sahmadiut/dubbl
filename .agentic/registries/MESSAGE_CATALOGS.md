@@ -108,6 +108,14 @@ Extraction ownership:
 | LOC-019 | LOC-017 child: document template settings |
 | LOC-020 | LOC-017 child: import/export, backups and trash |
 | LOC-007 | Accounting, sales, purchasing, contacts, tax and associated shared UI/errors |
+| LOC-021 | LOC-007 child: chart of accounts, account picker/drawer and accounting navigation; see [scope](ACCOUNT_CATALOGS.md) |
+| LOC-022 | LOC-007 child: journals and opening balances |
+| LOC-023 | LOC-007 child: banking |
+| LOC-024 | LOC-007 child: assets, loans, budgets and accruals |
+| LOC-025 | LOC-007 child: sales and shared document forms |
+| LOC-026 | LOC-007 child: purchasing |
+| LOC-027 | LOC-007 child: contacts |
+| LOC-028 | LOC-007 child: tax |
 | LOC-008 | Inventory, payroll, projects, CRM, reports, dashboard and documents |
 | LOC-009 | Public surfaces, landing/help, email/PDF and user-visible background content; remaining source audit |
 | LOC-002 | Independent combined key coverage, plural and safe rendering acceptance |

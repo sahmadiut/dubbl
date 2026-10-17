@@ -1,6 +1,9 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useTranslations } from "next-intl";
+import { requireAccountResponse, accountFailureMessage, accountTypeLabel } from "@/i18n/account-presentation";
+
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronRight, Lock, Plus, Search, X } from "lucide-react";
 import { useCreateDrawer } from "@/components/dashboard/create-drawer";
@@ -41,39 +44,44 @@ const TYPE_META: Record<string, { dot: string; bg: string; text: string; border:
 const ALL_TYPES = ["asset", "liability", "equity", "revenue", "expense"] as const;
 
 export default function AccountsPage() {
+  const t = useTranslations("Accounts");
+  const errors = useTranslations("AccountErrors");
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [sort, setSort] = useState("code:asc");
 
-  useDocumentTitle("Accounting \u00B7 Chart of Accounts");
+  useDocumentTitle(t("chartTitle"));
 
-  function fetchAccounts() {
+  const fetchAccounts = useCallback(() => {
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
 
     fetch("/api/v1/accounts", {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then(async (r) => (await requireAccountResponse(r, errors, t("loadAccountsFailed"))).json())
       .then((data) => {
         if (data.accounts) setAccounts(data.accounts);
+        setError(null);
       })
+      .catch((err) => setError(accountFailureMessage(err, t("loadAccountsFailed"))))
       .finally(() => setLoading(false));
-  }
+  }, [t, errors]);
 
   useEffect(() => {
     fetchAccounts();
-  }, []);
+  }, [fetchAccounts]);
 
   useEffect(() => {
     const handler = () => fetchAccounts();
     window.addEventListener("accounts-changed", handler);
     return () => window.removeEventListener("accounts-changed", handler);
-  }, []);
+  }, [fetchAccounts]);
 
   const filtered = useMemo(() => {
     let result = accounts;
@@ -117,6 +125,8 @@ export default function AccountsPage() {
 
   if (loading) return <BrandLoader />;
 
+  if (error) return <p role="alert" className="text-sm text-destructive">{error}</p>;
+
   if (accounts.length === 0) {
     const TYPE_BG: Record<string, string> = {
       asset: "bg-blue-500/10 dark:bg-blue-500/15",
@@ -133,21 +143,20 @@ export default function AccountsPage() {
       expense: "bg-red-500",
     };
     const TYPE_EXAMPLES: Record<string, string[]> = {
-      asset: ["1000 · Cash", "1100 · Accounts Receivable", "1200 · Equipment", "1300 · Inventory"],
-      liability: ["2000 · Accounts Payable", "2100 · Loans", "2200 · Credit Cards"],
-      equity: ["3000 · Owner Capital", "3100 · Retained Earnings", "3200 · Drawings"],
-      revenue: ["4000 · Sales Revenue", "4100 · Service Income", "4200 · Interest"],
-      expense: ["5000 · Rent", "5100 · Payroll", "5200 · Utilities", "5300 · Supplies"],
+      asset: [t("example1000"), t("example1100"), t("example1200"), t("example1300")],
+      liability: [t("example2000"), t("example2100"), t("example2200")],
+      equity: [t("example3000"), t("example3100"), t("example3200")],
+      revenue: [t("example4000"), t("example4100"), t("example4200")],
+      expense: [t("example5000"), t("example5100"), t("example5200"), t("example5300")],
     };
 
     return (
       <ContentReveal className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold tracking-tight">Chart of Accounts</h2>
+            <h2 className="text-lg font-semibold tracking-tight">{t("chartOfAccounts")}</h2>
             <p className="text-sm text-muted-foreground mt-0.5">
-              Your list of accounts — the categories every transaction is
-              recorded against.
+              {t("chartDescription")}
             </p>
           </div>
           <Button
@@ -156,7 +165,7 @@ export default function AccountsPage() {
             className="bg-emerald-600 hover:bg-emerald-700"
           >
             <Plus className="mr-2 size-4" />
-            New account
+            {t("newAccount")}
           </Button>
         </div>
 
@@ -168,7 +177,7 @@ export default function AccountsPage() {
             >
               <div className="flex items-center gap-2">
                 <span className={`size-2 rounded-full ${TYPE_DOT[type]}`} />
-                <p className="text-sm font-semibold capitalize">{type}</p>
+                <p className="text-sm font-semibold capitalize">{accountTypeLabel(t, type)}</p>
               </div>
               <div className="space-y-1">
                 {TYPE_EXAMPLES[type].map((ex) => (
@@ -189,10 +198,9 @@ export default function AccountsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold tracking-tight">Chart of Accounts</h2>
+          <h2 className="text-lg font-semibold tracking-tight">{t("chartOfAccounts")}</h2>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Your list of accounts — the categories every transaction is recorded
-            against. {accounts.length} accounts · {activeCount} active
+            {t("chartDescription")}{" "}{t("accountSummary", { count: accounts.length, active: activeCount })}
           </p>
         </div>
         <Button
@@ -201,7 +209,7 @@ export default function AccountsPage() {
           className="bg-emerald-600 hover:bg-emerald-700"
         >
           <Plus className="mr-2 size-4" />
-          New account
+          {t("newAccount")}
         </Button>
       </div>
 
@@ -226,7 +234,7 @@ export default function AccountsPage() {
             return (
               <div key={type} className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <span className={`size-2 rounded-full ${TYPE_META[type].dot}`} />
-                <span className="capitalize">{type}</span>
+                <span className="capitalize">{accountTypeLabel(t, type)}</span>
                 <span className="tabular-nums font-medium text-foreground">{count}</span>
               </div>
             );
@@ -238,12 +246,12 @@ export default function AccountsPage() {
       <div className="space-y-3">
         <Tabs value={typeFilter} onValueChange={setTypeFilter}>
           <TabsList>
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="asset">Asset</TabsTrigger>
-            <TabsTrigger value="liability">Liability</TabsTrigger>
-            <TabsTrigger value="equity">Equity</TabsTrigger>
-            <TabsTrigger value="revenue">Revenue</TabsTrigger>
-            <TabsTrigger value="expense">Expense</TabsTrigger>
+            <TabsTrigger value="all">{t("all")}</TabsTrigger>
+            <TabsTrigger value="asset">{t("asset")}</TabsTrigger>
+            <TabsTrigger value="liability">{t("liability")}</TabsTrigger>
+            <TabsTrigger value="equity">{t("equity")}</TabsTrigger>
+            <TabsTrigger value="revenue">{t("revenue")}</TabsTrigger>
+            <TabsTrigger value="expense">{t("expense")}</TabsTrigger>
           </TabsList>
         </Tabs>
 
@@ -251,7 +259,7 @@ export default function AccountsPage() {
           <div className="relative w-full sm:max-w-xs">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <Input
-              placeholder="Search by name or code..."
+              placeholder={t("searchAccounts")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9"
@@ -259,15 +267,15 @@ export default function AccountsPage() {
           </div>
           <Select value={sort} onValueChange={setSort}>
             <SelectTrigger className="h-9 w-44 text-xs">
-              <SelectValue placeholder="Sort by..." />
+              <SelectValue placeholder={t("sortBy")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="code:asc">Code (ascending)</SelectItem>
-              <SelectItem value="code:desc">Code (descending)</SelectItem>
-              <SelectItem value="name:asc">Name (A-Z)</SelectItem>
-              <SelectItem value="name:desc">Name (Z-A)</SelectItem>
-              <SelectItem value="type:asc">Type (A-Z)</SelectItem>
-              <SelectItem value="type:desc">Type (Z-A)</SelectItem>
+              <SelectItem value="code:asc">{t("codeAsc")}</SelectItem>
+              <SelectItem value="code:desc">{t("codeDesc")}</SelectItem>
+              <SelectItem value="name:asc">{t("nameAsc")}</SelectItem>
+              <SelectItem value="name:desc">{t("nameDesc")}</SelectItem>
+              <SelectItem value="type:asc">{t("typeAsc")}</SelectItem>
+              <SelectItem value="type:desc">{t("typeDesc")}</SelectItem>
             </SelectContent>
           </Select>
           {hasFilters && (
@@ -281,7 +289,7 @@ export default function AccountsPage() {
               }}
             >
               <X className="mr-1 size-3" />
-              Clear filters
+              {t("clearFilters")}
             </Button>
           )}
         </div>
@@ -290,7 +298,7 @@ export default function AccountsPage() {
       {/* Grouped accounts */}
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <p className="text-sm text-muted-foreground">No accounts match your filters.</p>
+          <p className="text-sm text-muted-foreground">{t("noMatchingAccounts")}</p>
           <Button
             variant="ghost"
             size="sm"
@@ -300,7 +308,7 @@ export default function AccountsPage() {
               setTypeFilter("all");
             }}
           >
-            Clear filters
+            {t("clearFilters")}
           </Button>
         </div>
       ) : (
@@ -313,9 +321,9 @@ export default function AccountsPage() {
               <div key={type} className={`rounded-xl border ${meta.border} overflow-hidden`}>
                 <div className={`${meta.bg} px-4 py-2.5 flex items-center gap-2`}>
                   <span className={`size-2 rounded-full ${meta.dot}`} />
-                  <h3 className={`text-sm font-semibold capitalize ${meta.text}`}>{type}</h3>
+                  <h3 className={`text-sm font-semibold capitalize ${meta.text}`}>{accountTypeLabel(t, type)}</h3>
                   <span className="text-xs text-muted-foreground ml-auto tabular-nums">
-                    {items.length} account{items.length !== 1 ? "s" : ""}
+                    {t("accountCount", { count: items.length })}
                   </span>
                 </div>
                 <div className="divide-y">
@@ -332,7 +340,7 @@ export default function AccountsPage() {
                           {account.isSystem && (
                             <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded shrink-0">
                               <Lock className="size-2.5" />
-                              Built-in
+                              {t("builtIn")}
                             </span>
                           )}
                         </div>
@@ -342,7 +350,7 @@ export default function AccountsPage() {
                       </div>
                       <span className="text-xs text-muted-foreground shrink-0">{account.currencyCode}</span>
                       {!account.isActive && (
-                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground bg-muted px-1.5 py-0.5 rounded">Inactive</span>
+                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{t("inactive")}</span>
                       )}
                       <ChevronRight className="size-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                     </button>

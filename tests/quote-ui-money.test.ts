@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { randomUUID } from "node:crypto";
 import { createElement } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderToStaticMarkup } from "./helpers/presentation";
 import { quoteEditorLines, quoteUiHeader, quoteUiDocument, quoteUiSummary, quoteUiMoney } from "../lib/money/quote-ui";
 import { documentEditorPreview } from "../lib/money/document-editor";
 import { parseQuoteCreate, quoteInputLines, quoteTotals } from "../lib/api/quote-wire";

@@ -396,3 +396,17 @@ LOC-017 retains combined acceptance; locale requirements remain unchanged.
 - [LOC-018](../tasks/LOC-018.md): Billing and Stripe settings catalogs.
 - [LOC-019](../tasks/LOC-019.md): Document template settings catalogs.
 - [LOC-020](../tasks/LOC-020.md): Import/export, backups and trash catalogs.
+
+
+## LOC-007 domain extraction split
+
+Verified scope: 87 route TSX files plus shared forms/drawers. LOC-007 retains independent combined acceptance; all children preserve exact-money, REST/MCP and DEC-008 Stripe boundaries.
+
+- [LOC-021](../tasks/LOC-021.md): Chart of accounts and accounting navigation.
+- [LOC-022](../tasks/LOC-022.md): Journals and opening balances.
+- [LOC-023](../tasks/LOC-023.md): Banking catalogs.
+- [LOC-024](../tasks/LOC-024.md): Assets loans budgets and accrual catalogs.
+- [LOC-025](../tasks/LOC-025.md): Sales catalogs.
+- [LOC-026](../tasks/LOC-026.md): Purchasing catalogs.
+- [LOC-027](../tasks/LOC-027.md): Contacts catalogs.
+- [LOC-028](../tasks/LOC-028.md): Tax catalogs.

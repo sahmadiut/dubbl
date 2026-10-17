@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createElement } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderToStaticMarkup } from "./helpers/presentation";
 import { LineItemsEditor } from "../components/dashboard/line-items-editor";
 
 const render = (currencyCode: string | null, unitPrice: string, quantity = "1") => renderToStaticMarkup(createElement(LineItemsEditor, {

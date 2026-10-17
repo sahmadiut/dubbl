@@ -1,5 +1,8 @@
 "use client";
 
+import { adminPlanLabel } from "@/i18n/admin-labels";
+import { useTranslations } from "next-intl";
+
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -45,6 +48,8 @@ const PLAN_BADGE: Record<string, string> = {
 type SortKey = "name" | "created" | "members";
 
 export default function AdminOrganizationsPage() {
+  const t = useTranslations("Admin");
+
   const [orgs, setOrgs] = useState<Org[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -61,11 +66,11 @@ export default function AdminOrganizationsPage() {
       const data = await res.json();
       setOrgs(data.organizations || []);
     } catch {
-      toast.error("Failed to load organizations");
+      toast.error(t("failedToLoadOrganizations"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchOrgs();
@@ -123,9 +128,9 @@ export default function AdminOrganizationsPage() {
     <ContentReveal>
       <div className="space-y-6">
         <div>
-          <h2 className="text-lg font-semibold">Organizations</h2>
+          <h2 className="text-lg font-semibold">{t("organizations")}</h2>
           <p className="text-sm text-muted-foreground">
-            All organizations on the platform
+            {t("allOrganizationsOnThePlatform")}
           </p>
         </div>
 
@@ -134,40 +139,40 @@ export default function AdminOrganizationsPage() {
           <SearchInput
             value={search}
             onChange={setSearch}
-            placeholder="Search name or slug..."
+            placeholder={t("searchNameOrSlug")}
             className="w-56"
           />
           <Select value={planFilter} onValueChange={setPlanFilter}>
             <SelectTrigger className="w-[110px] h-8 text-xs">
-              <SelectValue placeholder="Plan" />
+              <SelectValue placeholder={t("plan")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Plans</SelectItem>
-              <SelectItem value="free">Free</SelectItem>
-              <SelectItem value="pro">Pro</SelectItem>
+              <SelectItem value="all">{t("allPlans")}</SelectItem>
+              <SelectItem value="free">{t("free")}</SelectItem>
+              <SelectItem value="pro">{t("pro")}</SelectItem>
             </SelectContent>
           </Select>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-[120px] h-8 text-xs">
-              <SelectValue placeholder="Status" />
+              <SelectValue placeholder={t("status")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="trialing">Trialing</SelectItem>
-              <SelectItem value="past_due">Past Due</SelectItem>
-              <SelectItem value="canceled">Canceled</SelectItem>
-              <SelectItem value="deleted">Deleted</SelectItem>
+              <SelectItem value="all">{t("allStatus")}</SelectItem>
+              <SelectItem value="active">{t("active")}</SelectItem>
+              <SelectItem value="trialing">{t("trialing")}</SelectItem>
+              <SelectItem value="past_due">{t("pastDue")}</SelectItem>
+              <SelectItem value="canceled">{t("canceled")}</SelectItem>
+              <SelectItem value="deleted">{t("deleted")}</SelectItem>
             </SelectContent>
           </Select>
           <Select value={managedFilter} onValueChange={setManagedFilter}>
             <SelectTrigger className="w-[120px] h-8 text-xs">
-              <SelectValue placeholder="Billing" />
+              <SelectValue placeholder={t("billing")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Billing</SelectItem>
+              <SelectItem value="all">{t("allBilling")}</SelectItem>
               <SelectItem value="stripe">Stripe</SelectItem>
-              <SelectItem value="manual">Manual</SelectItem>
+              <SelectItem value="manual">{t("manual")}</SelectItem>
             </SelectContent>
           </Select>
           <Select value={`${sortBy}-${sortAsc ? "asc" : "desc"}`} onValueChange={(v) => {
@@ -180,23 +185,23 @@ export default function AdminOrganizationsPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="created-desc">Newest First</SelectItem>
-              <SelectItem value="created-asc">Oldest First</SelectItem>
-              <SelectItem value="name-asc">Name A-Z</SelectItem>
-              <SelectItem value="name-desc">Name Z-A</SelectItem>
-              <SelectItem value="members-desc">Most Members</SelectItem>
-              <SelectItem value="members-asc">Fewest Members</SelectItem>
+              <SelectItem value="created-desc">{t("newestFirst")}</SelectItem>
+              <SelectItem value="created-asc">{t("oldestFirst")}</SelectItem>
+              <SelectItem value="name-asc">{t("nameAZ")}</SelectItem>
+              <SelectItem value="name-desc">{t("nameZA")}</SelectItem>
+              <SelectItem value="members-desc">{t("mostMembers")}</SelectItem>
+              <SelectItem value="members-asc">{t("fewestMembers")}</SelectItem>
             </SelectContent>
           </Select>
           {hasFilters && (
             <Button variant="ghost" size="sm" className="h-8 text-xs gap-1" onClick={clearFilters}>
               <X className="size-3" />
-              Clear
+              {t("clear")}
             </Button>
           )}
           {!loading && (
             <Badge variant="secondary" className="text-xs ml-auto">
-              {filtered.length} of {orgs.length}
+              {t("filteredCount", { count: filtered.length, total: orgs.length })}
             </Badge>
           )}
         </div>
@@ -210,7 +215,7 @@ export default function AdminOrganizationsPage() {
         ) : (
           <div className="divide-y rounded-lg border">
             {filtered.map((o) => {
-              const displayPlan = o.customPlanName || o.plan;
+              const displayPlan = o.customPlanName || adminPlanLabel(t, o.plan);
               const isEnterprise = o.managedBy === "manual";
               return (
                 <Link
@@ -229,7 +234,7 @@ export default function AdminOrganizationsPage() {
                     <div className="flex items-center gap-2">
                       <p className="truncate text-sm font-medium">{o.name}</p>
                       {o.deletedAt && (
-                        <Badge variant="outline" className="text-[10px] text-red-500">Deleted</Badge>
+                        <Badge variant="outline" className="text-[10px] text-red-500">{t("deleted")}</Badge>
                       )}
                     </div>
                     <p className="truncate text-xs text-muted-foreground">
@@ -244,7 +249,7 @@ export default function AdminOrganizationsPage() {
                     variant="outline"
                     className={`text-[11px] capitalize ${isEnterprise ? "text-purple-600 bg-purple-50 dark:text-purple-400 dark:bg-purple-950/50" : PLAN_BADGE[o.plan] || ""}`}
                   >
-                    {isEnterprise ? displayPlan : o.plan}
+                    {isEnterprise ? displayPlan : adminPlanLabel(t, o.plan)}
                   </Badge>
                   <ChevronRight className="size-3.5 text-muted-foreground/50 shrink-0" />
                 </Link>
@@ -252,7 +257,7 @@ export default function AdminOrganizationsPage() {
             })}
             {filtered.length === 0 && (
               <div className="py-12 text-center text-sm text-muted-foreground">
-                No organizations found
+                {t("noOrganizationsFound")}
               </div>
             )}
           </div>

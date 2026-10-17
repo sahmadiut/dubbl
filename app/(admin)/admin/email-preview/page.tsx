@@ -1,5 +1,8 @@
 "use client";
 
+import { adminTemplateLabel } from "@/i18n/admin-labels";
+import { useTranslations } from "next-intl";
+
 import { useState, useEffect, useCallback } from "react";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -20,6 +23,8 @@ interface EmailTemplate {
 }
 
 export default function AdminEmailPreviewPage() {
+  const t = useTranslations("Admin");
+
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<string>("");
   const [emailHtml, setEmailHtml] = useState<string>("");
@@ -32,11 +37,11 @@ export default function AdminEmailPreviewPage() {
       const data = await res.json();
       setTemplates(data.templates || []);
     } catch {
-      toast.error("Failed to load email templates");
+      toast.error(t("failedToLoadEmailTemplates"));
     } finally {
       setLoadingTemplates(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchTemplates();
@@ -52,7 +57,7 @@ export default function AdminEmailPreviewPage() {
       const data = await res.json();
       setEmailHtml(data.html || "");
     } catch {
-      toast.error("Failed to load preview");
+      toast.error(t("failedToLoadPreview"));
     } finally {
       setLoadingPreview(false);
     }
@@ -62,9 +67,9 @@ export default function AdminEmailPreviewPage() {
     <ContentReveal>
       <div className="space-y-6">
         <div>
-          <h2 className="text-lg font-semibold">Email Preview</h2>
+          <h2 className="text-lg font-semibold">{t("emailPreview")}</h2>
           <p className="text-sm text-muted-foreground">
-            Preview email templates with sample data
+            {t("previewEmailTemplatesWithSampleData")}
           </p>
         </div>
 
@@ -74,12 +79,12 @@ export default function AdminEmailPreviewPage() {
           <div className="flex items-center gap-2">
             <Select value={selectedTemplate} onValueChange={loadPreview}>
               <SelectTrigger className="w-64">
-                <SelectValue placeholder="Select a template" />
+                <SelectValue placeholder={t("selectATemplate")} />
               </SelectTrigger>
               <SelectContent>
-                {templates.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>
-                    {t.name}
+                {templates.map((template) => (
+                  <SelectItem key={template.id} value={template.id}>
+                    {adminTemplateLabel(t, template.id, template.name)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -99,7 +104,7 @@ export default function AdminEmailPreviewPage() {
                 disabled={!emailHtml}
               >
                 <Monitor className="size-3.5" />
-                Full View
+                {t("fullView")}
               </Button>
             )}
           </div>
@@ -109,7 +114,7 @@ export default function AdminEmailPreviewPage() {
           <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-20">
             <Eye className="size-8 text-muted-foreground/30 mb-2" />
             <p className="text-xs text-muted-foreground">
-              Select a template to preview
+              {t("selectATemplateToPreview")}
             </p>
           </div>
         )}
@@ -123,7 +128,7 @@ export default function AdminEmailPreviewPage() {
             <iframe
               srcDoc={emailHtml}
               className="w-full h-[600px] border-0"
-              title="Email preview"
+              title={t("emailPreviewFrame")}
               sandbox="allow-same-origin"
             />
           </div>

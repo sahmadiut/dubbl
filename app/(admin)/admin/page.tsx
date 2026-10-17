@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useState, useEffect, useCallback } from "react";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -26,12 +28,13 @@ const PLAN_COLORS: Record<string, string> = {
   pro: "bg-blue-500",
 };
 
-const PLAN_LABELS: Record<string, string> = {
-  free: "Free",
-  pro: "Pro",
-};
-
 export default function AdminDashboardPage() {
+  const t = useTranslations("Admin");
+  const PLAN_LABELS: Record<string, string> = {
+    free: t("free"),
+    pro: t("pro"),
+  };
+
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -73,9 +76,9 @@ export default function AdminDashboardPage() {
     <ContentReveal>
       <div className="space-y-8">
         <div>
-          <h2 className="text-lg font-semibold">Admin Dashboard</h2>
+          <h2 className="text-lg font-semibold">{t("adminDashboard")}</h2>
           <p className="text-sm text-muted-foreground">
-            Platform overview and key metrics
+            {t("platformOverviewAndKeyMetrics")}
           </p>
         </div>
 
@@ -83,27 +86,27 @@ export default function AdminDashboardPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <StatCard
             icon={Users}
-            label="Total Users"
+            label={t("totalUsers")}
             value={stats.totalUsers}
-            sub={`+${stats.recentUsers} last 30d`}
+            sub={t("recentCount", { count: stats.recentUsers })}
           />
           <StatCard
             icon={Building2}
-            label="Organizations"
+            label={t("organizations")}
             value={stats.totalOrgs}
-            sub={`+${stats.recentOrgs} last 30d`}
+            sub={t("recentCount", { count: stats.recentOrgs })}
           />
           <StatCard
             icon={Crown}
-            label="Enterprise"
+            label={t("enterprise")}
             value={stats.enterpriseOrgs}
-            sub="Manually managed"
+            sub={t("manuallyManaged")}
           />
           <StatCard
             icon={UserPlus}
-            label="Total Members"
+            label={t("totalMembers")}
             value={stats.totalMembers}
-            sub="Across all orgs"
+            sub={t("acrossAllOrgs")}
           />
         </div>
 
@@ -111,7 +114,7 @@ export default function AdminDashboardPage() {
         <div className="rounded-lg border p-5 space-y-4">
           <div className="flex items-center gap-2">
             <TrendingUp className="size-4 text-muted-foreground" />
-            <h3 className="text-sm font-medium">Plan Distribution</h3>
+            <h3 className="text-sm font-medium">{t("planDistribution")}</h3>
           </div>
 
           {/* Bar */}
@@ -141,7 +144,7 @@ export default function AdminDashboardPage() {
                 <div key={r.plan} className="flex items-center gap-2">
                   <div className={`size-2.5 rounded-full ${PLAN_COLORS[r.plan] || "bg-gray-400"}`} />
                   <span className="text-xs text-muted-foreground">
-                    {PLAN_LABELS[r.plan] || r.plan} - {r.count}
+                    {Object.hasOwn(PLAN_LABELS, r.plan) ? PLAN_LABELS[r.plan] : t("unknown")} - {r.count}
                   </span>
                 </div>
               ))}

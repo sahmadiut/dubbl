@@ -1,5 +1,8 @@
 "use client";
 
+import { workspaceErrorMessage } from "@/i18n/workspace-errors";
+import { useTranslations } from "next-intl";
+
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -17,8 +20,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { TeamFields } from "@/components/dashboard/team-fields";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import {
@@ -78,11 +80,6 @@ interface OrgMember {
   email: string;
 }
 
-const ACCENT_COLORS = [
-  "#10b981", "#3b82f6", "#f59e0b", "#ef4444",
-  "#8b5cf6", "#ec4899", "#06b6d4", "#f97316",
-];
-
 function getInitials(name: string | undefined | null) {
   if (!name) return "?";
   return name
@@ -104,6 +101,9 @@ function normalizeMembers(raw: RawTeamMember[]): TeamMember[] {
 }
 
 export default function TeamDetailPage() {
+  const t = useTranslations("Teams");
+  const errors = useTranslations("WorkspaceErrors");
+
   const params = useParams();
   const router = useRouter();
   const teamId = params.id as string;
@@ -206,11 +206,11 @@ export default function TeamDetailPage() {
         }),
       });
       if (!res.ok) throw new Error("Failed");
-      toast.success("Team updated");
+      toast.success(t("teamUpdated"));
       setEditOpen(false);
       fetchTeam();
     } catch {
-      toast.error("Failed to update team");
+      toast.error(t("failedToUpdateTeam"));
     } finally {
       setEditSaving(false);
     }
@@ -233,15 +233,16 @@ export default function TeamDetailPage() {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Failed to add member");
+        toast.error(workspaceErrorMessage(errors, err.error, t("failedToAddMember"), res.status));
+        return;
       }
 
-      toast.success("Member added");
+      toast.success(t("memberAdded"));
       setPopoverOpen(false);
       membersFetchedRef.current = false;
       fetchTeam();
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Failed to add member");
+      toast.error(workspaceErrorMessage(errors, e instanceof Error ? e.message : undefined, t("failedToAddMember")));
     } finally {
       setAddingMemberId(null);
     }
@@ -249,9 +250,9 @@ export default function TeamDetailPage() {
 
   async function handleRemoveMember(memberId: string) {
     const confirmed = await confirm({
-      title: "Remove team member?",
-      description: "They will lose access to this team's resources.",
-      confirmLabel: "Remove",
+      title: t("removeTeamMember"),
+      description: t("theyWillLoseAccessToThisTeamSResources"),
+      confirmLabel: t("remove"),
       destructive: true,
     });
     if (!confirmed) return;
@@ -271,14 +272,15 @@ export default function TeamDetailPage() {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Failed to remove member");
+        toast.error(workspaceErrorMessage(errors, err.error, t("failedToRemoveMember"), res.status));
+        return;
       }
 
-      toast.success("Member removed");
+      toast.success(t("memberRemoved"));
       membersFetchedRef.current = false;
       fetchTeam();
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Failed to remove member");
+      toast.error(workspaceErrorMessage(errors, e instanceof Error ? e.message : undefined, t("failedToRemoveMember")));
     } finally {
       setRemovingMemberId(null);
     }
@@ -286,10 +288,10 @@ export default function TeamDetailPage() {
 
   async function handleDeleteTeam() {
     const confirmed = await confirm({
-      title: "Delete this team?",
+      title: t("deleteThisTeam"),
       description:
-        "This will permanently delete the team and remove all member assignments.",
-      confirmLabel: "Delete",
+        t("thisWillPermanentlyDeleteTheTeamAndRemoveAllMemberAssignments"),
+      confirmLabel: t("delete"),
       destructive: true,
     });
     if (!confirmed) return;
@@ -303,10 +305,10 @@ export default function TeamDetailPage() {
         headers: { "x-organization-id": orgId },
       });
       if (!res.ok) throw new Error("Failed");
-      toast.success("Team deleted");
+      toast.success(t("teamDeleted"));
       router.push("/teams");
     } catch {
-      toast.error("Failed to delete team");
+      toast.error(t("failedToDeleteTeam"));
     }
   }
 
@@ -339,7 +341,7 @@ export default function TeamDetailPage() {
     return (
       <ContentReveal className="space-y-6">
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <p className="text-sm font-medium">Team not found</p>
+          <p className="text-sm font-medium">{t("teamNotFound")}</p>
           <Button
             variant="outline"
             size="sm"
@@ -347,7 +349,7 @@ export default function TeamDetailPage() {
             onClick={() => router.push("/teams")}
           >
             <ArrowLeft className="mr-2 size-3.5" />
-            Back to Teams
+            {t("backToTeams")}
           </Button>
         </div>
       </ContentReveal>
@@ -384,8 +386,7 @@ export default function TeamDetailPage() {
                 variant="outline"
                 className="text-[10px] shrink-0"
               >
-                {team.members.length}{" "}
-                {team.members.length === 1 ? "member" : "members"}
+                {t("memberCount", { count: team.members.length })}
               </Badge>
             </div>
             {team.description && (
@@ -403,7 +404,7 @@ export default function TeamDetailPage() {
             onClick={openEdit}
           >
             <Pencil className="size-3" />
-            Edit
+            {t("edit")}
           </Button>
           <Button
             variant="outline"
@@ -412,7 +413,7 @@ export default function TeamDetailPage() {
             onClick={handleDeleteTeam}
           >
             <Trash2 className="size-3" />
-            Delete
+            {t("delete")}
           </Button>
         </div>
       </div>
@@ -423,7 +424,7 @@ export default function TeamDetailPage() {
           <div className="flex items-center gap-2 text-muted-foreground">
             <Users className="size-4" />
             <span className="text-[11px] font-medium uppercase tracking-wide">
-              Members
+              {t("members")}
             </span>
           </div>
           <p className="mt-2 text-2xl font-bold font-mono tabular-nums">
@@ -443,7 +444,7 @@ export default function TeamDetailPage() {
               style={{ backgroundColor: teamColor }}
             />
             <span className="text-[11px] font-medium uppercase tracking-wide">
-              Team Color
+              {t("teamColor")}
             </span>
           </div>
           <p className="mt-2 text-sm font-mono font-medium">{teamColor}</p>
@@ -452,7 +453,7 @@ export default function TeamDetailPage() {
           <div className="flex items-center gap-2 text-muted-foreground">
             <Mail className="size-4" />
             <span className="text-[11px] font-medium uppercase tracking-wide">
-              Contacts
+              {t("contacts")}
             </span>
           </div>
           <p className="mt-2 text-2xl font-bold font-mono tabular-nums">
@@ -465,8 +466,8 @@ export default function TeamDetailPage() {
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <p className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-            Team Members{" "}
-            {debouncedSearch && `(${filteredMembers.length} of ${team.members.length})`}
+            {t("teamMembers")}{" "}
+            {debouncedSearch && t("filteredCount", { count: filteredMembers.length, total: team.members.length })}
           </p>
           <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
             <PopoverTrigger asChild>
@@ -475,12 +476,12 @@ export default function TeamDetailPage() {
                 className="h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700"
               >
                 <UserPlus className="size-3" />
-                Add Member
+                {t("addMember")}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-80 p-0" align="end">
               <Command shouldFilter={!loadingMembers}>
-                <CommandInput placeholder="Search members..." />
+                <CommandInput placeholder={t("searchMembers")} />
                 <CommandList>
                   {loadingMembers ? (
                     <div className="flex items-center justify-center py-6">
@@ -492,7 +493,7 @@ export default function TeamDetailPage() {
                         <div className="flex flex-col items-center gap-1.5 py-2">
                           <Users className="size-4 text-muted-foreground" />
                           <span className="text-muted-foreground text-sm">
-                            No available members
+                            {t("noAvailableMembers")}
                           </span>
                         </div>
                       </CommandEmpty>
@@ -510,7 +511,7 @@ export default function TeamDetailPage() {
                             </div>
                             <div className="flex flex-col min-w-0 flex-1">
                               <span className="text-sm font-medium truncate">
-                                {member.name || "Unnamed"}
+                                {member.name || t("unnamed")}
                               </span>
                               {member.email && (
                                 <span className="text-xs text-muted-foreground truncate">
@@ -538,7 +539,7 @@ export default function TeamDetailPage() {
             <Input
               value={memberSearch}
               onChange={(e) => setMemberSearch(e.target.value)}
-              placeholder="Search members by name or email..."
+              placeholder={t("searchMembersByNameOrEmail")}
               className="pl-9 h-9 text-sm"
             />
           </div>
@@ -549,17 +550,17 @@ export default function TeamDetailPage() {
             <div className="flex size-12 items-center justify-center rounded-xl bg-muted">
               <Users className="size-6 text-muted-foreground" />
             </div>
-            <p className="mt-4 text-sm font-medium">No members yet</p>
+            <p className="mt-4 text-sm font-medium">{t("noMembersYet")}</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Add members to this team to get started.
+              {t("addMembersToThisTeamToGetStarted")}
             </p>
           </div>
         ) : filteredMembers.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border py-10 text-center">
             <Search className="size-5 text-muted-foreground" />
-            <p className="mt-3 text-sm font-medium">No members match your search</p>
+            <p className="mt-3 text-sm font-medium">{t("noMembersMatchYourSearch")}</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Try a different name or email address.
+              {t("tryADifferentNameOrEmailAddress")}
             </p>
           </div>
         ) : (
@@ -582,7 +583,7 @@ export default function TeamDetailPage() {
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate">
-                        {member.name || "Unnamed"}
+                        {member.name || t("unnamed")}
                       </p>
                       {member.email && (
                         <p className="text-xs text-muted-foreground truncate">
@@ -598,6 +599,7 @@ export default function TeamDetailPage() {
                     className="size-8 shrink-0 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
                     disabled={removingMemberId === member.memberId}
                     onClick={() => handleRemoveMember(member.memberId)}
+                    aria-label={t("removeMember")}
                   >
                     <Trash2 className="size-3.5" />
                   </Button>
@@ -612,7 +614,7 @@ export default function TeamDetailPage() {
                   className="text-xs text-muted-foreground"
                   onClick={() => setVisibleCount((c) => c + 20)}
                 >
-                  Show more ({filteredMembers.length - visibleCount} remaining)
+                  {t("showMore", { count: filteredMembers.length - visibleCount })}
                 </Button>
               </div>
             )}
@@ -624,55 +626,20 @@ export default function TeamDetailPage() {
       <Sheet open={editOpen} onOpenChange={setEditOpen}>
         <SheetContent>
           <SheetHeader>
-            <SheetTitle>Edit Team</SheetTitle>
+            <SheetTitle>{t("editTeam")}</SheetTitle>
           </SheetHeader>
-          <div className="space-y-4 px-4">
-            <div className="space-y-2">
-              <Label>Name</Label>
-              <Input
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                placeholder="Team name"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Description</Label>
-              <Textarea
-                value={editDesc}
-                onChange={(e) => setEditDesc(e.target.value)}
-                placeholder="Optional description"
-                rows={3}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Color</Label>
-              <div className="flex flex-wrap gap-2">
-                {ACCENT_COLORS.map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    className={`size-7 rounded-full transition-all ${
-                      editColor === c
-                        ? "ring-2 ring-offset-2 ring-primary"
-                        : "hover:scale-110"
-                    }`}
-                    style={{ backgroundColor: c }}
-                    onClick={() => setEditColor(c)}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
+          <TeamFields name={editName} description={editDesc} color={editColor} editing
+            onNameChange={setEditName} onDescriptionChange={setEditDesc} onColorChange={setEditColor} />
           <SheetFooter>
             <Button variant="outline" onClick={() => setEditOpen(false)}>
-              Cancel
+              {t("cancel")}
             </Button>
             <Button
               onClick={handleEdit}
               disabled={editSaving || !editName.trim()}
               className="bg-emerald-600 hover:bg-emerald-700"
             >
-              {editSaving ? "Saving..." : "Save Changes"}
+              {editSaving ? t("saving") : t("saveChanges")}
             </Button>
           </SheetFooter>
         </SheetContent>

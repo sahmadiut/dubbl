@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +47,8 @@ interface PlatformUser {
 type SortKey = "name" | "email" | "created" | "orgs";
 
 export default function AdminUsersPage() {
+  const t = useTranslations("Admin");
+
   const [platformUsers, setPlatformUsers] = useState<PlatformUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -59,11 +63,11 @@ export default function AdminUsersPage() {
       const data = await res.json();
       setPlatformUsers(data.users || []);
     } catch {
-      toast.error("Failed to load users");
+      toast.error(t("failedToLoadUsers"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchUsers();
@@ -80,9 +84,9 @@ export default function AdminUsersPage() {
       setPlatformUsers((prev) =>
         prev.map((u) => (u.id === userId ? { ...u, isSiteAdmin: !current } : u))
       );
-      toast.success(!current ? "Granted admin access" : "Revoked admin access");
+      toast.success(!current ? t("grantedAdminAccess") : t("revokedAdminAccess"));
     } catch {
-      toast.error("Failed to update user");
+      toast.error(t("failedToUpdateUser"));
     }
   };
 
@@ -131,9 +135,9 @@ export default function AdminUsersPage() {
     <ContentReveal>
       <div className="space-y-6">
         <div>
-          <h2 className="text-lg font-semibold">Users</h2>
+          <h2 className="text-lg font-semibold">{t("users")}</h2>
           <p className="text-sm text-muted-foreground">
-            All registered users across the platform
+            {t("allRegisteredUsersAcrossThePlatform")}
           </p>
         </div>
 
@@ -142,18 +146,18 @@ export default function AdminUsersPage() {
           <SearchInput
             value={search}
             onChange={setSearch}
-            placeholder="Search name or email..."
+            placeholder={t("searchNameOrEmail")}
             className="w-56"
           />
           <Select value={roleFilter} onValueChange={setRoleFilter}>
             <SelectTrigger className="w-[120px] h-8 text-xs">
-              <SelectValue placeholder="Role" />
+              <SelectValue placeholder={t("role")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Users</SelectItem>
-              <SelectItem value="admin">Admins Only</SelectItem>
-              <SelectItem value="user">Regular Users</SelectItem>
-              <SelectItem value="no-org">No Organization</SelectItem>
+              <SelectItem value="all">{t("allUsers")}</SelectItem>
+              <SelectItem value="admin">{t("adminsOnly")}</SelectItem>
+              <SelectItem value="user">{t("regularUsers")}</SelectItem>
+              <SelectItem value="no-org">{t("noOrganization")}</SelectItem>
             </SelectContent>
           </Select>
           <Select value={`${sortBy}-${sortAsc ? "asc" : "desc"}`} onValueChange={(v) => {
@@ -166,24 +170,24 @@ export default function AdminUsersPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="created-desc">Newest First</SelectItem>
-              <SelectItem value="created-asc">Oldest First</SelectItem>
-              <SelectItem value="name-asc">Name A-Z</SelectItem>
-              <SelectItem value="name-desc">Name Z-A</SelectItem>
-              <SelectItem value="email-asc">Email A-Z</SelectItem>
-              <SelectItem value="orgs-desc">Most Orgs</SelectItem>
-              <SelectItem value="orgs-asc">Fewest Orgs</SelectItem>
+              <SelectItem value="created-desc">{t("newestFirst")}</SelectItem>
+              <SelectItem value="created-asc">{t("oldestFirst")}</SelectItem>
+              <SelectItem value="name-asc">{t("nameAZ")}</SelectItem>
+              <SelectItem value="name-desc">{t("nameZA")}</SelectItem>
+              <SelectItem value="email-asc">{t("emailAZ")}</SelectItem>
+              <SelectItem value="orgs-desc">{t("mostOrgs")}</SelectItem>
+              <SelectItem value="orgs-asc">{t("fewestOrgs")}</SelectItem>
             </SelectContent>
           </Select>
           {hasFilters && (
             <Button variant="ghost" size="sm" className="h-8 text-xs gap-1" onClick={clearFilters}>
               <X className="size-3" />
-              Clear
+              {t("clear")}
             </Button>
           )}
           {!loading && (
             <Badge variant="secondary" className="text-xs ml-auto">
-              {filtered.length} of {platformUsers.length}
+              {t("filteredCount", { count: filtered.length, total: platformUsers.length })}
             </Badge>
           )}
         </div>
@@ -225,7 +229,7 @@ export default function AdminUsersPage() {
                     className="gap-1 text-[11px] text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-950/50"
                   >
                     <ShieldCheck className="size-3" />
-                    Admin
+                    {t("admin")}
                   </Badge>
                 ) : (
                   <Badge
@@ -233,7 +237,7 @@ export default function AdminUsersPage() {
                     className="gap-1 text-[11px] text-zinc-600 bg-zinc-50 dark:text-zinc-400 dark:bg-zinc-800/50"
                   >
                     <User className="size-3" />
-                    User
+                    {t("user")}
                   </Badge>
                 )}
                 <DropdownMenu>
@@ -247,12 +251,12 @@ export default function AdminUsersPage() {
                       {u.isSiteAdmin ? (
                         <>
                           <ShieldOff className="size-3.5 mr-2" />
-                          Revoke Admin
+                          {t("revokeAdmin")}
                         </>
                       ) : (
                         <>
                           <Shield className="size-3.5 mr-2" />
-                          Grant Admin
+                          {t("grantAdmin")}
                         </>
                       )}
                     </DropdownMenuItem>
@@ -262,7 +266,7 @@ export default function AdminUsersPage() {
             ))}
             {filtered.length === 0 && (
               <div className="py-12 text-center text-sm text-muted-foreground">
-                No users found
+                {t("noUsersFound")}
               </div>
             )}
           </div>

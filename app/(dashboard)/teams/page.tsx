@@ -1,5 +1,8 @@
 "use client";
 
+import { workspaceErrorMessage } from "@/i18n/workspace-errors";
+import { useTranslations } from "next-intl";
+
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
@@ -28,8 +31,7 @@ import {
 } from "@/components/ui/select";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { TeamFields, TEAM_COLORS as ACCENT_COLORS } from "@/components/dashboard/team-fields";
 import {
   Sheet,
   SheetContent,
@@ -53,11 +55,6 @@ interface Team {
 
 type SortKey = "name" | "members";
 
-const SORT_OPTIONS: { value: SortKey; label: string }[] = [
-  { value: "name", label: "Name" },
-  { value: "members", label: "Members" },
-];
-
 const anim = (delay: number) => ({
   initial: { opacity: 0, y: 12 } as const,
   animate: { opacity: 1, y: 0 } as const,
@@ -80,17 +77,6 @@ function getInitials(name: string) {
     .join("")
     .toUpperCase();
 }
-
-const ACCENT_COLORS = [
-  "#10b981",
-  "#3b82f6",
-  "#f59e0b",
-  "#ef4444",
-  "#8b5cf6",
-  "#ec4899",
-  "#06b6d4",
-  "#f97316",
-];
 
 function getTeamColor(team: Team, index: number): string {
   return team.color || ACCENT_COLORS[index % ACCENT_COLORS.length];
@@ -119,55 +105,23 @@ function CreateTeamSheet({
   saving: boolean;
   onSave: () => void;
 }) {
+  const t = useTranslations("Teams");
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetContent>
         <SheetHeader>
-          <SheetTitle>New Team</SheetTitle>
+          <SheetTitle>{t("newTeam")}</SheetTitle>
         </SheetHeader>
-        <div className="space-y-4 px-4">
-          <div className="space-y-2">
-            <Label>Name</Label>
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Engineering, Marketing"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Description</Label>
-            <Textarea
-              value={desc}
-              onChange={(e) => setDesc(e.target.value)}
-              placeholder="Optional description"
-              rows={3}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Color</Label>
-            <div className="flex flex-wrap gap-2">
-              {ACCENT_COLORS.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  className={`size-7 rounded-full transition-all ${
-                    color === c ? "ring-2 ring-offset-2 ring-primary" : "hover:scale-110"
-                  }`}
-                  style={{ backgroundColor: c }}
-                  onClick={() => setColor(c)}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
+        <TeamFields name={name} description={desc} color={color}
+          onNameChange={setName} onDescriptionChange={setDesc} onColorChange={setColor} />
         <SheetFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button variant="outline" onClick={() => setOpen(false)}>{t("cancel")}</Button>
           <Button
             onClick={onSave}
             disabled={saving || !name.trim()}
             className="bg-emerald-600 hover:bg-emerald-700"
           >
-            {saving ? "Creating..." : "Create Team"}
+            {saving ? t("creating") : t("createTeam")}
           </Button>
         </SheetFooter>
       </SheetContent>
@@ -176,6 +130,13 @@ function CreateTeamSheet({
 }
 
 export default function TeamsPage() {
+  const t = useTranslations("Teams");
+  const errors = useTranslations("WorkspaceErrors");
+  const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+    { value: "name", label: t("name") },
+    { value: "members", label: t("members") },
+  ];
+
   const router = useRouter();
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
@@ -187,7 +148,7 @@ export default function TeamsPage() {
   const pendingSearch = search !== debouncedSearch;
   const [sortBy, setSortBy] = useState<SortKey>("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  useDocumentTitle("Teams · Overview");
+  useDocumentTitle(t("teamsOverview"));
 
   const fetchTeams = useCallback(() => {
     const orgId = localStorage.getItem("activeOrgId");
@@ -261,16 +222,17 @@ export default function TeamsPage() {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Failed");
+        toast.error(workspaceErrorMessage(errors, err.error, t("failedToCreateTeam"), res.status));
+        return;
       }
-      toast.success("Team created");
+      toast.success(t("teamCreated"));
       setCreateOpen(false);
       setCreateName("");
       setCreateDesc("");
       setCreateColor("#3b82f6");
       fetchTeams();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create team");
+      toast.error(workspaceErrorMessage(errors, err instanceof Error ? err.message : undefined, t("failedToCreateTeam")));
     } finally {
       setCreateSaving(false);
     }
@@ -296,10 +258,10 @@ export default function TeamsPage() {
           size="sm"
           className="h-7 text-xs gap-1"
         >
-          <Plus className="size-3" /> New Team
+          <Plus className="size-3" /> {t("newTeam")}
         </Button>
       ),
-      [openCreateSheet]
+      [openCreateSheet, t]
     )
   );
 
@@ -312,10 +274,10 @@ export default function TeamsPage() {
         {/* Ghost stat cards */}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            { icon: FolderKanban, label: "Total Teams" },
-            { icon: Users, label: "Total Members" },
-            { icon: BarChart3, label: "Avg Team Size" },
-            { icon: Crown, label: "Largest Team" },
+            { icon: FolderKanban, label: t("totalTeams") },
+            { icon: Users, label: t("totalMembers") },
+            { icon: BarChart3, label: t("avgTeamSize") },
+            { icon: Crown, label: t("largestTeam") },
           ].map((card, i) => (
             <motion.div
               key={card.label}
@@ -369,13 +331,13 @@ export default function TeamsPage() {
               {...anim(0.4)}
               className="text-lg font-semibold"
             >
-              Organize your workspace
+              {t("organizeYourWorkspace")}
             </motion.h3>
             <motion.p
               {...anim(0.45)}
               className="mt-2 max-w-md text-sm text-muted-foreground leading-relaxed"
             >
-              Create teams to group members together, streamline collaboration, and assign projects efficiently across your organization.
+              {t("createTeamsToGroupMembersTogetherStreamlineCollaborationAndAssignProject")}
             </motion.p>
 
             {/* Steps */}
@@ -385,19 +347,19 @@ export default function TeamsPage() {
             >
               <div className="flex items-center gap-2.5 rounded-lg border bg-card px-4 py-2.5 shadow-sm">
                 <div className="flex size-6 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-xs font-bold text-emerald-700 dark:text-emerald-300">1</div>
-                <span className="text-sm font-medium">Create a team</span>
+                <span className="text-sm font-medium">{t("createATeam")}</span>
               </div>
               <div className="hidden sm:block h-px w-6 bg-muted-foreground/20" />
               <div className="sm:hidden w-px h-4 bg-muted-foreground/20" />
               <div className="flex items-center gap-2.5 rounded-lg border bg-card px-4 py-2.5 shadow-sm opacity-60">
                 <div className="flex size-6 items-center justify-center rounded-full bg-muted text-xs font-bold text-muted-foreground">2</div>
-                <span className="text-sm font-medium text-muted-foreground">Add members</span>
+                <span className="text-sm font-medium text-muted-foreground">{t("addMembers")}</span>
               </div>
               <div className="hidden sm:block h-px w-6 bg-muted-foreground/20" />
               <div className="sm:hidden w-px h-4 bg-muted-foreground/20" />
               <div className="flex items-center gap-2.5 rounded-lg border bg-card px-4 py-2.5 shadow-sm opacity-40">
                 <div className="flex size-6 items-center justify-center rounded-full bg-muted text-xs font-bold text-muted-foreground">3</div>
-                <span className="text-sm font-medium text-muted-foreground">Assign projects</span>
+                <span className="text-sm font-medium text-muted-foreground">{t("assignProjects")}</span>
               </div>
             </motion.div>
 
@@ -408,7 +370,7 @@ export default function TeamsPage() {
                 className="bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20"
               >
                 <Plus className="mr-2 size-4" />
-                Create Your First Team
+                {t("createYourFirstTeam")}
               </Button>
             </motion.div>
           </div>
@@ -416,7 +378,7 @@ export default function TeamsPage() {
 
         {/* Ghost team cards */}
         <motion.div {...anim(0.6)} className="space-y-3">
-          <h3 className="text-sm font-semibold text-muted-foreground/50">Your Teams</h3>
+          <h3 className="text-sm font-semibold text-muted-foreground/50">{t("yourTeams")}</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {[1, 2, 3].map((i) => (
               <div
@@ -468,7 +430,7 @@ export default function TeamsPage() {
         <motion.div {...anim(0)} className="rounded-xl border bg-card p-4">
           <div className="flex items-center gap-2 text-muted-foreground">
             <FolderKanban className="size-4" />
-            <span className="text-[11px] font-medium uppercase tracking-wide">Total Teams</span>
+            <span className="text-[11px] font-medium uppercase tracking-wide">{t("totalTeams")}</span>
           </div>
           <p className="mt-2 text-2xl font-bold font-mono tabular-nums truncate">
             {teams.length}
@@ -478,7 +440,7 @@ export default function TeamsPage() {
         <motion.div {...anim(0.05)} className="rounded-xl border bg-card p-4">
           <div className="flex items-center gap-2 text-muted-foreground">
             <Users className="size-4" />
-            <span className="text-[11px] font-medium uppercase tracking-wide">Total Members</span>
+            <span className="text-[11px] font-medium uppercase tracking-wide">{t("totalMembers")}</span>
           </div>
           <p className="mt-2 text-2xl font-bold font-mono tabular-nums truncate">
             {totalMembers}
@@ -488,7 +450,7 @@ export default function TeamsPage() {
         <motion.div {...anim(0.1)} className="rounded-xl border bg-card p-4">
           <div className="flex items-center gap-2 text-muted-foreground">
             <BarChart3 className="size-4" />
-            <span className="text-[11px] font-medium uppercase tracking-wide">Avg Team Size</span>
+            <span className="text-[11px] font-medium uppercase tracking-wide">{t("avgTeamSize")}</span>
           </div>
           <p className="mt-2 text-2xl font-bold font-mono tabular-nums truncate">
             {avgTeamSize}
@@ -498,7 +460,7 @@ export default function TeamsPage() {
         <motion.div {...anim(0.15)} className="rounded-xl border bg-card p-4">
           <div className="flex items-center gap-2 text-muted-foreground">
             <Crown className="size-4" />
-            <span className="text-[11px] font-medium uppercase tracking-wide">Largest Team</span>
+            <span className="text-[11px] font-medium uppercase tracking-wide">{t("largestTeam")}</span>
           </div>
           <p className="mt-2 text-sm font-bold truncate" title={largestTeam?.name}>
             {largestTeam ? (
@@ -509,7 +471,7 @@ export default function TeamsPage() {
                 />
                 <span className="truncate">{largestTeam.name}</span>
                 <span className="text-muted-foreground font-normal text-xs ml-auto shrink-0">
-                  {getMemberCount(largestTeam)} members
+                  {t("memberCount", { count: getMemberCount(largestTeam) })}
                 </span>
               </span>
             ) : (
@@ -525,7 +487,7 @@ export default function TeamsPage() {
           <div className="relative flex-1 sm:max-w-xs">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search teams..."
+              placeholder={t("searchTeams")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9 pr-8 h-8 text-sm"
@@ -534,6 +496,7 @@ export default function TeamsPage() {
               <button
                 onClick={() => setSearch("")}
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                aria-label={t("clearSearch")}
               >
                 <X className="size-3.5" />
               </button>
@@ -553,7 +516,7 @@ export default function TeamsPage() {
               </SelectContent>
             </Select>
 
-            <Button variant="outline" size="icon" className="size-8 shrink-0" onClick={toggleSortOrder}>
+            <Button variant="outline" size="icon" className="size-8 shrink-0" onClick={toggleSortOrder} aria-label={t("sortOrder")}>
               <ArrowUpDown className={cn("size-3.5 transition-transform", sortOrder === "asc" && "rotate-180")} />
             </Button>
           </div>
@@ -563,7 +526,7 @@ export default function TeamsPage() {
       {/* Team cards grid */}
       {pendingSearch ? (
         <div className="flex items-center justify-center py-20">
-          <div className="brand-loader" aria-label="Loading">
+          <div className="brand-loader" aria-label={t("loading")}>
             <div className="brand-loader-circle brand-loader-circle-1" />
             <div className="brand-loader-circle brand-loader-circle-2" />
           </div>
@@ -574,9 +537,9 @@ export default function TeamsPage() {
             <div className="mx-auto flex size-10 items-center justify-center rounded-xl bg-muted mb-3">
               <FolderKanban className="size-5 text-muted-foreground" />
             </div>
-            <p className="text-sm font-medium">No teams found</p>
+            <p className="text-sm font-medium">{t("noTeamsFound")}</p>
             <p className="text-xs text-muted-foreground mt-1">
-              {search ? "Try a different search term" : "No teams match this filter"}
+              {search ? t("tryADifferentSearchTerm") : t("noTeamsMatchThisFilter")}
             </p>
           </div>
         </ContentReveal>
@@ -620,7 +583,7 @@ export default function TeamsPage() {
                             </p>
                           ) : (
                             <p className="text-xs text-muted-foreground/50 mt-1 italic">
-                              No description
+                              {t("noDescription")}
                             </p>
                           )}
                         </div>
@@ -656,7 +619,7 @@ export default function TeamsPage() {
                             </div>
                           )}
                           <span className="text-xs text-muted-foreground">
-                            {memberCount} {memberCount === 1 ? "member" : "members"}
+                            {t("memberCount", { count: memberCount })}
                           </span>
                         </div>
 
@@ -665,7 +628,7 @@ export default function TeamsPage() {
                           className="text-[10px] border-gray-200 bg-gray-50 text-gray-600 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-400"
                         >
                           <FolderKanban className="size-2.5 mr-0.5" />
-                          Team
+                          {t("team")}
                         </Badge>
                       </div>
                     </div>

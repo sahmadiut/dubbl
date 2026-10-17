@@ -1,5 +1,9 @@
 "use client";
 
+import { adminPlanLabel, adminStatusLabel, adminRoleLabel } from "@/i18n/admin-labels";
+import { SubscriptionDescription } from "@/components/admin/subscription-description";
+import { useTranslations } from "next-intl";
+
 import { useState, useEffect, useCallback, use } from "react";
 import Image from "next/image";
 import { ContentReveal } from "@/components/ui/content-reveal";
@@ -124,13 +128,13 @@ const PLAN_COLORS: Record<string, string> = {
 };
 
 const LIMIT_FIELDS = [
-  { key: "overrideMembers", defaultKey: "members", label: "Members", icon: Users },
-  { key: "overrideStorageMb", defaultKey: "storageMb", label: "Storage (MB)", icon: Gauge },
-  { key: "overrideContacts", defaultKey: "contacts", label: "Contacts", icon: Users },
-  { key: "overrideInvoicesPerMonth", defaultKey: "invoicesPerMonth", label: "Invoices / mo", icon: CreditCard },
-  { key: "overrideProjects", defaultKey: "projects", label: "Projects", icon: Building2 },
-  { key: "overrideBankAccounts", defaultKey: "bankAccounts", label: "Bank Accounts", icon: CreditCard },
-  { key: "overrideEntriesPerMonth", defaultKey: "entriesPerMonth", label: "Entries / mo", icon: StickyNote },
+  { key: "overrideMembers", defaultKey: "members", label: "members", icon: Users },
+  { key: "overrideStorageMb", defaultKey: "storageMb", label: "storageMB", icon: Gauge },
+  { key: "overrideContacts", defaultKey: "contacts", label: "contacts", icon: Users },
+  { key: "overrideInvoicesPerMonth", defaultKey: "invoicesPerMonth", label: "invoicesMo", icon: CreditCard },
+  { key: "overrideProjects", defaultKey: "projects", label: "projects", icon: Building2 },
+  { key: "overrideBankAccounts", defaultKey: "bankAccounts", label: "bankAccounts", icon: CreditCard },
+  { key: "overrideEntriesPerMonth", defaultKey: "entriesPerMonth", label: "entriesMo", icon: StickyNote },
 ] as const;
 
 export default function AdminOrgDetailPage({
@@ -138,6 +142,8 @@ export default function AdminOrgDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const t = useTranslations("Admin");
+
   const { id } = use(params);
   const [org, setOrg] = useState<OrgDetail | null>(null);
   const [sub, setSub] = useState<Sub | null>(null);
@@ -175,11 +181,11 @@ export default function AdminOrgDetailPage({
       setPlanDefaults(data.planDefaults);
       populateEditState(data.subscription);
     } catch {
-      toast.error("Failed to load organization");
+      toast.error(t("failedToLoadOrganization"));
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, t]);
 
   const populateEditState = (s: Sub) => {
     setEditPlan(s.plan);
@@ -223,11 +229,11 @@ export default function AdminOrgDetailPage({
         body: JSON.stringify(body),
       });
       if (!res.ok) throw new Error();
-      toast.success("Changes saved");
+      toast.success(t("changesSaved"));
       setDirty(false);
       fetchOrg();
     } catch {
-      toast.error("Failed to save");
+      toast.error(t("failedToSave"));
     } finally {
       setSaving(false);
     }
@@ -240,11 +246,11 @@ export default function AdminOrgDetailPage({
         method: "POST",
       });
       if (!res.ok) throw new Error();
-      toast.success("Stripe subscription canceled");
+      toast.success(t("stripeSubscriptionCanceled"));
       setCancelDialogOpen(false);
       fetchOrg();
     } catch {
-      toast.error("Failed to cancel subscription");
+      toast.error(t("failedToCancelSubscription"));
     } finally {
       setCanceling(false);
     }
@@ -271,11 +277,11 @@ export default function AdminOrgDetailPage({
         }),
       });
       if (!res.ok) throw new Error();
-      toast.success("Switched to enterprise deal");
+      toast.success(t("switchedToEnterpriseDeal"));
       setSwitchDialogOpen(false);
       fetchOrg();
     } catch {
-      toast.error("Failed to switch");
+      toast.error(t("failedToSwitch"));
     } finally {
       setSaving(false);
     }
@@ -292,7 +298,7 @@ export default function AdminOrgDetailPage({
 
   if (!org || !sub) return null;
 
-  const displayPlan = sub.customPlanName || sub.plan;
+  const displayPlan = sub.customPlanName || adminPlanLabel(t, sub.plan);
   const isEnterprise = sub.managedBy === "manual";
   const hasStripe = !!sub.stripeSubscriptionId;
 
@@ -316,11 +322,11 @@ export default function AdminOrgDetailPage({
                   variant="outline"
                   className={cn("text-[11px] capitalize", isEnterprise ? "text-purple-600 bg-purple-50 dark:text-purple-400 dark:bg-purple-950/50" : STATUS_COLORS[sub.status] || "")}
                 >
-                  {sub.status}
+                  {adminStatusLabel(t, sub.status)}
                 </Badge>
               </div>
               <p className="text-xs text-muted-foreground">
-                {org.slug} · {org.defaultCurrency} · Created {new Date(org.createdAt).toLocaleDateString()}
+                {org.slug} · {org.defaultCurrency} · {t("created", { date: new Date(org.createdAt).toLocaleDateString() })}
               </p>
             </div>
           </div>
@@ -334,7 +340,7 @@ export default function AdminOrgDetailPage({
                 onClick={() => setSwitchDialogOpen(true)}
               >
                 <Zap className="size-3" />
-                Switch to Enterprise
+                {t("switchToEnterprise")}
               </Button>
             )}
             {hasStripe && (
@@ -345,7 +351,7 @@ export default function AdminOrgDetailPage({
                 onClick={() => setCancelDialogOpen(true)}
               >
                 <AlertTriangle className="size-3" />
-                Cancel Stripe
+                {t("cancelStripe")}
               </Button>
             )}
           </div>
@@ -353,19 +359,19 @@ export default function AdminOrgDetailPage({
 
         {/* Quick info row */}
         <div className="flex flex-wrap gap-3">
-          <QuickStat label="Plan" value={
+          <QuickStat label={t("plan")} value={
             <span className={cn("capitalize", isEnterprise && "text-purple-600 dark:text-purple-400")}>{displayPlan}</span>
           } />
-          <QuickStat label="Seats" value={sub.seatCount} />
-          <QuickStat label="Members" value={members.length} />
-          <QuickStat label="Managed" value={sub.managedBy === "manual" ? "Manual" : "Stripe"} />
+          <QuickStat label={t("seats")} value={sub.seatCount} />
+          <QuickStat label={t("members")} value={members.length} />
+          <QuickStat label={t("managed")} value={sub.managedBy === "manual" ? t("manual") : "Stripe"} />
           {sub.stripeCustomerId && (
             <QuickStat label="Stripe" value={
               <span className="font-mono text-[10px]">{sub.stripeCustomerId}</span>
             } />
           )}
           {sub.currentPeriodEnd && (
-            <QuickStat label="Renews" value={new Date(sub.currentPeriodEnd).toLocaleDateString()} />
+            <QuickStat label={t("renews")} value={new Date(sub.currentPeriodEnd).toLocaleDateString()} />
           )}
         </div>
 
@@ -374,16 +380,16 @@ export default function AdminOrgDetailPage({
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList variant="line">
-            <TabsTrigger value="plan">Plan & Limits</TabsTrigger>
-            <TabsTrigger value="members">Members ({members.length})</TabsTrigger>
-            <TabsTrigger value="notes">Notes</TabsTrigger>
+            <TabsTrigger value="plan">{t("planLimits")}</TabsTrigger>
+            <TabsTrigger value="members">{t("membersCount", { count: members.length })}</TabsTrigger>
+            <TabsTrigger value="notes">{t("notes")}</TabsTrigger>
           </TabsList>
 
           {/* Plan & Limits tab */}
           <TabsContent value="plan" className="mt-6 space-y-6">
             {/* Plan tier cards */}
             <div>
-              <Label className="text-xs text-muted-foreground mb-3 block">Plan Tier</Label>
+              <Label className="text-xs text-muted-foreground mb-3 block">{t("planTier")}</Label>
               <div className="grid grid-cols-3 gap-3">
                 {(["free", "pro"] as const).map((p) => (
                   <button
@@ -404,9 +410,9 @@ export default function AdminOrgDetailPage({
                         <Check className="size-2.5 text-white" />
                       </div>
                     )}
-                    <p className="text-sm font-semibold capitalize">{p}</p>
+                    <p className="text-sm font-semibold capitalize">{adminPlanLabel(t, p)}</p>
                     <p className="text-[11px] text-muted-foreground mt-0.5">
-                      {p === "free" ? "$0/mo" : "$12/seat/mo"}
+                      {p === "free" ? t("freePrice") : t("proPrice")}
                     </p>
                   </button>
                 ))}
@@ -416,22 +422,22 @@ export default function AdminOrgDetailPage({
             {/* Status + Seats + Management */}
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Status</Label>
+                <Label className="text-xs text-muted-foreground">{t("status")}</Label>
                 <Select value={editStatus} onValueChange={(v) => { setEditStatus(v); markDirty(); }}>
                   <SelectTrigger className="h-9">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="trialing">Trialing</SelectItem>
-                    <SelectItem value="past_due">Past Due</SelectItem>
-                    <SelectItem value="canceled">Canceled</SelectItem>
-                    <SelectItem value="incomplete">Incomplete</SelectItem>
+                    <SelectItem value="active">{t("active")}</SelectItem>
+                    <SelectItem value="trialing">{t("trialing")}</SelectItem>
+                    <SelectItem value="past_due">{t("pastDue")}</SelectItem>
+                    <SelectItem value="canceled">{t("canceled")}</SelectItem>
+                    <SelectItem value="incomplete">{t("incomplete")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Seat Count</Label>
+                <Label className="text-xs text-muted-foreground">{t("seatCount")}</Label>
                 <Input
                   type="number"
                   min={1}
@@ -441,23 +447,23 @@ export default function AdminOrgDetailPage({
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Billing</Label>
+                <Label className="text-xs text-muted-foreground">{t("billing")}</Label>
                 <Select value={editManagedBy} onValueChange={(v) => { setEditManagedBy(v); markDirty(); }}>
                   <SelectTrigger className="h-9">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="stripe">Stripe</SelectItem>
-                    <SelectItem value="manual">Manual</SelectItem>
+                    <SelectItem value="manual">{t("manual")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Custom Plan Name</Label>
+              <Label className="text-xs text-muted-foreground">{t("customPlanName")}</Label>
               <Input
-                placeholder="Leave empty to use tier name"
+                placeholder={t("leaveEmptyToUseTierName")}
                 className="h-9"
                 value={editCustomName}
                 onChange={(e) => { setEditCustomName(e.target.value); markDirty(); }}
@@ -470,8 +476,8 @@ export default function AdminOrgDetailPage({
             <div>
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <Label className="text-xs text-muted-foreground block">Limit Overrides</Label>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">Empty uses plan defaults. -1 for unlimited.</p>
+                  <Label className="text-xs text-muted-foreground block">{t("limitOverrides")}</Label>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">{t("emptyUsesPlanDefaults1ForUnlimited")}</p>
                 </div>
                 {Object.values(editOverrides).some((v) => v !== "") && (
                   <Button
@@ -485,7 +491,7 @@ export default function AdminOrgDetailPage({
                       markDirty();
                     }}
                   >
-                    Reset All
+                    {t("resetAll")}
                   </Button>
                 )}
               </div>
@@ -493,7 +499,7 @@ export default function AdminOrgDetailPage({
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {LIMIT_FIELDS.map((f) => {
                   const planVal = planDefaults ? planDefaults[f.defaultKey] : null;
-                  const placeholder = planVal === Infinity ? "Unlimited" : String(planVal ?? "-");
+                  const placeholder = planVal === Infinity ? t("unlimited") : String(planVal ?? "-");
                   const hasOverride = editOverrides[f.key] !== "";
                   return (
                     <div key={f.key} className={cn(
@@ -502,7 +508,7 @@ export default function AdminOrgDetailPage({
                     )}>
                       <div className="flex items-center gap-1.5">
                         <f.icon className="size-3 text-muted-foreground" />
-                        <span className="text-[11px] font-medium text-muted-foreground">{f.label}</span>
+                        <span className="text-[11px] font-medium text-muted-foreground">{t(f.label)}</span>
                       </div>
                       <Input
                         type="number"
@@ -515,7 +521,7 @@ export default function AdminOrgDetailPage({
                         }}
                       />
                       <p className="text-[10px] text-muted-foreground">
-                        Default: {placeholder}
+                        {t("defaultLimit", { value: placeholder })}
                       </p>
                     </div>
                   );
@@ -526,7 +532,7 @@ export default function AdminOrgDetailPage({
             {/* Save bar */}
             {dirty && (
               <div className="sticky bottom-0 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 bg-background/80 backdrop-blur border-t flex items-center justify-between gap-3">
-                <p className="text-xs text-muted-foreground">You have unsaved changes</p>
+                <p className="text-xs text-muted-foreground">{t("youHaveUnsavedChanges")}</p>
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
@@ -534,11 +540,11 @@ export default function AdminOrgDetailPage({
                     className="text-xs"
                     onClick={() => { if (sub) populateEditState(sub); }}
                   >
-                    Discard
+                    {t("discard")}
                   </Button>
                   <Button size="sm" className="gap-1.5 text-xs" onClick={handleSave} disabled={saving}>
                     <Save className="size-3" />
-                    {saving ? "Saving..." : "Save Changes"}
+                    {saving ? t("saving") : t("saveChanges")}
                   </Button>
                 </div>
               </div>
@@ -564,13 +570,13 @@ export default function AdminOrgDetailPage({
                     </p>
                     <Badge variant="outline" className={cn("gap-1 text-[11px]", ROLE_COLORS[m.role] || "")}>
                       <RoleIcon className="size-3" />
-                      {m.role}
+                      {adminRoleLabel(t, m.role)}
                     </Badge>
                   </div>
                 );
               })}
               {members.length === 0 && (
-                <div className="py-12 text-center text-sm text-muted-foreground">No members</div>
+                <div className="py-12 text-center text-sm text-muted-foreground">{t("noMembers")}</div>
               )}
             </div>
           </TabsContent>
@@ -578,7 +584,7 @@ export default function AdminOrgDetailPage({
           {/* Notes tab */}
           <TabsContent value="notes" className="mt-6 space-y-4">
             <Textarea
-              placeholder="Internal notes about this organization, enterprise deal terms, contacts..."
+              placeholder={t("internalNotesAboutThisOrganizationEnterpriseDealTermsContacts")}
               value={editNotes}
               onChange={(e) => { setEditNotes(e.target.value); markDirty(); }}
               rows={8}
@@ -587,7 +593,7 @@ export default function AdminOrgDetailPage({
             {dirty && (
               <Button size="sm" className="gap-1.5 text-xs" onClick={handleSave} disabled={saving}>
                 <Save className="size-3" />
-                {saving ? "Saving..." : "Save Notes"}
+                {saving ? t("saving") : t("saveNotes")}
               </Button>
             )}
           </TabsContent>
@@ -598,10 +604,9 @@ export default function AdminOrgDetailPage({
       <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Cancel Stripe Subscription</DialogTitle>
+            <DialogTitle>{t("cancelStripeSubscription")}</DialogTitle>
             <DialogDescription>
-              This will immediately cancel the Stripe subscription for {org.name}.
-              The organization will keep their current plan tier but billing will stop.
+              <SubscriptionDescription name={org.name} />
             </DialogDescription>
           </DialogHeader>
           {sub.stripeSubscriptionId && (
@@ -611,7 +616,7 @@ export default function AdminOrgDetailPage({
           )}
           <DialogFooter>
             <Button variant="outline" size="sm" onClick={() => setCancelDialogOpen(false)}>
-              Keep Subscription
+              {t("keepSubscription")}
             </Button>
             <Button
               variant="destructive"
@@ -621,7 +626,7 @@ export default function AdminOrgDetailPage({
               disabled={canceling}
             >
               <AlertTriangle className="size-3" />
-              {canceling ? "Canceling..." : "Cancel Subscription"}
+              {canceling ? t("canceling") : t("cancelSubscription")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -631,25 +636,24 @@ export default function AdminOrgDetailPage({
       <Dialog open={switchDialogOpen} onOpenChange={setSwitchDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Switch to Enterprise</DialogTitle>
+            <DialogTitle>{t("switchToEnterprise")}</DialogTitle>
             <DialogDescription>
-              This will set {org.name} to a manually managed enterprise plan.
-              {hasStripe && " Their Stripe subscription will be canceled."}
+              <SubscriptionDescription name={org.name} switching hasStripe={hasStripe} />
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2 text-sm">
-            <p className="font-medium">What happens:</p>
+            <p className="font-medium">{t("whatHappens")}</p>
             <ul className="space-y-1 text-muted-foreground text-xs">
-              {hasStripe && <li className="flex items-center gap-2"><AlertTriangle className="size-3 text-amber-500" /> Stripe subscription canceled</li>}
-              <li className="flex items-center gap-2"><Check className="size-3 text-emerald-500" /> Plan set to Business tier</li>
-              <li className="flex items-center gap-2"><Check className="size-3 text-emerald-500" /> Billing set to Manual</li>
-              <li className="flex items-center gap-2"><Check className="size-3 text-emerald-500" /> Custom name set to &quot;Enterprise&quot;</li>
-              <li className="flex items-center gap-2"><Check className="size-3 text-emerald-500" /> You can customize limits after</li>
+              {hasStripe && <li className="flex items-center gap-2"><AlertTriangle className="size-3 text-amber-500" /> {t("stripeSubscriptionCanceled")}</li>}
+              <li className="flex items-center gap-2"><Check className="size-3 text-emerald-500" /> {t("planSetToBusinessTier")}</li>
+              <li className="flex items-center gap-2"><Check className="size-3 text-emerald-500" /> {t("billingSetToManual")}</li>
+              <li className="flex items-center gap-2"><Check className="size-3 text-emerald-500" /> {t("customNameSetToEnterprise")}</li>
+              <li className="flex items-center gap-2"><Check className="size-3 text-emerald-500" /> {t("youCanCustomizeLimitsAfter")}</li>
             </ul>
           </div>
           <DialogFooter>
             <Button variant="outline" size="sm" onClick={() => setSwitchDialogOpen(false)}>
-              Cancel
+              {t("cancel")}
             </Button>
             <Button
               size="sm"
@@ -658,7 +662,7 @@ export default function AdminOrgDetailPage({
               disabled={saving}
             >
               <Zap className="size-3" />
-              {saving ? "Switching..." : "Switch to Enterprise"}
+              {saving ? t("switching") : t("switchToEnterprise")}
             </Button>
           </DialogFooter>
         </DialogContent>

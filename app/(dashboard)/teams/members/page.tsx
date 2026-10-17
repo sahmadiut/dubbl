@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useState, useEffect, useCallback } from "react";
 import { motion, MotionConfig } from "motion/react";
 import { Users, Search, X } from "lucide-react";
@@ -35,6 +37,8 @@ function getInitials(name: string) {
 }
 
 export default function TeamMembersPage() {
+  const t = useTranslations("Teams");
+
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchKey, setFetchKey] = useState(0);
@@ -42,7 +46,7 @@ export default function TeamMembersPage() {
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search);
   const pendingSearch = search !== debouncedSearch;
-  useDocumentTitle("Teams · Members");
+  useDocumentTitle(t("teamsMembers"));
 
   const fetchMembers = useCallback(() => {
     const orgId = localStorage.getItem("activeOrgId");
@@ -92,8 +96,8 @@ export default function TeamMembersPage() {
   return (
     <ContentReveal className="space-y-6">
       <PageHeader
-        title="Members"
-        description="All organization members and their team assignments."
+        title={t("members")}
+        description={t("allOrganizationMembersAndTheirTeamAssignments")}
       />
 
       {/* Search */}
@@ -101,7 +105,7 @@ export default function TeamMembersPage() {
         <div className="relative flex-1 sm:max-w-xs">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search by name or email..."
+            placeholder={t("searchByNameOrEmail")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9 pr-8 h-8 text-sm"
@@ -120,7 +124,7 @@ export default function TeamMembersPage() {
       {/* Members list */}
       {pendingSearch ? (
         <div className="flex items-center justify-center py-20">
-          <div className="brand-loader" aria-label="Loading">
+          <div className="brand-loader" aria-label={t("loading")}>
             <div className="brand-loader-circle brand-loader-circle-1" />
             <div className="brand-loader-circle brand-loader-circle-2" />
           </div>
@@ -132,10 +136,10 @@ export default function TeamMembersPage() {
               <Users className="size-5 text-muted-foreground" />
             </div>
             <p className="text-sm font-medium">
-              {members.length === 0 ? "No members yet" : "No members found"}
+              {members.length === 0 ? t("noMembersYet") : t("noMembersFound")}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              {search ? "Try a different search term" : "No organization members to display."}
+              {search ? t("tryADifferentSearchTerm") : t("noOrganizationMembersToDisplay")}
             </p>
           </div>
         </ContentReveal>
@@ -180,7 +184,7 @@ export default function TeamMembersPage() {
                         </Badge>
                       ))
                     ) : (
-                      <span className="text-xs text-muted-foreground">No teams</span>
+                      <span className="text-xs text-muted-foreground">{t("noTeams")}</span>
                     )}
                   </div>
                 </div>

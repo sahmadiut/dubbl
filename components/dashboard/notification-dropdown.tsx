@@ -1,5 +1,10 @@
 "use client";
 
+import { notificationRelativeTime } from "@/i18n/notification-presentation";
+import { usePresentation } from "@/i18n/provider";
+import { ApprovalNotificationTitle, ApprovalNotificationSender, approvalEntityHref } from "@/components/dashboard/approval-notification-text";
+import { useTranslations } from "next-intl";
+
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -45,33 +50,6 @@ interface ApprovalRequest {
   requestedBy?: { user?: { name?: string | null; email?: string | null } | null } | null;
 }
 
-// Plain-language label for what is awaiting sign-off
-const APPROVAL_ENTITY_LABELS: Record<ApprovalRequest["entityType"], string> = {
-  bill: "Bill",
-  expense: "Expense",
-  invoice: "Invoice",
-  journal_entry: "Journal entry",
-  purchase_order: "Purchase order",
-};
-
-// Where the user goes to review and sign off on each item
-function approvalEntityHref(req: ApprovalRequest): string {
-  switch (req.entityType) {
-    case "bill":
-      return `/purchases/${req.entityId}`;
-    case "purchase_order":
-      return `/purchases/orders/${req.entityId}`;
-    case "expense":
-      return `/purchases/expenses/${req.entityId}`;
-    case "invoice":
-      return `/sales/${req.entityId}`;
-    case "journal_entry":
-      return `/accounting/${req.entityId}`;
-    default:
-      return "/notifications";
-  }
-}
-
 const TYPE_ICONS: Record<string, typeof Bell> = {
   invoice_overdue: FileText,
   payment_received: DollarSign,
@@ -92,21 +70,9 @@ const TYPE_COLORS: Record<string, string> = {
   task_assigned: "text-indigo-500 bg-indigo-500/10",
 };
 
-function relativeTime(date: string) {
-  const now = new Date();
-  const d = new Date(date);
-  const diffMs = now.getTime() - d.getTime();
-  const diffMin = Math.floor(diffMs / 60000);
-  if (diffMin < 1) return "Just now";
-  if (diffMin < 60) return `${diffMin}m ago`;
-  const diffHrs = Math.floor(diffMin / 60);
-  if (diffHrs < 24) return `${diffHrs}h ago`;
-  const diffDays = Math.floor(diffHrs / 24);
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
-
 export function NotificationDropdown() {
+  const t = useTranslations("Notifications");
+  const presentation = usePresentation();
   const router = useRouter();
   const { data: session } = useSession();
   const userId = session?.user?.id ?? null;
@@ -188,13 +154,13 @@ export function NotificationDropdown() {
     fetchApprovals();
   }, [fetchApprovals]);
 
-  const handleOpenChange = useCallback((next: boolean) => {
+  const handleOpenChange = (next: boolean) => {
     setOpen(next);
     if (next) {
       fetchNotifications();
       fetchApprovals();
     }
-  }, [fetchNotifications, fetchApprovals]);
+  };
 
   const markAsRead = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -237,6 +203,7 @@ export function NotificationDropdown() {
           variant="ghost"
           size="icon"
           className="relative size-7"
+          aria-label={t("notifications")}
         >
           <Bell className="size-3.5" />
           <AnimatePresence>
@@ -248,7 +215,7 @@ export function NotificationDropdown() {
                 transition={{ type: "spring", stiffness: 500, damping: 25 }}
                 className="absolute -top-0.5 -right-0.5 flex size-3.5 items-center justify-center rounded-full bg-red-500 text-[8px] font-medium text-white"
               >
-                {badgeCount > 9 ? "9+" : badgeCount}
+                {badgeCount > 9 ? t("badgeOverflow") : badgeCount}
               </motion.span>
             )}
           </AnimatePresence>
@@ -262,7 +229,7 @@ export function NotificationDropdown() {
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b">
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-semibold">Notifications</h3>
+            <h3 className="text-sm font-semibold">{t("notifications")}</h3>
             {unreadCount > 0 && (
               <span className="flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 text-[11px] font-semibold">
                 {unreadCount}
@@ -275,7 +242,7 @@ export function NotificationDropdown() {
               className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
             >
               <CheckCheck className="size-3" />
-              Mark all read
+              {t("markAllRead")}
             </button>
           )}
         </div>
@@ -289,7 +256,7 @@ export function NotificationDropdown() {
                 <div className="flex items-center gap-1.5">
                   <ShieldCheck className="size-3 text-purple-500" />
                   <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                    Waiting for you to approve
+                    {t("waitingForYouToApprove")}
                   </span>
                 </div>
                 <span className="flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 text-[10px] font-semibold">
@@ -300,7 +267,7 @@ export function NotificationDropdown() {
                 const requester =
                   req.requestedBy?.user?.name ||
                   req.requestedBy?.user?.email ||
-                  "Someone";
+                  t("someone");
                 return (
                   <button
                     key={req.id}
@@ -316,14 +283,14 @@ export function NotificationDropdown() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-2">
                         <p className="text-[13px] leading-snug font-medium text-foreground">
-                          {APPROVAL_ENTITY_LABELS[req.entityType]} needs your approval
+                          <ApprovalNotificationTitle entityType={req.entityType} />
                         </p>
                         <span className="text-[10px] text-muted-foreground/50 tabular-nums shrink-0 pt-0.5">
-                          {relativeTime(req.createdAt)}
+                          {notificationRelativeTime(t, presentation, req.createdAt)}
                         </span>
                       </div>
                       <p className="mt-0.5 text-[11px] text-muted-foreground/70 line-clamp-1">
-                        Sent by {requester} &middot; Tap to review &amp; sign off
+                        <ApprovalNotificationSender name={requester} />
                       </p>
                     </div>
                     <ArrowRight className="size-3 shrink-0 self-center text-muted-foreground/40 group-hover:text-foreground transition-colors" />
@@ -343,8 +310,8 @@ export function NotificationDropdown() {
               <div className="flex size-10 items-center justify-center rounded-xl bg-muted">
                 <Bell className="size-5 text-muted-foreground" />
               </div>
-              <p className="mt-3 text-sm font-medium text-muted-foreground">All caught up</p>
-              <p className="mt-0.5 text-xs text-muted-foreground/60">No notifications yet</p>
+              <p className="mt-3 text-sm font-medium text-muted-foreground">{t("allCaughtUp")}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground/60">{t("noNotificationsYet")}</p>
             </div>
             )
           ) : (
@@ -380,7 +347,7 @@ export function NotificationDropdown() {
                       </p>
                       <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
                         <span className="text-[10px] text-muted-foreground/50 tabular-nums">
-                          {relativeTime(n.createdAt)}
+                          {notificationRelativeTime(t, presentation, n.createdAt)}
                         </span>
                         {isUnread && (
                           <span className="size-1.5 rounded-full bg-blue-500" />
@@ -409,7 +376,7 @@ export function NotificationDropdown() {
               }}
               className="flex w-full items-center justify-center gap-1.5 py-2.5 text-[12px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
             >
-              View all notifications
+              {t("viewAllNotifications")}
               <ArrowRight className="size-3" />
             </button>
           </div>

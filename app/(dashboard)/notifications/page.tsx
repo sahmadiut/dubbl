@@ -1,5 +1,9 @@
 "use client";
 
+import { notificationRelativeTime, groupNotifications } from "@/i18n/notification-presentation";
+import { usePresentation } from "@/i18n/provider";
+import { useTranslations } from "next-intl";
+
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -54,69 +58,25 @@ const TYPE_COLORS: Record<string, string> = {
   task_assigned: "text-indigo-500 bg-indigo-500/10",
 };
 
-const TYPE_LABELS: Record<string, string> = {
-  invoice_overdue: "Invoice",
-  payment_received: "Payment",
-  inventory_low: "Inventory",
-  payroll_due: "Payroll",
-  approval_needed: "Approval",
-  system_alert: "System",
-  task_assigned: "Task",
-};
-
-function relativeTime(date: string) {
-  const now = new Date();
-  const d = new Date(date);
-  const diffMs = now.getTime() - d.getTime();
-  const diffMin = Math.floor(diffMs / 60000);
-  if (diffMin < 1) return "Just now";
-  if (diffMin < 60) return `${diffMin}m ago`;
-  const diffHrs = Math.floor(diffMin / 60);
-  if (diffHrs < 24) return `${diffHrs}h ago`;
-  const diffDays = Math.floor(diffHrs / 24);
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
-
-function groupByDate(notifications: Notification[]) {
-  const groups: { label: string; items: Notification[] }[] = [];
-  const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-
-  const todayStr = today.toDateString();
-  const yesterdayStr = yesterday.toDateString();
-
-  const map = new Map<string, Notification[]>();
-
-  for (const n of notifications) {
-    const d = new Date(n.createdAt);
-    const ds = d.toDateString();
-    let label: string;
-
-    if (ds === todayStr) label = "Today";
-    else if (ds === yesterdayStr) label = "Yesterday";
-    else label = d.toLocaleDateString("en-US", { month: "long", day: "numeric" });
-
-    if (!map.has(label)) map.set(label, []);
-    map.get(label)!.push(n);
-  }
-
-  for (const [label, items] of map) {
-    groups.push({ label, items });
-  }
-
-  return groups;
-}
-
-const TABS = [
-  { value: "all", label: "All" },
-  { value: "unread", label: "Unread" },
-] as const;
-
 const PAGE_SIZE = 20;
 
 export default function NotificationsPage() {
+  const t = useTranslations("Notifications");
+  const presentation = usePresentation();
+  const TYPE_LABELS: Record<string, string> = {
+    invoice_overdue: t("invoice"),
+    payment_received: t("payment"),
+    inventory_low: t("inventory"),
+    payroll_due: t("payroll"),
+    approval_needed: t("approval"),
+    system_alert: t("system"),
+    task_assigned: t("task"),
+  };
+  const TABS = [
+    { value: "all", label: t("all") },
+    { value: "unread", label: t("unread") },
+  ] as const;
+
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "unread">("all");
@@ -225,7 +185,7 @@ export default function NotificationsPage() {
 
   if (loading) return <BrandLoader />;
 
-  const groups = groupByDate(notifications);
+  const groups = groupNotifications(t, presentation, notifications);
 
   return (
     <ContentReveal>
@@ -237,11 +197,11 @@ export default function NotificationsPage() {
               <Bell className="size-5 text-primary" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold">Notifications</h2>
+              <h2 className="text-lg font-semibold">{t("notifications")}</h2>
               <p className="text-sm text-muted-foreground">
                 {unreadCount > 0
-                  ? `${unreadCount} unread notification${unreadCount !== 1 ? "s" : ""}`
-                  : "All caught up"}
+                  ? t("unreadCount", { count: unreadCount })
+                  : t("allCaughtUp")}
               </p>
             </div>
           </div>
@@ -249,13 +209,13 @@ export default function NotificationsPage() {
             {unreadCount > 0 && (
               <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={markAllRead}>
                 <CheckCheck className="size-3" />
-                Mark all read
+                {t("markAllRead")}
               </Button>
             )}
             <Button variant="ghost" size="sm" className="h-7 text-xs gap-1.5" asChild>
               <Link href="/settings/notifications">
                 <Settings2 className="size-3" />
-                Preferences
+                {t("preferences")}
               </Link>
             </Button>
           </div>
@@ -308,18 +268,18 @@ export default function NotificationsPage() {
                     <Inbox className="size-8 text-muted-foreground/50" />
                   </div>
                   <h3 className="mt-5 text-sm font-medium">
-                    {filter === "unread" ? "No unread notifications" : "No notifications yet"}
+                    {filter === "unread" ? t("noUnreadNotifications") : t("noNotificationsYet")}
                   </h3>
                   <p className="mt-1.5 text-xs text-muted-foreground max-w-[250px]">
                     {filter === "unread"
-                      ? "You've read all your notifications. Nice work!"
-                      : "When something important happens, you'll see it here."}
+                      ? t("youVeReadAllYourNotificationsNiceWork")
+                      : t("whenSomethingImportantHappensYouLlSeeItHere")}
                   </p>
                 </div>
               ) : (
                 <div className="space-y-6">
                   {groups.map((group) => (
-                    <div key={group.label}>
+                    <div key={group.key}>
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="text-xs font-medium text-muted-foreground">{group.label}</h3>
                         <div className="flex-1 h-px bg-border" />
@@ -328,7 +288,7 @@ export default function NotificationsPage() {
                         {group.items.map((n) => {
                           const Icon = TYPE_ICONS[n.type] || Bell;
                           const colorClass = TYPE_COLORS[n.type] || "text-muted-foreground bg-muted";
-                          const typeLabel = TYPE_LABELS[n.type] || "Notification";
+                          const typeLabel = Object.hasOwn(TYPE_LABELS, n.type) ? TYPE_LABELS[n.type] : t("notification");
                           const isUnread = !n.readAt;
 
                           return (
@@ -381,7 +341,7 @@ export default function NotificationsPage() {
                                     )}
                                   </div>
                                   <span className="text-[11px] text-muted-foreground/50 tabular-nums shrink-0 pt-3">
-                                    {relativeTime(n.createdAt)}
+                                    {notificationRelativeTime(t, presentation, n.createdAt)}
                                   </span>
                                 </div>
                               </div>
@@ -398,7 +358,7 @@ export default function NotificationsPage() {
                       <Loader2 className="size-5 text-muted-foreground animate-spin" />
                     )}
                     {!hasMore && notifications.length > 0 && (
-                      <p className="text-xs text-muted-foreground/50">No more notifications</p>
+                      <p className="text-xs text-muted-foreground/50">{t("noMoreNotifications")}</p>
                     )}
                   </div>
                 </div>

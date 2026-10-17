@@ -1,4 +1,7 @@
 "use client";
+import { bankFieldLabels, opsForField, summarizeRule, isAmountField, type ConditionField, type ConditionOp, type RuleCondition, type SplitAllocation, type BankRule, type AccountOption, type ContactOption, type TaxRateOption } from "@/i18n/bank-rule-presentation";
+import { useTranslations } from "next-intl";
+import { settingsErrorMessage } from "@/i18n/settings-errors";
 import { bankUiRule } from "@/lib/money/bank-ui";
 
 import { useState, useEffect, useCallback } from "react";
@@ -46,103 +49,6 @@ import { toast } from "sonner";
 // Sentinel used for "no selection" Select items — Radix forbids empty-string values.
 const NONE = "__none__";
 
-type ConditionField =
-  | "description"
-  | "reference"
-  | "amount"
-  | "payee"
-  | "counterparty";
-type ConditionOp =
-  | "contains"
-  | "equals"
-  | "starts_with"
-  | "ends_with"
-  | "gt"
-  | "lt"
-  | "between";
-
-interface RuleCondition {
-  field: ConditionField;
-  op: ConditionOp;
-  value: string;
-}
-
-interface SplitAllocation {
-  accountId: string;
-  percent?: number;
-  amount?: number;
-  amountMinor?: string;
-  taxRateId?: string;
-}
-
-interface BankRule {
-  id: string;
-  name: string;
-  priority: number;
-  matchField: string;
-  matchType: string;
-  matchValue: string;
-  conditions?: RuleCondition[] | null;
-  matchAll: boolean;
-  splitAllocations?: SplitAllocation[] | null;
-  accountId: string | null;
-  contactId: string | null;
-  taxRateId: string | null;
-  autoReconcile: boolean;
-  isActive: boolean;
-  createdAt: string;
-}
-
-interface AccountOption {
-  id: string;
-  name: string;
-}
-
-interface ContactOption {
-  id: string;
-  name: string;
-}
-
-interface TaxRateOption {
-  id: string;
-  name: string;
-}
-
-// Plain-language labels for the things a transaction can be matched on.
-const FIELD_LABELS: Record<ConditionField, string> = {
-  description: "Description",
-  reference: "Reference",
-  amount: "Amount (minor units)",
-  payee: "Payee",
-  counterparty: "Other party",
-};
-
-// Operators available for text fields.
-const TEXT_OPS: { value: ConditionOp; label: string }[] = [
-  { value: "contains", label: "contains" },
-  { value: "equals", label: "is exactly" },
-  { value: "starts_with", label: "starts with" },
-  { value: "ends_with", label: "ends with" },
-];
-
-// Operators available for the amount field.
-const AMOUNT_OPS: { value: ConditionOp; label: string }[] = [
-  { value: "equals", label: "is exactly" },
-  { value: "gt", label: "is more than" },
-  { value: "lt", label: "is less than" },
-  { value: "between", label: "is between" },
-];
-
-const AMOUNT_FIELDS: ConditionField[] = ["amount"];
-
-function isAmountField(field: ConditionField) {
-  return AMOUNT_FIELDS.includes(field);
-}
-
-function opsForField(field: ConditionField) {
-  return isAmountField(field) ? AMOUNT_OPS : TEXT_OPS;
-}
-
 // Rules are shared across banks, so thresholds and fixed splits use bank minor units.
 function parseMinorUnits(input: string): number | null {
   const text = input.trim();
@@ -155,59 +61,6 @@ function formatMinorUnits(minor: number): string {
   return String(minor);
 }
 
-function summarizeRule(
-  rule: BankRule,
-  accounts: AccountOption[],
-  taxRates: TaxRateOption[],
-  contacts: ContactOption[]
-): { match: string; actions: string[] } {
-  const conds =
-    rule.conditions && rule.conditions.length > 0
-      ? rule.conditions
-      : ([
-          {
-            field: (rule.matchField as ConditionField) || "description",
-            op: (rule.matchType as ConditionOp) || "contains",
-            value: rule.matchValue,
-          },
-        ] as RuleCondition[]);
-
-  const joiner = rule.matchAll ? " AND " : " OR ";
-  const match = conds
-    .map((c) => {
-      const fieldLabel = FIELD_LABELS[c.field] ?? c.field;
-      const opLabel =
-        opsForField(c.field).find((o) => o.value === c.op)?.label ?? c.op;
-      let val = c.value;
-      if (isAmountField(c.field)) {
-        if (c.op === "between") {
-          const [a, b] = c.value.split(",");
-          val = `${a} and ${b}`;
-        }
-      }
-      return `${fieldLabel} ${opLabel} "${val}"`;
-    })
-    .join(joiner);
-
-  const actions: string[] = [];
-  if (rule.splitAllocations && rule.splitAllocations.length > 0) {
-    actions.push(`Split across ${rule.splitAllocations.length} accounts`);
-  } else if (rule.accountId) {
-    actions.push(
-      accounts.find((a) => a.id === rule.accountId)?.name ?? "Assigned category"
-    );
-  }
-  if (rule.taxRateId) {
-    actions.push(taxRates.find((t) => t.id === rule.taxRateId)?.name ?? "Tax");
-  }
-  if (rule.contactId) {
-    actions.push(
-      contacts.find((c) => c.id === rule.contactId)?.name ?? "Contact"
-    );
-  }
-  return { match, actions };
-}
-
 const emptyCondition = (): RuleCondition => ({
   field: "description",
   op: "contains",
@@ -215,6 +68,10 @@ const emptyCondition = (): RuleCondition => ({
 });
 
 export default function BankRulesPage() {
+  const t = useTranslations("SettingsBankRules");
+  const te = useTranslations("SettingsErrors");
+
+  const FIELD_LABELS = bankFieldLabels(t);
   const [rules, setRules] = useState<BankRule[]>([]);
   const [loading, setLoading] = useState(true);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -248,9 +105,9 @@ export default function BankRulesPage() {
     })
       .then((r) => r.json())
       .then((data) => setRules((data.data || data.rules || []).map(bankUiRule)))
-      .catch(() => { setRules([]); toast.error("Bank rules are unavailable. Reload to try again."); })
+      .catch(() => { setRules([]); toast.error(t("rulesUnavailable")); })
       .finally(() => setLoading(false));
-  }, []);
+  }, [t]);
 
   const fetchOptions = useCallback(() => {
     const orgId = localStorage.getItem("activeOrgId");
@@ -353,7 +210,7 @@ export default function BankRulesPage() {
         const next = { ...c, ...patch };
         // When the field switches between text and amount, keep the operator valid.
         if (patch.field) {
-          const allowed = opsForField(patch.field).map((o) => o.value);
+          const allowed = opsForField(patch.field, t).map((o) => o.value);
           if (!allowed.includes(next.op)) next.op = allowed[0];
         }
         return next;
@@ -418,7 +275,7 @@ export default function BankRulesPage() {
 
     const conditionsPayload = buildConditionsPayload();
     if (!conditionsPayload) {
-      toast.error("Please fill in a value for every condition.");
+      toast.error(t("conditionRequired"));
       return;
     }
 
@@ -426,11 +283,11 @@ export default function BankRulesPage() {
     if (useSplits) {
       const cleaned = splits.filter((s) => s.accountId);
       if (cleaned.length === 0) {
-        toast.error("Add at least one account to split across, or turn off splitting.");
+        toast.error(t("splitAccountRequired"));
         return;
       }
       if (cleaned.some(s => s.amountMinor !== undefined && (parseMinorUnits(s.amountMinor) === null || parseMinorUnits(s.amountMinor)! < 0))) {
-        toast.error("Fixed amounts must be nonnegative whole bank minor units within the supported range.");
+        toast.error(t("invalidFixedAmount"));
         return;
       }
       splitPayload = cleaned.map((s) => ({
@@ -480,11 +337,11 @@ export default function BankRulesPage() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        toast.error(data.error || "Failed to save rule");
+        toast.error(settingsErrorMessage(te, data.error, t("failedToSaveRule"), res.status));
         return;
       }
 
-      toast.success(editingRule ? "Rule updated" : "Rule created");
+      toast.success(editingRule ? t("ruleUpdated") : t("ruleCreated"));
       setSheetOpen(false);
       fetchRules();
     } finally {
@@ -502,10 +359,10 @@ export default function BankRulesPage() {
     });
 
     if (res.ok) {
-      toast.success("Rule deleted");
+      toast.success(t("ruleDeleted"));
       fetchRules();
     } else {
-      toast.error("Failed to delete rule");
+      toast.error(t("failedToDeleteRule"));
     }
   };
 
@@ -523,10 +380,10 @@ export default function BankRulesPage() {
     });
 
     if (res.ok) {
-      toast.success(rule.isActive ? "Rule disabled" : "Rule enabled");
+      toast.success(rule.isActive ? t("ruleDisabled") : t("ruleEnabled"));
       fetchRules();
     } else {
-      toast.error("Failed to update rule");
+      toast.error(t("failedToUpdateRule"));
     }
   };
 
@@ -534,7 +391,7 @@ export default function BankRulesPage() {
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
 
-    toast.info("Analyzing transactions for rule suggestions...");
+    toast.info(t("analyzingSuggestions"));
 
     try {
       const res = await fetch("/api/v1/bank-rules/suggestions", {
@@ -542,7 +399,7 @@ export default function BankRulesPage() {
       });
 
       if (!res.ok) {
-        toast.error("Failed to get suggestions");
+        toast.error(t("failedToGetSuggestions"));
         return;
       }
 
@@ -550,15 +407,15 @@ export default function BankRulesPage() {
       const count = data.suggestions?.length ?? 0;
       if (count === 0) {
         toast.info(
-          "No suggestions found. Assign more transactions to categories first."
+          t("noSuggestions")
         );
       } else {
         toast.success(
-          `Found ${count} rule suggestion${count === 1 ? "" : "s"}`
+          t("suggestionCount", { count })
         );
       }
     } catch {
-      toast.error("Failed to get suggestions");
+      toast.error(t("failedToGetSuggestions"));
     }
   };
 
@@ -568,13 +425,11 @@ export default function BankRulesPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold">Bank Rules</h2>
+            <h2 className="text-lg font-semibold">{t("bankRules")}</h2>
             <p className="text-sm text-muted-foreground">
-              Automatically sort imported bank transactions into the right
-              category.
-              {rules.length > 0 && (
+              {t("descriptionText")}{rules.length > 0 && (
                 <span className="ml-2 inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
-                  {rules.length} rule{rules.length === 1 ? "" : "s"}
+                  {t("ruleCount", { count: rules.length })}
                 </span>
               )}
             </p>
@@ -587,11 +442,11 @@ export default function BankRulesPage() {
               onClick={handleGetSuggestions}
             >
               <Sparkles className="size-3.5" />
-              Get Suggestions
+              {t("getSuggestions")}
             </Button>
             <Button size="sm" className="h-8 text-xs gap-1.5" onClick={openCreate}>
               <Plus className="size-3.5" />
-              Add Rule
+              {t("addRule")}
             </Button>
           </div>
         </div>
@@ -606,8 +461,8 @@ export default function BankRulesPage() {
         ) : rules.length === 0 ? (
           <EmptyState
             icon={ListFilter}
-            title="No bank rules yet"
-            description="Create rules to automatically assign imported bank transactions to a category, based on words in their description, the amount, or who it was paid to."
+            title={t("noBankRulesYet")}
+            description={t("emptyDescription")}
           >
             <Button
               size="sm"
@@ -615,13 +470,14 @@ export default function BankRulesPage() {
               onClick={openCreate}
             >
               <Plus className="size-3.5" />
-              Create Rule
+              {t("createRule")}
             </Button>
           </EmptyState>
         ) : (
           <div className="rounded-lg border divide-y">
             {rules.map((rule) => {
               const { match, actions } = summarizeRule(
+                t,
                 rule,
                 accounts,
                 taxRates,
@@ -646,7 +502,7 @@ export default function BankRulesPage() {
 
                   {/* Priority */}
                   <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <span>Priority {rule.priority}</span>
+                    <span>{t("priorityValue", { priority: rule.priority })}</span>
                   </div>
 
                   {/* Active badge */}
@@ -658,7 +514,7 @@ export default function BankRulesPage() {
                         : ""
                     }
                   >
-                    {rule.isActive ? "Active" : "Inactive"}
+                    {rule.isActive ? t("active") : t("inactive")}
                   </Badge>
 
                   {/* Actions */}
@@ -671,11 +527,11 @@ export default function BankRulesPage() {
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => openEdit(rule)}>
                         <Pencil className="mr-2 size-3.5" />
-                        Edit
+                        {t("edit")}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleToggleActive(rule)}>
                         <ToggleLeft className="mr-2 size-3.5" />
-                        {rule.isActive ? "Disable" : "Enable"}
+                        {rule.isActive ? t("disable") : t("enable")}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
@@ -683,7 +539,7 @@ export default function BankRulesPage() {
                         onClick={() => handleDelete(rule.id)}
                       >
                         <Trash2 className="mr-2 size-3.5" />
-                        Delete
+                        {t("delete")}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -699,16 +555,16 @@ export default function BankRulesPage() {
         <SheetContent className="overflow-y-auto sm:max-w-lg">
           <SheetHeader>
             <SheetTitle>
-              {editingRule ? "Edit Rule" : "New Bank Rule"}
+              {editingRule ? t("editRule") : t("newBankRule")}
             </SheetTitle>
           </SheetHeader>
           <div className="space-y-6 px-4 py-4">
             <div className="space-y-2">
-              <Label>Rule name</Label>
+              <Label>{t("ruleName")}</Label>
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Stripe Payouts"
+                placeholder={t("eGStripePayouts")}
               />
             </div>
 
@@ -716,7 +572,7 @@ export default function BankRulesPage() {
             <div className="space-y-3 rounded-lg border p-3">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-semibold">
-                  When a transaction matches
+                  {t("whenATransactionMatches")}
                 </Label>
                 {conditions.length > 1 && (
                   <Select
@@ -727,8 +583,8 @@ export default function BankRulesPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">all conditions</SelectItem>
-                      <SelectItem value="any">any condition</SelectItem>
+                      <SelectItem value="all">{t("allConditions")}</SelectItem>
+                      <SelectItem value="any">{t("anyCondition")}</SelectItem>
                     </SelectContent>
                   </Select>
                 )}
@@ -741,7 +597,7 @@ export default function BankRulesPage() {
                     <div key={idx} className="space-y-2">
                       {idx > 0 && (
                         <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                          {matchAll ? "and" : "or"}
+                          {matchAll ? t("andLabel") : t("orLabel")}
                         </div>
                       )}
                       <div className="flex items-start gap-2">
@@ -780,7 +636,7 @@ export default function BankRulesPage() {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              {opsForField(cond.field).map((o) => (
+                              {opsForField(cond.field, t).map((o) => (
                                 <SelectItem key={o.value} value={o.value}>
                                   {o.label}
                                 </SelectItem>
@@ -802,10 +658,10 @@ export default function BankRulesPage() {
                                     }`,
                                   })
                                 }
-                                placeholder="Min"
+                                placeholder={t("min")}
                               />
                               <span className="text-xs text-muted-foreground">
-                                to
+                                {t("to")}
                               </span>
                               <Input
                                 type="number"
@@ -818,7 +674,7 @@ export default function BankRulesPage() {
                                     },${e.target.value}`,
                                   })
                                 }
-                                placeholder="Max"
+                                placeholder={t("max")}
                               />
                             </div>
                           ) : (
@@ -831,7 +687,7 @@ export default function BankRulesPage() {
                                 updateCondition(idx, { value: e.target.value })
                               }
                               placeholder={
-                                isAmount ? "Minor units (e.g. 1250 USD cents)" : "Text to match"
+                                isAmount ? t("minorUnitsEG1250USDCents") : t("textToMatch")
                               }
                             />
                           )}
@@ -844,7 +700,7 @@ export default function BankRulesPage() {
                           className="size-9 shrink-0 text-muted-foreground"
                           disabled={conditions.length === 1}
                           onClick={() => removeCondition(idx)}
-                          aria-label="Remove condition"
+                          aria-label={t("removeCondition")}
                         >
                           <X className="size-4" />
                         </Button>
@@ -862,22 +718,20 @@ export default function BankRulesPage() {
                 onClick={addCondition}
               >
                 <Plus className="size-3.5" />
-                Add condition
+                {t("addCondition")}
               </Button>
             </div>
 
             {/* THEN — actions */}
             <div className="space-y-3 rounded-lg border p-3">
-              <Label className="text-sm font-semibold">Then do this</Label>
+              <Label className="text-sm font-semibold">{t("thenDoThis")}</Label>
 
               {/* Split toggle */}
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>Split across several categories</Label>
+                  <Label>{t("splitAcrossSeveralCategories")}</Label>
                   <p className="text-xs text-muted-foreground">
-                    Divide each matching transaction by percentage or fixed
-                    bank currency minor units (USD cents). Amount conditions also use
-                    minor units; 1250 always stays 1250 in the matched bank currency.
+                    {t("splitHelp")}
                   </p>
                 </div>
                 <Switch checked={useSplits} onCheckedChange={setUseSplits} />
@@ -886,7 +740,7 @@ export default function BankRulesPage() {
               {!useSplits ? (
                 <>
                   <div className="space-y-2">
-                    <Label>Assign to category / account</Label>
+                    <Label>{t("assignToCategoryAccount")}</Label>
                     <Select
                       value={accountId || NONE}
                       onValueChange={(v) =>
@@ -894,10 +748,10 @@ export default function BankRulesPage() {
                       }
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select category" />
+                        <SelectValue placeholder={t("selectCategory")} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value={NONE}>None</SelectItem>
+                        <SelectItem value={NONE}>{t("none")}</SelectItem>
                         {accounts.map((a) => (
                           <SelectItem key={a.id} value={a.id}>
                             {a.name}
@@ -908,7 +762,7 @@ export default function BankRulesPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Tax rate (optional)</Label>
+                    <Label>{t("taxRateOptional")}</Label>
                     <Select
                       value={taxRateId || NONE}
                       onValueChange={(v) =>
@@ -916,10 +770,10 @@ export default function BankRulesPage() {
                       }
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="No tax" />
+                        <SelectValue placeholder={t("noTax")} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value={NONE}>No tax</SelectItem>
+                        <SelectItem value={NONE}>{t("noTax")}</SelectItem>
                         {taxRates.map((t) => (
                           <SelectItem key={t.id} value={t.id}>
                             {t.name}
@@ -933,7 +787,7 @@ export default function BankRulesPage() {
                 <div className="space-y-3">
                   {splits.length === 0 && (
                     <p className="text-xs text-muted-foreground">
-                      No splits yet. Add one or more categories below.
+                      {t("noSplitsYetAddOneOrMoreCategoriesBelow")}
                     </p>
                   )}
                   {splits.map((s, idx) => (
@@ -943,7 +797,7 @@ export default function BankRulesPage() {
                     >
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-medium text-muted-foreground">
-                          Split {idx + 1}
+                          {t("splitNumber", { number: idx + 1 })}
                         </span>
                         <Button
                           type="button"
@@ -951,7 +805,7 @@ export default function BankRulesPage() {
                           size="icon"
                           className="size-7 text-muted-foreground"
                           onClick={() => removeSplit(idx)}
-                          aria-label="Remove split"
+                          aria-label={t("removeSplit")}
                         >
                           <X className="size-3.5" />
                         </Button>
@@ -965,10 +819,10 @@ export default function BankRulesPage() {
                         }
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Category" />
+                          <SelectValue placeholder={t("category")} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value={NONE}>Select category</SelectItem>
+                          <SelectItem value={NONE}>{t("selectCategory")}</SelectItem>
                           {accounts.map((a) => (
                             <SelectItem key={a.id} value={a.id}>
                               {a.name}
@@ -978,7 +832,7 @@ export default function BankRulesPage() {
                       </Select>
                       <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-1">
-                          <Label className="text-xs">Percent</Label>
+                          <Label className="text-xs">{t("percent")}</Label>
                           <Input
                             type="number"
                             min={0}
@@ -994,11 +848,11 @@ export default function BankRulesPage() {
                                 amountMinor: undefined,
                               })
                             }
-                            placeholder="e.g. 50"
+                            placeholder={t("eG50")}
                           />
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-xs">Or fixed minor units</Label>
+                          <Label className="text-xs">{t("orFixedMinorUnits")}</Label>
                           <Input
                             type="number"
                             step="1"
@@ -1012,12 +866,12 @@ export default function BankRulesPage() {
                                 percent: undefined,
                               });
                             }}
-                            placeholder="e.g. 1250"
+                            placeholder={t("eG1250")}
                           />
                         </div>
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-xs">Tax rate (optional)</Label>
+                        <Label className="text-xs">{t("taxRateOptional")}</Label>
                         <Select
                           value={s.taxRateId || NONE}
                           onValueChange={(v) =>
@@ -1027,10 +881,10 @@ export default function BankRulesPage() {
                           }
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="No tax" />
+                            <SelectValue placeholder={t("noTax")} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value={NONE}>No tax</SelectItem>
+                            <SelectItem value={NONE}>{t("noTax")}</SelectItem>
                             {taxRates.map((t) => (
                               <SelectItem key={t.id} value={t.id}>
                                 {t.name}
@@ -1049,28 +903,26 @@ export default function BankRulesPage() {
                     onClick={addSplit}
                   >
                     <Plus className="size-3.5" />
-                    Add split
+                    {t("addSplit")}
                   </Button>
                   <p className="text-xs text-muted-foreground">
-                    Leave the last split blank on amount/percent and it absorbs
-                    the remainder so the splits always add up to the full
-                    transaction.
+                    {t("remainderHelp")}
                   </p>
                 </div>
               )}
 
               {/* Contact applies in both modes */}
               <div className="space-y-2">
-                <Label>Link to a contact (optional)</Label>
+                <Label>{t("linkToAContactOptional")}</Label>
                 <Select
                   value={contactId || NONE}
                   onValueChange={(v) => setContactId(v === NONE ? "" : v)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select contact" />
+                    <SelectValue placeholder={t("selectContact")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={NONE}>None</SelectItem>
+                    <SelectItem value={NONE}>{t("none")}</SelectItem>
                     {contacts.map((c) => (
                       <SelectItem key={c.id} value={c.id}>
                         {c.name}
@@ -1083,9 +935,9 @@ export default function BankRulesPage() {
 
             {/* Options */}
             <div className="space-y-4 rounded-lg border p-3">
-              <Label className="text-sm font-semibold">Options</Label>
+              <Label className="text-sm font-semibold">{t("options")}</Label>
               <div className="space-y-2">
-                <Label>Priority</Label>
+                <Label>{t("priority")}</Label>
                 <Input
                   type="number"
                   value={priority}
@@ -1093,18 +945,17 @@ export default function BankRulesPage() {
                   placeholder="0"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Higher priority rules are checked first.
+                  {t("higherPriorityRulesAreCheckedFirst")}
                 </p>
               </div>
 
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label title="Marking as cleared moves no money — it just confirms the transaction matches your bank.">
-                    Mark matching transactions as cleared
+                  <Label title={t("clearingHelp")}>
+                    {t("markMatchingTransactionsAsCleared")}
                   </Label>
                   <p className="text-xs text-muted-foreground">
-                    Tick off matching transactions automatically. This moves no
-                    money.
+                    {t("clearingNotice")}
                   </p>
                 </div>
                 <Switch
@@ -1116,10 +967,10 @@ export default function BankRulesPage() {
           </div>
           <SheetFooter>
             <Button variant="outline" onClick={() => setSheetOpen(false)}>
-              Cancel
+              {t("cancel")}
             </Button>
             <Button onClick={handleSave} disabled={saving || !canSave}>
-              {saving ? "Saving..." : editingRule ? "Update" : "Create"}
+              {saving ? t("saving") : editingRule ? t("update") : t("create")}
             </Button>
           </SheetFooter>
         </SheetContent>

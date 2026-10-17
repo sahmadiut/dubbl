@@ -1,4 +1,7 @@
 "use client";
+import { ApprovalConditionHelp } from "@/components/settings/approval-condition-help";
+import { useTranslations } from "next-intl";
+import { settingsErrorMessage, SettingsRequestError } from "@/i18n/settings-errors";
 
 import { useState, useEffect, useCallback } from "react";
 import { ContentReveal } from "@/components/ui/content-reveal";
@@ -73,33 +76,36 @@ interface Workflow {
   createdAt: string;
 }
 
-const ENTITY_TYPES = [
-  { value: "bill", label: "Bill" },
-  { value: "expense", label: "Expense" },
-  { value: "invoice", label: "Invoice" },
-  { value: "journal_entry", label: "Journal Entry" },
-  { value: "purchase_order", label: "Purchase Order" },
-];
-
-const OPERATORS = [
-  { value: "eq", label: "equals" },
-  { value: "neq", label: "not equals" },
-  { value: "gt", label: "greater than" },
-  { value: "lt", label: "less than" },
-  { value: "gte", label: "greater or equal" },
-  { value: "lte", label: "less or equal" },
-];
-
-function entityTypeLabel(t: string) {
-  return ENTITY_TYPES.find((e) => e.value === t)?.label ?? t;
-}
-
 export default function ApprovalWorkflowsPage() {
   const activeOrgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
   return <ApprovalWorkflowsWorkspace key={activeOrgId} activeOrgId={activeOrgId} />;
 }
 
 function ApprovalWorkflowsWorkspace({ activeOrgId }: { activeOrgId: string | null }) {
+  const t = useTranslations("SettingsApprovals");
+  const te = useTranslations("SettingsErrors");
+
+  const ENTITY_TYPES = [
+    { value: "bill", label: t("bill") },
+    { value: "expense", label: t("expense") },
+    { value: "invoice", label: t("invoice") },
+    { value: "journal_entry", label: t("journalEntry") },
+    { value: "purchase_order", label: t("purchaseOrder") },
+  ];
+
+  const OPERATORS = [
+    { value: "eq", label: t("equals") },
+    { value: "neq", label: t("notEquals") },
+    { value: "gt", label: t("greaterThan") },
+    { value: "lt", label: t("lessThan") },
+    { value: "gte", label: t("greaterOrEqual") },
+    { value: "lte", label: t("lessOrEqual") },
+  ];
+
+  function entityTypeLabel(value: string) {
+    return ENTITY_TYPES.find((e) => e.value === value)?.label ?? value;
+  }
+
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [members, setMembers] = useState<OrgMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -127,14 +133,14 @@ function ApprovalWorkflowsWorkspace({ activeOrgId }: { activeOrgId: string | nul
         headers: { "x-organization-id": activeOrgId ?? "" },
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Could not load workflows");
+      if (!res.ok) throw new SettingsRequestError(settingsErrorMessage(te, data.error, t("couldNotLoadWorkflows"), res.status));
       if (data.data) setWorkflows(data.data.map((workflow: Workflow) => ({ ...workflow, conditions: taxUiConditions(workflow.entityType, workflow.conditions) })));
     } catch (err) {
-      setWorkflows([]); toast.error(err instanceof Error ? err.message : "Invalid saved workflow");
+      setWorkflows([]); toast.error(err instanceof SettingsRequestError ? err.message : t("invalidSavedWorkflow"));
     } finally {
       setLoading(false);
     }
-  }, [activeOrgId]);
+  }, [activeOrgId, t, te]);
 
   const fetchMembers = useCallback(async () => {
     try {
@@ -217,7 +223,7 @@ function ApprovalWorkflowsWorkspace({ activeOrgId }: { activeOrgId: string | nul
   }
 
   let conditionError: string | null = null;
-  try { taxUiConditions(entityType, conditions); } catch { conditionError = "Use supported fields and canonical integer minor-unit thresholds. Text supports equals or not equals."; }
+  try { taxUiConditions(entityType, conditions); } catch { conditionError = t("conditionError"); }
 
   async function save() {
     if (!activeOrgId || localStorage.getItem("activeOrgId") !== activeOrgId || conditionError) return;
@@ -237,13 +243,13 @@ function ApprovalWorkflowsWorkspace({ activeOrgId }: { activeOrgId: string | nul
           steps,
         }),
       });
-      if (!res.ok) throw new Error((await res.json()).error);
+      if (!res.ok) throw new SettingsRequestError(settingsErrorMessage(te, (await res.json()).error, t("failedToSaveWorkflow"), res.status));
       setSheetOpen(false);
       await fetchWorkflows();
-      toast.success(editingWorkflow ? "Workflow updated" : "Workflow created");
+      toast.success(editingWorkflow ? t("workflowUpdated") : t("workflowCreated"));
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Failed to save workflow"
+        err instanceof SettingsRequestError ? err.message : t("failedToSaveWorkflow")
       );
     } finally {
       setSaving(false);
@@ -257,12 +263,12 @@ function ApprovalWorkflowsWorkspace({ activeOrgId }: { activeOrgId: string | nul
         headers: { "Content-Type": "application/json", ...headers() },
         body: JSON.stringify({ isActive: !w.isActive }),
       });
-      if (!res.ok) throw new Error((await res.json()).error);
+      if (!res.ok) throw new SettingsRequestError(settingsErrorMessage(te, (await res.json()).error, t("failedToToggleWorkflow"), res.status));
       await fetchWorkflows();
-      toast.success(w.isActive ? "Workflow deactivated" : "Workflow activated");
+      toast.success(w.isActive ? t("workflowDeactivated") : t("workflowActivated"));
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Failed to toggle workflow"
+        err instanceof SettingsRequestError ? err.message : t("failedToToggleWorkflow")
       );
     }
   }
@@ -273,12 +279,12 @@ function ApprovalWorkflowsWorkspace({ activeOrgId }: { activeOrgId: string | nul
         method: "DELETE",
         headers: headers(),
       });
-      if (!res.ok) throw new Error((await res.json()).error);
+      if (!res.ok) throw new SettingsRequestError(settingsErrorMessage(te, (await res.json()).error, t("failedToDeleteWorkflow"), res.status));
       await fetchWorkflows();
-      toast.success("Workflow deleted");
+      toast.success(t("workflowDeleted"));
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Failed to delete workflow"
+        err instanceof SettingsRequestError ? err.message : t("failedToDeleteWorkflow")
       );
     }
   }
@@ -298,11 +304,10 @@ function ApprovalWorkflowsWorkspace({ activeOrgId }: { activeOrgId: string | nul
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold tracking-tight">
-            Approval Workflows
+            {t("approvalWorkflows")}
           </h2>
           <p className="mt-0.5 text-[13px] text-muted-foreground">
-            Configure multi-step approval workflows for bills, expenses,
-            invoices, and more.
+            {t("descriptionText")}
           </p>
         </div>
         <Button
@@ -311,7 +316,7 @@ function ApprovalWorkflowsWorkspace({ activeOrgId }: { activeOrgId: string | nul
           className="bg-emerald-600 hover:bg-emerald-700"
         >
           <Plus className="mr-1.5 size-3.5" />
-          Create Workflow
+          {t("createWorkflow")}
         </Button>
       </div>
 
@@ -324,8 +329,8 @@ function ApprovalWorkflowsWorkspace({ activeOrgId }: { activeOrgId: string | nul
       ) : workflows.length === 0 ? (
         <EmptyState
           icon={CheckCircle2}
-          title="No approval workflows"
-          description="Create workflows to require approvals before bills, expenses, or invoices are processed."
+          title={t("noApprovalWorkflows")}
+          description={t("emptyDescription")}
         />
       ) : (
         <div className="space-y-6">
@@ -347,16 +352,15 @@ function ApprovalWorkflowsWorkspace({ activeOrgId }: { activeOrgId: string | nul
                           variant={w.isActive ? "default" : "secondary"}
                           className="text-[10px]"
                         >
-                          {w.isActive ? "Active" : "Inactive"}
+                          {w.isActive ? t("active") : t("inactive")}
                         </Badge>
                         <Badge variant="outline" className="text-[10px]">
-                          {w.steps.length} step{w.steps.length !== 1 ? "s" : ""}
+                          {t("stepCount", { count: w.steps.length })}
                         </Badge>
                       </div>
                       {w.conditions.length > 0 && (
                         <p className="mt-0.5 text-xs text-muted-foreground">
-                          {w.conditions.length} condition
-                          {w.conditions.length !== 1 ? "s" : ""}
+                          {t("conditionCount", { count: w.conditions.length })}
                         </p>
                       )}
                     </div>
@@ -373,11 +377,11 @@ function ApprovalWorkflowsWorkspace({ activeOrgId }: { activeOrgId: string | nul
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => openEdit(w)}>
                           <Pencil className="mr-2 size-3.5" />
-                          Edit
+                          {t("edit")}
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => toggleActive(w)}>
                           <ToggleLeft className="mr-2 size-3.5" />
-                          {w.isActive ? "Deactivate" : "Activate"}
+                          {w.isActive ? t("deactivate") : t("activate")}
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
@@ -385,7 +389,7 @@ function ApprovalWorkflowsWorkspace({ activeOrgId }: { activeOrgId: string | nul
                           className="text-red-600"
                         >
                           <Trash2 className="mr-2 size-3.5" />
-                          Delete
+                          {t("delete")}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -402,24 +406,24 @@ function ApprovalWorkflowsWorkspace({ activeOrgId }: { activeOrgId: string | nul
         <SheetContent className="overflow-y-auto">
           <SheetHeader>
             <SheetTitle>
-              {editingWorkflow ? "Edit Workflow" : "Create Workflow"}
+              {editingWorkflow ? t("editWorkflow") : t("createWorkflow")}
             </SheetTitle>
           </SheetHeader>
 
           <div className="space-y-5 px-4 py-4">
             {/* Name */}
             <div className="space-y-2">
-              <Label>Name</Label>
+              <Label>{t("name")}</Label>
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. High-value bill approval"
+                placeholder={t("eGHighValueBillApproval")}
               />
             </div>
 
             {/* Entity Type */}
             <div className="space-y-2">
-              <Label>Entity Type</Label>
+              <Label>{t("entityType")}</Label>
               <Select value={entityType} onValueChange={setEntityType}>
                 <SelectTrigger>
                   <SelectValue />
@@ -437,7 +441,7 @@ function ApprovalWorkflowsWorkspace({ activeOrgId }: { activeOrgId: string | nul
             {/* Conditions */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label>Conditions</Label>
+                <Label>{t("conditions")}</Label>
                 <Button
                   type="button"
                   variant="ghost"
@@ -446,23 +450,10 @@ function ApprovalWorkflowsWorkspace({ activeOrgId }: { activeOrgId: string | nul
                   className="h-7 text-xs"
                 >
                   <Plus className="mr-1 size-3" />
-                  Add
+                  {t("add")}
                 </Button>
               </div>
-              {conditions.length === 0 && (
-                <p className="text-xs text-muted-foreground">
-                  No conditions - workflow will apply to all{" "}
-                  {entityTypeLabel(entityType).toLowerCase()}s.
-                </p>
-              )}
-              {conditions.length > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  Use total for invoices, bills or purchase orders, totalAmount for
-                  expenses, or a text field such as status. Money thresholds are
-                  integer minor units of the document currency. Text fields support
-                  equals and not equals.
-                </p>
-              )}
+              <ApprovalConditionHelp entityType={entityType} hasConditions={conditions.length > 0} />
               {conditions.map((c, i) => (
                 <div key={i} className="flex items-center gap-2">
                   <Input
@@ -470,7 +461,7 @@ function ApprovalWorkflowsWorkspace({ activeOrgId }: { activeOrgId: string | nul
                     onChange={(e) =>
                       updateCondition(i, { field: e.target.value })
                     }
-                    placeholder="field"
+                    placeholder={t("field")}
                     className="flex-1"
                   />
                   <Select
@@ -497,8 +488,8 @@ function ApprovalWorkflowsWorkspace({ activeOrgId }: { activeOrgId: string | nul
                     onChange={(e) =>
                       updateCondition(i, { value: e.target.value })
                     }
-                    aria-label={`Condition ${i + 1} value`}
-                    placeholder="value"
+                    aria-label={t("conditionValue", { number: i + 1 })}
+                    placeholder={t("value")}
                     className="flex-1"
                   />
                   <Button
@@ -517,7 +508,7 @@ function ApprovalWorkflowsWorkspace({ activeOrgId }: { activeOrgId: string | nul
             {/* Steps */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label>Approval Steps</Label>
+                <Label>{t("approvalSteps")}</Label>
                 <Button
                   type="button"
                   variant="ghost"
@@ -526,12 +517,12 @@ function ApprovalWorkflowsWorkspace({ activeOrgId }: { activeOrgId: string | nul
                   className="h-7 text-xs"
                 >
                   <Plus className="mr-1 size-3" />
-                  Add Step
+                  {t("addStep")}
                 </Button>
               </div>
               {steps.length === 0 && (
                 <p className="text-xs text-muted-foreground">
-                  At least one approval step is required.
+                  {t("atLeastOneApprovalStepIsRequired")}
                 </p>
               )}
               {steps.map((s, i) => (
@@ -547,7 +538,7 @@ function ApprovalWorkflowsWorkspace({ activeOrgId }: { activeOrgId: string | nul
                     onValueChange={(v) => updateStep(i, { approverId: v })}
                   >
                     <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Select approver" />
+                      <SelectValue placeholder={t("selectApprover")} />
                     </SelectTrigger>
                     <SelectContent>
                       {members.map((m) => (
@@ -596,7 +587,7 @@ function ApprovalWorkflowsWorkspace({ activeOrgId }: { activeOrgId: string | nul
           {conditionError && <p role="alert" className="px-4 text-sm text-destructive">{conditionError}</p>}
           <SheetFooter>
             <Button variant="outline" onClick={() => setSheetOpen(false)}>
-              Cancel
+              {t("cancel")}
             </Button>
             <Button
               onClick={save}
@@ -611,7 +602,7 @@ function ApprovalWorkflowsWorkspace({ activeOrgId }: { activeOrgId: string | nul
               {saving ? (
                 <Loader2 className="mr-2 size-4 animate-spin" />
               ) : null}
-              {editingWorkflow ? "Update" : "Create"}
+              {editingWorkflow ? t("update") : t("create")}
             </Button>
           </SheetFooter>
         </SheetContent>

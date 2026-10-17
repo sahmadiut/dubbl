@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "next-intl";
 
 import { useState, useEffect, useCallback } from "react";
 import { Plus, Trash2, Mail, Clock, AlertCircle, CheckCircle2, XCircle } from "lucide-react";
@@ -7,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
+import { ReminderTemplateFields } from "@/components/settings/reminder-template-fields";
 import { Switch } from "@/components/ui/switch";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
@@ -62,21 +63,6 @@ interface ReminderLog {
   reminderRule: ReminderRule | null;
 }
 
-const TRIGGER_LABELS: Record<string, string> = {
-  before_due: "Before due date",
-  on_due: "On due date",
-  after_due: "After due date",
-};
-
-const TEMPLATE_VARIABLES = [
-  { label: "Contact Name", value: "{{contactName}}" },
-  { label: "Document #", value: "{{documentNumber}}" },
-  { label: "Amount Due", value: "{{amountDue}}" },
-  { label: "Due Date", value: "{{dueDate}}" },
-  { label: "Organization", value: "{{organizationName}}" },
-  { label: "Days Overdue", value: "{{daysOverdue}}" },
-];
-
 const emptyForm: {
   name: string;
   triggerType: "before_due" | "on_due" | "after_due";
@@ -100,6 +86,14 @@ const emptyForm: {
 };
 
 export default function RemindersPage() {
+  const t = useTranslations("SettingsReminders");
+
+  const TRIGGER_LABELS: Record<string, string> = {
+    before_due: t("beforeDueDate"),
+    on_due: t("onDueDate"),
+    after_due: t("afterDueDate"),
+  };
+
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [rules, setRules] = useState<ReminderRule[]>([]);
   const [logs, setLogs] = useState<ReminderLog[]>([]);
@@ -111,7 +105,7 @@ export default function RemindersPage() {
   const [logStatus, setLogStatus] = useState<string>("");
   const [logPage, setLogPage] = useState(1);
   const [logTotal, setLogTotal] = useState(0);
-  useDocumentTitle("Settings · Reminders");
+  useDocumentTitle(t("settingsReminders"));
 
   function getHeaders() {
     const orgId = localStorage.getItem("activeOrgId") || "";
@@ -171,7 +165,7 @@ export default function RemindersPage() {
 
   async function handleSave() {
     if (!form.name.trim() || !form.subjectTemplate.trim() || !form.bodyTemplate.trim()) {
-      toast.error("Please fill in all required fields");
+      toast.error(t("pleaseFillInAllRequiredFields"));
       return;
     }
     setSaving(true);
@@ -197,21 +191,21 @@ export default function RemindersPage() {
           headers: getHeaders(),
           body: JSON.stringify(payload),
         });
-        if (!res.ok) throw new Error("Failed to update");
-        toast.success("Reminder rule updated");
+        if (!res.ok) throw new Error(t("failedToUpdate"));
+        toast.success(t("reminderRuleUpdated"));
       } else {
         const res = await fetch("/api/v1/reminders", {
           method: "POST",
           headers: getHeaders(),
           body: JSON.stringify(payload),
         });
-        if (!res.ok) throw new Error("Failed to create");
-        toast.success("Reminder rule created");
+        if (!res.ok) throw new Error(t("failedToCreate"));
+        toast.success(t("reminderRuleCreated"));
       }
       setSheetOpen(false);
       await fetchRules();
     } catch {
-      toast.error("Something went wrong");
+      toast.error(t("somethingWentWrong"));
     } finally {
       setSaving(false);
     }
@@ -219,9 +213,9 @@ export default function RemindersPage() {
 
   async function handleDelete(id: string) {
     await confirm({
-      title: "Delete reminder rule?",
-      description: "This rule will be permanently removed.",
-      confirmLabel: "Delete",
+      title: t("deleteReminderRule"),
+      description: t("thisRuleWillBePermanentlyRemoved"),
+      confirmLabel: t("delete"),
       destructive: true,
       onConfirm: async () => {
         await fetch(`/api/v1/reminders/${id}`, {
@@ -229,7 +223,7 @@ export default function RemindersPage() {
           headers: getHeaders(),
         });
         await fetchRules();
-        toast.success("Reminder rule deleted");
+        toast.success(t("reminderRuleDeleted"));
       },
     });
   }
@@ -265,25 +259,25 @@ export default function RemindersPage() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-semibold">Payment Reminders</h2>
+              <h2 className="text-lg font-semibold">{t("paymentReminders")}</h2>
               <p className="text-sm text-muted-foreground">
-                Configure automated dunning rules for overdue invoices and bills.
+                {t("configureAutomatedDunningRulesForOverdueInvoicesAndBills")}
               </p>
             </div>
             <Button size="sm" className="h-7 text-xs gap-1" onClick={openCreate}>
-              <Plus className="size-3" /> New Rule
+              <Plus className="size-3" /> {t("newRule")}
             </Button>
           </div>
 
           {rules.length === 0 ? (
             <div className="rounded-lg border bg-card p-8 text-center">
               <Mail className="size-8 text-muted-foreground mx-auto mb-3" />
-              <p className="text-sm font-medium">No reminder rules yet</p>
+              <p className="text-sm font-medium">{t("noReminderRulesYet")}</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Create your first rule to start sending automated payment reminders.
+                {t("createYourFirstRuleToStartSendingAutomatedPaymentReminders")}
               </p>
               <Button size="sm" className="h-7 text-xs gap-1 mt-4" onClick={openCreate}>
-                <Plus className="size-3" /> New Rule
+                <Plus className="size-3" /> {t("newRule")}
               </Button>
             </div>
           ) : (
@@ -291,10 +285,10 @@ export default function RemindersPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-xs">Name</TableHead>
-                    <TableHead className="text-xs">Trigger</TableHead>
-                    <TableHead className="text-xs">Document</TableHead>
-                    <TableHead className="text-xs">Enabled</TableHead>
+                    <TableHead className="text-xs">{t("name")}</TableHead>
+                    <TableHead className="text-xs">{t("trigger")}</TableHead>
+                    <TableHead className="text-xs">{t("documentLabel")}</TableHead>
+                    <TableHead className="text-xs">{t("enabled")}</TableHead>
                     <TableHead className="text-xs w-[60px]" />
                   </TableRow>
                 </TableHeader>
@@ -309,12 +303,12 @@ export default function RemindersPage() {
                       <TableCell className="text-sm text-muted-foreground">
                         {TRIGGER_LABELS[rule.triggerType]}
                         {rule.triggerType !== "on_due" && (
-                          <span> · {rule.triggerDays} day{rule.triggerDays !== 1 ? "s" : ""}</span>
+                          <span> · {t("dayCount", { count: rule.triggerDays })}</span>
                         )}
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="text-[10px] capitalize">
-                          {rule.documentType}
+                          {rule.documentType === "invoice" ? t("invoice") : t("bill")}
                         </Badge>
                       </TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()}>
@@ -345,20 +339,20 @@ export default function RemindersPage() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-semibold">Reminder Log</h2>
+              <h2 className="text-lg font-semibold">{t("reminderLog")}</h2>
               <p className="text-sm text-muted-foreground">
-                History of sent, failed, and skipped reminders.
+                {t("historyOfSentFailedAndSkippedReminders")}
               </p>
             </div>
             <Select value={logStatus} onValueChange={(v) => { setLogStatus(v === "all" ? "" : v); setLogPage(1); }}>
               <SelectTrigger className="h-7 w-[130px] text-xs">
-                <SelectValue placeholder="All statuses" />
+                <SelectValue placeholder={t("allStatuses")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All statuses</SelectItem>
-                <SelectItem value="sent">Sent</SelectItem>
-                <SelectItem value="failed">Failed</SelectItem>
-                <SelectItem value="skipped">Skipped</SelectItem>
+                <SelectItem value="all">{t("allStatuses")}</SelectItem>
+                <SelectItem value="sent">{t("sent")}</SelectItem>
+                <SelectItem value="failed">{t("failed")}</SelectItem>
+                <SelectItem value="skipped">{t("skipped")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -366,7 +360,7 @@ export default function RemindersPage() {
           {logs.length === 0 ? (
             <div className="rounded-lg border bg-card p-6 text-center">
               <Clock className="size-6 text-muted-foreground mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground">No reminder logs yet</p>
+              <p className="text-sm text-muted-foreground">{t("noReminderLogsYet")}</p>
             </div>
           ) : (
             <>
@@ -374,11 +368,11 @@ export default function RemindersPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="text-xs">Status</TableHead>
-                      <TableHead className="text-xs">Rule</TableHead>
-                      <TableHead className="text-xs">Recipient</TableHead>
-                      <TableHead className="text-xs">Subject</TableHead>
-                      <TableHead className="text-xs">Sent</TableHead>
+                      <TableHead className="text-xs">{t("status")}</TableHead>
+                      <TableHead className="text-xs">{t("rule")}</TableHead>
+                      <TableHead className="text-xs">{t("recipient")}</TableHead>
+                      <TableHead className="text-xs">{t("subject")}</TableHead>
+                      <TableHead className="text-xs">{t("sent")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -387,17 +381,17 @@ export default function RemindersPage() {
                         <TableCell>
                           {log.status === "sent" && (
                             <Badge variant="outline" className="text-[10px] gap-1 text-emerald-600 border-emerald-200">
-                              <CheckCircle2 className="size-3" /> Sent
+                              <CheckCircle2 className="size-3" /> {t("sent")}
                             </Badge>
                           )}
                           {log.status === "failed" && (
                             <Badge variant="outline" className="text-[10px] gap-1 text-red-600 border-red-200">
-                              <XCircle className="size-3" /> Failed
+                              <XCircle className="size-3" /> {t("failed")}
                             </Badge>
                           )}
                           {log.status === "skipped" && (
                             <Badge variant="outline" className="text-[10px] gap-1 text-amber-600 border-amber-200">
-                              <AlertCircle className="size-3" /> Skipped
+                              <AlertCircle className="size-3" /> {t("skipped")}
                             </Badge>
                           )}
                         </TableCell>
@@ -422,7 +416,7 @@ export default function RemindersPage() {
               {logTotalPages > 1 && (
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-muted-foreground">
-                    Page {logPage} of {logTotalPages} · {logTotal} entries
+                    {t("pagination", { page: logPage, pages: logTotalPages, count: logTotal })}
                   </p>
                   <div className="flex gap-1">
                     <Button
@@ -432,7 +426,7 @@ export default function RemindersPage() {
                       disabled={logPage <= 1}
                       onClick={() => setLogPage((p) => p - 1)}
                     >
-                      Previous
+                      {t("previous")}
                     </Button>
                     <Button
                       variant="outline"
@@ -441,7 +435,7 @@ export default function RemindersPage() {
                       disabled={logPage >= logTotalPages}
                       onClick={() => setLogPage((p) => p + 1)}
                     >
-                      Next
+                      {t("next")}
                     </Button>
                   </div>
                 </div>
@@ -455,19 +449,19 @@ export default function RemindersPage() {
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetContent className="sm:max-w-lg overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>{editingId ? "Edit Rule" : "New Reminder Rule"}</SheetTitle>
+            <SheetTitle>{editingId ? t("editRule") : t("newReminderRule")}</SheetTitle>
             <SheetDescription>
               {editingId
-                ? "Update the reminder rule configuration."
-                : "Configure when and how payment reminders are sent."}
+                ? t("updateTheReminderRuleConfiguration")
+                : t("configureWhenAndHowPaymentRemindersAreSent")}
             </SheetDescription>
           </SheetHeader>
 
           <div className="space-y-4 px-4 pb-6">
             <div className="space-y-1.5">
-              <Label className="text-xs">Name</Label>
+              <Label className="text-xs">{t("name")}</Label>
               <Input
-                placeholder="e.g. 7 days before due"
+                placeholder={t("eG7DaysBeforeDue")}
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 className="h-8 text-sm"
@@ -476,7 +470,7 @@ export default function RemindersPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs">Trigger Type</Label>
+                <Label className="text-xs">{t("triggerType")}</Label>
                 <Select
                   value={form.triggerType}
                   onValueChange={(v) =>
@@ -487,16 +481,16 @@ export default function RemindersPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="before_due">Before due date</SelectItem>
-                    <SelectItem value="on_due">On due date</SelectItem>
-                    <SelectItem value="after_due">After due date</SelectItem>
+                    <SelectItem value="before_due">{t("beforeDueDate")}</SelectItem>
+                    <SelectItem value="on_due">{t("onDueDate")}</SelectItem>
+                    <SelectItem value="after_due">{t("afterDueDate")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               {form.triggerType !== "on_due" && (
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Days</Label>
+                  <Label className="text-xs">{t("days")}</Label>
                   <Input
                     type="number"
                     min={0}
@@ -512,7 +506,7 @@ export default function RemindersPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs">Document Type</Label>
+                <Label className="text-xs">{t("documentType")}</Label>
                 <Select
                   value={form.documentType}
                   onValueChange={(v) =>
@@ -523,14 +517,14 @@ export default function RemindersPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="invoice">Invoice</SelectItem>
-                    <SelectItem value="bill">Bill</SelectItem>
+                    <SelectItem value="invoice">{t("invoice")}</SelectItem>
+                    <SelectItem value="bill">{t("bill")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs">Recipient</Label>
+                <Label className="text-xs">{t("recipient")}</Label>
                 <Select
                   value={form.recipientType}
                   onValueChange={(v) =>
@@ -541,9 +535,9 @@ export default function RemindersPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="contact_email">Contact email</SelectItem>
-                    <SelectItem value="contact_persons">Contact persons</SelectItem>
-                    <SelectItem value="custom">Custom emails</SelectItem>
+                    <SelectItem value="contact_email">{t("contactEmail")}</SelectItem>
+                    <SelectItem value="contact_persons">{t("contactPersons")}</SelectItem>
+                    <SelectItem value="custom">{t("customEmails")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -551,72 +545,31 @@ export default function RemindersPage() {
 
             {form.recipientType === "custom" && (
               <div className="space-y-1.5">
-                <Label className="text-xs">Custom Emails</Label>
+                <Label className="text-xs">{t("customEmailsLabel")}</Label>
                 <Input
-                  placeholder="email1@example.com, email2@example.com"
+                  placeholder={t("email1ExampleComEmail2ExampleCom")}
                   value={form.customEmails}
                   onChange={(e) => setForm({ ...form, customEmails: e.target.value })}
                   className="h-8 text-sm"
                 />
                 <p className="text-[11px] text-muted-foreground">
-                  Separate multiple emails with commas.
+                  {t("separateMultipleEmailsWithCommas")}
                 </p>
               </div>
             )}
 
-            <div className="space-y-1.5">
-              <Label className="text-xs">Subject Template</Label>
-              <Input
-                placeholder="Payment reminder for {{documentNumber}}"
-                value={form.subjectTemplate}
-                onChange={(e) => setForm({ ...form, subjectTemplate: e.target.value })}
-                className="h-8 text-sm"
-              />
-              <div className="flex flex-wrap gap-1 pt-1">
-                {TEMPLATE_VARIABLES.map((v) => (
-                  <Button
-                    key={v.value}
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-5 text-[10px] px-1.5"
-                    onClick={() => insertVariable(v.value, "subjectTemplate")}
-                  >
-                    {v.label}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs">Body Template</Label>
-              <Textarea
-                placeholder="Dear {{contactName}}, this is a reminder..."
-                value={form.bodyTemplate}
-                onChange={(e) => setForm({ ...form, bodyTemplate: e.target.value })}
-                className="text-sm min-h-[120px]"
-              />
-              <div className="flex flex-wrap gap-1 pt-1">
-                {TEMPLATE_VARIABLES.map((v) => (
-                  <Button
-                    key={v.value}
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-5 text-[10px] px-1.5"
-                    onClick={() => insertVariable(v.value, "bodyTemplate")}
-                  >
-                    {v.label}
-                  </Button>
-                ))}
-              </div>
-            </div>
+            <ReminderTemplateFields
+              subjectTemplate={form.subjectTemplate}
+              bodyTemplate={form.bodyTemplate}
+              onChange={(field, value) => setForm({ ...form, [field]: value })}
+              onInsert={insertVariable}
+            />
 
             <div className="flex items-center justify-between rounded-lg border p-3">
               <div>
-                <p className="text-sm font-medium">Enable rule</p>
+                <p className="text-sm font-medium">{t("enableRule")}</p>
                 <p className="text-xs text-muted-foreground">
-                  Reminders will be sent automatically when enabled.
+                  {t("remindersWillBeSentAutomaticallyWhenEnabled")}
                 </p>
               </div>
               <Switch
@@ -632,7 +585,7 @@ export default function RemindersPage() {
                 className="h-7 text-xs"
                 onClick={() => setSheetOpen(false)}
               >
-                Cancel
+                {t("cancel")}
               </Button>
               <Button
                 size="sm"
@@ -640,7 +593,7 @@ export default function RemindersPage() {
                 onClick={handleSave}
                 disabled={saving || !form.name.trim()}
               >
-                {saving ? "Saving..." : editingId ? "Update" : "Create"}
+                {saving ? t("saving") : editingId ? t("update") : t("create")}
               </Button>
             </div>
           </div>

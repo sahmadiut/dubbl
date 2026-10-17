@@ -3,10 +3,11 @@
 LOC-005 is the validation/preference slice of LOC-002. The parent remains open
 for full extraction and independent integration acceptance. Current coverage is
 `LocalePreferences`, LOC-010 authentication/onboarding/invitation namespaces and
-LOC-011 shared shell/UI, LOC-014 core settings and LOC-013 teams/admin/notification
+LOC-011 shared shell/UI, LOC-014 core settings, LOC-015 settings automation and LOC-013 teams/admin/notification
 namespaces in `messages/en-US.json` and `messages/fa-IR.json`
 (see [auth scope](AUTH_CATALOGS.md), [shell scope](SHELL_CATALOGS.md),
-[settings scope](SETTINGS_CATALOGS.md) and [workspace scope](WORKSPACE_CATALOGS.md));
+[settings scope](SETTINGS_CATALOGS.md), [automation scope](SETTINGS_AUTOMATION_CATALOGS.md)
+and [workspace scope](WORKSPACE_CATALOGS.md));
 passing key parity does not mean that the rest of the product is localized.
 
 ## Catalog and authoring contract

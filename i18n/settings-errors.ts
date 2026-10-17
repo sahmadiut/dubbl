@@ -8,6 +8,11 @@ type ErrorKey = Parameters<Translate>[0];
 const keys: Partial<Record<string, ErrorKey>> = {
   "Organization not found": "organizationMissing",
   "Tag not found": "tagMissing",
+  "Bank rule not found": "bankRuleMissing",
+  "Approval workflow not found": "workflowMissing",
+  "Webhook not found": "webhookMissing",
+  "Pipeline not found": "pipelineMissing",
+  "Reminder rule not found": "reminderMissing",
   "Insufficient permissions": "forbidden",
   "Not authenticated": "unauthenticated",
   "Base currency can't be changed once transactions exist": "currencyTransactions",
@@ -15,6 +20,10 @@ const keys: Partial<Record<string, ErrorKey>> = {
   "Base currency can't be changed with asset, category or loan history": "currencyAssets",
   "Base currency can't be changed with accrual schedule history": "currencyAccruals",
 };
+
+// Only errors created after the allowlist/status mapping may carry display copy.
+// Fetch, JSON and saved-data validators otherwise use the operation fallback.
+export class SettingsRequestError extends Error {}
 
 export function settingsErrorMessage(t: Translate, message: unknown, fallback: string, status?: number): string {
   if (typeof message === "string" && Object.hasOwn(keys, message)) {

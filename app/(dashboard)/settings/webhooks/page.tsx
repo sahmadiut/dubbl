@@ -1,4 +1,7 @@
 "use client";
+import { useTranslations } from "next-intl";
+import { webhookStatusLabel } from "@/i18n/webhook-status";
+import { settingsErrorMessage } from "@/i18n/settings-errors";
 
 import { useState, useEffect, useCallback } from "react";
 import { ContentReveal } from "@/components/ui/content-reveal";
@@ -58,37 +61,6 @@ interface DeliveryItem {
   createdAt: string;
 }
 
-const EVENT_GROUPS: Record<string, { label: string; events: string[] }> = {
-  invoices: {
-    label: "Invoices",
-    events: ["invoice.created", "invoice.paid", "invoice.overdue"],
-  },
-  payments: {
-    label: "Payments",
-    events: ["payment.received"],
-  },
-  expenses: {
-    label: "Expenses",
-    events: ["expense.created"],
-  },
-  bills: {
-    label: "Bills",
-    events: ["bill.created", "bill.due"],
-  },
-  contacts: {
-    label: "Contacts",
-    events: ["contact.created"],
-  },
-  accounting: {
-    label: "Accounting",
-    events: ["journal.posted"],
-  },
-  approvals: {
-    label: "Approvals",
-    events: ["approval.requested", "approval.completed"],
-  },
-};
-
 function getOrgId() {
   return localStorage.getItem("activeOrgId") || "";
 }
@@ -98,6 +70,40 @@ function orgHeaders(extra?: Record<string, string>) {
 }
 
 export default function WebhooksPage() {
+  const t = useTranslations("SettingsWebhooks");
+  const te = useTranslations("SettingsErrors");
+
+  const EVENT_GROUPS: Record<string, { label: string; events: string[] }> = {
+    invoices: {
+      label: t("invoices"),
+      events: ["invoice.created", "invoice.paid", "invoice.overdue"],
+    },
+    payments: {
+      label: t("payments"),
+      events: ["payment.received"],
+    },
+    expenses: {
+      label: t("expenses"),
+      events: ["expense.created"],
+    },
+    bills: {
+      label: t("bills"),
+      events: ["bill.created", "bill.due"],
+    },
+    contacts: {
+      label: t("contacts"),
+      events: ["contact.created"],
+    },
+    accounting: {
+      label: t("accounting"),
+      events: ["journal.posted"],
+    },
+    approvals: {
+      label: t("approvals"),
+      events: ["approval.requested", "approval.completed"],
+    },
+  };
+
   const [webhooks, setWebhooks] = useState<WebhookItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -200,15 +206,15 @@ export default function WebhooksPage() {
 
       if (!res.ok) {
         const data = await res.json();
-        toast.error(data.error || "Failed to save webhook");
+        toast.error(settingsErrorMessage(te, data.error, t("failedToSaveWebhook"), res.status));
         return;
       }
 
-      toast.success(editingWebhook ? "Webhook updated" : "Webhook created");
+      toast.success(editingWebhook ? t("webhookUpdated") : t("webhookCreated"));
       setSheetOpen(false);
       fetchWebhooks();
     } catch {
-      toast.error("Failed to save webhook");
+      toast.error(t("failedToSaveWebhook"));
     } finally {
       setSaving(false);
     }
@@ -222,13 +228,13 @@ export default function WebhooksPage() {
       });
 
       if (res.ok) {
-        toast.success("Webhook deleted");
+        toast.success(t("webhookDeleted"));
         fetchWebhooks();
       } else {
-        toast.error("Failed to delete webhook");
+        toast.error(t("failedToDeleteWebhook"));
       }
     } catch {
-      toast.error("Failed to delete webhook");
+      toast.error(t("failedToDeleteWebhook"));
     }
   };
 
@@ -241,13 +247,13 @@ export default function WebhooksPage() {
       });
 
       if (res.ok) {
-        toast.success(wh.isActive ? "Webhook disabled" : "Webhook enabled");
+        toast.success(wh.isActive ? t("webhookDisabled") : t("webhookEnabled"));
         fetchWebhooks();
       } else {
-        toast.error("Failed to update webhook");
+        toast.error(t("failedToUpdateWebhook"));
       }
     } catch {
-      toast.error("Failed to update webhook");
+      toast.error(t("failedToUpdateWebhook"));
     }
   };
 
@@ -259,13 +265,13 @@ export default function WebhooksPage() {
       });
 
       if (res.ok) {
-        toast.success("Test delivery sent");
+        toast.success(t("testDeliverySent"));
         if (expandedId === id) fetchDeliveries(id);
       } else {
-        toast.error("Test delivery failed");
+        toast.error(t("testDeliveryFailed"));
       }
     } catch {
-      toast.error("Test delivery failed");
+      toast.error(t("testDeliveryFailed"));
     }
   };
 
@@ -280,19 +286,18 @@ export default function WebhooksPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold tracking-tight">Webhooks</h2>
+            <h2 className="text-lg font-semibold tracking-tight">{t("webhooks")}</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Send real-time event notifications to external services
-              {webhooks.length > 0 && (
+              {t("sendRealTimeEventNotificationsToExternalServices")}{webhooks.length > 0 && (
                 <span className="ml-2 inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
-                  {webhooks.length} configured
+                  {t("configuredCount", { count: webhooks.length })}
                 </span>
               )}
             </p>
           </div>
           <Button size="sm" onClick={openCreate}>
             <Plus className="mr-1.5 size-3.5" />
-            Add Webhook
+            {t("addWebhook")}
           </Button>
         </div>
 
@@ -306,8 +311,8 @@ export default function WebhooksPage() {
         ) : webhooks.length === 0 ? (
           <EmptyState
             icon={Webhook}
-            title="No webhooks yet"
-            description="Webhooks let you receive real-time notifications when events happen in your organization."
+            title={t("noWebhooksYet")}
+            description={t("emptyDescription")}
           >
             <Button
               size="sm"
@@ -315,7 +320,7 @@ export default function WebhooksPage() {
               onClick={openCreate}
             >
               <Plus className="mr-1.5 size-3.5" />
-              Create your first webhook
+              {t("createYourFirstWebhook")}
             </Button>
           </EmptyState>
         ) : (
@@ -353,8 +358,7 @@ export default function WebhooksPage() {
                   {/* Badges */}
                   <div className="hidden items-center gap-2 sm:flex">
                     <Badge variant="secondary" className="text-xs">
-                      {wh.events.length} event
-                      {wh.events.length !== 1 ? "s" : ""}
+                      {t("eventCount", { count: wh.events.length })}
                     </Badge>
                     <Badge
                       variant={wh.isActive ? "default" : "outline"}
@@ -364,7 +368,7 @@ export default function WebhooksPage() {
                           : ""
                       }`}
                     >
-                      {wh.isActive ? "Active" : "Inactive"}
+                      {wh.isActive ? t("active") : t("inactive")}
                     </Badge>
                   </div>
 
@@ -391,17 +395,17 @@ export default function WebhooksPage() {
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => openEdit(wh)}>
                         <Pencil className="mr-2 size-3.5" />
-                        Edit
+                        {t("edit")}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleSendTest(wh.id)}>
                         <Send className="mr-2 size-3.5" />
-                        Send Test
+                        {t("sendTest")}
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={() => handleToggleActive(wh)}
                       >
                         <ToggleLeft className="mr-2 size-3.5" />
-                        {wh.isActive ? "Disable" : "Enable"}
+                        {wh.isActive ? t("disable") : t("enable")}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
@@ -409,7 +413,7 @@ export default function WebhooksPage() {
                         onClick={() => handleDelete(wh.id)}
                       >
                         <Trash2 className="mr-2 size-3.5" />
-                        Delete
+                        {t("delete")}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -423,7 +427,7 @@ export default function WebhooksPage() {
                     }`}
                   >
                     <h4 className="mb-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                      Recent Deliveries
+                      {t("recentDeliveries")}
                     </h4>
                     {deliveriesLoading ? (
                       <div className="flex items-center justify-center py-6">
@@ -431,7 +435,7 @@ export default function WebhooksPage() {
                       </div>
                     ) : deliveries.length === 0 ? (
                       <p className="py-4 text-center text-sm text-muted-foreground">
-                        No deliveries yet
+                        {t("noDeliveriesYet")}
                       </p>
                     ) : (
                       <div className="space-y-2">
@@ -461,10 +465,10 @@ export default function WebhooksPage() {
                               }
                               className="text-[10px]"
                             >
-                              {d.status}
+                              {webhookStatusLabel(t, d.status)}
                             </Badge>
                             <span className="text-xs text-muted-foreground">
-                              {d.attempts} attempt{d.attempts !== 1 ? "s" : ""}
+                              {t("attemptCount", { count: d.attempts })}
                             </span>
                           </div>
                         ))}
@@ -483,38 +487,38 @@ export default function WebhooksPage() {
         <SheetContent>
           <SheetHeader>
             <SheetTitle>
-              {editingWebhook ? "Edit Webhook" : "New Webhook"}
+              {editingWebhook ? t("editWebhook") : t("newWebhook")}
             </SheetTitle>
           </SheetHeader>
           <div className="space-y-5 px-4 py-4">
             {/* URL */}
             <div className="space-y-2">
-              <Label>Endpoint URL</Label>
+              <Label>{t("endpointURL")}</Label>
               <Input
                 value={formUrl}
                 onChange={(e) => setFormUrl(e.target.value)}
-                placeholder="https://example.com/webhooks"
+                placeholder={t("httpsExampleComWebhooks")}
                 type="url"
                 className={formUrl.trim() && !/^https?:\/\/.+\..+/.test(formUrl.trim()) ? "border-destructive" : ""}
               />
               {formUrl.trim() && !/^https?:\/\/.+\..+/.test(formUrl.trim()) && (
-                <p className="text-xs text-destructive">Enter a valid URL starting with http:// or https://</p>
+                <p className="text-xs text-destructive">{t("enterAValidURLStartingWithHttpOrHttps")}</p>
               )}
             </div>
 
             {/* Description */}
             <div className="space-y-2">
-              <Label>Description</Label>
+              <Label>{t("description")}</Label>
               <Input
                 value={formDescription}
                 onChange={(e) => setFormDescription(e.target.value)}
-                placeholder="Optional description"
+                placeholder={t("optionalDescription")}
               />
             </div>
 
             {/* Events */}
             <div className="space-y-3">
-              <Label>Events</Label>
+              <Label>{t("events")}</Label>
               {Object.entries(EVENT_GROUPS).map(([key, group]) => (
                 <div key={key} className="space-y-2">
                   <p className="text-xs font-medium text-muted-foreground">
@@ -543,17 +547,17 @@ export default function WebhooksPage() {
               variant="outline"
               onClick={() => setSheetOpen(false)}
             >
-              Cancel
+              {t("cancel")}
             </Button>
             <Button
               onClick={handleSave}
               disabled={saving || !formUrl.trim() || formEvents.length === 0 || !/^https?:\/\/.+\..+/.test(formUrl.trim())}
             >
               {saving
-                ? "Saving..."
+                ? t("saving")
                 : editingWebhook
-                  ? "Update"
-                  : "Create"}
+                  ? t("update")
+                  : t("create")}
             </Button>
           </SheetFooter>
         </SheetContent>

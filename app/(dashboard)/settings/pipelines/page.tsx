@@ -1,4 +1,7 @@
 "use client";
+import { createPipelineStages, pipelineAnnouncements } from "@/i18n/pipeline-stages";
+import { useTranslations } from "next-intl";
+import { settingsErrorMessage, SettingsRequestError } from "@/i18n/settings-errors";
 
 import { useState, useEffect, useCallback } from "react";
 import {
@@ -68,15 +71,6 @@ const PRESET_COLORS = [
   "#f43f5e",
 ];
 
-const DEFAULT_NEW_STAGES: PipelineStage[] = [
-  { id: "lead", name: "Lead", color: "#94a3b8" },
-  { id: "qualified", name: "Qualified", color: "#3b82f6" },
-  { id: "proposal", name: "Proposal", color: "#8b5cf6" },
-  { id: "negotiation", name: "Negotiation", color: "#f59e0b" },
-  { id: "closed_won", name: "Won", color: "#10b981" },
-  { id: "closed_lost", name: "Lost", color: "#ef4444" },
-];
-
 function generateId() {
   return `stage_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -95,6 +89,7 @@ function SortableStageRow({
   onUpdate: (s: PipelineStage) => void;
   onRemove: () => void;
 }) {
+  const t = useTranslations("SettingsPipelines");
   const {
     attributes,
     listeners,
@@ -102,7 +97,7 @@ function SortableStageRow({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: stage.id });
+  } = useSortable({ id: stage.id, attributes: { roleDescription: t("sortableStage") } });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -135,6 +130,7 @@ function SortableStageRow({
         className="touch-none text-muted-foreground/40 hover:text-foreground cursor-grab active:cursor-grabbing shrink-0"
         {...attributes}
         {...listeners}
+        aria-label={t("moveStage", { name: stage.name })}
       >
         <GripVertical className="size-4" />
       </button>
@@ -144,6 +140,7 @@ function SortableStageRow({
         <button
           type="button"
           onClick={() => setShowColors(!showColors)}
+          aria-label={t("stageColor")}
           className="size-6 rounded-full border-2 border-background ring-1 ring-border shrink-0 transition-transform hover:scale-110"
           style={{ backgroundColor: stage.color }}
         />
@@ -162,6 +159,7 @@ function SortableStageRow({
                   c === stage.color ? "border-foreground" : "border-transparent"
                 )}
                 style={{ backgroundColor: c }}
+                aria-label={t("chooseColor", { color: c })}
               />
             ))}
           </div>
@@ -178,10 +176,10 @@ function SortableStageRow({
             className="h-7 text-sm flex-1"
             autoFocus
           />
-          <Button type="button" variant="ghost" size="sm" className="size-7 p-0" onClick={save}>
+          <Button type="button" variant="ghost" size="sm" className="size-7 p-0" onClick={save} aria-label={t("saveStage")}>
             <Check className="size-3.5 text-emerald-600" />
           </Button>
-          <Button type="button" variant="ghost" size="sm" className="size-7 p-0" onClick={() => { setName(stage.name); setEditing(false); }}>
+          <Button type="button" variant="ghost" size="sm" className="size-7 p-0" onClick={() => { setName(stage.name); setEditing(false); }} aria-label={t("cancel")}>
             <X className="size-3.5" />
           </Button>
         </div>
@@ -192,7 +190,7 @@ function SortableStageRow({
       {/* Actions */}
       {!editing && (
         <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-          <Button type="button" variant="ghost" size="sm" className="size-7 p-0" onClick={() => { setName(stage.name); setEditing(true); }}>
+          <Button type="button" variant="ghost" size="sm" className="size-7 p-0" onClick={() => { setName(stage.name); setEditing(true); }} aria-label={t("editStage")}>
             <Pencil className="size-3" />
           </Button>
           <Button
@@ -202,6 +200,7 @@ function SortableStageRow({
             className="size-7 p-0 text-destructive"
             onClick={onRemove}
             disabled={total <= 1}
+            aria-label={t("removeStage")}
           >
             <Trash2 className="size-3" />
           </Button>
@@ -227,6 +226,9 @@ function PipelineEditor({
   onSaved: () => void;
   orgId: string | null;
 }) {
+
+  const t = useTranslations("SettingsPipelines");
+  const te = useTranslations("SettingsErrors");
   const isNew = !pipeline;
   const [name, setName] = useState("");
   const [stages, setStages] = useState<PipelineStage[]>([]);
@@ -242,15 +244,15 @@ function PipelineEditor({
         setIsDefault(pipeline.isDefault);
       } else {
         setName("");
-        setStages([...DEFAULT_NEW_STAGES]);
+        setStages(createPipelineStages(t));
         setIsDefault(false);
       }
       setDirty(false);
     }
-  }, [open, pipeline]);
+  }, [open, pipeline, t]);
 
   function handleClose() {
-    if (dirty && !window.confirm("You have unsaved changes. Discard?")) return;
+    if (dirty && !window.confirm(t("youHaveUnsavedChangesDiscard"))) return;
     onOpenChange(false);
   }
 
@@ -284,7 +286,7 @@ function PipelineEditor({
   function addStage() {
     setStages((prev) => [
       ...prev,
-      { id: generateId(), name: "New Stage", color: PRESET_COLORS[prev.length % PRESET_COLORS.length] },
+      { id: generateId(), name: t("newStage"), color: PRESET_COLORS[prev.length % PRESET_COLORS.length] },
     ]);
     setDirty(true);
   }
@@ -305,14 +307,14 @@ function PipelineEditor({
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Failed to save pipeline");
+        throw new SettingsRequestError(settingsErrorMessage(te, data.error, t("failedToSavePipeline"), res.status));
       }
-      toast.success(isNew ? "Pipeline created" : "Pipeline updated");
+      toast.success(isNew ? t("pipelineCreated") : t("pipelineUpdated"));
       setDirty(false);
       onOpenChange(false);
       onSaved();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to save");
+      toast.error(err instanceof SettingsRequestError ? err.message : t("failedToSave"));
     } finally {
       setSaving(false);
     }
@@ -323,9 +325,9 @@ function PipelineEditor({
       <SheetContent className="sm:max-w-lg w-full p-0 flex flex-col">
         <SheetHeader className="px-4 pt-4 pb-3 sm:px-6 sm:pt-6 sm:pb-4 border-b space-y-3">
           <div>
-            <SheetTitle className="text-lg">{isNew ? "New Pipeline" : "Edit Pipeline"}</SheetTitle>
+            <SheetTitle className="text-lg">{isNew ? t("newPipeline") : t("editPipeline")}</SheetTitle>
             <SheetDescription>
-              {isNew ? "Create a pipeline with custom stages for your deals." : "Update stages, reorder, or change colors."}
+              {isNew ? t("editorDescription") : t("updateStagesReorderOrChangeColors")}
             </SheetDescription>
           </div>
         </SheetHeader>
@@ -333,14 +335,14 @@ function PipelineEditor({
           <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
             {/* Pipeline name */}
             <div className="space-y-4">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Pipeline</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("pipeline")}</p>
               <div className="space-y-2">
-                <Label htmlFor="pipeline-name">Name *</Label>
+                <Label htmlFor="pipeline-name">{t("name")}</Label>
                 <Input
                   id="pipeline-name"
                   value={name}
                   onChange={(e) => { setName(e.target.value); setDirty(true); }}
-                  placeholder="e.g. Sales Pipeline"
+                  placeholder={t("eGSalesPipeline")}
                   required
                 />
               </div>
@@ -351,7 +353,7 @@ function PipelineEditor({
                   onChange={(e) => { setIsDefault(e.target.checked); setDirty(true); }}
                   className="size-4 rounded border-border accent-emerald-600"
                 />
-                <span className="text-sm">Set as default pipeline</span>
+                <span className="text-sm">{t("setAsDefaultPipeline")}</span>
               </label>
             </div>
 
@@ -361,16 +363,24 @@ function PipelineEditor({
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Stages ({stages.length})
+                  {t("stagesHeading", { count: stages.length })}
                 </p>
                 <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={addStage}>
-                  <Plus className="size-3" /> Add Stage
+                  <Plus className="size-3" /> {t("addStage")}
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Deals move through stages from top to bottom. Click the color to change it, or use the arrows to reorder.
+                {t("stagesHelp")}
               </p>
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+                accessibility={{
+                  screenReaderInstructions: { draggable: t("dragInstructions") },
+                  announcements: pipelineAnnouncements(t, stages),
+                }}
+              >
                 <SortableContext items={stages.map((s) => s.id)} strategy={verticalListSortingStrategy}>
                   <div className="space-y-1.5">
                     {stages.map((stage) => (
@@ -387,7 +397,7 @@ function PipelineEditor({
               </DndContext>
               {stages.length === 0 && (
                 <p className="text-xs text-muted-foreground text-center py-4">
-                  Add at least one stage to create this pipeline.
+                  {t("stageRequired")}
                 </p>
               )}
             </div>
@@ -395,9 +405,9 @@ function PipelineEditor({
 
           {/* Footer */}
           <div className="sticky bottom-0 z-10 flex items-center justify-end gap-3 border-t bg-background/80 px-4 py-3 sm:px-6 sm:py-4 backdrop-blur-sm">
-            <Button type="button" variant="outline" onClick={handleClose}>Cancel</Button>
+            <Button type="button" variant="outline" onClick={handleClose}>{t("cancel")}</Button>
             <Button type="submit" disabled={saving || !name.trim() || stages.length === 0} className="bg-emerald-600 hover:bg-emerald-700">
-              {saving ? "Saving..." : isNew ? "Create Pipeline" : "Save Changes"}
+              {saving ? t("saving") : isNew ? t("createPipeline") : t("saveChanges")}
             </Button>
           </div>
         </form>
@@ -410,13 +420,15 @@ function PipelineEditor({
 // Main page
 // ---------------------------------------------------------------------------
 export default function PipelinesSettingsPage() {
+  const t = useTranslations("SettingsPipelines");
+
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [pipelines, setPipelines] = useState<Pipeline[]>([]);
   const [loading, setLoading] = useState(true);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingPipeline, setEditingPipeline] = useState<Pipeline | null>(null);
   const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
-  useDocumentTitle("Settings · Pipelines");
+  useDocumentTitle(t("settingsPipelines"));
 
   const fetchPipelines = useCallback(async () => {
     if (!orgId) return;
@@ -447,9 +459,9 @@ export default function PipelinesSettingsPage() {
 
   async function handleDelete(p: Pipeline) {
     await confirm({
-      title: `Delete "${p.name}"?`,
-      description: "This pipeline will be removed. Existing deals will not be deleted but will lose their pipeline reference.",
-      confirmLabel: "Delete",
+      title: t("deleteNamed", { name: p.name }),
+      description: t("deleteDescription"),
+      confirmLabel: t("delete"),
       destructive: true,
       onConfirm: async () => {
         if (!orgId) return;
@@ -458,7 +470,7 @@ export default function PipelinesSettingsPage() {
           headers: { "x-organization-id": orgId },
         });
         await fetchPipelines();
-        toast.success("Pipeline deleted");
+        toast.success(t("pipelineDeleted"));
       },
     });
   }
@@ -472,9 +484,9 @@ export default function PipelinesSettingsPage() {
         body: JSON.stringify({ isDefault: true }),
       });
       await fetchPipelines();
-      toast.success(`"${p.name}" set as default`);
+      toast.success(t("defaultNamed", { name: p.name }));
     } catch {
-      toast.error("Failed to update default pipeline");
+      toast.error(t("failedToUpdateDefaultPipeline"));
     }
   }
 
@@ -484,13 +496,13 @@ export default function PipelinesSettingsPage() {
     <ContentReveal className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold">Sales Pipelines</h3>
+          <h3 className="text-sm font-semibold">{t("salesPipelines")}</h3>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Manage your deal pipelines and customize stages.
+            {t("manageYourDealPipelinesAndCustomizeStages")}
           </p>
         </div>
         <Button size="sm" className="h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700" onClick={handleNew}>
-          <Plus className="size-3" /> New Pipeline
+          <Plus className="size-3" /> {t("newPipeline")}
         </Button>
       </div>
 
@@ -499,12 +511,12 @@ export default function PipelinesSettingsPage() {
           <div className="flex size-12 items-center justify-center rounded-2xl bg-muted mb-3">
             <Plus className="size-5 text-muted-foreground" />
           </div>
-          <h3 className="text-sm font-medium">No pipelines yet</h3>
+          <h3 className="text-sm font-medium">{t("noPipelinesYet")}</h3>
           <p className="text-xs text-muted-foreground mt-1 max-w-xs">
-            Create your first pipeline to start tracking deals through custom stages.
+            {t("emptyDescription")}
           </p>
           <Button size="sm" className="mt-4 bg-emerald-600 hover:bg-emerald-700" onClick={handleNew}>
-            Create Pipeline
+            {t("createPipeline")}
           </Button>
         </div>
       ) : (
@@ -518,22 +530,22 @@ export default function PipelinesSettingsPage() {
                     <span className="text-sm font-semibold">{p.name}</span>
                     {p.isDefault && (
                       <Badge className="bg-emerald-100 text-emerald-700 border-0 text-[10px] dark:bg-emerald-900/60 dark:text-emerald-400">
-                        Default
+                        {t("default")}
                       </Badge>
                     )}
                   </div>
                   <p className="text-[11px] text-muted-foreground mt-0.5">
-                    {p.stages.length} stage{p.stages.length !== 1 ? "s" : ""}
+                    {t("stageCount", { count: p.stages.length })}
                   </p>
                 </div>
                 <div className="flex items-center gap-1">
                   {!p.isDefault && (
                     <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => handleSetDefault(p)}>
-                      <Star className="size-3" /> Set Default
+                      <Star className="size-3" /> {t("setDefault")}
                     </Button>
                   )}
                   <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => handleEdit(p)}>
-                    <Pencil className="size-3" /> Edit
+                    <Pencil className="size-3" /> {t("edit")}
                   </Button>
                   <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-destructive" onClick={() => handleDelete(p)}>
                     <Trash2 className="size-3" />

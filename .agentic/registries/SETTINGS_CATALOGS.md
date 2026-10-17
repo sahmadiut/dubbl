@@ -5,7 +5,8 @@ settings TSX files totaling over 10,000 lines, so LOC-012 now waits for LOC-014
 through LOC-017 and retains independent integration acceptance. LOC-006 and
 LOC-002 also retain their combined acceptance. LOC-013 owns teams, administration
 and notifications outside the settings routes; settings notification preferences
-belong to LOC-015.
+belong to LOC-015, whose extracted scope and exceptions are recorded in
+[settings automation catalogs](SETTINGS_AUTOMATION_CATALOGS.md).
 
 ## Extracted core scope
 
@@ -42,8 +43,8 @@ are not accepted by this task.
 
 ## Remaining settings ownership
 
-- LOC-015: bank rules, approval workflows, pipelines, webhooks, reminders,
-  notification preferences and supporting copy/errors.
+- LOC-015 is extracted; see the linked automation inventory for its independent
+  verification and remaining native/RTL limitations.
 - LOC-016: members, roles, advisors, API keys and audit log.
 - LOC-017: billing, Stripe, document templates, import/export (including the bulk
   import wizard), backups and trash.

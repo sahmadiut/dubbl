@@ -4,12 +4,14 @@ LOC-005 is the validation/preference slice of LOC-002. The parent remains open
 for full extraction and independent integration acceptance. Current coverage is
 `LocalePreferences`, LOC-010 authentication/onboarding/invitation namespaces and
 LOC-011 shared shell/UI, LOC-014 core settings, LOC-015 settings automation,
-LOC-016 settings access/audit, LOC-018 billing/Stripe and LOC-013 teams/admin/notification
+LOC-016 settings access/audit, LOC-018 billing/Stripe, LOC-019 document templates
+and LOC-013 teams/admin/notification
 namespaces in `messages/en-US.json` and `messages/fa-IR.json`
 (see [auth scope](AUTH_CATALOGS.md), [shell scope](SHELL_CATALOGS.md),
 [settings scope](SETTINGS_CATALOGS.md), [automation scope](SETTINGS_AUTOMATION_CATALOGS.md),
 [access scope](SETTINGS_ACCESS_CATALOGS.md)
-and [workspace scope](WORKSPACE_CATALOGS.md), [provider scope](SETTINGS_PROVIDER_CATALOGS.md));
+and [workspace scope](WORKSPACE_CATALOGS.md), [provider scope](SETTINGS_PROVIDER_CATALOGS.md),
+[document settings scope](SETTINGS_DOCUMENT_CATALOGS.md));
 passing key parity does not mean that the rest of the product is localized.
 
 ## Catalog and authoring contract
@@ -85,6 +87,9 @@ Extraction ownership:
 | LOC-015 | LOC-012 child: settings automation and notification preferences |
 | LOC-016 | LOC-012 child: settings access and audit |
 | LOC-017 | LOC-012 child: settings providers, documents and data management |
+| LOC-018 | LOC-017 child: billing and Stripe settings |
+| LOC-019 | LOC-017 child: document template settings |
+| LOC-020 | LOC-017 child: import/export, backups and trash |
 | LOC-007 | Accounting, sales, purchasing, contacts, tax and associated shared UI/errors |
 | LOC-008 | Inventory, payroll, projects, CRM, reports, dashboard and documents |
 | LOC-009 | Public surfaces, landing/help, email/PDF and user-visible background content; remaining source audit |

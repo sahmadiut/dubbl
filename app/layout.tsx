@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
+import { Geist_Mono, Playfair_Display, Vazirmatn } from "next/font/google";
 import { SessionProvider } from "next-auth/react";
 import { RootProvider } from "fumadocs-ui/provider/next";
 import { Toaster } from "sonner";
@@ -10,9 +10,10 @@ import { PresentationProvider } from "@/i18n/provider";
 import "fumadocs-ui/style.css";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+const vazirmatn = Vazirmatn({
+  variable: "--font-vazirmatn",
+  subsets: ["arabic", "latin"],
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
@@ -110,12 +111,16 @@ export default async function RootLayout({
 }>) {
   const [presentation, messages, now] = await Promise.all([getPresentation(), getMessages(), getNow()]);
   return (
-    <html lang={presentation.locale} className="scroll-smooth" suppressHydrationWarning>
+    <html
+      lang={presentation.locale}
+      className={`${vazirmatn.variable} ${geistMono.variable} ${playfairDisplay.variable} scroll-smooth`}
+      suppressHydrationWarning
+    >
       <head>
         <meta name="apple-mobile-web-app-title" content="Dubbl" />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${playfairDisplay.variable} font-sans antialiased`}
+        className={`${vazirmatn.className} antialiased`}
       >
         <PresentationProvider presentation={presentation} messages={messages} now={now}>
           <ThemeProvider>

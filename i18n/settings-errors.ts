@@ -8,6 +8,7 @@ type ErrorKey = Parameters<Translate>[0];
 const keys: Partial<Record<string, ErrorKey>> = {
   "Organization not found": "organizationMissing",
   "Tag not found": "tagMissing",
+  "Template not found": "templateMissing",
   "Bank rule not found": "bankRuleMissing",
   "Approval workflow not found": "workflowMissing",
   "Webhook not found": "webhookMissing",

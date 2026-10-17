@@ -51,6 +51,9 @@ are not accepted by this task.
   (billing/Stripe), LOC-019 (document templates) and LOC-020 (import/export,
   bulk-import wizard, backups and trash). See
   [provider scope](SETTINGS_PROVIDER_CATALOGS.md) for LOC-018 extraction.
+  LOC-019 document-template extraction is recorded in
+  [document settings scope](SETTINGS_DOCUMENT_CATALOGS.md), including the
+  pre-existing CRUD MCP coverage gap for parent integration review.
 - LOC-012: independent combined settings acceptance after all four children.
 - LOC-006 / LOC-002: independent shell/settings and product-wide catalog acceptance.
 

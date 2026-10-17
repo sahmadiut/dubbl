@@ -25,6 +25,12 @@ LOC-012's independent combined settings acceptance is now recorded in
 owner-authorized Stripe exclusion, eight additional paired error keys and the
 2,160-key catalog total. LOC-006/002 and native/RTL gates remain independent.
 
+LOC-006's independent shell/auth/settings/workspace acceptance is recorded in
+[combined catalog acceptance](SHELL_AUTH_SETTINGS_ACCEPTANCE.md). It adds the
+paired sign-in request-failure message (2,161 keys per locale), composed rendering,
+production callback checks and migrated REST/MCP/SQL integration. LOC-002 and
+native/RTL qualification remain open. DEC-008 preserves Stripe unchanged.
+
 ## Catalog and authoring contract
 
 - English is the compile-time key schema (`i18n/types.d.ts`). `useTranslations`

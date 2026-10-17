@@ -21,6 +21,7 @@
   "Auth": {
     "invalidCode": "Invalid authentication code",
     "invalidCredentials": "Invalid email or password",
+    "signInFailed": "Unable to sign in. Please try again.",
     "seedFailed": "Failed to seed dev user",
     "devSignInFailed": "Dev sign-in failed",
     "devLoginFailed": "Dev login failed",

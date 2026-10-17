@@ -55,3 +55,12 @@ and behavior need assessment during parent integration. No provider action was
 executed here. Native translation, generated-content localization and RTL review
 remain open. See [attempt 1](../evidence/LOC-013-attempt-1.md) and
 [self-review](../evidence/LOC-013-review-1.md).
+
+LOC-006 [combined acceptance](SHELL_AUTH_SETTINGS_ACCEPTANCE.md) assessed the
+Business/pro mismatch and retains it unchanged under the owner's DEC-008 Stripe
+exclusion. Current MCP source inspection also corrects the broad counterpart
+claim above: no dedicated team CRUD/member-management tools are registered.
+Catalog-only acceptance adds no operation and does not certify that existing
+coverage gap. Parent tests independently check the actual team-create callback
+through authenticated REST, locale preferences through REST/MCP, persisted caller
+data and notification read isolation. LOC-002/native/RTL gates remain open.

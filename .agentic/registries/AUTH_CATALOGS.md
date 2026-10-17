@@ -60,3 +60,10 @@ interaction, successful authentication, authorization or native-language approva
 
 See [attempt 1](../evidence/LOC-010-attempt-1.md) and
 [self-review](../evidence/LOC-010-review-1.md) for actual final commands/results.
+
+LOC-006's [independent integration acceptance](SHELL_AUTH_SETTINGS_ACCEPTANCE.md)
+adds the paired `Auth.signInFailed` request-rejection message and loading reset.
+Actual production callback checks cover sign-in/TOTP, registration, invitation
+acceptance and onboarding canonical writes in both locales. The earlier child
+counts above are historical; current catalogs have 2,161 keys per locale.
+LOC-002/native/RTL gates remain independent; this is not live authentication approval.

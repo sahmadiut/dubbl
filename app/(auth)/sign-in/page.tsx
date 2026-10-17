@@ -96,26 +96,31 @@ function SignInContent() {
     setError("");
     setLoading(true);
 
-    const res = await signIn("credentials", {
-      email,
-      password,
-      ...(needsTotp && totp ? { totp } : {}),
-      redirect: false,
-    });
+    try {
+      const res = await signIn("credentials", {
+        email,
+        password,
+        ...(needsTotp && totp ? { totp } : {}),
+        redirect: false,
+      });
 
-    if (res?.error) {
-      if (res.code === "TwoFactorRequired") {
-        // Password was correct; the account has 2FA. Reveal the code field.
-        setNeedsTotp(true);
-        setError("");
-      } else if (needsTotp) {
-        setError(t("invalidCode"));
+      if (res?.error) {
+        if (res.code === "TwoFactorRequired") {
+          // Password was correct; the account has 2FA. Reveal the code field.
+          setNeedsTotp(true);
+          setError("");
+        } else if (needsTotp) {
+          setError(t("invalidCode"));
+        } else {
+          setError(t("invalidCredentials"));
+        }
+        setLoading(false);
       } else {
-        setError(t("invalidCredentials"));
+        window.location.href = authDestination(callbackUrl, window.location.origin);
       }
+    } catch {
+      setError(t("signInFailed"));
       setLoading(false);
-    } else {
-      window.location.href = authDestination(callbackUrl, window.location.origin);
     }
   }
 

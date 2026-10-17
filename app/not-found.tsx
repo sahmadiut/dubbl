@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "next-intl";
 
 import Link from "next/link";
 import { motion } from "motion/react";
@@ -7,6 +8,7 @@ import { Logo } from "@/components/shared/logo";
 import { cn } from "@/lib/utils";
 
 export default function NotFound() {
+  const t = useTranslations("SharedUI");
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background">
       {/* Noise grain overlay */}
@@ -137,7 +139,7 @@ export default function NotFound() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
-          This page doesn&apos;t exist or has been moved.
+          {t("pageMissing")}
         </motion.p>
 
         {/* CTA */}
@@ -169,7 +171,7 @@ export default function NotFound() {
               }}
             />
             <ArrowLeft className="relative size-4 transition-transform group-hover:-translate-x-0.5" />
-            <span className="relative">Back to Home</span>
+            <span className="relative">{t("backHome")}</span>
           </Link>
         </motion.div>
 
@@ -181,7 +183,7 @@ export default function NotFound() {
           transition={{ duration: 0.5, delay: 0.5 }}
         >
           <span className="text-emerald-600/40 dark:text-emerald-400/40">HTTP</span>{" "}
-          404 Not Found
+          {t("notFoundStatus")}
         </motion.p>
       </div>
     </div>

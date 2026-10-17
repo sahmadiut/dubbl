@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Section } from "@/components/dashboard/section";
 
@@ -51,6 +52,7 @@ function ButtonSkeleton() {
 }
 
 export function PageSkeleton({ variant = "default" }: { variant?: "default" | "dashboard" | "settings" | "reports" | "list-2" }) {
+  const t = useTranslations("SharedUI");
   if (variant === "dashboard") {
     return (
       <div className="space-y-6">
@@ -187,7 +189,7 @@ export function PageSkeleton({ variant = "default" }: { variant?: "default" | "d
   if (variant === "list-2") {
     return (
       <div className="space-y-10">
-        <Section title="Overview" description="Loading...">
+        <Section title={t("overview")} description={t("loading")}>
           <div className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               {Array.from({ length: 2 }).map((_, i) => (
@@ -200,7 +202,7 @@ export function PageSkeleton({ variant = "default" }: { variant?: "default" | "d
           </div>
         </Section>
         <div className="h-px bg-border" />
-        <Section title="Loading" description="Loading...">
+        <Section title={t("loading2")} description={t("loading")}>
           <div className="space-y-4">
             <TabsSkeleton />
             <TableSkeleton />
@@ -213,7 +215,7 @@ export function PageSkeleton({ variant = "default" }: { variant?: "default" | "d
   // default: 3 stat cards + table
   return (
     <div className="space-y-10">
-      <Section title="Overview" description="Loading...">
+      <Section title={t("overview")} description={t("loading")}>
         <div className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-3">
             {Array.from({ length: 3 }).map((_, i) => (
@@ -226,7 +228,7 @@ export function PageSkeleton({ variant = "default" }: { variant?: "default" | "d
         </div>
       </Section>
       <div className="h-px bg-border" />
-      <Section title="Loading" description="Loading...">
+      <Section title={t("loading2")} description={t("loading")}>
         <div className="space-y-4">
           <TabsSkeleton />
           <TableSkeleton />

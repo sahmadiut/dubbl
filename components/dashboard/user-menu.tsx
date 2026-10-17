@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -22,6 +24,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { AccountDialog } from "./edit-profile-dialog";
 
 export function UserMenu() {
+  const t = useTranslations("Shell");
   const { data: session } = useSession();
   const user = session?.user;
   const [accountOpen, setAccountOpen] = useState(false);
@@ -53,7 +56,7 @@ export function UserMenu() {
             </Avatar>
             <div className="grid flex-1 text-left leading-tight">
               <span className="truncate text-sm font-medium text-sidebar-accent-foreground">
-                {user?.name || "User"}
+                {user?.name || t("user")}
               </span>
               <span className="truncate text-[11px] text-sidebar-foreground/50">
                 {user?.email}
@@ -77,7 +80,7 @@ export function UserMenu() {
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[13px] font-semibold">{user?.name || "User"}</p>
+                <p className="truncate text-[13px] font-semibold">{user?.name || t("user")}</p>
                 <p className="truncate text-[11px] text-muted-foreground">{user?.email}</p>
               </div>
             </div>
@@ -91,14 +94,14 @@ export function UserMenu() {
               className="gap-2.5 rounded-lg px-2.5 py-2 text-[13px]"
             >
               <User className="size-4 text-muted-foreground" />
-              Account
+              {t("account")}
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => router.push("/settings/billing")}
               className="gap-2.5 rounded-lg px-2.5 py-2 text-[13px]"
             >
               <Sparkles className="size-4 text-emerald-600 dark:text-emerald-400" />
-              Upgrade to Pro
+              {t("upgradeToPro")}
             </DropdownMenuItem>
           </div>
 
@@ -110,7 +113,7 @@ export function UserMenu() {
               className="gap-2.5 rounded-lg px-2.5 py-2 text-[13px] text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400"
             >
               <LogOut className="size-4" />
-              Sign out
+              {t("signOut")}
             </DropdownMenuItem>
           </div>
         </DropdownMenuContent>

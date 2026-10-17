@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -9,14 +11,15 @@ interface ErrorStateProps {
 }
 
 export function ErrorState({ message, onRetry }: ErrorStateProps) {
+  const t = useTranslations("SharedUI");
   return (
     <div className="flex flex-col items-center justify-center py-24 text-center">
       <div className="flex size-14 items-center justify-center rounded-2xl bg-red-500/10">
         <AlertTriangle className="size-6 text-red-500" />
       </div>
-      <h3 className="mt-4 text-sm font-medium">Something went wrong</h3>
+      <h3 className="mt-4 text-sm font-medium">{t("somethingWentWrong")}</h3>
       <p className="mt-1.5 text-xs text-muted-foreground max-w-[300px]">
-        {message || "Failed to load data. Please check your connection and try again."}
+        {message || t("failedToLoadDataPleaseCheckYourConnectionAndTryAgain")}
       </p>
       {onRetry && (
         <Button
@@ -26,7 +29,7 @@ export function ErrorState({ message, onRetry }: ErrorStateProps) {
           onClick={onRetry}
         >
           <RefreshCw className="size-3" />
-          Try again
+          {t("tryAgain")}
         </Button>
       )}
     </div>

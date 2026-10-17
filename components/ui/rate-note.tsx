@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -32,14 +33,15 @@ export function RateNote({
   status: RateInfo | null | undefined;
   className?: string;
 }) {
+  const t = useTranslations("SharedUI");
   if (!status || !baseCurrency || baseCurrency === currency) return null;
 
   if (status.missing) {
     return (
       <span className={cn("inline-flex flex-wrap items-center gap-1 text-xs text-amber-600", className)}>
-        No {currency}→{baseCurrency} rate available.{" "}
+        {t("missingRate", { currency, baseCurrency })}{" "}
         <Link href="/tax/currencies" className="font-medium underline underline-offset-2">
-          Set a custom rate
+          {t("setACustomRate")}
         </Link>
       </span>
     );
@@ -56,13 +58,13 @@ export function RateNote({
       )}
       <span>·</span>
       {isManual ? (
-        <span className="font-medium text-blue-600">Manual rate</span>
+        <span className="font-medium text-blue-600">{t("manualRate")}</span>
       ) : (
-        <span>Auto rate</span>
+        <span>{t("autoRate")}</span>
       )}
       {status.effectiveDate && <span>· {status.effectiveDate}</span>}
       {status.stale && status.ageDays != null && (
-        <span className="font-medium text-amber-600">· {status.ageDays}d old</span>
+        <span className="font-medium text-amber-600">· {t("rateAge", { count: status.ageDays })}</span>
       )}
     </span>
   );

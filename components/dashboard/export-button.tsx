@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { generateCSV } from "@/lib/import-export/csv-utils";
@@ -12,12 +14,13 @@ interface ExportButtonProps {
 }
 
 export function ExportButton({ data, columns, filename = "export" }: ExportButtonProps) {
+  const t = useTranslations("SharedUI");
   const handleExport = () => {
     if (data.length === 0) return;
 
     let csv: string;
     try { csv = generateCSV(data.map(row => Object.fromEntries(Object.entries(row))), columns); }
-    catch { toast.error("Unable to export these values safely"); return; }
+    catch { toast.error(t("unableToExportTheseValuesSafely")); return; }
 
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -36,7 +39,7 @@ export function ExportButton({ data, columns, filename = "export" }: ExportButto
       disabled={data.length === 0}
     >
       <Download className="mr-1.5 size-3.5" />
-      Export CSV
+      {t("exportCSV")}
     </Button>
   );
 }

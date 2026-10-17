@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import {
   createContext,
   useCallback,
@@ -36,195 +38,6 @@ export function useTopbarAction(node: ReactNode) {
   }, [node, setAction]);
 }
 
-const LABELS: Record<string, string> = {
-  // Top-level
-  dashboard: "Overview",
-  sales: "Sales",
-  purchases: "Purchases",
-  contacts: "Contacts",
-  accounting: "Accounting",
-  projects: "Projects",
-  inventory: "Inventory",
-  payroll: "Payroll",
-  reports: "Reports",
-  notifications: "Notifications",
-  documents: "Documents",
-  settings: "Settings",
-  tax: "Tax",
-  crm: "CRM",
-  portal: "Portal",
-  consolidation: "Consolidation",
-  // Sales
-  invoices: "Invoices",
-  quotes: "Quotes",
-  receipts: "Cash Sales",
-  "credit-notes": "Credit Notes",
-  recurring: "Recurring",
-  payments: "Payments",
-  "customer-prepayments": "Prepayments",
-  "revenue-schedules": "Revenue Schedules",
-  new: "New",
-  // Purchases
-  bills: "Bills",
-  expenses: "Expenses",
-  orders: "Purchase Orders",
-  requisitions: "Requisitions",
-  "vendor-spend": "Vendor Spend",
-  "debit-notes": "Supplier Credits",
-  "goods-receipts": "Goods Received",
-  // Accounting
-  transactions: "Transactions",
-  accounts: "Accounts",
-  banking: "Banking",
-  "fixed-assets": "Fixed Assets",
-  budgets: "Budgets",
-  reconcile: "Reconcile",
-  loans: "Loans",
-  "opening-balances": "Opening Balances",
-  accruals: "Accruals",
-  "recurring-journals": "Recurring Journals",
-  // Settings
-  general: "General",
-  members: "Members",
-  roles: "Roles",
-  billing: "Billing",
-  advisors: "Advisors",
-  pipelines: "Pipelines",
-  "bank-rules": "Bank Rules",
-  "approval-workflows": "Approvals",
-  webhooks: "Webhooks",
-  "api-keys": "API Keys",
-  "audit-log": "Audit Log",
-  "cost-centers": "Cost Centers",
-  tags: "Tags",
-  reminders: "Reminders",
-  "document-templates": "Document Templates",
-  currencies: "Currencies",
-  "tax-rates": "Tax Rates",
-  // Payroll
-  employees: "Employees",
-  runs: "Pay Runs",
-  contractors: "Contractors",
-  "time-leave": "Time & Leave",
-  compensation: "Compensation",
-  timesheets: "Timesheets",
-  payslips: "Payslips",
-  "tax-forms": "Tax Forms",
-  leave: "Leave",
-  reviews: "Reviews",
-  pay: "Pay",
-  // Reports
-  "trial-balance": "Trial Balance",
-  "balance-sheet": "Balance Sheet",
-  "comparative-balance-sheet": "Comparative Balance Sheet",
-  "income-statement": "Income Statement",
-  "profit-and-loss": "Profit & Loss",
-  "pnl-comparison": "P&L Comparison",
-  "cash-flow": "Cash Flow",
-  "cash-flow-forecast": "Cash Flow Forecast",
-  "general-ledger": "General Ledger",
-  "aged-receivables": "Aged Receivables",
-  "aged-payables": "Aged Payables",
-  "budget-vs-actual": "Budget vs Actual",
-  "financial-ratios": "Financial Ratios",
-  "financial-calendar": "Financial Calendar",
-  "payment-performance": "Payment Performance",
-  "expense-analytics": "Expense Analytics",
-  profitability: "Profitability",
-  "tax-summary": "Tax Summary",
-  forecasting: "Forecasting",
-  custom: "Custom Reports",
-  "report-schedules": "Report Schedules",
-  scheduled: "Scheduled",
-  // Inventory
-  "stock-takes": "Stock Takes",
-  warehouses: "Warehouses",
-  valuation: "Valuation",
-  categories: "Categories",
-  transfers: "Transfers",
-  alerts: "Alerts",
-  history: "History",
-  suppliers: "Suppliers",
-  bom: "Bill of Materials",
-  assembly: "Assembly Orders",
-  variants: "Variants",
-  "landed-costs": "Landed Costs",
-  // CRM
-  deals: "Deals",
-  analytics: "Analytics",
-  "duplicate-detection": "Duplicate Detection",
-  // Projects
-  tasks: "Tasks",
-  milestones: "Milestones",
-  notes: "Notes",
-  team: "Team",
-  teams: "Teams",
-  time: "Time Tracking",
-  // Tax
-  "sales-tax": "Sales Tax",
-  "schedule-c": "Schedule C",
-  "vat-return": "VAT Return",
-  bas: "BAS",
-  periods: "Tax Periods",
-  // Workflows
-  workflows: "Workflows",
-  "approval-requests": "Approval Requests",
-  // Signatures
-  signature: "Signature",
-  sign: "Sign",
-  // Misc
-  "scheduled-payments": "Scheduled Payments",
-  "self-service": "Self Service",
-  statements: "Statements",
-  imports: "Imports",
-  batches: "Batches",
-  docs: "Docs",
-  admin: "Admin",
-  "email-preview": "Email Preview",
-};
-
-function getLabel(segment: string): string {
-  return LABELS[segment] || segment;
-}
-
-type DrawerType = "contact" | "project" | "invoice" | "bill" | "entry" | "inventory" | "quote" | "salesReceipt" | "purchaseOrder" | "expense" | "fixedAsset" | "budget" | "employee" | "creditNote" | "recurring" | "account" | "bankAccount" | "warehouse" | "stockTake" | "category" | "transfer" | "contractor" | "debitNote" | "customerCredit" | "loan" | "openingBalance" | "accrualSchedule" | "revenueSchedule" | "recurringJournal";
-
-const CTA_MAP: Record<string, { label: string; drawer: DrawerType } | null> = {
-  sales: { label: "New Invoice", drawer: "invoice" },
-  "sales/quotes": { label: "New Quote", drawer: "quote" },
-  "sales/receipts": { label: "New cash sale", drawer: "salesReceipt" },
-  "sales/credit-notes": { label: "New Credit Note", drawer: "creditNote" },
-  "sales/recurring": { label: "New Recurring", drawer: "recurring" },
-  "sales/customer-prepayments": { label: "New prepayment", drawer: "customerCredit" },
-  "sales/revenue-schedules": { label: "New revenue schedule", drawer: "revenueSchedule" },
-  purchases: { label: "New Bill", drawer: "bill" },
-  "purchases/expenses": { label: "New Expense", drawer: "expense" },
-  "purchases/orders": { label: "New PO", drawer: "purchaseOrder" },
-  "purchases/debit-notes": { label: "New supplier credit", drawer: "debitNote" },
-  accounting: { label: "New Entry", drawer: "entry" },
-  "accounting/accounts": { label: "New Account", drawer: "account" },
-  "accounting/banking": { label: "New Account", drawer: "bankAccount" },
-  "accounting/fixed-assets": { label: "New Asset", drawer: "fixedAsset" },
-  "accounting/budgets": { label: "New Budget", drawer: "budget" },
-  "accounting/loans": { label: "New loan", drawer: "loan" },
-  "accounting/opening-balances": { label: "Set opening balances", drawer: "openingBalance" },
-  "accounting/accruals": { label: "New accrual", drawer: "accrualSchedule" },
-  "accounting/recurring-journals": { label: "New recurring journal", drawer: "recurringJournal" },
-  contacts: { label: "New Contact", drawer: "contact" },
-  projects: { label: "New Project", drawer: "project" },
-  inventory: { label: "New Item", drawer: "inventory" },
-  "inventory/stock-takes": { label: "New Stock Take", drawer: "stockTake" },
-  "inventory/warehouses": { label: "New Warehouse", drawer: "warehouse" },
-  "inventory/transfers": { label: "New Transfer", drawer: "transfer" },
-  "inventory/valuation": null,
-  "payroll/employees": { label: "New Employee", drawer: "employee" },
-  "payroll/contractors": { label: "Add Contractor", drawer: "contractor" },
-  "payroll/time-leave": null,
-  "payroll/compensation": null,
-  "payroll/analytics": null,
-  teams: null,
-};
-
 export function Topbar() {
   const [customAction, setCustomAction] = useState<ReactNode>(null);
   const stableSetAction = useCallback((n: ReactNode) => setCustomAction(n), []);
@@ -237,6 +50,196 @@ export function Topbar() {
 }
 
 function TopbarInner({ customAction }: { customAction: ReactNode }) {
+  const t = useTranslations("Shell");
+  const LABELS: Record<string, string> = {
+    // Top-level
+    dashboard: t("overview"),
+    sales: t("sales"),
+    purchases: t("purchases"),
+    contacts: t("contacts"),
+    accounting: t("accounting"),
+    projects: t("projects"),
+    inventory: t("inventory"),
+    payroll: t("payroll"),
+    reports: t("reports"),
+    notifications: t("notifications"),
+    documents: t("documents"),
+    settings: t("settings"),
+    tax: t("tax"),
+    crm: t("cRM"),
+    portal: t("portal"),
+    consolidation: t("consolidation"),
+    // Sales
+    invoices: t("invoices"),
+    quotes: t("quotes"),
+    receipts: t("cashSales"),
+    "credit-notes": t("creditNotes"),
+    recurring: t("recurring"),
+    payments: t("payments"),
+    "customer-prepayments": t("prepayments"),
+    "revenue-schedules": t("revenueSchedules"),
+    new: t("new"),
+    // Purchases
+    bills: t("bills"),
+    expenses: t("expenses"),
+    orders: t("purchaseOrders"),
+    requisitions: t("requisitions"),
+    "vendor-spend": t("vendorSpend"),
+    "debit-notes": t("supplierCredits"),
+    "goods-receipts": t("goodsReceived"),
+    // Accounting
+    transactions: t("transactions"),
+    accounts: t("accounts"),
+    banking: t("banking"),
+    "fixed-assets": t("fixedAssets"),
+    budgets: t("budgets"),
+    reconcile: t("reconcile"),
+    loans: t("loans"),
+    "opening-balances": t("openingBalances"),
+    accruals: t("accruals"),
+    "recurring-journals": t("recurringJournals"),
+    // Settings
+    general: t("general"),
+    members: t("members"),
+    roles: t("roles"),
+    billing: t("billing"),
+    advisors: t("advisors"),
+    pipelines: t("pipelines"),
+    "bank-rules": t("bankRules"),
+    "approval-workflows": t("approvals"),
+    webhooks: t("webhooks"),
+    "api-keys": t("aPIKeys"),
+    "audit-log": t("auditLog"),
+    "cost-centers": t("costCenters"),
+    tags: t("tags"),
+    reminders: t("reminders"),
+    "document-templates": t("documentTemplates"),
+    currencies: t("currencies"),
+    "tax-rates": t("taxRates"),
+    // Payroll
+    employees: t("employees"),
+    runs: t("payRuns"),
+    contractors: t("contractors"),
+    "time-leave": t("timeLeave"),
+    compensation: t("compensation"),
+    timesheets: t("timesheets"),
+    payslips: t("payslips"),
+    "tax-forms": t("taxForms"),
+    leave: t("leave"),
+    reviews: t("reviews"),
+    pay: t("pay"),
+    // Reports
+    "trial-balance": t("trialBalance"),
+    "balance-sheet": t("balanceSheet"),
+    "comparative-balance-sheet": t("comparativeBalanceSheet"),
+    "income-statement": t("incomeStatement"),
+    "profit-and-loss": t("profitLoss"),
+    "pnl-comparison": t("pLComparison"),
+    "cash-flow": t("cashFlow"),
+    "cash-flow-forecast": t("cashFlowForecast"),
+    "general-ledger": t("generalLedger"),
+    "aged-receivables": t("agedReceivables"),
+    "aged-payables": t("agedPayables"),
+    "budget-vs-actual": t("budgetVsActual"),
+    "financial-ratios": t("financialRatios"),
+    "financial-calendar": t("financialCalendar"),
+    "payment-performance": t("paymentPerformance"),
+    "expense-analytics": t("expenseAnalytics"),
+    profitability: t("profitability"),
+    "tax-summary": t("taxSummary"),
+    forecasting: t("forecasting"),
+    custom: t("customReports"),
+    "report-schedules": t("reportSchedules"),
+    scheduled: t("scheduled"),
+    // Inventory
+    "stock-takes": t("stockTakes"),
+    warehouses: t("warehouses"),
+    valuation: t("valuation"),
+    categories: t("categories"),
+    transfers: t("transfers"),
+    alerts: t("alerts"),
+    history: t("history"),
+    suppliers: t("suppliers"),
+    bom: t("billOfMaterials"),
+    assembly: t("assemblyOrders"),
+    variants: t("variants"),
+    "landed-costs": t("landedCosts"),
+    // CRM
+    deals: t("deals"),
+    analytics: t("analytics"),
+    "duplicate-detection": t("duplicateDetection"),
+    // Projects
+    tasks: t("tasks"),
+    milestones: t("milestones"),
+    notes: t("notes"),
+    team: t("team"),
+    teams: t("teams"),
+    time: t("timeTracking"),
+    // Tax
+    "sales-tax": t("salesTax"),
+    "schedule-c": t("scheduleC"),
+    "vat-return": t("vATReturn"),
+    bas: t("bAS"),
+    periods: t("taxPeriods"),
+    // Workflows
+    workflows: t("workflows"),
+    "approval-requests": t("approvalRequests"),
+    // Signatures
+    signature: t("signature"),
+    sign: t("sign"),
+    // Misc
+    "scheduled-payments": t("scheduledPayments"),
+    "self-service": t("selfService"),
+    statements: t("statements"),
+    imports: t("imports"),
+    batches: t("batches"),
+    docs: t("docs"),
+    admin: t("admin"),
+    "email-preview": t("emailPreview"),
+  };
+
+  function getLabel(segment: string): string {
+    return LABELS[segment] || segment;
+  }
+
+  type DrawerType = "contact" | "project" | "invoice" | "bill" | "entry" | "inventory" | "quote" | "salesReceipt" | "purchaseOrder" | "expense" | "fixedAsset" | "budget" | "employee" | "creditNote" | "recurring" | "account" | "bankAccount" | "warehouse" | "stockTake" | "category" | "transfer" | "contractor" | "debitNote" | "customerCredit" | "loan" | "openingBalance" | "accrualSchedule" | "revenueSchedule" | "recurringJournal";
+
+  const CTA_MAP: Record<string, { label: string; drawer: DrawerType } | null> = {
+    sales: { label: t("newInvoice"), drawer: "invoice" },
+    "sales/quotes": { label: t("newQuote"), drawer: "quote" },
+    "sales/receipts": { label: t("newCashSale"), drawer: "salesReceipt" },
+    "sales/credit-notes": { label: t("newCreditNote"), drawer: "creditNote" },
+    "sales/recurring": { label: t("newRecurring"), drawer: "recurring" },
+    "sales/customer-prepayments": { label: t("newPrepayment"), drawer: "customerCredit" },
+    "sales/revenue-schedules": { label: t("newRevenueSchedule"), drawer: "revenueSchedule" },
+    purchases: { label: t("newBill"), drawer: "bill" },
+    "purchases/expenses": { label: t("newExpense"), drawer: "expense" },
+    "purchases/orders": { label: t("newPO"), drawer: "purchaseOrder" },
+    "purchases/debit-notes": { label: t("newSupplierCredit"), drawer: "debitNote" },
+    accounting: { label: t("newEntry"), drawer: "entry" },
+    "accounting/accounts": { label: t("newAccount"), drawer: "account" },
+    "accounting/banking": { label: t("newAccount"), drawer: "bankAccount" },
+    "accounting/fixed-assets": { label: t("newAsset"), drawer: "fixedAsset" },
+    "accounting/budgets": { label: t("newBudget"), drawer: "budget" },
+    "accounting/loans": { label: t("newLoan"), drawer: "loan" },
+    "accounting/opening-balances": { label: t("setOpeningBalances"), drawer: "openingBalance" },
+    "accounting/accruals": { label: t("newAccrual"), drawer: "accrualSchedule" },
+    "accounting/recurring-journals": { label: t("newRecurringJournal"), drawer: "recurringJournal" },
+    contacts: { label: t("newContact"), drawer: "contact" },
+    projects: { label: t("newProject2"), drawer: "project" },
+    inventory: { label: t("newItem"), drawer: "inventory" },
+    "inventory/stock-takes": { label: t("newStockTake"), drawer: "stockTake" },
+    "inventory/warehouses": { label: t("newWarehouse"), drawer: "warehouse" },
+    "inventory/transfers": { label: t("newTransfer"), drawer: "transfer" },
+    "inventory/valuation": null,
+    "payroll/employees": { label: t("newEmployee"), drawer: "employee" },
+    "payroll/contractors": { label: t("addContractor"), drawer: "contractor" },
+    "payroll/time-leave": null,
+    "payroll/compensation": null,
+    "payroll/analytics": null,
+    teams: null,
+  };
+
   const pathname = usePathname();
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
@@ -284,7 +287,7 @@ function TopbarInner({ customAction }: { customAction: ReactNode }) {
       if (!subTab) parentLabel = null;
     }
   } else {
-    pageTitle = effectiveSegments[effectiveSegments.length - 1] ? getLabel(effectiveSegments[effectiveSegments.length - 1]) : "Overview";
+    pageTitle = effectiveSegments[effectiveSegments.length - 1] ? getLabel(effectiveSegments[effectiveSegments.length - 1]) : t("overview");
     parentLabel = effectiveSegments.length > 1 ? getLabel(effectiveSegments[0]) : null;
   }
 
@@ -300,7 +303,7 @@ function TopbarInner({ customAction }: { customAction: ReactNode }) {
       <div className="mx-auto flex h-14 w-full max-w-[1250px] items-center justify-between gap-2 px-3 sm:px-6">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           {isMobile && (
-            <Button variant="ghost" size="icon" className="size-7 shrink-0" onClick={toggleSidebar}>
+            <Button variant="ghost" size="icon" className="size-7 shrink-0" onClick={toggleSidebar} aria-label={t("toggleSidebar")}>
               <Menu className="size-4" />
             </Button>
           )}
@@ -334,7 +337,7 @@ function TopbarInner({ customAction }: { customAction: ReactNode }) {
             className="hidden sm:flex items-center gap-2 text-muted-foreground text-xs h-7 px-2.5"
           >
             <Search className="size-3" />
-            <span>Search...</span>
+            <span>{t("search")}</span>
             <kbd className="pointer-events-none ml-1 inline-flex h-5 select-none items-center gap-0.5 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
               <span className="text-xs">&#8984;</span>K
             </kbd>

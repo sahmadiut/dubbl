@@ -26,6 +26,7 @@ const errorKeys: Partial<Record<string, ErrorKey>> = {
   "Only administrators can create organizations": "orgAdminOnly",
   "Slug already taken": "slugTaken",
   "Organization not found": "orgMissing",
+  "Cannot unlink your last authentication method": "lastAuthenticationMethod",
   "This invitation has been accepted": "accepted",
   "This invitation has been rejected": "rejected",
   "This invitation has been cancelled": "cancelled",

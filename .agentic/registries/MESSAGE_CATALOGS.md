@@ -2,8 +2,9 @@
 
 LOC-005 is the validation/preference slice of LOC-002. The parent remains open
 for full extraction and independent integration acceptance. Current coverage is
-`LocalePreferences` plus the LOC-010 authentication/onboarding/invitation namespaces
-in `messages/en-US.json` and `messages/fa-IR.json` (see [scope and exceptions](AUTH_CATALOGS.md));
+`LocalePreferences`, LOC-010 authentication/onboarding/invitation namespaces and
+LOC-011 shared shell/UI namespaces in `messages/en-US.json` and `messages/fa-IR.json`
+(see [auth scope](AUTH_CATALOGS.md) and [shell scope](SHELL_CATALOGS.md));
 passing key parity does not mean that the rest of the product is localized.
 
 ## Catalog and authoring contract

@@ -1,4 +1,6 @@
-"use client"
+"use client";
+
+import { useTranslations } from "next-intl";
 
 import * as React from "react"
 import { format } from "date-fns"
@@ -23,9 +25,11 @@ interface DatePickerProps {
 export function DatePicker({
   value,
   onChange,
-  placeholder = "Pick a date",
+  placeholder: suppliedPlaceholder,
   className,
 }: DatePickerProps) {
+  const t = useTranslations("SharedUI");
+  const placeholder = suppliedPlaceholder ?? t("pickADate");
   const [open, setOpen] = React.useState(false)
 
   const date = value ? new Date(value + "T00:00:00") : undefined

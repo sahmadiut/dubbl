@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useState, useEffect } from "react";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -52,6 +54,7 @@ export function CurrencySelect({
   disabled,
   compact,
 }: CurrencySelectProps) {
+  const t = useTranslations("SharedUI");
   const [open, setOpen] = useState(false);
   const [currencies, setCurrencies] = useState<Currency[]>(currencyCache ?? []);
 
@@ -92,16 +95,16 @@ export function CurrencySelect({
               </span>
             )
           ) : (
-            "Currency"
+            t("currency")
           )}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[280px] p-0" align="start">
         <Command>
-          <CommandInput placeholder="Search currency..." />
+          <CommandInput placeholder={t("searchCurrency")} />
           <CommandList>
-            <CommandEmpty>No currency found.</CommandEmpty>
+            <CommandEmpty>{t("noCurrencyFound")}</CommandEmpty>
             <CommandGroup>
               {currencies.map((c) => (
                 <CommandItem

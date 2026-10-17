@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -60,49 +62,10 @@ interface NavItem {
 }
 
 interface NavSection {
+  id?: string;
   label: string;
   items: NavItem[];
 }
-
-const sections: NavSection[] = [
-  {
-    label: "",
-    items: [
-      { label: "Dashboard", href: "/dashboard", icon: GaugeIcon },
-      { label: "Contacts", href: "/contacts", icon: HandCoinsIcon },
-    ],
-  },
-  {
-    label: "Financials",
-    items: [
-      { label: "Sales", href: "/sales", icon: FileTextIcon },
-      { label: "Purchases", href: "/purchases", icon: CartIcon },
-      { label: "Accounting", href: "/accounting", icon: ArrowLeftRightAnimatedIcon },
-      { label: "Tax", href: "/tax", icon: PercentAnimatedIcon },
-    ],
-  },
-  {
-    label: "Operations",
-    items: [
-      { label: "Teams", href: "/teams", icon: UsersAnimatedIcon },
-      { label: "Inventory", href: "/inventory", icon: ReceiptAnimatedIcon },
-      { label: "Payroll", href: "/payroll", icon: LandmarkAnimatedIcon },
-    ],
-  },
-  {
-    label: "",
-    items: [
-      { label: "CRM", href: "/crm", icon: TargetIcon },
-      { label: "Documents", href: "/documents", icon: FolderOpenIcon },
-      { label: "Reports", href: "/reports", icon: ChartLineIcon },
-    ],
-  },
-];
-
-const footerItems: NavItem[] = [
-  { label: "Settings", href: "/settings", icon: SettingsIcon },
-  { label: "Help", href: "/docs", icon: CircleHelpIcon },
-];
 
 function isActive(pathname: string, href: string) {
   if (href === "/dashboard") return pathname === "/dashboard";
@@ -157,6 +120,7 @@ interface ProjectListItem {
 }
 
 function ProjectsCollapsible({ pathname }: { pathname: string }) {
+  const t = useTranslations("Shell");
   const [open, setOpen] = useState(() => pathname.startsWith("/projects"));
   const [projects, setProjects] = useState<ProjectListItem[]>([]);
   const [hovered, setHovered] = useState(false);
@@ -210,7 +174,7 @@ function ProjectsCollapsible({ pathname }: { pathname: string }) {
           )}
         >
           <LayersIcon ref={iconRef} size={16} className="shrink-0" />
-          <span className="flex-1 text-left">Projects</span>
+          <span className="flex-1 text-left">{t("projects")}</span>
           <ChevronRight className={cn(
             "size-3.5 shrink-0 transition-transform duration-200",
             open && "rotate-90"
@@ -255,7 +219,7 @@ function ProjectsCollapsible({ pathname }: { pathname: string }) {
               onClick={() => openDrawer("project")}
             >
               <Plus className="size-3.5" />
-              <span>New project</span>
+              <span>{t("newProject")}</span>
             </SidebarMenuSubButton>
           </SidebarMenuSubItem>
         </SidebarMenuSub>
@@ -265,6 +229,48 @@ function ProjectsCollapsible({ pathname }: { pathname: string }) {
 }
 
 export function AppSidebar() {
+  const t = useTranslations("Shell");
+  const sections: NavSection[] = [
+    {
+      label: "",
+      items: [
+        { label: t("dashboard"), href: "/dashboard", icon: GaugeIcon },
+        { label: t("contacts"), href: "/contacts", icon: HandCoinsIcon },
+      ],
+    },
+    {
+      label: t("financials"),
+      items: [
+        { label: t("sales"), href: "/sales", icon: FileTextIcon },
+        { label: t("purchases"), href: "/purchases", icon: CartIcon },
+        { label: t("accounting"), href: "/accounting", icon: ArrowLeftRightAnimatedIcon },
+        { label: t("tax"), href: "/tax", icon: PercentAnimatedIcon },
+      ],
+    },
+    {
+      id: "operations",
+      label: t("operations"),
+      items: [
+        { label: t("teams"), href: "/teams", icon: UsersAnimatedIcon },
+        { label: t("inventory"), href: "/inventory", icon: ReceiptAnimatedIcon },
+        { label: t("payroll"), href: "/payroll", icon: LandmarkAnimatedIcon },
+      ],
+    },
+    {
+      label: "",
+      items: [
+        { label: t("cRM"), href: "/crm", icon: TargetIcon },
+        { label: t("documents"), href: "/documents", icon: FolderOpenIcon },
+        { label: t("reports"), href: "/reports", icon: ChartLineIcon },
+      ],
+    },
+  ];
+
+  const footerItems: NavItem[] = [
+    { label: t("settings"), href: "/settings", icon: SettingsIcon },
+    { label: t("help"), href: "/docs", icon: CircleHelpIcon },
+  ];
+
   const pathname = usePathname();
   const [overdueCounts, setOverdueCounts] = useState<{ sales: number; purchases: number }>({ sales: 0, purchases: 0 });
 
@@ -306,7 +312,7 @@ export function AppSidebar() {
             )}
             <SidebarGroupContent>
               <SidebarMenu className="gap-0.5">
-                {section.label === "Operations" && (
+                {section.id === "operations" && (
                   <ProjectsCollapsible pathname={pathname} />
                 )}
                 {section.items.map((item) => (

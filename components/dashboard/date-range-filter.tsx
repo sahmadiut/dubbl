@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -50,16 +52,17 @@ function getPresetDates(preset: Preset): { start: string; end: string } | null {
   }
 }
 
-const presets: { label: string; value: Preset }[] = [
-  { label: "This Month", value: "this-month" },
-  { label: "Last Month", value: "last-month" },
-  { label: "This Quarter", value: "this-quarter" },
-  { label: "This Year", value: "this-year" },
-  { label: "Last Year", value: "last-year" },
-  { label: "Custom", value: "custom" },
-];
-
 export function DateRangeFilter({ startDate, endDate, onDateChange }: DateRangeFilterProps) {
+  const t = useTranslations("DateRange");
+  const presets: { label: string; value: Preset }[] = [
+    { label: t("thisMonth"), value: "this-month" },
+    { label: t("lastMonth"), value: "last-month" },
+    { label: t("thisQuarter"), value: "this-quarter" },
+    { label: t("thisYear"), value: "this-year" },
+    { label: t("lastYear"), value: "last-year" },
+    { label: t("custom"), value: "custom" },
+  ];
+
   const [active, setActive] = useState<Preset>("this-month");
 
   function handlePreset(preset: Preset) {
@@ -88,14 +91,14 @@ export function DateRangeFilter({ startDate, endDate, onDateChange }: DateRangeF
           <DatePicker
             value={startDate}
             onChange={(v) => onDateChange(v, endDate)}
-            placeholder="Start date"
+            placeholder={t("startDate")}
             className="w-40 h-8 text-sm"
           />
-          <span className="text-sm text-muted-foreground">to</span>
+          <span className="text-sm text-muted-foreground">{t("to")}</span>
           <DatePicker
             value={endDate}
             onChange={(v) => onDateChange(startDate, v)}
-            placeholder="End date"
+            placeholder={t("endDate")}
             className="w-40 h-8 text-sm"
           />
         </div>

@@ -1,4 +1,6 @@
-"use client"
+"use client";
+
+import { useTranslations } from "next-intl";
 
 import * as React from "react"
 import { Command as CommandPrimitive } from "cmdk"
@@ -30,8 +32,8 @@ function Command({
 }
 
 function CommandDialog({
-  title = "Command Palette",
-  description = "Search for a command to run...",
+  title: suppliedTitle,
+  description: suppliedDescription,
   children,
   className,
   showCloseButton = true,
@@ -44,6 +46,9 @@ function CommandDialog({
   showCloseButton?: boolean
   shouldFilter?: boolean
 }) {
+  const t = useTranslations("SharedUI");
+  const title = suppliedTitle ?? t("commandPalette");
+  const description = suppliedDescription ?? t("searchForACommandToRun");
   return (
     <Dialog {...props}>
       <DialogContent

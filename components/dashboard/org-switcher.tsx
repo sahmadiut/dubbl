@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { setActiveOrganization } from "@/i18n/organization-client";
 
 import { useState, useEffect } from "react";
@@ -22,13 +24,14 @@ interface Org {
   createdAt: string;
 }
 
-const ROLE_LABELS: Record<string, string> = {
-  owner: "Owner",
-  admin: "Admin",
-  member: "Member",
-};
-
 export function OrgSwitcher() {
+  const t = useTranslations("Shell");
+  const ROLE_LABELS: Record<string, string> = {
+    owner: t("owner"),
+    admin: t("admin"),
+    member: t("member"),
+  };
+
   const [orgs, setOrgs] = useState<Org[]>([]);
   const [activeOrg, setActiveOrg] = useState<Org | null>(null);
 
@@ -100,16 +103,16 @@ export function OrgSwitcher() {
               {/* Info grid */}
               <div className="mx-3 mb-3 grid grid-cols-3 gap-px overflow-hidden rounded-md border border-border bg-border">
                 <div className="bg-card px-2 py-1.5 text-center">
-                  <p className="text-[10px] text-muted-foreground">Members</p>
+                  <p className="text-[10px] text-muted-foreground">{t("members")}</p>
                   <p className="text-[12px] font-semibold tabular-nums">{activeOrg.memberCount}</p>
                 </div>
                 <div className="bg-card px-2 py-1.5 text-center">
-                  <p className="text-[10px] text-muted-foreground">Currency</p>
+                  <p className="text-[10px] text-muted-foreground">{t("currency")}</p>
                   <p className="text-[12px] font-semibold">{activeOrg.defaultCurrency}</p>
                 </div>
                 <div className="bg-card px-2 py-1.5 text-center">
-                  <p className="text-[10px] text-muted-foreground">Plan</p>
-                  <p className="text-[12px] font-semibold">Free</p>
+                  <p className="text-[10px] text-muted-foreground">{t("plan")}</p>
+                  <p className="text-[12px] font-semibold">{t("free")}</p>
                 </div>
               </div>
             </>
@@ -119,7 +122,7 @@ export function OrgSwitcher() {
           {otherOrgs.length > 0 && (
             <>
               <div className="border-t border-border px-3 pt-2 pb-1">
-                <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Organizations</p>
+                <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{t("organizations")}</p>
               </div>
               <div className="px-1 pb-1">
                 {otherOrgs.map((org) => (
@@ -151,7 +154,7 @@ export function OrgSwitcher() {
               className="gap-2 text-[13px] text-muted-foreground"
             >
               <Plus className="size-3.5" />
-              New organization
+              {t("newOrganization")}
             </DropdownMenuItem>
           </div>
         </DropdownMenuContent>

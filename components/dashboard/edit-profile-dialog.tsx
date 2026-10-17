@@ -1,5 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { authErrorMessage, AuthPresentationError } from "@/i18n/auth-errors";
+
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "motion/react";
@@ -48,38 +51,40 @@ interface AccountDialogProps {
   } | null;
 }
 
-const PROVIDER_LABELS: Record<string, string> = {
-  google: "Google",
-  apple: "Apple",
-  credentials: "Email & Password",
-};
+export function formatProvider(provider: string | null, t: ReturnType<typeof useTranslations<"Account">>): string {
+  const PROVIDER_LABELS: Record<string, string> = {
+    google: "Google",
+    apple: "Apple",
+    credentials: t("emailPassword"),
+  };
 
-function formatProvider(provider: string | null): string {
-  return PROVIDER_LABELS[provider || ""] || provider || "Unknown";
+  return (provider && Object.hasOwn(PROVIDER_LABELS, provider) ? PROVIDER_LABELS[provider] : provider) || t("unknown");
 }
 
-function timeAgo(date: string): string {
-  const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
-  if (seconds < 60) return "Just now";
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-  if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
+export function timeAgo(date: string, t: ReturnType<typeof useTranslations<"Account">>, now = Date.now()): string {
+  const seconds = Math.floor((now - new Date(date).getTime()) / 1000);
+  if (seconds < 60) return t("justNow");
+  if (seconds < 3600) return t("minutesAgo", { count: Math.floor(seconds / 60) });
+  if (seconds < 86400) return t("hoursAgo", { count: Math.floor(seconds / 3600) });
+  if (seconds < 604800) return t("daysAgo", { count: Math.floor(seconds / 86400) });
   return new Date(date).toLocaleDateString();
 }
 
-const TABS = [
-  { id: "profile", label: "Profile", icon: User },
-  { id: "accounts", label: "Connections", icon: Link2 },
-  { id: "security", label: "Security", icon: Fingerprint },
-] as const;
-
-type TabId = (typeof TABS)[number]["id"];
+type TabId = "profile" | "accounts" | "security";
 
 export function AccountDialog({
   open,
   onOpenChange,
   user,
 }: AccountDialogProps) {
+  const t = useTranslations("Account");
+  const te = useTranslations("AuthErrors");
+  const TABS = [
+    { id: "profile", label: t("profile"), icon: User },
+    { id: "accounts", label: t("connections"), icon: Link2 },
+    { id: "security", label: t("security"), icon: Fingerprint },
+  ] as const;
+
   const [name, setName] = useState(user?.name || "");
   const [saving, setSaving] = useState(false);
   const [accounts, setAccounts] = useState<LinkedAccount[]>([]);
@@ -144,13 +149,13 @@ export function AccountDialog({
       });
       if (!res.ok) {
         const d = await res.json();
-        throw new Error(typeof d.error === "string" ? d.error : "Failed to update profile");
+        throw new AuthPresentationError(authErrorMessage(te, d.error, t("failedToUpdateProfile"), res.status));
       }
-      toast.success("Profile updated");
+      toast.success(t("profileUpdated"));
       onOpenChange(false);
       window.location.reload();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to update");
+      toast.error(err instanceof AuthPresentationError ? err.message : t("failedToUpdate"));
     } finally {
       setSaving(false);
     }
@@ -164,33 +169,33 @@ export function AccountDialog({
       });
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(typeof data.error === "string" ? data.error : "Failed to unlink account");
+        throw new AuthPresentationError(authErrorMessage(te, data.error, t("failedToUnlinkAccount"), res.status));
       }
-      toast.success("Account unlinked");
+      toast.success(t("accountUnlinked"));
       fetchAccounts();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to unlink");
+      toast.error(err instanceof AuthPresentationError ? err.message : t("failedToUnlink"));
     } finally {
       setUnlinking(null);
     }
   }
 
   async function revokeAll() {
-    if (!confirm("This will sign you out of all devices. You will need to sign in again.")) return;
+    if (!confirm(t("thisWillSignYouOutOfAllDevicesYouWillNeedToSignInAgain"))) return;
     setRevoking(true);
     try {
       const res = await fetch("/api/v1/sessions/revoke-all", { method: "POST" });
       const data = await res.json();
       if (data.success) {
-        toast.success("All sessions revoked");
+        toast.success(t("allSessionsRevoked"));
         setTimeout(() => {
           window.location.href = "/sign-in";
         }, 1000);
       } else {
-        throw new Error(data.error || "Failed to revoke sessions");
+        throw new AuthPresentationError(authErrorMessage(te, data.error, t("failedToRevokeSessions"), res.status));
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to revoke sessions");
+      toast.error(err instanceof AuthPresentationError ? err.message : t("failedToRevokeSessions"));
       setRevoking(false);
     }
   }
@@ -209,7 +214,7 @@ export function AccountDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[580px] gap-0 p-0 overflow-hidden">
-        <DialogTitle className="sr-only">Account settings</DialogTitle>
+        <DialogTitle className="sr-only">{t("accountSettings")}</DialogTitle>
 
         <div className="flex flex-col sm:flex-row sm:min-h-[420px]">
           {/* Sidebar nav */}
@@ -224,7 +229,7 @@ export function AccountDialog({
                   </AvatarFallback>
                 </Avatar>
                 <div className="min-w-0">
-                  <p className="truncate text-[13px] font-semibold">{user?.name || "User"}</p>
+                  <p className="truncate text-[13px] font-semibold">{user?.name || t("user")}</p>
                   <p className="truncate text-[11px] text-muted-foreground">{user?.email}</p>
                 </div>
               </div>
@@ -313,7 +318,7 @@ export function AccountDialog({
 /*  Tab content components                                             */
 /* ------------------------------------------------------------------ */
 
-function ProfileTab({
+export function ProfileTab({
   name,
   setName,
   email,
@@ -326,32 +331,33 @@ function ProfileTab({
   saving: boolean;
   onSave: () => void;
 }) {
+  const t = useTranslations("Account");
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-sm font-semibold">Profile</h3>
+        <h3 className="text-sm font-semibold">{t("profile")}</h3>
         <p className="text-[12px] text-muted-foreground mt-0.5">
-          Your personal details visible to team members.
+          {t("yourPersonalDetailsVisibleToTeamMembers")}
         </p>
       </div>
       <div className="space-y-4">
         <div className="space-y-1.5">
-          <Label className="text-xs">Display name</Label>
+          <Label className="text-xs">{t("displayName")}</Label>
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Your full name"
+            placeholder={t("yourFullName")}
           />
         </div>
         <div className="space-y-1.5">
-          <Label className="text-xs">Email</Label>
+          <Label className="text-xs">{t("email")}</Label>
           <Input
             value={email}
             disabled
             className="text-muted-foreground"
           />
           <p className="text-[11px] text-muted-foreground">
-            Contact support to change your email address.
+            {t("contactSupportToChangeYourEmailAddress")}
           </p>
         </div>
       </div>
@@ -361,13 +367,13 @@ function ProfileTab({
         size="sm"
         className="bg-emerald-600 hover:bg-emerald-700"
       >
-        {saving ? "Saving..." : "Save changes"}
+        {saving ? t("saving") : t("saveChanges")}
       </Button>
     </div>
   );
 }
 
-function AccountsTab({
+export function AccountsTab({
   accounts,
   hasPassword,
   canUnlink,
@@ -382,19 +388,20 @@ function AccountsTab({
   email: string;
   onUnlink: (id: string) => void;
 }) {
+  const t = useTranslations("Account");
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-sm font-semibold">Connections</h3>
+        <h3 className="text-sm font-semibold">{t("connections")}</h3>
         <p className="text-[12px] text-muted-foreground mt-0.5">
-          Sign-in methods linked to your account.
+          {t("signInMethodsLinkedToYourAccount")}
         </p>
       </div>
       {accounts.length === 0 && !hasPassword ? (
         <div className="py-10 text-center">
           <Shield className="mx-auto size-8 text-muted-foreground/30" />
           <p className="mt-2 text-sm text-muted-foreground">
-            No linked accounts found.
+            {t("noLinkedAccountsFound")}
           </p>
         </div>
       ) : (
@@ -406,12 +413,12 @@ function AccountsTab({
                   <Shield className="size-4 text-muted-foreground" />
                 </div>
                 <div>
-                  <p className="text-[13px] font-medium">Email & Password</p>
+                  <p className="text-[13px] font-medium">{t("emailPassword")}</p>
                   <p className="text-[11px] text-muted-foreground">{email}</p>
                 </div>
               </div>
               <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400">
-                Active
+                {t("active")}
               </span>
             </div>
           )}
@@ -423,12 +430,12 @@ function AccountsTab({
               <div className="flex items-center gap-3">
                 <div className="flex size-8 items-center justify-center rounded-lg bg-muted ring-1 ring-border">
                   <span className="text-[11px] font-bold text-muted-foreground">
-                    {(PROVIDER_LABELS[account.provider] || account.provider)[0]}
+                    {formatProvider(account.provider, t)[0]}
                   </span>
                 </div>
                 <div>
                   <p className="text-[13px] font-medium">
-                    {PROVIDER_LABELS[account.provider] || account.provider}
+                    {formatProvider(account.provider, t)}
                   </p>
                   <p className="text-[11px] text-muted-foreground capitalize">
                     {account.type}
@@ -436,6 +443,7 @@ function AccountsTab({
                 </div>
               </div>
               <Button
+                aria-label={t("unlinkAccount")}
                 variant="ghost"
                 size="icon"
                 className="size-7 text-muted-foreground hover:text-red-600"
@@ -452,7 +460,7 @@ function AccountsTab({
   );
 }
 
-function SecurityTab({
+export function SecurityTab({
   logins,
   loading,
   revoking,
@@ -463,12 +471,13 @@ function SecurityTab({
   revoking: boolean;
   onRevokeAll: () => void;
 }) {
+  const t = useTranslations("Account");
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-sm font-semibold">Security</h3>
+        <h3 className="text-sm font-semibold">{t("security")}</h3>
         <p className="text-[12px] text-muted-foreground mt-0.5">
-          Manage active sessions and review sign-in activity.
+          {t("manageActiveSessionsAndReviewSignInActivity")}
         </p>
       </div>
 
@@ -478,8 +487,8 @@ function SecurityTab({
           <div className="flex items-center gap-3 min-w-0">
             <LogOut className="size-4 shrink-0 text-red-600 dark:text-red-400" />
             <div className="min-w-0">
-              <p className="text-[13px] font-medium">Sign out everywhere</p>
-              <p className="text-[11px] text-muted-foreground">Invalidate all active sessions</p>
+              <p className="text-[13px] font-medium">{t("signOutEverywhere")}</p>
+              <p className="text-[11px] text-muted-foreground">{t("invalidateAllActiveSessions")}</p>
             </div>
           </div>
           <Button
@@ -489,22 +498,22 @@ function SecurityTab({
             onClick={onRevokeAll}
             disabled={revoking}
           >
-            {revoking ? "Revoking..." : "Revoke all"}
+            {revoking ? t("revoking") : t("revokeAll")}
           </Button>
         </div>
       </div>
 
       {/* Recent sign-ins */}
       <div>
-        <p className="text-xs font-medium text-muted-foreground mb-2.5">Recent sign-ins</p>
+        <p className="text-xs font-medium text-muted-foreground mb-2.5">{t("recentSignIns")}</p>
         {loading ? (
           <div className="py-8 text-center">
-            <p className="text-xs text-muted-foreground animate-pulse">Loading...</p>
+            <p className="text-xs text-muted-foreground animate-pulse">{t("loading")}</p>
           </div>
         ) : logins.length === 0 ? (
           <div className="py-8 text-center">
             <Monitor className="size-7 mx-auto text-muted-foreground/30 mb-2" />
-            <p className="text-xs text-muted-foreground">No sign-in history yet</p>
+            <p className="text-xs text-muted-foreground">{t("noSignInHistoryYet")}</p>
           </div>
         ) : (
           <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
@@ -536,16 +545,16 @@ function SecurityTab({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
                     <span className="text-[13px] font-medium truncate">
-                      {login.displayLabel || "Unknown device"}
+                      {login.displayLabel || t("unknownDevice")}
                     </span>
                     {login.alerted && (
                       <span className="shrink-0 rounded-full bg-amber-100 px-1.5 py-px text-[9px] font-bold text-amber-700 dark:bg-amber-950 dark:text-amber-400 uppercase">
-                        New IP
+                        {t("newIP")}
                       </span>
                     )}
                   </div>
                   <p className="text-[11px] text-muted-foreground">
-                    {formatProvider(login.provider)} · {timeAgo(login.createdAt)}
+                    {formatProvider(login.provider, t)} · {timeAgo(login.createdAt, t)}
                   </p>
                 </div>
               </motion.div>

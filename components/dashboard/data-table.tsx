@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import {
   Table,
   TableBody,
@@ -37,13 +39,15 @@ export function DataTable<T>({
   columns,
   data,
   loading,
-  emptyMessage = "No data found.",
+  emptyMessage: suppliedEmptyMessage,
   emptyAction,
   onRowClick,
   sortBy,
   sortOrder,
   onSort,
 }: DataTableProps<T>) {
+  const t = useTranslations("SharedUI");
+  const emptyMessage = suppliedEmptyMessage ?? t("noDataFound");
   const skeletonWidths = ["w-24", "w-32", "w-20", "w-28", "w-16"];
 
   function renderHeader(col: Column<T>) {

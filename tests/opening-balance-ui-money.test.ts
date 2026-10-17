@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createElement } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderToStaticMarkup } from "./helpers/presentation";
 import { openingBalancePreview, openingBalanceSaved, OPENING_BALANCE_CURRENCY } from "../lib/money/opening-balance-ui";
 import { OpeningBalanceForm } from "../components/dashboard/opening-balance-form";
 import { OpeningBalanceMoneyDetails } from "../components/dashboard/opening-balance-money-details";

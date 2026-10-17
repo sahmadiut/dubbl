@@ -1,5 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { AuthPresentationError } from "@/i18n/auth-errors";
+
 import { useState, useRef, useCallback } from "react";
 import { Upload, X, FileText, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -29,6 +32,7 @@ export function FileUploader({
   entityId,
   onAttached,
 }: FileUploaderProps) {
+  const t = useTranslations("Upload");
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -40,7 +44,7 @@ export function FileUploader({
       setFileName(file.name);
       const orgId = localStorage.getItem("activeOrgId");
       if (!orgId) {
-        toast.error("No organization selected");
+        toast.error(t("noOrganizationSelected"));
         setUploading(false);
         return;
       }
@@ -77,7 +81,7 @@ export function FileUploader({
         );
 
         if (!presignRes.ok) {
-          throw new Error("Failed to get upload URL");
+          throw new AuthPresentationError(t("failedToGetUploadURL"));
         }
 
         const json = await presignRes.json();
@@ -93,20 +97,20 @@ export function FileUploader({
         });
 
         if (!uploadRes.ok) {
-          throw new Error("Failed to upload file");
+          throw new AuthPresentationError(t("failedToUploadFile"));
         }
 
         onUpload(fileKey, file.name);
         if (linked && documentId) onAttached?.(documentId, file.name);
-        toast.success("File uploaded");
+        toast.success(t("fileUploaded"));
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Upload failed");
+        toast.error(err instanceof AuthPresentationError ? err.message : t("uploadFailed"));
         setFileName(null);
       } finally {
         setUploading(false);
       }
     },
-    [onUpload, entityType, entityId, onAttached]
+    [onUpload, entityType, entityId, onAttached, t]
   );
 
   function handleDragOver(e: React.DragEvent) {
@@ -162,7 +166,7 @@ export function FileUploader({
       {uploading ? (
         <>
           <Loader2 className="size-6 animate-spin text-emerald-600" />
-          <p className="mt-2 text-xs text-muted-foreground">Uploading...</p>
+          <p className="mt-2 text-xs text-muted-foreground">{t("uploading")}</p>
         </>
       ) : fileName ? (
         <>
@@ -171,6 +175,7 @@ export function FileUploader({
             {fileName}
           </p>
           <button
+            aria-label={t("removeFile")}
             type="button"
             onClick={(e) => {
               e.stopPropagation();
@@ -185,7 +190,7 @@ export function FileUploader({
         <>
           <Upload className="size-6 text-muted-foreground" />
           <p className="mt-2 text-xs text-muted-foreground">
-            Drop a file or click to upload
+            {t("dropAFileOrClickToUpload")}
           </p>
         </>
       )}

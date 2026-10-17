@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useState, useMemo } from "react";
 import {
   Table,
@@ -50,14 +52,17 @@ export function DataTableAdvanced<T>({
   columns,
   data,
   loading,
-  emptyMessage = "No data found.",
+  emptyMessage: suppliedEmptyMessage,
   onRowClick,
   pageSize = 25,
   selectable,
   onSelectionChange,
   bulkActions,
-  searchPlaceholder = "Search...",
+  searchPlaceholder: suppliedSearchPlaceholder,
 }: DataTableAdvancedProps<T>) {
+  const t = useTranslations("SharedUI");
+  const emptyMessage = suppliedEmptyMessage ?? t("noDataFound");
+  const searchPlaceholder = suppliedSearchPlaceholder ?? t("search");
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>(null);
   const [search, setSearch] = useState("");
@@ -186,7 +191,7 @@ export function DataTableAdvanced<T>({
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" className="h-8">
               <Settings2 className="mr-1.5 size-3.5" />
-              Columns
+              {t("columns")}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -215,6 +220,7 @@ export function DataTableAdvanced<T>({
               {selectable && (
                 <TableHead className="w-10 h-10">
                   <input
+                    aria-label={t("selectAll")}
                     type="checkbox"
                     checked={selectedIds.size === sorted.length && sorted.length > 0}
                     onChange={toggleAll}
@@ -272,6 +278,7 @@ export function DataTableAdvanced<T>({
                     {selectable && (
                       <TableCell className="py-1.5 w-10">
                         <input
+                          aria-label={t("selectRow", { row: globalIdx + 1 })}
                           type="checkbox"
                           checked={selectedIds.has(globalIdx)}
                           onChange={(e) => {
@@ -299,11 +306,11 @@ export function DataTableAdvanced<T>({
       {totalPages > 1 && (
         <div className="flex items-center justify-between px-1">
           <p className="text-xs text-muted-foreground tabular-nums">
-            {sorted.length} result{sorted.length !== 1 ? "s" : ""}
-            {search && ` for "${search}"`}
+            {search ? t("resultsFor", { count: sorted.length, search }) : t("results", { count: sorted.length })}
           </p>
           <div className="flex items-center gap-1.5">
             <Button
+              aria-label={t("previousPage")}
               variant="outline"
               size="icon"
               className="size-7 rounded-md"
@@ -316,6 +323,7 @@ export function DataTableAdvanced<T>({
               {page + 1} / {totalPages}
             </span>
             <Button
+              aria-label={t("nextPage")}
               variant="outline"
               size="icon"
               className="size-7 rounded-md"

@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -12,6 +14,7 @@ interface InlineEditProps {
 }
 
 export function InlineEdit({ value, onSave, className, placeholder }: InlineEditProps) {
+  const t = useTranslations("SharedUI");
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -59,7 +62,7 @@ export function InlineEdit({ value, onSave, className, placeholder }: InlineEdit
         className
       )}
     >
-      {value || placeholder || "Click to edit"}
+      {value || placeholder || t("clickToEdit")}
     </span>
   );
 }

@@ -19,8 +19,9 @@ including ThemeToggle, remain LOC-011; dashboard OrgLoader/layout remain LOC-011
 | `app/(dashboard)/invite/[token]/page.tsx` | Invitation: loading/ready/accepting/success/error copy; complete ICU messages allow reordered organization, inviter and role text. Standard owner/admin/member roles translate only at display time. |
 | `i18n/auth-errors.ts`, `i18n/invitation-role.ts`, `i18n/onboarding-options.ts` | Typed presentation adapters. Exact allowlist for existing server errors; invitation email and organization-limit counts interpolate safely. Malformed/unknown server errors use catalog fallbacks; 400/422 validation uses a catalog input-check message. Unexpected network exceptions use the operation fallback. |
 
-Both catalogs contain 238 matching keys: 17 existing preference keys plus 221
-keys for this task. All new Persian wording is **provisional**; none has native
+At LOC-010 completion both catalogs contained 238 matching keys: 17 existing
+preference keys plus 221 keys for that task. Later extraction adds further
+namespaces; see [catalog ownership](MESSAGE_CATALOGS.md). All LOC-010 Persian wording is **provisional**; none has native
 linguistic or financial terminology approval. This inventory, rather than an
 in-product approval badge or English placeholder, records the review status.
 Native L10N and full RTL qualification remain later tasks. No IRR/currency enablement

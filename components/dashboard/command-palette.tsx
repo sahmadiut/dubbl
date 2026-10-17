@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -27,16 +29,6 @@ type SearchResult = {
   href: string;
 };
 
-const TYPE_META: Record<
-  SearchResult["type"],
-  { label: string; icon: React.ComponentType<{ className?: string }> }
-> = {
-  invoice: { label: "Invoices", icon: FileText },
-  bill: { label: "Bills", icon: Receipt },
-  contact: { label: "Contacts", icon: User },
-  document: { label: "Documents", icon: Paperclip },
-};
-
 const GROUP_ORDER: SearchResult["type"][] = [
   "invoice",
   "bill",
@@ -52,6 +44,7 @@ const GROUP_ORDER: SearchResult["type"][] = [
  * do not render it inside this file.
  */
 export function CommandPalette() {
+  const t = useTranslations("GlobalSearch");
   const router = useRouter();
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
@@ -130,6 +123,39 @@ export function CommandPalette() {
     [router]
   );
 
+  return (
+    <CommandDialog
+      open={open}
+      onOpenChange={setOpen}
+      title={t("search")}
+      description={t("searchInvoicesBillsContactsAndDocuments")}
+      // Disable cmdk's built-in fuzzy filter — results come from the server.
+      shouldFilter={false}
+    >
+      <CommandInput
+        placeholder={t("searchInvoicesBillsContactsDocuments")}
+        value={query}
+        onValueChange={setQuery}
+      />
+      <GlobalSearchResults loading={loading} query={query} results={results} onSelect={handleSelect} />
+    </CommandDialog>
+  );
+}
+
+export function GlobalSearchResults({ loading, query, results, onSelect }: {
+  loading: boolean; query: string; results: SearchResult[]; onSelect: (href: string) => void;
+}) {
+  const t = useTranslations("GlobalSearch");
+  const TYPE_META: Record<
+    SearchResult["type"],
+    { label: string; icon: React.ComponentType<{ className?: string }> }
+  > = {
+    invoice: { label: t("invoices"), icon: FileText },
+    bill: { label: t("bills"), icon: Receipt },
+    contact: { label: t("contacts"), icon: User },
+    document: { label: t("documents"), icon: Paperclip },
+  };
+
   const grouped = GROUP_ORDER.map((type) => ({
     type,
     items: results.filter((r) => r.type === type),
@@ -138,34 +164,21 @@ export function CommandPalette() {
   const trimmedLen = query.trim().length;
 
   return (
-    <CommandDialog
-      open={open}
-      onOpenChange={setOpen}
-      title="Search"
-      description="Search invoices, bills, contacts, and documents."
-      // Disable cmdk's built-in fuzzy filter — results come from the server.
-      shouldFilter={false}
-    >
-      <CommandInput
-        placeholder="Search invoices, bills, contacts, documents..."
-        value={query}
-        onValueChange={setQuery}
-      />
       <CommandList>
         {loading && (
           <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
             <Loader2 className="size-4 animate-spin" />
-            Searching...
+            {t("searching")}
           </div>
         )}
 
         {!loading && trimmedLen >= 2 && grouped.length === 0 && (
-          <CommandEmpty>No results found.</CommandEmpty>
+          <CommandEmpty>{t("noResultsFound")}</CommandEmpty>
         )}
 
         {!loading && trimmedLen < 2 && (
           <div className="py-6 text-center text-sm text-muted-foreground">
-            Type to search invoices, bills, contacts, and documents.
+            {t("typeToSearchInvoicesBillsContactsAndDocuments")}
           </div>
         )}
 
@@ -183,7 +196,7 @@ export function CommandPalette() {
                     // value must be unique so cmdk keyboard selection works
                     // even with filtering disabled.
                     value={`${item.type}-${item.id}-${item.title}`}
-                    onSelect={() => handleSelect(item.href)}
+                    onSelect={() => onSelect(item.href)}
                   >
                     <Icon className="size-4 shrink-0 text-muted-foreground" />
                     <div className="flex min-w-0 flex-col">
@@ -200,7 +213,6 @@ export function CommandPalette() {
             );
           })}
       </CommandList>
-    </CommandDialog>
   );
 }
 

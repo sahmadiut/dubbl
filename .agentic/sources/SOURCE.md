@@ -1187,3 +1187,11 @@ Quarterly maintenance should include upstream Dubbl merge review, dependency/sec
 18. **GitHub Actions documentation for PostgreSQL services and container publishing.** 
 
 The resulting fork should therefore **retain Dubbl's architecture, independently reproduce only genuine Bigcapital advantages, make exact money storage the first prerequisite for IRR, treat Farsi as a full localization rather than a translation file, and design the Rial implementation around explicit currency regimes so the forthcoming Iranian redenomination can be accommodated without corrupting historical accounting records**. The central release criterion is not visual parity with Bigcapital: it is that the same economic event produces the same exact ledger result in English/LTR and Persian/RTL, for both ordinary currencies and large IRR amounts, before and after migration.
+
+## AI agent and administration owner extension
+
+Added 2026-10-17 from the project owner's request in this conversation. Add a site-integrated AI chat agent that can complete multiple steps and actions using existing site capabilities, constrained by the current user's permissions. Add an administration dashboard for provider/API endpoint, API credential, model, token consumption and user-specific access management. This extends the backlog; it does not implement or enable the feature.
+
+The implementation plan is [AI_AGENT_PLAN.md](../docs/AI_AGENT_PLAN.md), delivered by AI-001 through AI-013. Engineering acceptance includes scoped tool execution, durable runs, risk-based approvals, exact accounting contracts, credential protection, usage accounting, budget enforcement, bilingual accessible UI and integration qualification. Specific provider/model selection, current prices and live availability must be verified at implementation and deployment time. This request does not reopen deferred SaaS/bank/parity work or waive existing release gates.
+
+Owner priority clarification, 2026-10-17: AI is low priority. Complete Persian localization and the rest of the pre-existing backlog first, then begin AI. Schedule AI-001 through AI-013 in phase 11 and gate AI-001 on all currently unfinished pre-existing tasks; existing skipped scope stays deferred.

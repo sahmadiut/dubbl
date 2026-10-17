@@ -1,0 +1,69 @@
+# AI agent and administration delivery plan
+
+Requested by the project owner on 2026-10-17. This is a backlog and architecture proposal, not an implemented feature or deployment approval. Requirements: [owner extension](../sources/SOURCE.md#ai-agent-and-administration-owner-extension). Task status is authoritative in `../tasks/AI-*.md`.
+
+## Product outcome
+
+A user can ask the assistant to find a customer, inspect relevant records, prepare several documents and summarize the results in one conversation. The assistant executes a bounded sequence of authorized tools, observes each result and continues until complete, awaiting clarification/approval or explicitly stopped. It must report partial completion truthfully and link to actual records. It must never claim an action succeeded solely because the model described it.
+
+The target is coverage of existing site capabilities within user permissions. Support must be measured against an operation inventory; registering every current MCP tool does not prove complete site coverage. Missing operations require bounded implementation tasks and corresponding MCP tools. No arbitrary database, shell or browser control is implied.
+
+Administrators manage provider connections, API credentials, models, policies, quotas and monitoring. Users receive only the chat, history, usage and management capabilities they are allowed to access.
+
+## Findings from current source inspection
+
+- `lib/mcp/tools/index.ts` and `lib/mcp/server.ts` provide an established registry and organization-bound `AuthContext`. Existing shared services under `lib/api/` should supply business behavior rather than duplicating accounting logic.
+- `lib/api/auth-context.ts`, `lib/api/require-role.ts` and `lib/plans.ts` establish session/API-key identity and role/custom-permission checks. `lib/mcp/errors.ts` supplies error and exact-money serialization behavior.
+- `lib/mcp/auth.ts` currently falls back to a token role when membership is missing and does not resolve custom-role permissions. The API-key path in `auth-context.ts` also falls back when its creator's membership is missing. AI-002 must address and test relevant identity paths before exposing them to the agent. These are source findings, not demonstrated exploits or a complete security audit.
+- `lib/api/require-site-admin.ts`, `app/api/v1/admin/` and `app/(admin)/admin/` provide existing site-administration boundaries and navigation. Global administration must remain separate from organization roles and organization-scoped API/MCP credentials.
+- `package.json` declares Next.js, Drizzle/PostgreSQL, MCP and next-intl. No dedicated agent runtime/provider SDK is declared, and the targeted source search found no established AI chat implementation to extend. Verify again during AI-001.
+- Existing locale work is active. This planning change does not modify LOC-016 or its application changes, start an implementation task, or alter existing task priorities.
+
+## Architecture boundaries
+
+1. The chat UI calls authenticated run/conversation services. Resolve actor and organization from trusted server state; model-generated arguments cannot choose identity or widen scope.
+2. A durable executor owns the bounded model/tool loop. Persist run and step events, enforce budgets, handle reconnect/cancellation and reconcile uncertain side effects after a crash. Select the actual worker/runtime mechanism during AI-001 after checking existing deployment constraints; a browser connection is not the lifetime of a run.
+3. A tool dispatcher exposes an allowlisted subset of existing MCP contracts and shared domain services. Revalidate current authorization for every call and after approvals. Filter tool discovery for usability and enforce authorization again server-side. Use direct shared services/Drizzle conventions, not HTTP self-calls.
+4. Provider adapters normalize streaming, tool calls, errors, usage and model capabilities. Keep provider/model configuration versioned. Capability checks reject unsupported models instead of silently degrading action semantics. Approved endpoint policies must prevent SSRF, redirect-based credential disclosure and unapproved fallback providers.
+5. Usage services reserve budgets atomically before model requests and reconcile actual usage afterward. Include failed/retried attempts and flag missing usage. Use versioned prices and exact cost arithmetic; cost is an estimate with an explicit currency, not a provider invoice or automatic accounting entry.
+6. Configuration services store encrypted credentials server-side. Provider credential plaintext is never available to the model, transcript, analytics export or browser. Dedicated administration APIs/MCP tools exist, but are not discoverable by the ordinary chat agent. Platform operations cannot become global through an organization-scoped credential.
+
+Keep business amounts in the existing canonical minor-unit contracts with explicit currency; do not force every currency into two decimals or allow the model to perform ledger arithmetic. Existing exact-money, currency-readiness, period-lock, idempotency and domain-approval rules remain authoritative.
+
+## Permissions and user experience
+
+AI access is an additional restriction, never a substitute for a domain permission. AI-001 defines permission names consistent with `lib/plans.ts` and custom roles for chat use, own history/usage, organization usage, transcript audit, policy/budget management and provider management. Organization administration does not imply site administration, and aggregate usage access does not imply access to private transcripts.
+
+Read operations and allowed draft preparation can proceed automatically. Sensitive operations such as posting, payment, deletion, external sending or access changes require a concrete preview and an approval permitted by policy. Bind approval to exact arguments, actor, organization, resource version and expiry. An explicit batch approval can authorize several displayed actions; the assistant cannot approve itself or bypass an existing business approval workflow.
+
+Show action progress, pending approvals, records created, errors and final outcomes. Do not expose private model reasoning. Provide English and Persian catalogs, RTL, keyboard access and safe model-output rendering. Summarization or context truncation must preserve unresolved approvals, execution results and permissions as server state, not rely on a conversational summary for authority.
+
+## Delivery order and acceptance
+
+All tasks start as `todo`, in phase 11 (AI agent and administration), priority 2. On 2026-10-17 the owner explicitly clarified that AI is low priority and localization plus all pre-existing work must finish first. AI-001 therefore depends on every currently unfinished pre-existing task, including release and the first maintenance review, as well as its original prerequisites. Previously skipped scope remains deferred; it is not reopened. Dependencies enforce this ordering even if earlier work is blocked; phase labels alone are not barriers. No provider selection, credential purchase, deployment date or cost estimate is invented here.
+
+| Tasks | Deliverable |
+|---|---|
+| AI-001 | Inventory, architecture and provider capability contract |
+| AI-002 | Current identity, role/custom permission and tenant enforcement |
+| AI-003 | Conversation/run/step persistence and migrations |
+| AI-004 | Provider adapters and secure configuration REST/MCP services |
+| AI-005 | Usage, exact estimated cost and concurrent budgets |
+| AI-006 | Permission-aware tool dispatch and site coverage matrix |
+| AI-007 | Durable multi-step execution and recovery |
+| AI-008 | Concrete action previews and approvals |
+| AI-009 | Bilingual accessible chat and history |
+| AI-010 | Provider/model/policy administration UI |
+| AI-011 | Scoped usage and operations dashboard |
+| AI-012 | Security, accounting workflow and reliability qualification |
+| AI-013 | Independent integration acceptance and controlled rollout |
+
+Each implementation task needs meaningful tests, actual evidence and controller review. AI-012 uses deterministic provider fixtures for failure/concurrency coverage and a separately recorded configured-provider smoke test before enablement. Source/provider behavior, pricing and deployment availability must be checked against current official documentation at implementation time. Mocked success does not qualify live provider operation.
+
+AI-013 depends transitively on every feature task and remains open until independent integration acceptance. Keep the feature default-off until qualification; preparing it does not authorize deployment. Existing accounting, linguistic, security and general release gates remain applicable. If a task proves too broad, use the controller's child-task/split workflow; do not declare complete coverage with known missing operations.
+
+## Operational scope
+
+Include per-user and organization limits, max steps/context/output/time, request concurrency, retention/deletion, redacted audit trails, provider errors/latency, active-run cancellation and a kill switch. Disablement stops new dispatch and terminates active runs at safe boundaries; already completed external effects remain recorded. Final rollout evidence must document backup/migration behavior, provisioning, deployment/runtime compatibility, rollback and support procedures.
+
+This feature does not add general web browsing, arbitrary external connectors, autonomous scheduled work, fine-tuning, embeddings/RAG infrastructure or permission to change site capabilities. Such additions need their own justified scope. The present request is for an interactive agent over the site's existing authorized capabilities.

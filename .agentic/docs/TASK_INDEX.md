@@ -369,3 +369,22 @@ retains independent combined acceptance after these bounded children.
 - [LOC-015](../tasks/LOC-015.md): Settings automation and notification preferences.
 - [LOC-016](../tasks/LOC-016.md): Settings access and audit.
 - [LOC-017](../tasks/LOC-017.md): Settings providers, documents and data management.
+
+
+## AI agent and administration extension (2026-10-17)
+
+Owner-requested backlog; see [delivery plan](../docs/AI_AGENT_PLAN.md) and [requirements](../sources/SOURCE.md#ai-agent-and-administration-owner-extension). Phase 11, priority 2; AI-001 depends on all currently unfinished pre-existing tasks, so localization and the rest of the existing backlog finish first. Task files remain the status source.
+
+- [AI-001](../tasks/AI-001.md): Define agent capability inventory and execution contracts.
+- [AI-002](../tasks/AI-002.md): Enforce live identity and permissions for agent tool calls.
+- [AI-003](../tasks/AI-003.md): Persist scoped conversations runs and tool execution state.
+- [AI-004](../tasks/AI-004.md): Manage AI provider credentials models and configuration.
+- [AI-005](../tasks/AI-005.md): Meter token usage costs and enforce concurrent budgets.
+- [AI-006](../tasks/AI-006.md): Build authorized domain tool registry and guarded dispatch.
+- [AI-007](../tasks/AI-007.md): Implement durable bounded multi-step agent execution.
+- [AI-008](../tasks/AI-008.md): Add action previews approvals and resumable execution.
+- [AI-009](../tasks/AI-009.md): Build bilingual agent chat and action timeline.
+- [AI-010](../tasks/AI-010.md): Build provider and agent policy administration UI.
+- [AI-011](../tasks/AI-011.md): Build scoped AI usage and operations dashboard.
+- [AI-012](../tasks/AI-012.md): Qualify agent security privacy and workflow reliability.
+- [AI-013](../tasks/AI-013.md): Accept integrated AI agent and controlled rollout.

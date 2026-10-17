@@ -21,7 +21,8 @@ CLOSED = {'done', 'skipped'}
 ACTIVE = {'in_progress', 'review'}
 PHASES = ['Foundation audit', 'CI and architecture guardrails', 'Money and FX hardening',
           'Locale foundation', 'RTL conversion', 'P1 capability gaps', 'Data and banking parity',
-          'Translation completion', 'Release qualification', 'Production release', 'Maintenance']
+          'Translation completion', 'Release qualification', 'Production release', 'Maintenance',
+          'AI agent and administration']
 
 class Invalid(ValueError):
     pass

@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
+import { usePresentation } from "@/i18n/provider";
+import { auditActionLabel, auditEntityLabel, auditRelativeTime, auditDayLabel } from "@/i18n/audit-presentation";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import {
@@ -65,38 +68,6 @@ function getActionConfig(action: string) {
   return DEFAULT_ACTION;
 }
 
-function getRelativeTime(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diff = now.getTime() - date.getTime();
-  const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
-  return date.toLocaleDateString();
-}
-
-function getDayLabel(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const entryDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const diff = today.getTime() - entryDate.getTime();
-  const days = Math.floor(diff / 86400000);
-
-  if (days === 0) return "Today";
-  if (days === 1) return "Yesterday";
-  if (days < 7) return date.toLocaleDateString("en-US", { weekday: "long" });
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
-
-function formatEntityType(type: string): string {
-  return type.replace(/_/g, " ");
-}
-
 function ActivitySkeleton() {
   return (
     <div className="space-y-4 px-4 py-3">
@@ -114,6 +85,9 @@ function ActivitySkeleton() {
 }
 
 export function ActivityFeed() {
+  const t = useTranslations("JournalActivity");
+  const audit = useTranslations("SettingsAudit");
+  const presentation = usePresentation();
   const [entries, setEntries] = useState<AuditEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -136,7 +110,7 @@ export function ActivityFeed() {
 
   // Group entries by day
   const grouped = entries.reduce<{ label: string; items: AuditEntry[] }[]>((groups, entry) => {
-    const label = getDayLabel(entry.createdAt);
+    const label = auditDayLabel(audit, presentation, entry.createdAt);
     const last = groups[groups.length - 1];
     if (last && last.label === label) {
       last.items.push(entry);
@@ -149,7 +123,7 @@ export function ActivityFeed() {
   return (
     <div className="rounded-xl border bg-card overflow-hidden">
       <div className="px-4 py-3 border-b">
-        <h3 className="text-[13px] font-semibold">Recent Activity</h3>
+        <h3 className="text-[13px] font-semibold">{t("title")}</h3>
       </div>
 
       {loading ? (
@@ -160,7 +134,7 @@ export function ActivityFeed() {
             <ArrowLeftRight className="size-5 text-muted-foreground" />
           </div>
           <p className="text-[13px] text-muted-foreground">
-            Actions like creating invoices will appear here
+            {t("empty")}
           </p>
         </div>
       ) : (
@@ -206,14 +180,14 @@ export function ActivityFeed() {
                         <div className="flex-1 min-w-0 pt-0.5">
                           <p className="text-[12px] leading-snug">
                             <span className="font-medium">{entry.userName}</span>{" "}
-                            <span className="text-muted-foreground">{entry.action}</span>{" "}
+                            <span className="text-muted-foreground">{auditActionLabel(audit, entry.action)}</span>{" "}
                             <span className="inline-flex items-center gap-1">
                               <EntityIcon className="inline size-3 text-muted-foreground/60" />
-                              <span className="text-muted-foreground">{formatEntityType(entry.entityType)}</span>
+                              <span className="text-muted-foreground">{auditEntityLabel(audit, entry.entityType)}</span>
                             </span>
                           </p>
                           <p className="text-[10px] text-muted-foreground/50 mt-0.5 tabular-nums">
-                            {getRelativeTime(entry.createdAt)}
+                            {auditRelativeTime(audit, presentation, entry.createdAt)}
                           </p>
                         </div>
                       </div>
@@ -229,7 +203,7 @@ export function ActivityFeed() {
             href="/settings/audit-log"
             className="flex items-center justify-center gap-1.5 border-t px-4 py-2.5 text-[12px] font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-muted/30"
           >
-            View all activity
+            {t("viewAll")}
             <ChevronRight className="size-3" />
           </Link>
         </>

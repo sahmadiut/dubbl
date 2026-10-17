@@ -1,4 +1,6 @@
 "use client";
+import { useTranslations } from "next-intl";
+import { journalPreviewMessage } from "@/i18n/journal-presentation";
 
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
@@ -50,6 +52,7 @@ interface EntryFormProps {
 }
 
 export function EntryForm({ accounts, onSubmit, loading, initial, onCancel, submitLabel }: EntryFormProps) {
+  const t = useTranslations("Journals");
   const [date, setDate] = useState(initial?.date || new Date().toISOString().split("T")[0]);
   const [description, setDescription] = useState(initial?.description || "");
   const [reference, setReference] = useState(initial?.reference || "");
@@ -96,7 +99,7 @@ export function EntryForm({ accounts, onSubmit, loading, initial, onCancel, subm
     <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
       <div className="grid gap-3 sm:grid-cols-3 sm:gap-4">
         <div className="space-y-2">
-          <Label htmlFor="date">Date</Label>
+          <Label htmlFor="date">{t("date")}</Label>
           <Input
             id="date"
             type="date"
@@ -106,45 +109,38 @@ export function EntryForm({ accounts, onSubmit, loading, initial, onCancel, subm
           />
         </div>
         <div className="space-y-2 sm:col-span-2">
-          <Label htmlFor="description">Description</Label>
+          <Label htmlFor="description">{t("description")}</Label>
           <Input
             id="description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="e.g. Office rent payment"
+            placeholder={t("rentPlaceholder")}
             required
           />
         </div>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="reference">Reference (optional)</Label>
+        <Label htmlFor="reference">{t("referenceOptional")}</Label>
         <Input
           id="reference"
           value={reference}
           onChange={(e) => setReference(e.target.value)}
-          placeholder="e.g. INV-001"
+          placeholder={t("invoiceExample")}
         />
       </div>
 
       <div className="space-y-3">
         <div className="space-y-1">
-          <Label>Entry lines</Label>
-          <p className="text-xs text-muted-foreground">
-            Each line is money in (debit) or money out (credit). The Debit and
-            Credit columns must add up to the same total.
-          </p>
+          <Label>{t("entryLines")}</Label>
+          <p className="text-xs text-muted-foreground">{t("linesHint")}</p>
         </div>
         <div className="overflow-x-auto rounded-lg border">
           <div className="grid min-w-[600px] grid-cols-[1fr_1fr_120px_120px_40px] gap-2 border-b bg-muted/50 px-3 py-2 text-xs font-medium text-muted-foreground">
-            <span>Account</span>
-            <span>Description</span>
-            <span className="text-right" title="The left side of an entry">
-              Debit
-            </span>
-            <span className="text-right" title="The right side of an entry">
-              Credit
-            </span>
+            <span>{t("account")}</span>
+            <span>{t("description")}</span>
+            <span className="text-right" title={t("debitHint")}>{t("debit")}</span>
+            <span className="text-right" title={t("creditHint")}>{t("credit")}</span>
             <span />
           </div>
           {lines.map((line, i) => (
@@ -157,7 +153,7 @@ export function EntryForm({ accounts, onSubmit, loading, initial, onCancel, subm
                 onValueChange={(v) => updateLine(i, "accountId", v)}
               >
                 <SelectTrigger className="h-8 text-sm">
-                  <SelectValue placeholder="Select account" />
+                  <SelectValue placeholder={t("selectAccount")} />
                 </SelectTrigger>
                 <SelectContent>
                   {accounts.map((a) => (
@@ -171,17 +167,17 @@ export function EntryForm({ accounts, onSubmit, loading, initial, onCancel, subm
                 className="h-8 text-sm"
                 value={line.description}
                 onChange={(e) => updateLine(i, "description", e.target.value)}
-                placeholder="Line memo"
+                placeholder={t("lineMemo")}
               />
               <CurrencyInput
                 size="sm"
-                aria-label={`Debit for line ${i + 1}`}
+                aria-label={t("debitLine", { number: i + 1 })}
                 value={line.debit}
                 onChange={(v) => updateLine(i, "debit", v)}
               />
               <CurrencyInput
                 size="sm"
-                aria-label={`Credit for line ${i + 1}`}
+                aria-label={t("creditLine", { number: i + 1 })}
                 value={line.credit}
                 onChange={(v) => updateLine(i, "credit", v)}
               />
@@ -191,6 +187,7 @@ export function EntryForm({ accounts, onSubmit, loading, initial, onCancel, subm
                 size="icon"
                 className="size-8"
                 onClick={() => removeLine(i)}
+                aria-label={t("removeLine", { number: i + 1 })}
                 disabled={lines.length <= 2}
               >
                 <Trash2 className="size-3.5 text-muted-foreground" />
@@ -205,9 +202,7 @@ export function EntryForm({ accounts, onSubmit, loading, initial, onCancel, subm
               onClick={addLine}
               className="w-fit text-xs"
             >
-              <Plus className="mr-1 size-3" />
-              Add line
-            </Button>
+              <Plus className="mr-1 size-3" />{t("addLine")}</Button>
             <span />
             <span className="text-right text-sm font-mono font-semibold tabular-nums">
               {journalDecimal(totalDebit)}
@@ -218,21 +213,20 @@ export function EntryForm({ accounts, onSubmit, loading, initial, onCancel, subm
             <span />
           </div>
         </div>
-        {preview.error && <p role="alert" className="text-xs text-red-600">{preview.error}</p>}
+        {preview.error && <p role="alert" className="text-xs text-red-600">{journalPreviewMessage(t, preview.error)}</p>}
         {!preview.error && !isBalanced && totalDebit + totalCredit > 0n && (
           <p className={cn("text-xs font-medium text-red-600")}>
-            Debits ({journalDecimal(totalDebit)}) must equal credits (
-            {journalDecimal(totalCredit)})
+            {t("imbalance", { debit: journalDecimal(totalDebit), credit: journalDecimal(totalCredit) })}
           </p>
         )}
       </div>
 
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
         {onCancel ? (
-          <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
+          <Button type="button" variant="outline" onClick={onCancel}>{t("cancel")}</Button>
         ) : (
           <Button type="button" variant="outline" asChild>
-            <Link href="/transactions">Cancel</Link>
+            <Link href="/transactions">{t("cancel")}</Link>
           </Button>
         )}
         <Button
@@ -240,7 +234,7 @@ export function EntryForm({ accounts, onSubmit, loading, initial, onCancel, subm
           disabled={!isBalanced || loading}
           className="bg-emerald-600 hover:bg-emerald-700"
         >
-          {loading ? "Saving..." : (submitLabel || "Save Entry")}
+          {loading ? t("saving") : (submitLabel || t("saveEntry"))}
         </Button>
       </div>
     </form>

@@ -1,4 +1,6 @@
 "use client";
+import { useTranslations } from "next-intl";
+import { requireJournalResponse, journalFailureMessage } from "@/i18n/journal-presentation";
 
 import { useState, useEffect } from "react";
 import { Scale, Plus } from "lucide-react";
@@ -16,6 +18,8 @@ interface OpeningBalanceEntry {
 }
 
 export default function OpeningBalancesPage() {
+  const t = useTranslations("Journals");
+  const errors = useTranslations("JournalErrors");
   const { open: openDrawer } = useCreateDrawer();
   const [entry, setEntry] = useState<OpeningBalanceEntry | null>(null);
   const [loading, setLoading] = useState(true);
@@ -30,61 +34,52 @@ export default function OpeningBalancesPage() {
       setLoading(true);
       try {
         const response = await fetch("/api/v1/opening-balances", { headers: { "x-organization-id": orgId } });
-        if (!response.ok) throw new Error("Could not load opening balances");
+        await requireJournalResponse(response, errors, t("loadOpeningFailed"));
         const data = await response.json();
         if (!cancelled) { setEntry(data.entry ?? null); setError(null); }
-      } catch {
-        if (!cancelled) setError("Could not load opening balances");
+      } catch (error) {
+        if (!cancelled) setError(journalFailureMessage(error, t("loadOpeningFailed")));
       } finally { if (!cancelled) setLoading(false); }
     };
     void load();
     window.addEventListener("opening-balances-updated", load);
     return () => { cancelled = true; window.removeEventListener("opening-balances-updated", load); };
-  }, [orgId]);
+  }, [orgId, t, errors]);
 
-  if (loading) return <div className="space-y-6"><PageHeader title="Loading..." /></div>;
+  if (loading) return <div className="space-y-6"><PageHeader title={t("loading")} /></div>;
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Opening balances"
-        description="Your account starting balances from when you began using the app."
+        title={t("openingTitle")}
+        description={t("openingDescription")}
       >
         <Button size="sm" onClick={() => openDrawer("openingBalance")}>
           <Plus className="mr-2 size-4" />
-          {entry ? "Replace opening balances" : "Set opening balances"}
+          {entry ? t("replaceOpening") : t("setOpening")}
         </Button>
       </PageHeader>
 
       <div className="rounded-lg border bg-muted/30 p-4">
         <div className="flex items-start gap-3">
           <Scale className="size-4 mt-0.5 text-muted-foreground shrink-0" />
-          <p className="text-sm text-muted-foreground">
-            Opening balances are how much was in each account on the day you started
-            using the app — for example money in the bank, unpaid customer invoices,
-            or amounts you still owed. Set them once so your reports start from the
-            right numbers.
-          </p>
+          <p className="text-sm text-muted-foreground">{t("openingHint")}</p>
         </div>
       </div>
 
       {error ? <p role="alert" className="text-sm text-red-600">{error}</p> : !entry ? (
         <div className="rounded-lg border p-10 text-center">
           <Scale className="size-8 mx-auto text-muted-foreground" />
-          <p className="mt-3 text-sm font-medium">No opening balances yet</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Add your account starting balances so your books begin from the right place.
-          </p>
+          <p className="mt-3 text-sm font-medium">{t("noOpening")}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{t("firstOpeningHint")}</p>
           <Button className="mt-4" size="sm" onClick={() => openDrawer("openingBalance")}>
-            <Plus className="mr-2 size-4" />
-            Set opening balances
-          </Button>
+            <Plus className="mr-2 size-4" />{t("setOpening")}</Button>
         </div>
       ) : (
         <>
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <span className="text-xs sm:text-sm text-muted-foreground">
-              Starting from: {entry.date}
+              {t("startingFrom", { date: entry.date })}
             </span>
           </div>
 

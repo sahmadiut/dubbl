@@ -1,4 +1,6 @@
 "use client";
+import { useTranslations } from "next-intl";
+import { journalPreviewMessage, type JournalTranslate, requireJournalResponse, journalFailureMessage } from "@/i18n/journal-presentation";
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -86,51 +88,51 @@ interface Entry {
   fiscalYearId: string | null;
 }
 
-const statusConfig: Record<string, { class: string; label: string; bg: string }> = {
-  draft: {
-    class: "",
-    label: "draft",
-    bg: "bg-gray-500",
-  },
-  posted: {
-    class: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300",
-    label: "in your books",
-    bg: "bg-emerald-500",
-  },
-  void: {
-    class: "border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300",
-    label: "cancelled",
-    bg: "bg-red-500",
-  },
-};
-
-const sourceTypeLabels: Record<string, string> = {
-  manual: "Manual Entry",
-  invoice: "Invoice",
-  bill: "Bill",
-  payment: "Payment",
-  expense: "Expense",
-  bank: "Bank Transaction",
-  credit_note: "Credit Note",
-  debit_note: "Debit Note",
-  depreciation: "Depreciation",
-  year_end_close: "Year-End Closing",
-  opening_balance: "Opening Balance",
-};
-
 function formatDate(dateStr: string) {
   const d = new Date(dateStr + "T00:00:00");
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-function formatTimestamp(ts: string) {
+function formatTimestamp(ts: string, t: JournalTranslate) {
   const d = new Date(ts);
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-    + " at "
-    + d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  return t("timestamp", { date: d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }), time: d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) });
 }
 
 export default function EntryDetailPage() {
+  const t = useTranslations("Journals");
+  const errors = useTranslations("JournalErrors");
+  const sourceTypeLabels: Record<string, string> = {
+    manual: t("manualSource"),
+    invoice: t("invoiceSource"),
+    bill: t("billSource"),
+    payment: t("paymentSource"),
+    expense: t("expenseSource"),
+    bank: t("bankSource"),
+    credit_note: t("creditNoteSource"),
+    debit_note: t("debitNoteSource"),
+    depreciation: t("depreciationSource"),
+    year_end_close: t("yearEndSource"),
+    opening_balance: t("openingSource"),
+  };
+
+  const statusConfig: Record<string, { class: string; label: string; bg: string }> = {
+    draft: {
+      class: "",
+      label: t("draftStatus"),
+      bg: "bg-gray-500",
+    },
+    posted: {
+      class: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300",
+      label: t("postedStatus"),
+      bg: "bg-emerald-500",
+    },
+    void: {
+      class: "border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300",
+      label: t("cancelledStatus"),
+      bg: "bg-red-500",
+    },
+  };
+
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { confirm, dialog: confirmDialog } = useConfirm();
@@ -143,7 +145,7 @@ export default function EntryDetailPage() {
 
   const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
 
-  useDocumentTitle("Accounting \u00B7 Entry Details");
+  useDocumentTitle(t("detailDocumentTitle"));
   useEntityTitle(entry ? `JE-${entry.entryNumber}` : undefined);
 
   function loadEntry() {
@@ -151,12 +153,12 @@ export default function EntryDetailPage() {
     fetch(`/api/v1/entries/${id}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then(async (r) => { if (!r.ok) throw new Error("Could not load journal"); return r.json(); })
+      .then(async (r) => (await requireJournalResponse(r, errors, t("loadFailed"))).json())
       .then((data) => {
         setEntry(coreJournalDetail(data.entry));
         setError(null);
       })
-      .catch(() => { setEntry(null); setError("Could not load valid journal amounts. Please try again."); })
+      .catch((error) => { setEntry(null); setError(journalFailureMessage(error, t("loadFailed"))); })
       .finally(() => setLoading(false));
   }
 
@@ -173,11 +175,11 @@ export default function EntryDetailPage() {
         method: "POST",
         headers: { "x-organization-id": orgId },
       });
-      if (!res.ok) throw new Error((await res.json()).error);
+      await requireJournalResponse(res, errors, t("postFailed"));
       loadEntry();
-      toast.success("Entry finalized and added to your books");
+      toast.success(t("postedSuccess"));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't finalize this entry");
+      toast.error(journalFailureMessage(err, t("postFailed")));
     } finally {
       setActionLoading(false);
     }
@@ -195,12 +197,12 @@ export default function EntryDetailPage() {
         },
         body: JSON.stringify({ reason: voidReason }),
       });
-      if (!res.ok) throw new Error((await res.json()).error);
+      await requireJournalResponse(res, errors, t("voidFailed"));
       loadEntry();
       setVoidReason("");
-      toast.success("Entry cancelled");
+      toast.success(t("voidSuccess"));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't cancel this entry");
+      toast.error(journalFailureMessage(err, t("voidFailed")));
     } finally {
       setActionLoading(false);
     }
@@ -209,20 +211,23 @@ export default function EntryDetailPage() {
   async function deleteEntry() {
     if (!orgId) return;
     await confirm({
-      title: "Delete this entry?",
-      description: "This will permanently remove the draft journal entry. This cannot be undone.",
-      confirmLabel: "Delete Entry",
+      title: t("deleteEntryTitle"),
+      description: t("deleteEntryDescription"),
+      confirmLabel: t("deleteEntry"),
+      cancelLabel: t("cancel"),
       destructive: true,
       onConfirm: async () => {
-        const res = await fetch(`/api/v1/entries/${id}`, {
-          method: "DELETE",
-          headers: { "x-organization-id": orgId },
-        });
-        if (res.ok) {
-          toast.success("Entry deleted");
+        try {
+          const res = await fetch(`/api/v1/entries/${id}`, {
+            method: "DELETE",
+            headers: { "x-organization-id": orgId },
+          });
+          await requireJournalResponse(res, errors, t("deleteFailed"));
+          toast.success(t("deleteSuccess"));
           router.push("/accounting");
-        } else {
-          toast.error("Failed to delete entry");
+        } catch (error) {
+          toast.error(journalFailureMessage(error, t("deleteFailed")));
+          throw error;
         }
       },
     });
@@ -249,9 +254,9 @@ export default function EntryDetailPage() {
         </Button>
         <div className="flex flex-col items-center gap-3 py-20 text-center">
           <FileText className="size-10 text-muted-foreground" />
-          <p role="alert" className="text-sm text-muted-foreground">{error ?? "Journal entry not found."}</p>
+          <p role="alert" className="text-sm text-muted-foreground">{error ?? t("missingEntry")}</p>
           <Button variant="outline" size="sm" asChild>
-            <Link href="/accounting">Back to Transactions</Link>
+            <Link href="/accounting">{t("backTransactions")}</Link>
           </Button>
         </div>
       </div>
@@ -281,13 +286,11 @@ export default function EntryDetailPage() {
             <div>
               <div className="flex items-center gap-2.5">
                 <h1 className="text-lg font-semibold tracking-tight">
-                  Entry #{entry.entryNumber}
+                  {t("entryTitle", { number: entry.entryNumber })}
                 </h1>
                 <Badge variant="outline" className={sc.class}>{sc.label}</Badge>
                 {entry.voidedAt && (
-                  <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300">
-                    Reversed
-                  </Badge>
+                  <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300">{t("reversed")}</Badge>
                 )}
               </div>
               <p className="text-sm text-muted-foreground mt-0.5">
@@ -303,30 +306,24 @@ export default function EntryDetailPage() {
                   size="sm"
                   onClick={() => setEditOpen(true)}
                   disabled={actionLoading}
-                  title="Change this draft entry before finalizing it"
+                  title={t("editHint")}
                 >
-                  <Pencil className="mr-2 size-4" />
-                  Edit
-                </Button>
+                  <Pencil className="mr-2 size-4" />{t("edit")}</Button>
                 <Button
                   size="sm"
                   onClick={postEntry}
                   disabled={actionLoading}
                   className="bg-emerald-600 hover:bg-emerald-700"
-                  title="Locks this entry and adds it to your books"
+                  title={t("finalizeHint")}
                 >
-                  <Check className="mr-2 size-4" />
-                  Finalize
-                </Button>
+                  <Check className="mr-2 size-4" />{t("finalize")}</Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={deleteEntry}
                   className="text-red-600"
                 >
-                  <Trash2 className="mr-2 size-4" />
-                  Delete
-                </Button>
+                  <Trash2 className="mr-2 size-4" />{t("delete")}</Button>
               </>
             )}
             {entry.status === "posted" && !entry.voidedAt && (
@@ -336,23 +333,19 @@ export default function EntryDetailPage() {
                     variant="outline"
                     size="sm"
                     className="text-red-600"
-                    title="Reverses this entry so it no longer affects your books"
+                    title={t("reverseHint")}
                   >
-                    <X className="mr-2 size-4" />
-                    Cancel
-                  </Button>
+                    <X className="mr-2 size-4" />{t("voidAction")}</Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Cancel entry #{entry.entryNumber}?</DialogTitle>
-                    <DialogDescription>
-                      This reverses the entry so it no longer affects your books. Please add a reason.
-                    </DialogDescription>
+                    <DialogTitle>{t("voidTitle", { number: entry.entryNumber })}</DialogTitle>
+                    <DialogDescription>{t("voidDescription")}</DialogDescription>
                   </DialogHeader>
                   <Textarea
                     value={voidReason}
                     onChange={(e) => setVoidReason(e.target.value)}
-                    placeholder="Reason for cancelling this entry..."
+                    placeholder={t("voidReason")}
                     rows={3}
                   />
                   <DialogFooter>
@@ -361,7 +354,7 @@ export default function EntryDetailPage() {
                       onClick={voidEntry}
                       disabled={!voidReason.trim() || actionLoading}
                     >
-                      {actionLoading ? "Cancelling..." : "Cancel entry"}
+                      {actionLoading ? t("cancelling") : t("cancelEntry")}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -375,7 +368,7 @@ export default function EntryDetailPage() {
           <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/30 p-4">
             <AlertTriangle className="size-4 text-red-600 dark:text-red-400 mt-0.5 shrink-0" />
             <div>
-              <p className="text-sm font-medium text-red-700 dark:text-red-300">Entry cancelled</p>
+              <p className="text-sm font-medium text-red-700 dark:text-red-300">{t("voidSuccess")}</p>
               <p className="text-sm text-red-600 dark:text-red-400 mt-0.5">{entry.voidReason}</p>
             </div>
           </div>
@@ -390,18 +383,18 @@ export default function EntryDetailPage() {
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <Hash className="size-3.5 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">Entry Number</span>
+                  <span className="text-xs text-muted-foreground">{t("entryNumber")}</span>
                   <span className="text-sm font-mono font-semibold">{entry.entryNumber}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar className="size-3.5 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">Date</span>
+                  <span className="text-xs text-muted-foreground">{t("date")}</span>
                   <span className="text-sm">{formatDate(entry.date)}</span>
                 </div>
                 {entry.reference && (
                   <div className="flex items-center gap-2">
                     <FileText className="size-3.5 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">Reference</span>
+                    <span className="text-xs text-muted-foreground">{t("reference")}</span>
                     <span className="text-sm">{entry.reference}</span>
                   </div>
                 )}
@@ -412,31 +405,31 @@ export default function EntryDetailPage() {
                 {entry.sourceType && (
                   <div className="flex sm:justify-end items-center gap-2">
                     <BookOpen className="size-3.5 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">Source</span>
+                    <span className="text-xs text-muted-foreground">{t("source")}</span>
                     <Badge variant="outline" className="text-[10px]">
-                      {sourceTypeLabels[entry.sourceType] || entry.sourceType}
+                      {Object.hasOwn(sourceTypeLabels, entry.sourceType) ? sourceTypeLabels[entry.sourceType] : entry.sourceType}
                     </Badge>
                   </div>
                 )}
                 {entry.postedAt && (
                   <div className="flex sm:justify-end items-center gap-2">
                     <Check className="size-3.5 text-emerald-500" />
-                    <span className="text-xs text-muted-foreground">Finalized</span>
-                    <span className="text-sm">{formatTimestamp(entry.postedAt)}</span>
+                    <span className="text-xs text-muted-foreground">{t("finalized")}</span>
+                    <span className="text-sm">{formatTimestamp(entry.postedAt, t)}</span>
                   </div>
                 )}
                 {entry.voidedAt && (
                   <div className="flex sm:justify-end items-center gap-2">
                     <X className="size-3.5 text-red-500" />
-                    <span className="text-xs text-muted-foreground">Cancelled</span>
-                    <span className="text-sm">{formatTimestamp(entry.voidedAt)}</span>
+                    <span className="text-xs text-muted-foreground">{t("cancelled")}</span>
+                    <span className="text-sm">{formatTimestamp(entry.voidedAt, t)}</span>
                   </div>
                 )}
                 {!entry.postedAt && !entry.voidedAt && entry.createdAt && (
                   <div className="flex sm:justify-end items-center gap-2">
                     <Clock className="size-3.5 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">Created</span>
-                    <span className="text-sm">{formatTimestamp(entry.createdAt)}</span>
+                    <span className="text-xs text-muted-foreground">{t("created")}</span>
+                    <span className="text-sm">{formatTimestamp(entry.createdAt, t)}</span>
                   </div>
                 )}
               </div>
@@ -448,18 +441,10 @@ export default function EntryDetailPage() {
             <table className="w-full min-w-[500px] text-sm">
               <thead>
                 <tr className="border-b bg-muted/20">
-                  <th className="px-6 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                    Account
-                  </th>
-                  <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                    Description
-                  </th>
-                  <th className="px-6 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-muted-foreground w-32">
-                    Debit
-                  </th>
-                  <th className="px-6 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-muted-foreground w-32">
-                    Credit
-                  </th>
+                  <th className="px-6 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t("account")}</th>
+                  <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t("description")}</th>
+                  <th className="px-6 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-muted-foreground w-32">{t("debit")}</th>
+                  <th className="px-6 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-muted-foreground w-32">{t("credit")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -511,20 +496,20 @@ export default function EntryDetailPage() {
             <div className="flex justify-end">
               <div className="w-full max-w-xs space-y-1.5">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Total Debits</span>
+                  <span className="text-muted-foreground">{t("totalDebits")}</span>
                   <span className="font-mono tabular-nums font-semibold">
                     {journalSideDisplay(savedLines, "debitAmountMinor")}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Total Credits</span>
+                  <span className="text-muted-foreground">{t("totalCredits")}</span>
                   <span className="font-mono tabular-nums font-semibold">
                     {journalSideDisplay(savedLines, "creditAmountMinor")}
                   </span>
                 </div>
                 <div className="h-px bg-border my-1" />
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Difference</span>
+                  <span className="text-muted-foreground">{t("difference")}</span>
                   <span className={cn(
                     "font-mono tabular-nums font-semibold",
                     isBalanced
@@ -543,22 +528,20 @@ export default function EntryDetailPage() {
         <div className="grid gap-4 sm:grid-cols-2">
           {/* Entry details */}
           <div className="rounded-xl border bg-card p-5">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">
-              Entry Details
-            </p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">{t("entryDetails")}</p>
             <div className="space-y-3">
               <div>
-                <p className="text-[11px] text-muted-foreground">Description</p>
+                <p className="text-[11px] text-muted-foreground">{t("description")}</p>
                 <p className="text-sm mt-0.5">{entry.description}</p>
               </div>
               {entry.reference && (
                 <div>
-                  <p className="text-[11px] text-muted-foreground">Reference</p>
+                  <p className="text-[11px] text-muted-foreground">{t("reference")}</p>
                   <p className="text-sm mt-0.5">{entry.reference}</p>
                 </div>
               )}
               <div>
-                <p className="text-[11px] text-muted-foreground">Date</p>
+                <p className="text-[11px] text-muted-foreground">{t("date")}</p>
                 <p className="text-sm mt-0.5">{formatDate(entry.date)}</p>
               </div>
             </div>
@@ -566,40 +549,36 @@ export default function EntryDetailPage() {
 
           {/* Audit trail */}
           <div className="rounded-xl border bg-card p-5">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">
-              Audit Trail
-            </p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">{t("auditTrail")}</p>
             <div className="space-y-3">
               {entry.sourceType && (
                 <div>
-                  <p className="text-[11px] text-muted-foreground">Source</p>
+                  <p className="text-[11px] text-muted-foreground">{t("source")}</p>
                   <p className="text-sm mt-0.5">
                     {sourceTypeLabels[entry.sourceType] || entry.sourceType}
                   </p>
                 </div>
               )}
               <div>
-                <p className="text-[11px] text-muted-foreground">Created</p>
-                <p className="text-sm mt-0.5">{formatTimestamp(entry.createdAt)}</p>
+                <p className="text-[11px] text-muted-foreground">{t("created")}</p>
+                <p className="text-sm mt-0.5">{formatTimestamp(entry.createdAt, t)}</p>
               </div>
               {entry.postedAt && (
                 <div>
-                  <p className="text-[11px] text-muted-foreground">Finalized</p>
-                  <p className="text-sm mt-0.5">{formatTimestamp(entry.postedAt)}</p>
+                  <p className="text-[11px] text-muted-foreground">{t("finalized")}</p>
+                  <p className="text-sm mt-0.5">{formatTimestamp(entry.postedAt, t)}</p>
                 </div>
               )}
               {entry.voidedAt && (
                 <div>
-                  <p className="text-[11px] text-muted-foreground">Cancelled</p>
-                  <p className="text-sm mt-0.5">{formatTimestamp(entry.voidedAt)}</p>
+                  <p className="text-[11px] text-muted-foreground">{t("cancelled")}</p>
+                  <p className="text-sm mt-0.5">{formatTimestamp(entry.voidedAt, t)}</p>
                 </div>
               )}
               <div>
-                <p className="text-[11px] text-muted-foreground">Lines</p>
+                <p className="text-[11px] text-muted-foreground">{t("lines")}</p>
                 <p className="text-sm mt-0.5">
-                  {entry.lines.length} journal {entry.lines.length === 1 ? "line" : "lines"} ·{" "}
-                  {entry.lines.filter((l) => journalRestMinor(l.debitAmount, l.debitAmountMinor) > 0n).length} debits,{" "}
-                  {entry.lines.filter((l) => journalRestMinor(l.creditAmount, l.creditAmountMinor) > 0n).length} credits
+                  {t("lineSummary", { count: entry.lines.length, debits: entry.lines.filter((l) => journalRestMinor(l.debitAmount, l.debitAmountMinor) > 0n).length, credits: entry.lines.filter((l) => journalRestMinor(l.creditAmount, l.creditAmountMinor) > 0n).length })}
                 </p>
               </div>
             </div>
@@ -649,6 +628,8 @@ function EditEntrySheet({
   orgId: string | null;
   onSaved: () => void;
 }) {
+  const t = useTranslations("Journals");
+  const errors = useTranslations("JournalErrors");
   const [date, setDate] = useState(entry.date);
   const [description, setDescription] = useState(entry.description);
   const [reference, setReference] = useState(entry.reference ?? "");
@@ -688,9 +669,9 @@ function EditEntrySheet({
 
   async function save() {
     if (!orgId) return;
-    if (!description.trim()) { toast.error("Add a description"); return; }
-    if (preview.error) { toast.error(preview.error); return; }
-    if (!balanced) { toast.error("Add at least two balanced lines with accounts and amounts"); return; }
+    if (!description.trim()) { toast.error(t("addDescription")); return; }
+    if (preview.error) { toast.error(journalPreviewMessage(t, preview.error)); return; }
+    if (!balanced) { toast.error(t("balancedLines")); return; }
     setSaving(true);
     try {
       const res = await fetch(`/api/v1/entries/${entry.id}`, {
@@ -704,11 +685,11 @@ function EditEntrySheet({
           lines: preview.lines,
         }),
       });
-      if (!res.ok) throw new Error((await res.json()).error);
-      toast.success("Entry updated");
+      await requireJournalResponse(res, errors, t("updateFailed"));
+      toast.success(t("updated"));
       onSaved();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't update this entry");
+      toast.error(journalFailureMessage(err, t("updateFailed")));
     } finally {
       setSaving(false);
     }
@@ -718,32 +699,31 @@ function EditEntrySheet({
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
       <SheetContent side="right" className="w-full sm:max-w-2xl flex flex-col p-0">
         <SheetHeader className="px-4 pt-5 pb-4 sm:px-6 border-b shrink-0">
-          <SheetTitle className="text-lg">Edit entry #{entry.entryNumber}</SheetTitle>
-          <SheetDescription>Change this draft before you finalize it.</SheetDescription>
+          <SheetTitle className="text-lg">{t("editTitle", { number: entry.entryNumber })}</SheetTitle>
+          <SheetDescription>{t("editDescription")}</SheetDescription>
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 space-y-4">
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label className="text-xs">Date</Label>
+              <Label className="text-xs">{t("date")}</Label>
               <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Reference (optional)</Label>
-              <Input value={reference} onChange={(e) => setReference(e.target.value)} placeholder="e.g. ADJ-001" />
+              <Label className="text-xs">{t("referenceOptional")}</Label>
+              <Input value={reference} onChange={(e) => setReference(e.target.value)} placeholder={t("adjustmentExample")} />
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">Description</Label>
-            <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What is this entry for?" />
+            <Label className="text-xs">{t("description")}</Label>
+            <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t("entryPurpose")} />
           </div>
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label className="text-xs">Lines</Label>
+              <Label className="text-xs">{t("lines")}</Label>
               <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={addLine}>
-                <Plus className="mr-1 size-3.5" />Add line
-              </Button>
+                <Plus className="mr-1 size-3.5" />{t("addLine")}</Button>
             </div>
             {lines.map((l, i) => (
               <div key={i} className="grid grid-cols-[1fr_120px_120px_auto] gap-2 items-start">
@@ -752,25 +732,25 @@ function EditEntrySheet({
                   <Input
                     value={l.description}
                     onChange={(e) => update(i, { description: e.target.value })}
-                    placeholder="Line note (optional)"
+                    placeholder={t("lineNote")}
                     className="h-7 text-xs"
                   />
                 </div>
                 <CurrencyInput
                   prefix={l.currencyCode ?? "USD"}
                   fractionDigits={currencyMetadata(l.currencyCode ?? "USD").minorUnits}
-                  aria-label={`Debit for line ${i + 1}`}
+                  aria-label={t("debitLine", { number: i + 1 })}
                   value={l.debit}
                   onChange={(v) => update(i, { debit: v, credit: v ? "" : l.credit })}
-                  placeholder="Debit"
+                  placeholder={t("debit")}
                 />
                 <CurrencyInput
                   prefix={l.currencyCode ?? "USD"}
                   fractionDigits={currencyMetadata(l.currencyCode ?? "USD").minorUnits}
-                  aria-label={`Credit for line ${i + 1}`}
+                  aria-label={t("creditLine", { number: i + 1 })}
                   value={l.credit}
                   onChange={(v) => update(i, { credit: v, debit: v ? "" : l.debit })}
-                  placeholder="Credit"
+                  placeholder={t("credit")}
                 />
                 <Button
                   type="button"
@@ -778,6 +758,7 @@ function EditEntrySheet({
                   size="icon"
                   className="size-8 text-muted-foreground hover:text-red-600"
                   onClick={() => removeLine(i)}
+                  aria-label={t("removeLine", { number: i + 1 })}
                   disabled={lines.length <= 2}
                 >
                   <Trash2 className="size-4" />
@@ -786,12 +767,12 @@ function EditEntrySheet({
             ))}
           </div>
 
-          {preview.error && <p role="alert" className="text-xs text-red-600">{preview.error}</p>}
+          {preview.error && <p role="alert" className="text-xs text-red-600">{journalPreviewMessage(t, preview.error)}</p>}
           <div className="rounded-lg border bg-muted/30 p-3 text-sm">
-            <div className="flex justify-between"><span className="text-muted-foreground">Total debits</span><span className="font-mono tabular-nums">{journalSideDisplay(preview.lines, "debitAmountMinor")}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Total credits</span><span className="font-mono tabular-nums">{journalSideDisplay(preview.lines, "creditAmountMinor")}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">{t("totalDebitsLower")}</span><span className="font-mono tabular-nums">{journalSideDisplay(preview.lines, "debitAmountMinor")}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">{t("totalCreditsLower")}</span><span className="font-mono tabular-nums">{journalSideDisplay(preview.lines, "creditAmountMinor")}</span></div>
             <div className="mt-1 flex justify-between border-t pt-1">
-              <span className="text-muted-foreground">Difference</span>
+              <span className="text-muted-foreground">{t("difference")}</span>
               <span className={cn("font-mono tabular-nums font-semibold", balanced ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400")}>
                 {journalSideDisplay(preview.lines, "difference")}
               </span>
@@ -800,9 +781,9 @@ function EditEntrySheet({
         </div>
 
         <div className="sticky bottom-0 flex items-center justify-end gap-2 border-t bg-background/80 px-4 py-3 sm:px-6 backdrop-blur-sm shrink-0">
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button variant="outline" onClick={onClose}>{t("cancel")}</Button>
           <Button onClick={save} disabled={saving || !balanced} className="bg-emerald-600 hover:bg-emerald-700">
-            {saving ? "Saving…" : "Save changes"}
+            {saving ? t("savingEllipsis") : t("saveChanges")}
           </Button>
         </div>
       </SheetContent>

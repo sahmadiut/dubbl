@@ -1,4 +1,6 @@
 "use client";
+import { useTranslations } from "next-intl";
+import { requireJournalResponse, journalFailureMessage, type JournalTranslate } from "@/i18n/journal-presentation";
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useDebounce } from "@/lib/hooks/use-debounce";
@@ -47,61 +49,60 @@ const statusColors: Record<string, string> = {
     "border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300",
 };
 
-// Plain-language status labels (end users aren't accountants).
-const statusLabels: Record<string, string> = {
-  active: "on",
-  paused: "paused",
-  completed: "finished",
-};
+function buildColumns(t: JournalTranslate): Column<RecurringJournal>[] {
+  const frequencyLabels: Record<string, string> = {
+    weekly: t("weekly"),
+    fortnightly: t("fortnightly"),
+    monthly: t("monthly"),
+    quarterly: t("quarterly"),
+    semi_annual: t("semiAnnual"),
+    annual: t("annual"),
+  };
 
-const frequencyLabels: Record<string, string> = {
-  weekly: "Weekly",
-  fortnightly: "Fortnightly",
-  monthly: "Monthly",
-  quarterly: "Quarterly",
-  semi_annual: "Semi-Annual",
-  annual: "Annual",
-};
+  const statusLabels: Record<string, string> = {
+    active: t("onStatus"),
+    paused: t("pausedStatus"),
+    completed: t("finishedStatus"),
+  };
 
-function buildColumns(): Column<RecurringJournal>[] {
   return [
     {
       key: "name",
-      header: "Name",
+      header: t("name"),
       sortKey: "name",
       render: (r) => <span className="text-sm font-medium">{r.name}</span>,
     },
     {
       key: "frequency",
-      header: "How often",
+      header: t("howOften"),
       sortKey: "frequency",
       className: "w-32",
       render: (r) => (
         <span className="text-sm">
-          {frequencyLabels[r.frequency] || r.frequency}
+          {Object.hasOwn(frequencyLabels, r.frequency) ? frequencyLabels[r.frequency] : r.frequency}
         </span>
       ),
     },
     {
       key: "nextRun",
-      header: "Next entry",
+      header: t("nextEntry"),
       sortKey: "nextRun",
       className: "w-32",
       render: (r) => <span className="text-sm">{r.nextRunDate || "-"}</span>,
     },
     {
       key: "status",
-      header: "Status",
+      header: t("status"),
       className: "w-24",
       render: (r) => (
         <Badge variant="outline" className={statusColors[r.status] || ""}>
-          {statusLabels[r.status] || r.status}
+          {Object.hasOwn(statusLabels, r.status) ? statusLabels[r.status] : r.status}
         </Badge>
       ),
     },
     {
       key: "occurrences",
-      header: "Posted",
+      header: t("postedColumn"),
       className: "w-28 text-right",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums">
@@ -113,9 +114,13 @@ function buildColumns(): Column<RecurringJournal>[] {
 }
 
 export default function RecurringJournalsPage() {
+  const t = useTranslations("Journals");
+  const errors = useTranslations("JournalErrors");
+
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
   const [templates, setTemplates] = useState<RecurringJournal[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const [initialLoad, setInitialLoad] = useState(true);
   const [refetching, setRefetching] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -129,12 +134,12 @@ export default function RecurringJournalsPage() {
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search);
 
-  useDocumentTitle("Accounting · Recurring Journals");
+  useDocumentTitle(t("recurringDocumentTitle"));
 
   const PAGE_SIZE = 50;
   const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
 
-  const columns = useMemo(() => buildColumns(), []);
+  const columns = useMemo(() => buildColumns(t), [t]);
 
   const buildParams = useCallback((p: number) => {
     const params = new URLSearchParams();
@@ -158,17 +163,20 @@ export default function RecurringJournalsPage() {
     fetch(`/api/v1/recurring-journals?${buildParams(1)}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then(async (r) => (await requireJournalResponse(r, errors, t("loadRecurringFailed"))).json())
       .then((data) => {
         if (cancelled) return;
-        setTemplates(data.data || []);
+        if (!Array.isArray(data.data)) throw new Error("Invalid recurring journals response");
+        setError(null);
+        setTemplates(data.data);
         setTotalCount(data.pagination?.total || 0);
       })
+      .catch((error) => { if (!cancelled) setError(journalFailureMessage(error, t("loadRecurringFailed"))); })
       .then(() => devDelay())
       .finally(() => { if (!cancelled) { setInitialLoad(false); setRefetching(false); setFetchKey((k) => k + 1); } });
 
     return () => { cancelled = true; };
-  }, [orgId, buildParams]);
+  }, [orgId, buildParams, t, errors]);
 
   // Load more
   const loadMore = useCallback(() => {
@@ -179,15 +187,18 @@ export default function RecurringJournalsPage() {
     fetch(`/api/v1/recurring-journals?${buildParams(nextPage)}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then(async (r) => (await requireJournalResponse(r, errors, t("loadRecurringFailed"))).json())
       .then((data) => {
+        if (!Array.isArray(data.data)) throw new Error("Invalid recurring journals response");
+        setError(null);
         if (data.data) {
           setTemplates((prev) => [...prev, ...data.data]);
           setPage(nextPage);
         }
       })
+      .catch((error) => setError(journalFailureMessage(error, t("loadRecurringFailed"))))
       .finally(() => setLoadingMore(false));
-  }, [orgId, page, buildParams, loadingMore]);
+  }, [orgId, page, buildParams, loadingMore, t, errors]);
 
   const hasMore = templates.length < totalCount;
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -251,6 +262,7 @@ export default function RecurringJournalsPage() {
   );
 
   if (initialLoad) return <BrandLoader />;
+  if (error) return <p role="alert" className="text-sm text-destructive">{error}</p>;
 
   if (!initialLoad && !refetching && templates.length === 0 && statusFilter === "all" && !hasFilters) {
     // Generate a sample month grid
@@ -268,18 +280,14 @@ export default function RecurringJournalsPage() {
           {/* Top: title + CTA */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h2 className="text-lg font-semibold tracking-tight">Recurring Journals</h2>
-              <p className="mt-1 text-sm text-muted-foreground max-w-md">
-                Set up manual journal entries that post themselves automatically on a schedule — no need to re-enter them each time.
-              </p>
+              <h2 className="text-lg font-semibold tracking-tight">{t("recurringTitle")}</h2>
+              <p className="mt-1 text-sm text-muted-foreground max-w-md">{t("recurringDescription")}</p>
             </div>
             <Button
               onClick={() => openDrawer("recurringJournal")}
               className="bg-emerald-600 hover:bg-emerald-700 shrink-0"
             >
-              <Plus className="mr-2 size-4" />
-              New recurring journal
-            </Button>
+              <Plus className="mr-2 size-4" />{t("newRecurring")}</Button>
           </div>
 
           <div className="grid gap-6 sm:gap-8 grid-cols-1 lg:grid-cols-[1fr_1fr] items-start">
@@ -291,7 +299,7 @@ export default function RecurringJournalsPage() {
               </div>
               <div className="p-3">
                 <div className="grid grid-cols-7 mb-1">
-                  {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => (
+                  {[t("su"), t("mo"), t("tu"), t("we"), t("th"), t("fr"), t("sa")].map((d) => (
                     <div key={d} className="text-center text-[10px] font-medium text-muted-foreground py-1">{d}</div>
                   ))}
                 </div>
@@ -318,7 +326,7 @@ export default function RecurringJournalsPage() {
                 </div>
                 <div className="flex items-center gap-1.5 mt-2 pt-2 border-t">
                   <div className="size-2.5 rounded-full bg-indigo-400 dark:bg-indigo-500" />
-                  <span className="text-[10px] text-muted-foreground">Entry posts automatically on these dates</span>
+                  <span className="text-[10px] text-muted-foreground">{t("calendarHint")}</span>
                 </div>
               </div>
             </div>
@@ -328,33 +336,33 @@ export default function RecurringJournalsPage() {
               {/* Mock template card */}
               <div className="rounded-xl border bg-card overflow-hidden">
                 <div className="bg-muted/30 px-3 sm:px-5 py-3 border-b">
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Example schedule</p>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("exampleSchedule")}</p>
                 </div>
                 <div className="p-3 sm:p-5 space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium">Monthly rent allocation</p>
+                      <p className="text-sm font-medium">{t("rentExample")}</p>
                       <p className="text-xs text-muted-foreground">REF-RENT</p>
                     </div>
-                    <span className="rounded-full border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">on</span>
+                    <span className="rounded-full border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">{t("onStatus")}</span>
                   </div>
                   <div className="h-px bg-border" />
                   <div className="grid grid-cols-2 gap-3 text-xs">
                     <div>
-                      <p className="text-muted-foreground">How often</p>
-                      <p className="font-medium mt-0.5">Monthly</p>
+                      <p className="text-muted-foreground">{t("howOften")}</p>
+                      <p className="font-medium mt-0.5">{t("monthly")}</p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground">Next entry</p>
-                      <p className="font-medium mt-0.5">Jul 1, 2026</p>
+                      <p className="text-muted-foreground">{t("nextEntry")}</p>
+                      <p className="font-medium mt-0.5">{t("sampleDate")}</p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground">Posted so far</p>
+                      <p className="text-muted-foreground">{t("postedSoFar")}</p>
                       <p className="font-medium font-mono mt-0.5">5 / &infin;</p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground">Status</p>
-                      <p className="font-medium mt-0.5">Posting automatically</p>
+                      <p className="text-muted-foreground">{t("status")}</p>
+                      <p className="font-medium mt-0.5">{t("postingAutomatically")}</p>
                     </div>
                   </div>
                 </div>
@@ -362,9 +370,9 @@ export default function RecurringJournalsPage() {
 
               {/* Supported frequencies */}
               <div className="rounded-xl border bg-card px-3 sm:px-5 py-4">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Supported schedules</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">{t("supportedSchedules")}</p>
                 <div className="flex flex-wrap gap-2">
-                  {["Weekly", "Fortnightly", "Monthly", "Quarterly", "Semi-annual", "Annual"].map((freq) => (
+                  {[t("weekly"), t("fortnightly"), t("monthly"), t("quarterly"), t("semiAnnualSample"), t("annual")].map((freq) => (
                     <span key={freq} className="rounded-full border bg-muted/30 px-2.5 py-1 text-xs text-muted-foreground">{freq}</span>
                   ))}
                 </div>
@@ -380,9 +388,9 @@ export default function RecurringJournalsPage() {
     <ContentReveal className="space-y-6">
       {/* Top: Stats */}
       <div className="grid gap-3 sm:grid-cols-3">
-        <StatCard title="Posting automatically" value={activeCount.toString()} icon={RefreshCw} />
-        <StatCard title="Paused" value={pausedCount.toString()} icon={RefreshCw} changeType="negative" />
-        <StatCard title="Entries posted" value={totalPosted.toString()} icon={Calendar} />
+        <StatCard title={t("postingAutomatically")} value={activeCount.toString()} icon={RefreshCw} />
+        <StatCard title={t("paused")} value={pausedCount.toString()} icon={RefreshCw} changeType="negative" />
+        <StatCard title={t("entriesPosted")} value={totalPosted.toString()} icon={Calendar} />
       </div>
 
       <div className="h-px bg-border" />
@@ -392,10 +400,10 @@ export default function RecurringJournalsPage() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Tabs value={statusFilter} onValueChange={setStatusFilter}>
             <TabsList className="overflow-x-auto">
-              <TabsTrigger value="all" className="whitespace-nowrap">All</TabsTrigger>
-              <TabsTrigger value="active" className="whitespace-nowrap">On</TabsTrigger>
-              <TabsTrigger value="paused" className="whitespace-nowrap">Paused</TabsTrigger>
-              <TabsTrigger value="completed" className="whitespace-nowrap">Finished</TabsTrigger>
+              <TabsTrigger value="all" className="whitespace-nowrap">{t("all")}</TabsTrigger>
+              <TabsTrigger value="active" className="whitespace-nowrap">{t("on")}</TabsTrigger>
+              <TabsTrigger value="paused" className="whitespace-nowrap">{t("paused")}</TabsTrigger>
+              <TabsTrigger value="completed" className="whitespace-nowrap">{t("finished")}</TabsTrigger>
             </TabsList>
           </Tabs>
 
@@ -404,16 +412,14 @@ export default function RecurringJournalsPage() {
             size="sm"
             className="bg-emerald-600 hover:bg-emerald-700"
           >
-            <Plus className="mr-2 size-4" />
-            New recurring journal
-          </Button>
+            <Plus className="mr-2 size-4" />{t("newRecurring")}</Button>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
             <Input
-              placeholder="Search recurring journals..."
+              placeholder={t("searchRecurring")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="h-8 w-56 pl-8 text-xs"
@@ -424,16 +430,16 @@ export default function RecurringJournalsPage() {
             onValueChange={setFrequencyFilter}
           >
             <SelectTrigger className="h-8 w-40 text-xs">
-              <SelectValue placeholder="How often..." />
+              <SelectValue placeholder={t("howOftenPlaceholder")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All schedules</SelectItem>
-              <SelectItem value="weekly">Weekly</SelectItem>
-              <SelectItem value="fortnightly">Fortnightly</SelectItem>
-              <SelectItem value="monthly">Monthly</SelectItem>
-              <SelectItem value="quarterly">Quarterly</SelectItem>
-              <SelectItem value="semi_annual">Semi-Annual</SelectItem>
-              <SelectItem value="annual">Annual</SelectItem>
+              <SelectItem value="all">{t("allSchedules")}</SelectItem>
+              <SelectItem value="weekly">{t("weekly")}</SelectItem>
+              <SelectItem value="fortnightly">{t("fortnightly")}</SelectItem>
+              <SelectItem value="monthly">{t("monthly")}</SelectItem>
+              <SelectItem value="quarterly">{t("quarterly")}</SelectItem>
+              <SelectItem value="semi_annual">{t("semiAnnual")}</SelectItem>
+              <SelectItem value="annual">{t("annual")}</SelectItem>
             </SelectContent>
           </Select>
           <Select
@@ -445,14 +451,14 @@ export default function RecurringJournalsPage() {
             }}
           >
             <SelectTrigger className="h-8 w-44 text-xs">
-              <SelectValue placeholder="Sort by..." />
+              <SelectValue placeholder={t("sortBy")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="created:desc">Newest</SelectItem>
-              <SelectItem value="created:asc">Oldest</SelectItem>
-              <SelectItem value="name:asc">Name A-Z</SelectItem>
-              <SelectItem value="name:desc">Name Z-A</SelectItem>
-              <SelectItem value="nextRun:asc">Next entry soonest</SelectItem>
+              <SelectItem value="created:desc">{t("newest")}</SelectItem>
+              <SelectItem value="created:asc">{t("oldest")}</SelectItem>
+              <SelectItem value="name:asc">{t("nameAsc")}</SelectItem>
+              <SelectItem value="name:desc">{t("nameDesc")}</SelectItem>
+              <SelectItem value="nextRun:asc">{t("nextSoonest")}</SelectItem>
             </SelectContent>
           </Select>
           {hasFilters && (
@@ -462,9 +468,7 @@ export default function RecurringJournalsPage() {
               className="h-8 text-xs text-muted-foreground"
               onClick={() => { setSearch(""); setFrequencyFilter("all"); }}
             >
-              <X className="mr-1 size-3" />
-              Clear filters
-            </Button>
+              <X className="mr-1 size-3" />{t("clearFilters")}</Button>
           )}
         </div>
 
@@ -476,7 +480,7 @@ export default function RecurringJournalsPage() {
               columns={columns}
               data={filteredTemplates}
               loading={false}
-              emptyMessage="No recurring journals match your filters."
+              emptyMessage={t("noRecurringMatches")}
               onRowClick={(r) => router.push(`/accounting/recurring-journals/${r.id}`)}
               sortBy={sortBy}
               sortOrder={sortOrder}
@@ -490,7 +494,7 @@ export default function RecurringJournalsPage() {
           <>
             <div className="flex items-center justify-between pt-1">
               <p className="text-xs text-muted-foreground">
-                Showing {templates.length} of {totalCount} recurring journal{totalCount !== 1 ? "s" : ""}
+                {t("showingRecurring", { shown: templates.length, count: totalCount })}
               </p>
             </div>
             {hasMore && (

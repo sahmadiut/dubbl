@@ -1,4 +1,6 @@
 "use client";
+import { useTranslations } from "next-intl";
+import { journalPreviewMessage } from "@/i18n/journal-presentation";
 
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
@@ -19,6 +21,7 @@ type Props = {
 };
 
 export function OpeningBalanceForm({ accounts, saving, onCancel, onSubmit, initialRows }: Props) {
+  const t = useTranslations("Journals");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [rows, setRows] = useState<OpeningBalanceRow[]>(initialRows ?? [
     { accountId: "", debit: "", credit: "" }, { accountId: "", debit: "", credit: "" },
@@ -37,23 +40,20 @@ export function OpeningBalanceForm({ accounts, saving, onCancel, onSubmit, initi
     <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
       <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
         <div className="space-y-2">
-          <Label>As of date</Label>
-          <DatePicker value={date} onChange={setDate} placeholder="Opening date" />
+          <Label>{t("asOfDate")}</Label>
+          <DatePicker value={date} onChange={setDate} placeholder={t("openingDate")} />
         </div>
 
         <div className="space-y-3">
           <div className="space-y-1">
-            <Label>Account balances (USD)</Label>
-            <p className="text-xs text-muted-foreground">
-              Each line is money in (debit) or money out (credit). The Debit and
-              Credit columns must add up to the same total.
-            </p>
+            <Label>{t("accountBalances")}</Label>
+            <p className="text-xs text-muted-foreground">{t("linesHint")}</p>
           </div>
           <div className="overflow-x-auto rounded-lg border">
             <div className="grid min-w-[600px] grid-cols-[1fr_120px_120px_40px] gap-2 border-b bg-muted/50 px-3 py-2 text-xs font-medium text-muted-foreground">
-              <span>Account</span>
-              <span className="text-right">Debit</span>
-              <span className="text-right">Credit</span>
+              <span>{t("account")}</span>
+              <span className="text-right">{t("debit")}</span>
+              <span className="text-right">{t("credit")}</span>
               <span />
             </div>
             {rows.map((row, i) => (
@@ -62,8 +62,8 @@ export function OpeningBalanceForm({ accounts, saving, onCancel, onSubmit, initi
                 className="grid min-w-[600px] grid-cols-[1fr_120px_120px_40px] gap-2 border-b px-3 py-2 last:border-b-0"
               >
                 <Select value={row.accountId} onValueChange={(v) => updateRow(i, "accountId", v)}>
-                  <SelectTrigger aria-label={`Account for line ${i + 1}`} className="h-8 text-sm">
-                    <SelectValue placeholder="Select account" />
+                  <SelectTrigger aria-label={t("accountLine", { number: i + 1 })} className="h-8 text-sm">
+                    <SelectValue placeholder={t("selectAccount")} />
                   </SelectTrigger>
                   <SelectContent>
                     {accounts.map((a) => (
@@ -73,14 +73,15 @@ export function OpeningBalanceForm({ accounts, saving, onCancel, onSubmit, initi
                     ))}
                   </SelectContent>
                 </Select>
-                <CurrencyInput aria-label={`Debit for line ${i + 1}`} aria-invalid={!!preview.error} size="sm" value={row.debit} onChange={(v) => updateRow(i, "debit", v)} />
-                <CurrencyInput aria-label={`Credit for line ${i + 1}`} aria-invalid={!!preview.error} size="sm" value={row.credit} onChange={(v) => updateRow(i, "credit", v)} />
+                <CurrencyInput aria-label={t("debitLine", { number: i + 1 })} aria-invalid={!!preview.error} size="sm" value={row.debit} onChange={(v) => updateRow(i, "debit", v)} />
+                <CurrencyInput aria-label={t("creditLine", { number: i + 1 })} aria-invalid={!!preview.error} size="sm" value={row.credit} onChange={(v) => updateRow(i, "credit", v)} />
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
                   className="size-8"
                   onClick={() => removeRow(i)}
+                  aria-label={t("removeLine", { number: i + 1 })}
                   disabled={rows.length <= 2}
                 >
                   <Trash2 className="size-3.5 text-muted-foreground" />
@@ -89,26 +90,24 @@ export function OpeningBalanceForm({ accounts, saving, onCancel, onSubmit, initi
             ))}
             <div className="grid min-w-[600px] grid-cols-[1fr_120px_120px_40px] gap-2 border-t bg-muted/30 px-3 py-2">
               <Button type="button" variant="ghost" size="sm" onClick={addRow} className="w-fit text-xs">
-                <Plus className="mr-1 size-3" />
-                Add line
-              </Button>
+                <Plus className="mr-1 size-3" />{t("addLine")}</Button>
               <span className="text-right text-sm font-mono font-semibold tabular-nums">{journalDecimal(preview.totalDebit)}</span>
               <span className="text-right text-sm font-mono font-semibold tabular-nums">{journalDecimal(preview.totalCredit)}</span>
               <span />
             </div>
           </div>
-          {preview.error && <p role="alert" className="text-xs font-medium text-red-600">{preview.error}</p>}
+          {preview.error && <p role="alert" className="text-xs font-medium text-red-600">{journalPreviewMessage(t, preview.error)}</p>}
           {!preview.isBalanced && preview.totalDebit + preview.totalCredit > 0n && (
             <p className="text-xs font-medium text-red-600">
-              Debits ({journalDecimal(preview.totalDebit)}) must equal credits ({journalDecimal(preview.totalCredit)})
+              {t("imbalance", { debit: journalDecimal(preview.totalDebit), credit: journalDecimal(preview.totalCredit) })}
             </p>
           )}
         </div>
       </div>
       <div className="sticky bottom-0 z-10 flex items-center justify-end gap-3 border-t bg-background/80 px-4 py-3 sm:px-6 sm:py-4 backdrop-blur-sm">
-        <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
+        <Button type="button" variant="outline" onClick={onCancel}>{t("cancel")}</Button>
         <Button type="submit" disabled={saving || !date || !preview.isBalanced} className="bg-emerald-600 hover:bg-emerald-700">
-          {saving ? "Saving..." : "Set opening balances"}
+          {saving ? t("saving") : t("setOpening")}
         </Button>
       </div>
     </form>

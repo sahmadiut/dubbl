@@ -109,7 +109,7 @@ Extraction ownership:
 | LOC-020 | LOC-017 child: import/export, backups and trash |
 | LOC-007 | Accounting, sales, purchasing, contacts, tax and associated shared UI/errors |
 | LOC-021 | LOC-007 child: chart of accounts, account picker/drawer and accounting navigation; see [scope](ACCOUNT_CATALOGS.md) |
-| LOC-022 | LOC-007 child: journals and opening balances |
+| LOC-022 | LOC-007 child: journals and opening balances; see [scope](JOURNAL_CATALOGS.md) |
 | LOC-023 | LOC-007 child: banking |
 | LOC-024 | LOC-007 child: assets, loans, budgets and accruals |
 | LOC-025 | LOC-007 child: sales and shared document forms |

@@ -1,4 +1,6 @@
 "use client";
+import { useTranslations } from "next-intl";
+import { requireJournalResponse, journalFailureMessage } from "@/i18n/journal-presentation";
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
@@ -50,26 +52,30 @@ const statusColors: Record<string, string> = {
 };
 
 // Plain-language status labels (end users aren't accountants).
-const statusLabels: Record<string, string> = {
-  active: "posting automatically",
-  paused: "paused",
-  completed: "finished",
-};
-
-const frequencyLabels: Record<string, string> = {
-  weekly: "Weekly",
-  fortnightly: "Fortnightly",
-  monthly: "Monthly",
-  quarterly: "Quarterly",
-  semi_annual: "Semi-Annual",
-  annual: "Annual",
-};
 
 export default function RecurringJournalDetailPage() {
+  const t = useTranslations("Journals");
+  const errors = useTranslations("JournalErrors");
+  const frequencyLabels: Record<string, string> = {
+    weekly: t("weekly"),
+    fortnightly: t("fortnightly"),
+    monthly: t("monthly"),
+    quarterly: t("quarterly"),
+    semi_annual: t("semiAnnual"),
+    annual: t("annual"),
+  };
+
+  const statusLabels: Record<string, string> = {
+    active: t("postingStatus"),
+    paused: t("pausedStatus"),
+    completed: t("finishedStatus"),
+  };
+
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [rj, setRj] = useState<RecurringJournalDetail | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState(false);
   const [posting, setPosting] = useState(false);
@@ -83,12 +89,14 @@ export default function RecurringJournalDetailPage() {
     fetch(`/api/v1/recurring-journals/${id}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then(async (r) => (await requireJournalResponse(r, errors, t("loadRecurringFailed"))).json())
       .then((data) => {
+        setError(null);
         if (data.template) setRj(data.template);
       })
+      .catch((error) => setError(journalFailureMessage(error, t("loadRecurringFailed"))))
       .finally(() => setLoading(false));
-  }, [id, orgId]);
+  }, [id, orgId, t, errors]);
 
   // Pause / resume the schedule.
   async function handleToggle() {
@@ -99,18 +107,17 @@ export default function RecurringJournalDetailPage() {
         method: "POST",
         headers: { "x-organization-id": orgId },
       });
-      if (res.ok) {
-        const data = await res.json();
-        setRj((prev) => (prev ? { ...prev, ...data.template } : prev));
-        toast.success(
-          data.template?.status === "paused"
-            ? "Schedule paused — it won't post until you resume it"
-            : "Schedule resumed — it will post automatically again"
-        );
-      } else {
-        const data = await res.json();
-        toast.error(typeof data.error === "string" ? data.error : "Couldn't change the schedule");
-      }
+      await requireJournalResponse(res, errors, t("toggleFailed"));
+      const data = await res.json();
+      if (!data.template || !["active", "paused"].includes(data.template.status)) throw new Error("Invalid recurring journal status");
+      setRj((prev) => (prev ? { ...prev, ...data.template } : prev));
+      toast.success(
+        data.template.status === "paused"
+          ? t("pauseSuccess")
+          : t("resumeSuccess")
+      );
+    } catch (error) {
+      toast.error(journalFailureMessage(error, t("toggleFailed")));
     } finally {
       setToggling(false);
     }
@@ -125,22 +132,21 @@ export default function RecurringJournalDetailPage() {
         method: "POST",
         headers: { "x-organization-id": orgId },
       });
-      if (res.ok) {
-        const data = await res.json();
-        const posted = data.posted ?? 0;
-        toast.success(
-          posted > 0
-            ? `Posted ${posted} entr${posted === 1 ? "y" : "ies"} that were due`
-            : "Nothing was due to post right now"
-        );
-        // Refresh this template to reflect new counts/next date.
-        fetch(`/api/v1/recurring-journals/${id}`, { headers: { "x-organization-id": orgId } })
-          .then((r) => r.json())
-          .then((d) => { if (d.template) setRj(d.template); });
-      } else {
-        const data = await res.json();
-        toast.error(typeof data.error === "string" ? data.error : "Couldn't post the entries");
-      }
+      await requireJournalResponse(res, errors, t("runFailed"));
+      const data = await res.json();
+      const posted = data.posted ?? 0;
+      toast.success(
+        posted > 0
+          ? t("postedDue", { count: posted })
+          : t("nothingDue")
+      );
+      // Refresh this template to reflect new counts/next date.
+      const refreshed = await fetch(`/api/v1/recurring-journals/${id}`, { headers: { "x-organization-id": orgId } });
+      await requireJournalResponse(refreshed, errors, t("loadRecurringFailed"));
+      const d = await refreshed.json();
+      if (d.template) setRj(d.template);
+    } catch (error) {
+      toast.error(journalFailureMessage(error, t("runFailed")));
     } finally {
       setPosting(false);
     }
@@ -150,36 +156,47 @@ export default function RecurringJournalDetailPage() {
   async function handleDelete() {
     if (!orgId) return;
     await confirm({
-      title: "Delete this recurring journal?",
-      description: "This stops it from posting any more entries. Entries it already posted stay in your books.",
-      confirmLabel: "Delete schedule",
+      title: t("deleteRecurringTitle"),
+      description: t("deleteRecurringDescription"),
+      confirmLabel: t("deleteSchedule"),
+      cancelLabel: t("cancel"),
       destructive: true,
       onConfirm: async () => {
-        const res = await fetch(`/api/v1/recurring-journals/${id}`, {
-          method: "DELETE",
-          headers: { "x-organization-id": orgId },
-        });
-        if (res.ok) {
-          toast.success("Recurring journal deleted");
+        try {
+          const res = await fetch(`/api/v1/recurring-journals/${id}`, {
+            method: "DELETE",
+            headers: { "x-organization-id": orgId },
+          });
+          await requireJournalResponse(res, errors, t("deleteRecurringFailed"));
+          toast.success(t("deletedRecurring"));
           router.push("/accounting/recurring-journals");
-        } else {
-          toast.error("Couldn't delete this recurring journal");
+        } catch (error) {
+          toast.error(journalFailureMessage(error, t("deleteRecurringFailed")));
+          throw error;
         }
       },
     });
   }
 
-  if (loading) return <div className="space-y-6"><PageHeader title="Loading..." /></div>;
-  if (!rj) return <div className="space-y-6"><PageHeader title="Recurring journal not found" /></div>;
+  if (loading) return <div className="space-y-6"><PageHeader title={t("loading")} /></div>;
+  if (error) return <p role="alert" className="text-sm text-destructive">{error}</p>;
+  if (!rj) return <div className="space-y-6"><PageHeader title={t("missingRecurring")} /></div>;
 
-  const totalDebit = rj.lines.reduce((s, l) => s + journalStoredMinor(l.debitAmountMinor), 0n);
-  const totalCredit = rj.lines.reduce((s, l) => s + journalStoredMinor(l.creditAmountMinor), 0n);
+  let totalDebit, totalCredit;
+  try {
+    totalDebit = rj.lines.reduce((s, l) => s + journalStoredMinor(l.debitAmountMinor), 0n);
+    totalCredit = rj.lines.reduce((s, l) => s + journalStoredMinor(l.creditAmountMinor), 0n);
+    journalMoney(totalDebit, rj.currencyCode);
+    journalMoney(totalCredit, rj.currencyCode);
+  } catch {
+    return <p role="alert" className="text-sm text-destructive">{t("loadFailed")}</p>;
+  }
 
   return (
     <div className="space-y-6">
-      <PageHeader title={rj.name} description="Manual journal entry that posts on a schedule">
+      <PageHeader title={rj.name} description={t("recurringDetailDescription")}>
         <Button variant="outline" size="sm" asChild>
-          <Link href="/accounting/recurring-journals"><ArrowLeft className="mr-2 size-4" />Back</Link>
+          <Link href="/accounting/recurring-journals"><ArrowLeft className="mr-2 size-4" />{t("back")}</Link>
         </Button>
         {rj.status !== "completed" && (
           <Button
@@ -187,57 +204,53 @@ export default function RecurringJournalDetailPage() {
             onClick={handlePostNow}
             loading={posting}
             className="bg-emerald-600 hover:bg-emerald-700"
-            title="Post any entries that are due right now"
+            title={t("postNowHint")}
           >
-            <Zap className="mr-2 size-4" />Post entries due now
-          </Button>
+            <Zap className="mr-2 size-4" />{t("postNow")}</Button>
         )}
         {rj.status === "active" && (
-          <Button variant="outline" size="sm" onClick={handleToggle} loading={toggling} title="Stop posting until you resume it">
-            <Pause className="mr-2 size-4" />Pause
-          </Button>
+          <Button variant="outline" size="sm" onClick={handleToggle} loading={toggling} title={t("pauseHint")}>
+            <Pause className="mr-2 size-4" />{t("pause")}</Button>
         )}
         {rj.status === "paused" && (
-          <Button variant="outline" size="sm" onClick={handleToggle} loading={toggling} title="Start posting automatically again">
-            <Play className="mr-2 size-4" />Resume
-          </Button>
+          <Button variant="outline" size="sm" onClick={handleToggle} loading={toggling} title={t("resumeHint")}>
+            <Play className="mr-2 size-4" />{t("resume")}</Button>
         )}
-        <Button variant="outline" size="sm" onClick={handleDelete} className="text-red-600" title="Stop this schedule from posting any more entries">
-          <Trash2 className="mr-2 size-4" />Delete
-        </Button>
+        <Button variant="outline" size="sm" onClick={handleDelete} className="text-red-600" title={t("deleteScheduleHint")}>
+          <Trash2 className="mr-2 size-4" />{t("delete")}</Button>
       </PageHeader>
 
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         <Badge variant="outline" className={statusColors[rj.status] || ""}>
-          {statusLabels[rj.status] || rj.status}
+          {Object.hasOwn(statusLabels, rj.status) ? statusLabels[rj.status] : rj.status}
         </Badge>
         <span className="text-xs sm:text-sm text-muted-foreground">
-          {frequencyLabels[rj.frequency] || rj.frequency}
+          {Object.hasOwn(frequencyLabels, rj.frequency) ? frequencyLabels[rj.frequency] : rj.frequency}
         </span>
         {rj.reference && (
           <span className="text-xs sm:text-sm text-muted-foreground">
-            Ref: {rj.reference}
+            {t("referenceValue", { reference: rj.reference })}
           </span>
         )}
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-lg border p-4">
-          <p className="text-xs text-muted-foreground">Next entry</p>
+          <p className="text-xs text-muted-foreground">{t("nextEntry")}</p>
           <p className="text-sm font-medium mt-1">{rj.nextRunDate || "-"}</p>
         </div>
         <div className="rounded-lg border p-4">
-          <p className="text-xs text-muted-foreground">Last posted</p>
-          <p className="text-sm font-medium mt-1">{rj.lastRunDate || "Never"}</p>
+          <p className="text-xs text-muted-foreground">{t("lastPosted")}</p>
+          <p className="text-sm font-medium mt-1">{rj.lastRunDate || t("never")}</p>
         </div>
         <div className="rounded-lg border p-4">
-          <p className="text-xs text-muted-foreground">Posted so far</p>
+          <p className="text-xs text-muted-foreground">{t("postedSoFar")}</p>
           <p className="text-sm font-medium font-mono mt-1">
             {rj.occurrencesGenerated} / {rj.maxOccurrences ?? "∞"}
           </p>
         </div>
         <div className="rounded-lg border p-4">
-          <p className="text-xs text-muted-foreground">Each entry</p>
+          <p className="text-xs text-muted-foreground">{t("eachEntry")}</p>
           <p className="text-sm font-bold font-mono mt-1">{journalMoney(totalDebit, rj.currencyCode)}</p>
         </div>
       </div>
@@ -245,10 +258,10 @@ export default function RecurringJournalDetailPage() {
       {/* Journal legs */}
       <div className="rounded-lg border overflow-x-auto">
         <div className="grid min-w-[500px] grid-cols-[1fr_140px_120px_120px] gap-2 border-b bg-muted/50 px-4 py-2 text-xs font-medium text-muted-foreground">
-          <span>Description</span>
-          <span>Account</span>
-          <span className="text-right">Money in</span>
-          <span className="text-right">Money out</span>
+          <span>{t("description")}</span>
+          <span>{t("account")}</span>
+          <span className="text-right">{t("moneyIn")}</span>
+          <span className="text-right">{t("moneyOut")}</span>
         </div>
         {rj.lines.map((line) => (
           <div key={line.id} className="grid min-w-[500px] grid-cols-[1fr_140px_120px_120px] gap-2 border-b px-4 py-2 last:border-b-0">
@@ -259,14 +272,14 @@ export default function RecurringJournalDetailPage() {
           </div>
         ))}
         <div className="border-t bg-muted/30 px-4 py-2 text-right flex flex-wrap justify-end gap-x-4 gap-y-1">
-          <span className="text-sm font-medium">Total in: {journalMoney(totalDebit, rj.currencyCode)}</span>
-          <span className="text-sm font-medium">Total out: {journalMoney(totalCredit, rj.currencyCode)}</span>
+          <span className="text-sm font-medium">{t("totalIn", { amount: journalMoney(totalDebit, rj.currencyCode) })}</span>
+          <span className="text-sm font-medium">{t("totalOut", { amount: journalMoney(totalCredit, rj.currencyCode) })}</span>
         </div>
       </div>
 
       {rj.notes && (
         <div className="rounded-lg border p-4">
-          <p className="text-xs font-medium text-muted-foreground mb-1">Notes</p>
+          <p className="text-xs font-medium text-muted-foreground mb-1">{t("notes")}</p>
           <p className="text-sm">{rj.notes}</p>
         </div>
       )}

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createElement } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderToStaticMarkup } from "./helpers/presentation";
 import { EntryForm } from "../components/dashboard/entry-form";
 import { CurrencyInput } from "../components/ui/currency-input";
 

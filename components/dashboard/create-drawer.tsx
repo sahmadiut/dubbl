@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { journalPreviewMessage, requireJournalResponse, journalFailureMessage } from "@/i18n/journal-presentation";
 import { requireAccountResponse, accountFailureMessage } from "@/i18n/account-presentation";
 
 import { assetLoanJson } from "@/lib/money/asset-loan-ui";
@@ -1011,6 +1012,8 @@ interface Account {
 }
 
 function EntryDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useTranslations("Journals");
+  const errors = useTranslations("JournalErrors");
   const router = useRouter();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(false);
@@ -1022,11 +1025,12 @@ function EntryDrawer({ open, onClose }: { open: boolean; onClose: () => void }) 
     fetch("/api/v1/accounts", {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then(async (r) => (await requireJournalResponse(r, errors, t("loadAccountsFailed"))).json())
       .then((data) => {
         if (data.accounts) setAccounts(data.accounts);
-      });
-  }, [open]);
+      })
+      .catch((error) => toast.error(journalFailureMessage(error, t("loadAccountsFailed"))));
+  }, [open, t, errors]);
 
   async function handleSubmit(data: {
     date: string;
@@ -1054,16 +1058,14 @@ function EntryDrawer({ open, onClose }: { open: boolean; onClose: () => void }) 
           })),
         }),
       });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Failed to create entry");
-      }
+      await requireJournalResponse(res, errors, t("createFailed"));
       const { entry } = await res.json();
-      toast.success("Manual entry created");
+      if (typeof entry?.id !== "string") throw new Error("Invalid journal response");
+      toast.success(t("createdEntry"));
       onClose();
       router.push(`/accounting/${entry.id}`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create entry");
+      toast.error(journalFailureMessage(err, t("createFailed")));
     } finally {
       setLoading(false);
     }
@@ -1076,8 +1078,8 @@ function EntryDrawer({ open, onClose }: { open: boolean; onClose: () => void }) 
           <div className="flex items-center gap-3">
             <DrawerIcon><BookOpen className="size-5" /></DrawerIcon>
             <div>
-              <SheetTitle className="text-lg">New manual entry</SheetTitle>
-              <SheetDescription>Make a direct adjustment to your books, for things like accruals or corrections.</SheetDescription>
+              <SheetTitle className="text-lg">{t("newEntry")}</SheetTitle>
+              <SheetDescription>{t("createDescription")}</SheetDescription>
             </div>
           </div>
         </SheetHeader>
@@ -1087,7 +1089,7 @@ function EntryDrawer({ open, onClose }: { open: boolean; onClose: () => void }) 
             onSubmit={handleSubmit}
             loading={loading}
             onCancel={onClose}
-            submitLabel="Create entry"
+            submitLabel={t("createEntry")}
           />
         </div>
       </SheetContent>
@@ -4568,6 +4570,8 @@ function LoanDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
 // Opening Balance Drawer (debit/credit rows, must balance)
 // ---------------------------------------------------------------------------
 function OpeningBalanceDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useTranslations("Journals");
+  const errors = useTranslations("JournalErrors");
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -4578,11 +4582,11 @@ function OpeningBalanceDrawer({ open, onClose }: { open: boolean; onClose: () =>
     if (!orgId) return;
     let cancelled = false;
     fetch("/api/v1/accounts", { headers: { "x-organization-id": orgId } })
-      .then(r => r.json())
+      .then(async (r) => (await requireJournalResponse(r, errors, t("loadAccountsFailed"))).json())
       .then(data => { if (!cancelled && data.accounts) setAccounts(data.accounts); })
-      .catch(() => {});
+      .catch((error) => toast.error(journalFailureMessage(error, t("loadAccountsFailed"))));
     return () => { cancelled = true; };
-  }, [open]);
+  }, [open, t, errors]);
   async function handleSubmit(payload: { date: string; balances: OpeningBalanceWrite[] }) {
     setSaving(true);
     const orgId = localStorage.getItem("activeOrgId");
@@ -4593,16 +4597,13 @@ function OpeningBalanceDrawer({ open, onClose }: { open: boolean; onClose: () =>
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(typeof data.error === "string" ? data.error : "Failed to set opening balances");
-      }
-      toast.success("Opening balances set");
+      await requireJournalResponse(res, errors, t("setOpeningFailed"));
+      toast.success(t("openingSet"));
       window.dispatchEvent(new Event("opening-balances-updated"));
       onClose();
       router.push("/accounting/opening-balances");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to set opening balances");
+      toast.error(journalFailureMessage(err, t("setOpeningFailed")));
     } finally { setSaving(false); }
   }
   return (
@@ -4612,8 +4613,8 @@ function OpeningBalanceDrawer({ open, onClose }: { open: boolean; onClose: () =>
           <div className="flex items-center gap-3">
             <DrawerIcon><Scale className="size-5" /></DrawerIcon>
             <div>
-              <SheetTitle className="text-lg">Set opening balances</SheetTitle>
-              <SheetDescription>Enter the starting balances for your accounts. The totals must match.</SheetDescription>
+              <SheetTitle className="text-lg">{t("setOpening")}</SheetTitle>
+              <SheetDescription>{t("openingDrawerDescription")}</SheetDescription>
             </div>
           </div>
         </SheetHeader>
@@ -4908,6 +4909,8 @@ interface RecurringJournalRow {
 }
 
 function RecurringJournalDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useTranslations("Journals");
+  const errors = useTranslations("JournalErrors");
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -4935,10 +4938,10 @@ function RecurringJournalDrawer({ open, onClose }: { open: boolean; onClose: () 
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
     fetch("/api/v1/accounts", { headers: { "x-organization-id": orgId } })
-      .then((r) => r.json())
+      .then(async (r) => (await requireJournalResponse(r, errors, t("loadAccountsFailed"))).json())
       .then((data) => { if (data.accounts) setAccounts(data.accounts); })
-      .catch(() => {});
-  }, [open]);
+      .catch((error) => toast.error(journalFailureMessage(error, t("loadAccountsFailed"))));
+  }, [open, t, errors]);
 
   const preview = journalEditorPreview(rows, { oneSided: true });
   const { totalDebit, totalCredit, isBalanced } = preview;
@@ -4956,7 +4959,7 @@ function RecurringJournalDrawer({ open, onClose }: { open: boolean; onClose: () 
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!name.trim()) { toast.error("Please enter a name"); return; }
+    if (!name.trim()) { toast.error(t("enterName")); return; }
     if (!isBalanced) return;
     setSaving(true);
     const orgId = localStorage.getItem("activeOrgId");
@@ -4982,15 +4985,12 @@ function RecurringJournalDrawer({ open, onClose }: { open: boolean; onClose: () 
           })),
         }),
       });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(typeof data.error === "string" ? data.error : "Failed to create recurring journal");
-      }
-      toast.success("Recurring journal created");
+      await requireJournalResponse(res, errors, t("createRecurringFailed"));
+      toast.success(t("createdRecurring"));
       onClose();
       router.push("/accounting/recurring-journals");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create recurring journal");
+      toast.error(journalFailureMessage(err, t("createRecurringFailed")));
     } finally {
       setSaving(false);
     }
@@ -5003,48 +5003,48 @@ function RecurringJournalDrawer({ open, onClose }: { open: boolean; onClose: () 
           <div className="flex items-center gap-3">
             <DrawerIcon><Repeat className="size-5" /></DrawerIcon>
             <div>
-              <SheetTitle className="text-lg">New recurring journal</SheetTitle>
-              <SheetDescription>Set up an adjustment that posts automatically on a schedule.</SheetDescription>
+              <SheetTitle className="text-lg">{t("newRecurring")}</SheetTitle>
+              <SheetDescription>{t("recurringDrawerDescription")}</SheetDescription>
             </div>
           </div>
         </SheetHeader>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
             <div className="space-y-4">
-              <SectionLabel>Template Details</SectionLabel>
+              <SectionLabel>{t("templateDetails")}</SectionLabel>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Name *</Label>
-                  <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Monthly depreciation" />
+                  <Label>{t("nameRequired")}</Label>
+                  <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("depreciationPlaceholder")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Frequency</Label>
+                  <Label>{t("frequency")}</Label>
                   <Select value={frequency} onValueChange={setFrequency}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="weekly">Weekly</SelectItem>
-                      <SelectItem value="fortnightly">Fortnightly</SelectItem>
-                      <SelectItem value="monthly">Monthly</SelectItem>
-                      <SelectItem value="quarterly">Quarterly</SelectItem>
-                      <SelectItem value="semi_annual">Semi-Annual</SelectItem>
-                      <SelectItem value="annual">Annual</SelectItem>
+                      <SelectItem value="weekly">{t("weekly")}</SelectItem>
+                      <SelectItem value="fortnightly">{t("fortnightly")}</SelectItem>
+                      <SelectItem value="monthly">{t("monthly")}</SelectItem>
+                      <SelectItem value="quarterly">{t("quarterly")}</SelectItem>
+                      <SelectItem value="semi_annual">{t("semiAnnual")}</SelectItem>
+                      <SelectItem value="annual">{t("annual")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Start Date</Label>
-                  <DatePicker value={startDate} onChange={setStartDate} placeholder="Start date" />
+                  <Label>{t("startDateLabel")}</Label>
+                  <DatePicker value={startDate} onChange={setStartDate} placeholder={t("startDate")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>End Date (optional)</Label>
-                  <DatePicker value={endDate} onChange={setEndDate} placeholder="No end date" />
+                  <Label>{t("endDateOptional")}</Label>
+                  <DatePicker value={endDate} onChange={setEndDate} placeholder={t("noEndDate")} />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Reference</Label>
-                <Input value={reference} onChange={(e) => setReference(e.target.value)} placeholder="Optional reference" />
+                <Label>{t("reference")}</Label>
+                <Input value={reference} onChange={(e) => setReference(e.target.value)} placeholder={t("optionalReference")} />
               </div>
             </div>
 
@@ -5052,18 +5052,15 @@ function RecurringJournalDrawer({ open, onClose }: { open: boolean; onClose: () 
 
             <div className="space-y-3">
               <div className="space-y-1">
-                <Label>Journal lines</Label>
-                <p className="text-xs text-muted-foreground">
-                  Each line is money in (debit) or money out (credit). The Debit and
-                  Credit columns must add up to the same total.
-                </p>
+                <Label>{t("journalLines")}</Label>
+                <p className="text-xs text-muted-foreground">{t("linesHint")}</p>
               </div>
               <div className="overflow-x-auto rounded-lg border">
                 <div className="grid min-w-[600px] grid-cols-[1fr_1fr_120px_120px_40px] gap-2 border-b bg-muted/50 px-3 py-2 text-xs font-medium text-muted-foreground">
-                  <span>Account</span>
-                  <span>Description</span>
-                  <span className="text-right">Debit</span>
-                  <span className="text-right">Credit</span>
+                  <span>{t("account")}</span>
+                  <span>{t("description")}</span>
+                  <span className="text-right">{t("debit")}</span>
+                  <span className="text-right">{t("credit")}</span>
                   <span />
                 </div>
                 {rows.map((row, i) => (
@@ -5073,7 +5070,7 @@ function RecurringJournalDrawer({ open, onClose }: { open: boolean; onClose: () 
                   >
                     <Select value={row.accountId} onValueChange={(v) => updateRow(i, "accountId", v)}>
                       <SelectTrigger className="h-8 text-sm">
-                        <SelectValue placeholder="Select account" />
+                        <SelectValue placeholder={t("selectAccount")} />
                       </SelectTrigger>
                       <SelectContent>
                         {accounts.map((a) => (
@@ -5087,16 +5084,17 @@ function RecurringJournalDrawer({ open, onClose }: { open: boolean; onClose: () 
                       className="h-8 text-sm"
                       value={row.description}
                       onChange={(e) => updateRow(i, "description", e.target.value)}
-                      placeholder="Line memo"
+                      placeholder={t("lineMemo")}
                     />
-                    <CurrencyInput size="sm" aria-label={`Debit for line ${i + 1}`} value={row.debit} onChange={(v) => updateRow(i, "debit", v)} />
-                    <CurrencyInput size="sm" aria-label={`Credit for line ${i + 1}`} value={row.credit} onChange={(v) => updateRow(i, "credit", v)} />
+                    <CurrencyInput size="sm" aria-label={t("debitLine", { number: i + 1 })} value={row.debit} onChange={(v) => updateRow(i, "debit", v)} />
+                    <CurrencyInput size="sm" aria-label={t("creditLine", { number: i + 1 })} value={row.credit} onChange={(v) => updateRow(i, "credit", v)} />
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
                       className="size-8"
                       onClick={() => removeRow(i)}
+                      aria-label={t("removeLine", { number: i + 1 })}
                       disabled={rows.length <= 2}
                     >
                       <Trash2 className="size-3.5 text-muted-foreground" />
@@ -5105,19 +5103,17 @@ function RecurringJournalDrawer({ open, onClose }: { open: boolean; onClose: () 
                 ))}
                 <div className="grid min-w-[600px] grid-cols-[1fr_1fr_120px_120px_40px] gap-2 border-t bg-muted/30 px-3 py-2">
                   <Button type="button" variant="ghost" size="sm" onClick={addRow} className="w-fit text-xs">
-                    <Plus className="mr-1 size-3" />
-                    Add line
-                  </Button>
+                    <Plus className="mr-1 size-3" />{t("addLine")}</Button>
                   <span />
                   <span className="text-right text-sm font-mono font-semibold tabular-nums">{journalDecimal(totalDebit)}</span>
                   <span className="text-right text-sm font-mono font-semibold tabular-nums">{journalDecimal(totalCredit)}</span>
                   <span />
                 </div>
               </div>
-              {preview.error && <p role="alert" className="text-xs text-red-600">{preview.error}</p>}
+              {preview.error && <p role="alert" className="text-xs text-red-600">{journalPreviewMessage(t, preview.error)}</p>}
               {!preview.error && !isBalanced && totalDebit + totalCredit > 0n && (
                 <p className="text-xs font-medium text-red-600">
-                  Debits ({journalDecimal(totalDebit)}) must equal credits ({journalDecimal(totalCredit)})
+                  {t("imbalance", { debit: journalDecimal(totalDebit), credit: journalDecimal(totalCredit) })}
                 </p>
               )}
             </div>
@@ -5125,14 +5121,14 @@ function RecurringJournalDrawer({ open, onClose }: { open: boolean; onClose: () 
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Notes</SectionLabel>
-              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notes for generated entries..." rows={3} />
+              <SectionLabel>{t("notes")}</SectionLabel>
+              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("notesPlaceholder")} rows={3} />
             </div>
           </div>
           <div className="sticky bottom-0 z-10 flex items-center justify-end gap-3 border-t bg-background/80 px-4 py-3 sm:px-6 sm:py-4 backdrop-blur-sm">
-            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+            <Button type="button" variant="outline" onClick={onClose}>{t("cancel")}</Button>
             <Button type="submit" disabled={saving || !isBalanced} className="bg-emerald-600 hover:bg-emerald-700">
-              {saving ? "Creating..." : "Create recurring journal"}
+              {saving ? t("creating") : t("createRecurring")}
             </Button>
           </div>
         </form>

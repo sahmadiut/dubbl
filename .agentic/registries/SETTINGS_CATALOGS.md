@@ -45,7 +45,8 @@ are not accepted by this task.
 
 - LOC-015 is extracted; see the linked automation inventory for its independent
   verification and remaining native/RTL limitations.
-- LOC-016: members, roles, advisors, API keys and audit log.
+- LOC-016 is extracted: members, roles, advisors, API keys and audit log; see
+  [access/audit scope](SETTINGS_ACCESS_CATALOGS.md) for exceptions and verification.
 - LOC-017: billing, Stripe, document templates, import/export (including the bulk
   import wizard), backups and trash.
 - LOC-012: independent combined settings acceptance after all four children.

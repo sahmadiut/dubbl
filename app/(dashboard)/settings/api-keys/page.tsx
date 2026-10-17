@@ -1,13 +1,16 @@
 "use client";
 
+import { richTextTags } from "@/i18n/rich-text";
+import { useTranslations } from "next-intl";
+import { settingsErrorMessage, SettingsRequestError } from "@/i18n/settings-errors";
+
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Plus, Key, Copy, Trash2, Loader2, Calendar, Clock, Lock, ArrowUpRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { ApiKeyFields } from "@/components/settings/api-key-fields";
 import {
   Sheet,
   SheetContent,
@@ -28,6 +31,8 @@ interface ApiKeyItem {
 }
 
 export default function ApiKeysPage() {
+  const t = useTranslations("SettingsApiKeys");
+  const te = useTranslations("SettingsErrors");
   const router = useRouter();
   const [keys, setKeys] = useState<ApiKeyItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,12 +78,12 @@ export default function ApiKeysPage() {
         body: JSON.stringify({ name }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to create key");
+      if (!res.ok) throw new SettingsRequestError(settingsErrorMessage(te, data.error, t("failedToCreateKey"), res.status));
       setNewKey(data.plainKey);
       setName("");
       fetchKeys();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create key");
+      toast.error(err instanceof SettingsRequestError && err.message ? err.message : t("failedToCreateKey"));
     } finally {
       setSaving(false);
     }
@@ -93,11 +98,11 @@ export default function ApiKeysPage() {
         method: "DELETE",
         headers: { "x-organization-id": orgId },
       });
-      if (!res.ok) throw new Error((await res.json()).error);
-      toast.success("API key revoked");
+      if (!res.ok) throw new SettingsRequestError(settingsErrorMessage(te, (await res.json()).error, "", res.status));
+      toast.success(t("apiKeyRevoked"));
       fetchKeys();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to delete key");
+      toast.error(err instanceof SettingsRequestError && err.message ? err.message : t("failedToDeleteKey"));
     } finally { setDeletingId(null); }
   }
 
@@ -112,9 +117,9 @@ export default function ApiKeysPage() {
         <div className="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/30">
           <Lock className="size-4 text-amber-600 dark:text-amber-400 shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-amber-800 dark:text-amber-200">Pro feature</p>
+            <p className="text-sm font-medium text-amber-800 dark:text-amber-200">{t("proFeature")}</p>
             <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
-              API keys require a Pro plan.
+              {t("apiKeysRequireAProPlan")}
             </p>
           </div>
           <Button
@@ -123,8 +128,7 @@ export default function ApiKeysPage() {
             className="shrink-0 text-xs border-amber-200 text-amber-700 hover:bg-amber-100 dark:border-amber-800 dark:text-amber-300"
             onClick={() => router.push("/settings/billing")}
           >
-            Upgrade
-            <ArrowUpRight className="ml-1 size-3" />
+            {t("upgrade")}<ArrowUpRight className="ml-1 size-3" />
           </Button>
         </div>
       )}
@@ -132,10 +136,9 @@ export default function ApiKeysPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold tracking-tight">API Keys</h2>
+          <h2 className="text-lg font-semibold tracking-tight">{t("apiKeys")}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Create and manage keys for programmatic access to the dubbl API
-            {keys.length > 0 && (
+            {t("createAndManageKeysForProgrammaticAccessToTheDubblAPI")}{keys.length > 0 && (
               <span className="ml-2 inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
                 {keys.length}/{maxKeys}
               </span>
@@ -152,7 +155,7 @@ export default function ApiKeysPage() {
           className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50"
         >
           <Plus className="mr-1.5 size-3.5" />
-          New Key
+          {t("newKey")}
         </Button>
       </div>
 
@@ -164,8 +167,8 @@ export default function ApiKeysPage() {
       ) : keys.length === 0 ? (
         <EmptyState
           icon={Key}
-          title="No API keys yet"
-          description="Create your first API key to start integrating with the dubbl API programmatically."
+          title={t("noAPIKeysYet")}
+          description={t("createYourFirstAPIKeyToStartIntegratingWithTheDubbl")}
         >
           <Button
             size="sm"
@@ -177,7 +180,7 @@ export default function ApiKeysPage() {
             className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50"
           >
             <Plus className="mr-1.5 size-3.5" />
-            Create your first key
+            {t("createYourFirstKey")}
           </Button>
         </EmptyState>
       ) : (
@@ -206,11 +209,11 @@ export default function ApiKeysPage() {
               <div className="hidden items-center gap-6 sm:flex">
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Clock className="size-3" />
-                  <span>{k.lastUsedAt ? `Used ${k.lastUsedAt}` : "Never used"}</span>
+                  <span>{k.lastUsedAt ? t("used", { date: k.lastUsedAt }) : t("neverUsed")}</span>
                 </div>
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Calendar className="size-3" />
-                  <span>Created {k.createdAt}</span>
+                  <span>{t("created", { date: k.createdAt })}</span>
                 </div>
               </div>
 
@@ -219,6 +222,7 @@ export default function ApiKeysPage() {
                 variant="ghost"
                 size="icon"
                 className="size-8 shrink-0 text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30"
+                aria-label={t("revokeKey")}
                 onClick={() => deleteKey(k.id)}
                 disabled={deletingId === k.id}
               >
@@ -235,17 +239,18 @@ export default function ApiKeysPage() {
 
       {/* Authentication / Usage */}
       <div className="space-y-3">
-        <h3 className="text-sm font-medium">Authentication</h3>
+        <h3 className="text-sm font-medium">{t("authentication")}</h3>
         <div className="overflow-hidden rounded-xl border bg-zinc-950 dark:bg-zinc-900">
           <div className="flex items-center justify-between border-b border-zinc-800 px-4 py-2.5">
-            <span className="text-xs font-medium text-zinc-400">Example request</span>
+            <span className="text-xs font-medium text-zinc-400">{t("exampleRequest")}</span>
             <Button
               variant="ghost"
               size="icon"
               className="size-7 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800"
+              aria-label={t("copyExample")}
               onClick={() => {
                 navigator.clipboard.writeText(curlExample);
-                toast.success("Copied to clipboard");
+                toast.success(t("copiedToClipboard"));
               }}
             >
               <Copy className="size-3" />
@@ -256,7 +261,10 @@ export default function ApiKeysPage() {
           </pre>
         </div>
         <p className="text-xs text-muted-foreground">
-          Include your API key in the <code className="rounded bg-muted px-1 py-0.5 text-[11px] font-mono">Authorization</code> header as a Bearer token. Keys are scoped to the organization they were created in. Keep them secret and rotate regularly.
+          {t.rich("authenticationHelp", {
+            ...richTextTags,
+            code: text => <code className="rounded bg-muted px-1 py-0.5 text-[11px] font-mono">{text}</code>,
+          })}
         </p>
       </div>
 
@@ -271,59 +279,34 @@ export default function ApiKeysPage() {
         <SheetContent>
           <SheetHeader>
             <SheetTitle>
-              {newKey ? "API Key Created" : "New API Key"}
+              {newKey ? t("apiKeyCreated") : t("newAPIKey")}
             </SheetTitle>
             {newKey && (
               <SheetDescription>
-                Copy this key now. You won&apos;t be able to see it again.
+                {t("copyThisKeyNowYouWonTBeAbleToSee")}
               </SheetDescription>
             )}
           </SheetHeader>
-          {newKey ? (
-            <div className="space-y-3 px-4 py-4">
-              <div className="flex items-center gap-2 rounded-lg bg-muted p-3">
-                <code className="flex-1 text-xs font-mono break-all">
-                  {newKey}
-                </code>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="shrink-0 size-8"
-                  onClick={() => {
-                    navigator.clipboard.writeText(newKey);
-                    toast.success("Copied to clipboard");
-                  }}
-                >
-                  <Copy className="size-3.5" />
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4 px-4 py-4">
-              <div className="space-y-2">
-                <Label>Name</Label>
-                <Input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Production API"
-                />
-              </div>
-            </div>
-          )}
+          <ApiKeyFields newKey={newKey} name={name} onNameChange={setName} onCopy={() => {
+            if (newKey) {
+              navigator.clipboard.writeText(newKey);
+              toast.success(t("copiedToClipboard"));
+            }
+          }} />
           <SheetFooter>
             {newKey ? (
-              <Button onClick={() => setCreateOpen(false)}>Done</Button>
+              <Button onClick={() => setCreateOpen(false)}>{t("done")}</Button>
             ) : (
               <>
                 <Button variant="outline" onClick={() => setCreateOpen(false)}>
-                  Cancel
+                  {t("cancel")}
                 </Button>
                 <Button
                   onClick={createKey}
                   disabled={!name || saving}
                   className="bg-emerald-600 hover:bg-emerald-700"
                 >
-                  {saving ? "Creating..." : "Create Key"}
+                  {saving ? t("creating") : t("createKey")}
                 </Button>
               </>
             )}

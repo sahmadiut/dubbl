@@ -1,5 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { settingsErrorMessage } from "@/i18n/settings-errors";
+
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,14 +47,16 @@ interface Advisor {
   grantedBy: { id: string; name: string | null } | null;
 }
 
-const ROLE_LABELS: Record<string, string> = {
-  accountant: "Accountant",
-  auditor: "Auditor",
-  tax_advisor: "Tax Advisor",
-  bookkeeper: "Bookkeeper",
-};
-
 export default function AdvisorsPage() {
+  const t = useTranslations("SettingsAdvisors");
+  const te = useTranslations("SettingsErrors");
+  const roleLabels: Record<string, string> = {
+    accountant: t("accountant"),
+    auditor: t("auditor"),
+    tax_advisor: t("taxAdvisor"),
+    bookkeeper: t("bookkeeper"),
+  };
+
   const [advisors, setAdvisors] = useState<Advisor[]>([]);
   const [loading, setLoading] = useState(true);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -88,11 +93,11 @@ export default function AdvisorsPage() {
 
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data.error || "Failed to invite advisor");
+        toast.error(settingsErrorMessage(te, data.error, t("failedToInviteAdvisor"), res.status));
         return;
       }
 
-      toast.success("Advisor invited");
+      toast.success(t("advisorInvited"));
       setSheetOpen(false);
       setEmail("");
       fetchAdvisors();
@@ -111,17 +116,17 @@ export default function AdvisorsPage() {
     });
 
     if (res.ok) {
-      toast.success("Access revoked");
+      toast.success(t("accessRevoked"));
       fetchAdvisors();
     } else {
-      toast.error("Failed to revoke access");
+      toast.error(t("failedToRevokeAccess"));
     }
   };
 
   const getStatusBadge = (advisor: Advisor) => {
-    if (advisor.revokedAt) return <Badge variant="destructive" className="text-[10px]">Revoked</Badge>;
-    if (advisor.acceptedAt && advisor.isActive) return <Badge variant="default" className="text-[10px] bg-emerald-600">Active</Badge>;
-    return <Badge variant="outline" className="text-[10px]">Pending</Badge>;
+    if (advisor.revokedAt) return <Badge variant="destructive" className="text-[10px]">{t("revoked")}</Badge>;
+    if (advisor.acceptedAt && advisor.isActive) return <Badge variant="default" className="text-[10px] bg-emerald-600">{t("active")}</Badge>;
+    return <Badge variant="outline" className="text-[10px]">{t("pending")}</Badge>;
   };
 
   return (
@@ -129,9 +134,9 @@ export default function AdvisorsPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold">Advisors</h2>
+            <h2 className="text-lg font-semibold">{t("advisors")}</h2>
             <p className="text-sm text-muted-foreground">
-              Grant your accountant or bookkeeper read access to your organization.
+              {t("grantYourAccountantOrBookkeeperReadAccessToYourOrganization")}
             </p>
           </div>
           <Button
@@ -144,7 +149,7 @@ export default function AdvisorsPage() {
             }}
           >
             <Plus className="size-3.5" />
-            Invite Advisor
+            {t("inviteAdvisor")}
           </Button>
         </div>
 
@@ -157,12 +162,12 @@ export default function AdvisorsPage() {
         ) : advisors.length === 0 ? (
           <EmptyState
             icon={Shield}
-            title="No advisors"
-            description="Invite your accountant or bookkeeper to give them access to your financial data."
+            title={t("noAdvisors")}
+            description={t("inviteYourAccountantOrBookkeeperToGiveThemAccessToYour")}
           >
             <Button size="sm" className="h-8 text-xs gap-1.5 mt-3" onClick={() => setSheetOpen(true)}>
               <Plus className="size-3.5" />
-              Invite Advisor
+              {t("inviteAdvisor")}
             </Button>
           </EmptyState>
         ) : (
@@ -170,10 +175,10 @@ export default function AdvisorsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Invited</TableHead>
+                  <TableHead>{t("email")}</TableHead>
+                  <TableHead>{t("role")}</TableHead>
+                  <TableHead>{t("status")}</TableHead>
+                  <TableHead>{t("invited")}</TableHead>
                   <TableHead className="w-[80px]" />
                 </TableRow>
               </TableHeader>
@@ -183,7 +188,7 @@ export default function AdvisorsPage() {
                     <TableCell className="font-medium">
                       {a.advisor?.email || a.inviteEmail || "-"}
                     </TableCell>
-                    <TableCell>{ROLE_LABELS[a.role] || a.role}</TableCell>
+                    <TableCell>{roleLabels[a.role] || a.role}</TableCell>
                     <TableCell>{getStatusBadge(a)}</TableCell>
                     <TableCell className="text-muted-foreground text-xs">
                       {new Date(a.invitedAt).toLocaleDateString()}
@@ -194,6 +199,7 @@ export default function AdvisorsPage() {
                           variant="ghost"
                           size="icon"
                           className="size-7 text-red-600"
+                          aria-label={t("revokeAccess")}
                           onClick={() => handleRevoke(a.id)}
                         >
                           <XCircle className="size-3.5" />
@@ -211,55 +217,55 @@ export default function AdvisorsPage() {
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetContent>
           <SheetHeader>
-            <SheetTitle>Invite Advisor</SheetTitle>
+            <SheetTitle>{t("inviteAdvisor")}</SheetTitle>
           </SheetHeader>
           <div className="space-y-4 px-4 py-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Email</label>
+              <label className="text-sm font-medium">{t("email")}</label>
               <Input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="accountant@example.com"
+                placeholder={t("accountantExampleCom")}
               />
               <p className="text-xs text-muted-foreground">
-                The advisor must have an existing account.
+                {t("theAdvisorMustHaveAnExistingAccount")}
               </p>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Role</label>
+              <label className="text-sm font-medium">{t("role")}</label>
               <Select value={role} onValueChange={setRole}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="accountant">Accountant</SelectItem>
-                  <SelectItem value="auditor">Auditor</SelectItem>
-                  <SelectItem value="tax_advisor">Tax Advisor</SelectItem>
-                  <SelectItem value="bookkeeper">Bookkeeper</SelectItem>
+                  <SelectItem value="accountant">{t("accountant")}</SelectItem>
+                  <SelectItem value="auditor">{t("auditor")}</SelectItem>
+                  <SelectItem value="tax_advisor">{t("taxAdvisor")}</SelectItem>
+                  <SelectItem value="bookkeeper">{t("bookkeeper")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="rounded-lg border bg-muted/30 p-3 text-xs text-muted-foreground space-y-1.5">
-              <p className="font-medium text-foreground">Advisor permissions</p>
+              <p className="font-medium text-foreground">{t("advisorPermissions")}</p>
               <ul className="list-disc list-inside space-y-0.5">
-                <li>Read access to all financial data</li>
-                <li>View and export all reports</li>
-                <li>Create and edit journal entries</li>
-                <li>Manage period locks</li>
+                <li>{t("readAccessToAllFinancialData")}</li>
+                <li>{t("viewAndExportAllReports")}</li>
+                <li>{t("createAndEditJournalEntries")}</li>
+                <li>{t("managePeriodLocks")}</li>
               </ul>
             </div>
           </div>
           <SheetFooter>
             <Button variant="outline" onClick={() => setSheetOpen(false)}>
-              Cancel
+              {t("cancel")}
             </Button>
             <Button
               onClick={handleInvite}
               disabled={saving || !email.trim()}
               className="bg-emerald-600 hover:bg-emerald-700"
             >
-              {saving ? "Inviting..." : "Send Invitation"}
+              {saving ? t("inviting") : t("sendInvitation")}
             </Button>
           </SheetFooter>
         </SheetContent>

@@ -1,5 +1,9 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { AUDIT_ENTITY_TYPES, auditActionLabel, auditEntityLabel, auditRelativeTime, auditDayLabel } from "@/i18n/audit-presentation";
+import { usePresentation } from "@/i18n/provider";
+
 import { useState, useEffect, useMemo } from "react";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import {
@@ -42,6 +46,7 @@ import {
 } from "@/components/ui/select";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
+import { AuditActivityText } from "@/components/settings/audit-activity-text";
 import { cn } from "@/lib/utils";
 
 interface AuditEntry {
@@ -69,61 +74,61 @@ const ENTITY_ICONS: Record<string, LucideIcon> = {
   settings: Settings,
 };
 
-const ACTION_CONFIG: Record<string, { icon: LucideIcon; label: string; color: string; badgeClass: string }> = {
+const ACTION_CONFIG: Record<string, { icon: LucideIcon; color: string; badgeClass: string }> = {
   create: {
-    icon: Plus, label: "Created",
+    icon: Plus,
     color: "text-emerald-600 dark:text-emerald-400",
     badgeClass: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300",
   },
   update: {
-    icon: Pencil, label: "Updated",
+    icon: Pencil,
     color: "text-blue-600 dark:text-blue-400",
     badgeClass: "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-300",
   },
   delete: {
-    icon: Trash2, label: "Deleted",
+    icon: Trash2,
     color: "text-red-600 dark:text-red-400",
     badgeClass: "border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300",
   },
   post: {
-    icon: Check, label: "Finalized",
+    icon: Check,
     color: "text-violet-600 dark:text-violet-400",
     badgeClass: "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-800 dark:bg-violet-950 dark:text-violet-300",
   },
   void: {
-    icon: XCircle, label: "Cancelled",
+    icon: XCircle,
     color: "text-orange-600 dark:text-orange-400",
     badgeClass: "border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-800 dark:bg-orange-950 dark:text-orange-300",
   },
   approve: {
-    icon: Check, label: "Approved",
+    icon: Check,
     color: "text-emerald-600 dark:text-emerald-400",
     badgeClass: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300",
   },
   send: {
-    icon: Send, label: "Sent",
+    icon: Send,
     color: "text-blue-600 dark:text-blue-400",
     badgeClass: "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-300",
   },
   restore: {
-    icon: RotateCcw, label: "Restored",
+    icon: RotateCcw,
     color: "text-teal-600 dark:text-teal-400",
     badgeClass: "border-teal-200 bg-teal-50 text-teal-700 dark:border-teal-800 dark:bg-teal-950 dark:text-teal-300",
   },
   purge: {
-    icon: Eraser, label: "Purged",
+    icon: Eraser,
     color: "text-rose-600 dark:text-rose-400",
     badgeClass: "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950 dark:text-rose-300",
   },
   restore_backup: {
-    icon: Database, label: "Backup Restored",
+    icon: Database,
     color: "text-amber-600 dark:text-amber-400",
     badgeClass: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300",
   },
 };
 
 const DEFAULT_ACTION_CONFIG = {
-  icon: ArrowLeftRight, label: "Action",
+  icon: ArrowLeftRight,
   color: "text-muted-foreground",
   badgeClass: "",
 };
@@ -136,55 +141,9 @@ function getActionConfig(action: string) {
   return DEFAULT_ACTION_CONFIG;
 }
 
-const ENTITY_TYPES = [
-  { value: "invoice", label: "Invoice" },
-  { value: "bill", label: "Bill" },
-  { value: "contact", label: "Contact" },
-  { value: "journal_entry", label: "Manual transaction" },
-  { value: "account", label: "Account" },
-  { value: "quote", label: "Quote" },
-  { value: "purchase_order", label: "Purchase Order" },
-  { value: "bank_account", label: "Bank Account" },
-  { value: "expense", label: "Expense" },
-  { value: "payment", label: "Payment" },
-  { value: "credit_note", label: "Credit Note" },
-];
-
-
-function formatEntityType(type: string): string {
-  const known = ENTITY_TYPES.find((e) => e.value === type);
-  if (known) return known.label.toLowerCase();
-  return type.replace(/_/g, " ");
-}
-
-function getRelativeTime(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diff = now.getTime() - date.getTime();
-  const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
-  return date.toLocaleDateString();
-}
-
-function getDayLabel(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const entryDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const diff = today.getTime() - entryDate.getTime();
-  const days = Math.floor(diff / 86400000);
-  if (days === 0) return "Today";
-  if (days === 1) return "Yesterday";
-  if (days < 7) return date.toLocaleDateString("en-US", { weekday: "long" });
-  return date.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
-}
-
 export default function AuditLogPage() {
+  const t = useTranslations("SettingsAudit");
+  const presentation = usePresentation();
   const [entries, setEntries] = useState<AuditEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
@@ -278,7 +237,7 @@ export default function AuditLogPage() {
   // Group by day
   const grouped = useMemo(() => {
     return filtered.reduce<{ label: string; items: AuditEntry[] }[]>((groups, entry) => {
-      const label = getDayLabel(entry.createdAt);
+      const label = auditDayLabel(t, presentation, entry.createdAt);
       const last = groups[groups.length - 1];
       if (last && last.label === label) {
         last.items.push(entry);
@@ -287,7 +246,7 @@ export default function AuditLogPage() {
       }
       return groups;
     }, []);
-  }, [filtered]);
+  }, [filtered, t, presentation]);
 
   const hasFilters = search || dateFrom || dateTo || entityTypeFilter !== "all" || actionFilter !== "all";
   const totalPages = Math.ceil(totalCount / limit);
@@ -309,11 +268,11 @@ export default function AuditLogPage() {
           <Tabs value={actionFilter} onValueChange={setActionFilter}>
             <TabsList className="overflow-x-auto">
               <TabsTrigger value="all" className="whitespace-nowrap">
-                All <span className="ml-1.5 text-[10px] text-muted-foreground tabular-nums">{allTotal}</span>
+                {t("all")}<span className="ml-1.5 text-[10px] text-muted-foreground tabular-nums">{allTotal}</span>
               </TabsTrigger>
               {Object.entries(actionCounts).map(([action, count]) => (
                 <TabsTrigger key={action} value={action} className="whitespace-nowrap capitalize">
-                  {action} <span className="ml-1.5 text-[10px] text-muted-foreground tabular-nums">{count}</span>
+                  {auditActionLabel(t, action)} <span className="ml-1.5 text-[10px] text-muted-foreground tabular-nums">{count}</span>
                 </TabsTrigger>
               ))}
             </TabsList>
@@ -324,7 +283,7 @@ export default function AuditLogPage() {
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
               <Input
-                placeholder="Search user, entity..."
+                placeholder={t("searchUserEntity")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="h-8 w-52 pl-8 text-xs"
@@ -332,30 +291,30 @@ export default function AuditLogPage() {
             </div>
             <Select value={entityTypeFilter} onValueChange={setEntityTypeFilter}>
               <SelectTrigger className="h-8 w-40 text-xs">
-                <SelectValue placeholder="Entity type" />
+                <SelectValue placeholder={t("entityType")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All entities</SelectItem>
-                {ENTITY_TYPES.map((t) => (
-                  <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                <SelectItem value="all">{t("allEntities")}</SelectItem>
+                {AUDIT_ENTITY_TYPES.map((type) => (
+                  <SelectItem key={type} value={type}>{auditEntityLabel(t, type)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <div className="flex items-center gap-1.5">
-              <span className="text-xs text-muted-foreground shrink-0">From</span>
+              <span className="text-xs text-muted-foreground shrink-0">{t("from")}</span>
               <DatePicker
                 value={dateFrom}
                 onChange={(v) => setDateFrom(v)}
-                placeholder="Start date"
+                placeholder={t("startDate")}
                 className="h-8 w-36 text-xs"
               />
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="text-xs text-muted-foreground shrink-0">To</span>
+              <span className="text-xs text-muted-foreground shrink-0">{t("to")}</span>
               <DatePicker
                 value={dateTo}
                 onChange={(v) => setDateTo(v)}
-                placeholder="End date"
+                placeholder={t("endDate")}
                 className="h-8 w-36 text-xs"
               />
             </div>
@@ -371,7 +330,7 @@ export default function AuditLogPage() {
                 }}
               >
                 <X className="mr-1 size-3" />
-                Clear
+                {t("clear")}
               </Button>
             )}
           </div>
@@ -383,10 +342,10 @@ export default function AuditLogPage() {
                 <ScrollText className="size-6 text-muted-foreground" />
               </div>
               <p className="text-sm font-medium">
-                {hasFilters ? "No entries match your filters" : "No audit entries yet"}
+                {hasFilters ? t("noEntriesMatchYourFilters") : t("noAuditEntriesYet")}
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                {hasFilters ? "Try adjusting your search or filters." : "Activity will appear here as changes are made."}
+                {hasFilters ? t("tryAdjustingYourSearchOrFilters") : t("activityWillAppearHereAsChangesAreMade")}
               </p>
             </div>
           ) : (
@@ -450,16 +409,12 @@ export default function AuditLogPage() {
                           <div className="flex-1 min-w-0 flex items-start justify-between gap-3 rounded-lg border bg-card px-3.5 py-2.5 shadow-xs transition-shadow group-hover:shadow-sm">
                             <div className="min-w-0">
                               <p className="text-[13px] leading-snug">
-                                <span className="font-medium">{entry.userName}</span>{" "}
-                                <span className="text-muted-foreground">{entry.action}</span>{" "}
-                                <span className="inline-flex items-center gap-1">
-                                  <EntityIcon className="inline size-3 text-muted-foreground/50" />
-                                  <span className="text-muted-foreground">{formatEntityType(entry.entityType)}</span>
-                                </span>
+                                <AuditActivityText userName={entry.userName} action={entry.action} entityType={entry.entityType}
+                                  icon={<EntityIcon className="inline size-3 text-muted-foreground/50" />} />
                               </p>
                               <div className="flex items-center gap-2 mt-1">
                                 <Badge variant="outline" className={cn("text-[10px] capitalize h-[18px] px-1.5", actionConfig.badgeClass)}>
-                                  {entry.action}
+                                  {auditActionLabel(t, entry.action)}
                                 </Badge>
                                 <span className="font-mono text-[10px] text-muted-foreground/40">{entry.entityId.slice(0, 8)}</span>
                                 {entry.ipAddress && (
@@ -477,7 +432,7 @@ export default function AuditLogPage() {
                                 {new Date(entry.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                               </p>
                               <p className="text-[10px] text-muted-foreground/40 hidden sm:block">
-                                {getRelativeTime(entry.createdAt)}
+                                {auditRelativeTime(t, presentation, entry.createdAt)}
                               </p>
                             </div>
                           </div>
@@ -494,7 +449,7 @@ export default function AuditLogPage() {
             {totalPages > 1 && (
               <div className="flex items-center justify-between pt-4">
                 <p className="text-[11px] text-muted-foreground tabular-nums">
-                  Page {page} of {totalPages}
+                  {t("pagination", { page, total: totalPages })}
                 </p>
                 <div className="flex items-center gap-1">
                   <Button
@@ -505,7 +460,7 @@ export default function AuditLogPage() {
                     onClick={() => setPage((p) => p - 1)}
                   >
                     <ChevronLeft className="size-3 mr-1" />
-                    Previous
+                    {t("previous")}
                   </Button>
                   <Button
                     variant="outline"
@@ -514,8 +469,7 @@ export default function AuditLogPage() {
                     disabled={page >= totalPages}
                     onClick={() => setPage((p) => p + 1)}
                   >
-                    Next
-                    <ChevronRight className="size-3 ml-1" />
+                    {t("next")}<ChevronRight className="size-3 ml-1" />
                   </Button>
                 </div>
               </div>
@@ -526,7 +480,7 @@ export default function AuditLogPage() {
       {/* Result count */}
       {filtered.length > 0 && (
         <p className="text-[11px] text-muted-foreground">
-          Showing {filtered.length} of {totalCount} entries
+          {t("resultCount", { count: filtered.length, total: totalCount })}
         </p>
       )}
     </ContentReveal>

@@ -388,3 +388,11 @@ Owner-requested backlog; see [delivery plan](../docs/AI_AGENT_PLAN.md) and [requ
 - [AI-011](../tasks/AI-011.md): Build scoped AI usage and operations dashboard.
 - [AI-012](../tasks/AI-012.md): Qualify agent security privacy and workflow reliability.
 - [AI-013](../tasks/AI-013.md): Accept integrated AI agent and controlled rollout.
+
+## LOC-017 provider/document/data split
+
+LOC-017 retains combined acceptance; locale requirements remain unchanged.
+
+- [LOC-018](../tasks/LOC-018.md): Billing and Stripe settings catalogs.
+- [LOC-019](../tasks/LOC-019.md): Document template settings catalogs.
+- [LOC-020](../tasks/LOC-020.md): Import/export, backups and trash catalogs.

@@ -47,8 +47,10 @@ are not accepted by this task.
   verification and remaining native/RTL limitations.
 - LOC-016 is extracted: members, roles, advisors, API keys and audit log; see
   [access/audit scope](SETTINGS_ACCESS_CATALOGS.md) for exceptions and verification.
-- LOC-017: billing, Stripe, document templates, import/export (including the bulk
-  import wizard), backups and trash.
+- LOC-017 retains combined provider/document/data acceptance after LOC-018
+  (billing/Stripe), LOC-019 (document templates) and LOC-020 (import/export,
+  bulk-import wizard, backups and trash). See
+  [provider scope](SETTINGS_PROVIDER_CATALOGS.md) for LOC-018 extraction.
 - LOC-012: independent combined settings acceptance after all four children.
 - LOC-006 / LOC-002: independent shell/settings and product-wide catalog acceptance.
 

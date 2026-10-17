@@ -13,6 +13,7 @@ const keys: Partial<Record<string, ErrorKey>> = {
   "Approval workflow not found": "workflowMissing",
   "Webhook not found": "webhookMissing",
   "Pipeline not found": "pipelineMissing",
+  "Delete live deals before deleting their pipeline": "pipelineHasDeals",
   "Reminder rule not found": "reminderMissing",
   "Member not found": "memberMissing",
   "Role not found": "roleMissing",
@@ -50,4 +51,18 @@ export function settingsErrorMessage(t: Translate, message: unknown, fallback: s
   if (status === 401) return t("unauthenticated");
   if (status === 403) return t("forbidden");
   return status === 400 || status === 422 ? t("invalidInput") : fallback;
+}
+
+/** Reject HTTP failures before a settings action reports success. */
+export async function requireSettingsResponse(response: Response, t: Translate, fallback: string) {
+  if (!response.ok) {
+    let message: unknown;
+    try { message = (await response.json()).error; } catch { /* Use status/fallback. */ }
+    throw new SettingsRequestError(settingsErrorMessage(t, message, fallback, response.status));
+  }
+  return response;
+}
+
+export function settingsFailureMessage(error: unknown, fallback: string) {
+  return error instanceof SettingsRequestError ? error.message : fallback;
 }

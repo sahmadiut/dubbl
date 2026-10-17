@@ -18,7 +18,12 @@ passing key parity does not mean that the rest of the product is localized.
 
 LOC-017 combined provider/document/data acceptance and integration repairs are
 recorded in [combined settings acceptance](SETTINGS_PROVIDER_DATA_ACCEPTANCE.md).
-The wider LOC-012/006/002 integration and native/RTL gates remain independent.
+The wider LOC-006/002 integration and native/RTL gates remain independent.
+
+LOC-012's independent combined settings acceptance is now recorded in
+[settings catalog acceptance](SETTINGS_CATALOG_ACCEPTANCE.md), including the
+owner-authorized Stripe exclusion, eight additional paired error keys and the
+2,160-key catalog total. LOC-006/002 and native/RTL gates remain independent.
 
 ## Catalog and authoring contract
 

@@ -688,7 +688,9 @@
     "net30": "Net 30",
     "net45": "Net 45",
     "net60": "Net 60",
-    "net90": "Net 90"
+    "net90": "Net 90",
+    "failedToLoad": "Failed to load organization settings",
+    "failedToLoadLock": "Failed to load period lock"
   },
   "SettingsProcurement": {
     "failedToSave": "Failed to save",
@@ -808,7 +810,8 @@
     "billingPastDue": "Your billing is past due. Update your payment method to invite members.",
     "freeMemberLimit": "Free plan is limited to 1 member. Upgrade to Pro to invite your team.",
     "advisorAccountRequired": "No account found with this email. The advisor must create an account first.",
-    "templateMissing": "Template not found"
+    "templateMissing": "Template not found",
+    "pipelineHasDeals": "Delete the live deals in this pipeline before deleting it."
   },
   "Admin": {
     "admin": "Admin",
@@ -1295,7 +1298,7 @@
     "createPipeline": "Create Pipeline",
     "saveChanges": "Save Changes",
     "settingsPipelines": "Settings · Pipelines",
-    "deleteDescription": "This pipeline will be removed. Existing deals will not be deleted but will lose their pipeline reference.",
+    "deleteDescription": "This pipeline will be removed. Delete its live deals before deleting the pipeline.",
     "delete": "Delete",
     "pipelineDeleted": "Pipeline deleted",
     "failedToUpdateDefaultPipeline": "Failed to update default pipeline",
@@ -1318,7 +1321,9 @@
     "dragOver": "Stage {name} is over stage {target}.",
     "dragOutside": "Stage {name} is outside a drop target.",
     "dragEnd": "Stage {name} was dropped at stage {target}.",
-    "dragCancel": "Moving stage {name} was cancelled."
+    "dragCancel": "Moving stage {name} was cancelled.",
+    "failedToLoad": "Failed to load pipelines",
+    "failedToDelete": "Failed to delete pipeline"
   },
   "SettingsWebhooks": {
     "retrying": "Retrying",
@@ -1444,7 +1449,10 @@
     "cancel": "Cancel",
     "saving": "Saving...",
     "update": "Update",
-    "create": "Create"
+    "create": "Create",
+    "failedToLoad": "Failed to load reminder rules",
+    "failedToLoadLogs": "Failed to load reminder logs",
+    "failedToDelete": "Failed to delete reminder rule"
   },
   "SettingsNotifications": {
     "invoiceOverdue": "Invoice Overdue",

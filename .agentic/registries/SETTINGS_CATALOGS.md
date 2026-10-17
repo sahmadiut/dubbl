@@ -1,5 +1,10 @@
 # Settings configuration catalogs
 
+Current LOC-012 combined acceptance is recorded in
+[settings integration](SETTINGS_CATALOG_ACCEPTANCE.md). It resolves the period-lock
+reader and automation handoff findings, documents remaining exceptions and applies
+the owner's Stripe exclusion. The extraction record below is historical scope.
+
 LOC-014 is the core configuration child of LOC-012. Source inspection found 23
 settings TSX files totaling over 10,000 lines, so LOC-012 now waits for LOC-014
 through LOC-017 and retains independent integration acceptance. LOC-006 and

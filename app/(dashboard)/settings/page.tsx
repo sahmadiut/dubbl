@@ -41,7 +41,8 @@ import { LocalePreferences } from "@/components/settings/locale-preferences";
 import { useLocale, useTranslations } from "next-intl";
 import { countryName } from "@/i18n/onboarding-options";
 import { addressCountryName, paymentTermLabel } from "@/i18n/settings-options";
-import { settingsErrorMessage } from "@/i18n/settings-errors";
+import { settingsErrorMessage, requireSettingsResponse, settingsFailureMessage } from "@/i18n/settings-errors";
+import { readSettingsLockDate } from "@/components/settings/period-lock-response";
 
 interface OrgSettings {
   id: string;
@@ -123,16 +124,14 @@ export default function SettingsPage() {
     fetch("/api/v1/period-lock", {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.lock?.lockDate) setLockDate(data.lock.lockDate);
-      })
-      .catch(() => {});
+      .then((r) => readSettingsLockDate(r, errors, st("failedToLoadLock")))
+      .then(setLockDate)
+      .catch((error) => toast.error(settingsFailureMessage(error, st("failedToLoadLock"))));
 
     fetch("/api/v1/organization", {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then(async (r) => (await requireSettingsResponse(r, errors, st("failedToLoad"))).json())
       .then((data) => {
         if (data.organization) {
           const o = data.organization;
@@ -162,8 +161,9 @@ export default function SettingsPage() {
             industrySector: o.industrySector || "",
           });
         }
-      });
-  }, []);
+      })
+      .catch((error) => toast.error(settingsFailureMessage(error, st("failedToLoad"))));
+  }, [errors, st]);
 
   function handleCountryChange(countryCode: string) {
     const country = getCountryByCode(countryCode);

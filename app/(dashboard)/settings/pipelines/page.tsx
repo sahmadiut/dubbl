@@ -1,7 +1,7 @@
 "use client";
 import { createPipelineStages, pipelineAnnouncements } from "@/i18n/pipeline-stages";
 import { useTranslations } from "next-intl";
-import { settingsErrorMessage, SettingsRequestError } from "@/i18n/settings-errors";
+import { settingsErrorMessage, SettingsRequestError, requireSettingsResponse, settingsFailureMessage } from "@/i18n/settings-errors";
 
 import { useState, useEffect, useCallback } from "react";
 import {
@@ -421,6 +421,7 @@ function PipelineEditor({
 // ---------------------------------------------------------------------------
 export default function PipelinesSettingsPage() {
   const t = useTranslations("SettingsPipelines");
+  const errors = useTranslations("SettingsErrors");
 
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [pipelines, setPipelines] = useState<Pipeline[]>([]);
@@ -436,12 +437,14 @@ export default function PipelinesSettingsPage() {
       const res = await fetch("/api/v1/crm/pipelines", {
         headers: { "x-organization-id": orgId },
       });
-      const data = await res.json();
+      const data = await (await requireSettingsResponse(res, errors, t("failedToLoad"))).json();
       setPipelines(data.pipelines || []);
+    } catch (error) {
+      toast.error(settingsFailureMessage(error, t("failedToLoad")));
     } finally {
       setLoading(false);
     }
-  }, [orgId]);
+  }, [orgId, errors, t]);
 
   useEffect(() => {
     fetchPipelines();
@@ -462,15 +465,22 @@ export default function PipelinesSettingsPage() {
       title: t("deleteNamed", { name: p.name }),
       description: t("deleteDescription"),
       confirmLabel: t("delete"),
+      cancelLabel: t("cancel"),
       destructive: true,
       onConfirm: async () => {
         if (!orgId) return;
-        await fetch(`/api/v1/crm/pipelines/${p.id}`, {
-          method: "DELETE",
-          headers: { "x-organization-id": orgId },
-        });
-        await fetchPipelines();
-        toast.success(t("pipelineDeleted"));
+        try {
+          const res = await fetch(`/api/v1/crm/pipelines/${p.id}`, {
+            method: "DELETE",
+            headers: { "x-organization-id": orgId },
+          });
+          await requireSettingsResponse(res, errors, t("failedToDelete"));
+          await fetchPipelines();
+          toast.success(t("pipelineDeleted"));
+        } catch (error) {
+          toast.error(settingsFailureMessage(error, t("failedToDelete")));
+          throw error;
+        }
       },
     });
   }
@@ -478,15 +488,16 @@ export default function PipelinesSettingsPage() {
   async function handleSetDefault(p: Pipeline) {
     if (!orgId || p.isDefault) return;
     try {
-      await fetch(`/api/v1/crm/pipelines/${p.id}`, {
+      const res = await fetch(`/api/v1/crm/pipelines/${p.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify({ isDefault: true }),
       });
+      await requireSettingsResponse(res, errors, t("failedToUpdateDefaultPipeline"));
       await fetchPipelines();
       toast.success(t("defaultNamed", { name: p.name }));
-    } catch {
-      toast.error(t("failedToUpdateDefaultPipeline"));
+    } catch (error) {
+      toast.error(settingsFailureMessage(error, t("failedToUpdateDefaultPipeline")));
     }
   }
 

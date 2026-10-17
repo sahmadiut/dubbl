@@ -1,5 +1,6 @@
 "use client";
 import { useTranslations } from "next-intl";
+import { requireSettingsResponse, settingsFailureMessage } from "@/i18n/settings-errors";
 
 import { useState, useEffect, useCallback } from "react";
 import { Plus, Trash2, Mail, Clock, AlertCircle, CheckCircle2, XCircle } from "lucide-react";
@@ -87,6 +88,7 @@ const emptyForm: {
 
 export default function RemindersPage() {
   const t = useTranslations("SettingsReminders");
+  const errors = useTranslations("SettingsErrors");
 
   const TRIGGER_LABELS: Record<string, string> = {
     before_due: t("beforeDueDate"),
@@ -115,23 +117,29 @@ export default function RemindersPage() {
   const fetchRules = useCallback(async () => {
     try {
       const res = await fetch("/api/v1/reminders", { headers: getHeaders() });
-      const data = await res.json();
+      const data = await (await requireSettingsResponse(res, errors, t("failedToLoad"))).json();
       setRules(data.data || []);
+    } catch (error) {
+      toast.error(settingsFailureMessage(error, t("failedToLoad")));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [errors, t]);
 
   const fetchLogs = useCallback(async () => {
-    const params = new URLSearchParams({ page: String(logPage), limit: "10" });
-    if (logStatus) params.set("status", logStatus);
-    const res = await fetch(`/api/v1/reminders/logs?${params}`, {
-      headers: getHeaders(),
-    });
-    const data = await res.json();
-    setLogs(data.data || []);
-    setLogTotal(data.total || 0);
-  }, [logPage, logStatus]);
+    try {
+      const params = new URLSearchParams({ page: String(logPage), limit: "10" });
+      if (logStatus) params.set("status", logStatus);
+      const res = await fetch(`/api/v1/reminders/logs?${params}`, {
+        headers: getHeaders(),
+      });
+      const data = await (await requireSettingsResponse(res, errors, t("failedToLoadLogs"))).json();
+      setLogs(data.data || []);
+      setLogTotal(data.total || 0);
+    } catch (error) {
+      toast.error(settingsFailureMessage(error, t("failedToLoadLogs")));
+    }
+  }, [logPage, logStatus, errors, t]);
 
   useEffect(() => {
     fetchRules();
@@ -191,7 +199,7 @@ export default function RemindersPage() {
           headers: getHeaders(),
           body: JSON.stringify(payload),
         });
-        if (!res.ok) throw new Error(t("failedToUpdate"));
+        await requireSettingsResponse(res, errors, t("failedToUpdate"));
         toast.success(t("reminderRuleUpdated"));
       } else {
         const res = await fetch("/api/v1/reminders", {
@@ -199,13 +207,13 @@ export default function RemindersPage() {
           headers: getHeaders(),
           body: JSON.stringify(payload),
         });
-        if (!res.ok) throw new Error(t("failedToCreate"));
+        await requireSettingsResponse(res, errors, t("failedToCreate"));
         toast.success(t("reminderRuleCreated"));
       }
       setSheetOpen(false);
       await fetchRules();
-    } catch {
-      toast.error(t("somethingWentWrong"));
+    } catch (error) {
+      toast.error(settingsFailureMessage(error, t("somethingWentWrong")));
     } finally {
       setSaving(false);
     }
@@ -216,28 +224,38 @@ export default function RemindersPage() {
       title: t("deleteReminderRule"),
       description: t("thisRuleWillBePermanentlyRemoved"),
       confirmLabel: t("delete"),
+      cancelLabel: t("cancel"),
       destructive: true,
       onConfirm: async () => {
-        await fetch(`/api/v1/reminders/${id}`, {
-          method: "DELETE",
-          headers: getHeaders(),
-        });
-        await fetchRules();
-        toast.success(t("reminderRuleDeleted"));
+        try {
+          const res = await fetch(`/api/v1/reminders/${id}`, {
+            method: "DELETE",
+            headers: getHeaders(),
+          });
+          await requireSettingsResponse(res, errors, t("failedToDelete"));
+          await fetchRules();
+          toast.success(t("reminderRuleDeleted"));
+        } catch (error) {
+          toast.error(settingsFailureMessage(error, t("failedToDelete")));
+          throw error;
+        }
       },
     });
   }
 
   async function handleToggle(rule: ReminderRule) {
-    const res = await fetch(`/api/v1/reminders/${rule.id}`, {
-      method: "PUT",
-      headers: getHeaders(),
-      body: JSON.stringify({ enabled: !rule.enabled }),
-    });
-    if (res.ok) {
+    try {
+      const res = await fetch(`/api/v1/reminders/${rule.id}`, {
+        method: "PUT",
+        headers: getHeaders(),
+        body: JSON.stringify({ enabled: !rule.enabled }),
+      });
+      await requireSettingsResponse(res, errors, t("failedToUpdate"));
       setRules((prev) =>
         prev.map((r) => (r.id === rule.id ? { ...r, enabled: !r.enabled } : r))
       );
+    } catch (error) {
+      toast.error(settingsFailureMessage(error, t("failedToUpdate")));
     }
   }
 

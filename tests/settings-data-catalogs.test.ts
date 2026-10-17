@@ -174,14 +174,14 @@ test("all five real wizard states translate their descriptions, counts, actions 
   }
 });
 
-test("destructive descriptions remain complete and escape names while keeping date/count interpolation", () => {
+test("destructive descriptions escape names and describe organization-wide emptying regardless of filters", () => {
   for (const locale of locales) {
     const messages = locale === "en-US" ? en : fa;
     const tt = createTranslator({ locale, messages, namespace: "SettingsTrash" });
     const bt = createTranslator({ locale, messages, namespace: "SettingsBackups" });
     assert.equal(renderWithPresentation(createElement(TrashDeleteDescription, { item }), locale), escaped(tt("deleteDescription", { name: sampleName })));
     assert.equal(renderWithPresentation(createElement(TrashDeleteDescription, { item: { ...item, name: null } }), locale), escaped(tt("deleteDescription", { name: tt("invoice") })));
-    for (const count of [0, 1, 2, 50]) assert.equal(renderWithPresentation(createElement(TrashEmptyDescription, { count }), locale), escaped(tt("emptyDescription", { count })));
+    assert.equal(renderWithPresentation(createElement(TrashEmptyDescription), locale), escaped(tt("emptyDescription")));
     const date = "2026-10-17 10:00 <script>";
     assert.equal(renderWithPresentation(createElement(BackupRestoreDescription, { date }), locale), escaped(bt("restoreDescription", { date })));
     assert.equal(renderWithPresentation(createElement(BackupDeleteDescription, { date }), locale), escaped(bt("deleteDescription", { date })));

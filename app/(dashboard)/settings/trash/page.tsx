@@ -224,7 +224,7 @@ export default function TrashPage() {
           <DialogHeader>
             <DialogTitle>{t("emptyTrashQuestion")}</DialogTitle>
             <DialogDescription>
-              <TrashEmptyDescription count={filteredItems.length} />
+              <TrashEmptyDescription />
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

@@ -143,16 +143,6 @@
       "contract": "BACKUP_WIRE_CONTRACTS.md"
     },
     {
-      "path": "app/api/v1/billing/portal/route.ts",
-      "policy": "Provider-native or delivery/configuration metadata, URLs, counts, acknowledgments and errors; monetary provider mappings retain the explicit owning service.",
-      "contract": "PROVIDER_WEBHOOK_WIRE_CONTRACTS.md"
-    },
-    {
-      "path": "app/api/v1/billing/route.ts",
-      "policy": "Provider-native or delivery/configuration metadata, URLs, counts, acknowledgments and errors; monetary provider mappings retain the explicit owning service.",
-      "contract": "PROVIDER_WEBHOOK_WIRE_CONTRACTS.md"
-    },
-    {
       "path": "app/api/v1/contacts/[id]/people/route.ts",
       "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
       "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
@@ -219,11 +209,6 @@
     },
     {
       "path": "app/api/v1/integrations/stripe/import/route.ts",
-      "policy": "Provider-native or delivery/configuration metadata, URLs, counts, acknowledgments and errors; monetary provider mappings retain the explicit owning service.",
-      "contract": "PROVIDER_WEBHOOK_WIRE_CONTRACTS.md"
-    },
-    {
-      "path": "app/api/v1/integrations/stripe/settings/route.ts",
       "policy": "Provider-native or delivery/configuration metadata, URLs, counts, acknowledgments and errors; monetary provider mappings retain the explicit owning service.",
       "contract": "PROVIDER_WEBHOOK_WIRE_CONTRACTS.md"
     },
@@ -399,11 +384,6 @@
     },
     {
       "path": "app/api/v1/trash/[id]/route.ts",
-      "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
-      "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
-    },
-    {
-      "path": "app/api/v1/trash/empty/route.ts",
       "policy": "Nonmonetary reference/auth/access/text/file/search/trash/lock metadata, counts, URLs, success or errors; no money alias inferred from names or opaque text.",
       "contract": "OPAQUE_ADMIN_WIRE_CONTRACTS.md"
     },

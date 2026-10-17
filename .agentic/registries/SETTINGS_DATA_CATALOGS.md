@@ -1,5 +1,9 @@
 # Settings data-management catalogs
 
+Current combined integration: [LOC-017 acceptance](SETTINGS_PROVIDER_DATA_ACCEPTANCE.md)
+resolves the bulk-empty MCP, confirmation scope and selection/date export findings
+below. The extraction record below describes LOC-020's scope and original handoff.
+
 LOC-020 extracts import/export, the bulk CSV wizard, backups and trash. It is a
 bounded child of LOC-017; LOC-017, LOC-012, LOC-006 and LOC-002 retain independent
 integration acceptance. All Persian wording is provisional pending native

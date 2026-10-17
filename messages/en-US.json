@@ -2123,7 +2123,7 @@
     "restored": "{entity} restored",
     "permanentlyDeleted": "{entity} permanently deleted",
     "deleteDescription": "This will permanently delete \"{name}\". This action cannot be undone.",
-    "emptyDescription": "This will permanently delete all {count} items in trash. This action cannot be undone.",
+    "emptyDescription": "This will permanently delete all items in your organization's trash, including items outside the current filters and page. This action cannot be undone.",
     "minutesAgo": "{count}m ago",
     "hoursAgo": "{count}h ago",
     "daysAgo": "{count}d ago",

@@ -62,6 +62,31 @@ Chosen behavior: replace the human-review requirement for MON-010 only with an h
 
 Production IRR enablement, production-data/volume/PostgreSQL16 qualification and later QA/release gates remain separate. The application financial readiness constant stays false. Evidence and fresh checks: [MON-010 review 3](../evidence/MON-010-review-3.md).
 
+## DEC-008 - Stripe preserved and frozen for future tasks
+
+Date: 2026-10-17 (Asia/Tehran). Owner: project owner (actual user in this
+conversation during LOC-017). Status: accepted, effective from the next task
+after LOC-017 until the owner explicitly changes it.
+
+The owner instructed that Stripe has no use for their project in Iran and asked
+for a durable note: keep the current work, but starting with the next task do no
+further Stripe work. Do not delete Stripe; leave it unchanged. This is the
+owner's product scope decision, not a researched claim about provider policy.
+
+Chosen behavior: preserve existing Stripe functionality/files and the changes
+already made during LOC-017. Finish verification and push this current task.
+Future tasks must not modify, extend, localize, refactor, repair or carry out
+dedicated work on Stripe without fresh explicit owner authorization. Do not
+remove or disable the integration. Stripe-specific defects, missing features,
+translation work and live-provider qualification must not block future tasks.
+Other accounting, manual/CSV banking, localization and release requirements stay
+in scope. Routine shared verification does not imply renewed implementation scope.
+
+Recorded in root AGENTS.md and START_HERE.md for future task selection and source
+audits. Actual instruction and effective boundary are recorded in
+[owner scope evidence](../evidence/STRIPE-scope-decision-2026-10-17.md). Completed
+task evidence is historical and is not rewritten to claim future qualification.
+
 ## Remaining open scope decisions
 
 | Decision | Owner | Task | Initial state |

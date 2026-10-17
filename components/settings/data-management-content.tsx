@@ -33,9 +33,9 @@ export function TrashDeleteDescription({ item }: { item: TrashItem | null }) {
   return <>{t("deleteDescription", { name: item?.name || (item ? trashEntityLabel(t, item.entityType) : "") })}</>;
 }
 
-export function TrashEmptyDescription({ count }: { count: number }) {
+export function TrashEmptyDescription() {
   const t = useTranslations("SettingsTrash");
-  return <>{t("emptyDescription", { count })}</>;
+  return <>{t("emptyDescription")}</>;
 }
 
 export function BackupList({ backups, page, totalPages, restoringId, deletingId, handleDownload, setRestoreBackup, setDeleteBackup, setPage }: {

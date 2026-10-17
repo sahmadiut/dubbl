@@ -22,6 +22,7 @@ import { richTextTags } from "@/i18n/rich-text";
 import { importOptions } from "@/components/settings/import-options";
 import { ImportJobHistory, type ImportJob } from "@/components/settings/data-management-content";
 import { toast } from "sonner";
+import { requestSettingsExport } from "@/components/settings/export-request";
 
 export default function ImportExportPage() {
   const t = useTranslations("SettingsImportExport");
@@ -76,32 +77,9 @@ export default function ImportExportPage() {
         return;
       }
 
-      if (!entityKey && entities.length > 1) {
-        const params = new URLSearchParams();
-        if (exportDateFrom) params.set("startDate", exportDateFrom);
-        if (exportDateTo) params.set("endDate", exportDateTo);
-
-        const res = await fetch(`/api/v1/export/all?${params}`, {
-          headers: { "x-organization-id": orgId },
-        });
-        if (!res.ok) throw new Error(t("exportFailed"));
-        const blob = await res.blob();
-        downloadBlob(blob, "dubbl-export.zip");
-      } else {
-        const key = entities[0];
-        const params = new URLSearchParams();
-        if (EXPORT_ENTITIES.find(e => e.key === key)?.transactional) {
-          if (exportDateFrom) params.set("startDate", exportDateFrom);
-          if (exportDateTo) params.set("endDate", exportDateTo);
-        }
-
-        const res = await fetch(`/api/v1/export/${key}?${params}`, {
-          headers: { "x-organization-id": orgId },
-        });
-        if (!res.ok) throw new Error(t("exportFailed"));
-        const blob = await res.blob();
-        downloadBlob(blob, `${key}.csv`);
-      }
+      const result = await requestSettingsExport({ selected: entities, all: entityKey === "all",
+        startDate: exportDateFrom, endDate: exportDateTo, organizationId: orgId });
+      downloadBlob(result.blob, result.filename);
       toast.success(t("exportDownloaded"));
     } catch {
       toast.error(t("exportFailed"));

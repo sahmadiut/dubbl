@@ -10,6 +10,8 @@ import { organization, users, member, apiKey, customRole, contact, invoice, paym
   stripeIntegration, stripeSyncLog, stripeEntityMap, webhook, webhookDelivery, periodLock, subscription } from "../../lib/db/schema";
 import { stripe } from "../../lib/stripe";
 import { registerIntegrationTools } from "../../lib/mcp/tools/integrations";
+import { registerProviderSettingsTools } from "../../lib/mcp/tools/provider-settings";
+import { POST as portalRest } from "../../app/api/v1/billing/portal/route";
 import { registerPublicPortalTools } from "../../lib/mcp/tools/public-portal";
 import { registerWebhookTools } from "../../lib/mcp/tools/webhooks";
 import { runInitialSync } from "../../lib/integrations/stripe/initial-sync";
@@ -30,7 +32,7 @@ import type { AuthContext } from "../../lib/api/auth-context";
 
 async function mcp(ctx: AuthContext) {
   const server = new McpServer({ name: "Stripe fixture", version: "1" });
-  registerIntegrationTools(server, ctx); registerPublicPortalTools(server, ctx); registerWebhookTools(server, ctx);
+  registerIntegrationTools(server, ctx); registerProviderSettingsTools(server, ctx); registerPublicPortalTools(server, ctx); registerWebhookTools(server, ctx);
   const client = new Client({ name: "Fixture", version: "1" });
   const [ct, st] = InMemoryTransport.createLinkedPair(); await server.connect(st); await client.connect(ct);
   assert.match((await client.listTools()).tools.find(t => t.name === "reconcile_stripe_balance")!.description!, /amountMinor/);
@@ -248,6 +250,19 @@ async function run() {
     assert.equal((await retryFailedStripeEvents()).failed, 1); assert.deepEqual(await snapshot(), afterSigned);
     // Subscription raw contract validation precedes subscription mutation.
     await db.insert(subscription).values({ organizationId: a.id, stripeSubscriptionId: "sub_seats" });
+    let portalCalls = 0;
+    stripe!.billingPortal.sessions.create = (async (input: Stripe.BillingPortal.SessionCreateParams) => {
+      portalCalls++; assert.equal(input.customer, "cus_portal"); assert.equal(input.return_url, "https://fixture.test/settings/billing");
+      return { url: "https://billing.stripe.test/fixture" };
+    }) as unknown as Stripe["billingPortal"]["sessions"]["create"];
+    await db.update(subscription).set({ stripeCustomerId: "cus_portal" }).where(eq(subscription.organizationId, a.id));
+    assert.deepEqual(await (await portalRest(jsonRequest({}))).json(), { url: "https://billing.stripe.test/fixture" });
+    assert.deepEqual((await ma.call("create_billing_portal", {})).body, { url: "https://billing.stripe.test/fixture" });
+    assert.equal((await portalRest(jsonRequest({}, "dk_stripe_denied"))).status, 403);
+    assert.equal((await denied.call("create_billing_portal", {})).body.status, 403);
+    assert.equal((await portalRest(jsonRequest({}, "dk_stripe_b"))).status, 404);
+    assert.equal((await mb.call("create_billing_portal", {})).body.status, 404);
+    assert.equal(portalCalls, 2);
     const beforeSub = await snapshot();
     assert.equal((await signedCheckout(signed("customer.subscription.updated", { id: "sub_seats", currency: "usd", items: { data: [{ price: { currency: "usd", unit_amount: 1.1 } }] } }))).status, 422);
     assert.deepEqual(await snapshot(), beforeSub);

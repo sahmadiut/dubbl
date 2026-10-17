@@ -1,5 +1,8 @@
 # Billing and Stripe settings catalogs
 
+Current combined integration: [LOC-017 acceptance](SETTINGS_PROVIDER_DATA_ACCEPTANCE.md).
+The extraction record below describes LOC-018's scope and original handoff.
+
 LOC-018 is the provider child of LOC-017. LOC-017 was split after inspecting six
 settings pages plus the bulk-import wizard: LOC-019 owns document templates and
 LOC-020 owns import/export, backups and trash. LOC-017/012/006/002 retain their

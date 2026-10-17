@@ -16,6 +16,10 @@ and [workspace scope](WORKSPACE_CATALOGS.md), [provider scope](SETTINGS_PROVIDER
 [data settings scope](SETTINGS_DATA_CATALOGS.md));
 passing key parity does not mean that the rest of the product is localized.
 
+LOC-017 combined provider/document/data acceptance and integration repairs are
+recorded in [combined settings acceptance](SETTINGS_PROVIDER_DATA_ACCEPTANCE.md).
+The wider LOC-012/006/002 integration and native/RTL gates remain independent.
+
 ## Catalog and authoring contract
 
 - English is the compile-time key schema (`i18n/types.d.ts`). `useTranslations`

@@ -2,14 +2,7 @@
   "requests": {
     "app/(dashboard)/settings/import-export/page.tsx": [
       "fetch(\"/api/v1/bulk/import-jobs?\" + new URLSearchParams({ limit: \"20\" }), { headers: { \"x-organization-id\": orgId }, })",
-      "params.set(\"startDate\", exportDateFrom)",
-      "params.set(\"endDate\", exportDateTo)",
-      "fetch(`/api/v1/export/all?${params}`, { headers: { \"x-organization-id\": orgId }, })",
-      "downloadBlob(blob, \"dubbl-export.zip\")",
-      "params.set(\"startDate\", exportDateFrom)",
-      "params.set(\"endDate\", exportDateTo)",
-      "fetch(`/api/v1/export/${key}?${params}`, { headers: { \"x-organization-id\": orgId }, })",
-      "downloadBlob(blob, `${key}.csv`)",
+      "downloadBlob(result.blob, result.filename)",
       "a.download = filename"
     ],
     "app/(dashboard)/settings/backups/page.tsx": [

@@ -6,8 +6,13 @@ import { requireRole } from "@/lib/api/require-role";
 import { wrapTool } from "@/lib/mcp/errors";
 import { TRASHABLE_ENTITIES, getTrashEntity } from "@/lib/api/trash-entities";
 import type { AuthContext } from "@/lib/api/auth-context";
+import { emptyTrash } from "@/lib/api/empty-trash";
 
 export function registerTrashTools(server: McpServer, ctx: AuthContext) {
+  server.registerTool("empty_trash", {
+    description: "Permanently delete ALL soft-deleted records across the organization, including records outside list filters, pages and the 30-day view. Requires delete:organization and confirm=true. Atomic: failures roll back all deletions. Returns success; cannot be undone.",
+    inputSchema: z.strictObject({ confirm: z.literal(true).describe("Explicit confirmation to permanently empty all organization trash") }),
+  }, () => wrapTool(ctx, () => emptyTrash(ctx)));
   server.tool(
     "list_trash",
     "List soft-deleted records in trash. Returns items deleted within the last 30 days. Optionally filter by entity type.",

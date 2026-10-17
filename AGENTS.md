@@ -1,5 +1,10 @@
 # Agent Rules
 
+## Owner Scope: Stripe
+- From the task after LOC-017 onward, preserve existing Stripe functionality and files, but do not modify, extend, localize, refactor, repair, or perform dedicated work on Stripe unless the owner explicitly changes this decision.
+- The owner does not use Stripe for this Iran-focused project. Keep it in place; do not remove or disable it. Stripe-specific gaps or provider qualification must not block future tasks.
+- See `.agentic/docs/DECISIONS.md`, DEC-008. Changes already made during LOC-017 are retained and verified.
+
 ## Build & Verification
 - Do NOT run full builds (`npm run build`, `next build`, etc.)
 - Use lint (`npm run lint`) or typecheck (`npx tsc --noEmit`) instead for verification

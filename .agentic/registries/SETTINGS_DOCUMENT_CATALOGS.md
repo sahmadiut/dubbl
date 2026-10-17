@@ -1,5 +1,9 @@
 # Document template settings catalogs
 
+Current combined integration: [LOC-017 acceptance](SETTINGS_PROVIDER_DATA_ACCEPTANCE.md)
+resolves the CRUD MCP gap identified below and shares template management with REST.
+The extraction record below describes LOC-019's scope and original handoff.
+
 LOC-019 extracts the document-template settings slice of LOC-017. LOC-017,
 LOC-012, LOC-006 and LOC-002 retain independent combined acceptance. Persian
 wording is provisional pending native review; RTL qualification remains open.

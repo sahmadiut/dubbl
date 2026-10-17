@@ -1,5 +1,7 @@
 "use client";
 
+import { setActiveOrganization } from "@/i18n/organization-client";
+
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Loader2, CheckCircle2, XCircle, Users } from "lucide-react";
@@ -88,9 +90,9 @@ export default function InviteAcceptPage() {
 
   function goToDashboard() {
     if (orgId) {
-      localStorage.setItem("activeOrgId", orgId);
+      setActiveOrganization(orgId);
     }
-    router.push("/");
+    window.location.href = "/";
   }
 
   return (

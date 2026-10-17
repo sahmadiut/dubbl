@@ -1,8 +1,11 @@
 "use client";
 
+import { setActiveOrganization } from "@/i18n/organization-client";
+import { authDestination } from "@/i18n/navigation";
+
 import { Suspense, useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
@@ -61,7 +64,6 @@ interface ProvidersConfig {
 }
 
 function SignInContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
   const [email, setEmail] = useState("");
@@ -109,7 +111,7 @@ function SignInContent() {
       }
       setLoading(false);
     } else {
-      router.push(callbackUrl);
+      window.location.href = authDestination(callbackUrl, window.location.origin);
     }
   }
 
@@ -122,7 +124,7 @@ function SignInContent() {
       if (!seedRes.ok) throw new Error("Failed to seed dev user");
       const { credentials, organizationId } = await seedRes.json();
 
-      localStorage.setItem("activeOrgId", organizationId);
+      setActiveOrganization(organizationId);
 
       const res = await signIn("credentials", {
         email: credentials.email,
@@ -134,7 +136,7 @@ function SignInContent() {
         throw new Error("Dev sign-in failed");
       }
 
-      router.push("/dashboard");
+      window.location.href = "/dashboard";
     } catch (err) {
       setError(err instanceof Error ? err.message : "Dev login failed");
       setDevLoading(false);

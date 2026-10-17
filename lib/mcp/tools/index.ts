@@ -1,4 +1,5 @@
 import { registerDocumentRenderingTools } from "./document-rendering";
+import { registerLocalePreferencesTools } from "./locale-preferences";
 import { registerAdminOrganizationTools } from "./admin-organization";
 import { registerAuditLogTools } from "./audit-log";
 import { registerDashboardLayoutTools } from "./dashboard-layouts";
@@ -204,4 +205,5 @@ export function registerAllTools(server: McpServer, ctx: AuthContext) {
   registerPublicPortalTools(server, ctx);
   registerInvoiceUblTools(server, ctx);
   registerDocumentRenderingTools(server, ctx);
+  registerLocalePreferencesTools(server, ctx);
 }

@@ -100,7 +100,7 @@ export default function SignUpPage() {
         throw new Error("Failed to sign in after registration");
       }
 
-      router.push("/onboarding");
+      window.location.href = "/onboarding";
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
       setLoading(false);

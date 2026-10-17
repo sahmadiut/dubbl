@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { SUPPORTED_LOCALES } from "@/i18n/locale";
 import { currencyCodeSchema } from "@/lib/currency/zod";
 import { functionalCurrencySchema } from "@/lib/currency/functional-currency";
 import { isValidBusinessType } from "@/lib/data/business-types";
@@ -6,6 +7,7 @@ import { exactMinorSchema, legacyMinor, stringifyWire, WireCompatibilityError } 
 
 const nullableText = z.string().nullable().optional();
 export const organizationUpdateFields = {
+  defaultLanguage: z.enum(SUPPORTED_LOCALES).nullable().optional().describe("Default UI language en-US or fa-IR; null inherits cookie/header; independent of currency"),
   name: z.string().min(1).optional().describe("Optional organization display name"),
   slug: z.string().min(1).optional().describe("Optional unique organization slug"),
   country: z.string().min(1).nullable().optional().describe("Optional country; null clears"),

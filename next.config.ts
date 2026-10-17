@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import { createMDX } from "fumadocs-mdx/next";
+import createNextIntlPlugin from "next-intl/plugin";
 
 const nextConfig: NextConfig = {
   output: "standalone",
@@ -7,4 +8,4 @@ const nextConfig: NextConfig = {
 
 const withMDX = createMDX();
 
-export default withMDX(nextConfig);
+export default createNextIntlPlugin()(withMDX(nextConfig));

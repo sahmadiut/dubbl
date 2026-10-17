@@ -1,0 +1,15 @@
+{
+  "LocalePreferences": {
+    "title": "Language and regional preferences",
+    "description": "Choose your language and regional display preferences independently of your organization's currency.",
+    "language": "Language",
+    "inherit": "Automatic",
+    "timeZone": "Timezone (IANA name, e.g. Europe/London)",
+    "numerals": "Numerals",
+    "calendar": "Display calendar",
+    "save": "Save preferences",
+    "saving": "Saving…",
+    "error": "Could not load or save preferences. Please try again.",
+    "organizationLanguage": "Organization default language"
+  }
+}

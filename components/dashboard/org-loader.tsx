@@ -1,5 +1,7 @@
 "use client";
 
+import { hasOrganizationCookie, setActiveOrganization } from "@/i18n/organization-client";
+
 import { useState, useEffect } from "react";
 import { Logo } from "@/components/shared/logo";
 
@@ -34,9 +36,18 @@ export function OrgLoader({ children }: { children: React.ReactNode }) {
           ?? data.organizations?.[0];
 
         if (org) {
+          // Migrate the existing localStorage selection once, then let the server
+          // and client consume the same organization default on the next request.
+          if (org.id && !hasOrganizationCookie(org.id)) {
+            setActiveOrganization(org.id);
+            if (hasOrganizationCookie(org.id)) {
+              window.location.reload();
+              return;
+            }
+          }
           // Persist resolved org for OAuth users who don't have it set yet
           if (!orgId && org.id) {
-            localStorage.setItem("activeOrgId", org.id);
+            setActiveOrganization(org.id);
           }
           if (org.country === null) {
             window.location.href = "/onboarding";

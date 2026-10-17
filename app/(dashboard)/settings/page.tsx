@@ -37,6 +37,8 @@ import {
   getCountryByCode,
 } from "@/lib/data/business-types";
 import { Section } from "@/components/dashboard/section";
+import { LocalePreferences } from "@/components/settings/locale-preferences";
+import { useTranslations } from "next-intl";
 
 interface OrgSettings {
   id: string;
@@ -44,6 +46,7 @@ interface OrgSettings {
   country: string | null;
   businessType: string | null;
   defaultCurrency: string;
+  defaultLanguage: string | null;
   fiscalYearStartMonth: number;
   countryCode: string | null;
   taxId: string | null;
@@ -67,12 +70,14 @@ const MONTHS = [
 ];
 
 export default function SettingsPage() {
+  const t = useTranslations("LocalePreferences");
   const [, setOrg] = useState<OrgSettings | null>(null);
   const [form, setForm] = useState({
     name: "",
     country: "" as string,
     businessType: "" as string,
     defaultCurrency: "USD",
+    defaultLanguage: "",
     fiscalYearStartMonth: "1",
     countryCode: "",
     taxId: "",
@@ -132,6 +137,7 @@ export default function SettingsPage() {
             country: o.country ?? "",
             businessType: o.businessType ?? "",
             defaultCurrency: o.defaultCurrency,
+            defaultLanguage: o.defaultLanguage ?? "",
             fiscalYearStartMonth: String(o.fiscalYearStartMonth),
             countryCode: o.countryCode || "",
             taxId: o.taxId || "",
@@ -177,6 +183,7 @@ export default function SettingsPage() {
         },
         body: JSON.stringify({
           name: form.name,
+          defaultLanguage: form.defaultLanguage || null,
           country: form.country || null,
           businessType: form.businessType || null,
           defaultCurrency: form.defaultCurrency,
@@ -201,6 +208,7 @@ export default function SettingsPage() {
       });
       if (!res.ok) throw new Error((await res.json()).error);
       toast.success("Settings saved");
+      window.location.reload();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to save");
     } finally {
@@ -214,8 +222,18 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-10">
+      <LocalePreferences />
       {/* Organization */}
       <Section title="Organization" description="Basic details about your organization.">
+        <div className="space-y-1.5">
+          <Label htmlFor="organization-language">{t("organizationLanguage")}</Label>
+          <select id="organization-language" className="h-9 w-full rounded-md border bg-background px-3 text-sm"
+            value={form.defaultLanguage} onChange={event => setForm({ ...form, defaultLanguage: event.target.value })}>
+            <option value="">{t("inherit")}</option>
+            <option value="en-US">English (US)</option>
+            <option value="fa-IR">فارسی</option>
+          </select>
+        </div>
         <div className="space-y-1.5">
           <Label className="text-xs">Name</Label>
           <Input

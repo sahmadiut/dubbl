@@ -4,6 +4,9 @@ import { SessionProvider } from "next-auth/react";
 import { RootProvider } from "fumadocs-ui/provider/next";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/shared/theme-provider";
+import { getMessages, getNow } from "next-intl/server";
+import { getPresentation } from "@/i18n/server";
+import { PresentationProvider } from "@/i18n/provider";
 import "fumadocs-ui/style.css";
 import "./globals.css";
 
@@ -100,25 +103,28 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const [presentation, messages, now] = await Promise.all([getPresentation(), getMessages(), getNow()]);
   return (
-    <html lang="en" className="scroll-smooth" suppressHydrationWarning>
+    <html lang={presentation.locale} className="scroll-smooth" suppressHydrationWarning>
       <head>
         <meta name="apple-mobile-web-app-title" content="Dubbl" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${playfairDisplay.variable} font-sans antialiased`}
       >
-        <ThemeProvider>
-          <RootProvider>
-            <SessionProvider>{children}</SessionProvider>
-          </RootProvider>
-          <Toaster richColors position="bottom-right" />
-        </ThemeProvider>
+        <PresentationProvider presentation={presentation} messages={messages} now={now}>
+          <ThemeProvider>
+            <RootProvider>
+              <SessionProvider>{children}</SessionProvider>
+            </RootProvider>
+            <Toaster richColors position="bottom-right" />
+          </ThemeProvider>
+        </PresentationProvider>
       </body>
     </html>
   );

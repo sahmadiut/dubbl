@@ -1,5 +1,7 @@
 "use client";
 
+import { setActiveOrganization } from "@/i18n/organization-client";
+
 import { useState, useEffect } from "react";
 import { ChevronDown, Plus, Check } from "lucide-react";
 import {
@@ -50,7 +52,7 @@ export function OrgSwitcher() {
 
   function switchOrg(org: Org) {
     setActiveOrg(org);
-    localStorage.setItem("activeOrgId", org.id);
+    setActiveOrganization(org.id);
     window.location.reload();
   }
 
@@ -143,7 +145,7 @@ export function OrgSwitcher() {
           <div className="border-t border-border p-1">
             <DropdownMenuItem
               onClick={() => {
-                localStorage.removeItem("activeOrgId");
+                setActiveOrganization(null);
                 window.location.href = "/onboarding";
               }}
               className="gap-2 text-[13px] text-muted-foreground"

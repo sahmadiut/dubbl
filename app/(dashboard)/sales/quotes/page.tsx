@@ -1,5 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { quoteStatusLabel } from "@/i18n/quote-presentation";
+
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, FileText, ScrollText, ArrowRightLeft } from "lucide-react";
@@ -40,65 +43,56 @@ const statusColors: Record<string, string> = {
   converted: "border-purple-200 bg-purple-50 text-purple-700",
 };
 
-// Plain-language status labels (end users aren't accountants).
-const statusLabels: Record<string, string> = {
-  draft: "draft",
-  sent: "sent",
-  accepted: "accepted",
-  declined: "declined",
-  expired: "expired",
-  converted: "turned into an invoice",
-};
-
-const columns: Column<Quote>[] = [
-  {
-    key: "number",
-    header: "Number",
-    className: "w-32",
-    render: (r) => <span className="font-mono text-sm">{r.quoteNumber}</span>,
-  },
-  {
-    key: "contact",
-    header: "Customer",
-    render: (r) => (
-      <span className="text-sm font-medium">{r.contact?.name || "-"}</span>
-    ),
-  },
-  {
-    key: "date",
-    header: "Date",
-    className: "w-28",
-    render: (r) => <span className="text-sm">{r.issueDate}</span>,
-  },
-  {
-    key: "expiry",
-    header: "Expires",
-    className: "w-28",
-    render: (r) => <span className="text-sm">{r.expiryDate}</span>,
-  },
-  {
-    key: "status",
-    header: "Status",
-    className: "w-24",
-    render: (r) => (
-      <Badge variant="outline" className={statusColors[r.status] || ""}>
-        {statusLabels[r.status] || r.status}
-      </Badge>
-    ),
-  },
-  {
-    key: "total",
-    header: "Total",
-    className: "w-28 text-right",
-    render: (r) => (
-      <span className="font-mono text-sm tabular-nums">
-        {quoteUiMoney(r.total, r.currencyCode)}
-      </span>
-    ),
-  },
-];
-
 export default function QuotesPage() {
+  const t = useTranslations("SalesQuotes");
+  const columns: Column<Quote>[] = [
+    {
+      key: "number",
+      header: t("number"),
+      className: "w-32",
+      render: (r) => <span className="font-mono text-sm">{r.quoteNumber}</span>,
+    },
+    {
+      key: "contact",
+      header: t("customer"),
+      render: (r) => (
+        <span className="text-sm font-medium">{r.contact?.name || "-"}</span>
+      ),
+    },
+    {
+      key: "date",
+      header: t("date"),
+      className: "w-28",
+      render: (r) => <span className="text-sm">{r.issueDate}</span>,
+    },
+    {
+      key: "expiry",
+      header: t("expires"),
+      className: "w-28",
+      render: (r) => <span className="text-sm">{r.expiryDate}</span>,
+    },
+    {
+      key: "status",
+      header: t("status"),
+      className: "w-24",
+      render: (r) => (
+        <Badge variant="outline" className={statusColors[r.status] || ""}>
+          {quoteStatusLabel(t, r.status)}
+        </Badge>
+      ),
+    },
+    {
+      key: "total",
+      header: t("total"),
+      className: "w-28 text-right",
+      render: (r) => (
+        <span className="font-mono text-sm tabular-nums">
+          {quoteUiMoney(r.total, r.currencyCode)}
+        </span>
+      ),
+    },
+  ];
+
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
   const [statusFilter, setStatusFilter] = useState("all");
@@ -109,7 +103,7 @@ export default function QuotesPage() {
   const error = loaded?.context === context ? loaded.error : null;
   const loading = !!orgId && loaded?.context !== context;
 
-  useDocumentTitle("Sales · Quotes");
+  useDocumentTitle(t("documentTitle"));
 
   useEffect(() => {
     const controller = new AbortController();
@@ -128,9 +122,9 @@ export default function QuotesPage() {
         const rows = data.data.map((row: QuoteWire) => quoteUiHeader(row));
         if (!controller.signal.aborted) setLoaded({ context, quotes: rows, error: null });
       })
-      .catch(() => { if (!controller.signal.aborted) setLoaded({ context, quotes: [], error: "Unable to load valid quote amounts. Try again." }); });
+      .catch(() => { if (!controller.signal.aborted) setLoaded({ context, quotes: [], error: t("readFailed") }); });
     return () => controller.abort();
-  }, [statusFilter, orgId, context]);
+  }, [statusFilter, orgId, context, t]);
 
   const sent = quoteUiSummary(quotes, "sent");
   const accepted = quoteUiSummary(quotes, "accepted");
@@ -150,11 +144,11 @@ export default function QuotesPage() {
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs text-muted-foreground">
                 <ScrollText className="size-3.5 text-purple-500" />
-                Quotes &amp; Proposals
+                {t("proposals")}
               </div>
-              <h2 className="mt-4 text-lg sm:text-2xl font-semibold tracking-tight">Send quotes, win deals</h2>
+              <h2 className="mt-4 text-lg sm:text-2xl font-semibold tracking-tight">{t("emptyTitle")}</h2>
               <p className="mt-3 text-sm text-muted-foreground leading-relaxed max-w-md">
-                Create detailed proposals with line items and pricing. When your customer accepts, turn it into an invoice with one click.
+                {t("emptyDescription")}
               </p>
               <div className="mt-6 flex items-center gap-3">
                 <Button
@@ -163,15 +157,15 @@ export default function QuotesPage() {
                   className="bg-emerald-600 hover:bg-emerald-700"
                 >
                   <Plus className="mr-2 size-4" />
-                  New Quote
+                  {t("newQuote")}
                 </Button>
               </div>
               {/* Mini stats */}
               <div className="mt-8 flex gap-4 sm:gap-6 text-center">
                 {[
-                  { label: "Sent", value: "0" },
-                  { label: "Accepted", value: "0" },
-                  { label: "Converted", value: "0" },
+                  { label: t("sentHeading"), value: "0" },
+                  { label: t("acceptedHeading"), value: "0" },
+                  { label: t("convertedHeading"), value: "0" },
                 ].map(({ label, value }) => (
                   <div key={label}>
                     <p className="text-xl font-bold font-mono tabular-nums text-muted-foreground/40">{value}</p>
@@ -190,20 +184,20 @@ export default function QuotesPage() {
                     <ScrollText className="size-4 text-purple-500" />
                     <span className="text-xs font-mono text-muted-foreground">QTE-0001</span>
                   </div>
-                  <span className="rounded-full border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/40 px-2 py-0.5 text-[10px] font-medium text-purple-600 dark:text-purple-400">accepted</span>
+                  <span className="rounded-full border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/40 px-2 py-0.5 text-[10px] font-medium text-purple-600 dark:text-purple-400">{t("accepted")}</span>
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">Website redesign</span>
+                    <span className="text-muted-foreground">{t("sampleWebsite")}</span>
                     <span className="font-mono text-muted-foreground">$2,400.00</span>
                   </div>
                   <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">SEO audit</span>
+                    <span className="text-muted-foreground">{t("sampleSeo")}</span>
                     <span className="font-mono text-muted-foreground">$800.00</span>
                   </div>
                   <div className="h-px bg-border my-1" />
                   <div className="flex justify-between text-xs font-medium">
-                    <span>Total</span>
+                    <span>{t("total")}</span>
                     <span className="font-mono">$3,200.00</span>
                   </div>
                 </div>
@@ -214,7 +208,7 @@ export default function QuotesPage() {
                 <div className="flex flex-col items-center gap-1 text-muted-foreground/40">
                   <div className="h-4 w-px bg-current" />
                   <ArrowRightLeft className="size-4 rotate-90" />
-                  <span className="text-[10px] font-medium">Turn into invoice</span>
+                  <span className="text-[10px] font-medium">{t("turnIntoInvoice")}</span>
                 </div>
               </div>
 
@@ -225,7 +219,7 @@ export default function QuotesPage() {
                     <FileText className="size-4 text-blue-500" />
                     <span className="text-xs font-mono text-muted-foreground">INV-0001</span>
                   </div>
-                  <span className="rounded-full border px-2 py-0.5 text-[10px] font-medium text-muted-foreground">draft</span>
+                  <span className="rounded-full border px-2 py-0.5 text-[10px] font-medium text-muted-foreground">{t("draft")}</span>
                 </div>
                 <div className="space-y-2">
                   <div className="h-2 w-28 rounded bg-muted" />
@@ -243,12 +237,12 @@ export default function QuotesPage() {
 
   return (
     <BlurReveal className="space-y-10">
-      <Section title="Overview" description="Amounts for the displayed quotes, grouped by currency.">
+      <Section title={t("overview")} description={t("overviewDescription")}>
         <div className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-3 [overflow-wrap:anywhere]">
-            <StatCard title="Sent" value={sent} icon={FileText} />
-            <StatCard title="Accepted" value={accepted} icon={FileText} changeType="positive" />
-            <StatCard title="Total Quotes" value={quotes.length.toString()} icon={FileText} />
+            <StatCard title={t("sentHeading")} value={sent} icon={FileText} />
+            <StatCard title={t("acceptedHeading")} value={accepted} icon={FileText} changeType="positive" />
+            <StatCard title={t("totalQuotes")} value={quotes.length.toString()} icon={FileText} />
           </div>
           <div className="flex justify-end flex-wrap">
             <Button
@@ -257,7 +251,7 @@ export default function QuotesPage() {
               className="bg-emerald-600 hover:bg-emerald-700"
             >
               <Plus className="mr-2 size-4" />
-              New Quote
+              {t("newQuote")}
             </Button>
           </div>
         </div>
@@ -265,14 +259,14 @@ export default function QuotesPage() {
 
       <div className="h-px bg-border" />
 
-      <Section title="Quotes" description="View, filter, and manage all your quotes.">
+      <Section title={t("quotes")} description={t("listDescription")}>
         <div className="space-y-4">
           <Tabs value={statusFilter} onValueChange={setStatusFilter}>
             <TabsList className="overflow-x-auto">
-              <TabsTrigger value="all" className="whitespace-nowrap">All</TabsTrigger>
-              <TabsTrigger value="draft" className="whitespace-nowrap">Draft</TabsTrigger>
-              <TabsTrigger value="sent" className="whitespace-nowrap">Sent</TabsTrigger>
-              <TabsTrigger value="accepted" className="whitespace-nowrap">Accepted</TabsTrigger>
+              <TabsTrigger value="all" className="whitespace-nowrap">{t("all")}</TabsTrigger>
+              <TabsTrigger value="draft" className="whitespace-nowrap">{t("draftHeading")}</TabsTrigger>
+              <TabsTrigger value="sent" className="whitespace-nowrap">{t("sentHeading")}</TabsTrigger>
+              <TabsTrigger value="accepted" className="whitespace-nowrap">{t("acceptedHeading")}</TabsTrigger>
             </TabsList>
           </Tabs>
 
@@ -280,7 +274,7 @@ export default function QuotesPage() {
             columns={columns}
             data={quotes}
             loading={loading}
-            emptyMessage="No quotes found."
+            emptyMessage={t("noQuotes")}
             onRowClick={(r) => router.push(`/sales/quotes/${r.id}`)}
           />
         </div>

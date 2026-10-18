@@ -1236,6 +1236,7 @@ function InventoryDrawer({ open, onClose }: { open: boolean; onClose: () => void
 // Quote Drawer
 // ---------------------------------------------------------------------------
 function QuoteDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useTranslations("SalesQuotes");
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [currencyCode, setCurrencyCode] = useState("USD");
@@ -1265,9 +1266,9 @@ function QuoteDrawer({ open, onClose }: { open: boolean; onClose: () => void }) 
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!contactId) { toast.error("Please select a customer"); return; }
+    if (!contactId) { toast.error(t("selectCustomer")); return; }
     if (!orgId) return;
-    if (!validLines) { toast.error("Check the quote line amounts"); return; }
+    if (!validLines) { toast.error(t("checkLines")); return; }
 
     try {
       const exactLines = quoteEditorLines(lines);
@@ -1283,15 +1284,15 @@ function QuoteDrawer({ open, onClose }: { open: boolean; onClose: () => void }) 
         }),
       });
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to create quote");
+        throw new Error("Quote creation failed");
       }
       const data = await res.json();
-      toast.success("Quote created");
+      if (!data?.quote || typeof data.quote.id !== "string" || !data.quote.id) throw new Error("Invalid quote response");
+      toast.success(t("created"));
       onClose();
       router.push(`/sales/quotes/${data.quote.id}`);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create quote");
+    } catch {
+      toast.error(t("createFailed"));
     } finally {
       setSaving(false);
     }
@@ -1304,37 +1305,37 @@ function QuoteDrawer({ open, onClose }: { open: boolean; onClose: () => void }) 
           <div className="flex items-center gap-3">
             <DrawerIcon><FileText className="size-5" /></DrawerIcon>
             <div>
-              <SheetTitle className="text-lg">New Quote</SheetTitle>
-              <SheetDescription>Create a sales quote for your customer.</SheetDescription>
+              <SheetTitle className="text-lg">{t("newQuote")}</SheetTitle>
+              <SheetDescription>{t("drawerDescription")}</SheetDescription>
             </div>
           </div>
         </SheetHeader>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
             <div className="space-y-4">
-              <SectionLabel>Quote Details</SectionLabel>
+              <SectionLabel>{t("details")}</SectionLabel>
               <div className="space-y-2">
-                <Label>Quote currency</Label>
+                <Label>{t("currency")}</Label>
                 <CurrencySelect value={currencyCode} onValueChange={(code) => { setCurrencyCode(code); if (code !== currencyCode) setValidLines(false); }} />
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Customer *</Label>
+                  <Label>{t("customerRequired")}</Label>
                   <ContactPicker value={contactId} onChange={setContactId} type="customer" />
                 </div>
                 <div className="space-y-2">
-                  <Label>Reference</Label>
-                  <Input value={reference} onChange={(e) => setReference(e.target.value)} placeholder="Quote reference" />
+                  <Label>{t("reference")}</Label>
+                  <Input value={reference} onChange={(e) => setReference(e.target.value)} placeholder={t("referencePlaceholder")} />
                 </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Issue Date</Label>
-                  <DatePicker value={issueDate} onChange={setIssueDate} placeholder="Issue date" />
+                  <Label>{t("issueDate")}</Label>
+                  <DatePicker value={issueDate} onChange={setIssueDate} placeholder={t("issuePlaceholder")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Expiry Date</Label>
-                  <DatePicker value={expiryDate} onChange={setExpiryDate} placeholder="Expiry date" />
+                  <Label>{t("expiryDate")}</Label>
+                  <DatePicker value={expiryDate} onChange={setExpiryDate} placeholder={t("expiryPlaceholder")} />
                 </div>
               </div>
             </div>
@@ -1342,7 +1343,7 @@ function QuoteDrawer({ open, onClose }: { open: boolean; onClose: () => void }) 
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Line Items</SectionLabel>
+              <SectionLabel>{t("lineItems")}</SectionLabel>
               <LineItemsEditor key={orgId} lines={lines} onChange={(next) => { setLines(next); setValidLines(false); }} accountTypeFilter={["revenue"]} taxContext="sales"
                 currencyCode={currencyCode} roundPriceFirst priceFractionDigits={18} onValidityChange={setValidLines} />
             </div>
@@ -1350,11 +1351,11 @@ function QuoteDrawer({ open, onClose }: { open: boolean; onClose: () => void }) 
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Notes</SectionLabel>
-              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notes to customer..." rows={3} />
+              <SectionLabel>{t("notes")}</SectionLabel>
+              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("notesPlaceholder")} rows={3} />
             </div>
           </div>
-          <DrawerFooter onClose={onClose} saving={saving} label="Create Quote" disabled={!validLines || !contactId || !orgId || lines.some(line => !line.description.trim())} />
+          <DrawerFooter onClose={onClose} saving={saving} label={t("createQuote")} disabled={!validLines || !contactId || !orgId || lines.some(line => !line.description.trim())} />
         </form>
       </SheetContent>
     </Sheet>

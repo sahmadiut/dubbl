@@ -133,6 +133,15 @@ Extraction ownership:
 | LOC-046 | LOC-025 child: revenue schedules |
 | LOC-047 | LOC-025 child: sales navigation and shared document/line forms |
 | LOC-026 | LOC-007 child: purchasing |
+| LOC-048 | LOC-026 child: goods receipt list/detail and shared procurement line details; see [scope](GOODS_RECEIPT_CATALOGS.md) |
+| LOC-049 | LOC-026 child: supplier bills |
+| LOC-050 | LOC-026 child: recurring bills |
+| LOC-051 | LOC-026 child: expenses and recurring expenses |
+| LOC-052 | LOC-026 child: supplier debit notes |
+| LOC-053 | LOC-026 child: purchase requisitions |
+| LOC-054 | LOC-026 child: purchase orders and receiving forms |
+| LOC-055 | LOC-026 child: landed costs |
+| LOC-056 | LOC-026 child: shared purchasing navigation/forms |
 | LOC-027 | LOC-007 child: contacts |
 | LOC-028 | LOC-007 child: tax |
 | LOC-008 | Inventory, payroll, projects, CRM, reports, dashboard and documents |

@@ -1,5 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { goodsReceiptStatusLabel } from "@/i18n/goods-receipt-presentation";
+
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Truck, PackageCheck, BookOpen, ReceiptText, Loader2 } from "lucide-react";
@@ -43,14 +46,6 @@ const statusColors: Record<string, string> = {
   void: "border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300",
 };
 
-// Plain-language status labels (end users aren't accountants).
-const statusLabels: Record<string, string> = {
-  draft: "draft",
-  received: "received",
-  billed: "billed",
-  void: "cancelled",
-};
-
 export default function GoodsReceiptDetailPage() {
   const { id } = useParams<{ id: string }>();
   const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
@@ -58,6 +53,7 @@ export default function GoodsReceiptDetailPage() {
 }
 
 function GoodsReceiptDetailContent() {
+  const t = useTranslations("GoodsReceipts");
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [gr, setGr] = useState<GoodsReceiptDetail | null>(null);
@@ -77,13 +73,13 @@ function GoodsReceiptDetailContent() {
       });
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data.error || "Could not create a bill from this goods receipt");
+        toast.error(t("createBillFailed"));
         return;
       }
-      toast.success("Draft bill created");
+      toast.success(t("billCreated"));
       router.push(`/purchases/${data.bill.id}`);
     } catch {
-      toast.error("Could not create a bill from this goods receipt");
+      toast.error(t("createBillFailed"));
     } finally {
       setBilling(false);
     }
@@ -95,16 +91,16 @@ function GoodsReceiptDetailContent() {
     if (!orgId) return;
     const controller = new AbortController();
     fetch(`/api/v1/goods-receipts/${id}`, { headers: { "x-organization-id": orgId }, signal: controller.signal })
-      .then(r => { if (!r.ok) throw new Error("Could not load procurement document"); return r.json(); })
-      .then(data => { if (!controller.signal.aborted) setGr(procurementReceipt(data.goodsReceipt as ProcurementWire<GoodsReceiptDetail>)); })
-      .catch(error => { if (!controller.signal.aborted) { setGr(null); setReadError(error instanceof Error ? error.message : "Invalid procurement amounts"); } })
+      .then(r => { if (!r.ok) throw new Error(t("detailReadFailed")); return r.json(); })
+      .then(data => { if (!controller.signal.aborted) { setGr(procurementReceipt(data.goodsReceipt as ProcurementWire<GoodsReceiptDetail>)); setReadError(null); } })
+      .catch(() => { if (!controller.signal.aborted) { setGr(null); setReadError(t("detailReadFailed")); } })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [id, orgId]);
+  }, [id, orgId, t]);
 
   if (readError) return <p role="alert" className="text-sm text-red-600">{readError}</p>;
-  if (loading) return <div className="space-y-6"><PageHeader title="Loading..." /></div>;
-  if (!gr) return <div className="space-y-6"><PageHeader title="Goods receipt not found" /></div>;
+  if (loading) return <div className="space-y-6"><PageHeader title={t("loading")} /></div>;
+  if (!gr) return <div className="space-y-6"><PageHeader title={t("notFound")} /></div>;
 
   const totalValue = gr.total;
   // First line carrying a journal entry — the GRNI posting for this receipt.
@@ -112,14 +108,14 @@ function GoodsReceiptDetailContent() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title={gr.receiptNumber} description={`From: ${gr.contact?.name || "Unknown"}`}>
+      <PageHeader title={gr.receiptNumber} description={t("fromSupplier", { name: gr.contact?.name || t("unknown") })}>
         <Button variant="outline" size="sm" asChild>
-          <Link href="/purchases/goods-receipts"><ArrowLeft className="mr-2 size-4" />Back</Link>
+          <Link href="/purchases/goods-receipts"><ArrowLeft className="mr-2 size-4" />{t("back")}</Link>
         </Button>
         {gr.purchaseOrder && (
-          <Button variant="outline" size="sm" asChild title="Open the purchase order these goods were received against">
+          <Button variant="outline" size="sm" asChild title={t("openOrderTooltip")}>
             <Link href={`/purchases/orders/${gr.purchaseOrder.id}`}>
-              <Truck className="mr-2 size-4" />View order {gr.purchaseOrder.poNumber}
+              <Truck className="mr-2 size-4" />{t("viewOrder", { number: gr.purchaseOrder.poNumber })}
             </Link>
           </Button>
         )}
@@ -128,20 +124,20 @@ function GoodsReceiptDetailContent() {
             size="sm"
             onClick={handleCreateBill}
             disabled={billing}
-            title="Create a draft supplier bill for the items received here, ready to review and pay"
+            title={t("createBillTooltip")}
           >
             {billing ? (
               <Loader2 className="mr-2 size-4 animate-spin" />
             ) : (
               <ReceiptText className="mr-2 size-4" />
             )}
-            Create a bill from this
+            {t("createBill")}
           </Button>
         )}
         {journalEntryId && (
-          <Button variant="outline" size="sm" asChild title="See the bookkeeping entry created when these goods were received">
+          <Button variant="outline" size="sm" asChild title={t("journalTooltip")}>
             <Link href={`/accounting/${journalEntryId}`}>
-              <BookOpen className="mr-2 size-4" />View bookkeeping entry
+              <BookOpen className="mr-2 size-4" />{t("viewJournal")}
             </Link>
           </Button>
         )}
@@ -149,33 +145,33 @@ function GoodsReceiptDetailContent() {
 
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         <Badge variant="outline" className={statusColors[gr.status] || ""}>
-          {statusLabels[gr.status] || gr.status}
+          {goodsReceiptStatusLabel(t, gr.status)}
         </Badge>
         <span className="text-xs sm:text-sm text-muted-foreground">
-          Received {gr.date}
+          {t("receivedDate", { date: gr.date })}
         </span>
         {gr.purchaseOrder && (
           <Link
             href={`/purchases/orders/${gr.purchaseOrder.id}`}
             className="text-xs sm:text-sm text-muted-foreground underline underline-offset-2 hover:text-foreground"
           >
-            Order {gr.purchaseOrder.poNumber}
+            {t("orderNumber", { number: gr.purchaseOrder.poNumber })}
           </Link>
         )}
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="rounded-lg border p-4">
-          <p className="text-xs text-muted-foreground">Value received</p>
+          <p className="text-xs text-muted-foreground">{t("valueReceived")}</p>
           <p className="text-xl font-bold font-mono break-all">{procurementMoney(totalValue, gr.currencyCode)}</p>
         </div>
         <div className="rounded-lg border p-4">
           <div className="flex items-center gap-2">
             <PackageCheck className="size-3.5 text-emerald-600" />
-            <p className="text-xs text-muted-foreground">Items received</p>
+            <p className="text-xs text-muted-foreground">{t("itemsReceived")}</p>
           </div>
           <p className="text-sm font-medium mt-1">
-            {gr.lines.length} item{gr.lines.length !== 1 ? "s" : ""}
+            {t("itemCount", { count: gr.lines.length })}
           </p>
         </div>
       </div>
@@ -184,7 +180,7 @@ function GoodsReceiptDetailContent() {
 
       {gr.notes && (
         <div className="rounded-lg border p-4">
-          <p className="text-xs font-medium text-muted-foreground mb-1">Notes</p>
+          <p className="text-xs font-medium text-muted-foreground mb-1">{t("notes")}</p>
           <p className="text-sm">{gr.notes}</p>
         </div>
       )}

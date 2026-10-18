@@ -293,3 +293,17 @@ Verified source scope: 18 route TSX files (7,728 lines) plus shared forms and se
 - [LOC-045](../tasks/LOC-045.md): Extract recurring invoice catalogs.
 - [LOC-046](../tasks/LOC-046.md): Extract revenue schedule catalogs.
 - [LOC-047](../tasks/LOC-047.md): Extract shared sales document catalogs.
+
+## LOC-026 purchasing extraction split
+
+Verified scope: 18 route TSX files (7,887 lines), plus shared forms/drawers. LOC-026 retains independent combined acceptance; shared ProcurementMoneyDetails belongs to LOC-048. Preserve exact-money, REST/MCP and DEC-008 boundaries.
+
+- [LOC-048](../tasks/LOC-048.md): Extract goods receipt catalogs.
+- [LOC-049](../tasks/LOC-049.md): Extract supplier bill catalogs.
+- [LOC-050](../tasks/LOC-050.md): Extract recurring bill catalogs.
+- [LOC-051](../tasks/LOC-051.md): Extract expense catalogs.
+- [LOC-052](../tasks/LOC-052.md): Extract supplier debit note catalogs.
+- [LOC-053](../tasks/LOC-053.md): Extract purchase requisition catalogs.
+- [LOC-054](../tasks/LOC-054.md): Extract purchase order catalogs.
+- [LOC-055](../tasks/LOC-055.md): Extract landed cost catalogs.
+- [LOC-056](../tasks/LOC-056.md): Extract shared purchasing catalogs.

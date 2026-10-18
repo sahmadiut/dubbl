@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { bankWorkspaceFailure, bankMatchReason, type WorkspaceTranslate } from "@/i18n/bank-workspace-presentation";
+import { bankImportFormatLabels, bankImportWarning } from "@/i18n/bank-import-presentation";
 import { requireBankAccountResponse } from "@/i18n/bank-account-presentation";
 
 import { useRef, useState, useMemo, useEffect } from "react";
@@ -314,22 +315,6 @@ export function derivedStateMeta(t: WorkspaceTranslate): Record<
 
 }
 
-export const FORMAT_LABELS: Record<StatementFormat, string> = {
-  auto: "Auto Detect",
-  csv: "CSV",
-  tsv: "TSV",
-  qif: "QIF",
-  ofx: "OFX",
-  qfx: "QFX",
-  qbo: "QBO",
-  camt052: "CAMT.052",
-  camt053: "CAMT.053",
-  camt054: "CAMT.054",
-  mt940: "MT940",
-  mt942: "MT942",
-  bai2: "BAI2",
-};
-
 export const ACCOUNT_COLORS = [
   "#10b981", "#3b82f6", "#8b5cf6", "#f59e0b", "#ef4444",
   "#ec4899", "#06b6d4", "#84cc16", "#f97316", "#6366f1",
@@ -629,6 +614,7 @@ export function TransactionRow({
 // Import Row
 // ---------------------------------------------------------------------------
 export function ImportRow({ imp, isLast }: { imp: StatementImport; isLast: boolean }) {
+  const t = useTranslations("BankImports");
   return (
     <div className={cn("flex items-center justify-between px-4 py-3", !isLast && "border-b")}>
       <div className="flex items-center gap-3 min-w-0">
@@ -643,13 +629,13 @@ export function ImportRow({ imp, isLast }: { imp: StatementImport; isLast: boole
           <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
             <span>{new Date(imp.createdAt).toLocaleDateString()}</span>
             {imp.statementStartDate && imp.statementEndDate && (
-              <span>{imp.statementStartDate} to {imp.statementEndDate}</span>
+              <span>{t("period", { start: imp.statementStartDate, end: imp.statementEndDate })}</span>
             )}
-            {imp.duplicateCount > 0 && <span>{imp.duplicateCount} duplicates skipped</span>}
+            {imp.duplicateCount > 0 && <span>{t("duplicatesSkipped", { count: imp.duplicateCount })}</span>}
           </div>
         </div>
       </div>
-      <span className="text-sm font-mono font-medium shrink-0 tabular-nums">{imp.importedCount} rows</span>
+      <span className="text-sm font-mono font-medium shrink-0 tabular-nums">{t("rowCount", { count: imp.importedCount })}</span>
     </div>
   );
 }
@@ -688,6 +674,8 @@ export function ImportSheet({
   onImport: () => void;
   currencyCode: string;
 }) {
+  const t = useTranslations("BankImports");
+  const formatLabels = bankImportFormatLabels(t);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   const canPreview = Boolean(selectedFile || manualContent.trim());
@@ -701,15 +689,15 @@ export function ImportSheet({
               <Upload className="size-5" />
             </div>
             <div>
-              <SheetTitle className="text-lg">Import Statement</SheetTitle>
-              <SheetDescription>Upload a bank statement or paste content to import transactions.</SheetDescription>
+              <SheetTitle className="text-lg">{t("title")}</SheetTitle>
+              <SheetDescription>{t("hint")}</SheetDescription>
             </div>
           </div>
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
           <div className="space-y-4">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Upload File</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("uploadFile")}</p>
             <div
               onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
               onDragLeave={(e) => { e.preventDefault(); setDragging(false); }}
@@ -726,6 +714,7 @@ export function ImportSheet({
               <input
                 ref={fileInputRef}
                 type="file"
+                aria-label={t("chooseFile")}
                 accept=".csv,.tsv,.qif,.ofx,.qfx,.qbo,.xml,.txt,.bai,.bai2"
                 onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
                 className="hidden"
@@ -734,9 +723,10 @@ export function ImportSheet({
                 <>
                   <FileText className="size-8 text-emerald-600" />
                   <p className="mt-3 text-sm font-medium">{selectedFile.name}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{(selectedFile.size / 1024).toFixed(1)} KB</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{t("fileSize", { size: (selectedFile.size / 1024).toFixed(1) })}</p>
                   <button
                     type="button"
+                    aria-label={t("removeFile")}
                     onClick={(e) => { e.stopPropagation(); setSelectedFile(null); }}
                     className="absolute right-3 top-3 rounded-full p-1.5 text-muted-foreground hover:bg-muted transition-colors"
                   >
@@ -748,8 +738,8 @@ export function ImportSheet({
                   <div className="flex size-12 items-center justify-center rounded-full bg-muted">
                     <Upload className="size-5 text-muted-foreground" />
                   </div>
-                  <p className="mt-3 text-sm font-medium">Drop your statement here</p>
-                  <p className="mt-1 text-xs text-muted-foreground">or click to browse. CSV, OFX, QFX, CAMT, MT940, BAI2, and more.</p>
+                  <p className="mt-3 text-sm font-medium">{t("dropHint")}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{t("browseHint")}</p>
                 </>
               )}
             </div>
@@ -758,24 +748,25 @@ export function ImportSheet({
           <div className="h-px bg-border" />
 
           <div className="space-y-4">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Or Paste Content</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("pasteContent")}</p>
             <Textarea
               value={manualContent}
               onChange={(e) => setManualContent(e.target.value)}
               rows={5}
               className="font-mono text-xs"
-              placeholder="Paste CSV, QFX, OFX, MT940, CAMT XML, or other statement content..."
+              aria-label={t("pasteContent")}
+              placeholder={t("contentPlaceholder")}
             />
           </div>
 
           <div className="h-px bg-border" />
 
           <div className="space-y-4">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Format</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("format")}</p>
             <Select value={format} onValueChange={(v) => setFormat(v as StatementFormat)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger aria-label={t("format")}><SelectValue /></SelectTrigger>
               <SelectContent>
-                {Object.entries(FORMAT_LABELS).map(([v, l]) => (
+                {Object.entries(formatLabels).map(([v, l]) => (
                   <SelectItem key={v} value={v}>{l}</SelectItem>
                 ))}
               </SelectContent>
@@ -786,13 +777,13 @@ export function ImportSheet({
             <>
               <div className="h-px bg-border" />
               <div className="space-y-4">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Preview</p>
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("preview")}</p>
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { label: "Format", value: FORMAT_LABELS[preview.format] || preview.format },
-                    { label: "Rows", value: String(preview.rowCount) },
-                    { label: "Duplicates", value: String(preview.duplicates.length) },
-                    { label: "Period", value: preview.statementStartDate && preview.statementEndDate ? `${preview.statementStartDate} to ${preview.statementEndDate}` : "-" },
+                    { label: t("format"), value: formatLabels[preview.format] || preview.format },
+                    { label: t("rows"), value: String(preview.rowCount) },
+                    { label: t("duplicates"), value: String(preview.duplicates.length) },
+                    { label: t("periodLabel"), value: preview.statementStartDate && preview.statementEndDate ? t("period", { start: preview.statementStartDate, end: preview.statementEndDate }) : "-" },
                   ].map(({ label, value }) => (
                     <div key={label} className="rounded-lg border bg-muted/20 p-3">
                       <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
@@ -803,18 +794,18 @@ export function ImportSheet({
 
                 {preview.warnings.length > 0 && (
                   <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800 p-3">
-                    <p className="text-xs font-medium text-amber-800 dark:text-amber-300">Warnings</p>
+                    <p className="text-xs font-medium text-amber-800 dark:text-amber-300">{t("warnings")}</p>
                     <ul className="mt-1.5 space-y-1 text-xs text-amber-700 dark:text-amber-400">
-                      {preview.warnings.map((w) => <li key={w}>{w}</li>)}
+                      {preview.warnings.map((w) => <li key={w}>{bankImportWarning(t, w)}</li>)}
                     </ul>
                   </div>
                 )}
 
                 <div className="rounded-lg border overflow-hidden overflow-x-auto">
                   <div className="grid min-w-[320px] grid-cols-[90px_1fr_100px] gap-2 border-b bg-muted/30 px-3 py-2">
-                    <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Date</span>
-                    <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Description</span>
-                    <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground text-right">Amount</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{t("date")}</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{t("description")}</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground text-right">{t("amount")}</span>
                   </div>
                   <div className="max-h-60 overflow-y-auto">
                     {preview.transactions.map((tx, i) => (
@@ -837,12 +828,12 @@ export function ImportSheet({
         </div>
 
         <div className="sticky bottom-0 z-10 flex flex-wrap items-center justify-end gap-2 sm:gap-3 border-t bg-background/80 px-4 py-3 sm:px-6 sm:py-4 backdrop-blur-sm">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t("cancel")}</Button>
           <Button variant="outline" disabled={!canPreview || previewing} onClick={onPreview}>
-            {previewing ? <><Loader2 className="mr-2 size-3.5 animate-spin" />Previewing...</> : "Preview"}
+            {previewing ? <><Loader2 className="mr-2 size-3.5 animate-spin" />{t("previewing")}</> : t("preview")}
           </Button>
           <Button onClick={onImport} disabled={!canPreview || importing} className="bg-emerald-600 hover:bg-emerald-700">
-            {importing ? <><Loader2 className="mr-2 size-3.5 animate-spin" />Importing...</> : "Import"}
+            {importing ? <><Loader2 className="mr-2 size-3.5 animate-spin" />{t("importing")}</> : t("import")}
           </Button>
         </div>
       </SheetContent>

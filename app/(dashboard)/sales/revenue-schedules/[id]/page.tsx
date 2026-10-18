@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { revenueMethodLabel, revenueStatusLabel, revenueScheduleValid, type RevenueReadError } from "@/i18n/revenue-schedule-presentation";
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
@@ -38,21 +40,9 @@ const statusColors: Record<string, string> = {
   cancelled: "border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300",
 };
 
-// Plain-language status labels (end users aren't accountants).
-const statusLabels: Record<string, string> = {
-  active: "in progress",
-  completed: "finished",
-  cancelled: "cancelled",
-};
-
-// Plain-language method labels (end users aren't accountants).
-const methodLabels: Record<string, string> = {
-  straight_line: "evenly over time",
-  milestone: "by milestone",
-  on_completion: "when finished",
-};
-
 export default function RevenueScheduleDetailPage() {
+  const t = useTranslations("RevenueSchedules");
+  const [error, setError] = useState<RevenueReadError | null>(null);
   const { id } = useParams<{ id: string }>();
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [rs, setRs] = useState<RevenueScheduleDetail | null>(null);
@@ -61,29 +51,38 @@ export default function RevenueScheduleDetailPage() {
 
   const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
 
-  useDocumentTitle("Sales · Revenue Schedule");
+  useDocumentTitle(t("detailDocumentTitle"));
 
-  function refetch() {
+  async function refetch() {
     if (!orgId) return;
-    fetch(`/api/v1/revenue-schedules/${id}`, {
-      headers: { "x-organization-id": orgId },
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.schedule) setRs(data.schedule);
-      });
+    try {
+      const res = await fetch(`/api/v1/revenue-schedules/${id}`, { headers: { "x-organization-id": orgId } });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      if (!revenueScheduleValid(data?.schedule, true) || data.schedule.id !== id) throw new Error();
+      setRs(data.schedule);
+      setError(null);
+    } catch {
+      setRs(null);
+      setError("refreshFailed");
+    }
   }
 
   useEffect(() => {
     if (!orgId) return;
-    fetch(`/api/v1/revenue-schedules/${id}`, {
-      headers: { "x-organization-id": orgId },
-    })
-      .then((r) => r.json())
+    let cancelled = false;
+    setLoading(true);
+    setRs(null);
+    setError(null);
+    fetch(`/api/v1/revenue-schedules/${id}`, { headers: { "x-organization-id": orgId } })
+      .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
       .then((data) => {
-        if (data.schedule) setRs(data.schedule);
+        if (!revenueScheduleValid(data?.schedule, true) || data.schedule.id !== id) throw new Error();
+        if (!cancelled) setRs(data.schedule);
       })
-      .finally(() => setLoading(false));
+      .catch(() => { if (!cancelled) setError("readFailed"); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, [id, orgId]);
 
   async function handleRecognize() {
@@ -97,12 +96,13 @@ export default function RevenueScheduleDetailPage() {
         body: JSON.stringify({ entryId: target.id }),
       });
       if (res.ok) {
-        toast.success("Counted the next period as income");
-        refetch();
+        toast.success(t("recognizedSuccess"));
+        await refetch();
       } else {
-        const data = await res.json();
-        toast.error(typeof data.error === "string" ? data.error : "Couldn't count the next period");
+        toast.error(t("recognizeFailed"));
       }
+    } catch {
+      toast.error(t("recognizeFailed"));
     } finally {
       setRecognizing(false);
     }
@@ -111,28 +111,30 @@ export default function RevenueScheduleDetailPage() {
   async function handleCancel() {
     if (!orgId) return;
     await confirm({
-      title: "Cancel this schedule?",
-      description: "This stops any further income from being counted on this schedule. Periods already counted stay as they are. You can't undo this.",
-      confirmLabel: "Cancel schedule",
+      title: t("cancelTitle"),
+      description: t("cancelDescription"),
+      confirmLabel: t("cancelSchedule"),
+      cancelLabel: t("cancel"),
       destructive: true,
       onConfirm: async () => {
-        const res = await fetch(`/api/v1/revenue-schedules/${id}`, {
-          method: "DELETE",
-          headers: { "x-organization-id": orgId },
-        });
-        if (res.ok) {
-          toast.success("Schedule cancelled");
-          refetch();
-        } else {
-          const data = await res.json();
-          toast.error(typeof data.error === "string" ? data.error : "Couldn't cancel this schedule");
+        try {
+          const res = await fetch(`/api/v1/revenue-schedules/${id}`, {
+            method: "DELETE",
+            headers: { "x-organization-id": orgId },
+          });
+          if (!res.ok) throw new Error();
+          toast.success(t("cancelledSuccess"));
+          await refetch();
+        } catch {
+          toast.error(t("cancelFailed"));
         }
       },
     });
   }
 
-  if (loading) return <div className="space-y-6"><PageHeader title="Loading..." /></div>;
-  if (!rs) return <div className="space-y-6"><PageHeader title="Revenue schedule not found" /></div>;
+  if (loading) return <div className="space-y-6"><PageHeader title={t("loading")} /></div>;
+  if (error) return <div className="space-y-6"><PageHeader title={t(error)} /><Button asChild variant="outline"><Link href="/sales/revenue-schedules">{t("back")}</Link></Button></div>;
+  if (!rs) return <div className="space-y-6"><PageHeader title={t("notFound")} /></div>;
 
   const sortedEntries = rs.entries;
   const nextEntry = sortedEntries.find((e) => !e.recognized);
@@ -140,9 +142,9 @@ export default function RevenueScheduleDetailPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Revenue schedule" description={`${rs.startDate} – ${rs.endDate} · ${methodLabels[rs.method] || rs.method}`}>
+      <PageHeader title={t("detailTitle")} description={t("detailDescription", { start: rs.startDate, end: rs.endDate, method: revenueMethodLabel(t, rs.method) })}>
         <Button variant="outline" size="sm" asChild>
-          <Link href="/sales/revenue-schedules"><ArrowLeft className="mr-2 size-4" />Back</Link>
+          <Link href="/sales/revenue-schedules"><ArrowLeft className="mr-2 size-4" />{t("back")}</Link>
         </Button>
         {rs.status === "active" && nextEntry && (
           <Button
@@ -150,47 +152,47 @@ export default function RevenueScheduleDetailPage() {
             onClick={handleRecognize}
             loading={recognizing}
             className="bg-emerald-600 hover:bg-emerald-700"
-            title="Count the next period's amount as income now"
+            title={t("recognizeHint")}
           >
-            <TrendingUp className="mr-2 size-4" />Count next period
+            <TrendingUp className="mr-2 size-4" />{t("recognize")}
           </Button>
         )}
         {rs.status === "active" && (
-          <Button variant="outline" size="sm" onClick={handleCancel} className="text-red-600" title="Stop counting any further income on this schedule">
-            <Ban className="mr-2 size-4" />Cancel schedule
+          <Button variant="outline" size="sm" onClick={handleCancel} className="text-red-600" title={t("cancelHint")}>
+            <Ban className="mr-2 size-4" />{t("cancelSchedule")}
           </Button>
         )}
       </PageHeader>
 
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-        <Badge variant="outline" className={statusColors[rs.status] || ""}>
-          {statusLabels[rs.status] || rs.status}
+        <Badge variant="outline" className={Object.hasOwn(statusColors, rs.status) ? statusColors[rs.status] : ""}>
+          {revenueStatusLabel(t, rs.status)}
         </Badge>
         <span className="text-xs sm:text-sm text-muted-foreground">
-          Spread {methodLabels[rs.method] || rs.method}
+          {t("spread", { method: revenueMethodLabel(t, rs.method) })}
         </span>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-lg border p-4">
-          <p className="text-xs text-muted-foreground">Total</p>
+          <p className="text-xs text-muted-foreground">{t("total")}</p>
           <p className="text-xl font-bold font-mono">{formatMoney(rs.totalAmount)}</p>
         </div>
         <div className="rounded-lg border p-4">
-          <p className="text-xs text-muted-foreground">Counted so far</p>
+          <p className="text-xs text-muted-foreground">{t("recognized")}</p>
           <p className="text-xl font-bold font-mono text-emerald-600">{formatMoney(rs.recognizedAmount)}</p>
         </div>
         <div className="rounded-lg border p-4">
-          <p className="text-xs text-muted-foreground">Left to count</p>
+          <p className="text-xs text-muted-foreground">{t("remaining")}</p>
           <p className="text-xl font-bold font-mono text-amber-600">{formatMoney(remaining)}</p>
         </div>
       </div>
 
       <div className="rounded-lg border overflow-x-auto">
         <div className="grid min-w-[400px] grid-cols-[1fr_140px_120px] gap-2 border-b bg-muted/50 px-4 py-2 text-xs font-medium text-muted-foreground">
-          <span>Period</span>
-          <span className="text-right">Amount</span>
-          <span className="text-right">Counted</span>
+          <span>{t("period")}</span>
+          <span className="text-right">{t("amount")}</span>
+          <span className="text-right">{t("countedHeading")}</span>
         </div>
         {sortedEntries.map((entry) => (
           <div key={entry.id} className="grid min-w-[400px] grid-cols-[1fr_140px_120px] gap-2 border-b px-4 py-2 last:border-b-0 items-center">
@@ -199,17 +201,17 @@ export default function RevenueScheduleDetailPage() {
             <span className="text-right text-sm">
               {entry.recognized ? (
                 <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-                  <Check className="mr-1 size-3" />counted
+                  <Check className="mr-1 size-3" />{t("counted")}
                 </Badge>
               ) : (
-                <span className="text-xs text-muted-foreground">not yet</span>
+                <span className="text-xs text-muted-foreground">{t("notYet")}</span>
               )}
             </span>
           </div>
         ))}
         {sortedEntries.length === 0 && (
           <div className="px-4 py-6 text-center text-sm text-muted-foreground">
-            No periods on this schedule.
+            {t("noPeriods")}
           </div>
         )}
       </div>

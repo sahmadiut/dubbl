@@ -4757,6 +4757,8 @@ interface InvoiceOption {
 }
 
 function RevenueScheduleDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useTranslations("RevenueSchedules");
+  const [invoiceError, setInvoiceError] = useState(false);
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [invoices, setInvoices] = useState<InvoiceOption[]>([]);
@@ -4776,18 +4778,25 @@ function RevenueScheduleDrawer({ open, onClose }: { open: boolean; onClose: () =
     }
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
+    let cancelled = false;
+    setInvoices([]);
+    setInvoiceError(false);
     fetch("/api/v1/invoices", { headers: { "x-organization-id": orgId } })
-      .then((r) => r.json())
-      .then((data) => { if (data.data) setInvoices(data.data); })
-      .catch(() => {});
+      .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
+      .then((data) => {
+        if (!Array.isArray(data?.data) || !data.data.every((inv: InvoiceOption) => inv && typeof inv.id === "string" && !!inv.id.trim())) throw new Error();
+        if (!cancelled) setInvoices(data.data);
+      })
+      .catch(() => { if (!cancelled) setInvoiceError(true); });
+    return () => { cancelled = true; };
   }, [open]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!invoiceId) { toast.error("Please choose an invoice"); return; }
+    if (!invoiceId) { toast.error(t("selectInvoice")); return; }
     setSaving(true);
     const orgId = localStorage.getItem("activeOrgId");
-    if (!orgId) { setSaving(false); return; }
+    if (!orgId) { toast.error(t("selectOrg")); setSaving(false); return; }
 
     const fingerprint = JSON.stringify({ orgId, invoiceId, totalAmount, startDate, endDate, method });
     if (retryRef.current?.fingerprint !== fingerprint) retryRef.current = { fingerprint, key: crypto.randomUUID() };
@@ -4804,16 +4813,14 @@ function RevenueScheduleDrawer({ open, onClose }: { open: boolean; onClose: () =
           method,
         }),
       });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(typeof data.error === "string" ? data.error : "Failed to create revenue schedule");
-      }
+      if (!res.ok) throw new Error();
       const data = await res.json();
-      toast.success("Revenue schedule created");
+      if (typeof data?.schedule?.id !== "string" || !data.schedule.id.trim()) throw new Error();
+      toast.success(t("created"));
       onClose();
       router.push(`/sales/revenue-schedules/${data.schedule.id}`);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create revenue schedule");
+    } catch {
+      toast.error(t("createFailed"));
     } finally {
       setSaving(false);
     }
@@ -4826,20 +4833,21 @@ function RevenueScheduleDrawer({ open, onClose }: { open: boolean; onClose: () =
           <div className="flex items-center gap-3">
             <DrawerIcon><TrendingUp className="size-5" /></DrawerIcon>
             <div>
-              <SheetTitle className="text-lg">New revenue schedule</SheetTitle>
-              <SheetDescription>Recognize income from an invoice gradually over time.</SheetDescription>
+              <SheetTitle className="text-lg">{t("newTitle")}</SheetTitle>
+              <SheetDescription>{t("drawerDescription")}</SheetDescription>
             </div>
           </div>
         </SheetHeader>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
             <div className="space-y-4">
-              <SectionLabel>Schedule Details</SectionLabel>
+              {invoiceError && <p role="alert" className="text-sm text-destructive">{t("invoicesFailed")}</p>}
+              <SectionLabel>{t("scheduleDetails")}</SectionLabel>
               <div className="space-y-2">
-                <Label>Invoice *</Label>
+                <Label>{t("invoiceRequired")}</Label>
                 <Select value={invoiceId} onValueChange={setInvoiceId}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Choose an invoice..." />
+                    <SelectValue placeholder={t("chooseInvoice")} />
                   </SelectTrigger>
                   <SelectContent>
                     {invoices.map((inv) => (
@@ -4850,7 +4858,7 @@ function RevenueScheduleDrawer({ open, onClose }: { open: boolean; onClose: () =
                     ))}
                     {invoices.length === 0 && (
                       <div className="px-2 py-4 text-center text-sm text-muted-foreground">
-                        No invoices yet
+                        {t("noInvoices")}
                       </div>
                     )}
                   </SelectContent>
@@ -4858,34 +4866,34 @@ function RevenueScheduleDrawer({ open, onClose }: { open: boolean; onClose: () =
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="drawer-revsched-amount">Total amount</Label>
+                  <Label htmlFor="drawer-revsched-amount">{t("totalAmount")}</Label>
                   <CurrencyInput id="drawer-revsched-amount" prefix="$" value={totalAmount} onChange={setTotalAmount} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Method</Label>
+                  <Label>{t("method")}</Label>
                   <Select value={method} onValueChange={setMethod}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="straight_line">Even amounts over time</SelectItem>
-                      <SelectItem value="milestone">By milestone</SelectItem>
-                      <SelectItem value="on_completion">All on completion</SelectItem>
+                      <SelectItem value="straight_line">{t("straightLineOption")}</SelectItem>
+                      <SelectItem value="milestone">{t("milestoneOption")}</SelectItem>
+                      <SelectItem value="on_completion">{t("onCompletionOption")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Start Date</Label>
-                  <DatePicker value={startDate} onChange={setStartDate} placeholder="Start date" />
+                  <Label>{t("startDate")}</Label>
+                  <DatePicker value={startDate} onChange={setStartDate} placeholder={t("startDatePlaceholder")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>End Date</Label>
-                  <DatePicker value={endDate} onChange={setEndDate} placeholder="End date" />
+                  <Label>{t("endDate")}</Label>
+                  <DatePicker value={endDate} onChange={setEndDate} placeholder={t("endDatePlaceholder")} />
                 </div>
               </div>
             </div>
           </div>
-          <DrawerFooter onClose={onClose} saving={saving} label="Create revenue schedule" />
+          <DrawerFooter onClose={onClose} saving={saving} label={t("create")} cancelLabel={t("cancel")} creatingLabel={t("creating")} />
         </form>
       </SheetContent>
     </Sheet>

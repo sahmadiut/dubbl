@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { revenueMethodLabel, revenueStatusLabel, revenueScheduleValid, type RevenueScheduleTranslate, type RevenueReadError } from "@/i18n/revenue-schedule-presentation";
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { useRouter } from "next/navigation";
@@ -40,25 +42,11 @@ const statusColors: Record<string, string> = {
   cancelled: "border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300",
 };
 
-// Plain-language status labels (end users aren't accountants).
-const statusLabels: Record<string, string> = {
-  active: "in progress",
-  completed: "finished",
-  cancelled: "cancelled",
-};
-
-// Plain-language method labels (end users aren't accountants).
-const methodLabels: Record<string, string> = {
-  straight_line: "evenly over time",
-  milestone: "by milestone",
-  on_completion: "when finished",
-};
-
-function buildColumns(): Column<RevenueSchedule>[] {
+function buildColumns(t: RevenueScheduleTranslate): Column<RevenueSchedule>[] {
   return [
     {
       key: "period",
-      header: "Period",
+      header: t("period"),
       render: (r) => (
         <span className="text-sm">
           {r.startDate} &ndash; {r.endDate}
@@ -67,27 +55,27 @@ function buildColumns(): Column<RevenueSchedule>[] {
     },
     {
       key: "method",
-      header: "How it's spread",
+      header: t("spreadHeading"),
       className: "w-40",
       render: (r) => (
         <span className="text-sm text-muted-foreground">
-          {methodLabels[r.method] || r.method}
+          {revenueMethodLabel(t, r.method)}
         </span>
       ),
     },
     {
       key: "status",
-      header: "Status",
+      header: t("status"),
       className: "w-28",
       render: (r) => (
-        <Badge variant="outline" className={statusColors[r.status] || ""}>
-          {statusLabels[r.status] || r.status}
+        <Badge variant="outline" className={Object.hasOwn(statusColors, r.status) ? statusColors[r.status] : ""}>
+          {revenueStatusLabel(t, r.status)}
         </Badge>
       ),
     },
     {
       key: "total",
-      header: "Total",
+      header: t("total"),
       className: "w-28 text-right",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums">
@@ -97,7 +85,7 @@ function buildColumns(): Column<RevenueSchedule>[] {
     },
     {
       key: "recognized",
-      header: "Counted so far",
+      header: t("recognized"),
       className: "w-32 text-right",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums text-emerald-600">
@@ -107,7 +95,7 @@ function buildColumns(): Column<RevenueSchedule>[] {
     },
     {
       key: "remaining",
-      header: "Left to count",
+      header: t("remaining"),
       className: "w-32 text-right",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums text-amber-600">
@@ -119,6 +107,8 @@ function buildColumns(): Column<RevenueSchedule>[] {
 }
 
 export default function RevenueSchedulesPage() {
+  const t = useTranslations("RevenueSchedules");
+  const [error, setError] = useState<RevenueReadError | null>(null);
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
   const [schedules, setSchedules] = useState<RevenueSchedule[]>([]);
@@ -132,12 +122,12 @@ export default function RevenueSchedulesPage() {
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search);
 
-  useDocumentTitle("Sales · Revenue Schedules");
+  useDocumentTitle(t("listDocumentTitle"));
 
   const PAGE_SIZE = 50;
   const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
 
-  const columns = useMemo(() => buildColumns(), []);
+  const columns = useMemo(() => buildColumns(t), [t]);
 
   const buildParams = useCallback((p: number) => {
     const params = new URLSearchParams();
@@ -156,12 +146,15 @@ export default function RevenueSchedulesPage() {
     fetch(`/api/v1/revenue-schedules?${buildParams(1)}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
       .then((data) => {
         if (cancelled) return;
-        setSchedules(data.data || []);
+        if (!Array.isArray(data?.data) || !data.data.every((row: unknown) => revenueScheduleValid(row))) throw new Error();
+        setError(null);
+        setSchedules(data.data);
         setTotalCount(data.pagination?.total || 0);
       })
+      .catch(() => { if (!cancelled) setError("readFailed"); })
       .then(() => devDelay())
       .finally(() => { if (!cancelled) { setInitialLoad(false); setRefetching(false); setFetchKey((k) => k + 1); } });
 
@@ -177,13 +170,16 @@ export default function RevenueSchedulesPage() {
     fetch(`/api/v1/revenue-schedules?${buildParams(nextPage)}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
       .then((data) => {
+        if (!Array.isArray(data?.data) || !data.data.every((row: unknown) => revenueScheduleValid(row))) throw new Error();
+        setError(null);
         if (data.data) {
           setSchedules((prev) => [...prev, ...data.data]);
           setPage(nextPage);
         }
       })
+      .catch(() => setError("moreFailed"))
       .finally(() => setLoadingMore(false));
   }, [orgId, page, buildParams, loadingMore]);
 
@@ -219,11 +215,11 @@ export default function RevenueSchedulesPage() {
         (s) =>
           s.startDate.toLowerCase().includes(q) ||
           s.endDate.toLowerCase().includes(q) ||
-          (methodLabels[s.method] || s.method).toLowerCase().includes(q)
+          revenueMethodLabel(t, s.method).toLowerCase().includes(q)
       );
     }
     return list;
-  }, [schedules, statusFilter, debouncedSearch]);
+  }, [schedules, statusFilter, debouncedSearch, t]);
 
   // Bump searchKey when debounced search or status filter changes to trigger ContentReveal
   useEffect(() => {
@@ -242,16 +238,16 @@ export default function RevenueSchedulesPage() {
 
   if (initialLoad) return <BrandLoader />;
 
-  if (!initialLoad && !refetching && schedules.length === 0 && statusFilter === "all" && !hasFilters) {
+  if (!initialLoad && !refetching && !error && schedules.length === 0 && statusFilter === "all" && !hasFilters) {
     return (
       <ContentReveal>
         <div className="pt-12 pb-12 space-y-10">
           {/* Top: title + CTA */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h2 className="text-lg font-semibold tracking-tight">Revenue Schedules</h2>
+              <h2 className="text-lg font-semibold tracking-tight">{t("title")}</h2>
               <p className="mt-1 text-sm text-muted-foreground max-w-md">
-                Count income from an invoice gradually over time instead of all at once — useful for upfront payments you earn month by month.
+                {t("description")}
               </p>
             </div>
             <Button
@@ -259,7 +255,7 @@ export default function RevenueSchedulesPage() {
               className="bg-emerald-600 hover:bg-emerald-700 shrink-0"
             >
               <Plus className="mr-2 size-4" />
-              New schedule
+              {t("newSchedule")}
             </Button>
           </div>
 
@@ -267,7 +263,7 @@ export default function RevenueSchedulesPage() {
             {/* Left: how it works */}
             <div className="rounded-xl border bg-card overflow-hidden">
               <div className="bg-muted/30 px-3 sm:px-5 py-3 border-b">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">How a schedule works</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("howItWorks")}</p>
               </div>
               <div className="divide-y">
                 <div className="flex items-center justify-between px-3 sm:px-5 py-3.5">
@@ -276,8 +272,8 @@ export default function RevenueSchedulesPage() {
                       <CalendarClock className="size-3.5 text-blue-500" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium">Paid upfront</p>
-                      <p className="text-[11px] text-muted-foreground">INV-0042 · 12 months</p>
+                      <p className="text-sm font-medium">{t("paidUpfront")}</p>
+                      <p className="text-[11px] text-muted-foreground">{t("exampleInvoice")}</p>
                     </div>
                   </div>
                   <span className="font-mono text-sm font-medium">$1,200.00</span>
@@ -288,8 +284,8 @@ export default function RevenueSchedulesPage() {
                       <TrendingUp className="size-3.5 text-emerald-500" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">Counted each month</p>
-                      <p className="text-[11px] text-muted-foreground">Spread evenly</p>
+                      <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">{t("eachMonth")}</p>
+                      <p className="text-[11px] text-muted-foreground">{t("spreadEvenly")}</p>
                     </div>
                   </div>
                   <span className="font-mono text-sm font-medium text-emerald-600 dark:text-emerald-400">+$100.00</span>
@@ -297,7 +293,7 @@ export default function RevenueSchedulesPage() {
                 <div className="flex items-center justify-between px-3 sm:px-5 py-3.5">
                   <div className="flex items-center gap-3">
                     <div className="size-7" />
-                    <p className="text-sm font-semibold">After 12 months</p>
+                    <p className="text-sm font-semibold">{t("afterYear")}</p>
                   </div>
                   <span className="font-mono text-sm font-bold">$1,200.00</span>
                 </div>
@@ -306,26 +302,26 @@ export default function RevenueSchedulesPage() {
 
             {/* Right: Use cases */}
             <div className="space-y-3">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">When to use</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("whenToUse")}</p>
               {[
                 {
-                  title: "Annual subscription paid upfront",
-                  desc: "Customer pays for a full year at once? Count the income one month at a time.",
+                  title: t("annualTitle"),
+                  desc: t("annualDescription"),
                   color: "border-l-blue-400",
                 },
                 {
-                  title: "Prepaid retainer or support plan",
-                  desc: "Got paid in advance for ongoing work? Spread the income across the term.",
+                  title: t("retainerTitle"),
+                  desc: t("retainerDescription"),
                   color: "border-l-amber-400",
                 },
                 {
-                  title: "Deposits for future delivery",
-                  desc: "Took a payment before the work is done? Recognise it as you deliver.",
+                  title: t("deliveryTitle"),
+                  desc: t("deliveryDescription"),
                   color: "border-l-teal-400",
                 },
                 {
-                  title: "Multi-month projects",
-                  desc: "Billed once for a long project? Recognise the income as you progress.",
+                  title: t("projectTitle"),
+                  desc: t("projectDescription"),
                   color: "border-l-purple-400",
                 },
               ].map(({ title, desc, color }) => (
@@ -343,11 +339,12 @@ export default function RevenueSchedulesPage() {
 
   return (
     <ContentReveal className="space-y-6">
+      {error && <p role="alert" className="text-sm text-destructive">{t(error)}</p>}
       {/* Top: Stats */}
       <div className="grid gap-3 sm:grid-cols-3">
-        <StatCard title="Total scheduled" value={formatMoney(totalScheduled)} icon={CalendarClock} />
-        <StatCard title="Counted so far" value={formatMoney(totalRecognized)} icon={TrendingUp} />
-        <StatCard title="Left to count" value={formatMoney(totalRemaining)} icon={CalendarClock} />
+        <StatCard title={t("scheduled")} value={formatMoney(totalScheduled)} icon={CalendarClock} />
+        <StatCard title={t("recognized")} value={formatMoney(totalRecognized)} icon={TrendingUp} />
+        <StatCard title={t("remaining")} value={formatMoney(totalRemaining)} icon={CalendarClock} />
       </div>
 
       <div className="h-px bg-border" />
@@ -357,10 +354,10 @@ export default function RevenueSchedulesPage() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Tabs value={statusFilter} onValueChange={setStatusFilter}>
             <TabsList className="overflow-x-auto">
-              <TabsTrigger value="all" className="whitespace-nowrap">All</TabsTrigger>
-              <TabsTrigger value="active" className="whitespace-nowrap" title="Schedules still counting income over time">In progress</TabsTrigger>
-              <TabsTrigger value="completed" className="whitespace-nowrap" title="Schedules where all the income has been counted">Finished</TabsTrigger>
-              <TabsTrigger value="cancelled" className="whitespace-nowrap">Cancelled</TabsTrigger>
+              <TabsTrigger value="all" className="whitespace-nowrap">{t("all")}</TabsTrigger>
+              <TabsTrigger value="active" className="whitespace-nowrap" title={t("activeHint")}>{t("activeTab")}</TabsTrigger>
+              <TabsTrigger value="completed" className="whitespace-nowrap" title={t("completedHint")}>{t("completedTab")}</TabsTrigger>
+              <TabsTrigger value="cancelled" className="whitespace-nowrap">{t("cancelledTab")}</TabsTrigger>
             </TabsList>
           </Tabs>
 
@@ -370,7 +367,7 @@ export default function RevenueSchedulesPage() {
             className="bg-emerald-600 hover:bg-emerald-700"
           >
             <Plus className="mr-2 size-4" />
-            New schedule
+            {t("newSchedule")}
           </Button>
         </div>
 
@@ -378,7 +375,7 @@ export default function RevenueSchedulesPage() {
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
             <Input
-              placeholder="Search schedules..."
+              placeholder={t("search")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="h-8 w-56 pl-8 text-xs"
@@ -392,7 +389,7 @@ export default function RevenueSchedulesPage() {
               onClick={() => { setSearch(""); }}
             >
               <X className="mr-1 size-3" />
-              Clear filters
+              {t("clearFilters")}
             </Button>
           )}
         </div>
@@ -405,7 +402,7 @@ export default function RevenueSchedulesPage() {
               columns={columns}
               data={filteredSchedules}
               loading={false}
-              emptyMessage="No revenue schedules match your filters."
+              emptyMessage={t("noMatches")}
               onRowClick={(r) => router.push(`/sales/revenue-schedules/${r.id}`)}
             />
           </ContentReveal>
@@ -416,7 +413,7 @@ export default function RevenueSchedulesPage() {
           <>
             <div className="flex items-center justify-between pt-1">
               <p className="text-xs text-muted-foreground">
-                Showing {schedules.length} of {totalCount} schedule{totalCount !== 1 ? "s" : ""}
+                {t("showing", { loaded: schedules.length, total: totalCount })}
               </p>
             </div>
             {hasMore && (

@@ -1,5 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { budgetTypeLabel, budgetPeriodLabel, budgetFailureMessage, requireBudgetResponse } from "@/i18n/budget-presentation";
+
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Plus, Save, Trash2 } from "lucide-react";
@@ -23,14 +26,6 @@ import type { BudgetLineData } from "../layout";
 import { generatePeriods } from "@/lib/budget-periods";
 import type { PeriodType } from "@/lib/budget-periods";
 
-const PERIOD_TYPE_OPTIONS: { value: PeriodType; label: string }[] = [
-  { value: "daily", label: "Daily" },
-  { value: "weekly", label: "Weekly" },
-  { value: "monthly", label: "Monthly" },
-  { value: "quarterly", label: "Quarterly" },
-  { value: "yearly", label: "Yearly" },
-  { value: "custom", label: "Custom" },
-];
 
 interface PeriodInput {
   label: string;
@@ -73,13 +68,14 @@ function emptyLine(periodType: PeriodType, startDate: string, endDate: string): 
 }
 
 export default function BudgetSettingsPage() {
+  const t = useTranslations("Budgets");
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { budget, currencyCode, accounts, refetch } = useBudgetContext();
   const formatMoney = (amount: bigint) => budgetMoney(amount, currencyCode);
   const { confirm, dialog: confirmDialog } = useConfirm();
 
-  useDocumentTitle("Accounting \u00B7 Budget Settings");
+  useDocumentTitle(t("settingsTitle"));
 
   const [name, setName] = useState(budget.name);
   const [startDate, setStartDate] = useState(budget.startDate);
@@ -183,7 +179,7 @@ export default function BudgetSettingsPage() {
     if (!orgId) return;
     const validLines = lines.filter((l) => l.accountId);
     if (validLines.length === 0) {
-      toast.error("Add at least one budget line with an account.");
+      toast.error(t("addAccount"));
       return;
     }
 
@@ -201,12 +197,12 @@ export default function BudgetSettingsPage() {
           lines: budgetLinesInput(validLines),
         }),
       });
-      if (!res.ok) throw new Error((await res.json()).error);
-      toast.success("Budget updated");
+      await requireBudgetResponse(res, t, t("updateFailed"));
+      toast.success(t("updated"));
       window.dispatchEvent(new Event("budgets-changed"));
       refetch();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to update budget");
+      toast.error(budgetFailureMessage(err, t, t("updateFailed")));
     } finally {
       setSaving(false);
     }
@@ -216,24 +212,27 @@ export default function BudgetSettingsPage() {
     if (!orgId) return;
     const willDeactivate = budget.isActive;
     await confirm({
-      title: willDeactivate ? "Deactivate this budget?" : "Reactivate this budget?",
+      title: willDeactivate ? t("deactivateQuestion") : t("reactivateQuestion"),
       description: willDeactivate
-        ? "Inactive budgets won't appear in reports or dashboards."
-        : "This budget will appear in reports again.",
-      confirmLabel: willDeactivate ? "Deactivate" : "Reactivate",
+        ? t("deactivateDescription")
+        : t("reactivateDescription"),
+      confirmLabel: willDeactivate ? t("deactivate") : t("reactivate"),
+      cancelLabel: t("cancel"),
       destructive: willDeactivate,
       onConfirm: async () => {
-        const res = await fetch(`/api/v1/budgets/${id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json", "x-organization-id": orgId },
-          body: JSON.stringify({ isActive: !willDeactivate }),
-        });
-        if (res.ok) {
-          toast.success(willDeactivate ? "Budget deactivated" : "Budget reactivated");
+        try {
+          const res = await fetch(`/api/v1/budgets/${id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json", "x-organization-id": orgId },
+            body: JSON.stringify({ isActive: !willDeactivate }),
+          });
+          await requireBudgetResponse(res, t, t("updateFailed"));
+          toast.success(willDeactivate ? t("deactivated") : t("reactivated"));
           window.dispatchEvent(new Event("budgets-changed"));
           refetch();
-        } else {
-          toast.error("Failed to update budget");
+        } catch (error) {
+          toast.error(budgetFailureMessage(error, t, t("updateFailed")));
+          throw error;
         }
       },
     });
@@ -242,18 +241,25 @@ export default function BudgetSettingsPage() {
   async function handleDelete() {
     if (!orgId) return;
     await confirm({
-      title: "Delete this budget?",
-      description: "This action cannot be undone.",
-      confirmLabel: "Delete",
+      title: t("deleteQuestion"),
+      description: t("deleteWarning"),
+      confirmLabel: t("delete"),
+      cancelLabel: t("cancel"),
       destructive: true,
       onConfirm: async () => {
-        await fetch(`/api/v1/budgets/${id}`, {
-          method: "DELETE",
-          headers: { "x-organization-id": orgId },
-        });
-        toast.success("Budget deleted");
-        window.dispatchEvent(new Event("budgets-changed"));
-        router.push("/accounting/budgets");
+        try {
+          const res = await fetch(`/api/v1/budgets/${id}`, {
+            method: "DELETE",
+            headers: { "x-organization-id": orgId },
+          });
+          await requireBudgetResponse(res, t, t("deleteFailed"));
+          toast.success(t("deleted"));
+          window.dispatchEvent(new Event("budgets-changed"));
+          router.push("/accounting/budgets");
+        } catch (error) {
+          toast.error(budgetFailureMessage(error, t, t("deleteFailed")));
+          throw error;
+        }
       },
     });
   }
@@ -264,33 +270,33 @@ export default function BudgetSettingsPage() {
         {/* General */}
         <div className="grid gap-6 sm:grid-cols-[200px_1fr] sm:gap-10">
           <div className="shrink-0">
-            <p className="text-sm font-medium">General</p>
-            <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">Budget name, date range, and period type.</p>
+            <p className="text-sm font-medium">{t("general")}</p>
+            <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">{t("generalDescription")}</p>
           </div>
           <div className="min-w-0 space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-xs">Budget Name</Label>
+              <Label className="text-xs">{t("name")}</Label>
               <Input value={name} onChange={(e) => setName(e.target.value)} required />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label className="text-xs">Start Date</Label>
+                <Label className="text-xs">{t("startDate")}</Label>
                 <Input type="date" value={startDate} onChange={(e) => handleDateChange("start", e.target.value)} required />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">End Date</Label>
+                <Label className="text-xs">{t("endDate")}</Label>
                 <Input type="date" value={endDate} onChange={(e) => handleDateChange("end", e.target.value)} required />
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Period Type</Label>
+              <Label className="text-xs">{t("periodType")}</Label>
               <Select value={periodType} onValueChange={(v) => handlePeriodTypeChange(v as PeriodType)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {PERIOD_TYPE_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  {(["daily", "weekly", "monthly", "quarterly", "yearly", "custom"] as const).map((value) => (
+                    <SelectItem key={value} value={value}>{budgetTypeLabel(t, value)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -303,13 +309,13 @@ export default function BudgetSettingsPage() {
         {/* Budget Lines */}
         <div className="grid gap-6 sm:grid-cols-[200px_1fr] sm:gap-10">
           <div className="shrink-0">
-            <p className="text-sm font-medium">Budget Lines</p>
-            <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">Annual amounts per account, distributed across periods.</p>
+            <p className="text-sm font-medium">{t("lines")}</p>
+            <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">{t("linesDescription")}</p>
           </div>
           <div className="min-w-0 space-y-4">
             <div className="flex justify-end">
               <Button type="button" variant="outline" size="sm" onClick={() => setLines((prev) => [...prev, emptyLine(periodType, startDate, endDate)])}>
-                <Plus className="mr-2 size-3.5" />Add Line
+                <Plus className="mr-2 size-3.5" />{t("addLine")}
               </Button>
             </div>
 
@@ -329,7 +335,7 @@ export default function BudgetSettingsPage() {
                           });
                         }}
                       >
-                        <SelectTrigger><SelectValue placeholder="Select account..." /></SelectTrigger>
+                        <SelectTrigger><SelectValue placeholder={t("selectAccount")} /></SelectTrigger>
                         <SelectContent>
                           {accounts.map((a) => (
                             <SelectItem key={a.id} value={a.id}>{a.code} - {a.name}</SelectItem>
@@ -337,15 +343,15 @@ export default function BudgetSettingsPage() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <button type="button" onClick={() => removeLine(i)} className="text-muted-foreground hover:text-red-600 shrink-0 p-1">
+                    <button type="button" aria-label={t("removeLine", { number: i + 1 })} onClick={() => removeLine(i)} className="text-muted-foreground hover:text-red-600 shrink-0 p-1">
                       <Trash2 className="size-4" />
                     </button>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Label className="text-xs text-muted-foreground shrink-0 w-16">Annual</Label>
+                    <Label className="text-xs text-muted-foreground shrink-0 w-16">{t("annual")}</Label>
                     <CurrencyInput
                       prefix={currencyCode === "USD" ? "$" : currencyCode}
-                      aria-label={`Total for budget line ${i + 1}`}
+                      aria-label={t("totalForLine", { number: i + 1 })}
                         aria-invalid={budgetDraftInvalid(annualAmounts[i] ?? budgetDecimal(line.total))}
                         value={annualAmounts[i] ?? budgetDecimal(line.total)}
                       onChange={(v) => handleAnnualChange(i, v)}
@@ -354,7 +360,7 @@ export default function BudgetSettingsPage() {
                     />
                     {line.total !== 0n && line.periods.length > 0 && (
                       <span className="text-xs text-muted-foreground font-mono tabular-nums shrink-0">
-                        {formatMoney(budgetPerPeriod(line.total, line.periods.length))}/period
+                        {t("perPeriod", { amount: formatMoney(budgetPerPeriod(line.total, line.periods.length)) })}
                       </span>
                     )}
                   </div>
@@ -364,17 +370,17 @@ export default function BudgetSettingsPage() {
                       onClick={() => setExpandedLine(isExpanded ? null : i)}
                       className="text-[11px] text-muted-foreground hover:text-foreground transition-colors underline-offset-2 hover:underline"
                     >
-                      {isExpanded ? "Hide period breakdown" : `Customize period amounts (${line.periods.length} periods)`}
+                      {isExpanded ? t("hidePeriods") : t("customizePeriods", { count: line.periods.length })}
                     </button>
                   )}
                   {isExpanded && (
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                       {line.periods.map((p, pi) => (
                         <div key={pi} className="space-y-1">
-                          <label className="text-[10px] text-muted-foreground pl-0.5">{p.label}</label>
+                          <label className="text-[10px] text-muted-foreground pl-0.5">{budgetPeriodLabel(t, p.label)}</label>
                           <CurrencyInput
                             size="sm"
-                            aria-label={`Amount for period ${p.label}`}
+                            aria-label={t("amountForPeriod", { period: budgetPeriodLabel(t, p.label) })}
                               aria-invalid={budgetDraftInvalid(periodDrafts[`${i}:${pi}`] ?? budgetDecimal(p.amount))}
                               value={periodDrafts[`${i}:${pi}`] ?? budgetDecimal(p.amount)}
                             onChange={(v) => updatePeriodAmount(i, pi, v)}
@@ -389,7 +395,7 @@ export default function BudgetSettingsPage() {
             })}
 
             {lines.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-6">No budget lines. Add one to get started.</p>
+              <p className="text-sm text-muted-foreground text-center py-6">{t("noLines")}</p>
             )}
           </div>
         </div>
@@ -398,7 +404,7 @@ export default function BudgetSettingsPage() {
 
         <div className="flex justify-end">
           <Button type="submit" size="sm" loading={saving} className="bg-emerald-600 hover:bg-emerald-700">
-            <Save className="mr-2 size-3.5" />Save changes
+            <Save className="mr-2 size-3.5" />{t("save")}
           </Button>
         </div>
 
@@ -407,19 +413,19 @@ export default function BudgetSettingsPage() {
         {/* Danger zone */}
         <div className="grid gap-6 sm:grid-cols-[200px_1fr] sm:gap-10">
           <div className="shrink-0">
-            <p className="text-sm font-medium text-red-600">Danger zone</p>
-            <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">Irreversible actions.</p>
+            <p className="text-sm font-medium text-red-600">{t("danger")}</p>
+            <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">{t("irreversible")}</p>
           </div>
           <div className="min-w-0 space-y-3">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-md border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/50 dark:bg-amber-950/20">
               <div>
                 <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
-                  {budget.isActive ? "Deactivate budget" : "Reactivate budget"}
+                  {budget.isActive ? t("deactivateBudget") : t("reactivateBudget")}
                 </p>
                 <p className="text-[12px] text-muted-foreground">
                   {budget.isActive
-                    ? "Hide from reports and dashboards."
-                    : "Make this budget active again."}
+                    ? t("hideDescription")
+                    : t("makeActive")}
                 </p>
               </div>
               <Button
@@ -429,16 +435,16 @@ export default function BudgetSettingsPage() {
                 onClick={handleToggleActive}
                 className="border-amber-300 text-amber-700 hover:bg-amber-100 dark:border-amber-800 dark:text-amber-400 dark:hover:bg-amber-950"
               >
-                {budget.isActive ? "Deactivate" : "Reactivate"}
+                {budget.isActive ? t("deactivate") : t("reactivate")}
               </Button>
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-md border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900/50 dark:bg-red-950/20">
               <div>
-                <p className="text-sm font-medium text-red-600 dark:text-red-400">Delete budget</p>
-                <p className="text-[12px] text-muted-foreground">Permanently delete this budget and all its lines.</p>
+                <p className="text-sm font-medium text-red-600 dark:text-red-400">{t("deleteBudget")}</p>
+                <p className="text-[12px] text-muted-foreground">{t("deleteDescription")}</p>
               </div>
-              <Button variant="destructive" size="sm" type="button" onClick={handleDelete}>Delete</Button>
+              <Button variant="destructive" size="sm" type="button" onClick={handleDelete}>{t("delete")}</Button>
             </div>
           </div>
         </div>

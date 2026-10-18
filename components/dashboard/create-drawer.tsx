@@ -8,6 +8,7 @@ import { useTranslations } from "next-intl";
 import { journalPreviewMessage, requireJournalResponse, journalFailureMessage } from "@/i18n/journal-presentation";
 import { requireAccountResponse, accountFailureMessage } from "@/i18n/account-presentation";
 
+import { budgetTypeLabel, budgetPeriodLabel, budgetFailureMessage, requireBudgetResponse } from "@/i18n/budget-presentation";
 import { loanJson, loanFailureMessage } from "@/i18n/loan-presentation";
 import { currencyMetadata } from "@/lib/money/exact";
 import { bankUiTransfer, bankUiAccount, bankUiMoney } from "@/lib/money/bank-ui";
@@ -2153,14 +2154,6 @@ interface BudgetLineInput {
   periods: BudgetPeriodInput[];
 }
 
-const PERIOD_TYPE_OPTIONS: { value: PeriodType; label: string }[] = [
-  { value: "daily", label: "Daily" },
-  { value: "weekly", label: "Weekly" },
-  { value: "monthly", label: "Monthly" },
-  { value: "quarterly", label: "Quarterly" },
-  { value: "yearly", label: "Yearly" },
-  { value: "custom", label: "Custom" },
-];
 
 function emptyBudgetLine(periodType: PeriodType, startDate: string, endDate: string): BudgetLineInput {
   const periods = generatePeriods(periodType, startDate, endDate).map((p) => ({ ...p, amount: 0n }));
@@ -2175,6 +2168,7 @@ interface BudgetAccount {
 }
 
 function BudgetDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useTranslations("Budgets");
   const router = useRouter();
   const [budgetCurrency, setBudgetCurrency] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -2295,10 +2289,10 @@ function BudgetDrawer({ open, onClose }: { open: boolean; onClose: () => void })
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const validLines = budgetLines.filter((l) => l.accountId);
-    if (validLines.length === 0) { toast.error("Add at least one budget line with an account"); return; }
-    setSaving(true);
+    if (validLines.length === 0) { toast.error(t("addAccountDrawer")); return; }
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
+    setSaving(true);
 
     try {
       for (const value of [...Object.values(annualAmounts), ...Object.values(periodDrafts)]) budgetInput(value || "0");
@@ -2313,16 +2307,13 @@ function BudgetDrawer({ open, onClose }: { open: boolean; onClose: () => void })
           lines: budgetLinesInput(validLines),
         }),
       });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to create budget");
-      }
-      toast.success("Budget created");
+      await requireBudgetResponse(res, t, t("createFailed"));
+      toast.success(t("created"));
       onClose();
       window.dispatchEvent(new Event("budgets-changed"));
       router.push("/accounting/budgets");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create budget");
+      toast.error(budgetFailureMessage(err, t, t("createFailed")));
     } finally {
       setSaving(false);
     }
@@ -2337,36 +2328,36 @@ function BudgetDrawer({ open, onClose }: { open: boolean; onClose: () => void })
           <div className="flex items-center gap-3">
             <DrawerIcon><Target className="size-5" /></DrawerIcon>
             <div>
-              <SheetTitle className="text-lg">New Budget</SheetTitle>
-              <SheetDescription>Plan spending by account with flexible period types.</SheetDescription>
+              <SheetTitle className="text-lg">{t("new")}</SheetTitle>
+              <SheetDescription>{t("drawerDescription")}</SheetDescription>
             </div>
           </div>
         </SheetHeader>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
             <div className="space-y-4">
-              <SectionLabel>Budget Info</SectionLabel>
+              <SectionLabel>{t("info")}</SectionLabel>
               <div className="space-y-2">
-                <Label>Budget Name *</Label>
-                <Input value={budgetName} onChange={(e) => setBudgetName(e.target.value)} placeholder="FY 2026 Operating Budget" required />
+                <Label>{t("requiredName")}</Label>
+                <Input value={budgetName} onChange={(e) => setBudgetName(e.target.value)} placeholder={t("namePlaceholder")} required />
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Start Date</Label>
-                  <DatePicker value={startDate} onChange={handleStartDateChange} placeholder="Start date" />
+                  <Label>{t("startDate")}</Label>
+                  <DatePicker value={startDate} onChange={handleStartDateChange} placeholder={t("startPlaceholder")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>End Date</Label>
-                  <DatePicker value={endDate} onChange={handleEndDateChange} placeholder="End date" />
+                  <Label>{t("endDate")}</Label>
+                  <DatePicker value={endDate} onChange={handleEndDateChange} placeholder={t("endPlaceholder")} />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Period Type</Label>
+                <Label>{t("periodType")}</Label>
                 <Select value={periodType} onValueChange={(v) => handlePeriodTypeChange(v as PeriodType)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {PERIOD_TYPE_OPTIONS.map((o) => (
-                      <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                    {(["daily", "weekly", "monthly", "quarterly", "yearly", "custom"] as const).map((value) => (
+                      <SelectItem key={value} value={value}>{budgetTypeLabel(t, value)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -2377,9 +2368,9 @@ function BudgetDrawer({ open, onClose }: { open: boolean; onClose: () => void })
 
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <SectionLabel>Budget Lines</SectionLabel>
+                <SectionLabel>{t("lines")}</SectionLabel>
                 <Button type="button" variant="outline" size="sm" onClick={() => setBudgetLines((prev) => [...prev, emptyBudgetLine(periodType, startDate, endDate)])}>
-                  <Plus className="mr-2 size-3.5" />Add Line
+                  <Plus className="mr-2 size-3.5" />{t("addLine")}
                 </Button>
               </div>
 
@@ -2400,7 +2391,7 @@ function BudgetDrawer({ open, onClose }: { open: boolean; onClose: () => void })
                             });
                           }}
                         >
-                          <SelectTrigger><SelectValue placeholder="Select account..." /></SelectTrigger>
+                          <SelectTrigger><SelectValue placeholder={t("selectAccount")} /></SelectTrigger>
                           <SelectContent>
                             {budgetAccounts.map((a) => (
                               <SelectItem key={a.id} value={a.id}>{a.code} - {a.name}</SelectItem>
@@ -2408,17 +2399,17 @@ function BudgetDrawer({ open, onClose }: { open: boolean; onClose: () => void })
                           </SelectContent>
                         </Select>
                       </div>
-                      <button type="button" onClick={() => removeLine(i)} className="text-muted-foreground hover:text-red-600 shrink-0 p-1">
+                      <button type="button" aria-label={t("removeLine", { number: i + 1 })} onClick={() => removeLine(i)} className="text-muted-foreground hover:text-red-600 shrink-0 p-1">
                         <Trash2 className="size-4" />
                       </button>
                     </div>
 
                     {/* Annual amount + per-period info */}
                     <div className="flex items-center gap-3">
-                      <Label className="text-xs text-muted-foreground shrink-0 w-16">Annual</Label>
+                      <Label className="text-xs text-muted-foreground shrink-0 w-16">{t("annual")}</Label>
                       <CurrencyInput
                         prefix={budgetCurrency === "USD" ? "$" : budgetCurrency ?? undefined}
-                        aria-label={`Total for budget line ${i + 1}`}
+                        aria-label={t("totalForLine", { number: i + 1 })}
                         aria-invalid={budgetDraftInvalid(annualAmounts[i] ?? budgetDecimal(line.total))}
                         value={annualAmounts[i] ?? (line.total !== 0n ? budgetDecimal(line.total) : "")}
                         onChange={(v) => handleAnnualChange(i, v)}
@@ -2427,7 +2418,7 @@ function BudgetDrawer({ open, onClose }: { open: boolean; onClose: () => void })
                       />
                       {line.total !== 0n && line.periods.length > 0 && (
                         <span className="text-xs text-muted-foreground font-mono tabular-nums shrink-0">
-                          {budgetCurrency ? formatMoney(budgetPerPeriod(line.total, line.periods.length), budgetCurrency) : budgetDecimal(budgetPerPeriod(line.total, line.periods.length))}/period
+                          {t("perPeriod", { amount: budgetCurrency ? formatMoney(budgetPerPeriod(line.total, line.periods.length), budgetCurrency) : budgetDecimal(budgetPerPeriod(line.total, line.periods.length)) })}
                         </span>
                       )}
                     </div>
@@ -2439,7 +2430,7 @@ function BudgetDrawer({ open, onClose }: { open: boolean; onClose: () => void })
                         onClick={() => setExpandedLine(isExpanded ? null : i)}
                         className="text-[11px] text-muted-foreground hover:text-foreground transition-colors underline-offset-2 hover:underline"
                       >
-                        {isExpanded ? "Hide period breakdown" : `Customize period amounts (${line.periods.length} periods)`}
+                        {isExpanded ? t("hidePeriods") : t("customizePeriods", { count: line.periods.length })}
                       </button>
                     )}
 
@@ -2448,10 +2439,10 @@ function BudgetDrawer({ open, onClose }: { open: boolean; onClose: () => void })
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                         {line.periods.map((p, pi) => (
                           <div key={pi} className="space-y-1">
-                            <label className="text-[10px] text-muted-foreground pl-0.5">{p.label}</label>
+                            <label className="text-[10px] text-muted-foreground pl-0.5">{budgetPeriodLabel(t, p.label)}</label>
                             <CurrencyInput
                               size="sm"
-                              aria-label={`Amount for period ${p.label}`}
+                              aria-label={t("amountForPeriod", { period: budgetPeriodLabel(t, p.label) })}
                               aria-invalid={budgetDraftInvalid(periodDrafts[`${i}:${pi}`] ?? budgetDecimal(p.amount))}
                               value={periodDrafts[`${i}:${pi}`] ?? budgetDecimal(p.amount)}
                               onChange={(v) => updatePeriodAmount(i, pi, v)}
@@ -2467,18 +2458,18 @@ function BudgetDrawer({ open, onClose }: { open: boolean; onClose: () => void })
               })}
 
               {budgetLines.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-6">No lines yet. Add one to start planning.</p>
+                <p className="text-sm text-muted-foreground text-center py-6">{t("noDrawerLines")}</p>
               )}
             </div>
           </div>
 
           {grandTotal !== 0n && (
             <div className="flex items-center justify-between border-t px-4 py-2.5 sm:px-6 text-sm">
-              <span className="text-muted-foreground">Total budget</span>
+              <span className="text-muted-foreground">{t("totalBudgetLower")}</span>
               <span className="font-mono font-semibold tabular-nums">{budgetCurrency ? formatMoney(grandTotal, budgetCurrency) : budgetDecimal(grandTotal)}</span>
             </div>
           )}
-          <DrawerFooter onClose={onClose} saving={saving} label="Create Budget" />
+          <DrawerFooter onClose={onClose} saving={saving} label={t("create")} cancelLabel={t("cancel")} creatingLabel={t("creating")} />
         </form>
       </SheetContent>
     </Sheet>

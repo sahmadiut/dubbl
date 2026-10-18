@@ -1,5 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { budgetPeriodLabel } from "@/i18n/budget-presentation";
+
 import { useState, useMemo } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -20,9 +23,10 @@ import {
 } from "recharts";
 
 export default function BudgetOverviewPage() {
+  const t = useTranslations("Budgets");
   const { budget, currencyCode, comparisons, totalBudgeted, totalActual } = useBudgetContext();
 
-  useDocumentTitle("Accounting \u00B7 Budget Details");
+  useDocumentTitle(t("detailsTitle"));
 
   const formatMoney = (amount: bigint) => budgetMoney(amount, currencyCode);
   const grandTotal = budget.lines.reduce((s, l) => s + l.total, 0n);
@@ -64,7 +68,7 @@ export default function BudgetOverviewPage() {
       {/* Spending trend chart */}
       {chartData.length > 1 && (
         <div>
-          <p className="text-sm font-medium mb-3">Spending Trend</p>
+          <p className="text-sm font-medium mb-3">{t("spendingTrend")}</p>
           <div className="rounded-lg border p-4">
             <ResponsiveContainer width="100%" height={280}>
               <AreaChart data={chartData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
@@ -79,15 +83,16 @@ export default function BudgetOverviewPage() {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                <XAxis dataKey="name" tick={{ fontSize: 11 }} className="text-muted-foreground" />
-                <YAxis tick={{ fontSize: 11 }} className="text-muted-foreground" tickFormatter={(v) => `${currencyCode} ${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`} />
+                <XAxis dataKey="name" tickFormatter={(label: string) => budgetPeriodLabel(t, label)} tick={{ fontSize: 11 }} className="text-muted-foreground" />
+                <YAxis tick={{ fontSize: 11 }} className="text-muted-foreground" tickFormatter={(v) => `${currencyCode} ${v >= 1000 ? t("chartThousands", { value: (v / 1000).toFixed(0) }) : v}`} />
                 <Tooltip
                   contentStyle={{ fontSize: 12, borderRadius: 8 }}
-                  formatter={(_value, name, item) => [formatMoney(name === "Budgeted" ? item.payload.budgetedExact : item.payload.actualExact)]}
+                  labelFormatter={(label) => budgetPeriodLabel(t, String(label))}
+                  formatter={(_value, _name, item) => [formatMoney(item.dataKey === "budgeted" ? item.payload.budgetedExact : item.payload.actualExact)]}
                 />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Area type="monotone" dataKey="budgeted" name="Budgeted" stroke="#8b5cf6" fill="url(#budgetedGrad)" strokeWidth={2} />
-                <Area type="monotone" dataKey="actual" name="Actual" stroke="#3b82f6" fill="url(#actualGrad)" strokeWidth={2} />
+                <Area type="monotone" dataKey="budgeted" name={t("budgeted")} stroke="#8b5cf6" fill="url(#budgetedGrad)" strokeWidth={2} />
+                <Area type="monotone" dataKey="actual" name={t("actual")} stroke="#3b82f6" fill="url(#actualGrad)" strokeWidth={2} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -140,9 +145,9 @@ export default function BudgetOverviewPage() {
         </div>
       ) : (
         <div className="rounded-xl border border-dashed py-12 text-center">
-          <p className="text-sm text-muted-foreground">No budget lines configured.</p>
+          <p className="text-sm text-muted-foreground">{t("noConfiguredLines")}</p>
           <Button size="sm" variant="outline" className="mt-3" asChild>
-            <a href={`/accounting/budgets/${budget.id}/settings`}>Add lines</a>
+            <a href={`/accounting/budgets/${budget.id}/settings`}>{t("addLines")}</a>
           </Button>
         </div>
       )}
@@ -159,17 +164,17 @@ export default function BudgetOverviewPage() {
       {grandTotal !== 0n && (
         <div className="rounded-lg border bg-muted/30 px-4 py-3 space-y-2">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium">Grand Total</p>
+            <p className="text-sm font-medium">{t("grandTotal")}</p>
             <p className="font-mono text-lg font-semibold tabular-nums">{formatMoney(grandTotal)}</p>
           </div>
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-4 text-muted-foreground">
-              <span>Spent: <span className="font-mono tabular-nums text-foreground">{formatMoney(totalActual)}</span></span>
+              <span>{t.rich("spent", { amount: formatMoney(totalActual), strong: (chunks) => <span className="font-mono tabular-nums text-foreground">{chunks}</span> })}</span>
               <span className={cn(
                 "font-mono tabular-nums",
                 over ? "text-red-600" : "text-emerald-600"
               )}>
-                {over ? "Over by " + formatMoney(budgetAbs(totalVariance)) : formatMoney(totalVariance) + " remaining"}
+                {over ? t("overBy", { amount: formatMoney(budgetAbs(totalVariance)) }) : t("remaining", { amount: formatMoney(totalVariance) })}
               </span>
             </div>
             <span className={cn(
@@ -210,6 +215,7 @@ function ViewLineCard({
   budgetLine?: BudgetLineData;
   periodComparisons: PeriodComparison[];
 }) {
+  const t = useTranslations("Budgets");
   const formatMoney = (amount: bigint) => budgetMoney(amount, currencyCode);
   const [expanded, setExpanded] = useState(false);
 
@@ -248,7 +254,7 @@ function ViewLineCard({
               "text-xs font-mono tabular-nums",
               over ? "text-red-600" : "text-emerald-600"
             )}>
-              {over ? "Over by " : "Under by "}{formatMoney(budgetAbs(variance))}
+              {t(over ? "overBy" : "underBy", { amount: formatMoney(budgetAbs(variance)) })}
             </p>
           )}
         </div>
@@ -266,10 +272,10 @@ function ViewLineCard({
       )}
       <div className="flex items-center justify-between text-[11px] text-muted-foreground">
         <div className="flex items-center gap-3">
-          {actual !== 0n && <span>{pct}% utilized</span>}
-          {actual !== 0n && <span className="font-mono tabular-nums">{formatMoney(budgeted - actual)} remaining</span>}
-          {burnRate !== 0n && <span className="font-mono tabular-nums">Projected: {formatMoney(burnRate)}</span>}
-          {actual === 0n && <span>No spending recorded yet</span>}
+          {actual !== 0n && <span>{t("utilized", { percent: pct })}</span>}
+          {actual !== 0n && <span className="font-mono tabular-nums">{t("remaining", { amount: formatMoney(budgeted - actual) })}</span>}
+          {burnRate !== 0n && <span className="font-mono tabular-nums">{t("projected", { amount: formatMoney(burnRate) })}</span>}
+          {actual === 0n && <span>{t("noSpending")}</span>}
         </div>
         {periods.length > 0 && (
           <button
@@ -277,7 +283,7 @@ function ViewLineCard({
             className="flex items-center gap-1 hover:text-foreground transition-colors"
           >
             {expanded ? <ChevronDown className="size-3" /> : <ChevronRight className="size-3" />}
-            Periods
+            {t("periods")}
           </button>
         )}
       </div>
@@ -288,7 +294,7 @@ function ViewLineCard({
             const pOver = p.actual > p.budgeted;
             return (
               <div key={p.id} className="flex items-center justify-between text-[11px] py-1 px-2 rounded hover:bg-muted/50">
-                <span className="text-muted-foreground min-w-[80px]">{p.label}</span>
+                <span className="text-muted-foreground min-w-[80px]">{budgetPeriodLabel(t, p.label)}</span>
                 <div className="flex items-center gap-3">
                   <span className="font-mono tabular-nums">{formatMoney(p.budgeted)}</span>
                   {p.actual !== 0n && (
@@ -314,6 +320,7 @@ function ViewLineCard({
 }
 
 function PeriodBreakdownTable({ comparisons, currencyCode }: { currencyCode: string; comparisons: { periods: PeriodComparison[] }[] }) {
+  const t = useTranslations("Budgets");
   const formatMoney = (amount: bigint) => budgetMoney(amount, currencyCode);
   // Aggregate periods across all accounts
   const periodMap = new Map<string, { label: string; sortOrder: number; budgeted: bigint; actual: bigint }>();
@@ -344,15 +351,15 @@ function PeriodBreakdownTable({ comparisons, currencyCode }: { currencyCode: str
 
   return (
     <div>
-      <p className="text-sm font-medium mb-3">Period Breakdown</p>
+      <p className="text-sm font-medium mb-3">{t("periodBreakdown")}</p>
       <div className="rounded-lg border overflow-hidden">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-muted/30">
-              <th className="text-left px-4 py-2 text-xs font-medium text-muted-foreground">Period</th>
-              <th className="text-right px-4 py-2 text-xs font-medium text-muted-foreground">Budgeted</th>
-              <th className="text-right px-4 py-2 text-xs font-medium text-muted-foreground">Actual</th>
-              <th className="text-right px-4 py-2 text-xs font-medium text-muted-foreground">Variance</th>
+              <th className="text-left px-4 py-2 text-xs font-medium text-muted-foreground">{t("period")}</th>
+              <th className="text-right px-4 py-2 text-xs font-medium text-muted-foreground">{t("budgeted")}</th>
+              <th className="text-right px-4 py-2 text-xs font-medium text-muted-foreground">{t("actual")}</th>
+              <th className="text-right px-4 py-2 text-xs font-medium text-muted-foreground">{t("variance")}</th>
             </tr>
           </thead>
           <tbody>
@@ -360,7 +367,7 @@ function PeriodBreakdownTable({ comparisons, currencyCode }: { currencyCode: str
               const variance = p.budgeted - p.actual;
               return (
                 <tr key={p.label} className="border-b last:border-b-0">
-                  <td className="px-4 py-2 text-sm">{p.label}</td>
+                  <td className="px-4 py-2 text-sm">{budgetPeriodLabel(t, p.label)}</td>
                   <td className="px-4 py-2 text-right font-mono tabular-nums text-sm">{formatMoney(p.budgeted)}</td>
                   <td className="px-4 py-2 text-right font-mono tabular-nums text-sm text-blue-600">{formatMoney(p.actual)}</td>
                   <td className={cn(
@@ -375,7 +382,7 @@ function PeriodBreakdownTable({ comparisons, currencyCode }: { currencyCode: str
           </tbody>
           <tfoot>
             <tr className="border-t bg-muted/30">
-              <td className="px-4 py-2 text-sm font-medium">Total</td>
+              <td className="px-4 py-2 text-sm font-medium">{t("total")}</td>
               <td className="px-4 py-2 text-right font-mono tabular-nums text-sm font-semibold">{formatMoney(totBudgeted)}</td>
               <td className="px-4 py-2 text-right font-mono tabular-nums text-sm font-semibold text-blue-600">{formatMoney(totActual)}</td>
               <td className={cn(

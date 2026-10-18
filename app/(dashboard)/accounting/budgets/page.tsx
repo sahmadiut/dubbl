@@ -1,5 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { budgetTypeLabel, budgetPeriodLabel, budgetReadJson, budgetFailureMessage } from "@/i18n/budget-presentation";
+
 import { useState, useEffect, useCallback } from "react";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { useRouter } from "next/navigation";
@@ -15,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { budgetMoney, budgetPercent, budgetAbs, budgetJson } from "@/lib/money/budget-ui";
+import { budgetMoney, budgetPercent, budgetAbs } from "@/lib/money/budget-ui";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { cn } from "@/lib/utils";
@@ -61,14 +64,6 @@ interface BudgetReport {
   comparisons: LineComparison[];
 }
 
-const PERIOD_LABELS: Record<string, string> = {
-  daily: "Daily",
-  weekly: "Weekly",
-  monthly: "Monthly",
-  quarterly: "Quarterly",
-  yearly: "Yearly",
-  custom: "Custom",
-};
 
 function getCurrentPeriod(periods: PeriodBreakdown[]): PeriodBreakdown | undefined {
   const today = new Date().toISOString().slice(0, 10);
@@ -76,6 +71,7 @@ function getCurrentPeriod(periods: PeriodBreakdown[]): PeriodBreakdown | undefin
 }
 
 export default function BudgetsPage() {
+  const t = useTranslations("Budgets");
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
   const [loadError, setLoadError] = useState("");
@@ -87,7 +83,7 @@ export default function BudgetsPage() {
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [loadingReports, setLoadingReports] = useState(false);
 
-  useDocumentTitle("Accounting \u00B7 Budgets");
+  useDocumentTitle(t("documentTitle"));
 
   const fetchData = useCallback(() => {
     const orgId = localStorage.getItem("activeOrgId");
@@ -97,7 +93,7 @@ export default function BudgetsPage() {
     fetch("/api/v1/budgets?limit=100", {
       headers: { "x-organization-id": orgId },
     })
-      .then(budgetJson)
+      .then(response => budgetReadJson(response, t, t("loadFailed")))
       .then((data) => {
         if (data.data) {
           setBudgets(data.data);
@@ -111,7 +107,7 @@ export default function BudgetsPage() {
               fetch(`/api/v1/reports/budget-vs-actual?budgetId=${b.id}`, {
                 headers: { "x-organization-id": orgId },
               })
-                .then(budgetJson)
+                .then(response => budgetReadJson(response, t, t("loadFailed")))
                 .then((d) => [b.id, {
                   currencyCode: d.currencyCode,
                   totalBudgeted: d.totalBudgeted as bigint,
@@ -135,8 +131,8 @@ export default function BudgetsPage() {
           setLoading(false);
         }
       })
-      .catch(error => { setBudgets([]); setLoadError(error instanceof Error ? error.message : "Unable to load budgets"); setLoading(false); });
-  }, []);
+      .catch(error => { setBudgets([]); setLoadError(budgetFailureMessage(error, t, t("loadFailed"))); setLoading(false); });
+  }, [t]);
 
   useEffect(() => {
     fetchData();
@@ -151,14 +147,14 @@ export default function BudgetsPage() {
     return (
       <ContentReveal className="space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold tracking-tight">Budgets</h2>
+          <h2 className="text-lg font-semibold tracking-tight">{t("budgets")}</h2>
           <Button
             onClick={() => openDrawer("budget")}
             size="sm"
             className="bg-emerald-600 hover:bg-emerald-700"
           >
             <Plus className="mr-2 size-4" />
-            New Budget
+            {t("new")}
           </Button>
         </div>
 
@@ -166,16 +162,16 @@ export default function BudgetsPage() {
           <div className="flex items-center gap-3 px-5 py-4 border-b">
             <Target className="size-4 text-muted-foreground" />
             <div>
-              <p className="text-sm font-semibold">Budget Tracking</p>
-              <p className="text-xs text-muted-foreground">Monitor spending against your targets</p>
+              <p className="text-sm font-semibold">{t("tracking")}</p>
+              <p className="text-xs text-muted-foreground">{t("trackingDescription")}</p>
             </div>
           </div>
           <div className="p-5 space-y-5 opacity-40">
             {[
-              { label: "Marketing", pct: 65 },
-              { label: "Operations", pct: 82 },
-              { label: "Engineering", pct: 40 },
-              { label: "Sales", pct: 55 },
+              { label: t("marketing"), pct: 65 },
+              { label: t("operations"), pct: 82 },
+              { label: t("engineering"), pct: 40 },
+              { label: t("sales"), pct: 55 },
             ].map(({ label, pct }) => (
               <div key={label} className="space-y-1.5">
                 <div className="flex items-center justify-between">
@@ -202,7 +198,7 @@ export default function BudgetsPage() {
     if (debouncedSearch) {
       const q = debouncedSearch.toLowerCase();
       const matchName = b.name.toLowerCase().includes(q);
-      const matchPeriod = (PERIOD_LABELS[b.periodType] || b.periodType).toLowerCase().includes(q);
+      const matchPeriod = budgetTypeLabel(t, b.periodType).toLowerCase().includes(q);
       const matchAccount = reports[b.id]?.comparisons?.some(
         (c) => c.accountName.toLowerCase().includes(q) || c.accountCode.toLowerCase().includes(q)
       );
@@ -221,9 +217,9 @@ export default function BudgetsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold tracking-tight">Budgets</h2>
+          <h2 className="text-lg font-semibold tracking-tight">{t("budgets")}</h2>
           <p className="text-sm text-muted-foreground mt-0.5">
-            {budgets.length} budget{budgets.length !== 1 ? "s" : ""} · {totalActive} active
+            {t("count", { count: budgets.length, active: totalActive })}
           </p>
         </div>
         <Button
@@ -232,7 +228,7 @@ export default function BudgetsPage() {
           className="bg-emerald-600 hover:bg-emerald-700"
         >
           <Plus className="mr-2 size-4" />
-          New Budget
+          {t("new")}
         </Button>
       </div>
 
@@ -241,7 +237,7 @@ export default function BudgetsPage() {
         <div className="relative w-full sm:max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <Input
-            placeholder="Search budgets or accounts..."
+            placeholder={t("search")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
@@ -252,9 +248,9 @@ export default function BudgetsPage() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="inactive">Inactive</SelectItem>
+            <SelectItem value="all">{t("all")}</SelectItem>
+            <SelectItem value="active">{t("active")}</SelectItem>
+            <SelectItem value="inactive">{t("inactive")}</SelectItem>
           </SelectContent>
         </Select>
         {hasFilters && (
@@ -265,7 +261,7 @@ export default function BudgetsPage() {
             onClick={() => { setSearch(""); setStatusFilter("all"); }}
           >
             <X className="mr-1 size-3" />
-            Clear
+            {t("clear")}
           </Button>
         )}
       </div>
@@ -274,14 +270,14 @@ export default function BudgetsPage() {
       {/* No results */}
       {filtered.length === 0 && (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <p className="text-sm text-muted-foreground">No budgets match your filters.</p>
+          <p className="text-sm text-muted-foreground">{t("noResults")}</p>
           <Button
             variant="ghost"
             size="sm"
             className="mt-2 text-xs"
             onClick={() => { setSearch(""); setStatusFilter("all"); }}
           >
-            Clear filters
+            {t("clearFilters")}
           </Button>
         </div>
       )}
@@ -293,7 +289,7 @@ export default function BudgetsPage() {
             const report = reports[b.id];
             if (!report) return <button key={b.id} onClick={() => router.push(`/accounting/budgets/${b.id}`)} className="w-full rounded-lg border p-4 text-left">
               <span className="text-sm font-semibold">{b.name}</span>
-              <span className="block text-xs text-muted-foreground">{loadingReports ? "Loading budget amounts..." : "Budget amounts unavailable. Open this budget to retry."}</span>
+              <span className="block text-xs text-muted-foreground">{loadingReports ? t("loadingAmounts") : t("amountsUnavailable")}</span>
             </button>;
             const formatMoney = (amount: bigint) => budgetMoney(amount, report.currencyCode);
             const total = b.lines?.reduce((s, l) => s + l.total, 0n) ?? 0n;
@@ -319,7 +315,7 @@ export default function BudgetsPage() {
                     <div className="flex items-center gap-2 min-w-0">
                       <p className="text-sm font-semibold truncate">{b.name}</p>
                       <Badge variant="outline" className="text-[10px] shrink-0">
-                        {PERIOD_LABELS[b.periodType] || b.periodType}
+                        {budgetTypeLabel(t, b.periodType)}
                       </Badge>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
@@ -332,10 +328,10 @@ export default function BudgetsPage() {
                             "font-mono tabular-nums",
                             over ? "text-red-600" : "text-emerald-600"
                           )}>
-                            {over ? "Over by " + formatMoney(budgetAbs(remaining)) : formatMoney(remaining) + " left"}
+                            {over ? t("overBy", { amount: formatMoney(budgetAbs(remaining)) }) : t("left", { amount: formatMoney(remaining) })}
                           </span>
                           <span>·</span>
-                          <span>{daysRemaining}d left ({timePct}%)</span>
+                          <span>{t("timeLeft", { days: daysRemaining, percent: timePct })}</span>
                         </div>
                       </div>
                       <ChevronRight className="size-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -395,7 +391,7 @@ export default function BudgetsPage() {
                                   : formatMoney(periodRemaining!)
                                 }
                               </p>
-                              <p className="text-[10px] text-muted-foreground">left in {currentPeriod.label}</p>
+                              <p className="text-[10px] text-muted-foreground">{t("leftIn", { period: budgetPeriodLabel(t, currentPeriod.label) })}</p>
                             </div>
                           )}
 
@@ -437,7 +433,7 @@ export default function BudgetsPage() {
       {/* Inactive budgets */}
       {inactiveBudgets.length > 0 && (
         <div className="space-y-2">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Inactive</p>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("inactive")}</p>
           <div className="rounded-lg border overflow-hidden">
             <div className="divide-y">
               {inactiveBudgets.map((b) => {
@@ -452,10 +448,10 @@ export default function BudgetsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-medium truncate text-muted-foreground">{b.name}</p>
-                        <Badge variant="outline" className="text-[10px] shrink-0">Inactive</Badge>
+                        <Badge variant="outline" className="text-[10px] shrink-0">{t("inactive")}</Badge>
                         {b.periodType && b.periodType !== "monthly" && (
                           <Badge variant="outline" className="text-[10px] shrink-0">
-                            {PERIOD_LABELS[b.periodType] || b.periodType}
+                            {budgetTypeLabel(t, b.periodType)}
                           </Badge>
                         )}
                       </div>
@@ -464,7 +460,7 @@ export default function BudgetsPage() {
                       </p>
                     </div>
                     <span className="font-mono text-sm font-medium tabular-nums shrink-0 text-muted-foreground">
-                      {total === undefined ? "Unavailable" : budgetMoney(total, report.currencyCode)}
+                      {total === undefined ? t("unavailable") : budgetMoney(total, report.currencyCode)}
                     </span>
                     <ChevronRight className="size-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                   </button>

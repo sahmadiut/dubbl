@@ -1,12 +1,15 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { budgetTypeLabel, budgetReadJson, budgetFailureMessage } from "@/i18n/budget-presentation";
+
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { useParams, useRouter, usePathname } from "next/navigation";
 import { ArrowLeft, Target, TrendingUp, TrendingDown, BarChart3, Settings2, Flame, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
-import { budgetMoney, budgetPercent, budgetAbs, budgetJson } from "@/lib/money/budget-ui";
+import { budgetMoney, budgetPercent, budgetAbs } from "@/lib/money/budget-ui";
 import { useEntityTitle } from "@/lib/hooks/use-entity-title";
 import { cn } from "@/lib/utils";
 import type { PeriodType } from "@/lib/budget-periods";
@@ -95,21 +98,14 @@ export function useBudgetContext() {
 
 export type { BudgetData, BudgetLineData, BudgetPeriodData, Comparison, PeriodComparison, Account };
 
-const PERIOD_TYPE_LABELS: Record<PeriodType, string> = {
-  monthly: "Monthly",
-  weekly: "Weekly",
-  daily: "Daily",
-  quarterly: "Quarterly",
-  yearly: "Yearly",
-  custom: "Custom",
-};
 
 const PAGE_TABS = [
-  { value: "overview", label: "Overview", icon: BarChart3, href: (id: string) => `/accounting/budgets/${id}` },
-  { value: "settings", label: "Settings", icon: Settings2, href: (id: string) => `/accounting/budgets/${id}/settings` },
+  { value: "overview", label: "overview", icon: BarChart3, href: (id: string) => `/accounting/budgets/${id}` },
+  { value: "settings", label: "settings", icon: Settings2, href: (id: string) => `/accounting/budgets/${id}/settings` },
 ] as const;
 
 export default function BudgetDetailLayout({ children }: { children: React.ReactNode }) {
+  const t = useTranslations("Budgets");
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const pathname = usePathname();
@@ -136,9 +132,9 @@ export default function BudgetDetailLayout({ children }: { children: React.React
     setLoadError("");
 
     Promise.all([
-      fetch(`/api/v1/budgets/${id}`, { headers: { "x-organization-id": orgId } }).then(budgetJson),
-      fetch("/api/v1/accounts?limit=500", { headers: { "x-organization-id": orgId } }).then(budgetJson),
-      fetch(`/api/v1/reports/budget-vs-actual?budgetId=${id}`, { headers: { "x-organization-id": orgId } }).then(budgetJson),
+      fetch(`/api/v1/budgets/${id}`, { headers: { "x-organization-id": orgId } }).then(response => budgetReadJson(response, t, t("detailLoadFailed"))),
+      fetch("/api/v1/accounts?limit=500", { headers: { "x-organization-id": orgId } }).then(response => budgetReadJson(response, t, t("detailLoadFailed"))),
+      fetch(`/api/v1/reports/budget-vs-actual?budgetId=${id}`, { headers: { "x-organization-id": orgId } }).then(response => budgetReadJson(response, t, t("detailLoadFailed"))),
     ])
       .then(([budgetData, accountsData, reportData]) => {
         if (budgetData.budget) setBudget(budgetData.budget);
@@ -154,9 +150,9 @@ export default function BudgetDetailLayout({ children }: { children: React.React
           setTotalDays(reportData.totalDays || 0);
         }
       })
-      .catch((error) => { setLoadError(error instanceof Error ? error.message : "Unable to load budget"); setBudget(null); setComparisons([]); })
+      .catch((error) => { setLoadError(budgetFailureMessage(error, t, t("detailLoadFailed"))); setBudget(null); setComparisons([]); })
       .finally(() => setLoading(false));
-  }, [id, orgId]);
+  }, [id, orgId, t]);
 
   useEffect(() => {
     fetchData();
@@ -167,8 +163,8 @@ export default function BudgetDetailLayout({ children }: { children: React.React
   if (!budget) {
     return (
       <div className="space-y-4 pt-12 text-center">
-        <p className="text-sm text-muted-foreground">{loadError || "Budget not found"}</p>
-        <button onClick={() => router.push("/accounting/budgets")} className="text-sm text-muted-foreground underline">Back to Budgets</button>
+        <p className="text-sm text-muted-foreground">{loadError || t("notFound")}</p>
+        <button onClick={() => router.push("/accounting/budgets")} className="text-sm text-muted-foreground underline">{t("backCapital")}</button>
       </div>
     );
   }
@@ -188,7 +184,7 @@ export default function BudgetDetailLayout({ children }: { children: React.React
           className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors mb-6"
         >
           <ArrowLeft className="size-3.5" />
-          Back to budgets
+          {t("back")}
         </button>
 
         {/* Header */}
@@ -204,14 +200,14 @@ export default function BudgetDetailLayout({ children }: { children: React.React
                   ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
                   : "text-muted-foreground"
                 }>
-                  {budget.isActive ? "Active" : "Inactive"}
+                  {budget.isActive ? t("active") : t("inactive")}
                 </Badge>
                 <Badge variant="outline" className="text-[10px]">
-                  {PERIOD_TYPE_LABELS[budget.periodType]}
+                  {budgetTypeLabel(t, budget.periodType)}
                 </Badge>
               </div>
               <p className="text-sm text-muted-foreground mt-0.5">
-                {budget.startDate} · {budget.endDate} · {budget.lines.length} line{budget.lines.length !== 1 ? "s" : ""}
+                {budget.startDate} · {budget.endDate} · {t("lineCount", { count: budget.lines.length })}
               </p>
             </div>
           </div>
@@ -220,13 +216,13 @@ export default function BudgetDetailLayout({ children }: { children: React.React
         {/* Stats */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 mb-8">
           <div>
-            <p className="text-[11px] text-muted-foreground">Total Budget</p>
+            <p className="text-[11px] text-muted-foreground">{t("totalBudget")}</p>
             <p className="mt-0.5 font-mono text-xl font-semibold tabular-nums">{formatMoney(grandTotal)}</p>
           </div>
           <div>
             <p className="text-[11px] text-muted-foreground flex items-center gap-1">
               <TrendingUp className="size-3 text-blue-500" />
-              Actual Spend
+              {t("actualSpend")}
             </p>
             <p className="mt-0.5 font-mono text-lg font-semibold tabular-nums text-blue-600">
               {totalActual !== 0n ? formatMoney(totalActual) : "-"}
@@ -238,7 +234,7 @@ export default function BudgetDetailLayout({ children }: { children: React.React
                 ? <TrendingDown className="size-3 text-emerald-500" />
                 : <TrendingUp className="size-3 text-red-500" />
               }
-              Variance
+              {t("variance")}
             </p>
             <p className={cn(
               "mt-0.5 font-mono text-lg font-semibold tabular-nums",
@@ -250,27 +246,27 @@ export default function BudgetDetailLayout({ children }: { children: React.React
           <div>
             <p className="text-[11px] text-muted-foreground flex items-center gap-1">
               <Flame className="size-3 text-orange-500" />
-              Burn Rate
+              {t("burnRate")}
             </p>
             <p className="mt-0.5 font-mono text-lg font-semibold tabular-nums text-orange-600">
               {totalBurnRate !== 0n ? formatMoney(totalBurnRate) : "-"}
             </p>
             {totalBurnRate !== 0n && (
-              <p className="text-[10px] text-muted-foreground">projected total</p>
+              <p className="text-[10px] text-muted-foreground">{t("projectedTotal")}</p>
             )}
           </div>
           <div>
             <p className="text-[11px] text-muted-foreground flex items-center gap-1">
               <Clock className="size-3 text-violet-500" />
-              Days Remaining
+              {t("daysRemaining")}
             </p>
             <p className="mt-0.5 font-mono text-lg font-semibold tabular-nums">
               {daysRemaining}
             </p>
-            <p className="text-[10px] text-muted-foreground">{daysElapsed} of {totalDays} elapsed</p>
+            <p className="text-[10px] text-muted-foreground">{t("elapsed", { elapsed: daysElapsed, total: totalDays })}</p>
           </div>
           <div>
-            <p className="text-[11px] text-muted-foreground">Utilization</p>
+            <p className="text-[11px] text-muted-foreground">{t("utilization")}</p>
             <div className="flex items-center gap-2 mt-1">
               <div className="h-2 flex-1 rounded-full bg-gray-200 dark:bg-muted overflow-hidden">
                 <div
@@ -288,13 +284,13 @@ export default function BudgetDetailLayout({ children }: { children: React.React
 
         {/* Page tabs */}
         <nav className="-mt-2 mb-8 flex items-center gap-1 overflow-x-auto border-b border-border">
-          {PAGE_TABS.map((t) => {
-            const Icon = t.icon;
-            const tabHref = t.href(id);
-            const active = activeTab === t.value;
+          {PAGE_TABS.map((tab) => {
+            const Icon = tab.icon;
+            const tabHref = tab.href(id);
+            const active = activeTab === tab.value;
             return (
               <button
-                key={t.value}
+                key={tab.value}
                 onClick={() => router.push(tabHref)}
                 className={cn(
                   "flex shrink-0 items-center gap-1.5 border-b-2 px-2.5 pb-2.5 text-[13px] font-medium transition-colors",
@@ -304,7 +300,7 @@ export default function BudgetDetailLayout({ children }: { children: React.React
                 )}
               >
                 <Icon className="size-3.5" />
-                {t.label}
+                {t(tab.label)}
               </button>
             );
           })}

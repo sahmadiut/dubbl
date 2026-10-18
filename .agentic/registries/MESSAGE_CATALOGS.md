@@ -110,7 +110,7 @@ Extraction ownership:
 | LOC-007 | Accounting, sales, purchasing, contacts, tax and associated shared UI/errors |
 | LOC-021 | LOC-007 child: chart of accounts, account picker/drawer and accounting navigation; see [scope](ACCOUNT_CATALOGS.md) |
 | LOC-022 | LOC-007 child: journals and opening balances; see [scope](JOURNAL_CATALOGS.md) |
-| LOC-023 | LOC-007 child: banking |
+| LOC-023 | LOC-007 child: banking; see [combined acceptance](BANKING_CATALOG_ACCEPTANCE.md) |
 | LOC-029 | LOC-023 child: bank-account list, creation and settings; see [scope](BANK_ACCOUNT_CATALOGS.md) |
 | LOC-030 | LOC-023 child: transaction workspace and shared matching/categorization sheets; see [scope](BANK_WORKSPACE_CATALOGS.md) |
 | LOC-031 | LOC-023 child: imports and shared import presentation; see [scope](BANK_IMPORT_CATALOGS.md) |

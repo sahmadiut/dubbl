@@ -148,6 +148,11 @@ Extraction ownership:
 | LOC-059 | LOC-027 child: contact detail shell/overview |
 | LOC-060 | LOC-027 child: contact financial tabs |
 | LOC-028 | LOC-007 child: tax |
+| LOC-061 | LOC-028 child: tax rate and navigation; see [scope](TAX_RATE_CATALOGS.md) |
+| LOC-062 | LOC-028 child: currency workspace |
+| LOC-063 | LOC-028 child: tax period |
+| LOC-064 | LOC-028 child: VAT filing |
+| LOC-065 | LOC-028 child: remaining tax filing |
 | LOC-008 | Inventory, payroll, projects, CRM, reports, dashboard and documents |
 | LOC-009 | Public surfaces, landing/help, email/PDF and user-visible background content; remaining source audit |
 | LOC-002 | Independent combined key coverage, plural and safe rendering acceptance |

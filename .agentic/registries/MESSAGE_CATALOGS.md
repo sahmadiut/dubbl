@@ -129,7 +129,7 @@ Extraction ownership:
 | LOC-042 | LOC-025 child: cash sales/receipts and shared receipt attachments; see [scope](SALES_RECEIPT_CATALOGS.md) |
 | LOC-043 | LOC-025 child: credit notes; see [scope](CREDIT_NOTE_CATALOGS.md) |
 | LOC-044 | LOC-025 child: customer prepayments; see [scope](CUSTOMER_PREPAYMENT_CATALOGS.md) |
-| LOC-045 | LOC-025 child: recurring invoices |
+| LOC-045 | LOC-025 child: recurring invoices; see [scope](RECURRING_INVOICE_CATALOGS.md) |
 | LOC-046 | LOC-025 child: revenue schedules |
 | LOC-047 | LOC-025 child: sales navigation and shared document/line forms |
 | LOC-026 | LOC-007 child: purchasing |

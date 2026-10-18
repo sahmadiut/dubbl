@@ -2755,6 +2755,7 @@ function CreditNoteDrawer({ open, onClose }: { open: boolean; onClose: () => voi
 // Recurring Template Drawer
 // ---------------------------------------------------------------------------
 function RecurringDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useTranslations("RecurringInvoices");
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [currencyCode, setCurrencyCode] = useState("USD");
@@ -2785,10 +2786,10 @@ function RecurringDrawer({ open, onClose }: { open: boolean; onClose: () => void
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!contactId) { toast.error("Please select a customer"); return; }
-    if (!name.trim()) { toast.error("Please enter a template name"); return; }
-    if (!orgId) { toast.error("Select an organization"); return; }
-    if (!validLines) { toast.error("Check the line amounts before saving"); return; }
+    if (!contactId) { toast.error(t("selectCustomer")); return; }
+    if (!name.trim()) { toast.error(t("enterName")); return; }
+    if (!orgId) { toast.error(t("selectOrg")); return; }
+    if (!validLines) { toast.error(t("checkLines")); return; }
     setSaving(true);
 
     try {
@@ -2806,14 +2807,15 @@ function RecurringDrawer({ open, onClose }: { open: boolean; onClose: () => void
         }),
       });
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to create recurring template");
+        throw new Error("Recurring template request failed");
       }
-      toast.success("Recurring template created");
+      const data = await res.json();
+      if (typeof data?.template?.id !== "string" || !data.template.id.trim()) throw new Error("Invalid created template");
+      toast.success(t("created"));
       onClose();
       router.push("/sales/recurring");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create template");
+    } catch {
+      toast.error(t("createFailed"));
     } finally {
       setSaving(false);
     }
@@ -2826,58 +2828,58 @@ function RecurringDrawer({ open, onClose }: { open: boolean; onClose: () => void
           <div className="flex items-center gap-3">
             <DrawerIcon><RefreshCw className="size-5" /></DrawerIcon>
             <div>
-              <SheetTitle className="text-lg">New Recurring Invoice</SheetTitle>
-              <SheetDescription>Set up a template to automatically generate invoices.</SheetDescription>
+              <SheetTitle className="text-lg">{t("newInvoice")}</SheetTitle>
+              <SheetDescription>{t("drawerDescription")}</SheetDescription>
             </div>
           </div>
         </SheetHeader>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
             <div className="space-y-4">
-              <SectionLabel>Template Details</SectionLabel>
+              <SectionLabel>{t("templateDetails")}</SectionLabel>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Template Name *</Label>
-                  <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Monthly Retainer" />
+                  <Label>{t("templateName")}</Label>
+                  <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("namePlaceholder")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Customer *</Label>
+                  <Label>{t("customerRequired")}</Label>
                   <ContactPicker value={contactId} onChange={setContactId} type="customer" />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Currency</Label>
+                <Label>{t("currency")}</Label>
                 <CurrencySelect value={currencyCode} onValueChange={(code) => { setCurrencyCode(code); setValidLines(false); }} />
-                <p className="text-xs text-muted-foreground">Prices use this currency. New templates default to USD.</p>
+                <p className="text-xs text-muted-foreground">{t("currencyHint")}</p>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Frequency</Label>
+                  <Label>{t("frequency")}</Label>
                   <Select value={frequency} onValueChange={setFrequency}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="weekly">Weekly</SelectItem>
-                      <SelectItem value="fortnightly">Fortnightly</SelectItem>
-                      <SelectItem value="monthly">Monthly</SelectItem>
-                      <SelectItem value="quarterly">Quarterly</SelectItem>
-                      <SelectItem value="semi_annual">Semi-Annual</SelectItem>
-                      <SelectItem value="annual">Annual</SelectItem>
+                      <SelectItem value="weekly">{t("weekly")}</SelectItem>
+                      <SelectItem value="fortnightly">{t("fortnightly")}</SelectItem>
+                      <SelectItem value="monthly">{t("monthly")}</SelectItem>
+                      <SelectItem value="quarterly">{t("quarterly")}</SelectItem>
+                      <SelectItem value="semi_annual">{t("semiAnnual")}</SelectItem>
+                      <SelectItem value="annual">{t("annual")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Reference</Label>
-                  <Input value={reference} onChange={(e) => setReference(e.target.value)} placeholder="Optional reference" />
+                  <Label>{t("reference")}</Label>
+                  <Input value={reference} onChange={(e) => setReference(e.target.value)} placeholder={t("referencePlaceholder")} />
                 </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Start Date</Label>
-                  <DatePicker value={startDate} onChange={setStartDate} placeholder="Start date" />
+                  <Label>{t("startDate")}</Label>
+                  <DatePicker value={startDate} onChange={setStartDate} placeholder={t("startDatePlaceholder")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>End Date (optional)</Label>
-                  <DatePicker value={endDate} onChange={setEndDate} placeholder="No end date" />
+                  <Label>{t("endDateOptional")}</Label>
+                  <DatePicker value={endDate} onChange={setEndDate} placeholder={t("noEndDate")} />
                 </div>
               </div>
               <label className="flex items-start gap-3 rounded-lg border bg-muted/30 px-3 py-3 cursor-pointer">
@@ -2888,9 +2890,9 @@ function RecurringDrawer({ open, onClose }: { open: boolean; onClose: () => void
                   className="mt-0.5 size-4 accent-emerald-600"
                 />
                 <span className="space-y-0.5">
-                  <span className="block text-sm font-medium">Email it automatically each time</span>
+                  <span className="block text-sm font-medium">{t("autoEmail")}</span>
                   <span className="block text-[11px] text-muted-foreground">
-                    Each new invoice is finalised and emailed to the customer on its own. Leave off to create drafts you send yourself.
+                    {t("autoEmailHint")}
                   </span>
                 </span>
               </label>
@@ -2899,7 +2901,7 @@ function RecurringDrawer({ open, onClose }: { open: boolean; onClose: () => void
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Line Items</SectionLabel>
+              <SectionLabel>{t("lineItems")}</SectionLabel>
               <LineItemsEditor key={orgId} lines={lines} onChange={(next) => { setLines(next); setValidLines(false); }} accountTypeFilter={["revenue"]} taxContext="sales"
                 currencyCode={currencyCode} documentKind="recurringInvoice" priceFractionDigits={18} onValidityChange={setValidLines} />
             </div>
@@ -2907,11 +2909,11 @@ function RecurringDrawer({ open, onClose }: { open: boolean; onClose: () => void
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Notes</SectionLabel>
-              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notes for generated invoices..." rows={3} />
+              <SectionLabel>{t("notes")}</SectionLabel>
+              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("notesPlaceholder")} rows={3} />
             </div>
           </div>
-          <DrawerFooter onClose={onClose} saving={saving} label="Create Template" disabled={!orgId || !name.trim() || !contactId || !validLines || lines.some(line => !line.description.trim())} />
+          <DrawerFooter onClose={onClose} saving={saving} label={t("createTemplate")} disabled={!orgId || !name.trim() || !contactId || !validLines || lines.some(line => !line.description.trim())} />
         </form>
       </SheetContent>
     </Sheet>

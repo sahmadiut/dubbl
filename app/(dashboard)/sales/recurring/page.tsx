@@ -1,5 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { recurringInvoiceFrequencyLabel, recurringInvoiceStatusLabel, type RecurringInvoiceTranslate, type RecurringInvoiceReadError } from "@/i18n/recurring-invoice-presentation";
+
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { useRouter } from "next/navigation";
@@ -47,69 +50,59 @@ const statusColors: Record<string, string> = {
   completed:
     "border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300",
 };
-
-const frequencyLabels: Record<string, string> = {
-  weekly: "Weekly",
-  fortnightly: "Fortnightly",
-  monthly: "Monthly",
-  quarterly: "Quarterly",
-  semi_annual: "Semi-Annual",
-  annual: "Annual",
-};
-
-function buildColumns(): Column<RecurringTemplate>[] {
+function buildColumns(t: RecurringInvoiceTranslate): Column<RecurringTemplate>[] {
   return [
     {
       key: "name",
-      header: "Name",
+      header: t("name"),
       sortKey: "name",
       render: (r) => <span className="text-sm font-medium">{r.name}</span>,
     },
     {
       key: "contact",
-      header: "Customer",
+      header: t("customer"),
       render: (r) => (
         <span className="text-sm font-medium">{r.contact?.name || "-"}</span>
       ),
     },
     {
       key: "frequency",
-      header: "Frequency",
+      header: t("frequency"),
       sortKey: "frequency",
       className: "w-32",
       render: (r) => (
         <span className="text-sm">
-          {frequencyLabels[r.frequency] || r.frequency}
+          {recurringInvoiceFrequencyLabel(t, r.frequency)}
         </span>
       ),
     },
     {
       key: "status",
-      header: "Status",
+      header: t("status"),
       className: "w-28",
       render: (r) => (
         <Badge variant="outline" className={statusColors[r.status] || ""}>
-          {r.status}
+          {recurringInvoiceStatusLabel(t, r.status)}
         </Badge>
       ),
     },
     {
       key: "nextRun",
-      header: "Next Run",
+      header: t("nextRun"),
       sortKey: "nextRun",
       className: "w-28",
       render: (r) => <span className="text-sm">{r.nextRunDate || "-"}</span>,
     },
     {
       key: "startDate",
-      header: "Start Date",
+      header: t("startDate"),
       sortKey: "startDate",
       className: "w-28",
       render: (r) => <span className="text-sm">{r.startDate}</span>,
     },
     {
       key: "occurrences",
-      header: "Occurrences",
+      header: t("occurrences"),
       className: "w-28 text-right",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums">
@@ -126,9 +119,10 @@ export default function RecurringInvoicesPage() {
 }
 
 function RecurringInvoicesContent() {
+  const t = useTranslations("RecurringInvoices");
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<RecurringInvoiceReadError | null>(null);
   const generation = useRef(0);
   const [templates, setTemplates] = useState<RecurringTemplate[]>([]);
   const [initialLoad, setInitialLoad] = useState(true);
@@ -151,7 +145,7 @@ function RecurringInvoicesContent() {
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search);
 
-  useDocumentTitle("Sales · Recurring Invoices");
+  useDocumentTitle(t("pageTitle"));
 
   const [upcoming, setUpcoming] = useState<
     { templateName: string; contactName: string; currencyCode: string; lineTotal: bigint; dates: { date: string; occurrence: number }[] }[]
@@ -160,7 +154,7 @@ function RecurringInvoicesContent() {
   const PAGE_SIZE = 50;
   const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
 
-  const columns = useMemo(() => buildColumns(), []);
+  const columns = useMemo(() => buildColumns(t), [t]);
 
   const buildParams = useCallback((p: number) => {
     const params = new URLSearchParams();
@@ -191,9 +185,10 @@ function RecurringInvoicesContent() {
       .then(async r => { if (!r.ok) throw new Error("Unable to load recurring templates"); return r.json(); })
       .then((data) => {
         if (cancelled) return;
+        if (!Array.isArray(data?.data)) throw new Error("Invalid recurring list");
         setError(null);
         setUpcoming([]);
-        const items = data.data || [];
+        const items = data.data;
         setTemplates(items);
         setTotalCount(data.pagination?.total || 0);
 
@@ -212,9 +207,9 @@ function RecurringInvoicesContent() {
                   contactName: d.template?.contactName || t.contact?.name || "",
                   lineTotal: d.template.lineTotal,
                   currencyCode: d.template.currencyCode,
-                  dates: d.upcoming || [],
+                  dates: Array.isArray(d.upcoming) ? d.upcoming : [],
                 }))
-                .catch(() => { if (!cancelled) setError("Some upcoming amounts could not be loaded. Refresh to try again."); return null; })
+                .catch(() => { if (!cancelled) setError("previewFailed"); return null; })
             )
           ).then((results) => {
             if (!cancelled) {
@@ -225,7 +220,7 @@ function RecurringInvoicesContent() {
           setUpcoming([]);
         }
       })
-      .catch(error => { if (!cancelled) setError(error instanceof Error ? error.message : "Unable to load templates"); })
+      .catch(() => { if (!cancelled) setError("readFailed"); })
       .then(() => devDelay())
       .finally(() => { if (!cancelled) { setInitialLoad(false); setRefetching(false); setFetchKey((k) => k + 1); } });
 
@@ -245,12 +240,13 @@ function RecurringInvoicesContent() {
       .then(async r => { if (!r.ok) throw new Error("Unable to load more templates"); return r.json(); })
       .then((data) => {
         if (generation.current !== requestGeneration) return;
+        if (!Array.isArray(data?.data)) throw new Error("Invalid recurring list");
         if (data.data) {
           setTemplates((prev) => [...prev, ...data.data]);
           setPage(nextPage);
         }
       })
-      .catch(() => { if (generation.current === requestGeneration) setError("Unable to load more templates"); })
+      .catch(() => { if (generation.current === requestGeneration) setError("moreFailed"); })
       .finally(() => { if (generation.current === requestGeneration) setLoadingMore(false); });
   }, [orgId, page, buildParams, loadingMore]);
 
@@ -337,9 +333,9 @@ function RecurringInvoicesContent() {
           {/* Top: title + CTA */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h2 className="text-lg font-semibold tracking-tight">Recurring Invoices</h2>
+              <h2 className="text-lg font-semibold tracking-tight">{t("title")}</h2>
               <p className="mt-1 text-sm text-muted-foreground max-w-md">
-                Set up templates that automatically generate invoices on a schedule.
+                {t("description")}
               </p>
             </div>
             <Button
@@ -347,7 +343,7 @@ function RecurringInvoicesContent() {
               className="bg-emerald-600 hover:bg-emerald-700 shrink-0"
             >
               <Plus className="mr-2 size-4" />
-              New Recurring Template
+              {t("newTemplate")}
             </Button>
           </div>
 
@@ -360,8 +356,8 @@ function RecurringInvoicesContent() {
               </div>
               <div className="p-3">
                 <div className="grid grid-cols-7 mb-1">
-                  {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => (
-                    <div key={d} className="text-center text-[10px] font-medium text-muted-foreground py-1">{d}</div>
+                  {(["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"] as const).map((d) => (
+                    <div key={d} className="text-center text-[10px] font-medium text-muted-foreground py-1">{t(d)}</div>
                   ))}
                 </div>
                 <div className="grid grid-cols-7">
@@ -387,7 +383,7 @@ function RecurringInvoicesContent() {
                 </div>
                 <div className="flex items-center gap-1.5 mt-2 pt-2 border-t">
                   <div className="size-2.5 rounded-full bg-indigo-400 dark:bg-indigo-500" />
-                  <span className="text-[10px] text-muted-foreground">Invoice auto-generates on these dates</span>
+                  <span className="text-[10px] text-muted-foreground">{t("calendarHint")}</span>
                 </div>
               </div>
             </div>
@@ -397,32 +393,32 @@ function RecurringInvoicesContent() {
               {/* Mock template card */}
               <div className="rounded-xl border bg-card overflow-hidden">
                 <div className="bg-muted/30 px-3 sm:px-5 py-3 border-b">
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Example template</p>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("example")}</p>
                 </div>
                 <div className="p-3 sm:p-5 space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium">Monthly hosting</p>
-                      <p className="text-xs text-muted-foreground">Acme Corp</p>
+                      <p className="text-sm font-medium">{t("exampleName")}</p>
+                      <p className="text-xs text-muted-foreground">{t("exampleCustomer")}</p>
                     </div>
-                    <span className="rounded-full border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">active</span>
+                    <span className="rounded-full border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">{t("active")}</span>
                   </div>
                   <div className="h-px bg-border" />
                   <div className="grid grid-cols-2 gap-3 text-xs">
                     <div>
-                      <p className="text-muted-foreground">Frequency</p>
-                      <p className="font-medium mt-0.5">Monthly</p>
+                      <p className="text-muted-foreground">{t("frequency")}</p>
+                      <p className="font-medium mt-0.5">{t("monthly")}</p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground">Amount</p>
+                      <p className="text-muted-foreground">{t("amount")}</p>
                       <p className="font-medium font-mono mt-0.5">$299.00</p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground">Next invoice</p>
-                      <p className="font-medium mt-0.5">Apr 1, 2026</p>
+                      <p className="text-muted-foreground">{t("nextInvoice")}</p>
+                      <p className="font-medium mt-0.5">{t("exampleDate")}</p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground">Generated</p>
+                      <p className="text-muted-foreground">{t("generated")}</p>
                       <p className="font-medium font-mono mt-0.5">12 / &infin;</p>
                     </div>
                   </div>
@@ -431,10 +427,10 @@ function RecurringInvoicesContent() {
 
               {/* Supported frequencies */}
               <div className="rounded-xl border bg-card px-3 sm:px-5 py-4">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Supported frequencies</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">{t("supportedFrequencies")}</p>
                 <div className="flex flex-wrap gap-2">
-                  {["Weekly", "Fortnightly", "Monthly", "Quarterly", "Semi-annual", "Annual"].map((freq) => (
-                    <span key={freq} className="rounded-full border bg-muted/30 px-2.5 py-1 text-xs text-muted-foreground">{freq}</span>
+                  {(["weekly", "fortnightly", "monthly", "quarterly", "semiAnnual", "annual"] as const).map((freq) => (
+                    <span key={freq} className="rounded-full border bg-muted/30 px-2.5 py-1 text-xs text-muted-foreground">{t(freq)}</span>
                   ))}
                 </div>
               </div>
@@ -447,18 +443,18 @@ function RecurringInvoicesContent() {
 
   return (
     <ContentReveal className="space-y-6">
-      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+      {error && <p role="alert" className="text-sm text-destructive">{t(error)}</p>}
       {/* Top: Stats */}
       <div className="grid gap-3 sm:grid-cols-3">
-        <StatCard title="Active Templates" value={activeCount.toString()} icon={RefreshCw} />
-        <StatCard title="Paused" value={pausedCount.toString()} icon={RefreshCw} changeType="negative" />
-        <StatCard title="Total Generated" value={totalGenerated.toString()} icon={RefreshCw} />
+        <StatCard title={t("activeTemplates")} value={activeCount.toString()} icon={RefreshCw} />
+        <StatCard title={t("paused")} value={pausedCount.toString()} icon={RefreshCw} changeType="negative" />
+        <StatCard title={t("totalGenerated")} value={totalGenerated.toString()} icon={RefreshCw} />
       </div>
 
       {/* Upcoming Generations */}
       {upcoming.length > 0 && (
         <div className="space-y-3">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Upcoming Generations (before discounts and tax)</p>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("upcoming")}</p>
           <div className="flex gap-3 overflow-x-auto pb-1">
             {upcoming.map((u) => (
               <div key={u.templateName} className="rounded-lg border px-4 py-3 min-w-[220px] shrink-0">
@@ -492,10 +488,10 @@ function RecurringInvoicesContent() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Tabs value={statusFilter} onValueChange={setStatusFilter}>
             <TabsList className="overflow-x-auto">
-              <TabsTrigger value="all" className="whitespace-nowrap">All</TabsTrigger>
-              <TabsTrigger value="active" className="whitespace-nowrap">Active</TabsTrigger>
-              <TabsTrigger value="paused" className="whitespace-nowrap">Paused</TabsTrigger>
-              <TabsTrigger value="completed" className="whitespace-nowrap">Completed</TabsTrigger>
+              <TabsTrigger value="all" className="whitespace-nowrap">{t("all")}</TabsTrigger>
+              <TabsTrigger value="active" className="whitespace-nowrap">{t("active")}</TabsTrigger>
+              <TabsTrigger value="paused" className="whitespace-nowrap">{t("paused")}</TabsTrigger>
+              <TabsTrigger value="completed" className="whitespace-nowrap">{t("completed")}</TabsTrigger>
             </TabsList>
           </Tabs>
 
@@ -505,7 +501,7 @@ function RecurringInvoicesContent() {
             className="bg-emerald-600 hover:bg-emerald-700"
           >
             <Plus className="mr-2 size-4" />
-            New Recurring
+            {t("newRecurring")}
           </Button>
         </div>
 
@@ -513,7 +509,7 @@ function RecurringInvoicesContent() {
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
             <Input
-              placeholder="Search templates..."
+              placeholder={t("search")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="h-8 w-56 pl-8 text-xs"
@@ -524,16 +520,16 @@ function RecurringInvoicesContent() {
             onValueChange={setFrequencyFilter}
           >
             <SelectTrigger className="h-8 w-40 text-xs">
-              <SelectValue placeholder="Frequency..." />
+              <SelectValue placeholder={t("frequencyPlaceholder")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Frequencies</SelectItem>
-              <SelectItem value="weekly">Weekly</SelectItem>
-              <SelectItem value="fortnightly">Fortnightly</SelectItem>
-              <SelectItem value="monthly">Monthly</SelectItem>
-              <SelectItem value="quarterly">Quarterly</SelectItem>
-              <SelectItem value="semi_annual">Semi-Annual</SelectItem>
-              <SelectItem value="annual">Annual</SelectItem>
+              <SelectItem value="all">{t("allFrequencies")}</SelectItem>
+              <SelectItem value="weekly">{t("weekly")}</SelectItem>
+              <SelectItem value="fortnightly">{t("fortnightly")}</SelectItem>
+              <SelectItem value="monthly">{t("monthly")}</SelectItem>
+              <SelectItem value="quarterly">{t("quarterly")}</SelectItem>
+              <SelectItem value="semi_annual">{t("semiAnnual")}</SelectItem>
+              <SelectItem value="annual">{t("annual")}</SelectItem>
             </SelectContent>
           </Select>
           <Select
@@ -545,14 +541,14 @@ function RecurringInvoicesContent() {
             }}
           >
             <SelectTrigger className="h-8 w-44 text-xs">
-              <SelectValue placeholder="Sort by..." />
+              <SelectValue placeholder={t("sortBy")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="created:desc">Newest</SelectItem>
-              <SelectItem value="created:asc">Oldest</SelectItem>
-              <SelectItem value="name:asc">Name A-Z</SelectItem>
-              <SelectItem value="name:desc">Name Z-A</SelectItem>
-              <SelectItem value="nextRun:asc">Next run soonest</SelectItem>
+              <SelectItem value="created:desc">{t("newest")}</SelectItem>
+              <SelectItem value="created:asc">{t("oldest")}</SelectItem>
+              <SelectItem value="name:asc">{t("nameAsc")}</SelectItem>
+              <SelectItem value="name:desc">{t("nameDesc")}</SelectItem>
+              <SelectItem value="nextRun:asc">{t("nextSoonest")}</SelectItem>
             </SelectContent>
           </Select>
           {hasFilters && (
@@ -563,7 +559,7 @@ function RecurringInvoicesContent() {
               onClick={() => { setSearch(""); setFrequencyFilter("all"); }}
             >
               <X className="mr-1 size-3" />
-              Clear filters
+              {t("clearFilters")}
             </Button>
           )}
         </div>
@@ -576,7 +572,7 @@ function RecurringInvoicesContent() {
               columns={columns}
               data={filteredTemplates}
               loading={false}
-              emptyMessage="No recurring invoices match your filters."
+              emptyMessage={t("noMatches")}
               onRowClick={(r) => router.push(`/sales/recurring/${r.id}`)}
               sortBy={sortBy}
               sortOrder={sortOrder}
@@ -590,7 +586,7 @@ function RecurringInvoicesContent() {
           <>
             <div className="flex items-center justify-between pt-1">
               <p className="text-xs text-muted-foreground">
-                Showing {templates.length} of {totalCount} template{totalCount !== 1 ? "s" : ""}
+                {t("showing", { loaded: templates.length, total: totalCount })}
               </p>
             </div>
             {hasMore && (

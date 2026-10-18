@@ -1,5 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { recurringInvoiceFrequencyLabel, recurringInvoiceStatusLabel, type RecurringInvoiceReadError } from "@/i18n/recurring-invoice-presentation";
+
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -42,22 +45,13 @@ const statusColors: Record<string, string> = {
   completed:
     "border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-400",
 };
-
-const frequencyLabels: Record<string, string> = {
-  weekly: "Weekly",
-  fortnightly: "Fortnightly",
-  monthly: "Monthly",
-  quarterly: "Quarterly",
-  semi_annual: "Semi-Annual",
-  annual: "Annual",
-};
-
 export default function RecurringDetailPage() {
+  const t = useTranslations("RecurringInvoices");
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [loaded, setLoaded] = useState<{ context: string; template: RecurringTemplate } | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<RecurringInvoiceReadError | null>(null);
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -70,7 +64,7 @@ export default function RecurringDetailPage() {
   const context = `${orgId}:${id}`;
   const template = loaded?.context === context ? loaded.template : null;
 
-  useDocumentTitle("Sales · Recurring Template");
+  useDocumentTitle(t("detailTitle"));
   useEntityTitle(template?.name);
 
   useEffect(() => {
@@ -79,7 +73,7 @@ export default function RecurringDetailPage() {
     fetch(`/api/v1/recurring/${id}`, { headers: { "x-organization-id": orgId }, signal: controller.signal })
       .then(async response => { if (!response.ok) throw new Error("Unable to load recurring template"); return response.json(); })
       .then(data => { if (!controller.signal.aborted) { setLoaded({ context, template: recurringInvoiceUiDocument(data.template) as RecurringTemplate }); setError(null); } })
-      .catch(error => { if (!controller.signal.aborted) { setLoaded(null); setError(error instanceof Error ? error.message : "Invalid recurring amounts"); } })
+      .catch(() => { if (!controller.signal.aborted) { setLoaded(null); setError("readFailed"); } })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
   }, [id, orgId, context]);
@@ -98,18 +92,21 @@ export default function RecurringDetailPage() {
         body: JSON.stringify({ status: newStatus }),
       });
       if (res.ok) {
-        const data = await res.json();
-        setLoaded(prev => prev?.context === context ? { context, template: { ...prev.template, ...data.template, lines: prev.template.lines } } : prev);
+        const data = await res.json().catch(() => null);
+        if (!data?.template || data.template.id !== id || data.template.status !== newStatus) {
+          setLoaded(null); setError("updateReadFailed"); return;
+        }
+        setLoaded(prev => prev?.context === context ? { context, template: { ...prev.template, status: newStatus } } : prev);
         toast.success(
           newStatus === "paused"
-            ? "Recurring template paused"
-            : "Recurring template resumed"
+            ? t("pausedSuccess")
+            : t("resumedSuccess")
         );
       } else {
-        toast.error("Failed to update status");
+        toast.error(t("updateFailed"));
       }
     } catch {
-      toast.error("Failed to update status");
+      toast.error(t("updateFailed"));
     } finally {
       setToggling(false);
     }
@@ -118,10 +115,10 @@ export default function RecurringDetailPage() {
   async function handleDelete() {
     if (!orgId) return;
     await confirm({
-      title: "Delete this recurring template?",
+      title: t("deleteTitle"),
       description:
-        "This will permanently delete the recurring template. This action cannot be undone.",
-      confirmLabel: "Delete",
+        t("deleteDescription"),
+      confirmLabel: t("delete"),
       destructive: true,
       onConfirm: async () => {
         setDeleting(true);
@@ -131,13 +128,13 @@ export default function RecurringDetailPage() {
             headers: { "x-organization-id": orgId },
           });
           if (res.ok) {
-            toast.success("Recurring template deleted");
+            toast.success(t("deleted"));
             router.push("/sales/recurring");
           } else {
-            toast.error("Failed to delete template");
+            toast.error(t("deleteFailed"));
           }
         } catch {
-          toast.error("Failed to delete template");
+          toast.error(t("deleteFailed"));
         } finally {
           setDeleting(false);
         }
@@ -148,14 +145,14 @@ export default function RecurringDetailPage() {
   if (loading)
     return (
       <div className="space-y-6">
-        <PageHeader title="Loading..." />
+        <PageHeader title={t("loading")} />
       </div>
     );
   if (!template)
     return (
       <div className="space-y-6">
-        <PageHeader title="Template not found" />
-        {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+        <PageHeader title={t("notFound")} />
+        {error && <p role="alert" className="text-sm text-destructive">{t(error)}</p>}
       </div>
     );
 
@@ -163,12 +160,12 @@ export default function RecurringDetailPage() {
     <div className="space-y-6">
       <PageHeader
         title={template.name}
-        description={`Contact: ${template.contact?.name || "Unknown"}`}
+        description={t("contact", { name: template.contact?.name || t("unknown") })}
       >
         <Button variant="outline" size="sm" asChild>
           <Link href="/sales/recurring">
             <ArrowLeft className="mr-2 size-4" />
-            Back
+            {t("back")}
           </Link>
         </Button>
         {(template.status === "active" || template.status === "paused") && (
@@ -181,12 +178,12 @@ export default function RecurringDetailPage() {
             {template.status === "active" ? (
               <>
                 <Pause className="mr-2 size-4" />
-                Pause
+                {t("pause")}
               </>
             ) : (
               <>
                 <Play className="mr-2 size-4" />
-                Resume
+                {t("resume")}
               </>
             )}
           </Button>
@@ -199,7 +196,7 @@ export default function RecurringDetailPage() {
           className="text-red-600"
         >
           <Trash2 className="mr-2 size-4" />
-          Delete
+          {t("delete")}
         </Button>
       </PageHeader>
 
@@ -208,20 +205,17 @@ export default function RecurringDetailPage() {
           variant="outline"
           className={statusColors[template.status] || ""}
         >
-          {template.status}
+          {recurringInvoiceStatusLabel(t, template.status)}
         </Badge>
         <span className="text-xs sm:text-sm text-muted-foreground">
-          {frequencyLabels[template.frequency] || template.frequency} · Starts{" "}
-          {template.startDate} · Ends{" "}
-          {template.endDate || "No end date"}
-          {template.nextRunDate &&
-            ` · Next run ${template.nextRunDate}`}
+          {t("schedule", { frequency: recurringInvoiceFrequencyLabel(t, template.frequency), start: template.startDate, end: template.endDate || t("noEndDate") })}
+          {template.nextRunDate && t("nextRunHint", { date: template.nextRunDate })}
         </span>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-lg border p-4">
-          <p className="text-xs text-muted-foreground">Occurrences</p>
+          <p className="text-xs text-muted-foreground">{t("occurrences")}</p>
           <p className="text-xl font-bold font-mono">
             {template.occurrencesGenerated} /{" "}
             {template.maxOccurrences != null
@@ -230,15 +224,15 @@ export default function RecurringDetailPage() {
           </p>
         </div>
         <div className="rounded-lg border p-4">
-          <p className="text-xs text-muted-foreground">Next Run</p>
+          <p className="text-xs text-muted-foreground">{t("nextRun")}</p>
           <p className="text-xl font-bold font-mono">
-            {template.nextRunDate || "N/A"}
+            {template.nextRunDate || t("notApplicable")}
           </p>
         </div>
         <div className="rounded-lg border p-4">
-          <p className="text-xs text-muted-foreground">Frequency</p>
+          <p className="text-xs text-muted-foreground">{t("frequency")}</p>
           <p className="text-xl font-bold font-mono">
-            {frequencyLabels[template.frequency] || template.frequency}
+            {recurringInvoiceFrequencyLabel(t, template.frequency)}
           </p>
         </div>
       </div>
@@ -248,7 +242,7 @@ export default function RecurringDetailPage() {
       {template.notes && (
         <div className="rounded-lg border p-4">
           <p className="text-xs font-medium text-muted-foreground mb-1">
-            Notes
+            {t("notes")}
           </p>
           <p className="text-sm">{template.notes}</p>
         </div>

@@ -1,4 +1,6 @@
 "use client";
+import { useTranslations } from "next-intl";
+import { bankAccountTypeLabel, BANK_ACCOUNT_TYPES, requireBankAccountResponse, bankAccountFailureMessage } from "@/i18n/bank-account-presentation";
 import { bankUiAccount } from "@/lib/money/bank-ui";
 import type { BankAccountDetail } from "../../_components";
 
@@ -21,9 +23,11 @@ import { useConfirm } from "@/lib/hooks/use-confirm";
 import { cn } from "@/lib/utils";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { useBankAccountContext } from "../layout";
-import { ACCOUNT_TYPE_LABELS, ACCOUNT_COLORS } from "../../_components";
+import { ACCOUNT_COLORS } from "../../_components";
 
 export default function BankSettingsPage() {
+  const t = useTranslations("BankAccounts");
+  const errors = useTranslations("BankAccountErrors");
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { confirm, dialog: confirmDialog } = useConfirm();
@@ -36,7 +40,7 @@ export default function BankSettingsPage() {
 
   const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
 
-  useDocumentTitle("Accounting \u00B7 Bank Settings");
+  useDocumentTitle(t("settingsTitle"));
 
   async function handleSaveSettings(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -60,13 +64,14 @@ export default function BankSettingsPage() {
           ...(chartAccountId ? { chartAccountId } : {}),
         }),
       });
-      if (!res.ok) throw new Error((await res.json()).error);
+      await requireBankAccountResponse(res, errors, t("updateFailed"));
       const data = await res.json();
-      setAccount(() => bankUiAccount(data.bankAccount) as unknown as BankAccountDetail);
-      toast.success("Account updated");
+      const updatedAccount = bankUiAccount(data.bankAccount) as unknown as BankAccountDetail;
+      setAccount(() => updatedAccount);
+      toast.success(t("updated"));
       refetch();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to update account");
+      toast.error(bankAccountFailureMessage(err, t("updateFailed")));
     } finally {
       setSaving(false);
     }
@@ -75,20 +80,24 @@ export default function BankSettingsPage() {
   async function handleDelete() {
     if (!orgId) return;
     await confirm({
-      title: "Delete this bank account?",
-      description: "This will permanently delete the account and all its transactions. This cannot be undone.",
-      confirmLabel: "Delete Account",
+      title: t("deleteTitle"),
+      description: t("deleteDescription"),
+      confirmLabel: t("deleteConfirm"),
+      cancelLabel: t("cancel"),
       destructive: true,
       onConfirm: async () => {
-        const res = await fetch(`/api/v1/bank-accounts/${id}`, {
-          method: "DELETE",
-          headers: { "x-organization-id": orgId },
-        });
-        if (res.ok) {
-          toast.success("Account deleted");
+        try {
+          const res = await fetch(`/api/v1/bank-accounts/${id}`, {
+            method: "DELETE",
+            headers: { "x-organization-id": orgId },
+          });
+          await requireBankAccountResponse(res, errors, t("deleteFailed"));
+          toast.success(t("deleted"));
           router.push("/accounting/banking");
-        } else {
-          toast.error("Failed to delete account");
+        } catch (err) {
+          const message = bankAccountFailureMessage(err, t("deleteFailed"));
+          toast.error(message);
+          throw new Error(message);
         }
       },
     });
@@ -99,34 +108,34 @@ export default function BankSettingsPage() {
       <form onSubmit={handleSaveSettings} className="space-y-10">
         <div className="grid gap-6 sm:grid-cols-[200px_1fr] sm:gap-10">
           <div className="shrink-0">
-            <p className="text-sm font-medium">General</p>
-            <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">Account name, bank, and type.</p>
+            <p className="text-sm font-medium">{t("general")}</p>
+            <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">{t("generalHint")}</p>
           </div>
           <div className="min-w-0 space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-xs">Account Name</Label>
+              <Label className="text-xs">{t("accountName")}</Label>
               <Input name="accountName" required defaultValue={account.accountName} />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label className="text-xs">Bank Name</Label>
-                <Input name="bankName" defaultValue={account.bankName || ""} placeholder="e.g. Revolut Business" />
+                <Label className="text-xs">{t("bankName")}</Label>
+                <Input name="bankName" defaultValue={account.bankName || ""} placeholder={t("bankExample")} />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Account Type</Label>
+                <Label className="text-xs">{t("accountType")}</Label>
                 <Select name="accountType" defaultValue={account.accountType}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {Object.entries(ACCOUNT_TYPE_LABELS).map(([v, l]) => (
-                      <SelectItem key={v} value={v}>{l}</SelectItem>
+                    {BANK_ACCOUNT_TYPES.map((v) => (
+                      <SelectItem key={v} value={v}>{bankAccountTypeLabel(t, v)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Account Number / IBAN</Label>
-              <Input name="accountNumber" defaultValue={account.accountNumber || ""} placeholder="1234 or GB29NWBK..." />
+              <Label className="text-xs">{t("accountNumber")}</Label>
+              <Input name="accountNumber" defaultValue={account.accountNumber || ""} placeholder={t("numberPlaceholder")} />
             </div>
           </div>
         </div>
@@ -135,16 +144,16 @@ export default function BankSettingsPage() {
 
         <div className="grid gap-6 sm:grid-cols-[200px_1fr] sm:gap-10">
           <div className="shrink-0">
-            <p className="text-sm font-medium">Region</p>
-            <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">Currency and country for this account.</p>
+            <p className="text-sm font-medium">{t("region")}</p>
+            <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">{t("regionHint")}</p>
           </div>
           <div className="min-w-0 grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label className="text-xs">Currency</Label>
+              <Label className="text-xs">{t("currency")}</Label>
               <CurrencySelect value={bankCurrency} onValueChange={setBankCurrency} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Country</Label>
+              <Label className="text-xs">{t("country")}</Label>
               <Input name="countryCode" defaultValue={account.countryCode || ""} placeholder="US" maxLength={2} />
             </div>
           </div>
@@ -154,22 +163,20 @@ export default function BankSettingsPage() {
 
         <div className="grid gap-6 sm:grid-cols-[200px_1fr] sm:gap-10">
           <div className="shrink-0">
-            <p className="text-sm font-medium">Books connection</p>
+            <p className="text-sm font-medium">{t("booksConnection")}</p>
             <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
-              The account in your books where this bank account&apos;s money is recorded. We set one up automatically &mdash; change it only if you want to use a specific account you already have.
-            </p>
+              {t("booksHint")}</p>
           </div>
           <div className="min-w-0 space-y-1.5">
             <AccountPicker
               value={chartAccountId}
               onChange={setChartAccountId}
               typeFilter={["asset", "liability"]}
-              placeholder="Connect to an account in your books…"
+              placeholder={t("connectPlaceholder")}
               allowCreate
             />
             <p className="text-[11px] text-muted-foreground">
-              Changing this only affects transactions recorded from now on.
-            </p>
+              {t("changeHint")}</p>
           </div>
         </div>
 
@@ -177,8 +184,8 @@ export default function BankSettingsPage() {
 
         <div className="grid gap-6 sm:grid-cols-[200px_1fr] sm:gap-10">
           <div className="shrink-0">
-            <p className="text-sm font-medium">Accent Color</p>
-            <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">Color used on cards and charts.</p>
+            <p className="text-sm font-medium">{t("accentColor")}</p>
+            <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">{t("colorHint")}</p>
           </div>
           <div className="min-w-0">
             <input type="hidden" name="color" value={account.color} />
@@ -193,7 +200,7 @@ export default function BankSettingsPage() {
                     account.color === c && "ring-offset-2 ring-gray-400"
                   )}
                   style={{ backgroundColor: c }}
-                  aria-label={`Choose ${c}`}
+                  aria-label={t("chooseColor", { color: c })}
                 />
               ))}
             </div>
@@ -204,24 +211,23 @@ export default function BankSettingsPage() {
 
         <div className="flex justify-end">
           <Button type="submit" size="sm" loading={saving} className="bg-emerald-600 hover:bg-emerald-700">
-            Save changes
-          </Button>
+            {t("saveChanges")}</Button>
         </div>
 
         <div className="h-px bg-border" />
 
         <div className="grid gap-6 sm:grid-cols-[200px_1fr] sm:gap-10">
           <div className="shrink-0">
-            <p className="text-sm font-medium text-red-600">Danger zone</p>
-            <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">Irreversible actions.</p>
+            <p className="text-sm font-medium text-red-600">{t("dangerZone")}</p>
+            <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">{t("dangerHint")}</p>
           </div>
           <div className="min-w-0">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-md border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900/50 dark:bg-red-950/20">
               <div>
-                <p className="text-sm font-medium text-red-600 dark:text-red-400">Delete account</p>
-                <p className="text-[12px] text-muted-foreground">Permanently delete this account and all imported transactions.</p>
+                <p className="text-sm font-medium text-red-600 dark:text-red-400">{t("deleteAccount")}</p>
+                <p className="text-[12px] text-muted-foreground">{t("deleteHint")}</p>
               </div>
-              <Button variant="destructive" size="sm" type="button" onClick={handleDelete}>Delete</Button>
+              <Button variant="destructive" size="sm" type="button" onClick={handleDelete}>{t("delete")}</Button>
             </div>
           </div>
         </div>

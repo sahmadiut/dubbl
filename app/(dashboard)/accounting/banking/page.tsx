@@ -1,6 +1,8 @@
 "use client";
+import { useTranslations } from "next-intl";
+import { bankAccountTypeLabel, bankAccountGroupLabel, requireBankAccountResponse, bankAccountFailureMessage } from "@/i18n/bank-account-presentation";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Plus,
@@ -57,26 +59,6 @@ interface BankAccount {
   isActive: boolean;
 }
 
-const ACCOUNT_TYPE_LABELS: Record<BankAccountType, string> = {
-  checking: "Checking",
-  savings: "Savings",
-  credit_card: "Credit Card",
-  cash: "Cash",
-  loan: "Loan",
-  investment: "Investment",
-  other: "Other",
-};
-
-const ACCOUNT_TYPE_GROUP_LABELS: Record<string, string> = {
-  checking: "Bank Accounts",
-  savings: "Savings Accounts",
-  credit_card: "Credit Cards",
-  cash: "Cash Accounts",
-  loan: "Loans",
-  investment: "Investments",
-  other: "Other Accounts",
-};
-
 const ACCOUNT_TYPE_ICONS: Record<BankAccountType, React.ElementType> = {
   checking: Landmark,
   savings: PiggyBank,
@@ -88,6 +70,8 @@ const ACCOUNT_TYPE_ICONS: Record<BankAccountType, React.ElementType> = {
 };
 
 export default function BankingPage() {
+  const t = useTranslations("BankAccounts");
+  const errors = useTranslations("BankAccountErrors");
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
@@ -95,27 +79,27 @@ export default function BankingPage() {
   const [readError, setReadError] = useState("");
   const [showBalances, setShowBalances] = useState(true);
 
-  useDocumentTitle("Accounting \u00B7 Bank Accounts");
+  useDocumentTitle(t("title"));
 
-  function fetchAccounts() {
+  const fetchAccounts = useCallback(() => {
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
 
     fetch("/api/v1/bank-accounts", {
       headers: { "x-organization-id": orgId },
     })
-      .then((res) => { if (!res.ok) throw new Error("Bank data is unavailable"); return res.json(); })
+      .then(async (res) => (await requireBankAccountResponse(res, errors, t("readFailed"))).json())
       .then((data) => { setAccounts((data.bankAccounts || []).map(bankUiAccount) as BankAccount[]); setReadError(""); })
-      .catch(() => { setAccounts([]); setReadError("Bank amounts are unavailable. Reload to try again."); })
+      .catch((err) => { setAccounts([]); setReadError(bankAccountFailureMessage(err, t("readFailed"))); })
       .finally(() => setLoading(false));
-  }
+  }, [errors, t]);
 
   useEffect(() => {
     fetchAccounts();
     const handler = () => fetchAccounts();
     window.addEventListener("bank-accounts-changed", handler);
     return () => window.removeEventListener("bank-accounts-changed", handler);
-  }, []);
+  }, [fetchAccounts]);
 
   const totals = useMemo(() => {
     const active = accounts.filter((a) => a.isActive).length;
@@ -137,24 +121,24 @@ export default function BankingPage() {
               {[
                 {
                   step: "1",
-                  label: "Add account",
-                  sub: "Create a bank account with currency and type",
+                  label: t("addAccount"),
+                  sub: t("addAccountHint"),
                   icon: Landmark,
                   color: "bg-blue-500",
                   ring: "ring-blue-200 dark:ring-blue-900",
                 },
                 {
                   step: "2",
-                  label: "Import statements",
-                  sub: "Upload CSV, OFX, CAMT, and more formats",
+                  label: t("importStatements"),
+                  sub: t("importHint"),
                   icon: ArrowUpRight,
                   color: "bg-amber-500",
                   ring: "ring-amber-200 dark:ring-amber-900",
                 },
                 {
                   step: "3",
-                  label: "Sort your transactions",
-                  sub: "Match them to invoices and bills, or assign a category",
+                  label: t("sortTransactions"),
+                  sub: t("sortHint"),
                   icon: ChevronRight,
                   color: "bg-emerald-500",
                   ring: "ring-emerald-200 dark:ring-emerald-900",
@@ -183,10 +167,9 @@ export default function BankingPage() {
               <Landmark className="size-7 text-emerald-600 dark:text-emerald-400" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold tracking-tight">Connect your first account</h2>
+              <h2 className="text-lg font-semibold tracking-tight">{t("firstAccount")}</h2>
               <p className="mt-1.5 text-sm text-muted-foreground max-w-md mx-auto">
-                Add a bank account to start importing statements and tracking balances.
-              </p>
+                {t("firstAccountHint")}</p>
             </div>
             <Button
               onClick={() => openDrawer("bankAccount")}
@@ -194,15 +177,14 @@ export default function BankingPage() {
               className="bg-emerald-600 hover:bg-emerald-700"
             >
               <Plus className="mr-2 size-4" />
-              New Bank Account
-            </Button>
+              {t("newBankAccount")}</Button>
           </div>
 
           {/* Preview stats */}
           <div className="w-full max-w-md grid grid-cols-2 gap-3 opacity-30">
             {[
-              { label: "Total Balance", value: "—" },
-              { label: "Accounts", value: "0" },
+              { label: t("totalBalance"), value: "—" },
+              { label: t("accounts"), value: "0" },
             ].map(({ label, value }) => (
               <div key={label} className="rounded-xl border border-dashed p-4 text-center">
                 <p className="text-[11px] text-muted-foreground">{label}</p>
@@ -234,7 +216,7 @@ export default function BankingPage() {
       {/* Stats row */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
         <div>
-          <p className="text-[11px] text-muted-foreground">Total Balance</p>
+          <p className="text-[11px] text-muted-foreground">{t("totalBalance")}</p>
           <p className="mt-0.5 font-mono text-lg font-semibold tabular-nums">
             {showBalances ? displayGroups(accounts) : "********"}
           </p>
@@ -242,8 +224,7 @@ export default function BankingPage() {
         <div>
           <p className="text-[11px] text-muted-foreground flex items-center gap-1">
             <ArrowDownLeft className="size-3 text-emerald-500" />
-            Positive balances
-          </p>
+            {t("positiveBalances")}</p>
           <p className="mt-0.5 font-mono text-lg font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
             {showBalances ? displayGroups(accounts, "positive") : "********"}
           </p>
@@ -251,23 +232,22 @@ export default function BankingPage() {
         <div>
           <p className="text-[11px] text-muted-foreground flex items-center gap-1">
             <ArrowUpRight className="size-3 text-red-500" />
-            Negative balances
-          </p>
+            {t("negativeBalances")}</p>
           <p className="mt-0.5 font-mono text-lg font-semibold tabular-nums text-red-600 dark:text-red-400">
             {showBalances ? displayGroups(accounts, "negative") : "********"}
           </p>
         </div>
         <div>
-          <p className="text-[11px] text-muted-foreground">Accounts</p>
+          <p className="text-[11px] text-muted-foreground">{t("accounts")}</p>
           <div className="flex items-baseline gap-2 mt-0.5">
             <p className="font-mono text-lg font-semibold tabular-nums">{accounts.length}</p>
             <span className="flex items-center gap-1 text-xs text-muted-foreground">
               <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              {totals.active} active
+              {t("activeCount", { count: totals.active })}
             </span>
           </div>
           {currencies.length > 1 && (
-            <p className="text-xs text-muted-foreground">{currencies.length} currencies</p>
+            <p className="text-xs text-muted-foreground">{t("currencyCount", { count: currencies.length })}</p>
           )}
         </div>
       </div>
@@ -277,10 +257,9 @@ export default function BankingPage() {
       {/* Header bar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold">Bank Accounts</h2>
+          <h2 className="text-sm font-semibold">{t("checkingGroup")}</h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Manage accounts, balances, and statement imports
-          </p>
+            {t("listHint")}</p>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -290,25 +269,23 @@ export default function BankingPage() {
             onClick={() => setShowBalances(!showBalances)}
           >
             {showBalances ? <Eye className="size-3.5" /> : <EyeOff className="size-3.5" />}
-            {showBalances ? "Hide" : "Show"}
+            {showBalances ? t("hide") : t("show")}
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={() => openDrawer("bankTransfer")}
-            title="Move money between your own accounts"
+            title={t("moveMoneyHint")}
           >
             <ArrowLeftRight className="mr-2 size-4" />
-            Move money
-          </Button>
+            {t("moveMoney")}</Button>
           <Button
             onClick={() => openDrawer("bankAccount")}
             size="sm"
             className="bg-emerald-600 hover:bg-emerald-700"
           >
             <Plus className="mr-2 size-4" />
-            New Account
-          </Button>
+            {t("newAccount")}</Button>
         </div>
       </div>
 
@@ -326,7 +303,7 @@ export default function BankingPage() {
                   <div className="flex items-center gap-2">
                     <Icon className="size-3.5 text-muted-foreground" />
                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      {ACCOUNT_TYPE_GROUP_LABELS[type] || type}
+                      {bankAccountGroupLabel(t, type)}
                     </p>
                     <span className="text-xs text-muted-foreground/50 tabular-nums">({group.length})</span>
                   </div>
@@ -365,8 +342,7 @@ export default function BankingPage() {
                           <p className="text-sm font-medium truncate">{account.accountName}</p>
                           {!account.isActive && (
                             <Badge variant="outline" className="text-[10px] shrink-0 text-muted-foreground border-muted-foreground/30">
-                              Inactive
-                            </Badge>
+                              {t("inactive")}</Badge>
                           )}
                         </div>
                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
@@ -380,12 +356,12 @@ export default function BankingPage() {
                             <span className="font-mono tabular-nums">····{account.accountNumber.slice(-4)}</span>
                           )}
                           {!account.bankName && !account.accountNumber && (
-                            <span>{ACCOUNT_TYPE_LABELS[account.accountType]}</span>
+                            <span>{bankAccountTypeLabel(t, account.accountType)}</span>
                           )}
                           {sortedGroups.length <= 1 && (
                             <>
                               <span className="text-border">·</span>
-                              <span>{ACCOUNT_TYPE_LABELS[account.accountType]}</span>
+                              <span>{bankAccountTypeLabel(t, account.accountType)}</span>
                             </>
                           )}
                         </div>
@@ -431,12 +407,10 @@ export default function BankingPage() {
                           <DropdownMenuContent align="end" className="w-40">
                             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/accounting/banking/${account.id}`); }}>
                               <ExternalLink className="size-3.5 mr-2" />
-                              View Details
-                            </DropdownMenuItem>
+                              {t("viewDetails")}</DropdownMenuItem>
                             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/accounting/banking/${account.id}/transactions`); }}>
                               <ArrowUpRight className="size-3.5 mr-2" />
-                              Transactions
-                            </DropdownMenuItem>
+                              {t("transactions")}</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
 

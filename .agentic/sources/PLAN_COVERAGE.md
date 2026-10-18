@@ -269,3 +269,13 @@ Verified scope: 87 route TSX files plus shared forms/drawers. LOC-007 retains in
 - [LOC-026](../tasks/LOC-026.md): Purchasing catalogs.
 - [LOC-027](../tasks/LOC-027.md): Contacts catalogs.
 - [LOC-028](../tasks/LOC-028.md): Tax catalogs.
+
+## LOC-023 banking extraction split
+
+Verified scope: 11 route/shared TSX files (7,019 lines) plus banking drawers. LOC-023 retains independent combined acceptance. Shared _components.tsx ownership is divided between transaction workspace and import presentation; reconciliation owns its page. Preserve Stripe under DEC-008.
+
+- [LOC-029](../tasks/LOC-029.md): Extract bank account catalogs.
+- [LOC-030](../tasks/LOC-030.md): Extract bank transaction workspace catalogs.
+- [LOC-031](../tasks/LOC-031.md): Extract bank import catalogs.
+- [LOC-032](../tasks/LOC-032.md): Extract bank reconciliation catalogs.
+- [LOC-033](../tasks/LOC-033.md): Extract bank payment scheduling and batch catalogs.

@@ -1,4 +1,5 @@
 "use client";
+import { requireBankAccountResponse, bankAccountFailureMessage } from "@/i18n/bank-account-presentation";
 
 import { useTranslations } from "next-intl";
 import { journalPreviewMessage, requireJournalResponse, journalFailureMessage } from "@/i18n/journal-presentation";
@@ -3042,6 +3043,8 @@ const BANK_ACCOUNT_COLORS = [
 ];
 
 function BankAccountDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useTranslations("BankAccounts");
+  const errors = useTranslations("BankAccountErrors");
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [accountName, setAccountName] = useState("");
@@ -3065,10 +3068,10 @@ function BankAccountDrawer({ open, onClose }: { open: boolean; onClose: () => vo
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!accountName.trim()) { toast.error("Please enter an account name"); return; }
-    setSaving(true);
+    if (!accountName.trim()) { toast.error(t("nameRequired")); return; }
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
+    setSaving(true);
 
     try {
       const res = await fetch("/api/v1/bank-accounts", {
@@ -3085,17 +3088,16 @@ function BankAccountDrawer({ open, onClose }: { open: boolean; onClose: () => vo
           ...(chartAccountId ? { chartAccountId } : {}),
         }),
       });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to create bank account");
-      }
+      await requireBankAccountResponse(res, errors, t("createFailed"));
       const data = await res.json();
-      toast.success("Bank account created");
+      const bankAccountId = data.bankAccount?.id;
+      if (typeof bankAccountId !== "string" || !bankAccountId) throw new Error("Missing bank account identifier");
+      toast.success(t("created"));
       onClose();
       window.dispatchEvent(new CustomEvent("bank-accounts-changed"));
-      router.push(`/accounting/banking/${data.bankAccount.id}`);
+      router.push(`/accounting/banking/${bankAccountId}`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create bank account");
+      toast.error(bankAccountFailureMessage(err, t("createFailed")));
     } finally {
       setSaving(false);
     }
@@ -3108,57 +3110,57 @@ function BankAccountDrawer({ open, onClose }: { open: boolean; onClose: () => vo
           <div className="flex items-center gap-3">
             <DrawerIcon><Landmark className="size-5" /></DrawerIcon>
             <div>
-              <SheetTitle className="text-lg">New Bank Account</SheetTitle>
-              <SheetDescription>Add an account to track transactions and import statements.</SheetDescription>
+              <SheetTitle className="text-lg">{t("newBankAccount")}</SheetTitle>
+              <SheetDescription>{t("createHint")}</SheetDescription>
             </div>
           </div>
         </SheetHeader>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
             <div className="space-y-4">
-              <SectionLabel>Account Details</SectionLabel>
+              <SectionLabel>{t("accountDetails")}</SectionLabel>
               <div className="space-y-2">
-                <Label>Account Name *</Label>
-                <Input value={accountName} onChange={(e) => setAccountName(e.target.value)} placeholder="Global Operating Account" />
+                <Label>{t("accountNameRequired")}</Label>
+                <Input value={accountName} onChange={(e) => setAccountName(e.target.value)} placeholder={t("accountExample")} />
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Bank Name</Label>
-                  <Input value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder="Revolut Business" />
+                  <Label>{t("bankName")}</Label>
+                  <Input value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder={t("bankPlaceholder")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Account Type</Label>
+                  <Label>{t("accountType")}</Label>
                   <Select value={accountType} onValueChange={setAccountType}>
-                    <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={t("selectType")} /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="checking">Checking</SelectItem>
-                      <SelectItem value="savings">Savings</SelectItem>
-                      <SelectItem value="credit_card">Credit Card</SelectItem>
-                      <SelectItem value="cash">Cash</SelectItem>
-                      <SelectItem value="loan">Loan</SelectItem>
-                      <SelectItem value="investment">Investment</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
+                      <SelectItem value="checking">{t("checking")}</SelectItem>
+                      <SelectItem value="savings">{t("savings")}</SelectItem>
+                      <SelectItem value="credit_card">{t("credit_card")}</SelectItem>
+                      <SelectItem value="cash">{t("cash")}</SelectItem>
+                      <SelectItem value="loan">{t("loan")}</SelectItem>
+                      <SelectItem value="investment">{t("investment")}</SelectItem>
+                      <SelectItem value="other">{t("other")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Account Number / IBAN</Label>
-                <Input value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} placeholder="1234 or GB29NWBK..." />
+                <Label>{t("accountNumber")}</Label>
+                <Input value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} placeholder={t("numberPlaceholder")} />
               </div>
             </div>
 
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Region & Currency</SectionLabel>
+              <SectionLabel>{t("regionCurrency")}</SectionLabel>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Currency</Label>
+                  <Label>{t("currency")}</Label>
                   <CurrencySelect value={currencyCode} onValueChange={setCurrencyCode} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Country</Label>
+                  <Label>{t("country")}</Label>
                   <Input value={countryCode} onChange={(e) => setCountryCode(e.target.value.toUpperCase())} placeholder="US" maxLength={2} />
                 </div>
               </div>
@@ -3167,31 +3169,31 @@ function BankAccountDrawer({ open, onClose }: { open: boolean; onClose: () => vo
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Books connection (optional)</SectionLabel>
+              <SectionLabel>{t("booksOptional")}</SectionLabel>
               <div className="space-y-1.5">
                 <AccountPicker
                   value={chartAccountId}
                   onChange={setChartAccountId}
                   typeFilter={["asset", "liability"]}
-                  placeholder="Set up automatically"
+                  placeholder={t("automatic")}
                   allowCreate
                 />
                 <p className="text-[11px] text-muted-foreground">
-                  Leave blank and we&apos;ll connect this account to your books automatically. Pick one only if you want to use a specific account you already have.
-                </p>
+                  {t("automaticHint")}</p>
               </div>
             </div>
 
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Accent Color</SectionLabel>
+              <SectionLabel>{t("accentColor")}</SectionLabel>
               <div className="flex gap-2">
                 {BANK_ACCOUNT_COLORS.map((c) => (
                   <button
                     key={c}
                     type="button"
                     onClick={() => setColor(c)}
+                    aria-label={t("chooseColor", { color: c })}
                     className={`size-6 rounded-full ring-2 ring-transparent transition-all ${color === c ? "ring-offset-2 ring-gray-400" : ""}`}
                     style={{ backgroundColor: c }}
                   />
@@ -3199,7 +3201,7 @@ function BankAccountDrawer({ open, onClose }: { open: boolean; onClose: () => vo
               </div>
             </div>
           </div>
-          <DrawerFooter onClose={onClose} saving={saving} label="Create Account" />
+          <DrawerFooter onClose={onClose} saving={saving} label={t("createAccount")} cancelLabel={t("cancel")} creatingLabel={t("creating")} />
         </form>
       </SheetContent>
     </Sheet>

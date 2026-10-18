@@ -124,7 +124,7 @@ Extraction ownership:
 | LOC-038 | LOC-024 child: accrual list/detail and creation drawer; see [scope](ACCRUAL_CATALOGS.md) |
 | LOC-025 | LOC-007 child: sales and shared document forms |
 | LOC-039 | LOC-025 child: payment list/detail; see [scope](SALES_PAYMENT_CATALOGS.md) |
-| LOC-040 | LOC-025 child: invoices and payment-recording dialogs |
+| LOC-040 | LOC-025 child: invoices and payment-recording dialogs; see [scope](SALES_INVOICE_CATALOGS.md) |
 | LOC-041 | LOC-025 child: quotes |
 | LOC-042 | LOC-025 child: cash sales/receipts |
 | LOC-043 | LOC-025 child: credit notes |

@@ -1,5 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { invoiceStatusLabel, type InvoiceTranslate } from "@/i18n/invoice-presentation";
+
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { useRouter } from "next/navigation";
@@ -59,25 +62,7 @@ const statusColors: Record<string, string> = {
   void: "border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300",
 };
 
-const methodLabels: Record<string, string> = {
-  bank_transfer: "Bank Transfer",
-  cash: "Cash",
-  check: "Check",
-  card: "Card",
-  other: "Other",
-};
-
-// Plain-language status labels (end users aren't accountants — avoid "void").
-const statusLabels: Record<string, string> = {
-  draft: "draft",
-  sent: "sent",
-  partial: "part paid",
-  paid: "paid",
-  overdue: "overdue",
-  void: "cancelled",
-};
-
-function getOverdueInfo(dueDate: string, status: string) {
+function getOverdueInfo(t: InvoiceTranslate, dueDate: string, status: string) {
   if (status === "paid" || status === "void" || status === "draft") return null;
   const now = new Date();
   const due = new Date(dueDate);
@@ -85,16 +70,17 @@ function getOverdueInfo(dueDate: string, status: string) {
   const days = Math.floor(diffMs / 86400000);
   if (days <= 0) {
     const daysLeft = Math.abs(days);
-    if (daysLeft === 0) return { label: "Due today", color: "text-amber-600" };
-    if (daysLeft <= 7) return { label: `Due in ${daysLeft}d`, color: "text-muted-foreground" };
+    if (daysLeft === 0) return { label: t("dueToday"), color: "text-amber-600" };
+    if (daysLeft <= 7) return { label: t("dueIn", { count: daysLeft }), color: "text-muted-foreground" };
     return null;
   }
-  if (days <= 30) return { label: `${days}d overdue`, color: "text-red-500" };
-  if (days <= 90) return { label: `${days}d overdue`, color: "text-red-600 font-medium" };
-  return { label: `${days}d overdue`, color: "text-red-700 font-semibold" };
+  if (days <= 30) return { label: t("daysOverdue", { count: days }), color: "text-red-500" };
+  if (days <= 90) return { label: t("daysOverdue", { count: days }), color: "text-red-600 font-medium" };
+  return { label: t("daysOverdue", { count: days }), color: "text-red-700 font-semibold" };
 }
 
 function buildColumns(
+  t: InvoiceTranslate,
   selectedIds: Set<string>,
   toggleOne: (id: string) => void
 ): Column<Invoice>[] {
@@ -112,37 +98,37 @@ function buildColumns(
           <Checkbox
             checked={selectedIds.has(r.id)}
             onCheckedChange={() => toggleOne(r.id)}
-            aria-label={`Select invoice ${r.invoiceNumber}`}
+            aria-label={t("selectInvoice", { number: r.invoiceNumber })}
           />
         </div>
       ),
     },
     {
       key: "number",
-      header: "Number",
+      header: t("number"),
       sortKey: "number",
       className: "w-32",
       render: (r) => <span className="font-mono text-sm">{r.invoiceNumber}</span>,
     },
     {
       key: "contact",
-      header: "Customer",
+      header: t("customer"),
       render: (r) => <span className="text-sm font-medium">{r.contact?.name || "-"}</span>,
     },
     {
       key: "date",
-      header: "Date",
+      header: t("date"),
       sortKey: "date",
       className: "w-28",
       render: (r) => <span className="text-sm">{r.issueDate}</span>,
     },
     {
       key: "due",
-      header: "Due",
+      header: t("due"),
       sortKey: "due",
       className: "w-36",
       render: (r) => {
-        const info = getOverdueInfo(r.dueDate, r.status);
+        const info = getOverdueInfo(t, r.dueDate, r.status);
         return (
           <div className="flex items-center gap-2">
             <span className="text-sm">{r.dueDate}</span>
@@ -155,17 +141,17 @@ function buildColumns(
     },
     {
       key: "status",
-      header: "Status",
+      header: t("status"),
       className: "w-24",
       render: (r) => (
         <Badge variant="outline" className={statusColors[r.status] || ""}>
-          {statusLabels[r.status] || r.status}
+          {invoiceStatusLabel(t, r.status)}
         </Badge>
       ),
     },
     {
       key: "total",
-      header: "Total",
+      header: t("total"),
       sortKey: "total",
       className: "w-28 text-right",
       render: (r) => (
@@ -174,7 +160,7 @@ function buildColumns(
     },
     {
       key: "due-amount",
-      header: "Balance",
+      header: t("balance"),
       sortKey: "amountDue",
       className: "w-28 text-right",
       render: (r) => {
@@ -194,6 +180,7 @@ function buildColumns(
 }
 
 export default function InvoicesPage() {
+  const t = useTranslations("SalesInvoices");
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -237,8 +224,8 @@ export default function InvoicesPage() {
   }, []);
 
   const columns = useMemo(
-    () => buildColumns(selectedIds, toggleOne),
-    [selectedIds, toggleOne]
+    () => buildColumns(t, selectedIds, toggleOne),
+    [t, selectedIds, toggleOne]
   );
 
   const buildParams = useCallback((p: number) => {
@@ -257,25 +244,26 @@ export default function InvoicesPage() {
   useEffect(() => {
     if (!orgId) return;
     let cancelled = false;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setRefetching(true);
     setPage(1);
 
     fetch(`/api/v1/invoices?${buildParams(1)}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("Invoice request failed"); return r.json(); })
       .then((data) => {
         if (cancelled) return;
-        setInvoices((data.data || []).map(invoiceUiDocument));
+        if (!Array.isArray(data?.data)) throw new Error("Invalid invoice list");
+        setInvoices(data.data.map(invoiceUiDocument));
+        setError(null);
         setTotalCount(data.pagination?.total || 0);
       })
       .then(() => devDelay())
-      .catch(() => { if (!cancelled) setError("Failed to load invoices. Please check your connection."); })
+      .catch(() => { if (!cancelled) setError(t("readFailed")); })
       .finally(() => { if (!cancelled) { setInitialLoad(false); setRefetching(false); setFetchKey((k) => k + 1); } });
 
     return () => { cancelled = true; };
-  }, [orgId, buildParams]);
+  }, [orgId, buildParams, t]);
 
   // Load more
   const loadMore = useCallback(() => {
@@ -286,17 +274,18 @@ export default function InvoicesPage() {
     fetch(`/api/v1/invoices?${buildParams(nextPage)}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("Invoice request failed"); return r.json(); })
       .then((data) => {
+        if (!Array.isArray(data?.data)) throw new Error("Invalid invoice list");
         if (data.data) {
           const rows = data.data.map(invoiceUiDocument);
           setInvoices((prev) => [...prev, ...rows]);
           setPage(nextPage);
         }
       })
-      .catch(() => setError("Failed to load valid invoice amounts."))
+      .catch(() => setError(t("moreFailed")))
       .finally(() => setLoadingMore(false));
-  }, [orgId, page, buildParams, loadingMore]);
+  }, [orgId, page, buildParams, loadingMore, t]);
 
   const hasMore = invoices.length < totalCount;
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -321,14 +310,14 @@ export default function InvoicesPage() {
     fetch(`/api/v1/invoices/summary`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("Invoice request failed"); return r.json(); })
       .then((data) => setSummary(invoiceUiSummary(data)))
       .catch(() => setSummary(null));
 
     fetch(`/api/v1/payments?type=received&limit=5`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("Invoice request failed"); return r.json(); })
       .then((data) => {
         if (data.data) setPayments(data.data.map(invoiceUiPayment));
       }).catch(() => setPayments([]));
@@ -361,7 +350,6 @@ export default function InvoicesPage() {
 
   // Bump searchKey when debounced search changes to trigger ContentReveal
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSearchKey((k) => k + 1);
   }, [debouncedSearch]);
 
@@ -411,19 +399,21 @@ export default function InvoicesPage() {
     fetch(`/api/v1/invoices?${buildParams(1)}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("Invoice request failed"); return r.json(); })
       .then((data) => {
-        setInvoices((data.data || []).map(invoiceUiDocument));
+        if (!Array.isArray(data?.data)) throw new Error("Invalid invoice list");
+        setInvoices(data.data.map(invoiceUiDocument));
+        setError(null);
         setTotalCount(data.pagination?.total || 0);
         setPage(1);
         setFetchKey((k) => k + 1);
       })
-      .catch(() => setError("Failed to refresh valid invoice amounts."));
+      .catch(() => setError(t("refreshFailed")));
     fetch(`/api/v1/invoices/summary`, { headers: { "x-organization-id": orgId } })
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("Invoice request failed"); return r.json(); })
       .then((data) => setSummary(invoiceUiSummary(data)))
       .catch(() => setSummary(null));
-  }, [orgId, buildParams]);
+  }, [orgId, buildParams, t]);
 
   const runBulkAction = useCallback(
     async (action: "send-reminder" | "mark-as-sent", ids: string[]) => {
@@ -440,27 +430,29 @@ export default function InvoicesPage() {
         });
         const data = await res.json();
         if (!res.ok) {
-          toast.error(typeof data.error === "string" ? data.error : "Bulk action failed");
+          toast.error(t("bulkFailed"));
           return;
         }
-        const s = data.summary || { sent: 0, skipped: 0, failed: 0, total: 0 };
-        const verb = action === "send-reminder" ? "Reminder" : "Invoice";
+        const s = data.summary;
+        if (!s || ![s.sent, s.skipped, s.failed, s.total].every((count) => Number.isSafeInteger(count) && count >= 0)) {
+          toast.error(t("bulkFailed")); return;
+        }
         const parts: string[] = [];
-        if (s.sent) parts.push(`${s.sent} ${verb.toLowerCase()}${s.sent !== 1 ? "s" : ""} sent`);
-        if (s.skipped) parts.push(`${s.skipped} skipped`);
-        if (s.failed) parts.push(`${s.failed} failed`);
-        const msg = parts.join(", ") || "Nothing to do";
+        if (s.sent) parts.push(t(action === "send-reminder" ? "remindersSent" : "invoicesSent", { count: s.sent }));
+        if (s.skipped) parts.push(t("skipped", { count: s.skipped }));
+        if (s.failed) parts.push(t("failed", { count: s.failed }));
+        const msg = parts.join(t("summarySeparator")) || t("nothing");
         if (s.failed) toast.error(msg);
         else toast.success(msg);
         clearSelection();
         if (action === "mark-as-sent" && s.sent) refreshList();
       } catch {
-        toast.error("Bulk action failed. Please check your connection.");
+        toast.error(t("bulkConnection"));
       } finally {
         setBulkRunning(false);
       }
     },
-    [orgId, bulkRunning, clearSelection, refreshList]
+    [orgId, bulkRunning, clearSelection, refreshList, t]
   );
 
   const outstanding = summary?.outstanding || 0n;
@@ -487,9 +479,9 @@ export default function InvoicesPage() {
           <div className="w-full max-w-xl">
             <div className="grid grid-cols-3 gap-0">
               {[
-                { step: "1", label: "Create", sub: "Draft your invoice with line items and pricing", color: "bg-blue-500", ring: "ring-blue-200 dark:ring-blue-900" },
-                { step: "2", label: "Send", sub: "Email it directly to your customer", color: "bg-amber-500", ring: "ring-amber-200 dark:ring-amber-900" },
-                { step: "3", label: "Get paid", sub: "Track payments and outstanding balances", color: "bg-emerald-500", ring: "ring-emerald-200 dark:ring-emerald-900" },
+                { step: "1", label: t("createStep"), sub: t("createHint"), color: "bg-blue-500", ring: "ring-blue-200 dark:ring-blue-900" },
+                { step: "2", label: t("send"), sub: t("sendHint"), color: "bg-amber-500", ring: "ring-amber-200 dark:ring-amber-900" },
+                { step: "3", label: t("getPaid"), sub: t("paidHint"), color: "bg-emerald-500", ring: "ring-emerald-200 dark:ring-emerald-900" },
               ].map(({ step, label, sub, color, ring }, i) => (
                 <div key={step} className="flex flex-col items-center text-center relative">
                   {i < 2 && (
@@ -507,24 +499,22 @@ export default function InvoicesPage() {
 
           {/* CTA */}
           <div className="text-center">
-            <h2 className="text-lg font-semibold tracking-tight">Start getting paid</h2>
-            <p className="mt-1.5 text-sm text-muted-foreground">Create your first invoice to begin tracking revenue.</p>
+            <h2 className="text-lg font-semibold tracking-tight">{t("emptyTitle")}</h2>
+            <p className="mt-1.5 text-sm text-muted-foreground">{t("emptyDescription")}</p>
             <Button
               onClick={() => openDrawer("invoice")}
               size="lg"
               className="mt-5 bg-emerald-600 hover:bg-emerald-700"
             >
-              <Plus className="mr-2 size-4" />
-              New Invoice
-            </Button>
+              <Plus className="mr-2 size-4" />{t("newInvoice")}</Button>
           </div>
 
           {/* Preview stat cards (empty) */}
           <div className="w-full max-w-lg grid grid-cols-1 sm:grid-cols-3 gap-3 opacity-40">
             {[
-              { label: "Outstanding", value: summary?.currencyCode ? formatMoney(0n, summary.currencyCode) : "\u2014" },
-              { label: "Overdue", value: summary?.currencyCode ? formatMoney(0n, summary.currencyCode) : "\u2014" },
-              { label: "Paid this month", value: summary?.currencyCode ? formatMoney(0n, summary.currencyCode) : "\u2014" },
+              { label: t("outstanding"), value: summary?.currencyCode ? formatMoney(0n, summary.currencyCode) : "\u2014" },
+              { label: t("overdue"), value: summary?.currencyCode ? formatMoney(0n, summary.currencyCode) : "\u2014" },
+              { label: t("paidMonth"), value: summary?.currencyCode ? formatMoney(0n, summary.currencyCode) : "\u2014" },
             ].map(({ label, value }) => (
               <div key={label} className="rounded-lg border border-dashed p-3 text-center">
                 <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
@@ -541,9 +531,9 @@ export default function InvoicesPage() {
     <ContentReveal className="space-y-6">
       {/* Top: Stats */}
       <div className="grid gap-3 sm:grid-cols-3">
-        <StatCard title="Outstanding" value={summary?.currencyCode ? formatMoney(outstanding, summary.currencyCode) : "\u2014"} icon={FileText} />
-        <StatCard title="Overdue" value={summary?.currencyCode ? formatMoney(overdue, summary.currencyCode) : "\u2014"} icon={FileText} changeType="negative" />
-        <StatCard title="Total Invoices" value={invoiceCount.toString()} icon={FileText} />
+        <StatCard title={t("outstanding")} value={summary?.currencyCode ? formatMoney(outstanding, summary.currencyCode) : "\u2014"} icon={FileText} />
+        <StatCard title={t("overdue")} value={summary?.currencyCode ? formatMoney(overdue, summary.currencyCode) : "\u2014"} icon={FileText} changeType="negative" />
+        <StatCard title={t("totalInvoices")} value={invoiceCount.toString()} icon={FileText} />
       </div>
 
       {/* Aging + Recent Payments side by side */}
@@ -551,7 +541,7 @@ export default function InvoicesPage() {
         {/* Aging Breakdown */}
         {agingTotal > 0 && (
           <div className="rounded-lg border p-4 space-y-3">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Aging Breakdown</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("aging")}</p>
             <div className="h-2.5 w-full rounded-full overflow-hidden flex">
               {([
                 { key: "current" as const, color: "bg-emerald-500" },
@@ -567,10 +557,10 @@ export default function InvoicesPage() {
             </div>
             <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
               {([
-                { key: "current" as const, color: "bg-emerald-500", label: "Current" },
-                { key: "1-30" as const, color: "bg-amber-400", label: "1-30 days" },
-                { key: "31-60" as const, color: "bg-orange-500", label: "31-60 days" },
-                { key: "60+" as const, color: "bg-red-500", label: "60+ days" },
+                { key: "current" as const, color: "bg-emerald-500", label: t("current") },
+                { key: "1-30" as const, color: "bg-amber-400", label: t("daysOne") },
+                { key: "31-60" as const, color: "bg-orange-500", label: t("daysTwo") },
+                { key: "60+" as const, color: "bg-red-500", label: t("daysThree") },
               ] as const).map(({ key, color, label }) => (
                 <div key={key} className="flex items-center justify-between text-xs">
                   <div className="flex items-center gap-1.5">
@@ -590,10 +580,8 @@ export default function InvoicesPage() {
         {payments.length > 0 && (
           <div className="rounded-lg border p-4 space-y-3">
             <div className="flex items-center justify-between">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Recent Payments</p>
-              <Button variant="ghost" size="sm" className="h-6 text-xs text-muted-foreground px-2" onClick={() => router.push("/sales/payments")}>
-                View all
-              </Button>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("recentPayments")}</p>
+              <Button variant="ghost" size="sm" className="h-6 text-xs text-muted-foreground px-2" onClick={() => router.push("/sales/payments")}>{t("viewAll")}</Button>
             </div>
             <div className="space-y-0.5">
               {payments.map((p) => (
@@ -624,12 +612,12 @@ export default function InvoicesPage() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Tabs value={statusFilter} onValueChange={setStatusFilter}>
             <TabsList className="overflow-x-auto">
-              <TabsTrigger value="all" className="whitespace-nowrap">All</TabsTrigger>
-              <TabsTrigger value="draft" className="whitespace-nowrap">Draft</TabsTrigger>
-              <TabsTrigger value="sent" className="whitespace-nowrap">Sent</TabsTrigger>
-              <TabsTrigger value="partial" className="whitespace-nowrap">Partial</TabsTrigger>
-              <TabsTrigger value="paid" className="whitespace-nowrap">Paid</TabsTrigger>
-              <TabsTrigger value="overdue" className="whitespace-nowrap">Overdue</TabsTrigger>
+              <TabsTrigger value="all" className="whitespace-nowrap">{t("all")}</TabsTrigger>
+              <TabsTrigger value="draft" className="whitespace-nowrap">{t("draftTab")}</TabsTrigger>
+              <TabsTrigger value="sent" className="whitespace-nowrap">{t("sentTab")}</TabsTrigger>
+              <TabsTrigger value="partial" className="whitespace-nowrap">{t("partialTab")}</TabsTrigger>
+              <TabsTrigger value="paid" className="whitespace-nowrap">{t("paidTab")}</TabsTrigger>
+              <TabsTrigger value="overdue" className="whitespace-nowrap">{t("overdue")}</TabsTrigger>
             </TabsList>
           </Tabs>
 
@@ -638,36 +626,34 @@ export default function InvoicesPage() {
             size="sm"
             className="bg-emerald-600 hover:bg-emerald-700"
           >
-            <Plus className="mr-2 size-4" />
-            New Invoice
-          </Button>
+            <Plus className="mr-2 size-4" />{t("newInvoice")}</Button>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
             <Input
-              placeholder="Search invoices..."
+              placeholder={t("search")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="h-8 w-56 pl-8 text-xs"
             />
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="text-xs text-muted-foreground shrink-0">From</span>
+            <span className="text-xs text-muted-foreground shrink-0">{t("from")}</span>
             <DatePicker
               value={dateFrom}
               onChange={(v) => setDateFrom(v)}
-              placeholder="Start date"
+              placeholder={t("startDate")}
               className="h-8 w-40 text-xs"
             />
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="text-xs text-muted-foreground shrink-0">To</span>
+            <span className="text-xs text-muted-foreground shrink-0">{t("to")}</span>
             <DatePicker
               value={dateTo}
               onChange={(v) => setDateTo(v)}
-              placeholder="End date"
+              placeholder={t("endDate")}
               className="h-8 w-40 text-xs"
             />
           </div>
@@ -680,18 +666,18 @@ export default function InvoicesPage() {
             }}
           >
             <SelectTrigger className="h-8 w-44 text-xs">
-              <SelectValue placeholder="Sort by..." />
+              <SelectValue placeholder={t("sort")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="created:desc">Newest first</SelectItem>
-              <SelectItem value="created:asc">Oldest first</SelectItem>
-              <SelectItem value="due:asc">Due soonest</SelectItem>
-              <SelectItem value="due:desc">Due latest</SelectItem>
-              <SelectItem value="total:desc">Highest amount</SelectItem>
-              <SelectItem value="total:asc">Lowest amount</SelectItem>
-              <SelectItem value="amountDue:desc">Highest balance</SelectItem>
-              <SelectItem value="number:desc">Number (desc)</SelectItem>
-              <SelectItem value="number:asc">Number (asc)</SelectItem>
+              <SelectItem value="created:desc">{t("newest")}</SelectItem>
+              <SelectItem value="created:asc">{t("oldest")}</SelectItem>
+              <SelectItem value="due:asc">{t("dueSoonest")}</SelectItem>
+              <SelectItem value="due:desc">{t("dueLatest")}</SelectItem>
+              <SelectItem value="total:desc">{t("highest")}</SelectItem>
+              <SelectItem value="total:asc">{t("lowest")}</SelectItem>
+              <SelectItem value="amountDue:desc">{t("highestBalance")}</SelectItem>
+              <SelectItem value="number:desc">{t("numberDesc")}</SelectItem>
+              <SelectItem value="number:asc">{t("numberAsc")}</SelectItem>
             </SelectContent>
           </Select>
           {hasFilters && (
@@ -701,9 +687,7 @@ export default function InvoicesPage() {
               className="h-8 text-xs text-muted-foreground"
               onClick={() => { setSearch(""); setDateFrom(""); setDateTo(""); }}
             >
-              <X className="mr-1 size-3" />
-              Clear filters
-            </Button>
+              <X className="mr-1 size-3" />{t("clearFilters")}</Button>
           )}
         </div>
 
@@ -713,10 +697,10 @@ export default function InvoicesPage() {
             <Checkbox
               checked={allVisibleSelected ? true : someVisibleSelected ? "indeterminate" : false}
               onCheckedChange={toggleAll}
-              aria-label="Select all invoices"
+              aria-label={t("selectAll")}
             />
             <span className="text-xs font-medium">
-              {selectedIds.size} selected
+              {t("selected", { count: selectedIds.size })}
             </span>
             <div className="h-4 w-px bg-border mx-1" />
             <Button
@@ -731,7 +715,7 @@ export default function InvoicesPage() {
               ) : (
                 <Send className="mr-1.5 size-3.5" />
               )}
-              Send reminder
+              {t("sendReminder")}
               {remindableSelected.length > 0 && ` (${remindableSelected.length})`}
             </Button>
             <Button
@@ -746,7 +730,7 @@ export default function InvoicesPage() {
               ) : (
                 <CheckCircle2 className="mr-1.5 size-3.5" />
               )}
-              Mark as sent
+              {t("markSent")}
               {draftSelected.length > 0 && ` (${draftSelected.length})`}
             </Button>
             <Button
@@ -756,9 +740,7 @@ export default function InvoicesPage() {
               onClick={clearSelection}
               disabled={bulkRunning}
             >
-              <X className="mr-1 size-3" />
-              Clear
-            </Button>
+              <X className="mr-1 size-3" />{t("clear")}</Button>
           </div>
         )}
 
@@ -770,7 +752,7 @@ export default function InvoicesPage() {
               columns={columns}
               data={filteredInvoices}
               loading={false}
-              emptyMessage="No invoices match your filters."
+              emptyMessage={t("noMatches")}
               onRowClick={(r) => router.push(`/sales/${r.id}`)}
               sortBy={sortBy}
               sortOrder={sortOrder}
@@ -784,7 +766,7 @@ export default function InvoicesPage() {
           <>
             <div className="flex items-center justify-between pt-1">
               <p className="text-xs text-muted-foreground">
-                Showing {invoices.length} of {totalCount} invoice{totalCount !== 1 ? "s" : ""}
+                {t("showing", { shown: invoices.length, count: totalCount })}
               </p>
             </div>
             {hasMore && (

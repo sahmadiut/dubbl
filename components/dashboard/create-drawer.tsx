@@ -555,6 +555,7 @@ function ProjectDrawer({ open, onClose }: { open: boolean; onClose: () => void }
 // Invoice Drawer
 // ---------------------------------------------------------------------------
 function InvoiceDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useTranslations("SalesInvoices");
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [contactId, setContactId] = useState("");
@@ -604,22 +605,22 @@ function InvoiceDrawer({ open, onClose }: { open: boolean; onClose: () => void }
       fetch(`/api/v1/contacts/${encodeURIComponent(contactId)}`, { headers, signal: controller.signal }),
       fetch("/api/v1/organization", { headers, signal: controller.signal }),
     ]).then(async ([customer, org]) => {
-      if (!customer.ok || !org.ok) throw new Error("Unable to load the customer's invoice currency");
+      if (!customer.ok || !org.ok) throw new Error(t("currencyFailed"));
       const [customerData, orgData] = await Promise.all([customer.json(), org.json()]);
-      if (!customerData.contact || !orgData.organization) throw new Error("Unable to load the customer's invoice currency");
+      if (!customerData.contact || !orgData.organization) throw new Error(t("currencyFailed"));
       const code = invoiceEditorCurrency(null, customerData.contact.currencyCode, orgData.organization.defaultCurrency);
       if (!controller.signal.aborted) setCurrencyContext({ orgId, contactId, code });
     }).catch(() => {
-      if (!controller.signal.aborted) setCurrencyContext({ orgId, contactId, error: "Unable to load the customer's invoice currency. Select a currency to continue." });
+      if (!controller.signal.aborted) setCurrencyContext({ orgId, contactId, error: t("currencyFailed") });
     });
     return () => controller.abort();
-  }, [open, orgId, contactId]);
+  }, [open, orgId, contactId, t]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!contactId) { toast.error("Please select a customer"); return; }
+    if (!contactId) { toast.error(t("selectCustomer")); return; }
     if (!orgId) return;
-    if (!currencyCode || !validLines) { toast.error("Check the invoice currency and line amounts"); return; }
+    if (!currencyCode || !validLines) { toast.error(t("checkLines")); return; }
 
     // Deposit % is entered as a plain percent and stored as basis points.
     const pct = parseFloat(depositPercent);
@@ -630,7 +631,7 @@ function InvoiceDrawer({ open, onClose }: { open: boolean; onClose: () => void }
 
     try {
       const exactLines = documentLineInputs(lines);
-      if (exactLines.some(line => !line.description.trim())) throw new Error("Add a description for every line");
+      if (exactLines.some(line => !line.description.trim())) { toast.error(t("lineDescription")); return; }
       setSaving(true);
       const res = await fetch("/api/v1/invoices", {
         method: "POST",
@@ -646,19 +647,18 @@ function InvoiceDrawer({ open, onClose }: { open: boolean; onClose: () => void }
         }),
       });
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to create invoice");
+        throw new Error(t("createFailed"));
       }
       const data = await res.json();
       toast.success(
         data.invoice.status === "pending_approval"
-          ? "Invoice saved for approval — approve it from the invoice's page to send it"
-          : "Invoice created"
+          ? t("createdApproval")
+          : t("created")
       );
       onClose();
       router.push(`/sales/${data.invoice.id}`);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create invoice");
+    } catch {
+      toast.error(t("createFailed"));
     } finally {
       setSaving(false);
     }
@@ -671,38 +671,38 @@ function InvoiceDrawer({ open, onClose }: { open: boolean; onClose: () => void }
           <div className="flex items-center gap-3">
             <DrawerIcon><FileText className="size-5" /></DrawerIcon>
             <div>
-              <SheetTitle className="text-lg">New Invoice</SheetTitle>
-              <SheetDescription>Create a sales invoice for your customer.</SheetDescription>
+              <SheetTitle className="text-lg">{t("newInvoice")}</SheetTitle>
+              <SheetDescription>{t("drawerDescription")}</SheetDescription>
             </div>
           </div>
         </SheetHeader>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
             <div className="space-y-4">
-              <SectionLabel>Invoice Details</SectionLabel>
+              <SectionLabel>{t("invoiceDetails")}</SectionLabel>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Customer *</Label>
+                  <Label>{t("customerRequired")}</Label>
                   <ContactPicker value={contactId} onChange={(id) => { if (id !== contactId) { setContactId(id); setSelectedCurrency(""); setValidLines(false); } }} type="customer" />
                 </div>
                 <div className="space-y-2">
-                  <Label>Reference</Label>
-                  <Input value={reference} onChange={(e) => setReference(e.target.value)} placeholder="PO number, etc." />
+                  <Label>{t("reference")}</Label>
+                  <Input value={reference} onChange={(e) => setReference(e.target.value)} placeholder={t("referencePlaceholder")} />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Invoice currency</Label>
+                <Label>{t("invoiceCurrency")}</Label>
                 <CurrencySelect value={currencyCode ?? ""} onValueChange={(code) => { setSelectedCurrency(code); if (code !== currencyCode) setValidLines(false); }} />
                 {!selectedCurrency && currentCurrencyContext?.error && <p role="alert" className="text-xs text-red-600">{currentCurrencyContext.error}</p>}
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Issue Date</Label>
-                  <DatePicker value={issueDate} onChange={setIssueDate} placeholder="Issue date" />
+                  <Label>{t("issueDate")}</Label>
+                  <DatePicker value={issueDate} onChange={setIssueDate} placeholder={t("issuePlaceholder")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Due Date</Label>
-                  <DatePicker value={dueDate} onChange={setDueDate} placeholder="Due date" />
+                  <Label>{t("dueDate")}</Label>
+                  <DatePicker value={dueDate} onChange={setDueDate} placeholder={t("duePlaceholder")} />
                 </div>
               </div>
               <label className="flex items-start gap-3 rounded-lg border bg-muted/30 px-3 py-3 cursor-pointer">
@@ -713,26 +713,24 @@ function InvoiceDrawer({ open, onClose }: { open: boolean; onClose: () => void }
                   className="mt-0.5 size-4 accent-emerald-600"
                 />
                 <span className="space-y-0.5">
-                  <span className="block text-sm font-medium">This is a deposit / retainer invoice</span>
-                  <span className="block text-[11px] text-muted-foreground">
-                    Bill the customer up front for a deposit or an ongoing retainer rather than for work already done.
-                  </span>
+                  <span className="block text-sm font-medium">{t("depositToggle")}</span>
+                  <span className="block text-[11px] text-muted-foreground">{t("depositDescription")}</span>
                 </span>
               </label>
               {isDepositRetainer && (
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label>Invoice type</Label>
+                    <Label>{t("invoiceType")}</Label>
                     <Select value={invoiceType} onValueChange={(v) => setInvoiceType(v as "deposit" | "retainer")}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="deposit">Deposit</SelectItem>
-                        <SelectItem value="retainer">Retainer</SelectItem>
+                        <SelectItem value="deposit">{t("deposit")}</SelectItem>
+                        <SelectItem value="retainer">{t("retainer")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="drawer-invoice-deposit-pct">Deposit % (optional)</Label>
+                    <Label htmlFor="drawer-invoice-deposit-pct">{t("depositPercent")}</Label>
                     <Input
                       id="drawer-invoice-deposit-pct"
                       type="number"
@@ -741,7 +739,7 @@ function InvoiceDrawer({ open, onClose }: { open: boolean; onClose: () => void }
                       step="0.01"
                       value={depositPercent}
                       onChange={(e) => setDepositPercent(e.target.value)}
-                      placeholder="e.g. 25"
+                      placeholder={t("percentPlaceholder")}
                     />
                   </div>
                 </div>
@@ -754,10 +752,8 @@ function InvoiceDrawer({ open, onClose }: { open: boolean; onClose: () => void }
                   className="mt-0.5 size-4 accent-emerald-600"
                 />
                 <span className="space-y-0.5">
-                  <span className="block text-sm font-medium">Submit for approval instead of sending</span>
-                  <span className="block text-[11px] text-muted-foreground">
-                    Save the invoice for someone to approve. It won&apos;t be sent until it&apos;s approved.
-                  </span>
+                  <span className="block text-sm font-medium">{t("approvalToggle")}</span>
+                  <span className="block text-[11px] text-muted-foreground">{t("approvalDescription")}</span>
                 </span>
               </label>
             </div>
@@ -765,18 +761,18 @@ function InvoiceDrawer({ open, onClose }: { open: boolean; onClose: () => void }
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Line Items</SectionLabel>
+              <SectionLabel>{t("lineItems")}</SectionLabel>
               <LineItemsEditor key={orgId} lines={lines} onChange={(next) => { setLines(next); setValidLines(false); }} accountTypeFilter={["revenue"]} taxContext="sales" currencyCode={currencyCode} roundPriceFirst priceFractionDigits={18} onValidityChange={setValidLines} />
             </div>
 
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Notes</SectionLabel>
-              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notes to customer..." rows={3} />
+              <SectionLabel>{t("notes")}</SectionLabel>
+              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("notesPlaceholder")} rows={3} />
             </div>
           </div>
-          <DrawerFooter onClose={onClose} saving={saving} label="Create Invoice" disabled={!contactId || !currencyCode || !validLines} />
+          <DrawerFooter onClose={onClose} saving={saving} label={t("createInvoice")} disabled={!contactId || !currencyCode || !validLines} />
         </form>
       </SheetContent>
     </Sheet>

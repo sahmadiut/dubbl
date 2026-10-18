@@ -1,5 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { invoiceStatusLabel, invoiceMethodLabel, invoiceCreditLabel, invoiceComplianceLabel, type InvoiceTranslate } from "@/i18n/invoice-presentation";
+
 import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -93,13 +96,6 @@ interface AvailableCredit {
   notes: string | null;
 }
 
-// Plain-language label for where the credit came from.
-const creditSourceLabels: Record<string, string> = {
-  prepayment: "Prepayment",
-  overpayment: "Overpayment",
-  credit_note: "Credit note",
-};
-
 interface BaseAmounts {
   baseCurrency: string;
   rate: number | null;
@@ -145,26 +141,6 @@ const statusConfig: Record<string, { class: string; bg: string }> = {
   },
 };
 
-const methodLabels: Record<string, string> = {
-  bank_transfer: "Bank Transfer",
-  cash: "Cash",
-  check: "Check",
-  card: "Card",
-  other: "Other",
-};
-
-// Plain-language status labels (end users aren't accountants — avoid "void").
-const statusLabels: Record<string, string> = {
-  draft: "draft",
-  sent: "sent",
-  partial: "part paid",
-  paid: "paid",
-  overdue: "overdue",
-  void: "cancelled",
-  pending_approval: "waiting for approval",
-  rejected: "rejected",
-};
-
 interface PaymentRecord {
   id: string;
   paymentNumber: string;
@@ -179,16 +155,17 @@ function formatDate(dateStr: string) {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-function getOverdueInfo(dueDate: string, status: string) {
+function getOverdueInfo(t: InvoiceTranslate, dueDate: string, status: string) {
   if (["paid", "void", "draft"].includes(status)) return null;
   const days = Math.floor((Date.now() - new Date(dueDate).getTime()) / 86400000);
-  if (days > 0) return { label: `${days}d overdue`, class: "text-red-600 dark:text-red-400" };
-  if (days === 0) return { label: "Due today", class: "text-amber-600 dark:text-amber-400" };
-  if (Math.abs(days) <= 7) return { label: `Due in ${Math.abs(days)}d`, class: "text-muted-foreground" };
+  if (days > 0) return { label: t("daysOverdue", { count: days }), class: "text-red-600 dark:text-red-400" };
+  if (days === 0) return { label: t("dueToday"), class: "text-amber-600 dark:text-amber-400" };
+  if (Math.abs(days) <= 7) return { label: t("dueIn", { count: Math.abs(days) }), class: "text-muted-foreground" };
   return null;
 }
 
 export default function InvoiceDetailPage() {
+  const t = useTranslations("SalesInvoices");
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { confirm, dialog: confirmDialog } = useConfirm();
@@ -253,10 +230,10 @@ export default function InvoiceDetailPage() {
       headers: { "x-organization-id": orgId },
       signal: controller.signal,
     })
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("Invoice request failed"); return r.json(); })
       .then((data) => {
         if (controller.signal.aborted) return;
-        if (!data.invoice) throw new Error("Invoice amounts unavailable");
+        if (!data?.invoice) throw new Error("Invoice amounts unavailable");
         const saved = invoiceUiDocument(data.invoice) as unknown as InvoiceDetail;
         const history = (data.payments || []).map((row: Record<string, unknown>) => invoiceUiPayment({ ...row, currencyCode: saved.currencyCode }));
         const converted = data.base ? invoiceUiBase(data.base) : null;
@@ -264,14 +241,14 @@ export default function InvoiceDetailPage() {
         setMoneyError(null); setLoadedContext(contextKey);
       })
       .catch(() => {
-        if (!controller.signal.aborted) { setMoneyError("Unable to load valid invoice amounts. Please reload."); setLoadedContext(contextKey); }
+        if (!controller.signal.aborted) { setMoneyError(t("detailReadFailed")); setLoadedContext(contextKey); }
       })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
 
     fetch(`/api/v1/invoices/${id}/compliance`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("Invoice request failed"); return r.json(); })
       .then((data) => {
         if (data.warnings) setComplianceWarnings(data.warnings);
       })
@@ -280,7 +257,7 @@ export default function InvoiceDetailPage() {
     fetch(`/api/v1/invoices/${id}/snapshot`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("Invoice request failed"); return r.json(); })
       .then((data) => {
         if (data.sender) setSenderSnapshot(data.sender);
         if (data.recipient) setRecipientSnapshot(data.recipient);
@@ -288,7 +265,7 @@ export default function InvoiceDetailPage() {
       .catch(() => {});
 
     fetch("/api/v1/organization", { headers: { "x-organization-id": orgId } })
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("Invoice request failed"); return r.json(); })
       .then((data) => {
         if (data.organization?.name) setOrgName(data.organization.name);
       })
@@ -298,7 +275,7 @@ export default function InvoiceDetailPage() {
       headers: { "x-organization-id": orgId },
       signal: controller.signal,
     })
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("Invoice request failed"); return r.json(); })
       .then((data) => {
         if (controller.signal.aborted) return;
         if (Array.isArray(data.credits)) setCredits(data.credits.map(invoiceUiCredit));
@@ -307,7 +284,7 @@ export default function InvoiceDetailPage() {
       })
       .catch(() => { if (!controller.signal.aborted) setCredits([]); });
     return () => controller.abort();
-  }, [id, orgId, contextKey]);
+  }, [id, orgId, contextKey, t]);
 
   // Re-pull the invoice (+ payments + base) and available credits after an
   // action that changes balances (late fee, applying a credit).
@@ -316,21 +293,21 @@ export default function InvoiceDetailPage() {
     const active = invoiceRequest.current;
     if (active?.key !== contextKey || active.controller.signal.aborted) return;
     const invoiceRefresh = fetch(`/api/v1/invoices/${id}`, { headers: { "x-organization-id": orgId }, signal: active.controller.signal })
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("Invoice request failed"); return r.json(); })
       .then((data) => {
         if (active.controller.signal.aborted) return;
-        if (!data.invoice) throw new Error("Invoice amounts unavailable");
+        if (!data?.invoice) throw new Error("Invoice amounts unavailable");
         const saved = invoiceUiDocument(data.invoice) as unknown as InvoiceDetail;
         const history = (data.payments || []).map((row: Record<string, unknown>) => invoiceUiPayment({ ...row, currencyCode: saved.currencyCode }));
         const converted = data.base ? invoiceUiBase(data.base) : null;
         setInv(saved); setPayments(history); setBase(converted); setMoneyError(null);
       })
-      .catch(() => { if (!active.controller.signal.aborted) setMoneyError("Unable to refresh invoice amounts. Please reload."); });
+      .catch(() => { if (!active.controller.signal.aborted) setMoneyError(t("detailRefreshFailed")); });
     const creditRefresh = fetch(`/api/v1/invoices/${id}/available-credits`, {
       headers: { "x-organization-id": orgId },
       signal: active.controller.signal,
     })
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("Invoice request failed"); return r.json(); })
       .then((data) => {
         if (active.controller.signal.aborted) return;
         if (Array.isArray(data.credits)) setCredits(data.credits.map(invoiceUiCredit));
@@ -359,14 +336,13 @@ export default function InvoiceDetailPage() {
       if (res.ok) {
         setInterestOpen(false);
         setInterestAmount("");
-        toast.success("Late fee added as a new invoice");
+        toast.success(t("lateFeeSuccess"));
         await refetchInvoice();
       } else {
-        const data = await res.json().catch(() => ({}));
-        toast.error(typeof data.error === "string" ? data.error : "Couldn't add a late fee");
+        toast.error(t("lateFeeFailed"));
       }
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Couldn't add a late fee");
+    } catch {
+      toast.error(t("lateFeeFailed"));
     } finally {
       setInterestLoading(false);
     }
@@ -377,7 +353,7 @@ export default function InvoiceDetailPage() {
     // Apply the smaller of what's left on the credit and what's owed.
     let input: { amountMinor: string };
     try { input = invoiceUiCreditAmount(credit, inv); }
-    catch (error) { toast.error(error instanceof Error ? error.message : "Invalid credit amount"); return; }
+    catch { toast.error(t("creditInvalid")); return; }
     const amount = BigInt(input.amountMinor);
     setApplyingCreditId(credit.id);
     try {
@@ -387,12 +363,13 @@ export default function InvoiceDetailPage() {
         body: JSON.stringify({ invoiceId: id, ...input }),
       });
       if (res.ok) {
-        toast.success(`Applied ${formatMoney(amount, inv.currencyCode)} credit`);
+        toast.success(t("appliedCredit", { amount: formatMoney(amount, inv.currencyCode) }));
         await refetchInvoice();
       } else {
-        const data = await res.json().catch(() => ({}));
-        toast.error(typeof data.error === "string" ? data.error : "Couldn't apply this credit");
+        toast.error(t("creditFailed"));
       }
+    } catch {
+      toast.error(t("creditFailed"));
     } finally {
       setApplyingCreditId(null);
     }
@@ -408,12 +385,13 @@ export default function InvoiceDetailPage() {
         headers: { "x-organization-id": orgId },
       });
       if (res.ok) {
-        toast.success("Invoice approved");
+        toast.success(t("approved"));
         await refetchInvoice();
       } else {
-        const data = await res.json().catch(() => ({}));
-        toast.error(typeof data.error === "string" ? data.error : "Couldn't approve this invoice");
+        toast.error(t("approveFailed"));
       }
+    } catch {
+      toast.error(t("approveFailed"));
     } finally {
       setApproving(false);
     }
@@ -432,12 +410,13 @@ export default function InvoiceDetailPage() {
       if (res.ok) {
         setRejectOpen(false);
         setRejectReason("");
-        toast.success("Invoice rejected");
+        toast.success(t("rejected"));
         await refetchInvoice();
       } else {
-        const data = await res.json().catch(() => ({}));
-        toast.error(typeof data.error === "string" ? data.error : "Couldn't reject this invoice");
+        toast.error(t("rejectFailed"));
       }
+    } catch {
+      toast.error(t("rejectFailed"));
     } finally {
       setRejecting(false);
     }
@@ -447,9 +426,9 @@ export default function InvoiceDetailPage() {
   async function handleSubmitForApproval() {
     if (!orgId) return;
     await confirm({
-      title: "Send this invoice for approval?",
-      description: "This sends the invoice to be reviewed before it can go out to the customer.",
-      confirmLabel: "Send for approval",
+      title: t("submitTitle"),
+      description: t("submitDescription"),
+      confirmLabel: t("submitConfirm"),
       onConfirm: async () => {
         setSubmitting(true);
         try {
@@ -458,12 +437,13 @@ export default function InvoiceDetailPage() {
             headers: { "x-organization-id": orgId },
           });
           if (res.ok) {
-            toast.success("Sent for approval");
+            toast.success(t("submitted"));
             await refetchInvoice();
           } else {
-            const data = await res.json().catch(() => ({}));
-            toast.error(typeof data.error === "string" ? data.error : "Couldn't send this invoice for approval");
+            toast.error(t("submitFailed"));
           }
+        } catch {
+          toast.error(t("submitFailed"));
         } finally {
           setSubmitting(false);
         }
@@ -474,7 +454,7 @@ export default function InvoiceDetailPage() {
   useEffect(() => {
     if (!orgId || !payOpen) return;
     fetch("/api/v1/bank-accounts", { headers: { "x-organization-id": orgId } })
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("Invoice request failed"); return r.json(); })
       .then((data) => {
         if (data.data) setBankAccounts(data.data.map((a: { id: string; name: string }) => ({ id: a.id, name: a.name })));
       })
@@ -524,10 +504,12 @@ export default function InvoiceDetailPage() {
         setSenderSnapshot(data.sender);
         setRecipientSnapshot(data.recipient);
         setSnapshotSheetOpen(false);
-        toast.success("Invoice details updated");
+        toast.success(t("snapshotSuccess"));
       } else {
-        toast.error("Failed to update details");
+        toast.error(t("snapshotFailed"));
       }
+    } catch {
+      toast.error(t("snapshotFailed"));
     } finally {
       setSnapshotSaving(false);
     }
@@ -540,7 +522,7 @@ export default function InvoiceDetailPage() {
         headers: { "x-organization-id": orgId },
       });
       if (!res.ok) {
-        toast.error("Failed to download PDF");
+        toast.error(t("pdfFailed"));
         return;
       }
       const blob = await res.blob();
@@ -551,7 +533,7 @@ export default function InvoiceDetailPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      toast.error("Failed to download PDF");
+      toast.error(t("pdfFailed"));
     }
   }
 
@@ -565,7 +547,7 @@ export default function InvoiceDetailPage() {
     if (!inv) return;
     let input: { amountMinor: string };
     try { input = invoiceUiAmount(payAmount, inv.currencyCode); }
-    catch (error) { toast.error(error instanceof Error ? error.message : "Invalid payment amount"); return; }
+    catch { toast.error(t("paymentInvalid")); return; }
 
     setPayLoading(true);
     try {
@@ -584,12 +566,12 @@ export default function InvoiceDetailPage() {
         await refetchInvoice();
         setPayOpen(false);
         setPayAmount("");
-        toast.success("Payment recorded");
+        toast.success(t("paymentSuccess"));
       } else {
-        toast.error("Failed to record payment");
+        toast.error(t("paymentFailed"));
       }
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to record payment");
+    } catch {
+      toast.error(t("paymentFailed"));
     } finally {
       setPayLoading(false);
     }
@@ -598,20 +580,26 @@ export default function InvoiceDetailPage() {
   async function handleVoid() {
     if (!orgId) return;
     await confirm({
-      title: "Cancel this invoice?",
-      description: "This stops the invoice from counting toward what you're owed. You can't undo this.",
-      confirmLabel: "Cancel invoice",
+      title: t("voidTitle"),
+      description: t("voidDescription"),
+      confirmLabel: t("cancelInvoice"),
       destructive: true,
       onConfirm: async () => {
-        const res = await fetch(`/api/v1/invoices/${id}/void`, {
-          method: "POST",
-          headers: { "x-organization-id": orgId },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          invoiceUiDocument(data.invoice);
-          await refetchInvoice();
-          toast.success("Invoice cancelled");
+        try {
+          const res = await fetch(`/api/v1/invoices/${id}/void`, {
+            method: "POST",
+            headers: { "x-organization-id": orgId },
+          });
+          if (res.ok) {
+            const data = await res.json();
+            invoiceUiDocument(data.invoice);
+            await refetchInvoice();
+            toast.success(t("voidSuccess"));
+          } else {
+            toast.error(t("voidFailed"));
+          }
+        } catch {
+          toast.error(t("voidFailed"));
         }
       },
     });
@@ -620,24 +608,26 @@ export default function InvoiceDetailPage() {
   async function handleWriteOff() {
     if (!orgId) return;
     await confirm({
-      title: "Give up on collecting this invoice?",
-      description:
-        "Use this when a customer won't pay. The unpaid amount is recorded as a loss (a 'bad debt') and the invoice no longer counts toward what you're owed. You can't undo this.",
-      confirmLabel: "Write off the unpaid amount",
+      title: t("writeOffTitle"),
+      description: t("writeOffDescription"),
+      confirmLabel: t("writeOffConfirm"),
       destructive: true,
       onConfirm: async () => {
-        const res = await fetch(`/api/v1/invoices/${id}/write-off`, {
-          method: "POST",
-          headers: { "x-organization-id": orgId },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          invoiceUiDocument(data.invoice);
-          await refetchInvoice();
-          toast.success("Unpaid amount written off as a loss");
-        } else {
-          const data = await res.json().catch(() => ({}));
-          toast.error(typeof data.error === "string" ? data.error : "Couldn't write off this invoice");
+        try {
+          const res = await fetch(`/api/v1/invoices/${id}/write-off`, {
+            method: "POST",
+            headers: { "x-organization-id": orgId },
+          });
+          if (res.ok) {
+            const data = await res.json();
+            invoiceUiDocument(data.invoice);
+            await refetchInvoice();
+            toast.success(t("writeOffSuccess"));
+          } else {
+            toast.error(t("writeOffFailed"));
+          }
+        } catch {
+          toast.error(t("writeOffFailed"));
         }
       },
     });
@@ -664,21 +654,23 @@ export default function InvoiceDetailPage() {
       });
       if (res.ok) {
         const data = await res.json();
-        toast.success("Invoice duplicated");
+        toast.success(t("duplicateSuccess"));
         router.push(`/sales/${data.invoice.id}`);
+      } else {
+        toast.error(t("duplicateFailed"));
       }
     } catch {
-      toast.error("Failed to duplicate invoice");
+      toast.error(t("duplicateFailed"));
     } finally {
       setDuplicating(false);
     }
   }
 
-  if (loading || loadedContext !== contextKey) return <div className="space-y-6"><PageHeader title="Loading..." /></div>;
+  if (loading || loadedContext !== contextKey) return <div className="space-y-6"><PageHeader title={t("loading")} /></div>;
   if (moneyError) return <div role="alert" className="p-6">{moneyError}</div>;
-  if (!inv) return <div className="space-y-6"><PageHeader title="Invoice not found" /></div>;
+  if (!inv) return <div className="space-y-6"><PageHeader title={t("notFound")} /></div>;
 
-  const overdueInfo = getOverdueInfo(inv.dueDate, inv.status);
+  const overdueInfo = getOverdueInfo(t, inv.dueDate, inv.status);
   const paidPercent = invoiceUiPercent(inv.amountPaid, inv.total);
   const sc = statusConfig[inv.status] || statusConfig.draft;
 
@@ -689,22 +681,22 @@ export default function InvoiceDetailPage() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" asChild className="size-8 p-0">
-              <Link href="/sales"><ArrowLeft className="size-4" /></Link>
+              <Link href="/sales" aria-label={t("back")}><ArrowLeft className="size-4" /></Link>
             </Button>
             <div>
               <div className="flex items-center gap-2.5">
                 <h1 className="text-lg font-semibold tracking-tight">{inv.invoiceNumber}</h1>
-                <Badge variant="outline" className={sc.class}>{statusLabels[inv.status] || inv.status}</Badge>
+                <Badge variant="outline" className={sc.class}>{invoiceStatusLabel(t, inv.status)}</Badge>
                 {(inv.invoiceType === "deposit" || inv.invoiceType === "retainer") && (
                   <Badge variant="outline" className="border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-800 dark:bg-sky-950 dark:text-sky-300">
-                    {inv.invoiceType === "deposit" ? "Deposit invoice" : "Retainer invoice"}
+                    {inv.invoiceType === "deposit" ? t("depositInvoice") : t("retainerInvoice")}
                     {inv.depositPercent != null && ` · ${(inv.depositPercent / 100).toFixed(inv.depositPercent % 100 === 0 ? 0 : 2)}%`}
                   </Badge>
                 )}
                 {(inv.dunningLevel ?? 0) > 0 && (
-                  <span className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground" title="How many payment reminders have been sent for this invoice">
+                  <span className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground" title={t("reminderHint")}>
                     <Bell className="size-3" />
-                    {inv.dunningLevel} reminder{inv.dunningLevel === 1 ? "" : "s"} sent
+                    {t("remindersSent", { count: inv.dunningLevel ?? 0 })}
                   </span>
                 )}
                 {overdueInfo && (
@@ -712,7 +704,7 @@ export default function InvoiceDetailPage() {
                 )}
               </div>
               <p className="text-sm text-muted-foreground mt-0.5">
-                {inv.contact?.name || "Unknown contact"}
+                {inv.contact?.name || t("unknownContact")}
                 {inv.contact?.email && <span> · {inv.contact.email}</span>}
               </p>
             </div>
@@ -725,33 +717,27 @@ export default function InvoiceDetailPage() {
                   onClick={handleApprove}
                   loading={approving}
                   className="bg-emerald-600 hover:bg-emerald-700"
-                  title="Approve this invoice so it can be sent to the customer"
+                  title={t("approveHint")}
                 >
-                  <ThumbsUp className="mr-2 size-4" />Approve
-                </Button>
+                  <ThumbsUp className="mr-2 size-4" />{t("approve")}</Button>
                 <Dialog open={rejectOpen} onOpenChange={(o) => { setRejectOpen(o); if (!o) setRejectReason(""); }}>
                   <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700" title="Reject this invoice with a reason">
-                      <X className="mr-2 size-4" />Reject
-                    </Button>
+                    <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700" title={t("rejectHint")}>
+                      <X className="mr-2 size-4" />{t("reject")}</Button>
                   </DialogTrigger>
                   <DialogContent>
-                    <DialogHeader><DialogTitle>Reject this invoice?</DialogTitle></DialogHeader>
+                    <DialogHeader><DialogTitle>{t("rejectTitle")}</DialogTitle></DialogHeader>
                     <div className="space-y-4">
-                      <p className="text-sm text-muted-foreground">
-                        This sends the invoice back so it can be fixed and re-submitted. Add a reason so everyone knows why.
-                      </p>
+                      <p className="text-sm text-muted-foreground">{t("rejectDescription")}</p>
                       <div className="space-y-2">
-                        <Label>Reason (optional)</Label>
+                        <Label>{t("reason")}</Label>
                         <Input
                           value={rejectReason}
                           onChange={(e) => setRejectReason(e.target.value)}
-                          placeholder="e.g. amount doesn't match the order"
+                          placeholder={t("reasonPlaceholder")}
                         />
                       </div>
-                      <Button onClick={handleReject} loading={rejecting} className="w-full bg-red-600 hover:bg-red-700">
-                        Reject invoice
-                      </Button>
+                      <Button onClick={handleReject} loading={rejecting} className="w-full bg-red-600 hover:bg-red-700">{t("rejectInvoice")}</Button>
                     </div>
                   </DialogContent>
                 </Dialog>
@@ -763,31 +749,30 @@ export default function InvoiceDetailPage() {
                 size="sm"
                 onClick={handleSubmitForApproval}
                 loading={submitting}
-                title="Send this invoice to be reviewed before it goes out to the customer"
+                title={t("submitHint")}
               >
-                <ThumbsUp className="mr-2 size-4" />Submit for approval
-              </Button>
+                <ThumbsUp className="mr-2 size-4" />{t("submit")}</Button>
             )}
             {inv.status === "draft" && (
               <Button size="sm" onClick={() => setSendDialogOpen(true)} className="bg-emerald-600 hover:bg-emerald-700">
-                <Send className="mr-2 size-4" />Send
-              </Button>
+                <Send className="mr-2 size-4" />{t("send")}</Button>
             )}
             {["sent", "partial", "overdue"].includes(inv.status) && (
               <Dialog open={payOpen} onOpenChange={setPayOpen}>
                 <DialogTrigger asChild>
                   <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700">
-                    <DollarSign className="mr-2 size-4" />Record Payment
-                  </Button>
+                    <DollarSign className="mr-2 size-4" />{t("recordPayment")}</Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Record Payment</DialogTitle>
+                    <DialogTitle>{t("recordPayment")}</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label>Amount</Label>
+                      <Label>{t("amount")}</Label>
                       <InvoiceAmountInput
+                        label={t("amountLabel", { currency: inv.currencyCode })}
+                        invalidMessage={t("amountInvalid", { currency: inv.currencyCode })}
                         currency={inv.currencyCode}
                         value={payAmount}
                         onChange={setPayAmount}
@@ -795,30 +780,30 @@ export default function InvoiceDetailPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Date</Label>
-                      <DatePicker value={payDate} onChange={setPayDate} placeholder="Payment date" />
+                      <Label>{t("date")}</Label>
+                      <DatePicker value={payDate} onChange={setPayDate} placeholder={t("paymentDate")} />
                     </div>
                     <div className="space-y-2">
-                      <Label>Method</Label>
+                      <Label>{t("method")}</Label>
                       <Select value={payMethod} onValueChange={setPayMethod}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                          <SelectItem value="cash">Cash</SelectItem>
-                          <SelectItem value="check">Check</SelectItem>
-                          <SelectItem value="card">Card</SelectItem>
-                          <SelectItem value="other">Other</SelectItem>
+                          <SelectItem value="bank_transfer">{t("bankTransfer")}</SelectItem>
+                          <SelectItem value="cash">{t("cash")}</SelectItem>
+                          <SelectItem value="check">{t("check")}</SelectItem>
+                          <SelectItem value="card">{t("card")}</SelectItem>
+                          <SelectItem value="other">{t("other")}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     {bankAccounts.length > 0 && (
                       <div className="space-y-2">
-                        <Label>Bank Account</Label>
+                        <Label>{t("bankAccount")}</Label>
                         <Select value={payBankAccountId} onValueChange={setPayBankAccountId}>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select bank account (optional)" />
+                            <SelectValue placeholder={t("bankPlaceholder")} />
                           </SelectTrigger>
                           <SelectContent>
                             {bankAccounts.map((ba) => (
@@ -828,47 +813,40 @@ export default function InvoiceDetailPage() {
                         </Select>
                       </div>
                     )}
-                    <Button onClick={handlePay} disabled={!invoiceUiAmountValid(payAmount, inv.currencyCode)} loading={payLoading} className="w-full bg-emerald-600 hover:bg-emerald-700">
-                      Record Payment
-                    </Button>
+                    <Button onClick={handlePay} disabled={!invoiceUiAmountValid(payAmount, inv.currencyCode)} loading={payLoading} className="w-full bg-emerald-600 hover:bg-emerald-700">{t("recordPayment")}</Button>
                   </div>
                 </DialogContent>
               </Dialog>
             )}
             <Button variant="outline" size="sm" onClick={handleDownloadPdf}>
-              <Download className="mr-2 size-4" />Download PDF
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleDuplicate} loading={duplicating} title="Make a copy of this invoice you can edit and send again">
-              <Copy className="mr-2 size-4" />Make a copy
-            </Button>
+              <Download className="mr-2 size-4" />{t("downloadPdf")}</Button>
+            <Button variant="outline" size="sm" onClick={handleDuplicate} loading={duplicating} title={t("duplicateHint")}>
+              <Copy className="mr-2 size-4" />{t("duplicate")}</Button>
             {["sent", "partial", "overdue"].includes(inv.status) && (
               <Dialog open={interestOpen} onOpenChange={setInterestOpen}>
                 <DialogTrigger asChild>
                   <Button
                     variant="outline"
                     size="sm"
-                    title="Charge the customer a late fee / interest for paying after the due date. This creates a new invoice for the fee."
+                    title={t("interestHint")}
                   >
-                    <Percent className="mr-2 size-4" />Add late fee / interest
-                  </Button>
+                    <Percent className="mr-2 size-4" />{t("interestTitle")}</Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Add late fee / interest</DialogTitle>
+                    <DialogTitle>{t("interestTitle")}</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4">
-                    <p className="text-sm text-muted-foreground">
-                      This creates a separate invoice for the late fee. Leave the
-                      amount blank to use your organization&apos;s interest rate, or
-                      enter a custom amount to charge.
-                    </p>
+                    <p className="text-sm text-muted-foreground">{t("interestDescription")}</p>
                     <div className="space-y-2">
-                      <Label>Custom amount (optional)</Label>
+                      <Label>{t("customAmount")}</Label>
                       <InvoiceAmountInput
+                        label={t("amountLabel", { currency: inv.currencyCode })}
+                        invalidMessage={t("amountInvalid", { currency: inv.currencyCode })}
                         currency={inv.currencyCode}
                         value={interestAmount}
                         onChange={setInterestAmount}
-                        placeholder="Use my interest rate"
+                        placeholder={t("interestPlaceholder")}
                       />
                     </div>
                     <Button
@@ -876,9 +854,7 @@ export default function InvoiceDetailPage() {
                       loading={interestLoading}
                       disabled={interestAmount.trim() !== "" && !invoiceUiAmountValid(interestAmount.trim(), inv.currencyCode)}
                       className="w-full bg-emerald-600 hover:bg-emerald-700"
-                    >
-                      Add late fee
-                    </Button>
+                    >{t("addLateFee")}</Button>
                   </div>
                 </DialogContent>
               </Dialog>
@@ -889,16 +865,15 @@ export default function InvoiceDetailPage() {
                 size="sm"
                 onClick={handleWriteOff}
                 className="text-red-600"
-                title="Customer won't pay? Record the unpaid amount as a loss so it stops counting toward what you're owed."
+                title={t("writeOffHint")}
               >
-                <FileX className="mr-2 size-4" />Mark as won&apos;t be paid{" "}
-                <span className="ml-1 text-muted-foreground">(write off as bad debt)</span>
+                <FileX className="mr-2 size-4" />{t("writeOff")}{" "}
+                <span className="ml-1 text-muted-foreground">{t("badDebt")}</span>
               </Button>
             )}
             {inv.status !== "void" && inv.status !== "paid" && (
-              <Button variant="outline" size="sm" onClick={handleVoid} className="text-red-600" title="Stop this invoice from counting toward what you're owed">
-                <Ban className="mr-2 size-4" />Cancel invoice
-              </Button>
+              <Button variant="outline" size="sm" onClick={handleVoid} className="text-red-600" title={t("voidHint")}>
+                <Ban className="mr-2 size-4" />{t("cancelInvoice")}</Button>
             )}
           </div>
         </div>
@@ -910,18 +885,18 @@ export default function InvoiceDetailPage() {
               <div className="flex items-start gap-2.5">
                 <AlertTriangle className="size-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
                 <div>
-                  <p className="text-sm font-medium text-amber-800 dark:text-amber-300">Before you send this invoice</p>
+                  <p className="text-sm font-medium text-amber-800 dark:text-amber-300">{t("complianceTitle")}</p>
                   <ul className="mt-1.5 space-y-1">
                     {complianceWarnings.map((w, i) => (
                       <li key={i} className="text-xs text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
                         <span className={`inline-block size-1.5 rounded-full ${w.severity === "error" ? "bg-red-500" : "bg-amber-500"}`} />
-                        {w.message}
+                        {invoiceComplianceLabel(t, w.message)}
                       </li>
                     ))}
                   </ul>
                 </div>
               </div>
-              <button onClick={() => setComplianceDismissed(true)} className="text-amber-600 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-300">
+              <button aria-label={t("dismiss")} onClick={() => setComplianceDismissed(true)} className="text-amber-600 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-300">
                 <X className="size-4" />
               </button>
             </div>
@@ -935,8 +910,8 @@ export default function InvoiceDetailPage() {
             <div className="grid gap-6 sm:grid-cols-2">
               {/* Left: Bill to */}
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">Bill to</p>
-                <p className="text-sm font-semibold">{inv.contact?.name || "Unknown"}</p>
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">{t("billTo")}</p>
+                <p className="text-sm font-semibold">{inv.contact?.name || t("unknown")}</p>
                 {inv.contact?.email && (
                   <div className="flex items-center gap-1.5 mt-1">
                     <Mail className="size-3 text-muted-foreground" />
@@ -948,15 +923,15 @@ export default function InvoiceDetailPage() {
               <div className="sm:text-right">
                 <div className="space-y-1.5">
                   <div className="flex sm:justify-end items-center gap-3">
-                    <span className="text-xs text-muted-foreground">Invoice</span>
+                    <span className="text-xs text-muted-foreground">{t("invoice")}</span>
                     <span className="text-sm font-mono font-semibold">{inv.invoiceNumber}</span>
                   </div>
                   <div className="flex sm:justify-end items-center gap-3">
-                    <span className="text-xs text-muted-foreground">Issued</span>
+                    <span className="text-xs text-muted-foreground">{t("issued")}</span>
                     <span className="text-sm">{formatDate(inv.issueDate)}</span>
                   </div>
                   <div className="flex sm:justify-end items-center gap-3">
-                    <span className="text-xs text-muted-foreground">Due</span>
+                    <span className="text-xs text-muted-foreground">{t("due")}</span>
                     <span className="text-sm">{formatDate(inv.dueDate)}</span>
                     {overdueInfo && (
                       <span className={`text-[11px] font-medium ${overdueInfo.class}`}>{overdueInfo.label}</span>
@@ -964,7 +939,7 @@ export default function InvoiceDetailPage() {
                   </div>
                   {inv.reference && (
                     <div className="flex sm:justify-end items-center gap-3">
-                      <span className="text-xs text-muted-foreground">Ref</span>
+                      <span className="text-xs text-muted-foreground">{t("ref")}</span>
                       <span className="text-sm">{inv.reference}</span>
                     </div>
                   )}
@@ -978,11 +953,11 @@ export default function InvoiceDetailPage() {
             <table className="w-full min-w-[500px] text-sm">
               <thead>
                 <tr className="border-b bg-muted/20">
-                  <th className="px-6 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Description</th>
-                  <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-muted-foreground w-20">Qty</th>
-                  <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-muted-foreground w-28">Price</th>
-                  <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-muted-foreground w-28">Tax</th>
-                  <th className="px-6 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-muted-foreground w-28">Amount</th>
+                  <th className="px-6 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t("description")}</th>
+                  <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-muted-foreground w-20">{t("qty")}</th>
+                  <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-muted-foreground w-28">{t("price")}</th>
+                  <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-muted-foreground w-28">{t("tax")}</th>
+                  <th className="px-6 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-muted-foreground w-28">{t("amount")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -1005,7 +980,7 @@ export default function InvoiceDetailPage() {
                           )}
                         </div>
                       ) : (
-                        <span className="text-xs">No tax</span>
+                        <span className="text-xs">{t("noTax")}</span>
                       )}
                     </td>
                     <td className="px-6 py-3 text-right font-mono tabular-nums font-medium">{formatMoney(line.amount, inv.currencyCode)}</td>
@@ -1020,24 +995,24 @@ export default function InvoiceDetailPage() {
             <div className="flex justify-end">
               <div className="w-full max-w-xs space-y-1.5">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Subtotal</span>
+                  <span className="text-muted-foreground">{t("subtotal")}</span>
                   <span className="font-mono tabular-nums">{formatMoney(inv.subtotal, inv.currencyCode)}</span>
                 </div>
                 {inv.taxTotal > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Tax</span>
+                    <span className="text-muted-foreground">{t("tax")}</span>
                     <span className="font-mono tabular-nums">{formatMoney(inv.taxTotal, inv.currencyCode)}</span>
                   </div>
                 )}
                 <div className="h-px bg-border my-1" />
                 <div className="flex justify-between text-sm font-semibold">
-                  <span>Total</span>
+                  <span>{t("total")}</span>
                   <span className="font-mono tabular-nums">{formatMoney(inv.total, inv.currencyCode)}</span>
                 </div>
                 {base && base.baseCurrency !== inv.currencyCode && (
                   <>
                     <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>In {base.baseCurrency}</span>
+                      <span>{t("inCurrency", { currency: base.baseCurrency })}</span>
                       <span className="font-mono tabular-nums">
                         {base.amounts.total == null
                           ? "—"
@@ -1058,15 +1033,13 @@ export default function InvoiceDetailPage() {
 
         {/* Attachments */}
         <div className="rounded-xl border bg-card p-5">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">Attachments</p>
-          <p className="text-xs text-muted-foreground mb-3">
-            Attach the customer&apos;s purchase order, a signed copy, or any other file for this invoice.
-          </p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">{t("attachments")}</p>
+          <p className="text-xs text-muted-foreground mb-3">{t("attachmentDescription")}</p>
           <ReceiptAttachments
             orgId={orgId}
             entityType="invoice"
             entityId={id}
-            label="Add a file (purchase order, signed copy, etc.)"
+            label={t("addFile")}
           />
         </div>
 
@@ -1075,7 +1048,7 @@ export default function InvoiceDetailPage() {
           {/* Payment progress */}
           <div className="rounded-xl border bg-card p-5">
             <div className="flex items-center justify-between mb-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Payment Status</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("paymentStatus")}</p>
               <span className="text-xs font-mono text-muted-foreground">{paidPercent}%</span>
             </div>
             {/* Progress bar */}
@@ -1087,7 +1060,7 @@ export default function InvoiceDetailPage() {
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <p className="text-[11px] text-muted-foreground">Total</p>
+                <p className="text-[11px] text-muted-foreground">{t("total")}</p>
                 <div className="text-sm font-mono font-semibold mt-0.5">
                   <DualAmount
                     amount={inv.total}
@@ -1098,11 +1071,11 @@ export default function InvoiceDetailPage() {
                 </div>
               </div>
               <div>
-                <p className="text-[11px] text-muted-foreground">Paid</p>
+                <p className="text-[11px] text-muted-foreground">{t("paidTab")}</p>
                 <p className="text-sm font-mono font-semibold tabular-nums text-emerald-600 mt-0.5">{formatMoney(inv.amountPaid, inv.currencyCode)}</p>
               </div>
               <div>
-                <p className="text-[11px] text-muted-foreground">Due</p>
+                <p className="text-[11px] text-muted-foreground">{t("due")}</p>
                 <div className="text-sm font-mono font-semibold text-amber-600 mt-0.5">
                   <DualAmount
                     amount={inv.amountDue}
@@ -1117,24 +1090,24 @@ export default function InvoiceDetailPage() {
 
           {/* Notes / Reference */}
           <div className="rounded-xl border bg-card p-5">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">Details</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">{t("details")}</p>
             <div className="space-y-3">
               {inv.reference && (
                 <div>
-                  <p className="text-[11px] text-muted-foreground">Reference</p>
+                  <p className="text-[11px] text-muted-foreground">{t("reference")}</p>
                   <p className="text-sm mt-0.5">{inv.reference}</p>
                 </div>
               )}
               {inv.notes ? (
                 <div>
-                  <p className="text-[11px] text-muted-foreground">Notes</p>
+                  <p className="text-[11px] text-muted-foreground">{t("notes")}</p>
                   <p className="text-sm mt-0.5 whitespace-pre-wrap">{inv.notes}</p>
                 </div>
               ) : !inv.reference ? (
-                <p className="text-sm text-muted-foreground">No notes or reference added.</p>
+                <p className="text-sm text-muted-foreground">{t("noNotes")}</p>
               ) : null}
               <div>
-                <p className="text-[11px] text-muted-foreground">Dates</p>
+                <p className="text-[11px] text-muted-foreground">{t("dates")}</p>
                 <p className="text-sm mt-0.5">
                   {formatDate(inv.issueDate)} · {formatDate(inv.dueDate)}
                 </p>
@@ -1150,13 +1123,9 @@ export default function InvoiceDetailPage() {
             <div className="rounded-xl border bg-card overflow-hidden">
               <div className="flex items-center gap-2 border-b bg-muted/30 px-5 py-3">
                 <Wallet className="size-3.5 text-muted-foreground" />
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Available credit
-                </p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("availableCredit")}</p>
               </div>
-              <p className="px-5 pt-3 text-xs text-muted-foreground">
-                This customer has credit on account (from prepayments or overpayments). Apply it to settle this invoice.
-              </p>
+              <p className="px-5 pt-3 text-xs text-muted-foreground">{t("creditDescription")}</p>
               <div className="divide-y mt-1">
                 {credits.map((c) => {
                   const applyAmount = c.amountRemaining < inv.amountDue ? c.amountRemaining : inv.amountDue;
@@ -1169,7 +1138,7 @@ export default function InvoiceDetailPage() {
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-mono font-semibold">{formatMoney(c.amountRemaining, c.currencyCode)}</span>
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">{creditSourceLabels[c.sourceType] || c.sourceType}</Badge>
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">{invoiceCreditLabel(t, c.sourceType)}</Badge>
                           </div>
                           <p className="text-xs text-muted-foreground mt-0.5">{formatDate(c.date)}{c.notes ? ` · ${c.notes}` : ""}</p>
                         </div>
@@ -1180,9 +1149,9 @@ export default function InvoiceDetailPage() {
                         disabled={c.currencyCode !== inv.currencyCode || applyAmount <= 0n}
                         onClick={() => handleApplyCredit(c)}
                         loading={applyingCreditId === c.id}
-                        title={`Apply ${formatMoney(applyAmount, c.currencyCode)} to this invoice`}
+                        title={t("applyHint", { amount: formatMoney(applyAmount, c.currencyCode) })}
                       >
-                        Apply {formatMoney(applyAmount, c.currencyCode)}
+                        {t("apply", { amount: formatMoney(applyAmount, c.currencyCode) })}
                       </Button>
                     </div>
                   );
@@ -1195,28 +1164,26 @@ export default function InvoiceDetailPage() {
         {inv.status !== "draft" && (
           <div className="rounded-xl border bg-card p-5">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Document Details</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("documentDetails")}</p>
               <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={openSnapshotEdit}>
-                <Pencil className="size-3" />
-                Edit
-              </Button>
+                <Pencil className="size-3" />{t("edit")}</Button>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <p className="text-[11px] text-muted-foreground mb-1">From</p>
+                <p className="text-[11px] text-muted-foreground mb-1">{t("from")}</p>
                 <p className="text-sm font-medium">{senderSnapshot?.name || "-"}</p>
                 {senderSnapshot?.address && <p className="text-xs text-muted-foreground">{senderSnapshot.address}</p>}
                 {senderSnapshot?.email && <p className="text-xs text-muted-foreground">{senderSnapshot.email}</p>}
                 {senderSnapshot?.phone && <p className="text-xs text-muted-foreground">{senderSnapshot.phone}</p>}
-                {senderSnapshot?.taxId && <p className="text-xs text-muted-foreground">Tax ID: {senderSnapshot.taxId}</p>}
-                {senderSnapshot?.registrationNumber && <p className="text-xs text-muted-foreground">Reg: {senderSnapshot.registrationNumber}</p>}
+                {senderSnapshot?.taxId && <p className="text-xs text-muted-foreground">{t("senderTax", { value: senderSnapshot.taxId })}</p>}
+                {senderSnapshot?.registrationNumber && <p className="text-xs text-muted-foreground">{t("senderReg", { value: senderSnapshot.registrationNumber })}</p>}
               </div>
               <div>
-                <p className="text-[11px] text-muted-foreground mb-1">Bill to</p>
+                <p className="text-[11px] text-muted-foreground mb-1">{t("billTo")}</p>
                 <p className="text-sm font-medium">{recipientSnapshot?.name || inv.contact?.name || "-"}</p>
                 {(recipientSnapshot?.address) && <p className="text-xs text-muted-foreground">{recipientSnapshot.address}</p>}
                 {(recipientSnapshot?.email || inv.contact?.email) && <p className="text-xs text-muted-foreground">{recipientSnapshot?.email || inv.contact?.email}</p>}
-                {recipientSnapshot?.taxNumber && <p className="text-xs text-muted-foreground">Tax: {recipientSnapshot.taxNumber}</p>}
+                {recipientSnapshot?.taxNumber && <p className="text-xs text-muted-foreground">{t("recipientTax", { value: recipientSnapshot.taxNumber })}</p>}
               </div>
             </div>
           </div>
@@ -1226,62 +1193,62 @@ export default function InvoiceDetailPage() {
         <Sheet open={snapshotSheetOpen} onOpenChange={setSnapshotSheetOpen}>
           <SheetContent side="right" className="sm:max-w-md w-full overflow-y-auto">
             <SheetHeader>
-              <SheetTitle>Edit Document Details</SheetTitle>
+              <SheetTitle>{t("editDocument")}</SheetTitle>
             </SheetHeader>
             <div className="flex-1 space-y-4 px-4 pb-4">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 pt-2">From (Sender)</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 pt-2">{t("sender")}</p>
               <div className="space-y-1.5">
-                <Label className="text-xs">Name</Label>
+                <Label className="text-xs">{t("name")}</Label>
                 <Input value={senderName} onChange={(e) => setSenderName(e.target.value)} />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Address</Label>
+                <Label className="text-xs">{t("address")}</Label>
                 <Textarea value={senderAddress} onChange={(e) => setSenderAddress(e.target.value)} rows={2} className="text-xs" />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Email</Label>
+                <Label className="text-xs">{t("email")}</Label>
                 <Input value={senderEmail} onChange={(e) => setSenderEmail(e.target.value)} />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Phone</Label>
+                <Label className="text-xs">{t("phone")}</Label>
                 <Input value={senderPhone} onChange={(e) => setSenderPhone(e.target.value)} />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Tax ID / VAT</Label>
+                <Label className="text-xs">{t("taxId")}</Label>
                 <Input value={senderTaxId} onChange={(e) => setSenderTaxId(e.target.value)} />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Registration Number</Label>
+                <Label className="text-xs">{t("registrationNumber")}</Label>
                 <Input value={senderReg} onChange={(e) => setSenderReg(e.target.value)} />
               </div>
 
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 pt-2">Bill to (Recipient)</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 pt-2">{t("recipient")}</p>
               <div className="space-y-1.5">
-                <Label className="text-xs">Name</Label>
+                <Label className="text-xs">{t("name")}</Label>
                 <Input value={recipientName} onChange={(e) => setRecipientName(e.target.value)} />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Address</Label>
+                <Label className="text-xs">{t("address")}</Label>
                 <Textarea value={recipientAddress} onChange={(e) => setRecipientAddress(e.target.value)} rows={2} className="text-xs" />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Email</Label>
+                <Label className="text-xs">{t("email")}</Label>
                 <Input value={recipientEmail} onChange={(e) => setRecipientEmail(e.target.value)} />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Tax Number</Label>
+                <Label className="text-xs">{t("taxNumber")}</Label>
                 <Input value={recipientTaxNumber} onChange={(e) => setRecipientTaxNumber(e.target.value)} />
               </div>
             </div>
             <SheetFooter>
-              <Button variant="outline" onClick={() => setSnapshotSheetOpen(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => setSnapshotSheetOpen(false)}>{t("cancel")}</Button>
               <Button
                 onClick={handleSaveSnapshot}
                 disabled={snapshotSaving || !senderName.trim()}
                 className="bg-emerald-600 hover:bg-emerald-700"
               >
                 {snapshotSaving ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
-                Save
+                {t("save")}
               </Button>
             </SheetFooter>
           </SheetContent>
@@ -1292,7 +1259,7 @@ export default function InvoiceDetailPage() {
           <div className="rounded-xl border bg-card overflow-hidden">
             <div className="flex items-center gap-2 border-b bg-muted/30 px-5 py-3">
               <Clock className="size-3.5 text-muted-foreground" />
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Payment History</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("paymentHistory")}</p>
             </div>
             <div className="divide-y">
               {payments.map((p) => (
@@ -1304,7 +1271,7 @@ export default function InvoiceDetailPage() {
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-mono font-medium">{p.paymentNumber}</span>
-                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">{methodLabels[p.method] || p.method}</Badge>
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">{invoiceMethodLabel(t, p.method)}</Badge>
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">{formatDate(p.date)}</p>
                     </div>

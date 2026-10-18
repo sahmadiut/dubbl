@@ -116,7 +116,7 @@ Extraction ownership:
 | LOC-031 | LOC-023 child: imports and shared import presentation; see [scope](BANK_IMPORT_CATALOGS.md) |
 | LOC-032 | LOC-023 child: reconciliation; see [scope](BANK_RECONCILIATION_CATALOGS.md) |
 | LOC-033 | LOC-023 child: scheduled payments, batches and bank-transfer drawer; see [scope](BANK_PAYMENT_CATALOGS.md) |
-| LOC-024 | LOC-007 child: assets, loans, budgets and accruals |
+| LOC-024 | LOC-007 child: assets, loans, budgets and accruals; see [combined acceptance](ASSET_LOAN_BUDGET_ACCRUAL_ACCEPTANCE.md) |
 | LOC-034 | LOC-024 child: asset-category management; see [scope](ASSET_CATEGORY_CATALOGS.md) |
 | LOC-035 | LOC-024 child: fixed-asset list/detail and creation drawer; see [scope](FIXED_ASSET_CATALOGS.md) |
 | LOC-036 | LOC-024 child: loan list/detail and creation drawer; see [scope](LOAN_CATALOGS.md) |

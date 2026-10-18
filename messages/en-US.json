@@ -3985,6 +3985,8 @@
     "chooseExpense": "Choose the interest expense account...",
     "expenseHint": "The expense account interest charges are recorded against.",
     "create": "Create loan",
+    "cancel": "Cancel",
+    "creating": "Creating...",
     "created": "Loan created",
     "nameMissing": "Please enter a loan name",
     "principalMissing": "Please choose the loan (liability) account",

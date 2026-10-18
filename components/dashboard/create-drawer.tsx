@@ -4555,7 +4555,7 @@ function LoanDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
               </div>
             </div>
           </div>
-          <DrawerFooter onClose={onClose} saving={saving} label={t("create")} />
+          <DrawerFooter onClose={onClose} saving={saving} label={t("create")} cancelLabel={t("cancel")} creatingLabel={t("creating")} />
         </form>
       </SheetContent>
     </Sheet>

@@ -46,14 +46,15 @@ export function LocalePreferences() {
   const select = (field: "language" | "numerals" | "calendar", options: [string, string][]) => <div className="space-y-1.5">
     <Label htmlFor={`locale-${field}`} className="text-xs">{t(field)}</Label>
     <Select
-      value={form?.[field] ?? undefined}
-      onValueChange={value => setForm(form && { ...form, [field]: value })}
+      value={form?.[field] ?? ""}
+      onValueChange={value => setForm(form && { ...form, [field]: value === "inherit" ? null : value })}
       disabled={!form || saving}
     >
       <SelectTrigger id={`locale-${field}`}>
         <SelectValue placeholder={t("inherit")} />
       </SelectTrigger>
       <SelectContent>
+        <SelectItem value="inherit">{t("inherit")}</SelectItem>
         {options.map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}
       </SelectContent>
     </Select>

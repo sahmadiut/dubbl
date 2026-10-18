@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { createElement } from "react";
+import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
+import { resolve } from "node:path";
+import * as React from "react";
+import { createElement, isValidElement, type ReactElement, type ReactNode } from "react";
+import ts from "typescript";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createTranslator, useTranslations } from "next-intl";
 import { Linter } from "eslint";
@@ -10,6 +15,7 @@ import { safeTranslationsRule } from "../scripts/eslint-safe-translations.mjs";
 import { PresentationProvider } from "../i18n/provider";
 import { resolvePresentation } from "../i18n/locale";
 import { LocalePreferences } from "../components/settings/locale-preferences";
+import * as SelectControls from "../components/ui/select";
 import en from "../messages/en-US.json";
 import fa from "../messages/fa-IR.json";
 
@@ -102,21 +108,90 @@ test("React rich and plain translations escape adversarial interpolation in both
   }
 });
 
-test("locale preference options render from both catalogs while preserving machine values", () => {
+test("locale preference controls render localized labels and disabled custom selects before loading", () => {
   for (const language of ["en-US", "fa-IR"] as const) {
     const messages = language === "en-US" ? en : fa;
     const html = renderToStaticMarkup(createElement(PresentationProvider, {
       presentation: resolvePresentation({ user: { language } }), messages, now: new Date("2026-10-17T00:00:00Z"),
     }, createElement(LocalePreferences)));
-    for (const value of ["en-US", "fa-IR", "latn", "arabext", "gregory", "persian"]) assert.ok(html.includes(`value="${value}"`));
-    for (const key of ["english", "persian", "latinNumerals", "persianNumerals", "gregorianCalendar", "persianCalendar"] as const) {
-      assert.ok(html.includes(messages.LocalePreferences[key]));
+    for (const field of ["language", "numerals", "calendar"] as const) {
+      assert.match(html, new RegExp(`<button[^>]*role="combobox"[^>]*disabled=""[^>]*id="locale-${field}"`));
+      assert.ok(html.includes(messages.LocalePreferences[field]));
     }
+    assert.equal(html.split(messages.LocalePreferences.inherit).length - 1, 3);
     assert.ok(html.includes('placeholder="UTC"'));
   }
   assert.equal(en.LocalePreferences.persianCalendar, "Persian / هجری شمسی");
   assert.equal(en.LocalePreferences.persianNumerals, "۰۱۲۳۴۵۶۷۸۹");
   assert.equal(fa.LocalePreferences.gregorianCalendar, "میلادی");
+});
+
+// Inspect the actual component's element tree: closed Radix portals intentionally
+// omit their options from SSR. Control only hooks so option values and callbacks
+// can be checked without depending on the portal's server markup.
+function preferenceControls(language: "en-US" | "fa-IR", saving = false, loading = false) {
+  const file = resolve("components/settings/locale-preferences.tsx");
+  const require = createRequire(file);
+  let preferences = { language: null, timeZone: "UTC", numerals: null, calendar: null, fontFamily: null } as Record<string, string | null>;
+  let stateIndex = 0;
+  const compiled = { exports: {} as { LocalePreferences: () => ReactNode } };
+  const t = createTranslator({ locale: language, messages: language === "en-US" ? en : fa, namespace: "LocalePreferences" });
+  const code = ts.transpileModule(readFileSync(file, "utf8"), { compilerOptions: {
+    module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022,
+  } }).outputText;
+  const load = (id: string) => {
+    if (id === "react") return { ...React, useEffect: () => {}, useState: () => {
+      const index = stateIndex++;
+      return [index === 0 ? (loading ? null : preferences) : index === 1 ? saving : false,
+        (value: typeof preferences) => { if (index === 0) preferences = value; }];
+    } };
+    if (id === "next-intl") return { useTranslations: () => t };
+    if (id.endsWith("/ui/select")) return SelectControls;
+    return require(id.startsWith("@/") ? resolve(id.slice(2)) : id);
+  };
+  new Function("require", "module", "exports", code)(load, compiled, compiled.exports);
+  function elements(node: ReactNode): ReactElement<Record<string, unknown>>[] {
+    if (Array.isArray(node)) return node.flatMap(elements);
+    if (!isValidElement<{ children?: ReactNode }>(node)) return [];
+    return [node as ReactElement<Record<string, unknown>>, ...elements(node.props.children)];
+  }
+  return {
+    get selects() {
+      stateIndex = 0;
+      return elements(compiled.exports.LocalePreferences()).filter(node => node.type === SelectControls.Select);
+    },
+    elements, preferences: () => preferences, t,
+  };
+}
+
+test("custom locale selects retain translated options, canonical values, inheritance and saving guards", () => {
+  const fields = ["language", "numerals", "calendar"] as const;
+  const options = [["en-US", "fa-IR"], ["latn", "arabext"], ["gregory", "persian"]];
+  const labels = [["english", "persian"], ["latinNumerals", "persianNumerals"], ["gregorianCalendar", "persianCalendar"]] as const;
+  for (const language of ["en-US", "fa-IR"] as const) {
+    const controls = preferenceControls(language);
+    assert.equal(controls.selects.length, 3);
+    controls.selects.forEach((select, index) => {
+      assert.equal(select.props.value, "");
+      assert.equal(select.props.disabled, false);
+      const items = controls.elements(select.props.children as ReactNode).filter(node => node.type === SelectControls.SelectItem);
+      assert.deepEqual(items.map(item => item.props.value), ["inherit", ...options[index]]);
+      assert.deepEqual(items.map(item => item.props.children), [controls.t("inherit"), ...labels[index].map(key => controls.t(key))]);
+      const change = select.props.onValueChange as (value: string) => void;
+      for (const value of options[index]) {
+        change(value);
+        assert.equal(controls.preferences()[fields[index]], value);
+        assert.equal(controls.selects[index].props.value, value);
+      }
+      change("inherit");
+      assert.equal(controls.preferences()[fields[index]], null);
+      assert.equal(controls.selects[index].props.value, "");
+      assert.equal(controls.preferences().timeZone, "UTC");
+    });
+    for (const select of [...preferenceControls(language, true).selects, ...preferenceControls(language, false, true).selects]) {
+      assert.equal(select.props.disabled, true);
+    }
+  }
 });
 
 test("lint guards forbid raw/markup/catalog bypasses and HTML sinks in translation modules", () => {

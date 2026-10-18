@@ -1,11 +1,12 @@
 "use client";
 
-import { assetLoanJson } from "@/lib/money/asset-loan-ui";
+import { fixedAssetJson, fixedAssetFailureMessage, fixedAssetStatusLabel, fixedAssetMethodLabel } from "@/i18n/fixed-asset-presentation";
+import { useTranslations } from "next-intl";
 
 import { useState, useEffect, useMemo } from "react";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { useRouter } from "next/navigation";
-import { Plus, Play, Search, X, Building2, TrendingDown, Package } from "lucide-react";
+import { Plus, Play, Search, X } from "lucide-react";
 import { toast } from "sonner";
 import { useCreateDrawer } from "@/components/dashboard/create-drawer";
 import { DataTable, type Column } from "@/components/dashboard/data-table";
@@ -39,18 +40,6 @@ const statusColors: Record<string, string> = {
     "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300",
   disposed:
     "border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300",
-};
-
-const statusLabels: Record<string, string> = {
-  active: "In use",
-  fully_depreciated: "Fully written down",
-  disposed: "Sold or written off",
-  in_progress: "Not in use yet",
-};
-
-const methodLabels: Record<string, string> = {
-  straight_line: "Straight Line",
-  declining_balance: "Declining Balance",
 };
 
 function formatDate(dateStr: string) {
@@ -94,11 +83,11 @@ function DepreciationBar({
   );
 }
 
-function buildColumns(): Column<FixedAsset>[] {
+function buildColumns(t: ReturnType<typeof useTranslations<"FixedAssets">>): Column<FixedAsset>[] {
   return [
     {
       key: "assetNumber",
-      header: "Asset #",
+      header: t("assetNumber"),
       className: "w-28",
       render: (r) => (
         <span className="font-mono text-sm">{r.assetNumber}</span>
@@ -106,14 +95,14 @@ function buildColumns(): Column<FixedAsset>[] {
     },
     {
       key: "name",
-      header: "Name",
+      header: t("name"),
       render: (r) => (
         <span className="text-sm font-medium">{r.name}</span>
       ),
     },
     {
       key: "purchaseDate",
-      header: "Purchased",
+      header: t("purchased"),
       className: "w-32",
       render: (r) => (
         <span className="text-sm text-muted-foreground">
@@ -123,17 +112,17 @@ function buildColumns(): Column<FixedAsset>[] {
     },
     {
       key: "depreciationMethod",
-      header: "How value is spread",
+      header: t("methodHint"),
       className: "w-32",
       render: (r) => (
         <span className="text-xs text-muted-foreground">
-          {methodLabels[r.depreciationMethod] || r.depreciationMethod}
+          {fixedAssetMethodLabel(t, r.depreciationMethod)}
         </span>
       ),
     },
     {
       key: "purchasePrice",
-      header: "What you paid",
+      header: t("purchasePrice"),
       className: "w-28 text-right",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums">
@@ -143,7 +132,7 @@ function buildColumns(): Column<FixedAsset>[] {
     },
     {
       key: "depreciation",
-      header: "Value used up",
+      header: t("usedValue"),
       className: "w-36",
       render: (r) => {
         const pct =
@@ -169,7 +158,7 @@ function buildColumns(): Column<FixedAsset>[] {
     },
     {
       key: "netBookValue",
-      header: "Current value",
+      header: t("currentValue"),
       className: "w-28 text-right",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums">
@@ -179,11 +168,11 @@ function buildColumns(): Column<FixedAsset>[] {
     },
     {
       key: "status",
-      header: "Status",
+      header: t("status"),
       className: "w-36",
       render: (r) => (
         <Badge variant="outline" className={statusColors[r.status] || ""}>
-          {statusLabels[r.status] || r.status}
+          {fixedAssetStatusLabel(t, r.status)}
         </Badge>
       ),
     },
@@ -191,6 +180,7 @@ function buildColumns(): Column<FixedAsset>[] {
 }
 
 export default function FixedAssetsPage() {
+  const t = useTranslations("FixedAssets");
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
   const [assets, setAssets] = useState<FixedAsset[]>([]);
@@ -204,24 +194,26 @@ export default function FixedAssetsPage() {
   const [runningDepreciation, setRunningDepreciation] = useState(false);
   const [fetchKey, setFetchKey] = useState(0);
 
-  useDocumentTitle("Accounting \u00B7 Fixed Assets");
+  useDocumentTitle(t("documentTitle"));
 
-  const columns = useMemo(() => buildColumns(), []);
+  const columns = useMemo(() => buildColumns(t), [t]);
 
   // Fetch all assets (for counts) on mount
   useEffect(() => {
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
+    let cancelled = false;
 
     fetch(`/api/v1/fixed-assets`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => assetLoanJson(r))
+      .then((r) => fixedAssetJson(r, t, t("readFailed"), "data"))
       .then((data) => {
-        if (data.data) setAllAssets(data.data);
+        if (!cancelled) setAllAssets(data.data);
       })
-      .catch((error) => setReadError(error instanceof Error ? error.message : "Could not load saved assets"));
-  }, []);
+      .catch((error) => { if (!cancelled) setReadError(fixedAssetFailureMessage(error, t, t("readFailed"))); });
+    return () => { cancelled = true; };
+  }, [t]);
 
   // Fetch filtered assets
   useEffect(() => {
@@ -236,9 +228,10 @@ export default function FixedAssetsPage() {
     fetch(`/api/v1/fixed-assets?${params}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => assetLoanJson(r))
+      .then((r) => fixedAssetJson(r, t, t("readFailed"), "data"))
       .then((data) => {
         if (cancelled) return;
+        setReadError(null);
         if (data.data) {
           setAssets(data.data);
           // Keep allAssets in sync when fetching "all"
@@ -246,7 +239,7 @@ export default function FixedAssetsPage() {
         }
       })
       .then(() => devDelay())
-      .catch((error) => setReadError(error instanceof Error ? error.message : "Could not load saved money"))
+      .catch((error) => { if (!cancelled) setReadError(fixedAssetFailureMessage(error, t, t("readFailed"))); })
       .finally(() => {
         if (!cancelled) {
           setInitialLoad(false);
@@ -258,7 +251,7 @@ export default function FixedAssetsPage() {
     return () => {
       cancelled = true;
     };
-  }, [statusFilter]);
+  }, [statusFilter, t]);
 
   async function handleRunDepreciation() {
     const orgId = localStorage.getItem("activeOrgId");
@@ -269,17 +262,15 @@ export default function FixedAssetsPage() {
         method: "POST",
         headers: { "x-organization-id": orgId },
       });
-      const data = await assetLoanJson(res);
-      if (res.ok) {
-        toast.success(
-          `Value drops recorded for ${data.processed} item${data.processed === 1 ? "" : "s"}`
-        );
-        window.location.reload();
-      } else {
-        toast.error(typeof data.error === "string" ? data.error : "Couldn't record this period's value drops");
-      }
-    } catch {
-      toast.error("Couldn't record this period's value drops");
+      const data = await fixedAssetJson(res, t, t("runFailed"));
+
+      if (!Number.isSafeInteger(data.processed) || data.processed < 0) throw new Error("Invalid processed count");
+      toast.success(
+        t("runSuccess", { count: data.processed })
+      );
+      window.location.reload();
+    } catch (error) {
+      toast.error(fixedAssetFailureMessage(error, t, t("runFailed")));
     } finally {
       setRunningDepreciation(false);
     }
@@ -347,22 +338,22 @@ export default function FixedAssetsPage() {
               {[
                 {
                   step: "1",
-                  label: "Add assets",
-                  sub: "Register your equipment, vehicles, and property",
+                  label: t("addAssets"),
+                  sub: t("addAssetsHint"),
                   color: "bg-blue-500",
                   ring: "ring-blue-200 dark:ring-blue-900",
                 },
                 {
                   step: "2",
-                  label: "Spread the cost",
-                  sub: "Choose how each item's cost spreads over its useful life",
+                  label: t("spreadCost"),
+                  sub: t("spreadCostHint"),
                   color: "bg-amber-500",
                   ring: "ring-amber-200 dark:ring-amber-900",
                 },
                 {
                   step: "3",
-                  label: "Track value",
-                  sub: "Watch current values and record the drop each month",
+                  label: t("trackValue"),
+                  sub: t("trackValueHint"),
                   color: "bg-emerald-500",
                   ring: "ring-emerald-200 dark:ring-emerald-900",
                 },
@@ -391,11 +382,10 @@ export default function FixedAssetsPage() {
           {/* CTA */}
           <div className="text-center">
             <h2 className="text-lg font-semibold tracking-tight">
-              Track your fixed assets
+              {t("emptyTitle")}
             </h2>
             <p className="mt-1.5 text-sm text-muted-foreground">
-              Add your first item to start tracking how its value drops over
-              time.
+              {t("emptyDescription")}
             </p>
             <Button
               onClick={() => openDrawer("fixedAsset")}
@@ -403,16 +393,16 @@ export default function FixedAssetsPage() {
               className="mt-5 bg-emerald-600 hover:bg-emerald-700"
             >
               <Plus className="mr-2 size-4" />
-              Add item
+              {t("addItem")}
             </Button>
           </div>
 
           {/* Preview stat cards (empty) */}
           <div className="w-full max-w-lg grid grid-cols-1 sm:grid-cols-3 gap-3 opacity-40">
             {[
-              { label: "Total cost", value: "$0.00" },
-              { label: "Current value", value: "$0.00" },
-              { label: "Value used up", value: "$0.00" },
+              { label: t("totalCost"), value: "$0.00" },
+              { label: t("currentValue"), value: "$0.00" },
+              { label: t("usedValue"), value: "$0.00" },
             ].map(({ label, value }) => (
               <div
                 key={label}
@@ -440,7 +430,7 @@ export default function FixedAssetsPage() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-8 gap-y-3">
             <div>
               <p className="text-[11px] text-muted-foreground uppercase tracking-wide">
-                Total cost
+                {t("totalCost")}
               </p>
               <p className="mt-1 font-mono text-lg font-semibold tabular-nums">
                 {formatMoney(totalCost)}
@@ -448,7 +438,7 @@ export default function FixedAssetsPage() {
             </div>
             <div>
               <p className="text-[11px] text-muted-foreground uppercase tracking-wide">
-                Current value
+                {t("currentValue")}
               </p>
               <p className="mt-1 font-mono text-lg font-semibold tabular-nums">
                 {formatMoney(totalNBV)}
@@ -459,7 +449,7 @@ export default function FixedAssetsPage() {
             </div>
             <div>
               <p className="text-[11px] text-muted-foreground uppercase tracking-wide">
-                Value used up
+                {t("usedValue")}
               </p>
               <p className="mt-1 font-mono text-lg font-semibold tabular-nums text-red-500">
                 -{formatMoney(totalAccDep)}
@@ -467,7 +457,7 @@ export default function FixedAssetsPage() {
             </div>
             <div>
               <p className="text-[11px] text-muted-foreground uppercase tracking-wide">
-                Items
+                {t("items")}
               </p>
               <p className="mt-1 font-mono text-lg font-semibold tabular-nums">
                 {allAssets.length}
@@ -481,10 +471,10 @@ export default function FixedAssetsPage() {
               variant="outline"
               onClick={handleRunDepreciation}
               disabled={runningDepreciation}
-              title="Record this period's drop in value across all your items at once"
+              title={t("runHint")}
             >
               <Play className="mr-2 size-4" />
-              {runningDepreciation ? "Recording..." : "Record value drops"}
+              {runningDepreciation ? t("recording") : t("run")}
             </Button>
             <Button
               size="sm"
@@ -492,7 +482,7 @@ export default function FixedAssetsPage() {
               className="bg-emerald-600 hover:bg-emerald-700"
             >
               <Plus className="mr-2 size-4" />
-              Add item
+              {t("addItem")}
             </Button>
           </div>
         </div>
@@ -502,10 +492,10 @@ export default function FixedAssetsPage() {
           <div className="rounded-lg border p-4 space-y-3">
             <div className="flex items-center justify-between">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Value used up so far
+                {t("usedSoFar")}
               </p>
               <span className="text-xs font-mono tabular-nums text-muted-foreground">
-                {depPct}% used up
+                {t("usedPercent", { percent: depPct })}
               </span>
             </div>
             <div className="h-2.5 w-full rounded-full overflow-hidden flex bg-muted">
@@ -525,7 +515,7 @@ export default function FixedAssetsPage() {
               <div className="flex items-center gap-1.5">
                 <span className="inline-block size-2 rounded-full bg-emerald-500" />
                 <span className="text-muted-foreground">
-                  Current value · {formatMoney(totalNBV)}
+                  {t("currentSummary", { amount: formatMoney(totalNBV) })}
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
@@ -536,7 +526,7 @@ export default function FixedAssetsPage() {
                   )}
                 />
                 <span className="text-muted-foreground">
-                  Value used up · {formatMoney(totalAccDep)}
+                  {t("usedSummary", { amount: formatMoney(totalAccDep) })}
                 </span>
               </div>
             </div>
@@ -552,13 +542,13 @@ export default function FixedAssetsPage() {
           <Tabs value={statusFilter} onValueChange={setStatusFilter}>
             <TabsList className="overflow-x-auto">
               <TabsTrigger value="all" className="whitespace-nowrap">
-                All{" "}
+                {t("all")}{" "}
                 <span className="ml-1 text-muted-foreground">
                   {countByStatus.all}
                 </span>
               </TabsTrigger>
               <TabsTrigger value="active" className="whitespace-nowrap">
-                In use{" "}
+                {t("active")}{" "}
                 <span className="ml-1 text-muted-foreground">
                   {countByStatus.active}
                 </span>
@@ -567,13 +557,13 @@ export default function FixedAssetsPage() {
                 value="fully_depreciated"
                 className="whitespace-nowrap"
               >
-                Fully written down{" "}
+                {t("fullyDepreciated")}{" "}
                 <span className="ml-1 text-muted-foreground">
                   {countByStatus.fully_depreciated}
                 </span>
               </TabsTrigger>
               <TabsTrigger value="disposed" className="whitespace-nowrap">
-                Sold or written off{" "}
+                {t("disposed")}{" "}
                 <span className="ml-1 text-muted-foreground">
                   {countByStatus.disposed}
                 </span>
@@ -586,7 +576,7 @@ export default function FixedAssetsPage() {
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
             <Input
-              placeholder="Search by name or asset #..."
+              placeholder={t("search")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="h-8 w-64 pl-8 text-xs"
@@ -602,7 +592,7 @@ export default function FixedAssetsPage() {
               }}
             >
               <X className="mr-1 size-3" />
-              Clear
+              {t("clear")}
             </Button>
           )}
         </div>
@@ -615,7 +605,7 @@ export default function FixedAssetsPage() {
               columns={columns}
               data={filteredAssets}
               loading={false}
-              emptyMessage="No assets match your filters."
+              emptyMessage={t("noMatches")}
               onRowClick={(r) =>
                 router.push(`/accounting/fixed-assets/${r.id}`)
               }
@@ -626,9 +616,7 @@ export default function FixedAssetsPage() {
         {!refetching && !pendingSearch && filteredAssets.length > 0 && (
           <div className="pt-1">
             <p className="text-xs text-muted-foreground">
-              Showing {filteredAssets.length} asset
-              {filteredAssets.length !== 1 ? "s" : ""}
-              {debouncedSearch && ` matching "${debouncedSearch}"`}
+              {debouncedSearch ? t("showingMatching", { count: filteredAssets.length, query: debouncedSearch }) : t("showing", { count: filteredAssets.length })}
             </p>
           </div>
         )}

@@ -54,6 +54,9 @@ test("every scoped page and create drawer validates saved JSON and uses exact in
       if (path.replaceAll("\\", "/").endsWith("asset-categories/page.tsx")) {
         assert.match(source, /assetCategoryJson/, path);
         assert.match(readFileSync("i18n/asset-category-presentation.ts", "utf8"), /return assetLoanJson\(response\)/);
+      } else if (path.replaceAll("\\", "/").includes("fixed-assets/")) {
+        assert.match(source, /fixedAssetJson/, path);
+        assert.match(readFileSync("i18n/fixed-asset-presentation.ts", "utf8"), /await assetLoanJson\(response\)/);
       } else assert.match(source, /assetLoanJson/, path);
       assert.doesNotMatch(source, /\.json\(\)|from "@\/lib\/money"|parseFloat\(|parseMajor\(|accumulatedDepreciation\s*\//, path);
       assert.match(source, /role="alert"/, path);
@@ -61,6 +64,7 @@ test("every scoped page and create drawer validates saved JSON and uses exact in
   }
   for (const folder of ["fixed-assets", "asset-categories", "loans"]) inspect("app/(dashboard)/accounting/" + folder);
   const drawer = readFileSync("components/dashboard/create-drawer.tsx", "utf8");
-  for (const name of ["Fixed asset", "Loan"]) assert.match(drawer, new RegExp(`assetLoanJson\\(res\\);\\s+toast.success\\("${name} created"`));
+  assert.match(drawer, /fixedAssetJson\(res, t, t\("createFailed"\), "asset"\);\s+toast.success\(t\("created"\)\)/);
+  assert.match(drawer, /assetLoanJson\(res\);\s+toast.success\("Loan created"/);
   assert.match(drawer, /principalAmountMinor: assetCentsInput\(principalAmount\)/);
 });

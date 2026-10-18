@@ -1,4 +1,5 @@
 "use client";
+import { fixedAssetJson, fixedAssetFailureMessage } from "@/i18n/fixed-asset-presentation";
 import { requireBankAccountResponse, bankAccountFailureMessage } from "@/i18n/bank-account-presentation";
 
 import { requirePaymentResponse, paymentFailure } from "@/i18n/bank-payment-presentation";
@@ -1935,6 +1936,7 @@ interface FixedAssetAccount {
 }
 
 function FixedAssetDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useTranslations("FixedAssets");
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [accounts, setAccounts] = useState<FixedAssetAccount[]>([]);
@@ -1961,21 +1963,23 @@ function FixedAssetDrawer({ open, onClose }: { open: boolean; onClose: () => voi
     }
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
+    let cancelled = false;
     fetch("/api/v1/accounts", { headers: { "x-organization-id": orgId } })
-      .then((r) => assetLoanJson(r))
-      .then((data) => { if (data.accounts) setAccounts(data.accounts); })
-      .catch((error) => toast.error(error instanceof Error ? error.message : "Could not load accounts"));
-  }, [open]);
+      .then((r) => fixedAssetJson(r, t, t("accountsFailed"), "accounts"))
+      .then((data) => { if (!cancelled) setAccounts(data.accounts); })
+      .catch((error) => { if (!cancelled) toast.error(fixedAssetFailureMessage(error, t, t("accountsFailed"))); });
+    return () => { cancelled = true; };
+  }, [open, t]);
 
   const assetAccounts = accounts.filter((a) => a.type === "asset");
   const expenseAccounts = accounts.filter((a) => a.type === "expense");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!name || !assetNumber || !purchasePrice) { toast.error("Please fill in required fields"); return; }
-    setSaving(true);
+    if (!name || !assetNumber || !purchasePrice) { toast.error(t("requiredFields")); return; }
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
+    setSaving(true);
 
     try {
       const res = await fetch("/api/v1/fixed-assets", {
@@ -1995,16 +1999,13 @@ function FixedAssetDrawer({ open, onClose }: { open: boolean; onClose: () => voi
           accumulatedDepAccountId: accumulatedDepAccountId || null,
         }),
       });
-      if (!res.ok) {
-        const data = await assetLoanJson(res);
-        throw new Error(data.error || "Failed to create asset");
-      }
-      const data = await assetLoanJson(res);
-      toast.success("Fixed asset created");
+
+      const data = await fixedAssetJson(res, t, t("createFailed"), "asset");
+      toast.success(t("created"));
       onClose();
       router.push(`/accounting/fixed-assets/${data.asset.id}`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create asset");
+      toast.error(fixedAssetFailureMessage(err, t, t("createFailed")));
     } finally {
       setSaving(false);
     }
@@ -2017,42 +2018,42 @@ function FixedAssetDrawer({ open, onClose }: { open: boolean; onClose: () => voi
           <div className="flex items-center gap-3">
             <DrawerIcon><Building2 className="size-5" /></DrawerIcon>
             <div>
-              <SheetTitle className="text-lg">New Fixed Asset</SheetTitle>
-              <SheetDescription>Add a capital asset to track depreciation.</SheetDescription>
+              <SheetTitle className="text-lg">{t("newTitle")}</SheetTitle>
+              <SheetDescription>{t("newDescription")}</SheetDescription>
             </div>
           </div>
         </SheetHeader>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
             <div className="space-y-4">
-              <SectionLabel>Asset Info</SectionLabel>
+              <SectionLabel>{t("assetInfo")}</SectionLabel>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Asset Name *</Label>
-                  <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Office Equipment" />
+                  <Label>{t("nameRequired")}</Label>
+                  <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("nameExample")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Asset Number *</Label>
+                  <Label>{t("numberRequired")}</Label>
                   <Input value={assetNumber} onChange={(e) => setAssetNumber(e.target.value)} placeholder="FA-001" />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Description</Label>
-                <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description of the asset..." rows={2} />
+                <Label>{t("description")}</Label>
+                <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t("descriptionExample")} rows={2} />
               </div>
             </div>
 
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Purchase</SectionLabel>
+              <SectionLabel>{t("purchase")}</SectionLabel>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Purchase Date *</Label>
-                  <DatePicker value={purchaseDate} onChange={setPurchaseDate} placeholder="Purchase date" />
+                  <Label>{t("purchaseDateRequired")}</Label>
+                  <DatePicker value={purchaseDate} onChange={setPurchaseDate} placeholder={t("purchaseDate")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Purchase Price *</Label>
+                  <Label>{t("priceRequired")}</Label>
                   <CurrencyInput prefix="$" value={purchasePrice} onChange={setPurchasePrice} placeholder="10000.00" />
                 </div>
               </div>
@@ -2061,23 +2062,23 @@ function FixedAssetDrawer({ open, onClose }: { open: boolean; onClose: () => voi
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Depreciation</SectionLabel>
+              <SectionLabel>{t("depreciation")}</SectionLabel>
               <div className="grid gap-4 sm:grid-cols-3">
                 <div className="space-y-2">
-                  <Label>Residual Value</Label>
+                  <Label>{t("residual")}</Label>
                   <CurrencyInput prefix="$" value={residualValue} onChange={setResidualValue} placeholder="500.00" />
                 </div>
                 <div className="space-y-2">
-                  <Label>Useful Life (months)</Label>
+                  <Label>{t("lifeMonths")}</Label>
                   <Input type="number" value={usefulLifeMonths} onChange={(e) => setUsefulLifeMonths(e.target.value)} placeholder="60" />
                 </div>
                 <div className="space-y-2">
-                  <Label>Method</Label>
+                  <Label>{t("method")}</Label>
                   <Select value={depreciationMethod} onValueChange={setDepreciationMethod}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="straight_line">Straight Line</SelectItem>
-                      <SelectItem value="declining_balance">Declining Balance</SelectItem>
+                      <SelectItem value="straight_line">{t("straightLine")}</SelectItem>
+                      <SelectItem value="declining_balance">{t("decliningBalance")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -2087,12 +2088,12 @@ function FixedAssetDrawer({ open, onClose }: { open: boolean; onClose: () => voi
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Accounts</SectionLabel>
+              <SectionLabel>{t("accounts")}</SectionLabel>
               <div className="grid gap-4 sm:grid-cols-3">
                 <div className="space-y-2">
-                  <Label>Asset Account</Label>
+                  <Label>{t("assetAccount")}</Label>
                   <Select value={assetAccountId} onValueChange={setAssetAccountId}>
-                    <SelectTrigger><SelectValue placeholder="Select account" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={t("selectAccount")} /></SelectTrigger>
                     <SelectContent>
                       {assetAccounts.map((a) => (
                         <SelectItem key={a.id} value={a.id}>{a.code} - {a.name}</SelectItem>
@@ -2101,9 +2102,9 @@ function FixedAssetDrawer({ open, onClose }: { open: boolean; onClose: () => voi
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Depreciation Expense</Label>
+                  <Label>{t("expenseAccount")}</Label>
                   <Select value={depreciationAccountId} onValueChange={setDepreciationAccountId}>
-                    <SelectTrigger><SelectValue placeholder="Select account" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={t("selectAccount")} /></SelectTrigger>
                     <SelectContent>
                       {expenseAccounts.map((a) => (
                         <SelectItem key={a.id} value={a.id}>{a.code} - {a.name}</SelectItem>
@@ -2112,9 +2113,9 @@ function FixedAssetDrawer({ open, onClose }: { open: boolean; onClose: () => voi
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Accumulated Dep.</Label>
+                  <Label>{t("accumulatedAccount")}</Label>
                   <Select value={accumulatedDepAccountId} onValueChange={setAccumulatedDepAccountId}>
-                    <SelectTrigger><SelectValue placeholder="Select account" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={t("selectAccount")} /></SelectTrigger>
                     <SelectContent>
                       {assetAccounts.map((a) => (
                         <SelectItem key={a.id} value={a.id}>{a.code} - {a.name}</SelectItem>
@@ -2125,7 +2126,7 @@ function FixedAssetDrawer({ open, onClose }: { open: boolean; onClose: () => voi
               </div>
             </div>
           </div>
-          <DrawerFooter onClose={onClose} saving={saving} label="Create Asset" />
+          <DrawerFooter onClose={onClose} saving={saving} label={t("create")} cancelLabel={t("cancel")} creatingLabel={t("creating")} />
         </form>
       </SheetContent>
     </Sheet>

@@ -1,6 +1,7 @@
 "use client";
 
-import { assetLoanJson } from "@/lib/money/asset-loan-ui";
+import { fixedAssetJson, fixedAssetFailureMessage, FixedAssetRequestError, fixedAssetStatusLabel, fixedAssetMethodLabel } from "@/i18n/fixed-asset-presentation";
+import { useTranslations } from "next-intl";
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -100,19 +101,8 @@ const statusColors: Record<string, string> = {
 };
 
 // Plain-language status labels: end users aren't accountants.
-const statusLabels: Record<string, string> = {
-  active: "In use",
-  fully_depreciated: "Fully written down",
-  disposed: "Sold or written off",
-  in_progress: "Not in use yet",
-};
-
-const methodLabels: Record<string, string> = {
-  straight_line: "Straight Line",
-  declining_balance: "Declining Balance",
-};
-
 export default function FixedAssetDetailPage() {
+  const t = useTranslations("FixedAssets");
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [asset, setAsset] = useState<AssetDetail | null>(null);
@@ -152,34 +142,37 @@ export default function FixedAssetDetailPage() {
       ? localStorage.getItem("activeOrgId")
       : null;
 
-  useDocumentTitle("Accounting \u00B7 Asset Details");
+  useDocumentTitle(t("detailDocumentTitle"));
 
   useEffect(() => {
     if (!orgId) return;
+    let cancelled = false;
+    setReadError(null);
     fetch(`/api/v1/fixed-assets/${id}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => assetLoanJson(r))
+      .then((r) => fixedAssetJson(r, t, t("readFailed"), "detail"))
       .then((data) => {
-        if (data.asset) setAsset(data.asset);
+        if (!cancelled) setAsset(data.asset);
       })
-      .catch((error) => setReadError(error instanceof Error ? error.message : "Could not load saved money"))
-      .finally(() => setLoading(false));
+      .catch((error) => { if (!cancelled) setReadError(fixedAssetFailureMessage(error, t, t("readFailed"))); })
+      .finally(() => { if (!cancelled) setLoading(false); });
     // Construction costs are served by their own endpoint so the history is
     // reliable regardless of what the asset GET embeds.
     fetch(`/api/v1/fixed-assets/${id}/cwip-cost`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => (r.ok ? assetLoanJson(r) : { costs: [] }))
-      .then((data) => setCwipCosts(data.costs ?? []))
-      .catch((error) => setReadError(error instanceof Error ? error.message : "Could not load construction costs"));
-  }, [id, orgId]);
+      .then((r) => fixedAssetJson(r, t, t("costReadFailed"), "costs"))
+      .then((data) => { if (!cancelled) setCwipCosts(data.costs); })
+      .catch((error) => { if (!cancelled) setReadError(fixedAssetFailureMessage(error, t, t("costReadFailed"))); });
+    return () => { cancelled = true; };
+  }, [id, orgId, t]);
 
   async function reloadAsset() {
     if (!orgId) return;
     const data = await fetch(`/api/v1/fixed-assets/${id}`, {
       headers: { "x-organization-id": orgId },
-    }).then((r) => assetLoanJson(r));
+    }).then((r) => fixedAssetJson(r, t, t("readFailed"), "detail"));
     if (data.asset) setAsset(data.asset);
   }
 
@@ -188,7 +181,7 @@ export default function FixedAssetDetailPage() {
     const data = await fetch(`/api/v1/fixed-assets/${id}/cwip-cost`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => (r.ok ? assetLoanJson(r) : { costs: [] }));
+      .then((r) => fixedAssetJson(r, t, t("costReadFailed"), "costs"));
     setCwipCosts(data.costs ?? []);
   }
 
@@ -199,26 +192,23 @@ export default function FixedAssetDetailPage() {
         method: "POST",
         headers: { "x-organization-id": orgId },
       });
-      if (res.ok) {
-        await assetLoanJson(res);
-        toast.success("Value drop recorded for this period");
-        await reloadAsset();
-      } else {
-        const data = await assetLoanJson(res);
-        toast.error(typeof data.error === "string" ? data.error : "Couldn't record the value drop");
-      }
+
+      await fixedAssetJson(res, t, t("depreciateFailed"));
+      toast.success(t("depreciated"));
+      await reloadAsset();
+
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not update the asset");
+      toast.error(fixedAssetFailureMessage(error, t, t("depreciateFailed")));
     }
   }
 
   async function handleUndoDepreciation() {
     if (!orgId) return;
     const confirmed = await confirm({
-      title: "Undo the last value drop?",
+      title: t("undoTitle"),
       description:
-        "This reverses the most recent value drop for this item and removes its bookkeeping entry. You can record it again afterwards.",
-      confirmLabel: "Undo it",
+        t("undoDescription"),
+      confirmLabel: t("undoConfirm"),
     });
     if (!confirmed) return;
     setBusy(true);
@@ -228,20 +218,13 @@ export default function FixedAssetDetailPage() {
         { method: "POST", headers: { "x-organization-id": orgId, "content-type": "application/json" },
           body: JSON.stringify({ depreciationEntryId: asset?.depreciationEntries.at(-1)?.id }) }
       );
-      if (res.ok) {
-        await assetLoanJson(res);
-        toast.success("Last value drop undone");
-        await reloadAsset();
-      } else {
-        const data = await assetLoanJson(res);
-        toast.error(
-          typeof data.error === "string"
-            ? data.error
-            : "Couldn't undo the last value drop"
-        );
-      }
+
+      await fixedAssetJson(res, t, t("undoFailed"));
+      toast.success(t("undone"));
+      await reloadAsset();
+
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not update the asset");
+      toast.error(fixedAssetFailureMessage(error, t, t("undoFailed")));
     } finally {
       setBusy(false);
     }
@@ -251,7 +234,7 @@ export default function FixedAssetDetailPage() {
     if (!orgId) return;
     let amount: string;
     try { amount = assetCentsInput(revalueAmount || "0"); }
-    catch (error) { toast.error((error as Error).message); return; }
+    catch (error) { toast.error(fixedAssetFailureMessage(error, t, t("amountInvalid"))); return; }
     setBusy(true);
     try {
       const res = await fetch(`/api/v1/fixed-assets/${id}/revalue`, {
@@ -266,23 +249,16 @@ export default function FixedAssetDetailPage() {
           notes: revalueNotes || undefined,
         }),
       });
-      if (res.ok) {
-        await assetLoanJson(res);
-        setRevalueOpen(false);
-        setRevalueAmount("");
-        setRevalueNotes("");
-        toast.success("New, higher value recorded");
-        await reloadAsset();
-      } else {
-        const data = await assetLoanJson(res);
-        toast.error(
-          typeof data.error === "string"
-            ? data.error
-            : "Couldn't record the new value"
-        );
-      }
+
+      await fixedAssetJson(res, t, t("revalueFailed"));
+      setRevalueOpen(false);
+      setRevalueAmount("");
+      setRevalueNotes("");
+      toast.success(t("revalued"));
+      await reloadAsset();
+
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not update the asset");
+      toast.error(fixedAssetFailureMessage(error, t, t("revalueFailed")));
     } finally {
       setBusy(false);
     }
@@ -292,7 +268,7 @@ export default function FixedAssetDetailPage() {
     if (!orgId) return;
     let amount: string;
     try { amount = assetCentsInput(impairAmount || "0"); }
-    catch (error) { toast.error((error as Error).message); return; }
+    catch (error) { toast.error(fixedAssetFailureMessage(error, t, t("amountInvalid"))); return; }
     setBusy(true);
     try {
       const res = await fetch(`/api/v1/fixed-assets/${id}/impair`, {
@@ -307,23 +283,16 @@ export default function FixedAssetDetailPage() {
           notes: impairNotes || undefined,
         }),
       });
-      if (res.ok) {
-        await assetLoanJson(res);
-        setImpairOpen(false);
-        setImpairAmount("");
-        setImpairNotes("");
-        toast.success("Lower value recorded");
-        await reloadAsset();
-      } else {
-        const data = await assetLoanJson(res);
-        toast.error(
-          typeof data.error === "string"
-            ? data.error
-            : "Couldn't write down the value"
-        );
-      }
+
+      await fixedAssetJson(res, t, t("impairFailed"));
+      setImpairOpen(false);
+      setImpairAmount("");
+      setImpairNotes("");
+      toast.success(t("impaired"));
+      await reloadAsset();
+
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not update the asset");
+      toast.error(fixedAssetFailureMessage(error, t, t("impairFailed")));
     } finally {
       setBusy(false);
     }
@@ -341,22 +310,15 @@ export default function FixedAssetDetailPage() {
         },
         body: JSON.stringify({ date: capitalizeDate }),
       });
-      if (res.ok) {
-        await assetLoanJson(res);
-        setCapitalizeOpen(false);
-        toast.success("Item brought into use");
-        await reloadAsset();
-        await reloadCwipCosts();
-      } else {
-        const data = await assetLoanJson(res);
-        toast.error(
-          typeof data.error === "string"
-            ? data.error
-            : "Couldn't bring this item into use"
-        );
-      }
+
+      await fixedAssetJson(res, t, t("capitalizeFailed"));
+      setCapitalizeOpen(false);
+      toast.success(t("capitalized"));
+      await reloadAsset();
+      await reloadCwipCosts();
+
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not update the asset");
+      toast.error(fixedAssetFailureMessage(error, t, t("capitalizeFailed")));
     } finally {
       setBusy(false);
     }
@@ -367,13 +329,13 @@ export default function FixedAssetDetailPage() {
     let amountMinor: string;
     try {
       amountMinor = assetCentsInput(costAmount);
-      if (amountMinor === "0") throw new RangeError("Enter an amount greater than zero");
+      if (amountMinor === "0") throw new FixedAssetRequestError(t("positiveAmount"));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Enter a valid construction cost");
+      toast.error(fixedAssetFailureMessage(error, t, t("costInvalid")));
       return;
     }
     if (!costSourceAccountId) {
-      toast.error("Choose where the money came from");
+      toast.error(t("sourceRequired"));
       return;
     }
     setBusy(true);
@@ -391,25 +353,18 @@ export default function FixedAssetDetailPage() {
           sourceAccountId: costSourceAccountId,
         }),
       });
-      if (res.ok) {
-        await assetLoanJson(res);
-        setCostOpen(false);
-        setCostAmount("");
-        setCostDescription("");
-        setCostSourceAccountId("");
-        toast.success("Construction cost added");
-        await reloadAsset();
-        await reloadCwipCosts();
-      } else {
-        const data = await assetLoanJson(res);
-        toast.error(
-          typeof data.error === "string"
-            ? data.error
-            : "Couldn't add the construction cost"
-        );
-      }
+
+      await fixedAssetJson(res, t, t("costFailed"));
+      setCostOpen(false);
+      setCostAmount("");
+      setCostDescription("");
+      setCostSourceAccountId("");
+      toast.success(t("costAdded"));
+      await reloadAsset();
+      await reloadCwipCosts();
+
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not update the asset");
+      toast.error(fixedAssetFailureMessage(error, t, t("costFailed")));
     } finally {
       setBusy(false);
     }
@@ -419,7 +374,7 @@ export default function FixedAssetDetailPage() {
     if (!orgId) return;
     let amount: string;
     try { amount = assetCentsInput(disposeAmount || "0"); }
-    catch (error) { toast.error((error as Error).message); return; }
+    catch (error) { toast.error(fixedAssetFailureMessage(error, t, t("amountInvalid"))); return; }
 
     try {
       const res = await fetch(`/api/v1/fixed-assets/${id}/dispose`, {
@@ -431,39 +386,36 @@ export default function FixedAssetDetailPage() {
         body: JSON.stringify({ disposalAmountMinor: amount, date: disposeDate }),
       });
 
-      if (res.ok) {
-        const data = await assetLoanJson(res);
-        setAsset((prev) => (prev ? { ...prev, ...data.asset, depreciationEntries: prev.depreciationEntries } : prev));
-        setDisposeOpen(false);
-        toast.success("Item recorded as sold or written off");
-      } else {
-        const data = await assetLoanJson(res);
-        toast.error(typeof data.error === "string" ? data.error : "Couldn't record the sale or write-off");
-      }
+
+      const data = await fixedAssetJson(res, t, t("disposeFailed"), "asset");
+      setAsset((prev) => (prev ? { ...prev, ...data.asset, depreciationEntries: prev.depreciationEntries } : prev));
+      setDisposeOpen(false);
+      toast.success(t("disposedSuccess"));
+
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not update the asset");
+      toast.error(fixedAssetFailureMessage(error, t, t("disposeFailed")));
     }
   }
 
   async function handleDelete() {
     if (!orgId) return;
     const confirmed = await confirm({
-      title: "Delete this asset?",
-      description: "This action cannot be undone.",
-      confirmLabel: "Delete",
+      title: t("deleteTitle"),
+      description: t("deleteDescription"),
+      confirmLabel: t("delete"),
       destructive: true,
     });
     if (!confirmed) return;
-    const res = await fetch(`/api/v1/fixed-assets/${id}`, {
-      method: "DELETE",
-      headers: { "x-organization-id": orgId },
-    });
-    if (res.ok) {
-      await assetLoanJson(res);
-      toast.success("Asset deleted");
+    try {
+      const res = await fetch(`/api/v1/fixed-assets/${id}`, {
+        method: "DELETE",
+        headers: { "x-organization-id": orgId },
+      });
+      await fixedAssetJson(res, t, t("deleteFailed"));
+      toast.success(t("deleted"));
       router.push("/accounting/fixed-assets");
-    } else {
-      toast.error("Failed to delete asset");
+    } catch (error) {
+      toast.error(fixedAssetFailureMessage(error, t, t("deleteFailed")));
     }
   }
 
@@ -472,13 +424,13 @@ export default function FixedAssetDetailPage() {
   if (loading)
     return (
       <div className="space-y-6">
-        <PageHeader title="Loading..." />
+        <PageHeader title={t("loading")} />
       </div>
     );
   if (!asset)
     return (
       <div className="space-y-6">
-        <PageHeader title="Asset not found" />
+        <PageHeader title={t("notFound")} />
       </div>
     );
 
@@ -498,7 +450,7 @@ export default function FixedAssetDetailPage() {
         <Button variant="outline" size="sm" asChild>
           <Link href="/accounting/fixed-assets">
             <ArrowLeft className="mr-2 size-4" />
-            Back
+            {t("back")}
           </Link>
         </Button>
         {(asset.isCwip || asset.status === "in_progress") &&
@@ -508,19 +460,19 @@ export default function FixedAssetDetailPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => setCostOpen(true)}
-                title="Add money spent building or preparing this item before it's in use"
+                title={t("costHint")}
               >
                 <Hammer className="mr-2 size-4" />
-                Add construction cost
+                {t("addConstructionCost")}
               </Button>
               <Button
                 size="sm"
                 onClick={() => setCapitalizeOpen(true)}
                 className="bg-emerald-600 hover:bg-emerald-700"
-                title="Mark this item as ready and in use, so its value starts spreading over time"
+                title={t("capitalizeHint")}
               >
                 <PackageCheck className="mr-2 size-4" />
-                Bring into use
+                {t("capitalize")}
               </Button>
             </>
           )}
@@ -530,50 +482,50 @@ export default function FixedAssetDetailPage() {
               size="sm"
               onClick={handleDepreciate}
               className="bg-emerald-600 hover:bg-emerald-700"
-              title="Record this period's drop in value as the item is used (spreads its cost over time)"
+              title={t("depreciateHint")}
             >
               <TrendingDown className="mr-2 size-4" />
-              Record value drop
+              {t("depreciate")}
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm">
-                  More actions
+                  {t("moreActions")}
                   <ChevronDown className="ml-1.5 size-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-64">
                 <DropdownMenuItem
                   onClick={() => setRevalueOpen(true)}
-                  title="The item is worth more than its current value — record the higher value"
+                  title={t("revalueHint")}
                 >
                   <TrendingUp className="mr-2 size-4" />
-                  Record a higher value
+                  {t("revalue")}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => setImpairOpen(true)}
-                  title="The item is worth less than its current value — write it down to the lower value"
+                  title={t("impairHint")}
                 >
                   <CircleSlash className="mr-2 size-4" />
-                  Write down to a lower value
+                  {t("impair")}
                 </DropdownMenuItem>
                 {asset.depreciationEntries.length > 0 && (
                   <DropdownMenuItem
                     onClick={handleUndoDepreciation}
-                    title="Reverse the most recent value drop you recorded"
+                    title={t("undoHint")}
                   >
                     <Undo2 className="mr-2 size-4" />
-                    Undo last value drop
+                    {t("undo")}
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() => setDisposeOpen(true)}
                   className="text-red-600"
-                  title="Record that you sold this item or it's no longer in use"
+                  title={t("disposeHint")}
                 >
                   <Trash2 className="mr-2 size-4" />
-                  Record as sold or written off
+                  {t("dispose")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -585,9 +537,9 @@ export default function FixedAssetDetailPage() {
             size="sm"
             onClick={handleDelete}
             className="text-red-600"
-            title="Remove this item from your records entirely"
+            title={t("deleteHint")}
           >
-            Delete
+            {t("delete")}
           </Button>
         )}
       </PageHeader>
@@ -596,26 +548,25 @@ export default function FixedAssetDetailPage() {
       <Dialog open={disposeOpen} onOpenChange={setDisposeOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Record as sold or written off</DialogTitle>
+            <DialogTitle>{t("dispose")}</DialogTitle>
             <DialogDescription>
-              Use this when you&apos;ve sold the item or it&apos;s no longer in
-              use. It will be removed from the items you&apos;re still tracking.
+              {t("disposeDescription")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Amount you got for it</Label>
+              <Label>{t("disposalAmount")}</Label>
               <CurrencyInput
                 prefix="$"
                 value={disposeAmount}
                 onChange={setDisposeAmount}
               />
               <p className="text-xs text-muted-foreground">
-                Enter 0 if you didn&apos;t get any money for it.
+                {t("disposalZero")}
               </p>
             </div>
             <div className="space-y-2">
-              <Label>Date it was sold or stopped being used</Label>
+              <Label>{t("disposalDate")}</Label>
               <Input
                 type="date"
                 value={disposeDate}
@@ -626,7 +577,7 @@ export default function FixedAssetDetailPage() {
               onClick={handleDispose}
               className="w-full bg-red-600 hover:bg-red-700"
             >
-              Record as sold or written off
+              {t("dispose")}
             </Button>
           </div>
         </DialogContent>
@@ -636,26 +587,25 @@ export default function FixedAssetDetailPage() {
       <Dialog open={revalueOpen} onOpenChange={setRevalueOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Record a higher value</DialogTitle>
+            <DialogTitle>{t("revalue")}</DialogTitle>
             <DialogDescription>
-              Use this when the item is now worth more than its current value
-              (for example after a professional valuation).
+              {t("revalueDescription")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>New value (must be higher than current)</Label>
+              <Label>{t("higherValue")}</Label>
               <CurrencyInput
                 prefix="$"
                 value={revalueAmount}
                 onChange={setRevalueAmount}
               />
               <p className="text-xs text-muted-foreground">
-                Current value: {formatMoney(asset.netBookValue)}
+                {t("currentAmount", { amount: formatMoney(asset.netBookValue) })}
               </p>
             </div>
             <div className="space-y-2">
-              <Label>Date</Label>
+              <Label>{t("date")}</Label>
               <Input
                 type="date"
                 value={revalueDate}
@@ -663,11 +613,11 @@ export default function FixedAssetDetailPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Notes (optional)</Label>
+              <Label>{t("notesOptional")}</Label>
               <Textarea
                 value={revalueNotes}
                 onChange={(e) => setRevalueNotes(e.target.value)}
-                placeholder="Why is the value changing?"
+                placeholder={t("revalueNotes")}
               />
             </div>
             <Button
@@ -675,7 +625,7 @@ export default function FixedAssetDetailPage() {
               disabled={busy}
               className="w-full bg-emerald-600 hover:bg-emerald-700"
             >
-              Save new value
+              {t("saveHigher")}
             </Button>
           </div>
         </DialogContent>
@@ -685,26 +635,25 @@ export default function FixedAssetDetailPage() {
       <Dialog open={impairOpen} onOpenChange={setImpairOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Write down to a lower value</DialogTitle>
+            <DialogTitle>{t("impair")}</DialogTitle>
             <DialogDescription>
-              Use this when the item is now worth less than its current value
-              (for example it&apos;s damaged or out of date).
+              {t("impairDescription")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>New value (must be lower than current)</Label>
+              <Label>{t("lowerValue")}</Label>
               <CurrencyInput
                 prefix="$"
                 value={impairAmount}
                 onChange={setImpairAmount}
               />
               <p className="text-xs text-muted-foreground">
-                Current value: {formatMoney(asset.netBookValue)}
+                {t("currentAmount", { amount: formatMoney(asset.netBookValue) })}
               </p>
             </div>
             <div className="space-y-2">
-              <Label>Date</Label>
+              <Label>{t("date")}</Label>
               <Input
                 type="date"
                 value={impairDate}
@@ -712,11 +661,11 @@ export default function FixedAssetDetailPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Notes (optional)</Label>
+              <Label>{t("notesOptional")}</Label>
               <Textarea
                 value={impairNotes}
                 onChange={(e) => setImpairNotes(e.target.value)}
-                placeholder="Why is the value dropping?"
+                placeholder={t("impairNotes")}
               />
             </div>
             <Button
@@ -724,7 +673,7 @@ export default function FixedAssetDetailPage() {
               disabled={busy}
               className="w-full"
             >
-              Save lower value
+              {t("saveLower")}
             </Button>
           </div>
         </DialogContent>
@@ -734,15 +683,14 @@ export default function FixedAssetDetailPage() {
       <Dialog open={capitalizeOpen} onOpenChange={setCapitalizeOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Bring into use</DialogTitle>
+            <DialogTitle>{t("capitalize")}</DialogTitle>
             <DialogDescription>
-              Mark this item as ready and in use. Its value will start spreading
-              over time from this date.
+              {t("capitalizeDescription")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Date it started being used</Label>
+              <Label>{t("inServiceDate")}</Label>
               <Input
                 type="date"
                 value={capitalizeDate}
@@ -754,7 +702,7 @@ export default function FixedAssetDetailPage() {
               disabled={busy}
               className="w-full bg-emerald-600 hover:bg-emerald-700"
             >
-              Bring into use
+              {t("capitalize")}
             </Button>
           </div>
         </DialogContent>
@@ -764,16 +712,14 @@ export default function FixedAssetDetailPage() {
       <Dialog open={costOpen} onOpenChange={setCostOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add construction cost</DialogTitle>
+            <DialogTitle>{t("addConstructionCost")}</DialogTitle>
             <DialogDescription>
-              Record money spent building or preparing this item before it&apos;s
-              in use. It&apos;s added to what the item has cost you so far and
-              recorded in your books.
+              {t("costDescription")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Amount</Label>
+              <Label>{t("amount")}</Label>
               <CurrencyInput
                 prefix="$"
                 value={costAmount}
@@ -781,7 +727,7 @@ export default function FixedAssetDetailPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Date</Label>
+              <Label>{t("date")}</Label>
               <Input
                 type="date"
                 value={costDate}
@@ -789,22 +735,22 @@ export default function FixedAssetDetailPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Where the money came from</Label>
+              <Label>{t("sourceAccount")}</Label>
               <AccountPicker
                 value={costSourceAccountId}
                 onChange={setCostSourceAccountId}
-                placeholder="Choose an account (e.g. bank)"
+                placeholder={t("sourcePlaceholder")}
               />
               <p className="text-xs text-muted-foreground">
-                The account this cost was paid from or charged to.
+                {t("sourceHint")}
               </p>
             </div>
             <div className="space-y-2">
-              <Label>What it was for (optional)</Label>
+              <Label>{t("purposeOptional")}</Label>
               <Textarea
                 value={costDescription}
                 onChange={(e) => setCostDescription(e.target.value)}
-                placeholder="e.g. Contractor labour, materials"
+                placeholder={t("purposeExample")}
               />
             </div>
             <Button
@@ -812,7 +758,7 @@ export default function FixedAssetDetailPage() {
               disabled={busy}
               className="w-full bg-emerald-600 hover:bg-emerald-700"
             >
-              Add cost
+              {t("addCost")}
             </Button>
           </div>
         </DialogContent>
@@ -823,24 +769,23 @@ export default function FixedAssetDetailPage() {
           variant="outline"
           className={statusColors[asset.status] || ""}
         >
-          {statusLabels[asset.status] || asset.status}
+          {fixedAssetStatusLabel(t, asset.status)}
         </Badge>
         <span className="text-xs sm:text-sm text-muted-foreground">
-          {methodLabels[asset.depreciationMethod] || asset.depreciationMethod} ·{" "}
-          value spread over {asset.usefulLifeMonths} months
+          {t("lifeSummary", { method: fixedAssetMethodLabel(t, asset.depreciationMethod), count: asset.usefulLifeMonths })}
         </span>
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-4">
         <div className="rounded-lg border p-4">
-          <p className="text-xs text-muted-foreground">What you paid</p>
+          <p className="text-xs text-muted-foreground">{t("purchasePrice")}</p>
           <p className="text-xl font-bold font-mono">
             {formatMoney(asset.purchasePrice)}
           </p>
         </div>
         <div className="rounded-lg border p-4">
           <p className="text-xs text-muted-foreground">
-            Value used up so far
+            {t("usedSoFar")}
           </p>
           <p className="text-xl font-bold font-mono text-amber-600">
             {formatMoney(asset.accumulatedDepreciation)}
@@ -848,14 +793,14 @@ export default function FixedAssetDetailPage() {
           <p className="text-xs text-muted-foreground mt-1">{depPercent}%</p>
         </div>
         <div className="rounded-lg border p-4">
-          <p className="text-xs text-muted-foreground">Current value</p>
+          <p className="text-xs text-muted-foreground">{t("currentValue")}</p>
           <p className="text-xl font-bold font-mono text-emerald-600">
             {formatMoney(asset.netBookValue)}
           </p>
         </div>
         <div className="rounded-lg border p-4">
           <p className="text-xs text-muted-foreground">
-            Value left at the end
+            {t("residualValue")}
           </p>
           <p className="text-xl font-bold font-mono">
             {formatMoney(asset.residualValue)}
@@ -865,38 +810,37 @@ export default function FixedAssetDetailPage() {
 
       {/* Bookkeeping accounts */}
       <div className="rounded-lg border p-4">
-        <h3 className="text-sm font-semibold mb-3">Bookkeeping accounts</h3>
+        <h3 className="text-sm font-semibold mb-3">{t("books")}</h3>
         <p className="text-xs text-muted-foreground mb-3">
-          Where the value of this item and its drop in value are recorded in
-          your books.
+          {t("booksDescription")}
         </p>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 text-sm">
           <div>
-            <p className="text-xs text-muted-foreground">Where the item is held</p>
+            <p className="text-xs text-muted-foreground">{t("assetAccountHint")}</p>
             <p>
               {asset.assetAccount
                 ? `${asset.assetAccount.code} - ${asset.assetAccount.name}`
-                : "Not set"}
+                : t("notSet")}
             </p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">
-              Where the value drop is recorded as a cost
+              {t("expenseAccountHint")}
             </p>
             <p>
               {asset.depreciationAccount
                 ? `${asset.depreciationAccount.code} - ${asset.depreciationAccount.name}`
-                : "Not set"}
+                : t("notSet")}
             </p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">
-              Where the total value used up is tracked
+              {t("accumulatedAccountHint")}
             </p>
             <p>
               {asset.accumulatedDepAccount
                 ? `${asset.accumulatedDepAccount.code} - ${asset.accumulatedDepAccount.name}`
-                : "Not set"}
+                : t("notSet")}
             </p>
           </div>
         </div>
@@ -906,21 +850,21 @@ export default function FixedAssetDetailPage() {
       {asset.status === "disposed" && (
         <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
           <h3 className="text-sm font-semibold mb-2">
-            Sale or write-off details
+            {t("disposalDetails")}
           </h3>
           <div className="grid gap-3 sm:grid-cols-2 text-sm">
             <div>
               <p className="text-xs text-muted-foreground">
-                Date sold or stopped being used
+                {t("disposedDate")}
               </p>
-              <p>{asset.disposalDate || "N/A"}</p>
+              <p>{asset.disposalDate || t("unavailable")}</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Amount you got for it</p>
+              <p className="text-xs text-muted-foreground">{t("disposalAmount")}</p>
               <p className="font-mono">
                 {asset.disposalAmount !== null
                   ? formatMoney(asset.disposalAmount)
-                  : "N/A"}
+                  : t("unavailable")}
               </p>
             </div>
           </div>
@@ -930,18 +874,18 @@ export default function FixedAssetDetailPage() {
       {/* Value drop history */}
       <div className="rounded-lg border">
         <div className="border-b bg-muted/50 px-4 py-3">
-          <h3 className="text-sm font-semibold">Value drops over time</h3>
+          <h3 className="text-sm font-semibold">{t("depreciationHistory")}</h3>
         </div>
         {asset.depreciationEntries.length === 0 ? (
           <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-            No value drops recorded yet.
+            {t("noDepreciation")}
           </div>
         ) : (
           <div className="overflow-x-auto">
             <div className="grid min-w-[360px] grid-cols-[1fr_120px_120px] gap-2 border-b bg-muted/30 px-4 py-2 text-xs font-medium text-muted-foreground">
-              <span>Date</span>
-              <span className="text-right">Amount</span>
-              <span className="text-right">Bookkeeping entry</span>
+              <span>{t("date")}</span>
+              <span className="text-right">{t("amount")}</span>
+              <span className="text-right">{t("journalEntry")}</span>
             </div>
             {asset.depreciationEntries.map((entry) => (
               <div
@@ -969,27 +913,24 @@ export default function FixedAssetDetailPage() {
         cwipCosts.length > 0) && (
         <div className="rounded-lg border">
           <div className="flex items-center justify-between border-b bg-muted/50 px-4 py-3">
-            <h3 className="text-sm font-semibold">Construction costs</h3>
+            <h3 className="text-sm font-semibold">{t("constructionCosts")}</h3>
             {cwipCosts.length > 0 && (
               <span className="text-sm font-mono text-muted-foreground">
-                Total:{" "}
-                {formatMoney(
-                  cwipCosts.reduce((s, c) => s + BigInt(c.amount), 0n)
-                )}
+                {t("totalAmount", { amount: formatMoney(cwipCosts.reduce((s, c) => s + BigInt(c.amount), 0n)) })}
               </span>
             )}
           </div>
           {cwipCosts.length === 0 ? (
             <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-              No construction costs recorded yet.
+              {t("noCosts")}
             </div>
           ) : (
             <div className="overflow-x-auto">
               <div className="grid min-w-[480px] grid-cols-[120px_1fr_120px_120px] gap-2 border-b bg-muted/30 px-4 py-2 text-xs font-medium text-muted-foreground">
-                <span>Date</span>
-                <span>What it was for</span>
-                <span className="text-right">Amount</span>
-                <span className="text-right">Bookkeeping entry</span>
+                <span>{t("date")}</span>
+                <span>{t("purpose")}</span>
+                <span className="text-right">{t("amount")}</span>
+                <span className="text-right">{t("journalEntry")}</span>
               </div>
               {cwipCosts.map((cost) => (
                 <div
@@ -1019,18 +960,18 @@ export default function FixedAssetDetailPage() {
       {asset.revaluations && asset.revaluations.length > 0 && (
         <div className="rounded-lg border">
           <div className="border-b bg-muted/50 px-4 py-3">
-            <h3 className="text-sm font-semibold">Value changes over time</h3>
+            <h3 className="text-sm font-semibold">{t("valueHistory")}</h3>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Times you recorded a higher value or wrote the item down.
+              {t("valueHistoryHint")}
             </p>
           </div>
           <div className="overflow-x-auto">
             <div className="grid min-w-[560px] grid-cols-[110px_1fr_130px_130px_110px] gap-2 border-b bg-muted/30 px-4 py-2 text-xs font-medium text-muted-foreground">
-              <span>Date</span>
-              <span>Type</span>
-              <span className="text-right">New value</span>
-              <span className="text-right">Change</span>
-              <span className="text-right">Entry</span>
+              <span>{t("date")}</span>
+              <span>{t("type")}</span>
+              <span className="text-right">{t("newValue")}</span>
+              <span className="text-right">{t("change")}</span>
+              <span className="text-right">{t("entry")}</span>
             </div>
             {asset.revaluations.map((rev) => (
               <div
@@ -1042,12 +983,12 @@ export default function FixedAssetDetailPage() {
                   {rev.isImpairment ? (
                     <span className="inline-flex items-center text-amber-700">
                       <CircleSlash className="mr-1.5 size-3.5" />
-                      Written down
+                      {t("writtenDown")}
                     </span>
                   ) : (
                     <span className="inline-flex items-center text-emerald-700">
                       <TrendingUp className="mr-1.5 size-3.5" />
-                      Higher value
+                      {t("higher")}
                     </span>
                   )}
                   {rev.notes && (

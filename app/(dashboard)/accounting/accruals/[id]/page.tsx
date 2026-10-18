@@ -1,5 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { accrualJson, accrualFailureMessage, accrualStatusLabel } from "@/i18n/accrual-presentation";
+
 import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
@@ -38,14 +41,9 @@ const statusColors: Record<string, string> = {
   cancelled: "border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300",
 };
 
-// Plain-language status labels (end users aren't accountants).
-const statusLabels: Record<string, string> = {
-  active: "running",
-  completed: "finished",
-  cancelled: "cancelled",
-};
-
 export default function AccrualDetailPage() {
+  const t = useTranslations("Accruals");
+  const [error, setError] = useState("");
   const { id } = useParams<{ id: string }>();
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [acc, setAcc] = useState<AccrualScheduleDetail | null>(null);
@@ -56,28 +54,22 @@ export default function AccrualDetailPage() {
 
   useEntityTitle(acc?.description);
 
-  const refetch = useCallback(() => {
-    if (!orgId) return;
-    fetch(`/api/v1/accrual-schedules/${id}`, {
-      headers: { "x-organization-id": orgId },
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.schedule) setAcc(data.schedule);
-      });
-  }, [id, orgId]);
+  const refetch = useCallback(async () => {
+    if (!orgId) { setError(t("unauthenticated")); setLoading(false); return; }
+    try {
+      const data = await accrualJson(await fetch(`/api/v1/accrual-schedules/${id}`, {
+        headers: { "x-organization-id": orgId },
+      }), t, t("detailLoadFailed"), "schedule");
+      setAcc(data.schedule);
+      setError("");
+    } catch (err) {
+      setError(accrualFailureMessage(err, t, t("detailLoadFailed")));
+    } finally {
+      setLoading(false);
+    }
+  }, [id, orgId, t]);
 
-  useEffect(() => {
-    if (!orgId) return;
-    fetch(`/api/v1/accrual-schedules/${id}`, {
-      headers: { "x-organization-id": orgId },
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.schedule) setAcc(data.schedule);
-      })
-      .finally(() => setLoading(false));
-  }, [id, orgId]);
+  useEffect(() => { void refetch(); }, [refetch]);
 
   async function handlePostNext() {
     if (!orgId) return;
@@ -90,13 +82,11 @@ export default function AccrualDetailPage() {
         headers: { "x-organization-id": orgId, "Content-Type": "application/json" },
         body: JSON.stringify({ entryId }),
       });
-      if (res.ok) {
-        toast.success("This month's share has been recorded");
-        refetch();
-      } else {
-        const data = await res.json();
-        toast.error(typeof data.error === "string" ? data.error : "Couldn't record this month");
-      }
+      await accrualJson(res, t, t("postFailed"), "post");
+      toast.success(t("posted"));
+      await refetch();
+    } catch (err) {
+      toast.error(accrualFailureMessage(err, t, t("postFailed")));
     } finally {
       setPosting(false);
     }
@@ -105,28 +95,31 @@ export default function AccrualDetailPage() {
   async function handleCancel() {
     if (!orgId) return;
     await confirm({
-      title: "Cancel this accrual?",
-      description: "This stops any remaining months from being recorded. Months already recorded stay as they are. You can't undo this.",
-      confirmLabel: "Cancel accrual",
+      title: t("cancelQuestion"),
+      description: t("cancelDescription"),
+      confirmLabel: t("cancelAccrual"),
       destructive: true,
+      cancelLabel: t("keep"),
       onConfirm: async () => {
-        const res = await fetch(`/api/v1/accrual-schedules/${id}`, {
-          method: "DELETE",
-          headers: { "x-organization-id": orgId },
-        });
-        if (res.ok) {
-          toast.success("Accrual cancelled");
-          refetch();
-        } else {
-          const data = await res.json();
-          toast.error(typeof data.error === "string" ? data.error : "Couldn't cancel this accrual");
+        try {
+          const res = await fetch(`/api/v1/accrual-schedules/${id}`, {
+            method: "DELETE",
+            headers: { "x-organization-id": orgId },
+          });
+          await accrualJson(res, t, t("cancelFailed"), "cancel");
+          toast.success(t("cancelSuccess"));
+          await refetch();
+        } catch (err) {
+          toast.error(accrualFailureMessage(err, t, t("cancelFailed")));
+          throw err;
         }
       },
     });
   }
 
-  if (loading) return <div className="space-y-6"><PageHeader title="Loading..." /></div>;
-  if (!acc) return <div className="space-y-6"><PageHeader title="Accrual not found" /></div>;
+  if (loading) return <div className="space-y-6"><PageHeader title={t("loading")} /></div>;
+  if (error && !acc) return <p role="alert">{error}</p>;
+  if (!acc) return <div className="space-y-6"><PageHeader title={t("notFound")} /></div>;
 
   const entries = [...acc.entries].sort((a, b) => a.sortOrder - b.sortOrder);
   const postedCount = entries.filter((e) => e.posted).length;
@@ -134,9 +127,10 @@ export default function AccrualDetailPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title={acc.description} description={`${formatMoney(acc.totalAmount)} over ${acc.periods} month${acc.periods !== 1 ? "s" : ""}`}>
+      {error && <p role="alert">{error}</p>}
+      <PageHeader title={acc.description} description={t("summary", { amount: formatMoney(acc.totalAmount), count: acc.periods })}>
         <Button variant="outline" size="sm" asChild>
-          <Link href="/accounting/accruals"><ArrowLeft className="mr-2 size-4" />Back</Link>
+          <Link href="/accounting/accruals"><ArrowLeft className="mr-2 size-4" />{t("back")}</Link>
         </Button>
         {acc.status === "active" && hasUnposted && (
           <Button
@@ -144,47 +138,47 @@ export default function AccrualDetailPage() {
             onClick={handlePostNext}
             loading={posting}
             className="bg-emerald-600 hover:bg-emerald-700"
-            title="Record the next month's share in your books"
+            title={t("postTitle")}
           >
-            <CalendarClock className="mr-2 size-4" />Record next month
+            <CalendarClock className="mr-2 size-4" />{t("post")}
           </Button>
         )}
         {acc.status !== "cancelled" && (
-          <Button variant="outline" size="sm" onClick={handleCancel} className="text-red-600" title="Stop any remaining months from being recorded">
-            <Ban className="mr-2 size-4" />Cancel accrual
+          <Button variant="outline" size="sm" onClick={handleCancel} className="text-red-600" title={t("cancelTitle")}>
+            <Ban className="mr-2 size-4" />{t("cancelAccrual")}
           </Button>
         )}
       </PageHeader>
 
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         <Badge variant="outline" className={statusColors[acc.status] || ""}>
-          {statusLabels[acc.status] || acc.status}
+          {accrualStatusLabel(t, acc.status)}
         </Badge>
         <span className="text-xs sm:text-sm text-muted-foreground">
-          {acc.startDate} to {acc.endDate}
+          {t("dateRange", { start: acc.startDate, end: acc.endDate })}
         </span>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-lg border p-4">
-          <p className="text-xs text-muted-foreground">Total</p>
+          <p className="text-xs text-muted-foreground">{t("total")}</p>
           <p className="text-xl font-bold font-mono">{formatMoney(acc.totalAmount)}</p>
         </div>
         <div className="rounded-lg border p-4">
-          <p className="text-xs text-muted-foreground">Months</p>
+          <p className="text-xs text-muted-foreground">{t("months")}</p>
           <p className="text-xl font-bold font-mono">{acc.periods}</p>
         </div>
         <div className="rounded-lg border p-4">
-          <p className="text-xs text-muted-foreground">Recorded so far</p>
-          <p className="text-xl font-bold font-mono text-emerald-600">{postedCount} of {acc.periods}</p>
+          <p className="text-xs text-muted-foreground">{t("recordedSoFar")}</p>
+          <p className="text-xl font-bold font-mono text-emerald-600">{t("progress", { posted: postedCount, count: acc.periods })}</p>
         </div>
       </div>
 
       <div className="rounded-lg border overflow-x-auto">
         <div className="grid min-w-[420px] grid-cols-[1fr_140px_120px] gap-2 border-b bg-muted/50 px-4 py-2 text-xs font-medium text-muted-foreground">
-          <span>Month</span>
-          <span className="text-right">Amount</span>
-          <span className="text-right">Recorded</span>
+          <span>{t("month")}</span>
+          <span className="text-right">{t("amount")}</span>
+          <span className="text-right">{t("recorded")}</span>
         </div>
         {entries.map((entry) => (
           <div key={entry.id} className="grid min-w-[420px] grid-cols-[1fr_140px_120px] gap-2 border-b px-4 py-2.5 last:border-b-0 items-center">
@@ -193,16 +187,16 @@ export default function AccrualDetailPage() {
             <span className="text-right">
               {entry.posted ? (
                 <span className="inline-flex items-center gap-1 text-xs text-emerald-600">
-                  <Check className="size-3.5" />Recorded
+                  <Check className="size-3.5" />{t("recorded")}
                 </span>
               ) : (
-                <span className="text-xs text-muted-foreground">Not yet</span>
+                <span className="text-xs text-muted-foreground">{t("notYet")}</span>
               )}
             </span>
           </div>
         ))}
         <div className="border-t bg-muted/30 px-4 py-2 text-right">
-          <span className="text-sm font-bold">Total: {formatMoney(acc.totalAmount)}</span>
+          <span className="text-sm font-bold">{t("totalAmountSummary", { amount: formatMoney(acc.totalAmount) })}</span>
         </div>
       </div>
 

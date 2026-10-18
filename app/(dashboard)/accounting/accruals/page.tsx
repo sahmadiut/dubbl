@@ -1,5 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { accrualJson, accrualFailureMessage, accrualStatusLabel } from "@/i18n/accrual-presentation";
+
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { useRouter } from "next/navigation";
@@ -42,25 +45,18 @@ const statusColors: Record<string, string> = {
   cancelled: "border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300",
 };
 
-// Plain-language status labels (end users aren't accountants).
-const statusLabels: Record<string, string> = {
-  active: "running",
-  completed: "finished",
-  cancelled: "cancelled",
-};
-
-function buildColumns(): Column<AccrualSchedule>[] {
+function buildColumns(t: ReturnType<typeof useTranslations<"Accruals">>): Column<AccrualSchedule>[] {
   return [
     {
       key: "description",
-      header: "What it's for",
+      header: t("purpose"),
       render: (r) => (
         <span className="text-sm font-medium">{r.description}</span>
       ),
     },
     {
       key: "total",
-      header: "Total",
+      header: t("total"),
       sortKey: "total",
       className: "w-28 text-right",
       render: (r) => (
@@ -71,7 +67,7 @@ function buildColumns(): Column<AccrualSchedule>[] {
     },
     {
       key: "periods",
-      header: "Months",
+      header: t("months"),
       className: "w-24 text-right",
       render: (r) => (
         <span className="text-sm tabular-nums">{r.periods}</span>
@@ -79,18 +75,18 @@ function buildColumns(): Column<AccrualSchedule>[] {
     },
     {
       key: "start",
-      header: "Starts",
+      header: t("starts"),
       sortKey: "start",
       className: "w-28",
       render: (r) => <span className="text-sm">{r.startDate}</span>,
     },
     {
       key: "status",
-      header: "Status",
+      header: t("status"),
       className: "w-24",
       render: (r) => (
         <Badge variant="outline" className={statusColors[r.status] || ""}>
-          {statusLabels[r.status] || r.status}
+          {accrualStatusLabel(t, r.status)}
         </Badge>
       ),
     },
@@ -98,6 +94,8 @@ function buildColumns(): Column<AccrualSchedule>[] {
 }
 
 export default function AccrualsPage() {
+  const t = useTranslations("Accruals");
+  const [error, setError] = useState("");
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
   const [schedules, setSchedules] = useState<AccrualSchedule[]>([]);
@@ -111,12 +109,12 @@ export default function AccrualsPage() {
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search);
 
-  useDocumentTitle("Accounting · Accruals");
+  useDocumentTitle(t("documentTitle"));
 
   const PAGE_SIZE = 50;
   const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
 
-  const columns = useMemo(() => buildColumns(), []);
+  const columns = useMemo(() => buildColumns(t), [t]);
 
   const buildParams = useCallback((p: number) => {
     const params = new URLSearchParams();
@@ -128,25 +126,27 @@ export default function AccrualsPage() {
 
   // Fetch first page when filters change
   useEffect(() => {
-    if (!orgId) return;
+    if (!orgId) { setError(t("unauthenticated")); setInitialLoad(false); return; }
     let cancelled = false;
+    setError("");
     setRefetching(true);
     setPage(1);
 
     fetch(`/api/v1/accrual-schedules?${buildParams(1)}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => accrualJson(r, t, t("loadFailed"), "list"))
       .then((data) => {
         if (cancelled) return;
-        setSchedules(data.data || []);
-        setTotalCount(data.pagination?.total || 0);
+        setSchedules(data.data);
+        setTotalCount(data.pagination.total);
       })
+      .catch((err) => { if (!cancelled) setError(accrualFailureMessage(err, t, t("loadFailed"))); })
       .then(() => devDelay())
       .finally(() => { if (!cancelled) { setInitialLoad(false); setRefetching(false); setFetchKey((k) => k + 1); } });
 
     return () => { cancelled = true; };
-  }, [orgId, buildParams]);
+  }, [orgId, buildParams, t]);
 
   // Load more
   const loadMore = useCallback(() => {
@@ -157,15 +157,17 @@ export default function AccrualsPage() {
     fetch(`/api/v1/accrual-schedules?${buildParams(nextPage)}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => accrualJson(r, t, t("loadFailed"), "list"))
       .then((data) => {
         if (data.data) {
+          setError("");
           setSchedules((prev) => [...prev, ...data.data]);
           setPage(nextPage);
         }
       })
+      .catch((err) => { setError(accrualFailureMessage(err, t, t("loadFailed"))); })
       .finally(() => setLoadingMore(false));
-  }, [orgId, page, buildParams, loadingMore]);
+  }, [orgId, page, buildParams, loadingMore, t]);
 
   const hasMore = schedules.length < totalCount;
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -209,6 +211,7 @@ export default function AccrualsPage() {
   );
 
   if (initialLoad) return <BrandLoader />;
+  if (error && schedules.length === 0) return <p role="alert">{error}</p>;
 
   if (!initialLoad && !refetching && schedules.length === 0 && statusFilter === "all" && !hasFilters) {
     return (
@@ -217,9 +220,9 @@ export default function AccrualsPage() {
           {/* Top: title + CTA */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h2 className="text-lg font-semibold tracking-tight">Accruals</h2>
+              <h2 className="text-lg font-semibold tracking-tight">{t("accruals")}</h2>
               <p className="mt-1 text-sm text-muted-foreground max-w-md">
-                Spread a one-off cost or income evenly over several months, instead of putting it all in one month.
+                {t("intro")}
               </p>
             </div>
             <Button
@@ -227,7 +230,7 @@ export default function AccrualsPage() {
               className="bg-emerald-600 hover:bg-emerald-700 shrink-0"
             >
               <Plus className="mr-2 size-4" />
-              New accrual
+              {t("new")}
             </Button>
           </div>
 
@@ -235,7 +238,7 @@ export default function AccrualsPage() {
             {/* Left: how it works */}
             <div className="rounded-xl border bg-card overflow-hidden">
               <div className="bg-muted/30 px-3 sm:px-5 py-3 border-b">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">How an accrual works</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("how")}</p>
               </div>
               <div className="divide-y">
                 <div className="flex items-center justify-between px-3 sm:px-5 py-3.5">
@@ -244,11 +247,11 @@ export default function AccrualsPage() {
                       <CalendarRange className="size-3.5 text-blue-500" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium">One-off cost</p>
-                      <p className="text-[11px] text-muted-foreground">Annual insurance</p>
+                      <p className="text-sm font-medium">{t("oneOff")}</p>
+                      <p className="text-[11px] text-muted-foreground">{t("insurance")}</p>
                     </div>
                   </div>
-                  <span className="font-mono text-sm font-medium">$1,200.00</span>
+                  <span className="font-mono text-sm font-medium">{formatMoney(120000)}</span>
                 </div>
                 <div className="flex items-center justify-between px-3 sm:px-5 py-3.5 bg-teal-50/30 dark:bg-teal-950/10">
                   <div className="flex items-center gap-3">
@@ -256,44 +259,44 @@ export default function AccrualsPage() {
                       <CalendarClock className="size-3.5 text-teal-500" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-teal-700 dark:text-teal-300">Spread over 12 months</p>
-                      <p className="text-[11px] text-muted-foreground">A little each month</p>
+                      <p className="text-sm font-medium text-teal-700 dark:text-teal-300">{t("spreadExample")}</p>
+                      <p className="text-[11px] text-muted-foreground">{t("littleEachMonth")}</p>
                     </div>
                   </div>
-                  <span className="font-mono text-sm font-medium text-teal-600 dark:text-teal-400">$100.00/mo</span>
+                  <span className="font-mono text-sm font-medium text-teal-600 dark:text-teal-400">{t("monthlyExample", { amount: formatMoney(10000) })}</span>
                 </div>
                 <div className="flex items-center justify-between px-3 sm:px-5 py-3.5">
                   <div className="flex items-center gap-3">
                     <div className="size-7" />
-                    <p className="text-sm font-semibold">Each month shows its fair share</p>
+                    <p className="text-sm font-semibold">{t("fairShare")}</p>
                   </div>
-                  <span className="font-mono text-sm font-bold">$100.00</span>
+                  <span className="font-mono text-sm font-bold">{formatMoney(10000)}</span>
                 </div>
               </div>
             </div>
 
             {/* Right: Use cases */}
             <div className="space-y-3">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">When to use</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("when")}</p>
               {[
                 {
-                  title: "Paid a year upfront",
-                  desc: "Insurance, rent, or a subscription billed annually? Spread the cost across the months it covers.",
+                  title: t("upfront"),
+                  desc: t("upfrontDescription"),
                   color: "border-l-blue-400",
                 },
                 {
-                  title: "Big bill, many months",
-                  desc: "A one-off expense that really benefits a whole year shouldn't land in a single month.",
+                  title: t("bigBill"),
+                  desc: t("bigBillDescription"),
                   color: "border-l-amber-400",
                 },
                 {
-                  title: "Income earned over time",
-                  desc: "Got paid upfront for work delivered over several months? Recognise it bit by bit.",
+                  title: t("income"),
+                  desc: t("incomeDescription"),
                   color: "border-l-teal-400",
                 },
                 {
-                  title: "Smoother monthly numbers",
-                  desc: "Even out lumpy costs so each month's profit reflects what actually happened.",
+                  title: t("smoother"),
+                  desc: t("smootherDescription"),
                   color: "border-l-purple-400",
                 },
               ].map(({ title, desc, color }) => (
@@ -311,10 +314,11 @@ export default function AccrualsPage() {
 
   return (
     <ContentReveal className="space-y-6">
+      {error && <p role="alert">{error}</p>}
       {/* Top: Stats */}
       <div className="grid gap-3 sm:grid-cols-3">
-        <StatCard title="Scheduled" value={formatMoney(totalScheduled)} icon={CalendarRange} />
-        <StatCard title="Running" value={runningCount.toString()} icon={CalendarClock} />
+        <StatCard title={t("scheduled")} value={formatMoney(totalScheduled)} icon={CalendarRange} />
+        <StatCard title={t("runningTab")} value={runningCount.toString()} icon={CalendarClock} />
       </div>
 
       <div className="h-px bg-border" />
@@ -324,10 +328,10 @@ export default function AccrualsPage() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Tabs value={statusFilter} onValueChange={setStatusFilter}>
             <TabsList className="overflow-x-auto">
-              <TabsTrigger value="all" className="whitespace-nowrap">All</TabsTrigger>
-              <TabsTrigger value="active" className="whitespace-nowrap">Running</TabsTrigger>
-              <TabsTrigger value="completed" className="whitespace-nowrap">Finished</TabsTrigger>
-              <TabsTrigger value="cancelled" className="whitespace-nowrap">Cancelled</TabsTrigger>
+              <TabsTrigger value="all" className="whitespace-nowrap">{t("all")}</TabsTrigger>
+              <TabsTrigger value="active" className="whitespace-nowrap">{t("runningTab")}</TabsTrigger>
+              <TabsTrigger value="completed" className="whitespace-nowrap">{t("finishedTab")}</TabsTrigger>
+              <TabsTrigger value="cancelled" className="whitespace-nowrap">{t("cancelledTab")}</TabsTrigger>
             </TabsList>
           </Tabs>
 
@@ -337,7 +341,7 @@ export default function AccrualsPage() {
             className="bg-emerald-600 hover:bg-emerald-700"
           >
             <Plus className="mr-2 size-4" />
-            New accrual
+            {t("new")}
           </Button>
         </div>
 
@@ -345,7 +349,7 @@ export default function AccrualsPage() {
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
             <Input
-              placeholder="Search accruals..."
+              placeholder={t("search")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="h-8 w-56 pl-8 text-xs"
@@ -359,7 +363,7 @@ export default function AccrualsPage() {
               onClick={() => { setSearch(""); }}
             >
               <X className="mr-1 size-3" />
-              Clear filters
+              {t("clearFilters")}
             </Button>
           )}
         </div>
@@ -372,7 +376,7 @@ export default function AccrualsPage() {
               columns={columns}
               data={filteredSchedules}
               loading={false}
-              emptyMessage="No accruals match your filters."
+              emptyMessage={t("noMatches")}
               onRowClick={(r) => router.push(`/accounting/accruals/${r.id}`)}
             />
           </ContentReveal>
@@ -383,7 +387,7 @@ export default function AccrualsPage() {
           <>
             <div className="flex items-center justify-between pt-1">
               <p className="text-xs text-muted-foreground">
-                Showing {schedules.length} of {totalCount} accrual{totalCount !== 1 ? "s" : ""}
+                {t("showing", { shown: schedules.length, count: totalCount })}
               </p>
             </div>
             {hasMore && (

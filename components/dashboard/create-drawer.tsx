@@ -9,6 +9,7 @@ import { journalPreviewMessage, requireJournalResponse, journalFailureMessage } 
 import { requireAccountResponse, accountFailureMessage } from "@/i18n/account-presentation";
 
 import { budgetTypeLabel, budgetPeriodLabel, budgetFailureMessage, requireBudgetResponse } from "@/i18n/budget-presentation";
+import { accrualJson, accrualFailureMessage } from "@/i18n/accrual-presentation";
 import { loanJson, loanFailureMessage } from "@/i18n/loan-presentation";
 import { currencyMetadata } from "@/lib/money/exact";
 import { bankUiTransfer, bankUiAccount, bankUiMoney } from "@/lib/money/bank-ui";
@@ -4623,6 +4624,7 @@ function OpeningBalanceDrawer({ open, onClose }: { open: boolean; onClose: () =>
 // Accrual Schedule Drawer
 // ---------------------------------------------------------------------------
 function AccrualScheduleDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useTranslations("Accruals");
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [description, setDescription] = useState("");
@@ -4645,14 +4647,14 @@ function AccrualScheduleDrawer({ open, onClose }: { open: boolean; onClose: () =
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!description.trim()) { toast.error("Please enter a description"); return; }
-    if (!accountId) { toast.error("Please choose an account"); return; }
-    if (!reverseAccountId) { toast.error("Please choose the reversing account"); return; }
-    try { accrualUiInput(totalAmount); accrualUiPeriods(periods); } catch (error) { toast.error((error as Error).message); return; }
-    if (!endDate) { toast.error("Please choose an end date"); return; }
-    setSaving(true);
+    if (!description.trim()) { toast.error(t("descriptionRequired")); return; }
+    if (!accountId) { toast.error(t("accountRequired")); return; }
+    if (!reverseAccountId) { toast.error(t("reverseRequired")); return; }
+    try { accrualUiInput(totalAmount); accrualUiPeriods(periods); } catch (error) { toast.error(accrualFailureMessage(error, t, t("createFailed"))); return; }
+    if (!endDate) { toast.error(t("endRequired")); return; }
     const orgId = localStorage.getItem("activeOrgId");
-    if (!orgId) { setSaving(false); return; }
+    if (!orgId) { toast.error(t("unauthenticated")); return; }
+    setSaving(true);
 
     try {
       const res = await fetch("/api/v1/accrual-schedules", {
@@ -4669,16 +4671,12 @@ function AccrualScheduleDrawer({ open, onClose }: { open: boolean; onClose: () =
           reverseAccountId,
         }),
       });
-      if (!res.ok) {
-        const data = await projectCrmJson(res);
-        throw new Error(typeof data.error === "string" ? data.error : "Failed to create accrual");
-      }
-      const data = await projectCrmJson(res);
-      toast.success("Accrual created");
+      const data = await accrualJson(res, t, t("createFailed"), "schedule");
+      toast.success(t("created"));
       onClose();
       router.push(`/accounting/accruals/${data.schedule.id}`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create accrual");
+      toast.error(accrualFailureMessage(err, t, t("createFailed")));
     } finally {
       setSaving(false);
     }
@@ -4691,37 +4689,37 @@ function AccrualScheduleDrawer({ open, onClose }: { open: boolean; onClose: () =
           <div className="flex items-center gap-3">
             <DrawerIcon><CalendarClock className="size-5" /></DrawerIcon>
             <div>
-              <SheetTitle className="text-lg">New accrual</SheetTitle>
-              <SheetDescription>Spread a cost or income evenly across several periods.</SheetDescription>
+              <SheetTitle className="text-lg">{t("new")}</SheetTitle>
+              <SheetDescription>{t("drawerDescription")}</SheetDescription>
             </div>
           </div>
         </SheetHeader>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
             <div className="space-y-4">
-              <SectionLabel>Accrual Details</SectionLabel>
+              <SectionLabel>{t("details")}</SectionLabel>
               <div className="space-y-2">
-                <Label htmlFor="drawer-accrual-desc">Description *</Label>
-                <Input id="drawer-accrual-desc" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="e.g. Annual insurance premium" />
+                <Label htmlFor="drawer-accrual-desc">{t("description")}</Label>
+                <Input id="drawer-accrual-desc" value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t("descriptionPlaceholder")} />
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="drawer-accrual-amount">Total amount</Label>
+                  <Label htmlFor="drawer-accrual-amount">{t("totalAmount")}</Label>
                   <CurrencyInput id="drawer-accrual-amount" prefix="$" value={totalAmount} onChange={setTotalAmount} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="drawer-accrual-periods">Number of periods</Label>
-                  <Input id="drawer-accrual-periods" type="number" min={1} value={periods} onChange={(e) => setPeriods(e.target.value)} placeholder="e.g. 12" />
+                  <Label htmlFor="drawer-accrual-periods">{t("periodCount")}</Label>
+                  <Input id="drawer-accrual-periods" type="number" min={1} value={periods} onChange={(e) => setPeriods(e.target.value)} placeholder={t("periodPlaceholder")} />
                 </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Start Date</Label>
-                  <DatePicker value={startDate} onChange={setStartDate} placeholder="Start date" />
+                  <Label>{t("startDate")}</Label>
+                  <DatePicker value={startDate} onChange={setStartDate} placeholder={t("startPlaceholder")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>End Date</Label>
-                  <DatePicker value={endDate} onChange={setEndDate} placeholder="End date" />
+                  <Label>{t("endDate")}</Label>
+                  <DatePicker value={endDate} onChange={setEndDate} placeholder={t("endPlaceholder")} />
                 </div>
               </div>
             </div>
@@ -4729,18 +4727,18 @@ function AccrualScheduleDrawer({ open, onClose }: { open: boolean; onClose: () =
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Accounts</SectionLabel>
+              <SectionLabel>{t("accounts")}</SectionLabel>
               <div className="space-y-2">
-                <Label>Account *</Label>
-                <AccountPicker value={accountId} onChange={setAccountId} placeholder="Choose the account..." />
+                <Label>{t("account")}</Label>
+                <AccountPicker value={accountId} onChange={setAccountId} placeholder={t("accountPlaceholder")} />
               </div>
               <div className="space-y-2">
-                <Label>Reversing account *</Label>
-                <AccountPicker value={reverseAccountId} onChange={setReverseAccountId} placeholder="Choose the account each period posts against..." />
+                <Label>{t("reverseAccount")}</Label>
+                <AccountPicker value={reverseAccountId} onChange={setReverseAccountId} placeholder={t("reversePlaceholder")} />
               </div>
             </div>
           </div>
-          <DrawerFooter onClose={onClose} saving={saving} label="Create accrual" />
+          <DrawerFooter onClose={onClose} saving={saving} label={t("create")} cancelLabel={t("cancel")} creatingLabel={t("creating")} />
         </form>
       </SheetContent>
     </Sheet>

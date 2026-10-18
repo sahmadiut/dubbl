@@ -51,7 +51,10 @@ test("every scoped page and create drawer validates saved JSON and uses exact in
       const path = join(folder, entry.name);
       if (entry.isDirectory()) { inspect(path); continue; }
       const source = readFileSync(path, "utf8");
-      assert.match(source, /assetLoanJson/, path);
+      if (path.replaceAll("\\", "/").endsWith("asset-categories/page.tsx")) {
+        assert.match(source, /assetCategoryJson/, path);
+        assert.match(readFileSync("i18n/asset-category-presentation.ts", "utf8"), /return assetLoanJson\(response\)/);
+      } else assert.match(source, /assetLoanJson/, path);
       assert.doesNotMatch(source, /\.json\(\)|from "@\/lib\/money"|parseFloat\(|parseMajor\(|accumulatedDepreciation\s*\//, path);
       assert.match(source, /role="alert"/, path);
     }

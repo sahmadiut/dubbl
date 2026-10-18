@@ -120,7 +120,7 @@ export default async function RootLayout({
         <meta name="apple-mobile-web-app-title" content="Dubbl" />
       </head>
       <body
-        className={`${vazirmatn.className} antialiased`}
+        className={`${vazirmatn.className} antialiased${presentation.fontFamily !== "vazirmatn" ? ` font-${presentation.fontFamily}` : ""}`}
       >
         <PresentationProvider presentation={presentation} messages={messages} now={now}>
           <ThemeProvider>

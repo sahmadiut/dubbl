@@ -3,6 +3,9 @@ export type AppLocale = (typeof SUPPORTED_LOCALES)[number];
 export const LOCALE_COOKIE = "DUBBL_LOCALE";
 export const ORGANIZATION_COOKIE = "DUBBL_ORGANIZATION";
 
+export const FONT_FAMILIES = ["vazirmatn", "abar", "filimo", "estedad", "iransansx", "digikala"] as const;
+export type FontFamily = (typeof FONT_FAMILIES)[number];
+
 export function isAppLocale(value: unknown): value is AppLocale {
   return value === "en-US" || value === "fa-IR";
 }
@@ -27,6 +30,7 @@ export type PresentationPreferences = {
   timeZone?: unknown;
   numerals?: unknown;
   calendar?: unknown;
+  fontFamily?: unknown;
 };
 
 export function isTimeZone(value: unknown): value is string {
@@ -42,6 +46,8 @@ export function resolvePresentation(input: {
 }) {
   const locale = [input.user?.language, input.organizationLanguage, input.cookie].find(isAppLocale)
     ?? negotiateLocale(input.acceptLanguage) ?? "en-US";
+  const fontFamily: FontFamily = (FONT_FAMILIES as readonly string[]).includes(input.user?.fontFamily as string)
+    ? input.user!.fontFamily as FontFamily : "vazirmatn";
   return {
     locale,
     // UTC is a deterministic fallback, independent of language and server TZ.
@@ -50,6 +56,7 @@ export function resolvePresentation(input: {
       ? input.user.numerals : locale === "fa-IR" ? "arabext" : "latn",
     calendar: input.user?.calendar === "gregory" || input.user?.calendar === "persian"
       ? input.user.calendar : locale === "fa-IR" ? "persian" : "gregory",
+    fontFamily,
   } as const;
 }
 export type Presentation = ReturnType<typeof resolvePresentation>;

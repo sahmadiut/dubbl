@@ -23,7 +23,7 @@ const nullableExpansionColumns: Record<string, string[]> = {
   payroll_run: ["base_currency", "termination_employee_id", "termination_pto_hours"],
   payroll_item_deduction: ["employee_deduction_id", "liability_account_code"],
   organization: ["default_language"],
-  users: ["language", "time_zone", "numerals", "calendar"],
+  users: ["language", "time_zone", "numerals", "calendar", "font_family"],
 };
 const quote = (name: string) => {
   assert.match(name, /^[a-z_]+$/);

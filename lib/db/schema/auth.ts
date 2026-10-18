@@ -34,6 +34,7 @@ export const users = pgTable("users", {
   timeZone: text("time_zone"),
   numerals: text("numerals"),
   calendar: text("calendar"),
+  fontFamily: text("font_family"),
   isSiteAdmin: boolean("is_site_admin").notNull().default(false),
   sessionRevokedAt: timestamp("session_revoked_at", { mode: "date" }),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),

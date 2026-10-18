@@ -64,21 +64,21 @@ async function run() {
   const rest = async (body: unknown, key?: string) => {
     const response = await PATCH(req(body, key)); assert.equal(response.status, 200); return response.json();
   };
-  const stored = async () => (await db.execute(sql`select language,time_zone,numerals,calendar from users where id=${owner.id}`)).rows[0];
+  const stored = async () => (await db.execute(sql`select language,time_zone,numerals,calendar,font_family from users where id=${owner.id}`)).rows[0];
   const snapshot = async () => (await db.execute(sql`select (select jsonb_agg(to_jsonb(u) order by id)::text from users u) as users, (select jsonb_agg(to_jsonb(o) order by id)::text from organization o) as orgs, (select jsonb_agg(to_jsonb(a) order by id)::text from audit_log a) as audit`)).rows;
   try {
-    const blank = { language: null, timeZone: null, numerals: null, calendar: null };
+    const blank = { language: null, timeZone: null, numerals: null, calendar: null, fontFamily: null };
     assert.equal((await loadPresentationPreferences(viewer.id)).organizationLanguage, "en-US");
     assert.equal((await loadPresentationPreferences(owner.id)).organizationLanguage, undefined);
     assert.deepEqual((await (await GET(req())).json()).preferences, blank);
     assert.deepEqual((await call("get_locale_preferences")).body.preferences, blank);
-    const prefs = { language: "fa-IR", timeZone: "America/New_York", numerals: "latn", calendar: "gregory" };
+    const prefs = { language: "fa-IR", timeZone: "America/New_York", numerals: "latn", calendar: "gregory", fontFamily: "abar" };
     assert.deepEqual((await rest(prefs)).preferences, prefs);
     assert.deepEqual((await call("get_locale_preferences")).body.preferences, prefs);
-    assert.deepEqual(await stored(), { language: "fa-IR", time_zone: "America/New_York", numerals: "latn", calendar: "gregory" });
+    assert.deepEqual(await stored(), { language: "fa-IR", time_zone: "America/New_York", numerals: "latn", calendar: "gregory", font_family: "abar" });
     assert.deepEqual((await call("update_locale_preferences", { language: "en-US" })).body.preferences, { ...prefs, language: "en-US" });
     assert.deepEqual((await (await GET(req())).json()).preferences, { ...prefs, language: "en-US" });
-    for (const bad of [{}, { language: "fa" }, { timeZone: "Tehran" }, { numerals: "arab" }, { calendar: "islamic" }, { language: "fa-IR", userId: foreign.id }, { currency: "IRR" }]) {
+    for (const bad of [{}, { language: "fa" }, { timeZone: "Tehran" }, { numerals: "arab" }, { calendar: "islamic" }, { fontFamily: "unknown" }, { fontFamily: "../abar" }, { language: "fa-IR", userId: foreign.id }, { currency: "IRR" }]) {
       const before = await snapshot();
       assert.equal((await PATCH(req(bad))).status, 400);
       assert.equal((await call("update_locale_preferences", bad)).isError, true);
@@ -103,8 +103,13 @@ async function run() {
     sessionUserId = owner.id;
     requestCookies.set("DUBBL_ORGANIZATION", a.id); requestCookies.set("DUBBL_LOCALE", "fa-IR");
     assert.equal((await getPresentation()).locale, "en-US"); // user > org/cookie/header
-    await rest({ language: null, timeZone: null, numerals: null, calendar: null });
-    assert.deepEqual((await getPresentation()), { locale: "en-US", timeZone: "UTC", numerals: "latn", calendar: "gregory" });
+    assert.equal((await getPresentation()).fontFamily, "abar");
+    assert.equal((await call("update_locale_preferences", { fontFamily: "iransansx" })).isError, false);
+    assert.equal((await stored()).font_family, "iransansx");
+    assert.equal((await getPresentation()).fontFamily, "iransansx");
+    assert.equal((await (await GET(req())).json()).preferences.fontFamily, "iransansx");
+    await rest(blank);
+    assert.deepEqual((await getPresentation()), { locale: "en-US", timeZone: "UTC", numerals: "latn", calendar: "gregory", fontFamily: "vazirmatn" });
     requestCookies.set("DUBBL_ORGANIZATION", b.id);
     assert.equal((await getPresentation()).locale, "fa-IR"); // switch organization
     sessionUserId = viewer.id;
@@ -122,11 +127,12 @@ async function run() {
     await db.update(organization).set({ deletedAt: new Date() }).where(eq(organization.id, b.id));
     assert.equal((await loadPresentationPreferences(owner.id, b.id)).organizationLanguage, undefined);
     // Legacy malformed saved preferences fail closed to supported fallbacks.
-    await db.update(users).set({ language: "unsupported", timeZone: "invalid", numerals: "bad", calendar: "bad" }).where(eq(users.id, owner.id));
+    await db.update(users).set({ language: "unsupported", timeZone: "invalid", numerals: "bad", calendar: "bad", fontFamily: "unknown" }).where(eq(users.id, owner.id));
     assert.equal((await getPresentation()).locale, "en-US");
     assert.equal((await getPresentation()).timeZone, "UTC");
+    assert.equal((await getPresentation()).fontFamily, "vazirmatn");
     await rest(blank);
-    assert.deepEqual(await stored(), { language: null, time_zone: null, numerals: null, calendar: null });
+    assert.deepEqual(await stored(), { language: null, time_zone: null, numerals: null, calendar: null, font_family: null });
     const audit = (await db.execute(sql`select changes from audit_log where entity_type='locale_preferences' and entity_id=${owner.id} order by created_at limit 1`)).rows[0];
     assert.ok(JSON.stringify(audit.changes).includes("America/New_York"));
     assert.deepEqual((await db.execute(sql`select default_currency,mileage_rate::text from organization where id=${a.id}`)).rows[0], { default_currency: "USD", mileage_rate: "67" });

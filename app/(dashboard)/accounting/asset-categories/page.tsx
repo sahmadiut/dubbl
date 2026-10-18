@@ -1,6 +1,7 @@
 "use client";
 
-import { assetLoanJson } from "@/lib/money/asset-loan-ui";
+import { useTranslations } from "next-intl";
+import { ASSET_CATEGORY_METHODS, ASSET_CATEGORY_CONVENTIONS, assetCategoryMethodLabel, assetCategoryJson, assetCategoryFailureMessage } from "@/i18n/asset-category-presentation";
 
 import { useState, useEffect, useCallback } from "react";
 import { Plus, Layers, Loader2, Pencil } from "lucide-react";
@@ -45,38 +46,6 @@ interface AssetCategory {
   accumulatedDepAccountId: string | null;
   cwipAccountId: string | null;
   isActive: boolean;
-}
-
-// ── Plain-language option labels (end users aren't accountants) ──────────────
-const METHOD_OPTIONS: { value: string; label: string }[] = [
-  { value: "straight_line", label: "Even amount each period (straight line)" },
-  { value: "declining_balance", label: "Faster early on (declining balance)" },
-  { value: "units_of_production", label: "Based on usage (units of production)" },
-  { value: "sum_of_years_digits", label: "Front-loaded (sum of years' digits)" },
-];
-
-const CONVENTION_OPTIONS: { value: string; label: string }[] = [
-  { value: "full_month", label: "Start of the purchase month" },
-  { value: "mid_month", label: "Middle of the purchase month" },
-  { value: "half_year", label: "Half a year in the first year" },
-  { value: "mid_quarter", label: "Middle of the purchase quarter" },
-  { value: "pro_rata_days", label: "Day-by-day from purchase" },
-  { value: "full_at_purchase", label: "All from the purchase date" },
-];
-
-function methodShort(value: string): string {
-  switch (value) {
-    case "straight_line":
-      return "Straight line";
-    case "declining_balance":
-      return "Declining balance";
-    case "units_of_production":
-      return "Units of production";
-    case "sum_of_years_digits":
-      return "Sum of years' digits";
-    default:
-      return value;
-  }
 }
 
 // ── Form state ───────────────────────────────────────────────────────────────
@@ -129,7 +98,9 @@ function categoryToForm(c: AssetCategory): FormState {
 }
 
 export default function AssetCategoriesPage() {
-  useDocumentTitle("Accounting · Asset Categories");
+  const t = useTranslations("AssetCategories");
+  const errors = useTranslations("AssetCategoryErrors");
+  useDocumentTitle(t("documentTitle"));
 
   const orgId =
     typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
@@ -151,16 +122,18 @@ export default function AssetCategoriesPage() {
     fetch(`/api/v1/asset-categories?limit=200`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => assetLoanJson(r))
+      .then((r) => assetCategoryJson(r, errors, t("readFailed")))
       .then((data) => {
-        setCategories(data.data || []);
+        if (!Array.isArray(data.data)) throw new Error(t("readFailed"));
+        setCategories(data.data);
+        setReadError(null);
       })
-      .catch((error) => setReadError(error instanceof Error ? error.message : "Could not load saved money"))
+      .catch((error) => setReadError(assetCategoryFailureMessage(error, errors, t("readFailed"))))
       .finally(() => {
         setInitialLoad(false);
         setRefetching(false);
       });
-  }, [orgId]);
+  }, [orgId, t, errors]);
 
   useEffect(() => {
     load();
@@ -185,7 +158,7 @@ export default function AssetCategoriesPage() {
   const handleSave = useCallback(async () => {
     if (!orgId) return;
     if (!form.name.trim()) {
-      setError("Please give this template a name.");
+      setError(t("nameRequired"));
       return;
     }
     setSaving(true);
@@ -216,51 +189,47 @@ export default function AssetCategoriesPage() {
         },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) {
-        const data = await assetLoanJson(res).catch(() => null);
-        setError(data?.error || "Could not save the template. Please try again.");
-        return;
-      }
-      await assetLoanJson(res);
+      const data = await assetCategoryJson(res, errors, t("saveFailed"));
+      if (typeof data.category?.id !== "string" || !data.category.id) throw new Error(t("saveFailed"));
       setDialogOpen(false);
       load();
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Could not save the template. Please try again.");
+      setError(assetCategoryFailureMessage(error, errors, t("saveFailed")));
     } finally {
       setSaving(false);
     }
-  }, [orgId, form, editingId, load]);
+  }, [orgId, form, editingId, load, t, errors]);
 
   const columns: Column<AssetCategory>[] = [
     {
       key: "name",
-      header: "Name",
+      header: t("name"),
       render: (r) => (
         <span className="text-sm font-medium">{r.name}</span>
       ),
     },
     {
       key: "method",
-      header: "How it loses value",
+      header: t("method"),
       render: (r) => (
-        <span className="text-sm">{methodShort(r.defaultDepreciationMethod)}</span>
+        <span className="text-sm">{assetCategoryMethodLabel(t, r.defaultDepreciationMethod)}</span>
       ),
     },
     {
       key: "life",
-      header: "Lifespan",
+      header: t("lifespan"),
       className: "w-32",
       render: (r) => (
         <span className="text-sm">
           {r.defaultUsefulLifeMonths != null
-            ? `${r.defaultUsefulLifeMonths} mo`
+            ? t("months", { count: r.defaultUsefulLifeMonths })
             : "—"}
         </span>
       ),
     },
     {
       key: "residual",
-      header: "Leftover value",
+      header: t("residual"),
       className: "w-32 text-right",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums">
@@ -270,7 +239,7 @@ export default function AssetCategoriesPage() {
     },
     {
       key: "status",
-      header: "Status",
+      header: t("status"),
       className: "w-24",
       render: (r) =>
         r.isActive ? (
@@ -278,11 +247,11 @@ export default function AssetCategoriesPage() {
             variant="outline"
             className="border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
           >
-            active
+            {t("active")}
           </Badge>
         ) : (
           <Badge variant="outline" className="text-muted-foreground">
-            inactive
+            {t("inactive")}
           </Badge>
         ),
     },
@@ -295,6 +264,7 @@ export default function AssetCategoriesPage() {
           variant="ghost"
           size="sm"
           className="h-7 px-2 text-xs"
+          aria-label={t("editAction", { name: r.name })}
           onClick={(e) => {
             e.stopPropagation();
             openEdit(r);
@@ -314,11 +284,9 @@ export default function AssetCategoriesPage() {
     <ContentReveal className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-lg font-semibold tracking-tight">Asset Categories</h2>
+          <h2 className="text-lg font-semibold tracking-tight">{t("title")}</h2>
           <p className="mt-1 text-sm text-muted-foreground max-w-lg">
-            Reusable templates for how your equipment, vehicles, and other assets
-            lose value over time. Pick one when you add an asset to fill in the
-            defaults automatically.
+            {t("description")}
           </p>
         </div>
         <Button
@@ -326,7 +294,7 @@ export default function AssetCategoriesPage() {
           className="bg-emerald-600 hover:bg-emerald-700 shrink-0"
         >
           <Plus className="mr-2 size-4" />
-          New Category
+          {t("newAction")}
         </Button>
       </div>
 
@@ -340,15 +308,14 @@ export default function AssetCategoriesPage() {
             <Layers className="size-5 text-muted-foreground" />
           </div>
           <div>
-            <p className="text-sm font-medium">No categories yet</p>
+            <p className="text-sm font-medium">{t("emptyTitle")}</p>
             <p className="mt-1 text-sm text-muted-foreground max-w-sm">
-              Create a template once and reuse it every time you add a similar
-              asset.
+              {t("emptyDescription")}
             </p>
           </div>
           <Button onClick={openCreate} variant="outline" size="sm">
             <Plus className="mr-2 size-4" />
-            New Category
+            {t("newAction")}
           </Button>
         </div>
       ) : (
@@ -356,7 +323,7 @@ export default function AssetCategoriesPage() {
           columns={columns}
           data={categories}
           loading={false}
-          emptyMessage="No categories yet."
+          emptyMessage={t("emptyTable")}
           onRowClick={(r) => openEdit(r)}
         />
       )}
@@ -366,21 +333,20 @@ export default function AssetCategoriesPage() {
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              {editingId ? "Edit category" : "New category"}
+              {editingId ? t("editTitle") : t("newTitle")}
             </DialogTitle>
             <DialogDescription>
-              Set the defaults that will be applied to every asset using this
-              template.
+              {t("dialogDescription")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-5 py-2">
             {/* Name */}
             <div className="space-y-1.5">
-              <Label htmlFor="ac-name">Name</Label>
+              <Label htmlFor="ac-name">{t("name")}</Label>
               <Input
                 id="ac-name"
-                placeholder="e.g. Computers & laptops"
+                placeholder={t("nameExample")}
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
               />
@@ -389,7 +355,7 @@ export default function AssetCategoriesPage() {
             {/* Method + convention */}
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label>How it loses value</Label>
+                <Label>{t("method")}</Label>
                 <Select
                   value={form.defaultDepreciationMethod}
                   onValueChange={(v) =>
@@ -400,16 +366,16 @@ export default function AssetCategoriesPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {METHOD_OPTIONS.map((o) => (
-                      <SelectItem key={o.value} value={o.value}>
-                        {o.label}
+                    {ASSET_CATEGORY_METHODS.map((value) => (
+                      <SelectItem key={value} value={value}>
+                        {t(value)}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label>When it starts counting</Label>
+                <Label>{t("convention")}</Label>
                 <Select
                   value={form.defaultConvention}
                   onValueChange={(v) =>
@@ -420,9 +386,9 @@ export default function AssetCategoriesPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {CONVENTION_OPTIONS.map((o) => (
-                      <SelectItem key={o.value} value={o.value}>
-                        {o.label}
+                    {ASSET_CATEGORY_CONVENTIONS.map((value) => (
+                      <SelectItem key={value} value={value}>
+                        {t(value)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -433,23 +399,23 @@ export default function AssetCategoriesPage() {
             {/* Life + residual + rate */}
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="ac-life">Lifespan (months)</Label>
+                <Label htmlFor="ac-life">{t("lifeMonths")}</Label>
                 <Input
                   id="ac-life"
                   type="number"
                   min={1}
-                  placeholder="e.g. 36"
+                  placeholder={t("lifeExample")}
                   value={form.usefulLifeMonths}
                   onChange={(e) =>
                     setForm((f) => ({ ...f, usefulLifeMonths: e.target.value }))
                   }
                 />
                 <p className="text-[11px] text-muted-foreground">
-                  How long you expect the asset to be useful.
+                  {t("lifeHint")}
                 </p>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="ac-residual">Leftover value</Label>
+                <Label htmlFor="ac-residual">{t("residual")}</Label>
                 <Input
                   id="ac-residual"
                   inputMode="decimal"
@@ -460,28 +426,28 @@ export default function AssetCategoriesPage() {
                   }
                 />
                 <p className="text-[11px] text-muted-foreground">
-                  What it&apos;s worth at the end of its life.
+                  {t("residualHint")}
                 </p>
               </div>
             </div>
 
             {isDeclining && (
               <div className="space-y-1.5">
-                <Label htmlFor="ac-rate">Yearly rate (%)</Label>
+                <Label htmlFor="ac-rate">{t("rate")}</Label>
                 <Input
                   id="ac-rate"
                   type="number"
                   min={0}
                   max={1000}
                   step="0.01"
-                  placeholder="e.g. 20"
+                  placeholder={t("rateExample")}
                   value={form.depreciationRatePct}
                   onChange={(e) =>
                     setForm((f) => ({ ...f, depreciationRatePct: e.target.value }))
                   }
                 />
                 <p className="text-[11px] text-muted-foreground">
-                  Percentage of the remaining value written off each year.
+                  {t("rateHint")}
                 </p>
               </div>
             )}
@@ -489,58 +455,58 @@ export default function AssetCategoriesPage() {
             {/* Account pickers */}
             <div className="space-y-4 rounded-lg border bg-muted/20 p-4">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Where it&apos;s tracked in your books
+                {t("books")}
               </p>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <Label>Asset account</Label>
+                  <Label>{t("assetAccount")}</Label>
                   <AccountPicker
                     value={form.assetAccountId}
                     onChange={(id) =>
                       setForm((f) => ({ ...f, assetAccountId: id }))
                     }
                     typeFilter={["asset"]}
-                    placeholder="Select account..."
+                    placeholder={t("selectAccount")}
                     allowCreate
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Depreciation expense account</Label>
+                  <Label>{t("expenseAccount")}</Label>
                   <AccountPicker
                     value={form.depreciationAccountId}
                     onChange={(id) =>
                       setForm((f) => ({ ...f, depreciationAccountId: id }))
                     }
                     typeFilter={["expense"]}
-                    placeholder="Select account..."
+                    placeholder={t("selectAccount")}
                     allowCreate
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Accumulated depreciation account</Label>
+                  <Label>{t("accumulatedAccount")}</Label>
                   <AccountPicker
                     value={form.accumulatedDepAccountId}
                     onChange={(id) =>
                       setForm((f) => ({ ...f, accumulatedDepAccountId: id }))
                     }
                     typeFilter={["asset"]}
-                    placeholder="Select account..."
+                    placeholder={t("selectAccount")}
                     allowCreate
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Work-in-progress account</Label>
+                  <Label>{t("cwipAccount")}</Label>
                   <AccountPicker
                     value={form.cwipAccountId}
                     onChange={(id) =>
                       setForm((f) => ({ ...f, cwipAccountId: id }))
                     }
                     typeFilter={["asset"]}
-                    placeholder="Select account..."
+                    placeholder={t("selectAccount")}
                     allowCreate
                   />
                   <p className="text-[11px] text-muted-foreground">
-                    For assets still being built or installed.
+                    {t("cwipHint")}
                   </p>
                 </div>
               </div>
@@ -549,9 +515,9 @@ export default function AssetCategoriesPage() {
             {/* Active toggle */}
             <div className="flex items-center justify-between rounded-lg border p-3">
               <div>
-                <Label htmlFor="ac-active">Available for new assets</Label>
+                <Label htmlFor="ac-active">{t("available")}</Label>
                 <p className="text-[11px] text-muted-foreground">
-                  Turn off to hide this template without deleting it.
+                  {t("availableHint")}
                 </p>
               </div>
               <Switch
@@ -574,7 +540,7 @@ export default function AssetCategoriesPage() {
               onClick={() => setDialogOpen(false)}
               disabled={saving}
             >
-              Cancel
+              {t("cancel")}
             </Button>
             <Button
               onClick={handleSave}
@@ -582,7 +548,7 @@ export default function AssetCategoriesPage() {
               className="bg-emerald-600 hover:bg-emerald-700"
             >
               {saving && <Loader2 className="mr-2 size-4 animate-spin" />}
-              {editingId ? "Save changes" : "Create category"}
+              {editingId ? t("save") : t("create")}
             </Button>
           </DialogFooter>
         </DialogContent>

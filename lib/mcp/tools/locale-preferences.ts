@@ -7,7 +7,7 @@ import { localePreferencesSchema } from "@/i18n/preferences-schema";
 
 export function registerLocalePreferencesTools(server: McpServer, ctx: AuthContext) {
   server.registerTool("get_locale_preferences", {
-    description: "Get the authenticated user's global presentation preferences in the current organization membership context. Returns {preferences: {language, timeZone, numerals, calendar}}; null values inherit defaults. Contains no money or currency settings.",
+    description: "Get the authenticated user's global presentation preferences in the current organization membership context. Returns {preferences: {language, timeZone, numerals, calendar, fontFamily}}; null values inherit defaults. Contains no money or currency settings.",
     inputSchema: z.object({}).strict(),
   }, () => wrapTool(ctx, () => getLocalePreferences(ctx)));
   server.registerTool("update_locale_preferences", {

@@ -234,24 +234,34 @@ export default function SettingsPage() {
   return (
     <div className="space-y-10">
       <LocalePreferences />
+
+      <div className="h-px bg-border" />
+
       {/* Organization */}
       <Section title={st("organization")} description={st("basicDetailsAboutYourOrganization")}>
-        <div className="space-y-1.5">
-          <Label htmlFor="organization-language">{t("organizationLanguage")}</Label>
-          <select id="organization-language" className="h-9 w-full rounded-md border bg-background px-3 text-sm"
-            value={form.defaultLanguage} onChange={event => setForm({ ...form, defaultLanguage: event.target.value })}>
-            <option value="">{t("inherit")}</option>
-            <option value="en-US">{t("english")}</option>
-            <option value="fa-IR">{t("persian")}</option>
-          </select>
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs">{st("name")}</Label>
-          <Input
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-            placeholder={st("acmeInc")}
-          />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="organization-name" className="text-xs">{st("name")}</Label>
+            <Input
+              id="organization-name"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              placeholder={st("acmeInc")}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="organization-language" className="text-xs">{t("organizationLanguage")}</Label>
+            <select
+              id="organization-language"
+              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              value={form.defaultLanguage}
+              onChange={(event) => setForm({ ...form, defaultLanguage: event.target.value })}
+            >
+              <option value="">{t("inherit")}</option>
+              <option value="en-US">{t("english")}</option>
+              <option value="fa-IR">{t("persian")}</option>
+            </select>
+          </div>
         </div>
       </Section>
 

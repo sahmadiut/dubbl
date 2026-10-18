@@ -124,7 +124,7 @@ export default function SettingsLayout({
                           : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                       )}
                     >
-                      <Icon className="size-3.5" />
+                      <Icon className="ms-3 size-3.5" />
                       {item.label}
                     </Link>
                   );

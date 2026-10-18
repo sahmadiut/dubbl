@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
 import { useFormatter, useLocale, useTimeZone, useTranslations } from "next-intl";
-import { isAppLocale, isTimeZone, negotiateLocale, resolvePresentation, type Presentation } from "../i18n/locale";
+import { FONT_FAMILIES, isAppLocale, isTimeZone, negotiateLocale, resolvePresentation, type Presentation } from "../i18n/locale";
 import { localePreferencesSchema } from "../i18n/preferences-schema";
 import { PresentationProvider, usePresentation } from "../i18n/provider";
 import en from "../messages/en-US.json";
@@ -35,13 +35,28 @@ test("Accept-Language respects weights, exclusions, malformed ranges and stable 
 
 test("presentation fields stay independent; invalid saved fields have deterministic fallbacks", () => {
   assert.deepEqual(resolvePresentation({ user: { language: "fa-IR", timeZone: "America/New_York", numerals: "latn", calendar: "gregory" } }),
-    { locale: "fa-IR", timeZone: "America/New_York", numerals: "latn", calendar: "gregory" });
+    { locale: "fa-IR", timeZone: "America/New_York", numerals: "latn", calendar: "gregory", fontFamily: "vazirmatn" });
   assert.deepEqual(resolvePresentation({ user: { language: "en-US", timeZone: "Asia/Tokyo", numerals: "arabext", calendar: "persian" } }),
-    { locale: "en-US", timeZone: "Asia/Tokyo", numerals: "arabext", calendar: "persian" });
+    { locale: "en-US", timeZone: "Asia/Tokyo", numerals: "arabext", calendar: "persian", fontFamily: "vazirmatn" });
   assert.deepEqual(resolvePresentation({ user: { language: "fa-IR", timeZone: "invalid", numerals: "invalid", calendar: "invalid" } }),
-    { locale: "fa-IR", timeZone: "UTC", numerals: "arabext", calendar: "persian" });
+    { locale: "fa-IR", timeZone: "UTC", numerals: "arabext", calendar: "persian", fontFamily: "vazirmatn" });
   for (const value of ["Tehran", "", "Not/AZone", "+03:30", null]) assert.equal(isTimeZone(value), false);
   for (const value of ["UTC", "Europe/London", "Asia/Tehran", "Etc/GMT+5"]) assert.equal(isTimeZone(value), true);
+});
+
+test("font overrides validate independently, null clears and malformed saved values fall back", () => {
+  for (const fontFamily of FONT_FAMILIES) {
+    assert.deepEqual(localePreferencesSchema.parse({ fontFamily }), { fontFamily });
+    const presentation = resolvePresentation({ user: { language: "fa-IR", fontFamily } });
+    assert.equal(presentation.fontFamily, fontFamily);
+    assert.equal(presentation.locale, "fa-IR");
+  }
+  assert.deepEqual(localePreferencesSchema.parse({ fontFamily: null }), { fontFamily: null });
+  for (const fontFamily of ["", "unknown", "../abar", "font-abar", {}, 1]) {
+    assert.equal(localePreferencesSchema.safeParse({ fontFamily }).success, false);
+    assert.equal(resolvePresentation({ user: { fontFamily } }).fontFamily, "vazirmatn");
+  }
+  assert.equal(resolvePresentation({ user: { fontFamily: null } }).fontFamily, "vazirmatn");
 });
 
 test("preference writes are strict partial updates and null clears overrides", () => {

@@ -123,6 +123,15 @@ Extraction ownership:
 | LOC-037 | LOC-024 child: budget routes and creation drawer |
 | LOC-038 | LOC-024 child: accrual list/detail and creation drawer |
 | LOC-025 | LOC-007 child: sales and shared document forms |
+| LOC-039 | LOC-025 child: payment list/detail; see [scope](SALES_PAYMENT_CATALOGS.md) |
+| LOC-040 | LOC-025 child: invoices and payment-recording dialogs |
+| LOC-041 | LOC-025 child: quotes |
+| LOC-042 | LOC-025 child: cash sales/receipts |
+| LOC-043 | LOC-025 child: credit notes |
+| LOC-044 | LOC-025 child: customer prepayments |
+| LOC-045 | LOC-025 child: recurring invoices |
+| LOC-046 | LOC-025 child: revenue schedules |
+| LOC-047 | LOC-025 child: sales navigation and shared document/line forms |
 | LOC-026 | LOC-007 child: purchasing |
 | LOC-027 | LOC-007 child: contacts |
 | LOC-028 | LOC-007 child: tax |

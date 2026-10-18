@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { salesPaymentMethodLabel, type SalesPaymentTranslate } from "@/i18n/sales-payment-presentation";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useDebounce } from "@/lib/hooks/use-debounce";
@@ -37,14 +39,6 @@ interface Payment {
   allocations: { documentType: string; documentId: string; amount: bigint }[];
 }
 
-const methodLabels: Record<string, string> = {
-  bank_transfer: "Bank Transfer",
-  cash: "Cash",
-  check: "Check",
-  card: "Card",
-  other: "Other",
-};
-
 const methodColors: Record<string, string> = {
   bank_transfer: "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-300",
   cash: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300",
@@ -53,46 +47,46 @@ const methodColors: Record<string, string> = {
   other: "",
 };
 
-function buildColumns(): Column<Payment>[] {
+function buildColumns(t: SalesPaymentTranslate): Column<Payment>[] {
   return [
     {
       key: "number",
-      header: "Number",
+      header: t("number"),
       sortKey: "number",
       className: "w-32",
       render: (r) => <span className="font-mono text-sm">{r.paymentNumber}</span>,
     },
     {
       key: "contact",
-      header: "Customer",
+      header: t("customer"),
       render: (r) => <span className="text-sm font-medium">{r.contact?.name || "-"}</span>,
     },
     {
       key: "date",
-      header: "Date",
+      header: t("date"),
       sortKey: "date",
       className: "w-28",
       render: (r) => <span className="text-sm">{r.date}</span>,
     },
     {
       key: "method",
-      header: "Method",
+      header: t("method"),
       className: "w-32",
       render: (r) => (
-        <Badge variant="outline" className={methodColors[r.method] || ""}>
-          {methodLabels[r.method] || r.method}
+        <Badge variant="outline" className={Object.hasOwn(methodColors, r.method) ? methodColors[r.method] : ""}>
+          {salesPaymentMethodLabel(t, r.method)}
         </Badge>
       ),
     },
     {
       key: "reference",
-      header: "Reference",
+      header: t("reference"),
       className: "w-32",
       render: (r) => <span className="text-sm text-muted-foreground">{r.reference || "-"}</span>,
     },
     {
       key: "amount",
-      header: "Amount",
+      header: t("amount"),
       sortKey: "amount",
       className: "w-28 text-right",
       render: (r) => (
@@ -103,13 +97,13 @@ function buildColumns(): Column<Payment>[] {
     },
     {
       key: "allocations",
-      header: "Allocations",
+      header: t("allocations"),
       className: "w-28",
       render: (r) => {
         const count = r.allocations?.length || 0;
         return (
           <span className="text-sm text-muted-foreground">
-            {count === 0 ? "-" : `${count} invoice${count !== 1 ? "s" : ""}`}
+            {count === 0 ? "-" : t("invoiceCount", { count })}
           </span>
         );
       },
@@ -123,6 +117,7 @@ export default function PaymentsPage() {
 }
 
 function PaymentsList({ orgId }: { orgId: string | null }) {
+  const t = useTranslations("SalesPayments");
   const router = useRouter();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [readError, setReadError] = useState("");
@@ -130,7 +125,7 @@ function PaymentsList({ orgId }: { orgId: string | null }) {
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search);
 
-  useDocumentTitle("Sales · Payments");
+  useDocumentTitle(t("documentTitle"));
 
   const [methodFilter, setMethodFilter] = useState("all");
   const [dateFrom, setDateFrom] = useState("");
@@ -138,7 +133,7 @@ function PaymentsList({ orgId }: { orgId: string | null }) {
   const [sortBy, setSortBy] = useState("date");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
-  const columns = useMemo(() => buildColumns(), []);
+  const columns = useMemo(() => buildColumns(t), [t]);
 
   useEffect(() => {
     if (!orgId) return;
@@ -146,16 +141,17 @@ function PaymentsList({ orgId }: { orgId: string | null }) {
     fetch(`/api/v1/payments?type=received`, {
       headers: { "x-organization-id": orgId }, signal: controller.signal,
     })
-      .then((r) => { if (!r.ok) throw new Error("Unable to load payments"); return r.json(); })
+      .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
       .then((data) => {
-        const rows = (data.data || []).map(paymentUiRow) as Payment[];
-        if (!controller.signal.aborted) setPayments(rows);
+        if (!Array.isArray(data.data)) throw new Error();
+        const rows = data.data.map(paymentUiRow) as Payment[];
+        if (!controller.signal.aborted) { setPayments(rows); setReadError(""); }
       })
       .then(() => devDelay())
-      .catch(() => { if (!controller.signal.aborted) { setReadError("Payment amounts are unavailable. Reload to try again."); setPayments([]); } })
+      .catch(() => { if (!controller.signal.aborted) { setReadError(t("readFailed")); setPayments([]); } })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [orgId]);
+  }, [orgId, t]);
 
   const handleSort = useCallback((key: string) => {
     setSortBy((prev) => {
@@ -225,17 +221,17 @@ function PaymentsList({ orgId }: { orgId: string | null }) {
       <ContentReveal className="space-y-6">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" className="size-8" asChild>
-            <Link href="/sales"><ArrowLeft className="size-4" /></Link>
+            <Link href="/sales" aria-label={t("backInvoices")}><ArrowLeft className="size-4" /></Link>
           </Button>
           <div>
-            <h1 className="text-lg font-semibold tracking-tight">Payments</h1>
-            <p className="text-sm text-muted-foreground">Payments received against your invoices.</p>
+            <h1 className="text-lg font-semibold tracking-tight">{t("title")}</h1>
+            <p className="text-sm text-muted-foreground">{t("description")}</p>
           </div>
         </div>
         <EmptyState
           icon={Banknote}
-          title="No payments recorded"
-          description="Payments will appear here when you record them against invoices."
+          title={t("emptyTitle")}
+          description={t("emptyDescription")}
         />
       </ContentReveal>
     );
@@ -247,22 +243,22 @@ function PaymentsList({ orgId }: { orgId: string | null }) {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" className="size-8" asChild>
-            <Link href="/sales"><ArrowLeft className="size-4" /></Link>
+            <Link href="/sales" aria-label={t("backInvoices")}><ArrowLeft className="size-4" /></Link>
           </Button>
           <div>
-            <h1 className="text-lg font-semibold tracking-tight">Payments</h1>
-            <p className="text-sm text-muted-foreground">Payments received against your invoices.</p>
+            <h1 className="text-lg font-semibold tracking-tight">{t("title")}</h1>
+            <p className="text-sm text-muted-foreground">{t("description")}</p>
           </div>
         </div>
       </div>
 
-      <p className="text-xs text-muted-foreground">Loaded payment sample, grouped by currency. Amount sorting groups currencies first.</p>
+      <p className="text-xs text-muted-foreground">{t("sampleHint")}</p>
       {/* Stats */}
       <div className="grid gap-3 sm:grid-cols-3 [&_div]:min-w-0 [&_.font-mono]:break-all">
-        <StatCard title="Total Received" value={summary.total} icon={Banknote} changeType="positive" />
-        <StatCard title="Payments" value={filtered.length.toString()} icon={Banknote} />
+        <StatCard title={t("totalReceived")} value={summary.total} icon={Banknote} changeType="positive" />
+        <StatCard title={t("title")} value={filtered.length.toString()} icon={Banknote} />
         <StatCard
-          title="Avg Payment"
+          title={t("average")}
           value={summary.average}
           icon={Banknote}
         />
@@ -273,7 +269,8 @@ function PaymentsList({ orgId }: { orgId: string | null }) {
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
           <Input
-            placeholder="Search payments..."
+            aria-label={t("search")}
+            placeholder={t("search")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="h-8 w-56 pl-8 text-xs"
@@ -281,32 +278,32 @@ function PaymentsList({ orgId }: { orgId: string | null }) {
         </div>
         <Select value={methodFilter} onValueChange={setMethodFilter}>
           <SelectTrigger className="h-8 w-40 text-xs">
-            <SelectValue placeholder="Method" />
+            <SelectValue placeholder={t("method")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All methods</SelectItem>
-            <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-            <SelectItem value="cash">Cash</SelectItem>
-            <SelectItem value="check">Check</SelectItem>
-            <SelectItem value="card">Card</SelectItem>
-            <SelectItem value="other">Other</SelectItem>
+            <SelectItem value="all">{t("allMethods")}</SelectItem>
+            <SelectItem value="bank_transfer">{t("bankTransfer")}</SelectItem>
+            <SelectItem value="cash">{t("cash")}</SelectItem>
+            <SelectItem value="check">{t("check")}</SelectItem>
+            <SelectItem value="card">{t("card")}</SelectItem>
+            <SelectItem value="other">{t("other")}</SelectItem>
           </SelectContent>
         </Select>
         <div className="flex items-center gap-1.5">
-          <span className="text-xs text-muted-foreground shrink-0">From</span>
+          <span className="text-xs text-muted-foreground shrink-0">{t("from")}</span>
           <DatePicker
             value={dateFrom}
             onChange={(v) => setDateFrom(v)}
-            placeholder="Start date"
+            placeholder={t("startDate")}
             className="h-8 w-40 text-xs"
           />
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="text-xs text-muted-foreground shrink-0">To</span>
+          <span className="text-xs text-muted-foreground shrink-0">{t("to")}</span>
           <DatePicker
             value={dateTo}
             onChange={(v) => setDateTo(v)}
-            placeholder="End date"
+            placeholder={t("endDate")}
             className="h-8 w-40 text-xs"
           />
         </div>
@@ -319,15 +316,15 @@ function PaymentsList({ orgId }: { orgId: string | null }) {
           }}
         >
           <SelectTrigger className="h-8 w-40 text-xs">
-            <SelectValue placeholder="Sort by..." />
+            <SelectValue placeholder={t("sort")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="date:desc">Newest first</SelectItem>
-            <SelectItem value="date:asc">Oldest first</SelectItem>
-            <SelectItem value="amount:desc">Highest amount</SelectItem>
-            <SelectItem value="amount:asc">Lowest amount</SelectItem>
-            <SelectItem value="number:desc">Number (desc)</SelectItem>
-            <SelectItem value="number:asc">Number (asc)</SelectItem>
+            <SelectItem value="date:desc">{t("newest")}</SelectItem>
+            <SelectItem value="date:asc">{t("oldest")}</SelectItem>
+            <SelectItem value="amount:desc">{t("highest")}</SelectItem>
+            <SelectItem value="amount:asc">{t("lowest")}</SelectItem>
+            <SelectItem value="number:desc">{t("numberDesc")}</SelectItem>
+            <SelectItem value="number:asc">{t("numberAsc")}</SelectItem>
           </SelectContent>
         </Select>
         {hasFilters && (
@@ -338,7 +335,7 @@ function PaymentsList({ orgId }: { orgId: string | null }) {
             onClick={() => { setSearch(""); setMethodFilter("all"); setDateFrom(""); setDateTo(""); }}
           >
             <X className="mr-1 size-3" />
-            Clear filters
+            {t("clearFilters")}
           </Button>
         )}
       </div>
@@ -352,7 +349,7 @@ function PaymentsList({ orgId }: { orgId: string | null }) {
             columns={columns}
             data={filtered}
             loading={false}
-            emptyMessage="No payments match your filters."
+            emptyMessage={t("noMatches")}
             sortBy={sortBy}
             sortOrder={sortOrder}
             onSort={handleSort}

@@ -420,3 +420,17 @@ Verified scope: 11 route/shared TSX files (7,019 lines) plus banking drawers. LO
 - [LOC-031](../tasks/LOC-031.md): Extract bank import catalogs.
 - [LOC-032](../tasks/LOC-032.md): Extract bank reconciliation catalogs.
 - [LOC-033](../tasks/LOC-033.md): Extract bank payment scheduling and batch catalogs.
+
+## LOC-025 sales extraction split
+
+Verified source scope: 18 route TSX files (7,728 lines) plus shared forms and seven creation drawers. LOC-025 retains independent combined acceptance; all children preserve exact-money, REST/MCP and DEC-008 Stripe boundaries.
+
+- [LOC-039](../tasks/LOC-039.md): Extract sales payment catalogs.
+- [LOC-040](../tasks/LOC-040.md): Extract sales invoice catalogs.
+- [LOC-041](../tasks/LOC-041.md): Extract sales quote catalogs.
+- [LOC-042](../tasks/LOC-042.md): Extract cash sale catalogs.
+- [LOC-043](../tasks/LOC-043.md): Extract sales credit note catalogs.
+- [LOC-044](../tasks/LOC-044.md): Extract customer prepayment catalogs.
+- [LOC-045](../tasks/LOC-045.md): Extract recurring invoice catalogs.
+- [LOC-046](../tasks/LOC-046.md): Extract revenue schedule catalogs.
+- [LOC-047](../tasks/LOC-047.md): Extract shared sales document catalogs.

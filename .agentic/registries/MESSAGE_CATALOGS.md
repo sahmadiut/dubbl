@@ -143,6 +143,10 @@ Extraction ownership:
 | LOC-055 | LOC-026 child: landed costs |
 | LOC-056 | LOC-026 child: shared purchasing navigation/forms |
 | LOC-027 | LOC-007 child: contacts |
+| LOC-057 | LOC-027 child: contact people/files; see [scope](CONTACT_PEOPLE_FILES_CATALOGS.md) |
+| LOC-058 | LOC-027 child: contact list/picker/creation |
+| LOC-059 | LOC-027 child: contact detail shell/overview |
+| LOC-060 | LOC-027 child: contact financial tabs |
 | LOC-028 | LOC-007 child: tax |
 | LOC-008 | Inventory, payroll, projects, CRM, reports, dashboard and documents |
 | LOC-009 | Public surfaces, landing/help, email/PDF and user-visible background content; remaining source audit |

@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
@@ -32,6 +34,7 @@ function formatFileSize(bytes: number) {
 }
 
 export default function ContactFilesPage() {
+  const t = useTranslations("ContactFiles");
   const { id } = useParams<{ id: string }>();
   const { confirm } = useContactContext();
 
@@ -49,14 +52,16 @@ export default function ContactFilesPage() {
       const res = await fetch(`/api/v1/contacts/${id}/files`, {
         headers: { "x-organization-id": orgId },
       });
+      if (!res.ok) throw new Error();
       const data = await res.json();
-      setFiles(data.data ?? []);
+      if (!Array.isArray(data.data)) throw new Error();
+      setFiles(data.data);
     } catch {
-      toast.error("Failed to load files");
+      toast.error(t("readFailed"));
     } finally {
       setFilesLoading(false);
     }
-  }, [id]);
+  }, [id, t]);
 
   useEffect(() => {
     fetchFiles();
@@ -80,20 +85,19 @@ export default function ContactFilesPage() {
           visibility: fileVisibility,
         }),
       });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Upload failed");
-      }
+      if (!res.ok) throw new Error();
       const data = await res.json();
-      await fetch(data.uploadUrl, {
+      if (typeof data.uploadUrl !== "string" || !data.uploadUrl) throw new Error();
+      const upload = await fetch(data.uploadUrl, {
         method: "PUT",
         headers: { "Content-Type": file.type || "application/octet-stream" },
         body: file,
       });
-      toast.success("File uploaded");
+      if (!upload.ok) throw new Error();
+      toast.success(t("uploadSuccess"));
       fetchFiles();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to upload file");
+    } catch {
+      toast.error(t("uploadFailed"));
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -103,7 +107,7 @@ export default function ContactFilesPage() {
   async function handleDeleteFile(docId: string) {
     const orgId = getOrgId();
     if (!orgId) return;
-    const ok = await confirm({ title: "Delete file", description: "Are you sure you want to delete this file?" });
+    const ok = await confirm({ title: t("deleteTitle"), description: t("deleteDescription") });
     if (!ok) return;
     try {
       const res = await fetch(`/api/v1/documents/${docId}`, {
@@ -111,10 +115,10 @@ export default function ContactFilesPage() {
         headers: { "x-organization-id": orgId },
       });
       if (!res.ok) throw new Error();
-      toast.success("File deleted");
+      toast.success(t("deleteSuccess"));
       fetchFiles();
     } catch {
-      toast.error("Failed to delete file");
+      toast.error(t("deleteFailed"));
     }
   }
 
@@ -125,19 +129,19 @@ export default function ContactFilesPage() {
       const res = await fetch(`/api/v1/documents/${docId}/download`, {
         headers: { "x-organization-id": orgId },
       });
+      if (!res.ok) throw new Error();
       const data = await res.json();
-      if (data.downloadUrl) {
-        window.open(data.downloadUrl, "_blank");
-      }
+      if (typeof data.downloadUrl !== "string" || !data.downloadUrl) throw new Error();
+      window.open(data.downloadUrl, "_blank");
     } catch {
-      toast.error("Failed to download file");
+      toast.error(t("downloadFailed"));
     }
   }
 
   return (
     <ContentReveal key="files">
       <div className="space-y-6">
-        <Section title="Files" description="Documents and files attached to this contact.">
+        <Section title={t("title")} description={t("description")}>
           <div className="space-y-4">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
@@ -146,8 +150,8 @@ export default function ContactFilesPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="organization">Shared</SelectItem>
-                    <SelectItem value="private">Private</SelectItem>
+                    <SelectItem value="organization">{t("shared")}</SelectItem>
+                    <SelectItem value="private">{t("private")}</SelectItem>
                   </SelectContent>
                 </Select>
                 <Button
@@ -161,7 +165,7 @@ export default function ContactFilesPage() {
                   ) : (
                     <Upload className="mr-2 size-3.5" />
                   )}
-                  {uploading ? "Uploading..." : "Upload file"}
+                  {uploading ? t("uploading") : t("upload")}
                 </Button>
                 <input
                   ref={fileInputRef}
@@ -175,7 +179,7 @@ export default function ContactFilesPage() {
               </div>
               {files.length > 0 && (
                 <p className="text-[12px] text-muted-foreground">
-                  {files.length} {files.length === 1 ? "file" : "files"}
+                  {t("count", { count: files.length })}
                 </p>
               )}
             </div>
@@ -191,10 +195,10 @@ export default function ContactFilesPage() {
                 <div className="flex flex-col items-center justify-center py-8 text-center rounded-lg border border-dashed">
                   <Paperclip className="mb-2 size-8 text-muted-foreground/30" />
                   <p className="text-sm text-muted-foreground">
-                    No files yet
+                    {t("empty")}
                   </p>
                   <p className="text-xs text-muted-foreground/70 mt-1">
-                    Upload files to attach them to this contact
+                    {t("emptyHint")}
                   </p>
                 </div>
               </ContentReveal>
@@ -206,10 +210,10 @@ export default function ContactFilesPage() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b bg-muted/40">
-                        <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Name</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Size</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Visibility</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Uploaded</th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">{t("name")}</th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">{t("size")}</th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">{t("visibility")}</th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">{t("uploaded")}</th>
                         <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground" />
                       </tr>
                     </thead>
@@ -231,11 +235,11 @@ export default function ContactFilesPage() {
                             {file.visibility === "private" ? (
                               <Badge variant="outline" className="text-[11px] gap-1">
                                 <Lock className="size-3" />
-                                Private
+                                {t("private")}
                               </Badge>
                             ) : (
                               <Badge variant="secondary" className="text-[11px]">
-                                Shared
+                                {t("shared")}
                               </Badge>
                             )}
                           </td>
@@ -248,6 +252,7 @@ export default function ContactFilesPage() {
                                 variant="ghost"
                                 size="sm"
                                 className="h-7 w-7 p-0"
+                                aria-label={t("download")}
                                 onClick={() => handleDownloadFile(file.id)}
                               >
                                 <Download className="size-3.5" />
@@ -256,6 +261,7 @@ export default function ContactFilesPage() {
                                 variant="ghost"
                                 size="sm"
                                 className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                                aria-label={t("deleteTitle")}
                                 onClick={() => handleDeleteFile(file.id)}
                               >
                                 <Trash2 className="size-3.5" />

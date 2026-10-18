@@ -448,3 +448,12 @@ Verified scope: 18 route TSX files (7,887 lines), plus shared forms/drawers. LOC
 - [LOC-054](../tasks/LOC-054.md): Extract purchase order catalogs.
 - [LOC-055](../tasks/LOC-055.md): Extract landed cost catalogs.
 - [LOC-056](../tasks/LOC-056.md): Extract shared purchasing catalogs.
+
+## LOC-027 contacts extraction split
+
+Verified scope: nine route TSX files (2,965 lines including blanks), plus the shared contact picker and creation drawer. LOC-027 retains independent combined acceptance. Preserve exact-money, REST/MCP and DEC-008 boundaries.
+
+- [LOC-057](../tasks/LOC-057.md): Extract contact people and files catalogs.
+- [LOC-058](../tasks/LOC-058.md): Extract contact list and creation catalogs.
+- [LOC-059](../tasks/LOC-059.md): Extract contact detail shell catalogs.
+- [LOC-060](../tasks/LOC-060.md): Extract contact financial tab catalogs.

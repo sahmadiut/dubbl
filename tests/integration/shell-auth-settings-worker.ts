@@ -55,10 +55,13 @@ async function run() {
   try {
     for (const [locale, messages] of [["en-US", en], ["fa-IR", fa]] as const) {
       const prefs = { language: locale, timeZone: "Asia/Tehran", numerals: "latn", calendar: "gregory" };
-      await json(await patchPreferences(req("user/locale-preferences", "PATCH", prefs)));
-      assert.deepEqual((await ma.call("get_locale_preferences")).preferences, prefs);
+      const expectedPreferences = { ...prefs, fontFamily: null };
+      assert.deepEqual((await json(await patchPreferences(req("user/locale-preferences", "PATCH", prefs)))).preferences, expectedPreferences);
+      assert.deepEqual((await ma.call("get_locale_preferences")).preferences, expectedPreferences);
+      assert.deepEqual((await db.execute(sql`select language,time_zone,numerals,calendar,font_family from users where id=${owner.id}`)).rows,
+        [{ language: locale, time_zone: "Asia/Tehran", numerals: "latn", calendar: "gregory", font_family: null }]);
       const presentation = resolvePresentation(await loadPresentationPreferences(owner.id, a.id));
-      assert.deepEqual(presentation, { locale, timeZone: "Asia/Tehran", numerals: "latn", calendar: "gregory" });
+      assert.deepEqual(presentation, { locale, timeZone: "Asia/Tehran", numerals: "latn", calendar: "gregory", fontFamily: "vazirmatn" });
       const html = renderToStaticMarkup(createElement(PresentationProvider, { presentation, messages, now: new Date("2026-10-18T00:00:00Z") },
         createElement(TeamFields, { ...saved, editing: false, onNameChange() {}, onDescriptionChange() {}, onColorChange() {} })));
       assert.ok(html.includes(messages.Teams.description));

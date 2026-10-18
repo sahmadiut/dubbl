@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
@@ -21,6 +23,7 @@ import { ContentReveal } from "@/components/ui/content-reveal";
 import { useContactContext, getOrgId } from "../layout";
 
 export default function ContactPeoplePage() {
+  const t = useTranslations("ContactPeople");
   const { id } = useParams<{ id: string }>();
   const { contact, fetchContact } = useContactContext();
 
@@ -57,13 +60,13 @@ export default function ContactPeoplePage() {
         }),
       });
 
-      if (!res.ok) throw new Error("Failed to add person");
-      toast.success("Person added");
+      if (!res.ok) throw new Error();
+      toast.success(t("added"));
       setNewPerson({ name: "", email: "", phone: "", jobTitle: "", isPrimary: false });
       setShowAddPerson(false);
       fetchContact();
     } catch {
-      toast.error("Failed to add person");
+      toast.error(t("addFailed"));
     } finally {
       setAddingPerson(false);
     }
@@ -72,12 +75,12 @@ export default function ContactPeoplePage() {
   return (
     <ContentReveal key="people">
       <div className="space-y-10">
-        <Section title="Contact people" description="People associated with this contact organization.">
+        <Section title={t("title")} description={t("description")}>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               {(contact.people?.length ?? 0) > 0 ? (
                 <p className="text-[12px] text-muted-foreground">
-                  {(contact.people?.length ?? 0)} {(contact.people?.length ?? 0) === 1 ? "person" : "people"}
+                  {t("count", { count: contact.people?.length ?? 0 })}
                 </p>
               ) : (
                 <div />
@@ -90,12 +93,12 @@ export default function ContactPeoplePage() {
                 {showAddPerson ? (
                   <>
                     <X className="mr-2 size-3.5" />
-                    Cancel
+                    {t("cancel")}
                   </>
                 ) : (
                   <>
                     <UserPlus className="mr-2 size-3.5" />
-                    Add person
+                    {t("addPerson")}
                   </>
                 )}
               </Button>
@@ -108,9 +111,9 @@ export default function ContactPeoplePage() {
               >
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Name *</Label>
+                    <Label className="text-xs">{t("nameRequired")}</Label>
                     <Input
-                      placeholder="Full name"
+                      placeholder={t("fullName")}
                       value={newPerson.name}
                       onChange={(e) =>
                         setNewPerson({ ...newPerson, name: e.target.value })
@@ -119,10 +122,10 @@ export default function ContactPeoplePage() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Email</Label>
+                    <Label className="text-xs">{t("email")}</Label>
                     <Input
                       type="email"
-                      placeholder="Email address"
+                      placeholder={t("emailAddress")}
                       value={newPerson.email}
                       onChange={(e) =>
                         setNewPerson({ ...newPerson, email: e.target.value })
@@ -130,9 +133,9 @@ export default function ContactPeoplePage() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Phone</Label>
+                    <Label className="text-xs">{t("phone")}</Label>
                     <Input
-                      placeholder="Phone number"
+                      placeholder={t("phoneNumber")}
                       value={newPerson.phone}
                       onChange={(e) =>
                         setNewPerson({ ...newPerson, phone: e.target.value })
@@ -140,9 +143,9 @@ export default function ContactPeoplePage() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Job title</Label>
+                    <Label className="text-xs">{t("jobTitle")}</Label>
                     <Input
-                      placeholder="Job title"
+                      placeholder={t("jobTitle")}
                       value={newPerson.jobTitle}
                       onChange={(e) =>
                         setNewPerson({ ...newPerson, jobTitle: e.target.value })
@@ -163,7 +166,7 @@ export default function ContactPeoplePage() {
                       htmlFor="personPrimary"
                       className="cursor-pointer text-sm font-normal"
                     >
-                      Primary contact
+                      {t("primaryContact")}
                     </Label>
                   </div>
                   <Button
@@ -173,7 +176,7 @@ export default function ContactPeoplePage() {
                     className="bg-emerald-600 hover:bg-emerald-700"
                   >
                     <UserPlus className="mr-2 size-3.5" />
-                    Add
+                    {t("add")}
                   </Button>
                 </div>
               </form>
@@ -183,10 +186,10 @@ export default function ContactPeoplePage() {
               <div className="flex flex-col items-center justify-center py-8 text-center rounded-lg border border-dashed">
                 <UserPlus className="mb-2 size-8 text-muted-foreground/30" />
                 <p className="text-sm text-muted-foreground">
-                  No contact people yet
+                  {t("empty")}
                 </p>
                 <p className="text-xs text-muted-foreground/70 mt-1">
-                  Add people associated with this contact
+                  {t("emptyHint")}
                 </p>
               </div>
             ) : (
@@ -215,7 +218,7 @@ export default function ContactPeoplePage() {
                             className="border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 text-[11px]"
                           >
                             <Star className="mr-1 size-3" />
-                            Primary
+                            {t("primary")}
                           </Badge>
                         )}
                       </div>

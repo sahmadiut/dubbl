@@ -1,5 +1,6 @@
 "use client";
 
+import { requireReconciliationResponse, reconciliationFailure } from "@/i18n/bank-reconciliation-presentation";
 import { useTranslations } from "next-intl";
 import { bankWorkspaceFailure, bankMatchReason, type WorkspaceTranslate } from "@/i18n/bank-workspace-presentation";
 import { bankImportFormatLabels, bankImportWarning } from "@/i18n/bank-import-presentation";
@@ -2727,6 +2728,8 @@ export function ReconciliationReport({
   bankAccountId: string;
   onChanged: () => void;
 }) {
+  const t = useTranslations("BankReconciliation");
+  const errors = useTranslations("BankAccountErrors");
   const [adjustOpen, setAdjustOpen] = useState(false);
   const [adjustDesc, setAdjustDesc] = useState("");
   const [posting, setPosting] = useState(false);
@@ -2749,13 +2752,13 @@ export function ReconciliationReport({
           reconciliationId: data.reconciliation?.id,
         }),
       });
-      if (!res.ok) throw new Error((await res.json()).error);
-      toast.success("Difference written off");
+      await requireReconciliationResponse(res, t, errors, t("adjustFailed"));
+      toast.success(t("adjustSuccess"));
       setAdjustOpen(false);
       setAdjustDesc("");
       onChanged();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't write off the difference");
+      toast.error(reconciliationFailure(err, t, t("adjustFailed")));
     } finally {
       setPosting(false);
     }
@@ -2766,17 +2769,17 @@ export function ReconciliationReport({
       <div className="rounded-xl border bg-card overflow-hidden">
         <div className="grid grid-cols-1 divide-y sm:grid-cols-3 sm:divide-x sm:divide-y-0">
           <div className="p-4">
-            <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Bank statement balance</p>
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wide">{t("statementBalance")}</p>
             <p className="mt-1 text-xl font-semibold font-mono tabular-nums">{bankMoneyDisplay(data.statementEndBalance, currencyCode)}</p>
           </div>
           <div className="p-4">
-            <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Balance in your books</p>
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wide">{t("booksBalance")}</p>
             <p className="mt-1 text-xl font-semibold font-mono tabular-nums">
               {data.glBalance == null ? "—" : bankMoneyDisplay(data.glBalance, data.glCurrencyCode)}
             </p>
           </div>
           <div className="p-4">
-            <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Difference</p>
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wide">{t("difference")}</p>
             <p className={cn(
               "mt-1 text-xl font-semibold font-mono tabular-nums",
               diff == null ? "text-muted-foreground" : balanced ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"
@@ -2790,24 +2793,24 @@ export function ReconciliationReport({
           balanced ? "bg-emerald-50/50 dark:bg-emerald-950/20" : "bg-amber-50/50 dark:bg-amber-950/20"
         )}>
           {!data.hasLedgerAccount ? (
-            <span className="text-xs text-muted-foreground">This bank account isn&apos;t set up for bookkeeping yet, so its balance in your books can&apos;t be worked out.</span>
+            <span className="text-xs text-muted-foreground">{t("noLedger")}</span>
           ) : data.comparisonUnavailableReason === "different_currency_units" ? (
-            <span className="text-xs text-muted-foreground">The statement and books use different currencies. A currency-qualified statement check is required.</span>
+            <span className="text-xs text-muted-foreground">{t("differentCurrencies")}</span>
           ) : balanced ? (
             <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
-              <CheckCircle className="size-3.5" />Your books match the statement.
+              <CheckCircle className="size-3.5" />{t("balanced")}
             </span>
           ) : (
             <>
               <span className="flex items-center gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-300">
                 <Scale className="size-3.5" />
                 {diff != null && diff > 0
-                  ? "The statement shows more than your books."
-                  : "Your books show more than the statement."}
+                  ? t("statementMore")
+                  : t("booksMore")}
               </span>
               <div className="flex-1" />
-              <Button size="sm" variant="outline" onClick={() => setAdjustOpen(true)} disabled={diff == null || diff === 0n || data.reconciliation?.status === "completed"} title="Add a small entry so your books match the statement exactly">
-                <Scale className="mr-1.5 size-3.5" />Write off the difference
+              <Button size="sm" variant="outline" onClick={() => setAdjustOpen(true)} disabled={diff == null || diff === 0n || data.reconciliation?.status === "completed"} title={t("adjustTitle")}>
+                <Scale className="mr-1.5 size-3.5" />{t("writeOff")}
               </Button>
             </>
           )}
@@ -2817,36 +2820,36 @@ export function ReconciliationReport({
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="rounded-lg border">
           <div className="flex items-center justify-between border-b px-3 py-2">
-            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Matched to statement</span>
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("matchedToStatement")}</span>
             <span className="text-xs font-mono tabular-nums text-muted-foreground">
               {data.reconciled.count} · {bankMoneyDisplay(data.reconciled.total, currencyCode)}
             </span>
           </div>
-          <RecLineList transactions={data.reconciled.transactions} currencyCode={currencyCode} empty="Nothing matched to the statement yet." />
+          <RecLineList transactions={data.reconciled.transactions} currencyCode={currencyCode} empty={t("noMatched")} />
         </div>
         <div className="rounded-lg border">
           <div className="flex items-center justify-between border-b px-3 py-2">
-            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Not yet matched</span>
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("notMatched")}</span>
             <span className="text-xs font-mono tabular-nums text-muted-foreground">
               {data.unreconciled.count} · {bankMoneyDisplay(data.unreconciled.total, currencyCode)}
             </span>
           </div>
-          <RecLineList transactions={data.unreconciled.transactions} currencyCode={currencyCode} empty="Nothing left to match." />
+          <RecLineList transactions={data.unreconciled.transactions} currencyCode={currencyCode} empty={t("noUnmatched")} />
         </div>
       </div>
 
       <Dialog open={adjustOpen} onOpenChange={setAdjustOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Write off the difference</DialogTitle>
+            <DialogTitle>{t("writeOff")}</DialogTitle>
             <DialogDescription>
-              This adds a small entry for the leftover difference so your books match the statement exactly.
+              {t("adjustHint")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 text-sm">
             <div className="rounded-lg border bg-muted/30 p-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">Adjustment amount</span>
+                <span className="text-xs text-muted-foreground">{t("adjustAmount")}</span>
                 <span className={cn(
                   "font-mono font-semibold tabular-nums",
                   diff != null && diff > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
@@ -2856,19 +2859,19 @@ export function ReconciliationReport({
               </div>
               <p className="mt-1.5 text-[11px] text-muted-foreground">
                 {diff != null && diff > 0
-                  ? "Recorded as a small bit of miscellaneous income."
-                  : "Recorded as a small miscellaneous expense."}
+                  ? t("incomeHint")
+                  : t("expenseHint")}
               </p>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Description (optional)</Label>
-              <Input value={adjustDesc} onChange={(e) => setAdjustDesc(e.target.value)} placeholder="e.g. Bank rounding difference" />
+              <Label className="text-xs">{t("description")}</Label>
+              <Input value={adjustDesc} onChange={(e) => setAdjustDesc(e.target.value)} placeholder={t("descriptionPlaceholder")} />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAdjustOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setAdjustOpen(false)}>{t("cancel")}</Button>
             <Button onClick={postAdjustment} disabled={posting || diff == null || diff === 0n || data.reconciliation?.status === "completed"} className="bg-emerald-600 hover:bg-emerald-700">
-              {posting ? <><Loader2 className="mr-2 size-3.5 animate-spin" />Saving…</> : "Write off the difference"}
+              {posting ? <><Loader2 className="mr-2 size-3.5 animate-spin" />{t("saving")}</> : t("writeOff")}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,6 +1,9 @@
 "use client";
 import { bankUiAccount, bankUiTransaction, bankUiReport, bankUiReconciliation, bankUiBalance } from "@/lib/money/bank-ui";
 
+import { useTranslations } from "next-intl";
+import { requireReconciliationResponse, reconciliationFailure } from "@/i18n/bank-reconciliation-presentation";
+
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -72,6 +75,8 @@ interface Reconciliation {
 }
 
 export default function ReconcilePage() {
+  const t = useTranslations("BankReconciliation");
+  const errors = useTranslations("BankAccountErrors");
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [account, setAccount] = useState<BankAccountDetail | null>(null);
@@ -96,7 +101,7 @@ export default function ReconcilePage() {
       ? localStorage.getItem("activeOrgId")
       : null;
 
-  useDocumentTitle("Accounting \u00B7 Match statement to your books");
+  useDocumentTitle(t("documentTitle"));
 
   const fetchData = useCallback(() => {
     if (!orgId) return;
@@ -108,20 +113,20 @@ export default function ReconcilePage() {
     // into a statement reconciliation. Lines already part of a completed
     // statement reconciliation (reconciliationId set) are filtered out below.
     Promise.all([
-      fetch(`/api/v1/bank-accounts/${id}`, { headers }).then((r) => { if (!r.ok) throw new Error("Bank data is unavailable"); return r.json(); }),
+      fetch(`/api/v1/bank-accounts/${id}`, { headers }).then(async (r) => (await requireReconciliationResponse(r, t, errors, t("unavailable"))).json()),
       fetch(`/api/v1/bank-accounts/${id}/transactions?status=unreconciled&limit=100`, {
         headers,
-      }).then((r) => { if (!r.ok) throw new Error("Bank data is unavailable"); return r.json(); }),
+      }).then(async (r) => (await requireReconciliationResponse(r, t, errors, t("unavailable"))).json()),
       fetch(`/api/v1/bank-accounts/${id}/transactions?status=reconciled&limit=100`, {
         headers,
-      }).then((r) => { if (!r.ok) throw new Error("Bank data is unavailable"); return r.json(); }),
+      }).then(async (r) => (await requireReconciliationResponse(r, t, errors, t("unavailable"))).json()),
       fetch(`/api/v1/bank-accounts/${id}/reconciliations`, {
         headers,
-      }).then((r) => { if (!r.ok) throw new Error("Bank data is unavailable"); return r.json(); }),
+      }).then(async (r) => (await requireReconciliationResponse(r, t, errors, t("unavailable"))).json()),
       // Statement-vs-GL report: end balance, GL balance, running difference and
       // the reconciled / unreconciled splits, scoped to the latest reconciliation.
       fetch(`/api/v1/bank-accounts/${id}/reconciliation`, { headers })
-        .then((r) => (r.ok ? r.json() : null))
+        .then(async (r) => (await requireReconciliationResponse(r, t, errors, t("unavailable"))).json())
         .catch(() => null),
     ])
       .then(([accountData, unreconciledData, reconciledData, recData, reportData]) => {
@@ -136,9 +141,9 @@ export default function ReconcilePage() {
         if (recData.data) setReconciliations(recData.data.map(bankUiReconciliation) as Reconciliation[]);
         setReport(reportData && reportData.bankAccountId ? bankUiReport(reportData) as unknown as ReconciliationData : null);
       })
-      .catch(() => { setAccount(null); setTransactions([]); setReport(null); toast.error("Statement amounts are unavailable. Reload to try again."); })
+      .catch((err) => { setAccount(null); setTransactions([]); setReport(null); toast.error(reconciliationFailure(err, t, t("unavailable"))); })
       .finally(() => setLoading(false));
-  }, [id, orgId]);
+  }, [id, orgId, t, errors]);
 
   useEffect(() => {
     fetchData();
@@ -160,7 +165,7 @@ export default function ReconcilePage() {
 
   function toggleSelect(tx: Transaction) {
     if (!isCategorized(tx)) {
-      toast.error("Add this transaction to your books before matching it to the statement.");
+      toast.error(t("addFirst"));
       return;
     }
     setSelectedIds((prev) => {
@@ -204,8 +209,10 @@ export default function ReconcilePage() {
       }
     }
 
-    const label = action === "reconcile" ? "Matched" : "Ignored";
-    toast.success(`${label} ${success} transaction${success !== 1 ? "s" : ""}`);
+    const failed = selectedIds.size - success;
+    if (success === 0) toast.error(t("bulkFailed"));
+    else if (failed > 0) toast.warning(t("partialResult", { count: success, failed }));
+    else toast.success(t(action === "reconcile" ? "matchedCount" : "ignoredCount", { count: success }));
     setSelectedIds(new Set());
     setActing(false);
     fetchData();
@@ -228,14 +235,14 @@ export default function ReconcilePage() {
           endBalanceMinor: bankUiBalance(recForm.endBalance || "0", account!.currencyCode),
         }),
       });
-      if (!res.ok) throw new Error((await res.json()).error);
-      toast.success("Statement check started");
+      await requireReconciliationResponse(res, t, errors, t("startFailed"));
+      toast.success(t("startSuccess"));
       setSheetOpen(false);
       setRecForm({ startDate: "", endDate: "", startBalance: "", endBalance: "" });
       fetchData();
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Couldn't start the statement check"
+        reconciliationFailure(err, t, t("startFailed"))
       );
     } finally {
       setSavingRec(false);
@@ -250,7 +257,7 @@ export default function ReconcilePage() {
     if (!orgId) return;
     const active = reconciliations.find((r) => r.status === "in_progress");
     if (!active) {
-      toast.error("Start a statement check first.");
+      toast.error(t("startFirst"));
       setSheetOpen(true);
       return;
     }
@@ -270,16 +277,16 @@ export default function ReconcilePage() {
             : {}),
         }),
       });
-      if (!res.ok) throw new Error((await res.json()).error);
+      await requireReconciliationResponse(res, t, errors, t("finishFailed"));
       const data = await res.json();
       toast.success(
-        `Statement check finished — ${data.reconciledCount} line${data.reconciledCount === 1 ? "" : "s"} matched`
+        t("finishSuccess", { count: data.reconciledCount })
       );
       setSelectedIds(new Set());
       fetchData();
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Couldn't finish the statement check"
+        reconciliationFailure(err, t, t("finishFailed"))
       );
     } finally {
       setActing(false);
@@ -295,7 +302,7 @@ export default function ReconcilePage() {
   const unreconciledTotal = transactions.reduce((sum, t) => sum + BigInt(t.amount), 0n);
 
   if (loading) return <BrandLoader />;
-  if (!account) return <p role="alert">Statement amounts are unavailable. Reload to try again.</p>;
+  if (!account) return <p role="alert">{t("unavailable")}</p>;
   const formatBankAmount = (amount: number | bigint) => bankMoneyDisplay(amount, account.currencyCode);
 
   return (
@@ -305,16 +312,17 @@ export default function ReconcilePage() {
           variant="ghost"
           size="icon"
           className="size-8 shrink-0"
+          aria-label={t("back")}
           onClick={() => router.push(`/accounting/banking/${id}`)}
         >
           <ArrowLeft className="size-4" />
         </Button>
         <div className="flex-1 min-w-0">
           <h1 className="text-lg font-semibold tracking-tight truncate">
-            Match statement to your books · {account?.accountName}
+            {t("title", { account: account.accountName })}
           </h1>
           <p className="text-sm text-muted-foreground">
-            Tick off transactions that appear on your bank statement
+            {t("hint")}
           </p>
         </div>
         {activeRec ? (
@@ -323,14 +331,14 @@ export default function ReconcilePage() {
             onClick={() => finishStatementCheck()}
             disabled={acting || !report || report.currencyCode !== report.glCurrencyCode}
             className="bg-emerald-600 hover:bg-emerald-700"
-            title="Mark every in-your-books line in this period as on the statement and close the check"
+            title={t("finishAllTitle")}
           >
             <CheckCircle className="mr-1.5 size-3.5" />
-            Finish statement check
+            {t("finish")}
           </Button>
         ) : (
           <Button variant="outline" size="sm" onClick={() => setSheetOpen(true)}>
-            Check a statement
+            {t("checkStatement")}
           </Button>
         )}
       </div>
@@ -339,13 +347,13 @@ export default function ReconcilePage() {
       <div className="rounded-xl border bg-card overflow-hidden">
         <div className="grid grid-cols-3 divide-x">
           <div className="p-4">
-            <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Account balance</p>
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wide">{t("accountBalance")}</p>
             <p className="mt-1 text-xl font-semibold font-mono tabular-nums">
               {formatBankAmount(account?.balance || 0n)}
             </p>
           </div>
           <div className="p-4">
-            <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Still to match</p>
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wide">{t("stillToMatch")}</p>
             <p className="mt-1 text-xl font-semibold font-mono tabular-nums">
               {transactions.length}
               <span className="text-sm font-normal text-muted-foreground ml-1.5">
@@ -354,7 +362,7 @@ export default function ReconcilePage() {
             </p>
           </div>
           <div className="p-4">
-            <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Selected</p>
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wide">{t("selected")}</p>
             <p className={cn(
               "mt-1 text-xl font-semibold font-mono tabular-nums",
               selectedIds.size > 0
@@ -364,7 +372,7 @@ export default function ReconcilePage() {
               {selectedIds.size > 0 ? formatBankAmount(selectedTotal) : "-"}
               {selectedIds.size > 0 && (
                 <span className="text-sm font-normal text-muted-foreground ml-1.5">
-                  ({selectedIds.size} items)
+                  ({t("itemCount", { count: selectedIds.size })})
                 </span>
               )}
             </p>
@@ -377,20 +385,20 @@ export default function ReconcilePage() {
               onClick={() => finishStatementCheck([...selectedIds])}
               disabled={acting || !activeRec}
               className="bg-emerald-600 hover:bg-emerald-700"
-              title={activeRec ? "Mark these lines as on your statement and finish the check" : "Start a statement check first"}
+              title={activeRec ? t("finishSelectedTitle") : t("startFirstTitle")}
             >
               <CheckCircle className="mr-1.5 size-3.5" />
-              Mark {selectedIds.size} on statement &amp; finish
+              {t("markSelected", { count: selectedIds.size })}
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => bulkAction("exclude")}
               disabled={acting || transactions.some((tx) => selectedIds.has(tx.id) && (tx.status === "reconciled" || tx.journalEntryId !== null))}
-              title="Undo accounted lines from the bank account before ignoring them"
+              title={t("ignoreTitle")}
             >
               <XCircle className="mr-1.5 size-3.5" />
-              Ignore {selectedIds.size}
+              {t("ignoreSelected", { count: selectedIds.size })}
             </Button>
             <div className="flex-1" />
             <button
@@ -398,7 +406,7 @@ export default function ReconcilePage() {
               className="text-xs text-muted-foreground hover:text-foreground transition-colors"
               onClick={() => setSelectedIds(new Set())}
             >
-              Clear selection
+              {t("clearSelection")}
             </button>
           </div>
         )}
@@ -419,9 +427,9 @@ export default function ReconcilePage() {
       {filteredTransactions.length === 0 && transactions.length === 0 ? (
         <div className="rounded-xl border border-dashed py-16 text-center">
           <CheckCircle className="size-8 text-emerald-500 mx-auto" />
-          <h3 className="mt-3 text-sm font-semibold">All caught up</h3>
+          <h3 className="mt-3 text-sm font-semibold">{t("allCaughtUp")}</h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            Nothing left to match to your statement.
+            {t("nothingLeft")}
           </p>
         </div>
       ) : (
@@ -432,7 +440,7 @@ export default function ReconcilePage() {
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search transactions..."
+                placeholder={t("search")}
                 className="pl-9 h-8 text-sm"
               />
             </div>
@@ -444,18 +452,17 @@ export default function ReconcilePage() {
             >
               {selectableTransactions.length > 0 &&
               selectedIds.size === selectableTransactions.length
-                ? "Deselect all"
-                : "Select all"}
+                ? t("deselectAll")
+                : t("selectAll")}
             </button>
           </div>
 
           {uncategorizedCount > 0 && (
             <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
               <span className="font-medium">
-                {uncategorizedCount} transaction{uncategorizedCount !== 1 ? "s" : ""} not in your books yet.
+                {t("notInBooks", { count: uncategorizedCount })}
               </span>{" "}
-              Assign {uncategorizedCount !== 1 ? "them" : "it"} to a category or match {uncategorizedCount !== 1 ? "them" : "it"} from the
-              bank account page first — only lines that are in your books can be matched to the statement.
+              {t("categorizeHint", { count: uncategorizedCount })}
             </div>
           )}
 
@@ -522,7 +529,7 @@ export default function ReconcilePage() {
                         <>
                           <span className="text-muted-foreground/30">·</span>
                           <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
-                            Add to your books first
+                            {t("addBooksFirst")}
                           </span>
                         </>
                       )}
@@ -545,17 +552,17 @@ export default function ReconcilePage() {
       {/* Past reconciliations */}
       {reconciliations.length > 0 && (
         <div className="space-y-3 pt-2">
-          <h3 className="text-sm font-semibold">Past statement checks</h3>
+          <h3 className="text-sm font-semibold">{t("pastChecks")}</h3>
           <div className="rounded-lg border divide-y">
             {reconciliations.map((rec) => (
               <div key={rec.id} className="flex items-center gap-4 px-4 py-3">
                 <Calendar className="size-4 shrink-0 text-muted-foreground" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium">
-                    {rec.startDate} to {rec.endDate}
+                    {t("range", { start: rec.startDate, end: rec.endDate })}
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    {formatBankAmount(rec.startBalance)} to {formatBankAmount(rec.endBalance)}
+                    {t("range", { start: formatBankAmount(rec.startBalance), end: formatBankAmount(rec.endBalance) })}
                   </p>
                 </div>
                 <Badge
@@ -566,7 +573,7 @@ export default function ReconcilePage() {
                       : "border-amber-200 bg-amber-50 text-amber-700"
                   }
                 >
-                  {rec.status === "completed" ? "Completed" : "In Progress"}
+                  {rec.status === "completed" ? t("completed") : t("inProgress")}
                 </Badge>
               </div>
             ))}
@@ -579,36 +586,36 @@ export default function ReconcilePage() {
         <SheetContent className="sm:max-w-lg w-full p-0 flex flex-col">
           <SheetHeader className="px-6 pt-6 pb-4 border-b space-y-3">
             <div>
-              <SheetTitle className="text-lg">Check a statement</SheetTitle>
+              <SheetTitle className="text-lg">{t("checkStatement")}</SheetTitle>
               <SheetDescription>
-                Enter your bank statement dates and balances to start checking it against your books.
+                {t("newHint")}
               </SheetDescription>
             </div>
           </SheetHeader>
           <div className="flex-1 overflow-y-auto space-y-6 px-6 py-5">
             <div className="space-y-4">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Statement Period
+                {t("statementPeriod")}
               </p>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Start Date</Label>
+                  <Label>{t("startDate")}</Label>
                   <DatePicker
                     value={recForm.startDate}
                     onChange={(v) =>
                       setRecForm({ ...recForm, startDate: v })
                     }
-                    placeholder="Select date"
+                    placeholder={t("selectDate")}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>End Date</Label>
+                  <Label>{t("endDate")}</Label>
                   <DatePicker
                     value={recForm.endDate}
                     onChange={(v) =>
                       setRecForm({ ...recForm, endDate: v })
                     }
-                    placeholder="Select date"
+                    placeholder={t("selectDate")}
                   />
                 </div>
               </div>
@@ -618,11 +625,11 @@ export default function ReconcilePage() {
 
             <div className="space-y-4">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Statement Balances
+                {t("statementBalances")}
               </p>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="statement-opening">Opening Balance ({account?.currencyCode})</Label>
+                  <Label htmlFor="statement-opening">{t("openingBalance", { currency: account.currencyCode })}</Label>
                   <Input
                     inputMode="decimal"
                     id="statement-opening"
@@ -634,7 +641,7 @@ export default function ReconcilePage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="statement-closing">Closing Balance ({account?.currencyCode})</Label>
+                  <Label htmlFor="statement-closing">{t("closingBalance", { currency: account.currencyCode })}</Label>
                   <Input
                     inputMode="decimal"
                     id="statement-closing"
@@ -650,14 +657,14 @@ export default function ReconcilePage() {
           </div>
           <div className="sticky bottom-0 flex items-center justify-end gap-3 border-t bg-background/80 px-6 py-4 backdrop-blur-sm">
             <Button variant="outline" onClick={() => setSheetOpen(false)}>
-              Cancel
+              {t("cancel")}
             </Button>
             <Button
               onClick={createReconciliation}
               disabled={!recForm.startDate || !recForm.endDate || savingRec}
               className="bg-emerald-600 hover:bg-emerald-700"
             >
-              {savingRec ? "Starting..." : "Start checking"}
+              {savingRec ? t("starting") : t("start")}
             </Button>
           </div>
         </SheetContent>

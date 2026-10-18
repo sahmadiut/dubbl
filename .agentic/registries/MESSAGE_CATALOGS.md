@@ -114,7 +114,7 @@ Extraction ownership:
 | LOC-029 | LOC-023 child: bank-account list, creation and settings; see [scope](BANK_ACCOUNT_CATALOGS.md) |
 | LOC-030 | LOC-023 child: transaction workspace and shared matching/categorization sheets; see [scope](BANK_WORKSPACE_CATALOGS.md) |
 | LOC-031 | LOC-023 child: imports and shared import presentation; see [scope](BANK_IMPORT_CATALOGS.md) |
-| LOC-032 | LOC-023 child: reconciliation |
+| LOC-032 | LOC-023 child: reconciliation; see [scope](BANK_RECONCILIATION_CATALOGS.md) |
 | LOC-033 | LOC-023 child: scheduled payments, batches and bank-transfer drawer |
 | LOC-024 | LOC-007 child: assets, loans, budgets and accruals |
 | LOC-034 | LOC-024 child: asset-category management; see [scope](ASSET_CATEGORY_CATALOGS.md) |

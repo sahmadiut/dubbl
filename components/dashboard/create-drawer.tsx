@@ -4220,6 +4220,7 @@ function CustomerCreditDrawer({ open, onClose }: { open: boolean; onClose: () =>
 }
 
 function CustomerCreditForm({ open, onClose, orgId }: { open: boolean; onClose: () => void; orgId: string | null }) {
+  const t = useTranslations("CustomerPrepayments");
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [contactId, setContactId] = useState("");
@@ -4262,16 +4263,16 @@ function CustomerCreditForm({ open, onClose, orgId }: { open: boolean; onClose: 
       const code = customerPrepaymentCurrency(null, customerData.contact.currencyCode, orgData.organization.defaultCurrency);
       if (!controller.signal.aborted) setCurrencyContext({ orgId, contactId, code });
     }).catch(() => {
-      if (!controller.signal.aborted) setCurrencyContext({ orgId, contactId, error: "Unable to load the customer's currency. Select a currency to continue." });
+      if (!controller.signal.aborted) setCurrencyContext({ orgId, contactId, error: "currencyReadFailed" });
     });
     return () => controller.abort();
   }, [open, orgId, contactId]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!contactId) { toast.error("Please select a customer"); return; }
-    if (!bankAccountId) { toast.error("Please choose where the money was paid in"); return; }
-    if (!currencyCode || !exactAmount || !selectedBank) { toast.error("Check the amount, currency and paid-in account"); return; }
+    if (!contactId) { toast.error(t("selectCustomer")); return; }
+    if (!bankAccountId) { toast.error(t("selectBank")); return; }
+    if (!currencyCode || !exactAmount || !selectedBank) { toast.error(t("checkAmount")); return; }
     setSaving(true);
     if (!orgId) { setSaving(false); return; }
 
@@ -4290,14 +4291,15 @@ function CustomerCreditForm({ open, onClose, orgId }: { open: boolean; onClose: 
         }),
       });
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(typeof data.error === "string" ? data.error : "Failed to record prepayment");
+        throw new Error("Prepayment creation failed");
       }
-      toast.success("Prepayment recorded");
+      const data = await res.json();
+      if (typeof data?.customerCredit?.id !== "string" || !data.customerCredit.id.trim()) throw new Error("Invalid created prepayment");
+      toast.success(t("created"));
       onClose();
       router.push("/sales/customer-prepayments");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to record prepayment");
+    } catch {
+      toast.error(t("createFailed"));
     } finally {
       setSaving(false);
     }
@@ -4310,46 +4312,46 @@ function CustomerCreditForm({ open, onClose, orgId }: { open: boolean; onClose: 
           <div className="flex items-center gap-3">
             <DrawerIcon><Wallet className="size-5" /></DrawerIcon>
             <div>
-              <SheetTitle className="text-lg">New prepayment</SheetTitle>
-              <SheetDescription>Record money a customer paid you in advance, before any invoice.</SheetDescription>
+              <SheetTitle className="text-lg">{t("newPrepayment")}</SheetTitle>
+              <SheetDescription>{t("drawerDescription")}</SheetDescription>
             </div>
           </div>
         </SheetHeader>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
             <div className="space-y-4">
-              <SectionLabel>Prepayment Details</SectionLabel>
+              <SectionLabel>{t("details")}</SectionLabel>
               <div className="space-y-2">
-                <Label>Customer *</Label>
+                <Label>{t("customerRequired")}</Label>
                 <ContactPicker value={contactId} onChange={setContactId} type="customer" />
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Date</Label>
-                  <DatePicker value={date} onChange={setDate} placeholder="Date received" />
+                  <Label>{t("date")}</Label>
+                  <DatePicker value={date} onChange={setDate} placeholder={t("dateReceived")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Amount</Label>
+                  <Label>{t("amount")}</Label>
                   {currencyCode ? <InvoiceAmountInput currency={currencyCode} value={amount} onChange={setAmount} /> :
-                    <p className="text-sm text-muted-foreground">Select a customer or currency to enter an amount.</p>}
-                  {exactAmount && currencyCode && <p className="text-xs text-muted-foreground">Received: {customerPrepaymentMoney(BigInt(exactAmount.amountMinor), currencyCode)}</p>}
+                    <p className="text-sm text-muted-foreground">{t("selectCurrencyHint")}</p>}
+                  {exactAmount && currencyCode && <p className="text-xs text-muted-foreground">{t("receivedAmount", { amount: customerPrepaymentMoney(BigInt(exactAmount.amountMinor), currencyCode) })}</p>}
                 </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Type</Label>
+                  <Label>{t("type")}</Label>
                   <Select value={sourceType} onValueChange={setSourceType}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="prepayment">Prepayment</SelectItem>
-                      <SelectItem value="overpayment">Overpayment</SelectItem>
+                      <SelectItem value="prepayment">{t("prepayment")}</SelectItem>
+                      <SelectItem value="overpayment">{t("overpayment")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Currency</Label>
+                  <Label>{t("currency")}</Label>
                   <CurrencySelect value={currencyCode ?? ""} onValueChange={setSelectedCurrency} />
-                  {currentContext?.error && !selectedCurrency && <p role="alert" className="text-xs text-destructive">{currentContext.error}</p>}
+                  {currentContext?.error && !selectedCurrency && <p role="alert" className="text-xs text-destructive">{t("currencyReadFailed")}</p>}
                 </div>
               </div>
             </div>
@@ -4357,12 +4359,12 @@ function CustomerCreditForm({ open, onClose, orgId }: { open: boolean; onClose: 
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Payment</SectionLabel>
+              <SectionLabel>{t("payment")}</SectionLabel>
               <div className="space-y-2">
-                <Label>Paid into *</Label>
+                <Label>{t("paidInto")}</Label>
                 <Select value={bankAccountId} onValueChange={setBankAccountId}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Choose where the money landed..." />
+                    <SelectValue placeholder={t("chooseBank")} />
                   </SelectTrigger>
                   <SelectContent>
                     {matchingBanks.map((acc) => (
@@ -4372,13 +4374,13 @@ function CustomerCreditForm({ open, onClose, orgId }: { open: boolean; onClose: 
                     ))}
                     {matchingBanks.length === 0 && (
                       <div className="px-2 py-4 text-center text-sm text-muted-foreground">
-                        No bank or cash accounts in this currency
+                        {t("noBanks")}
                       </div>
                     )}
                   </SelectContent>
                 </Select>
                 <p className="text-[11px] text-muted-foreground">
-                  The cash or bank account the customer paid into.
+                  {t("bankHint")}
                 </p>
               </div>
             </div>
@@ -4386,11 +4388,11 @@ function CustomerCreditForm({ open, onClose, orgId }: { open: boolean; onClose: 
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Notes</SectionLabel>
-              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notes about this prepayment..." rows={3} />
+              <SectionLabel>{t("notes")}</SectionLabel>
+              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("notesPlaceholder")} rows={3} />
             </div>
           </div>
-          <DrawerFooter onClose={onClose} saving={saving} label="Record prepayment" disabled={!orgId || !contactId || !exactAmount || !selectedBank} />
+          <DrawerFooter onClose={onClose} saving={saving} label={t("recordAction")} disabled={!orgId || !contactId || !exactAmount || !selectedBank} />
         </form>
       </SheetContent>
     </Sheet>

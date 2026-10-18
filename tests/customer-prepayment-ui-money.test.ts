@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createElement } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderWithPresentation as renderToStaticMarkup } from "./helpers/presentation";
 import { z } from "zod";
 import { customerPrepaymentAmount, customerPrepaymentCurrency, customerPrepaymentRow, customerPrepaymentMoney,
   customerPrepaymentSummary, customerPrepaymentInvoice, customerPrepaymentInvoiceEligible, customerPrepaymentApplication } from "../lib/money/customer-prepayment-ui";

@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { customerPrepaymentStatusLabel, customerPrepaymentSourceLabel } from "@/i18n/customer-prepayment-presentation";
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
@@ -52,21 +54,6 @@ const statusColors: Record<string, string> = {
   void: "border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300",
 };
 
-// Plain-language status labels (end users aren't accountants).
-const statusLabels: Record<string, string> = {
-  open: "available",
-  applied: "used",
-  refunded: "refunded",
-  void: "cancelled",
-};
-
-// Plain-language labels for how the money arrived.
-const sourceLabels: Record<string, string> = {
-  prepayment: "Paid in advance",
-  overpayment: "Overpaid",
-  credit_note: "Credit note",
-};
-
 interface InvoiceOption {
   id: string;
   invoiceNumber: string;
@@ -84,6 +71,7 @@ export default function CustomerPrepaymentDetailPage() {
 }
 
 function CustomerPrepaymentDetail({ id, orgId }: { id: string; orgId: string | null }) {
+  const t = useTranslations("CustomerPrepayments");
   const [cc, setCc] = useState<CustomerCreditDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [applyOpen, setApplyOpen] = useState(false);
@@ -91,7 +79,7 @@ function CustomerPrepaymentDetail({ id, orgId }: { id: string; orgId: string | n
   const [applyInvoiceId, setApplyInvoiceId] = useState("");
   const [applyAmount, setApplyAmount] = useState("");
   const [invoices, setInvoices] = useState<InvoiceOption[]>([]);
-  const [readError, setReadError] = useState("");
+  const [readError, setReadError] = useState<"" | "readFailed" | "updatedReadFailed">("");
   const [invoiceError, setInvoiceError] = useState("");
 
   useEntityTitle(cc?.contact?.name);
@@ -107,7 +95,7 @@ function CustomerPrepaymentDetail({ id, orgId }: { id: string; orgId: string | n
       .then((data) => {
         if (!controller.signal.aborted) setCc(customerPrepaymentRow(data.customerCredit as CustomerCreditWire));
       })
-      .catch(() => { if (!controller.signal.aborted) setReadError("Unable to load valid prepayment amounts. Try again."); })
+      .catch(() => { if (!controller.signal.aborted) setReadError("readFailed"); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
   }, [id, orgId]);
@@ -126,7 +114,7 @@ function CustomerPrepaymentDetail({ id, orgId }: { id: string; orgId: string | n
         const rows: InvoiceOption[] = data.data.map(customerPrepaymentInvoice);
         if (!controller.signal.aborted) setInvoices(rows.filter(inv => customerPrepaymentInvoiceEligible(cc, inv)));
       })
-      .catch(() => { if (!controller.signal.aborted) { setInvoices([]); setInvoiceError("Unable to load valid invoice balances. Reopen to try again."); } });
+      .catch(() => { if (!controller.signal.aborted) { setInvoices([]); setInvoiceError("invoiceReadFailed"); } });
     return () => controller.abort();
   }, [orgId, applyOpen, cc]);
 
@@ -146,78 +134,83 @@ function CustomerPrepaymentDetail({ id, orgId }: { id: string; orgId: string | n
         body: JSON.stringify(payload),
       });
       if (res.ok) {
-        const data = await res.json();
-        try { setCc({ ...cc, ...customerPrepaymentRow(data.customerCredit as CustomerCreditWire) }); }
-        catch { setCc(null); setReadError("Unable to read the updated prepayment balance. Reload before continuing."); }
+        try {
+          const data = await res.json();
+          setCc({ ...cc, ...customerPrepaymentRow(data.customerCredit as CustomerCreditWire) });
+        } catch {
+          setCc(null);
+          setReadError("updatedReadFailed");
+          setApplyOpen(false);
+          return;
+        }
         setApplyOpen(false);
         setApplyInvoiceId("");
         setApplyAmount("");
-        toast.success("Credit put towards the invoice");
+        toast.success(t("applySuccess"));
       } else {
-        const data = await res.json();
-        toast.error(typeof data.error === "string" ? data.error : "Couldn't use this credit");
+        toast.error(t("applyFailed"));
       }
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Couldn't use this credit");
+    } catch {
+      toast.error(t("applyFailed"));
     } finally {
       setApplyLoading(false);
     }
   }
 
-  if (loading) return <div className="space-y-6"><PageHeader title="Loading..." /></div>;
-  if (readError) return <p role="alert" className="text-sm text-destructive">{readError}</p>;
-  if (!cc) return <div className="space-y-6"><PageHeader title="Prepayment not found" /></div>;
+  if (loading) return <div className="space-y-6"><PageHeader title={t("loading")} /></div>;
+  if (readError) return <p role="alert" className="text-sm text-destructive">{t(readError)}</p>;
+  if (!cc) return <div className="space-y-6"><PageHeader title={t("notFound")} /></div>;
 
   let applicationValid = false;
   let applicationError = "";
   const selected = invoices.find(inv => inv.id === applyInvoiceId);
   if (selected && applyAmount) {
     try { customerPrepaymentApplication(applyAmount, cc, selected); applicationValid = true; }
-    catch (error) { applicationError = error instanceof Error ? error.message : "Enter a valid amount"; }
+    catch { applicationError = t("invalidAmount"); }
   }
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Prepayment" description={`From: ${cc.contact?.name || "Unknown"}`}>
+      <PageHeader title={t("prepayment")} description={t("recipient", { name: cc.contact?.name || t("unknown") })}>
         <Button variant="outline" size="sm" asChild>
-          <Link href="/sales/customer-prepayments"><ArrowLeft className="mr-2 size-4" />Back</Link>
+          <Link href="/sales/customer-prepayments"><ArrowLeft className="mr-2 size-4" />{t("back")}</Link>
         </Button>
         {cc.status === "open" && cc.amountRemaining > 0n && (
           <Dialog open={applyOpen} onOpenChange={(open) => {
             setApplyOpen(open); setInvoices([]); setInvoiceError(""); setApplyInvoiceId(""); setApplyAmount("");
           }}>
             <DialogTrigger asChild>
-              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" title="Put this credit towards what a customer owes on an invoice">
-                <FileText className="mr-2 size-4" />Apply to an invoice
+              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" title={t("applyHint")}>
+                <FileText className="mr-2 size-4" />{t("applyAction")}
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Apply this credit to an invoice</DialogTitle>
+                <DialogTitle>{t("applyTitle")}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Invoice</Label>
+                  <Label>{t("invoice")}</Label>
                   <Select value={applyInvoiceId} onValueChange={setApplyInvoiceId}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select an invoice..." />
+                      <SelectValue placeholder={t("selectInvoice")} />
                     </SelectTrigger>
                     <SelectContent>
                       {invoices.map((inv) => (
                         <SelectItem key={inv.id} value={inv.id}>
-                          {inv.invoiceNumber} · {inv.contact?.name || "Unknown"} · Due: {formatMoney(inv.amountDue, inv.currencyCode)}
+                          {t("invoiceOption", { number: inv.invoiceNumber, name: inv.contact?.name || t("unknown"), amount: formatMoney(inv.amountDue, inv.currencyCode) })}
                         </SelectItem>
                       ))}
                       {invoices.length === 0 && (
                         <div className="px-2 py-4 text-center text-sm text-muted-foreground">
-                          No outstanding invoices in {cc.currencyCode}
+                          {t("noInvoices", { currency: cc.currencyCode })}
                         </div>
                       )}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Amount</Label>
+                  <Label>{t("amount")}</Label>
                   <InvoiceAmountInput
                     currency={cc.currencyCode}
                     value={applyAmount}
@@ -225,10 +218,10 @@ function CustomerPrepaymentDetail({ id, orgId }: { id: string; orgId: string | n
                     placeholder={customerPrepaymentDecimal(cc.amountRemaining, cc.currencyCode)}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Available credit: {formatMoney(cc.amountRemaining, cc.currencyCode)}
+                    {t("availableCredit", { amount: formatMoney(cc.amountRemaining, cc.currencyCode) })}
                   </p>
                 </div>
-                {invoiceError && <p role="alert" className="text-sm text-destructive">{invoiceError}</p>}
+                {invoiceError && <p role="alert" className="text-sm text-destructive">{t("invoiceReadFailed")}</p>}
                 {applicationError && <p role="alert" className="text-sm text-destructive">{applicationError}</p>}
                 <Button
                   onClick={handleApply}
@@ -236,7 +229,7 @@ function CustomerPrepaymentDetail({ id, orgId }: { id: string; orgId: string | n
                   disabled={!applicationValid || !!invoiceError}
                   className="w-full bg-emerald-600 hover:bg-emerald-700"
                 >
-                  Put towards the invoice
+                  {t("applySubmit")}
                 </Button>
               </div>
             </DialogContent>
@@ -246,13 +239,13 @@ function CustomerPrepaymentDetail({ id, orgId }: { id: string; orgId: string | n
 
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         <Badge variant="outline" className={statusColors[cc.status] || ""}>
-          {statusLabels[cc.status] || cc.status}
+          {customerPrepaymentStatusLabel(t, cc.status)}
         </Badge>
         <span className="text-xs sm:text-sm text-muted-foreground">
-          {sourceLabels[cc.sourceType] || cc.sourceType}
+          {customerPrepaymentSourceLabel(t, cc.sourceType)}
         </span>
         <span className="text-xs sm:text-sm text-muted-foreground">
-          Received {cc.date}
+          {t("received", { date: cc.date })}
         </span>
       </div>
 
@@ -260,7 +253,7 @@ function CustomerPrepaymentDetail({ id, orgId }: { id: string; orgId: string | n
 
       {cc.notes && (
         <div className="rounded-lg border p-4">
-          <p className="text-xs font-medium text-muted-foreground mb-1">Notes</p>
+          <p className="text-xs font-medium text-muted-foreground mb-1">{t("notes")}</p>
           <p className="text-sm">{cc.notes}</p>
         </div>
       )}

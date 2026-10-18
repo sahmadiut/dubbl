@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { customerPrepaymentStatusLabel, customerPrepaymentSourceLabel, type CustomerPrepaymentTranslate } from "@/i18n/customer-prepayment-presentation";
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { useRouter } from "next/navigation";
@@ -45,60 +47,45 @@ const statusColors: Record<string, string> = {
   void: "border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300",
 };
 
-// Plain-language status labels (end users aren't accountants).
-const statusLabels: Record<string, string> = {
-  open: "available",
-  applied: "used",
-  refunded: "refunded",
-  void: "cancelled",
-};
-
-// Plain-language labels for how the money arrived.
-const sourceLabels: Record<string, string> = {
-  prepayment: "Paid in advance",
-  overpayment: "Overpaid",
-  credit_note: "Credit note",
-};
-
-function buildColumns(): Column<CustomerCredit>[] {
+function buildColumns(t: CustomerPrepaymentTranslate): Column<CustomerCredit>[] {
   return [
     {
       key: "date",
-      header: "Date",
+      header: t("date"),
       sortKey: "date",
       className: "w-28",
       render: (r) => <span className="text-sm">{r.date}</span>,
     },
     {
       key: "contact",
-      header: "Customer",
+      header: t("customer"),
       render: (r) => (
         <span className="text-sm font-medium">{r.contact?.name || "-"}</span>
       ),
     },
     {
       key: "source",
-      header: "Source",
+      header: t("source"),
       className: "w-36",
       render: (r) => (
         <span className="text-sm text-muted-foreground">
-          {sourceLabels[r.sourceType] || r.sourceType}
+          {customerPrepaymentSourceLabel(t, r.sourceType)}
         </span>
       ),
     },
     {
       key: "status",
-      header: "Status",
+      header: t("status"),
       className: "w-24",
       render: (r) => (
         <Badge variant="outline" className={statusColors[r.status] || ""}>
-          {statusLabels[r.status] || r.status}
+          {customerPrepaymentStatusLabel(t, r.status)}
         </Badge>
       ),
     },
     {
       key: "amount",
-      header: "Original",
+      header: t("original"),
       sortKey: "amount",
       className: "w-28 text-right",
       render: (r) => (
@@ -109,7 +96,7 @@ function buildColumns(): Column<CustomerCredit>[] {
     },
     {
       key: "remaining",
-      header: "Remaining",
+      header: t("remaining"),
       sortKey: "remaining",
       className: "w-28 text-right",
       render: (r) => (
@@ -127,10 +114,11 @@ export default function CustomerPrepaymentsPage() {
 }
 
 function CustomerPrepaymentsList({ orgId }: { orgId: string | null }) {
+  const t = useTranslations("CustomerPrepayments");
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
   const [credits, setCredits] = useState<CustomerCredit[]>([]);
-  const [readError, setReadError] = useState("");
+  const [readError, setReadError] = useState<"" | "readFailed" | "moreFailed">("");
   const generation = useRef(0);
   const [initialLoad, setInitialLoad] = useState(true);
   const [refetching, setRefetching] = useState(false);
@@ -144,14 +132,14 @@ function CustomerPrepaymentsList({ orgId }: { orgId: string | null }) {
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search);
 
-  useDocumentTitle("Sales · Prepayments");
+  useDocumentTitle(t("pageTitle"));
 
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
   const PAGE_SIZE = 50;
 
-  const columns = useMemo(() => buildColumns(), []);
+  const columns = useMemo(() => buildColumns(t), [t]);
 
   const buildParams = useCallback((p: number) => {
     const params = new URLSearchParams();
@@ -189,7 +177,7 @@ function CustomerPrepaymentsList({ orgId }: { orgId: string | null }) {
         setTotalCount(data.pagination?.total || 0);
       })
       .then(() => devDelay())
-      .catch(() => { if (!cancelled) { setCredits([]); setReadError("Unable to load valid prepayment amounts. Try again."); } })
+      .catch(() => { if (!cancelled) { setCredits([]); setReadError("readFailed"); } })
       .finally(() => { if (!cancelled) { setInitialLoad(false); setRefetching(false); setFetchKey((k) => k + 1); } });
 
     return () => { cancelled = true; controller.abort(); generation.current += 1; };
@@ -213,7 +201,7 @@ function CustomerPrepaymentsList({ orgId }: { orgId: string | null }) {
         setCredits((prev) => [...prev, ...rows]);
         setPage(nextPage);
       })
-      .catch(() => { if (current === generation.current) setReadError("Unable to load more valid prepayment amounts. Try again."); })
+      .catch(() => { if (current === generation.current) setReadError("moreFailed"); })
       .finally(() => { if (current === generation.current) setLoadingMore(false); });
   }, [orgId, page, buildParams, loadingMore, refetching, readError]);
 
@@ -255,9 +243,9 @@ function CustomerPrepaymentsList({ orgId }: { orgId: string | null }) {
     return credits.filter(
       (c) =>
         (c.contact?.name || "").toLowerCase().includes(q) ||
-        (sourceLabels[c.sourceType] || c.sourceType).toLowerCase().includes(q)
+        customerPrepaymentSourceLabel(t, c.sourceType).toLowerCase().includes(q)
     );
-  }, [credits, debouncedSearch]);
+  }, [credits, debouncedSearch, t]);
 
   // Bump searchKey when debounced search changes to trigger ContentReveal
   useEffect(() => {
@@ -276,9 +264,9 @@ function CustomerPrepaymentsList({ orgId }: { orgId: string | null }) {
           {/* Top: title + CTA */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h2 className="text-lg font-semibold tracking-tight">Prepayments</h2>
+              <h2 className="text-lg font-semibold tracking-tight">{t("prepayments")}</h2>
               <p className="mt-1 text-sm text-muted-foreground max-w-md">
-                Money a customer paid you in advance — a credit sitting on their account that you can put towards a future invoice.
+                {t("emptyDescription")}
               </p>
             </div>
             <Button
@@ -286,7 +274,7 @@ function CustomerPrepaymentsList({ orgId }: { orgId: string | null }) {
               className="bg-emerald-600 hover:bg-emerald-700 shrink-0"
             >
               <Plus className="mr-2 size-4" />
-              New prepayment
+              {t("newPrepayment")}
             </Button>
           </div>
 
@@ -294,7 +282,7 @@ function CustomerPrepaymentsList({ orgId }: { orgId: string | null }) {
             {/* Left: how it works */}
             <div className="rounded-xl border bg-card overflow-hidden">
               <div className="bg-muted/30 px-3 sm:px-5 py-3 border-b">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">How a prepayment works</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("howItWorks")}</p>
               </div>
               <div className="divide-y">
                 <div className="flex items-center justify-between px-3 sm:px-5 py-3.5">
@@ -303,8 +291,8 @@ function CustomerPrepaymentsList({ orgId }: { orgId: string | null }) {
                       <Wallet className="size-3.5 text-emerald-500" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">Customer pays you early</p>
-                      <p className="text-[11px] text-muted-foreground">Credit on account</p>
+                      <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">{t("paidEarly")}</p>
+                      <p className="text-[11px] text-muted-foreground">{t("creditOnAccount")}</p>
                     </div>
                   </div>
                   <span className="font-mono text-sm font-medium text-emerald-600 dark:text-emerald-400">+$500.00</span>
@@ -315,7 +303,7 @@ function CustomerPrepaymentsList({ orgId }: { orgId: string | null }) {
                       <ReceiptText className="size-3.5 text-blue-500" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium">Put towards an invoice</p>
+                      <p className="text-sm font-medium">{t("putTowardsInvoice")}</p>
                       <p className="text-[11px] text-muted-foreground">INV-0042</p>
                     </div>
                   </div>
@@ -324,7 +312,7 @@ function CustomerPrepaymentsList({ orgId }: { orgId: string | null }) {
                 <div className="flex items-center justify-between px-3 sm:px-5 py-3.5">
                   <div className="flex items-center gap-3">
                     <div className="size-7" />
-                    <p className="text-sm font-semibold">Credit left over</p>
+                    <p className="text-sm font-semibold">{t("creditLeft")}</p>
                   </div>
                   <span className="font-mono text-sm font-bold">$200.00</span>
                 </div>
@@ -333,26 +321,26 @@ function CustomerPrepaymentsList({ orgId }: { orgId: string | null }) {
 
             {/* Right: Use cases */}
             <div className="space-y-3">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">When to use</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("whenToUse")}</p>
               {[
                 {
-                  title: "Deposit before work starts",
-                  desc: "A customer pays up front to secure a booking or kick off a job.",
+                  title: t("depositTitle"),
+                  desc: t("depositDescription"),
                   color: "border-l-emerald-400",
                 },
                 {
-                  title: "Customer paid too much",
-                  desc: "Got an overpayment on an invoice? Hold the extra as a credit on their account.",
+                  title: t("overpaidTitle"),
+                  desc: t("overpaidDescription"),
                   color: "border-l-blue-400",
                 },
                 {
-                  title: "Retainer or top-up",
-                  desc: "Money paid in advance to be drawn down against future invoices.",
+                  title: t("retainerTitle"),
+                  desc: t("retainerDescription"),
                   color: "border-l-amber-400",
                 },
                 {
-                  title: "Put it towards an invoice later",
-                  desc: "When you bill them, use the available credit to reduce what they owe.",
+                  title: t("laterTitle"),
+                  desc: t("laterDescription"),
                   color: "border-l-purple-400",
                 },
               ].map(({ title, desc, color }) => (
@@ -372,12 +360,12 @@ function CustomerPrepaymentsList({ orgId }: { orgId: string | null }) {
     <ContentReveal className="space-y-6">
       {/* Top: Stats */}
       <div className="grid gap-3 sm:grid-cols-3 [overflow-wrap:anywhere]">
-        <StatCard title="Received (loaded)" value={readError ? "—" : totals.received} icon={Wallet} />
-        <StatCard title="Available to use (loaded)" value={readError ? "—" : totals.remaining} icon={Wallet} />
-        <StatCard title="Prepayments" value={totalCount.toString()} icon={ReceiptText} />
+        <StatCard title={t("receivedLoaded")} value={readError ? "—" : totals.received} icon={Wallet} />
+        <StatCard title={t("availableLoaded")} value={readError ? "—" : totals.remaining} icon={Wallet} />
+        <StatCard title={t("prepayments")} value={totalCount.toString()} icon={ReceiptText} />
       </div>
 
-      {readError && <p role="alert" className="text-sm text-destructive">{readError}</p>}
+      {readError && <p role="alert" className="text-sm text-destructive">{t(readError)}</p>}
 
       <div className="h-px bg-border" />
 
@@ -386,10 +374,10 @@ function CustomerPrepaymentsList({ orgId }: { orgId: string | null }) {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Tabs value={statusFilter} onValueChange={setStatusFilter}>
             <TabsList className="overflow-x-auto">
-              <TabsTrigger value="all" className="whitespace-nowrap">All</TabsTrigger>
-              <TabsTrigger value="open" className="whitespace-nowrap" title="Credit still available to put towards an invoice">Available</TabsTrigger>
-              <TabsTrigger value="applied" className="whitespace-nowrap" title="Credit you've used against an invoice">Used</TabsTrigger>
-              <TabsTrigger value="void" className="whitespace-nowrap">Cancelled</TabsTrigger>
+              <TabsTrigger value="all" className="whitespace-nowrap">{t("all")}</TabsTrigger>
+              <TabsTrigger value="open" className="whitespace-nowrap" title={t("availableHint")}>{t("available")}</TabsTrigger>
+              <TabsTrigger value="applied" className="whitespace-nowrap" title={t("usedHint")}>{t("used")}</TabsTrigger>
+              <TabsTrigger value="void" className="whitespace-nowrap">{t("cancelled")}</TabsTrigger>
             </TabsList>
           </Tabs>
 
@@ -399,7 +387,7 @@ function CustomerPrepaymentsList({ orgId }: { orgId: string | null }) {
             className="bg-emerald-600 hover:bg-emerald-700"
           >
             <Plus className="mr-2 size-4" />
-            New prepayment
+            {t("newPrepayment")}
           </Button>
         </div>
 
@@ -407,27 +395,27 @@ function CustomerPrepaymentsList({ orgId }: { orgId: string | null }) {
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
             <Input
-              placeholder="Search prepayments..."
+              placeholder={t("search")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="h-8 w-56 pl-8 text-xs"
             />
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="text-xs text-muted-foreground shrink-0">From</span>
+            <span className="text-xs text-muted-foreground shrink-0">{t("from")}</span>
             <DatePicker
               value={dateFrom}
               onChange={(v) => setDateFrom(v)}
-              placeholder="Start date"
+              placeholder={t("startDate")}
               className="h-8 w-40 text-xs"
             />
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="text-xs text-muted-foreground shrink-0">To</span>
+            <span className="text-xs text-muted-foreground shrink-0">{t("to")}</span>
             <DatePicker
               value={dateTo}
               onChange={(v) => setDateTo(v)}
-              placeholder="End date"
+              placeholder={t("endDate")}
               className="h-8 w-40 text-xs"
             />
           </div>
@@ -440,15 +428,15 @@ function CustomerPrepaymentsList({ orgId }: { orgId: string | null }) {
             }}
           >
             <SelectTrigger className="h-8 w-44 text-xs">
-              <SelectValue placeholder="Sort by..." />
+              <SelectValue placeholder={t("sortBy")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="created:desc">Newest first</SelectItem>
-              <SelectItem value="created:asc">Oldest first</SelectItem>
-              <SelectItem value="amount:desc">Highest amount</SelectItem>
-              <SelectItem value="amount:asc">Lowest amount</SelectItem>
-              <SelectItem value="remaining:desc">Most remaining</SelectItem>
-              <SelectItem value="remaining:asc">Least remaining</SelectItem>
+              <SelectItem value="created:desc">{t("newest")}</SelectItem>
+              <SelectItem value="created:asc">{t("oldest")}</SelectItem>
+              <SelectItem value="amount:desc">{t("highest")}</SelectItem>
+              <SelectItem value="amount:asc">{t("lowest")}</SelectItem>
+              <SelectItem value="remaining:desc">{t("mostRemaining")}</SelectItem>
+              <SelectItem value="remaining:asc">{t("leastRemaining")}</SelectItem>
             </SelectContent>
           </Select>
           {hasFilters && (
@@ -459,7 +447,7 @@ function CustomerPrepaymentsList({ orgId }: { orgId: string | null }) {
               onClick={() => { setSearch(""); setDateFrom(""); setDateTo(""); }}
             >
               <X className="mr-1 size-3" />
-              Clear filters
+              {t("clearFilters")}
             </Button>
           )}
         </div>
@@ -472,7 +460,7 @@ function CustomerPrepaymentsList({ orgId }: { orgId: string | null }) {
               columns={columns}
               data={filteredCredits}
               loading={false}
-              emptyMessage="No prepayments match your filters."
+              emptyMessage={t("noMatches")}
               onRowClick={(r) => router.push(`/sales/customer-prepayments/${r.id}`)}
               sortBy={sortBy}
               sortOrder={sortOrder}
@@ -486,7 +474,7 @@ function CustomerPrepaymentsList({ orgId }: { orgId: string | null }) {
           <>
             <div className="flex items-center justify-between pt-1">
               <p className="text-xs text-muted-foreground">
-                Showing {credits.length} of {totalCount} prepayment{totalCount !== 1 ? "s" : ""}
+                {t("showing", { loaded: credits.length, total: totalCount })}
               </p>
             </div>
             {hasMore && (

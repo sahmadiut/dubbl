@@ -76,6 +76,7 @@ function loaded(path: string, states: Record<string, unknown> = {}) {
   const load = (id: string) => {
     if (id === "react") return { ...React, useState: (initial: unknown) => { const key = names[index++]; return [Object.hasOwn(states, key) ? states[key] : typeof initial === "function" ? initial() : initial, noop]; }, useEffect: noop, useRef: (value: unknown) => ({ current: value }), useMemo: (fn: () => unknown) => fn(), useCallback: (fn: unknown) => fn };
     if (id === "next-intl") return nextIntl;
+    if (id.endsWith("/invoice-amount-input")) return { InvoiceAmountInput };
     if (id === "next/navigation") return { useParams: () => ({ id: raw.id }), useRouter: () => ({ push: noop }) };
     if (id.endsWith("/create-drawer")) return { useCreateDrawer: () => ({ open: noop }) };
     if (id.endsWith("/use-debounce")) return { useDebounce: (value: string) => value };

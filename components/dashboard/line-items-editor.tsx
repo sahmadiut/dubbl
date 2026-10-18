@@ -1,4 +1,6 @@
 "use client";
+import { useTranslations } from "next-intl";
+import { documentPreviewMessage, type DocumentFormTranslate } from "@/i18n/document-form-presentation";
 
 import { useEffect, useMemo, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
@@ -59,18 +61,19 @@ function formatRatePct(rate: number) {
 // Whether a purchase-side rate's input VAT can be reclaimed. Rates that don't
 // carry a recoverable portion (exempt/no-vat) or are explicitly partial are
 // flagged so users understand what they'll actually get back.
-function reclaimHint(rate: TaxRateOption): string | null {
+function reclaimHint(t: DocumentFormTranslate, rate: TaxRateOption): string {
   const kind = rate.kind || "standard";
   if (rate.rate <= 0 || kind === "exempt" || kind === "no_vat" || kind === "sales_tax_us") {
-    return "not reclaimable";
+    return t("notReclaimable");
   }
   const recoverable = rate.recoverablePercent ?? 10000;
-  if (recoverable <= 0) return "not reclaimable";
-  if (recoverable < 10000) return `${formatRatePct(recoverable)}% reclaimable`;
-  return "reclaimable";
+  if (recoverable <= 0) return t("notReclaimable");
+  if (recoverable < 10000) return t("partlyReclaimable", { percent: formatRatePct(recoverable) });
+  return t("reclaimable");
 }
 
 export function LineItemsEditor({ lines, onChange, accountTypeFilter, taxContext, currencyCode, roundPriceFirst = false, priceFractionDigits = 2, onValidityChange, documentKind = "invoice" }: LineItemsEditorProps) {
+  const t = useTranslations("DocumentForms");
   const [taxRates, setTaxRates] = useState<TaxRateOption[]>([]);
 
   // Fetch the org's tax rates once (org via x-organization-id, mirroring the
@@ -115,14 +118,14 @@ export function LineItemsEditor({ lines, onChange, accountTypeFilter, taxContext
 
   return (
     <div className="space-y-3">
-      {documentKind === "recurringBill" && <p className="text-xs text-muted-foreground">Recurring bill prices use a fixed two-decimal scale in every currency: 1.00 stores 100 units. Amounts below show those units in {currencyCode}. Price and quantity are rounded before multiplication. Tax uses the current rate when each draft bill is generated.</p>}
-      {preview.error && <p role="alert" className="text-xs text-red-600">{preview.error}</p>}
+      {documentKind === "recurringBill" && <p className="text-xs text-muted-foreground">{t("recurringBillScale", { currency: currencyCode ?? "" })}</p>}
+      {preview.error && <p role="alert" className="text-xs text-red-600">{documentPreviewMessage(t, preview.error)}</p>}
       <div className="overflow-x-auto rounded-lg border">
         <div className="grid min-w-[620px] grid-cols-[1fr_80px_100px_120px_40px] gap-2 border-b bg-muted/50 px-3 py-2 text-xs font-medium text-muted-foreground">
-          <span>Description</span>
-          <span className="text-right">Qty</span>
-          <span className="text-right">Price{documentKind === "recurringBill" ? " (fixed two-decimal scale)" : currencyCode ? ` (${currencyCode})` : ""}</span>
-          <span className="text-right">Amount</span>
+          <span>{t("description")}</span>
+          <span className="text-right">{t("quantity")}</span>
+          <span className="text-right">{documentKind === "recurringBill" ? t("priceFixedScale") : currencyCode ? t("priceCurrency", { currency: currencyCode }) : t("price")}</span>
+          <span className="text-right">{t("amount")}</span>
           <span />
         </div>
         {lines.map((line, i) => {
@@ -130,7 +133,7 @@ export function LineItemsEditor({ lines, onChange, accountTypeFilter, taxContext
             ? taxRates.find((t) => t.id === line.taxRateId)
             : undefined;
           const hint =
-            taxContext === "purchase" && selectedRate ? reclaimHint(selectedRate) : null;
+            taxContext === "purchase" && selectedRate ? reclaimHint(t, selectedRate) : null;
           return (
             <div
               key={i}
@@ -141,23 +144,23 @@ export function LineItemsEditor({ lines, onChange, accountTypeFilter, taxContext
                   className="h-8 text-sm"
                   value={line.description}
                   onChange={(e) => updateLine(i, "description", e.target.value)}
-                  placeholder="Item description"
+                  placeholder={t("itemDescription")}
                 />
                 <AccountPicker
                   value={line.accountId}
                   onChange={(v) => updateLine(i, "accountId", v)}
                   typeFilter={accountTypeFilter}
-                  placeholder="Account"
+                  placeholder={t("account")}
                 />
                 <Select
                   value={line.taxRateId || "none"}
                   onValueChange={(v) => updateLine(i, "taxRateId", v === "none" ? "" : v)}
                 >
                   <SelectTrigger className="h-8 text-sm">
-                    <SelectValue placeholder="No tax" />
+                    <SelectValue placeholder={t("noTax")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">No tax</SelectItem>
+                    <SelectItem value="none">{t("noTax")}</SelectItem>
                     {taxRates.map((t) => (
                       <SelectItem key={t.id} value={t.id}>
                         {t.name} ({formatRatePct(t.rate)}%)
@@ -171,7 +174,7 @@ export function LineItemsEditor({ lines, onChange, accountTypeFilter, taxContext
               </div>
               <Input
                 className="h-8 text-right text-sm font-mono tabular-nums"
-                aria-label={`Quantity for line ${i + 1}`}
+                aria-label={t("quantityLine", { number: i + 1 })}
                 type="number"
                 step="any"
                 value={line.quantity}
@@ -179,7 +182,7 @@ export function LineItemsEditor({ lines, onChange, accountTypeFilter, taxContext
               />
               <CurrencyInput
                 size="sm"
-                aria-label={`Price for line ${i + 1}`}
+                aria-label={t("priceLine", { number: i + 1 })}
                 fractionDigits={priceFractionDigits}
                 value={line.unitPrice}
                 onChange={(v) => updateLine(i, "unitPrice", v)}
@@ -193,6 +196,7 @@ export function LineItemsEditor({ lines, onChange, accountTypeFilter, taxContext
                 size="icon"
                 className="size-8"
                 onClick={() => removeLine(i)}
+                aria-label={t("removeLine", { number: i + 1 })}
                 disabled={lines.length <= 1}
               >
                 <Trash2 className="size-3.5 text-muted-foreground" />
@@ -209,23 +213,23 @@ export function LineItemsEditor({ lines, onChange, accountTypeFilter, taxContext
             className="text-xs"
           >
             <Plus className="mr-1 size-3" />
-            Add line
+            {t("addLine")}
           </Button>
           <div className="space-y-0.5 text-right text-sm font-mono tabular-nums">
             <div className="flex justify-between gap-6">
-              <span className="text-muted-foreground">Subtotal</span>
+              <span className="text-muted-foreground">{t("subtotal")}</span>
               <span>{decimal(preview.subtotal)}</span>
             </div>
             <div className="flex justify-between gap-6">
-              <span className="text-muted-foreground">Tax</span>
+              <span className="text-muted-foreground">{t("tax")}</span>
               <span>{decimal(preview.taxTotal)}</span>
             </div>
             <div className="flex justify-between gap-6 font-semibold">
-              <span>Total</span>
+              <span>{t("total")}</span>
               <span>{decimal(preview.total)}</span>
             </div>
             {"amountDue" in preview && typeof preview.amountDue === "bigint" && <div className="flex justify-between gap-6 font-semibold">
-              <span>Amount due</span>
+              <span>{t("amountDue")}</span>
               <span>{decimal(preview.amountDue)}</span>
             </div>}
           </div>

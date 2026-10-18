@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createElement } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderToStaticMarkup } from "./helpers/presentation";
 import { DualAmount } from "../components/ui/dual-amount";
 import { InvoiceAmountInput } from "../components/dashboard/invoice-amount-input";
 

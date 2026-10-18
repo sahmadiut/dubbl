@@ -193,8 +193,8 @@ function DrawerFooter({
   saving,
   label,
   disabled = false,
-  cancelLabel = "Cancel",
-  creatingLabel = "Creating...",
+  cancelLabel,
+  creatingLabel,
 }: {
   onClose: () => void;
   saving: boolean;
@@ -203,17 +203,18 @@ function DrawerFooter({
   cancelLabel?: string;
   creatingLabel?: string;
 }) {
+  const t = useTranslations("DocumentForms");
   return (
     <div className="sticky bottom-0 z-10 flex items-center justify-end gap-3 border-t bg-background/80 px-4 py-3 sm:px-6 sm:py-4 backdrop-blur-sm">
       <Button type="button" variant="outline" onClick={onClose}>
-        {cancelLabel}
+        {cancelLabel ?? t("cancel")}
       </Button>
       <Button
         type="submit"
         disabled={saving || disabled}
         className="bg-emerald-600 hover:bg-emerald-700"
       >
-        {saving ? creatingLabel : label}
+        {saving ? (creatingLabel ?? t("creating")) : label}
       </Button>
     </div>
   );

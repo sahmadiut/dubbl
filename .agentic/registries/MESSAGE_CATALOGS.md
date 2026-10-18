@@ -126,7 +126,7 @@ Extraction ownership:
 | LOC-039 | LOC-025 child: payment list/detail; see [scope](SALES_PAYMENT_CATALOGS.md) |
 | LOC-040 | LOC-025 child: invoices and payment-recording dialogs; see [scope](SALES_INVOICE_CATALOGS.md) |
 | LOC-041 | LOC-025 child: quotes; see [scope](SALES_QUOTE_CATALOGS.md) |
-| LOC-042 | LOC-025 child: cash sales/receipts |
+| LOC-042 | LOC-025 child: cash sales/receipts and shared receipt attachments; see [scope](SALES_RECEIPT_CATALOGS.md) |
 | LOC-043 | LOC-025 child: credit notes |
 | LOC-044 | LOC-025 child: customer prepayments |
 | LOC-045 | LOC-025 child: recurring invoices |

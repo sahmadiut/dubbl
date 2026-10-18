@@ -1372,6 +1372,7 @@ interface BankAccountOption {
 }
 
 function SalesReceiptDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useTranslations("SalesReceipts");
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [contactId, setContactId] = useState("");
@@ -1423,17 +1424,17 @@ function SalesReceiptDrawer({ open, onClose }: { open: boolean; onClose: () => v
       const code = salesReceiptEditorCurrency(null, customerData.contact.currencyCode, orgData.organization.defaultCurrency);
       if (!controller.signal.aborted) setCurrencyContext({ orgId, contactId, code });
     }).catch(() => {
-      if (!controller.signal.aborted) setCurrencyContext({ orgId, contactId, error: "Unable to load the customer's currency. Select a currency to continue." });
+      if (!controller.signal.aborted) setCurrencyContext({ orgId, contactId, error: t("currencyFailed") });
     });
     return () => controller.abort();
-  }, [open, orgId, contactId]);
+  }, [open, orgId, contactId, t]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!contactId) { toast.error("Please select a customer"); return; }
-    if (!bankAccountId) { toast.error("Please choose where the money was paid in"); return; }
+    if (!contactId) { toast.error(t("selectCustomer")); return; }
+    if (!bankAccountId) { toast.error(t("selectAccount")); return; }
     if (!orgId) return;
-    if (!currencyCode || !validLines) { toast.error("Check the cash sale currency and line amounts"); return; }
+    if (!currencyCode || !validLines) { toast.error(t("checkLines")); return; }
 
     try {
       const exactLines = salesReceiptEditorLines(lines);
@@ -1451,16 +1452,14 @@ function SalesReceiptDrawer({ open, onClose }: { open: boolean; onClose: () => v
           lines: exactLines,
         }),
       });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(typeof data.error === "string" ? data.error : "Failed to record cash sale");
-      }
+      if (!res.ok) throw new Error("Cash sale request failed");
       const data = await res.json();
-      toast.success("Cash sale recorded");
+      if (typeof data?.salesReceipt?.id !== "string" || !data.salesReceipt.id.trim()) throw new Error("Invalid cash sale response");
+      toast.success(t("created"));
       onClose();
       router.push(`/sales/receipts/${data.salesReceipt.id}`);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to record cash sale");
+    } catch {
+      toast.error(t("createFailed"));
     } finally {
       setSaving(false);
     }
@@ -1473,32 +1472,32 @@ function SalesReceiptDrawer({ open, onClose }: { open: boolean; onClose: () => v
           <div className="flex items-center gap-3">
             <DrawerIcon><Banknote className="size-5" /></DrawerIcon>
             <div>
-              <SheetTitle className="text-lg">New Cash Sale</SheetTitle>
-              <SheetDescription>Record an over-the-counter sale that&apos;s already been paid for.</SheetDescription>
+              <SheetTitle className="text-lg">{t("newCashSaleHeading")}</SheetTitle>
+              <SheetDescription>{t("drawerDescription")}</SheetDescription>
             </div>
           </div>
         </SheetHeader>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
             <div className="space-y-4">
-              <SectionLabel>Sale Details</SectionLabel>
+              <SectionLabel>{t("saleDetails")}</SectionLabel>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Customer *</Label>
+                  <Label>{t("customerRequired")}</Label>
                   <ContactPicker value={contactId} onChange={setContactId} type="customer" />
                 </div>
                 <div className="space-y-2">
-                  <Label>Reference</Label>
-                  <Input value={reference} onChange={(e) => setReference(e.target.value)} placeholder="Receipt reference, etc." />
+                  <Label>{t("reference")}</Label>
+                  <Input value={reference} onChange={(e) => setReference(e.target.value)} placeholder={t("referencePlaceholder")} />
                 </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Date</Label>
-                  <DatePicker value={date} onChange={setDate} placeholder="Sale date" />
+                  <Label>{t("date")}</Label>
+                  <DatePicker value={date} onChange={setDate} placeholder={t("saleDate")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Currency</Label>
+                  <Label>{t("currency")}</Label>
                   <CurrencySelect value={currencyCode || ""} onValueChange={setSelectedCurrency} />
                   {!selectedCurrency && currentCurrencyContext?.error && <p role="alert" className="text-xs text-red-600">{currentCurrencyContext.error}</p>}
                 </div>
@@ -1508,19 +1507,19 @@ function SalesReceiptDrawer({ open, onClose }: { open: boolean; onClose: () => v
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>What was sold</SectionLabel>
+              <SectionLabel>{t("whatWasSold")}</SectionLabel>
               <LineItemsEditor key={orgId} lines={lines} onChange={setLines} accountTypeFilter={["revenue"]} taxContext="sales" currencyCode={currencyCode} roundPriceFirst={false} priceFractionDigits={18} onValidityChange={setValidLines} />
             </div>
 
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Payment</SectionLabel>
+              <SectionLabel>{t("payment")}</SectionLabel>
               <div className="space-y-2">
-                <Label>Paid into *</Label>
+                <Label>{t("paidIntoRequired")}</Label>
                 <Select value={bankAccountId} onValueChange={setBankAccountId}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Choose where the money landed..." />
+                    <SelectValue placeholder={t("chooseAccount")} />
                   </SelectTrigger>
                   <SelectContent>
                     {bankAccounts.map((acc) => (
@@ -1530,13 +1529,13 @@ function SalesReceiptDrawer({ open, onClose }: { open: boolean; onClose: () => v
                     ))}
                     {bankAccounts.length === 0 && (
                       <div className="px-2 py-4 text-center text-sm text-muted-foreground">
-                        No bank or cash accounts yet
+                        {t("noAccounts")}
                       </div>
                     )}
                   </SelectContent>
                 </Select>
                 <p className="text-[11px] text-muted-foreground">
-                  The cash or bank account the customer paid into.
+                  {t("accountHint")}
                 </p>
               </div>
             </div>
@@ -1544,11 +1543,11 @@ function SalesReceiptDrawer({ open, onClose }: { open: boolean; onClose: () => v
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Notes</SectionLabel>
-              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notes for this sale..." rows={3} />
+              <SectionLabel>{t("notes")}</SectionLabel>
+              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("notesPlaceholder")} rows={3} />
             </div>
           </div>
-          <DrawerFooter onClose={onClose} saving={saving} disabled={!contactId || !bankAccountId || !currencyCode || !validLines || lines.some(line => !line.description.trim())} label="Record cash sale" />
+          <DrawerFooter onClose={onClose} saving={saving} disabled={!contactId || !bankAccountId || !currencyCode || !validLines || lines.some(line => !line.description.trim())} label={t("recordCashSale")} />
         </form>
       </SheetContent>
     </Sheet>

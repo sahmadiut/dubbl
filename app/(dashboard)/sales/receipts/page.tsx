@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { salesReceiptStatusLabel, type SalesReceiptTranslate } from "@/i18n/sales-receipt-presentation";
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { useRouter } from "next/navigation";
@@ -48,18 +50,12 @@ const statusColors: Record<string, string> = {
   void: "border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300",
 };
 
-// Plain-language status labels (end users aren't accountants).
-const statusLabels: Record<string, string> = {
-  draft: "draft",
-  paid: "paid",
-  void: "cancelled",
-};
-
-function buildColumns(): Column<SalesReceipt>[] {
+// Finite display labels; filter and transport codes stay canonical.
+function buildColumns(t: SalesReceiptTranslate): Column<SalesReceipt>[] {
   return [
     {
       key: "number",
-      header: "Number",
+      header: t("number"),
       sortKey: "number",
       className: "w-32",
       render: (r) => (
@@ -68,31 +64,31 @@ function buildColumns(): Column<SalesReceipt>[] {
     },
     {
       key: "contact",
-      header: "Customer",
+      header: t("customer"),
       render: (r) => (
         <span className="text-sm font-medium">{r.contact?.name || "-"}</span>
       ),
     },
     {
       key: "date",
-      header: "Date",
+      header: t("date"),
       sortKey: "date",
       className: "w-28",
       render: (r) => <span className="text-sm">{r.date}</span>,
     },
     {
       key: "status",
-      header: "Status",
+      header: t("status"),
       className: "w-24",
       render: (r) => (
         <Badge variant="outline" className={statusColors[r.status] || ""}>
-          {statusLabels[r.status] || r.status}
+          {salesReceiptStatusLabel(t, r.status)}
         </Badge>
       ),
     },
     {
       key: "total",
-      header: "Total",
+      header: t("total"),
       sortKey: "total",
       className: "w-28 text-right",
       render: (r) => (
@@ -105,6 +101,7 @@ function buildColumns(): Column<SalesReceipt>[] {
 }
 
 export default function SalesReceiptsPage() {
+  const t = useTranslations("SalesReceipts");
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
   const [loaded, setLoaded] = useState<{ context: string; receipts: SalesReceipt[]; total: number; error: string | null } | null>(null);
@@ -120,7 +117,7 @@ export default function SalesReceiptsPage() {
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search);
 
-  useDocumentTitle("Sales · Cash Sales");
+  useDocumentTitle(t("documentTitle"));
 
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -133,7 +130,7 @@ export default function SalesReceiptsPage() {
   const totalCount = loaded?.context === context ? loaded.total : 0;
   const error = loaded?.context === context ? loaded.error : null;
   const waitingForContext = !!orgId && loaded?.context !== context;
-  const columns = useMemo(() => buildColumns(), []);
+  const columns = useMemo(() => buildColumns(t), [t]);
 
   const buildParams = useCallback((p: number) => {
     const params = new URLSearchParams();
@@ -163,11 +160,11 @@ export default function SalesReceiptsPage() {
         const rows = data.data.map((row: SalesReceiptWire) => salesReceiptUiHeader(row));
         if (!controller.signal.aborted) setLoaded({ context, receipts: rows, total: data.pagination?.total || 0, error: null });
       })
-      .catch(() => { if (!controller.signal.aborted) setLoaded({ context, receipts: [], total: 0, error: "Unable to load valid cash sale amounts. Try again." }); })
+      .catch(() => { if (!controller.signal.aborted) setLoaded({ context, receipts: [], total: 0, error: t("readFailed") }); })
       .then(() => devDelay())
       .finally(() => { if (!controller.signal.aborted && generation.current === current) { setInitialLoad(false); setRefetching(false); setFetchKey(k => k + 1); } });
     return () => controller.abort();
-  }, [orgId, buildParams, context]);
+  }, [orgId, buildParams, context, t]);
 
   const loadMore = useCallback(() => {
     if (!orgId || loadingMore || waitingForContext) return;
@@ -182,9 +179,9 @@ export default function SalesReceiptsPage() {
         setLoaded(prev => prev?.context === context ? { ...prev, receipts: [...prev.receipts, ...rows], error: null } : prev);
         setPage(nextPage);
       })
-      .catch(() => { if (generation.current === current) setLoaded(prev => prev?.context === context ? { ...prev, error: "Unable to load more valid cash sale amounts. Try again." } : prev); })
+      .catch(() => { if (generation.current === current) setLoaded(prev => prev?.context === context ? { ...prev, error: t("moreFailed") } : prev); })
       .finally(() => { if (generation.current === current) setLoadingMore(false); });
-  }, [orgId, page, buildParams, loadingMore, waitingForContext, context]);
+  }, [orgId, page, buildParams, loadingMore, waitingForContext, context, t]);
 
   const hasMore = receipts.length < totalCount;
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -245,9 +242,9 @@ export default function SalesReceiptsPage() {
           {/* Top: title + CTA */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h2 className="text-lg font-semibold tracking-tight">Cash Sales</h2>
+              <h2 className="text-lg font-semibold tracking-tight">{t("cashSales")}</h2>
               <p className="mt-1 text-sm text-muted-foreground max-w-md">
-                Record over-the-counter sales that are paid for on the spot — no invoice, no waiting for payment.
+                {t("emptyDescription")}
               </p>
             </div>
             <Button
@@ -255,7 +252,7 @@ export default function SalesReceiptsPage() {
               className="bg-emerald-600 hover:bg-emerald-700 shrink-0"
             >
               <Plus className="mr-2 size-4" />
-              New cash sale
+              {t("newCashSale")}
             </Button>
           </div>
 
@@ -263,7 +260,7 @@ export default function SalesReceiptsPage() {
             {/* Left: how it works */}
             <div className="rounded-xl border bg-card overflow-hidden">
               <div className="bg-muted/30 px-3 sm:px-5 py-3 border-b">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">How a cash sale works</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("howItWorks")}</p>
               </div>
               <div className="divide-y">
                 <div className="flex items-center justify-between px-3 sm:px-5 py-3.5">
@@ -272,7 +269,7 @@ export default function SalesReceiptsPage() {
                       <ReceiptText className="size-3.5 text-blue-500" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium">Sale total</p>
+                      <p className="text-sm font-medium">{t("saleTotal")}</p>
                       <p className="text-[11px] text-muted-foreground">SR-0001</p>
                     </div>
                   </div>
@@ -284,8 +281,8 @@ export default function SalesReceiptsPage() {
                       <Banknote className="size-3.5 text-emerald-500" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">Paid into</p>
-                      <p className="text-[11px] text-muted-foreground">Cash drawer</p>
+                      <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">{t("paidInto")}</p>
+                      <p className="text-[11px] text-muted-foreground">{t("cashDrawer")}</p>
                     </div>
                   </div>
                   <span className="font-mono text-sm font-medium text-emerald-600 dark:text-emerald-400">+$45.00</span>
@@ -293,7 +290,7 @@ export default function SalesReceiptsPage() {
                 <div className="flex items-center justify-between px-3 sm:px-5 py-3.5">
                   <div className="flex items-center gap-3">
                     <div className="size-7" />
-                    <p className="text-sm font-semibold">Nothing owed</p>
+                    <p className="text-sm font-semibold">{t("nothingOwed")}</p>
                   </div>
                   <span className="font-mono text-sm font-bold">$0.00</span>
                 </div>
@@ -302,26 +299,26 @@ export default function SalesReceiptsPage() {
 
             {/* Right: Use cases */}
             <div className="space-y-3">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">When to use</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("whenToUse")}</p>
               {[
                 {
-                  title: "Counter or till sale",
-                  desc: "A walk-in customer buys something and pays right away — cash or card.",
+                  title: t("counterTitle"),
+                  desc: t("counterDescription"),
                   color: "border-l-emerald-400",
                 },
                 {
-                  title: "Market or pop-up stall",
-                  desc: "Selling at an event? Log each sale as it's paid for, with the money landing in your till.",
+                  title: t("marketTitle"),
+                  desc: t("marketDescription"),
                   color: "border-l-blue-400",
                 },
                 {
-                  title: "On-the-spot service",
-                  desc: "Completed a job and got paid immediately? Record it without raising an invoice.",
+                  title: t("serviceTitle"),
+                  desc: t("serviceDescription"),
                   color: "border-l-amber-400",
                 },
                 {
-                  title: "No invoice needed",
-                  desc: "Use an invoice instead when the customer pays you later.",
+                  title: t("noInvoiceTitle"),
+                  desc: t("noInvoiceDescription"),
                   color: "border-l-purple-400",
                 },
               ].map(({ title, desc, color }) => (
@@ -342,8 +339,8 @@ export default function SalesReceiptsPage() {
       {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
       {/* Top: Stats */}
       <div className="grid gap-3 sm:grid-cols-3">
-        <div className="min-w-0 [&_.font-mono]:break-all [&_.space-y-1]:min-w-0"><StatCard title="Collected (loaded matches)" value={totalCollected} icon={Banknote} /></div>
-        <StatCard title="Cash sales" value={totalCount.toString()} icon={ReceiptText} />
+        <div className="min-w-0 [&_.font-mono]:break-all [&_.space-y-1]:min-w-0"><StatCard title={t("collected")} value={totalCollected} icon={Banknote} /></div>
+        <StatCard title={t("cashSalesCount")} value={totalCount.toString()} icon={ReceiptText} />
       </div>
 
       <div className="h-px bg-border" />
@@ -353,10 +350,10 @@ export default function SalesReceiptsPage() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Tabs value={statusFilter} onValueChange={setStatusFilter}>
             <TabsList className="overflow-x-auto">
-              <TabsTrigger value="all" className="whitespace-nowrap">All</TabsTrigger>
-              <TabsTrigger value="draft" className="whitespace-nowrap">Draft</TabsTrigger>
-              <TabsTrigger value="paid" className="whitespace-nowrap">Paid</TabsTrigger>
-              <TabsTrigger value="void" className="whitespace-nowrap">Cancelled</TabsTrigger>
+              <TabsTrigger value="all" className="whitespace-nowrap">{t("all")}</TabsTrigger>
+              <TabsTrigger value="draft" className="whitespace-nowrap">{t("draftHeading")}</TabsTrigger>
+              <TabsTrigger value="paid" className="whitespace-nowrap">{t("paidHeading")}</TabsTrigger>
+              <TabsTrigger value="void" className="whitespace-nowrap">{t("cancelledHeading")}</TabsTrigger>
             </TabsList>
           </Tabs>
 
@@ -366,7 +363,7 @@ export default function SalesReceiptsPage() {
             className="bg-emerald-600 hover:bg-emerald-700"
           >
             <Plus className="mr-2 size-4" />
-            New cash sale
+            {t("newCashSale")}
           </Button>
         </div>
 
@@ -374,27 +371,27 @@ export default function SalesReceiptsPage() {
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
             <Input
-              placeholder="Search cash sales..."
+              placeholder={t("search")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="h-8 w-56 pl-8 text-xs"
             />
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="text-xs text-muted-foreground shrink-0">From</span>
+            <span className="text-xs text-muted-foreground shrink-0">{t("from")}</span>
             <DatePicker
               value={dateFrom}
               onChange={(v) => setDateFrom(v)}
-              placeholder="Start date"
+              placeholder={t("startDate")}
               className="h-8 w-40 text-xs"
             />
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="text-xs text-muted-foreground shrink-0">To</span>
+            <span className="text-xs text-muted-foreground shrink-0">{t("to")}</span>
             <DatePicker
               value={dateTo}
               onChange={(v) => setDateTo(v)}
-              placeholder="End date"
+              placeholder={t("endDate")}
               className="h-8 w-40 text-xs"
             />
           </div>
@@ -407,15 +404,15 @@ export default function SalesReceiptsPage() {
             }}
           >
             <SelectTrigger className="h-8 w-44 text-xs">
-              <SelectValue placeholder="Sort by..." />
+              <SelectValue placeholder={t("sortBy")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="created:desc">Newest first</SelectItem>
-              <SelectItem value="created:asc">Oldest first</SelectItem>
-              <SelectItem value="total:desc">Highest amount</SelectItem>
-              <SelectItem value="total:asc">Lowest amount</SelectItem>
-              <SelectItem value="number:desc">Number (desc)</SelectItem>
-              <SelectItem value="number:asc">Number (asc)</SelectItem>
+              <SelectItem value="created:desc">{t("newest")}</SelectItem>
+              <SelectItem value="created:asc">{t("oldest")}</SelectItem>
+              <SelectItem value="total:desc">{t("highest")}</SelectItem>
+              <SelectItem value="total:asc">{t("lowest")}</SelectItem>
+              <SelectItem value="number:desc">{t("numberDesc")}</SelectItem>
+              <SelectItem value="number:asc">{t("numberAsc")}</SelectItem>
             </SelectContent>
           </Select>
           {hasFilters && (
@@ -426,7 +423,7 @@ export default function SalesReceiptsPage() {
               onClick={() => { setSearch(""); setDateFrom(""); setDateTo(""); }}
             >
               <X className="mr-1 size-3" />
-              Clear filters
+              {t("clearFilters")}
             </Button>
           )}
         </div>
@@ -439,7 +436,7 @@ export default function SalesReceiptsPage() {
               columns={columns}
               data={filteredReceipts}
               loading={false}
-              emptyMessage="No cash sales match your filters."
+              emptyMessage={t("noMatches")}
               onRowClick={(r) => router.push(`/sales/receipts/${r.id}`)}
               sortBy={sortBy}
               sortOrder={sortOrder}
@@ -453,7 +450,7 @@ export default function SalesReceiptsPage() {
           <>
             <div className="flex items-center justify-between pt-1">
               <p className="text-xs text-muted-foreground">
-                Showing {receipts.length} of {totalCount} cash sale{totalCount !== 1 ? "s" : ""}
+                {t("showing", { loaded: receipts.length, total: totalCount })}
               </p>
             </div>
             {hasMore && (

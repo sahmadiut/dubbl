@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useEffect, useCallback } from "react";
 import { FileText, X, Eye, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -23,13 +24,14 @@ export function ReceiptAttachments({
   orgId,
   entityType,
   entityId,
-  label = "Attach receipt or invoice (optional)",
+  label,
 }: {
   orgId: string | null;
   entityType: string;
   entityId: string | null;
   label?: string;
 }) {
+  const t = useTranslations("ReceiptAttachments");
   const [docs, setDocs] = useState<DocItem[]>([]);
   const [loading, setLoading] = useState(false);
   // Bumped after each upload so the dropzone remounts clean (the file then shows
@@ -44,6 +46,7 @@ export function ReceiptAttachments({
         `/api/v1/documents?entityType=${encodeURIComponent(entityType)}&entityId=${entityId}&limit=50`,
         { headers: { "x-organization-id": orgId } }
       );
+      if (!res.ok) throw new Error("Attachment request failed");
       const data = await res.json();
       const list: DocItem[] = (data.data ?? []).map((d: DocItem) => ({
         id: d.id,
@@ -69,11 +72,12 @@ export function ReceiptAttachments({
       const res = await fetch(`/api/v1/documents/${id}/download`, {
         headers: { "x-organization-id": orgId },
       });
+      if (!res.ok) throw new Error("Attachment request failed");
       const data = await res.json();
       if (data.downloadUrl) window.open(data.downloadUrl, "_blank", "noopener");
       else throw new Error();
     } catch {
-      toast.error("Couldn't open the file");
+      toast.error(t("openFailed"));
     }
   }
 
@@ -89,7 +93,7 @@ export function ReceiptAttachments({
       if (!res.ok) throw new Error();
     } catch {
       setDocs(prev);
-      toast.error("Couldn't remove the file");
+      toast.error(t("removeFailed"));
     }
   }
 
@@ -97,7 +101,7 @@ export function ReceiptAttachments({
 
   return (
     <div className="space-y-1.5">
-      <Label className="text-xs">{label}</Label>
+      <Label className="text-xs">{label ?? t("label")}</Label>
 
       {docs.length > 0 && (
         <div className="space-y-1.5">
@@ -112,7 +116,7 @@ export function ReceiptAttachments({
                 type="button"
                 onClick={() => view(d.id)}
                 className="rounded p-1 text-muted-foreground hover:bg-muted"
-                title="View"
+                title={t("view")}
               >
                 <Eye className="size-3.5" />
               </button>
@@ -120,7 +124,7 @@ export function ReceiptAttachments({
                 type="button"
                 onClick={() => remove(d.id)}
                 className="rounded p-1 text-muted-foreground hover:bg-muted"
-                title="Remove"
+                title={t("remove")}
               >
                 <X className="size-3.5" />
               </button>
@@ -131,7 +135,7 @@ export function ReceiptAttachments({
 
       {loading && docs.length === 0 ? (
         <div className="flex items-center gap-2 py-2 text-xs text-muted-foreground">
-          <Loader2 className="size-3.5 animate-spin" /> Loading…
+          <Loader2 className="size-3.5 animate-spin" /> {t("loading")}
         </div>
       ) : (
         <FileUploader

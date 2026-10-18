@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { salesReceiptStatusLabel } from "@/i18n/sales-receipt-presentation";
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { ArrowLeft, Banknote, Landmark } from "lucide-react";
@@ -49,13 +51,6 @@ const statusColors: Record<string, string> = {
   void: "border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300",
 };
 
-// Plain-language status labels (end users aren't accountants).
-const statusLabels: Record<string, string> = {
-  draft: "draft",
-  paid: "paid",
-  void: "cancelled",
-};
-
 export default function SalesReceiptDetailPage() {
   const { id } = useParams<{ id: string }>();
   const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
@@ -63,6 +58,7 @@ export default function SalesReceiptDetailPage() {
 }
 
 function SalesReceiptDetailContent({ id, orgId }: { id: string; orgId: string | null }) {
+  const t = useTranslations("SalesReceipts");
   const [sr, setSr] = useState<SalesReceiptDetail | null>(null);
   const [loading, setLoading] = useState(!!orgId);
   const [error, setError] = useState<string | null>(null);
@@ -71,52 +67,54 @@ function SalesReceiptDetailContent({ id, orgId }: { id: string; orgId: string | 
   useEffect(() => {
     const controller = new AbortController();
     if (!orgId) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setError(null); setLoading(true);
     fetch(`/api/v1/sales-receipts/${id}`, { headers: { "x-organization-id": orgId }, signal: controller.signal })
       .then(r => { if (!r.ok) throw new Error("Unable to load cash sale"); return r.json(); })
       .then(data => { const receipt = salesReceiptUiDocument(data.salesReceipt as SalesReceiptWire); if (!controller.signal.aborted) setSr(receipt); })
-      .catch(() => { if (!controller.signal.aborted) setError("Unable to load valid cash sale amounts. Try again."); })
+      .catch(() => { if (!controller.signal.aborted) setError(t("readFailed")); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [id, orgId]);
+  }, [id, orgId, t]);
 
-  if (loading) return <div className="space-y-6"><PageHeader title="Loading..." /></div>;
+  if (loading) return <div className="space-y-6"><PageHeader title={t("loading")} /></div>;
   if (error) return <p role="alert" className="text-sm text-red-600">{error}</p>;
-  if (!sr) return <div className="space-y-6"><PageHeader title="Cash sale not found" /></div>;
+  if (!sr) return <div className="space-y-6"><PageHeader title={t("notFound")} /></div>;
 
   const paidInto = sr.bankAccount?.accountName
     || (sr.depositAccount ? `${sr.depositAccount.code} · ${sr.depositAccount.name}` : null);
 
   return (
     <div className="space-y-6">
-      <PageHeader title={sr.receiptNumber} description={`Sold to: ${sr.contact?.name || "Unknown"}`}>
+      <PageHeader title={sr.receiptNumber} description={t("soldTo", { name: sr.contact?.name || t("unknown") })}>
         <Button variant="outline" size="sm" asChild>
-          <Link href="/sales/receipts"><ArrowLeft className="mr-2 size-4" />Back</Link>
+          <Link href="/sales/receipts"><ArrowLeft className="mr-2 size-4" />{t("back")}</Link>
         </Button>
       </PageHeader>
 
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         <Badge variant="outline" className={statusColors[sr.status] || ""}>
-          {statusLabels[sr.status] || sr.status}
+          {salesReceiptStatusLabel(t, sr.status)}
         </Badge>
         <span className="text-xs sm:text-sm text-muted-foreground">
           {sr.date}
         </span>
         {sr.reference && (
           <span className="text-xs sm:text-sm text-muted-foreground">
-            Ref: {sr.reference}
+            {t("referenceValue", { reference: sr.reference })}
           </span>
         )}
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="rounded-lg border p-4">
-          <p className="text-xs text-muted-foreground">Total</p>
+          <p className="text-xs text-muted-foreground">{t("total")}</p>
           <p className="text-xl font-bold font-mono break-all">{salesReceiptUiMoney(sr.total, sr.currencyCode)}</p>
         </div>
         <div className="rounded-lg border p-4">
           <div className="flex items-center gap-2">
             <Banknote className="size-3.5 text-emerald-600" />
-            <p className="text-xs text-muted-foreground">Paid into</p>
+            <p className="text-xs text-muted-foreground">{t("paidInto")}</p>
           </div>
           <p className="text-sm font-medium mt-1 flex items-center gap-1.5">
             {paidInto ? (
@@ -125,7 +123,7 @@ function SalesReceiptDetailContent({ id, orgId }: { id: string; orgId: string | 
                 {paidInto}
               </>
             ) : (
-              <span className="text-muted-foreground">Not recorded</span>
+              <span className="text-muted-foreground">{t("notRecorded")}</span>
             )}
           </p>
         </div>
@@ -135,7 +133,7 @@ function SalesReceiptDetailContent({ id, orgId }: { id: string; orgId: string | 
 
       {sr.notes && (
         <div className="rounded-lg border p-4">
-          <p className="text-xs font-medium text-muted-foreground mb-1">Notes</p>
+          <p className="text-xs font-medium text-muted-foreground mb-1">{t("notes")}</p>
           <p className="text-sm">{sr.notes}</p>
         </div>
       )}

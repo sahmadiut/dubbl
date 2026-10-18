@@ -1,5 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { bankPaymentStatus, paymentFailure, requirePaymentResponse } from "@/i18n/bank-payment-presentation";
+
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -81,13 +84,13 @@ interface BatchDetail {
 
 const ITEM_STATUS_CONFIG: Record<
   string,
-  { label: string; variant: "default" | "secondary" | "outline" | "destructive" }
+  { variant: "default" | "secondary" | "outline" | "destructive" }
 > = {
-  pending: { label: "Pending", variant: "secondary" },
-  processing: { label: "Processing", variant: "default" },
-  completed: { label: "Completed", variant: "outline" },
-  failed: { label: "Failed", variant: "destructive" },
-  cancelled: { label: "Cancelled", variant: "outline" },
+  pending: { variant: "secondary" },
+  processing: { variant: "default" },
+  completed: { variant: "outline" },
+  failed: { variant: "destructive" },
+  cancelled: { variant: "outline" },
 };
 
 export default function BatchDetailPage() {
@@ -96,6 +99,8 @@ export default function BatchDetailPage() {
   return <BatchDetails key={`${orgId}:${id}`} id={id} orgId={orgId} />;
 }
 function BatchDetails({ id, orgId }: { id: string; orgId: string | null }) {
+  const t = useTranslations("BankPayments");
+  const errors = useTranslations("BankAccountErrors");
   const router = useRouter();
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [batch, setBatch] = useState<BatchDetail | null>(null);
@@ -106,7 +111,7 @@ function BatchDetails({ id, orgId }: { id: string; orgId: string | null }) {
   const [remittanceLoading, setRemittanceLoading] = useState(false);
   const [remittanceGroups, setRemittanceGroups] = useState<RemittanceGroup[] | null>(null);
   const [sending, setSending] = useState(false);
-  useDocumentTitle("Accounting \u00B7 Batch Details");
+  useDocumentTitle(t("detailsTitle"));
 
   const fetchBatch = useCallback((signal?: AbortSignal) => {
     if (!orgId || !id) return;
@@ -115,9 +120,9 @@ function BatchDetails({ id, orgId }: { id: string; orgId: string | null }) {
     })
       .then((res) => { if (!res.ok) throw new Error("Unable to load batch"); return res.json(); })
       .then((data) => { const saved = data.batch ? paymentUiBatch(data.batch) as unknown as BatchDetail : null; if (!signal?.aborted) { setBatch(saved); setReadError(""); } })
-      .catch(() => { if (!signal?.aborted) { setBatch(null); setReadError("Batch amounts are unavailable. Reload to try again."); } })
+      .catch(() => { if (!signal?.aborted) { setBatch(null); setReadError(t("batchesUnavailable")); } })
       .finally(() => { if (!signal?.aborted) setLoading(false); });
-  }, [orgId, id]);
+  }, [orgId, id, t]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -129,9 +134,9 @@ function BatchDetails({ id, orgId }: { id: string; orgId: string | null }) {
     if (!orgId || !batch) return;
 
     const confirmed = await confirm({
-      title: "Submit Payment Batch",
-      description: `This will process ${batch.paymentCount} payment(s) totaling ${formatMoney(batch.totalAmount, batch.currencyCode)}. This action cannot be undone.`,
-      confirmLabel: "Submit Batch",
+      title: t("submitTitle"),
+      description: t("submitConfirm", { count: batch.paymentCount, amount: formatMoney(batch.totalAmount, batch.currencyCode) }),
+      confirmLabel: t("submitBatch"),
       destructive: false,
     });
 
@@ -146,19 +151,15 @@ function BatchDetails({ id, orgId }: { id: string; orgId: string | null }) {
           headers: { "x-organization-id": orgId },
         }
       );
+      await requirePaymentResponse(res, t, errors, t("submitFailed"));
       const data = await res.json();
 
-      if (!res.ok) {
-        toast.error(data.error || "Failed to submit batch");
-        return;
-      }
-
       toast.success(
-        `Batch submitted - ${data.processed}/${data.total} payments processed`
+        t("batchSubmitted", { processed: data.processed, total: data.total })
       );
       fetchBatch();
-    } catch {
-      toast.error("Failed to submit batch");
+    } catch (error) {
+      toast.error(paymentFailure(error, t, t("submitFailed")));
     } finally {
       setSubmitting(false);
     }
@@ -176,15 +177,11 @@ function BatchDetails({ id, orgId }: { id: string; orgId: string | null }) {
           headers: { "x-organization-id": orgId },
         }
       );
+      await requirePaymentResponse(res, t, errors, t("loadRemittanceFailed"));
       const data = await res.json();
-      if (!res.ok) {
-        toast.error(data.error || "Failed to load remittance advice");
-        setRemittanceOpen(false);
-        return;
-      }
       setRemittanceGroups((data.remittances || []).map(paymentUiRemittance) as RemittanceGroup[]);
-    } catch {
-      toast.error("Failed to load remittance advice");
+    } catch (error) {
+      toast.error(paymentFailure(error, t, t("loadRemittanceFailed")));
       setRemittanceOpen(false);
     } finally {
       setRemittanceLoading(false);
@@ -206,30 +203,24 @@ function BatchDetails({ id, orgId }: { id: string; orgId: string | null }) {
           body: JSON.stringify({}),
         }
       );
+      await requirePaymentResponse(res, t, errors, t("emailRemittanceFailed"));
       const data = await res.json();
-      if (!res.ok) {
-        toast.error(data.error || "Failed to email remittance advice");
-        return;
-      }
       const sentCount = data.sent?.length ?? 0;
       const skippedCount = data.skipped?.length ?? 0;
       if (sentCount === 0) {
         toast.warning(
           skippedCount > 0
-            ? "No remittance emailed - suppliers have no email address"
-            : "No suppliers to email"
+            ? t("noEmailSent")
+            : t("noSuppliers")
         );
       } else {
         toast.success(
-          `Remittance advice emailed to ${sentCount} supplier(s)` +
-            (skippedCount > 0
-              ? ` (${skippedCount} skipped - no email)`
-              : "")
+          skippedCount > 0 ? t("emailedSkipped", { count: sentCount, skipped: skippedCount }) : t("emailed", { count: sentCount })
         );
       }
       setRemittanceOpen(false);
-    } catch {
-      toast.error("Failed to email remittance advice");
+    } catch (error) {
+      toast.error(paymentFailure(error, t, t("emailRemittanceFailed")));
     } finally {
       setSending(false);
     }
@@ -249,14 +240,14 @@ function BatchDetails({ id, orgId }: { id: string; orgId: string | null }) {
       });
 
       if (!res.ok) {
-        toast.error("Failed to remove item");
+        await requirePaymentResponse(res, t, errors, t("removeFailed"));
         return;
       }
 
-      toast.success("Item removed from batch");
+      toast.success(t("itemRemoved"));
       fetchBatch();
-    } catch {
-      toast.error("Failed to remove item");
+    } catch (error) {
+      toast.error(paymentFailure(error, t, t("removeFailed")));
     }
   }
 
@@ -266,15 +257,13 @@ function BatchDetails({ id, orgId }: { id: string; orgId: string | null }) {
   if (!batch) {
     return (
       <ContentReveal className="py-16 text-center">
-        <p className="text-sm text-muted-foreground">Batch not found</p>
+        <p className="text-sm text-muted-foreground">{t("notFound")}</p>
         <Button
           variant="outline"
           size="sm"
           className="mt-4"
           onClick={() => router.push("/accounting/banking/batches")}
-        >
-          Back to Batches
-        </Button>
+        >{t("backBatches")}</Button>
       </ContentReveal>
     );
   }
@@ -296,9 +285,7 @@ function BatchDetails({ id, orgId }: { id: string; orgId: string | null }) {
         onClick={() => router.push("/accounting/banking/batches")}
         className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
       >
-        <ArrowLeft className="size-3.5" />
-        Back to Batches
-      </button>
+        <ArrowLeft className="size-3.5" />{t("backBatches")}</button>
 
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -319,16 +306,15 @@ function BatchDetails({ id, orgId }: { id: string; orgId: string | null }) {
                 }
                 className="text-[10px] capitalize"
               >
-                {batch.status}
+                {bankPaymentStatus(t, batch.status)}
               </Badge>
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Created {new Date(batch.createdAt).toLocaleDateString()}
+              {t("createdDate", { date: new Date(batch.createdAt).toLocaleDateString() })}
               {batch.completedAt && (
                 <>
                   {" "}
-                  {"\u00B7"} Completed{" "}
-                  {new Date(batch.completedAt).toLocaleDateString()}
+                  {"\u00B7"} {t("completedDate", { date: new Date(batch.completedAt).toLocaleDateString() })}
                 </>
               )}
             </p>
@@ -341,9 +327,7 @@ function BatchDetails({ id, orgId }: { id: string; orgId: string | null }) {
               variant="outline"
               onClick={handleOpenRemittance}
             >
-              <Mail className="mr-2 size-4" />
-              View / email remittance advice
-            </Button>
+              <Mail className="mr-2 size-4" />{t("viewRemittance")}</Button>
           )}
           {batch.status === "draft" && (
             <Button
@@ -357,7 +341,7 @@ function BatchDetails({ id, orgId }: { id: string; orgId: string | null }) {
               ) : (
                 <CheckCircle2 className="mr-2 size-4" />
               )}
-              Submit Batch
+              {t("submitBatch")}
             </Button>
           )}
         </div>
@@ -366,13 +350,13 @@ function BatchDetails({ id, orgId }: { id: string; orgId: string | null }) {
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="rounded-lg border p-3">
-          <p className="text-[11px] text-muted-foreground">Total Amount</p>
+          <p className="text-[11px] text-muted-foreground">{t("totalAmount")}</p>
           <p className="mt-0.5 font-mono text-sm font-semibold tabular-nums break-all">
             {formatMoney(batch.totalAmount, batch.currencyCode)}
           </p>
         </div>
         <div className="rounded-lg border p-3">
-          <p className="text-[11px] text-muted-foreground">Payments</p>
+          <p className="text-[11px] text-muted-foreground">{t("payments")}</p>
           <p className="mt-0.5 font-mono text-sm font-semibold tabular-nums break-all">
             {batch.paymentCount}
           </p>
@@ -380,13 +364,13 @@ function BatchDetails({ id, orgId }: { id: string; orgId: string | null }) {
         {batch.status !== "draft" && (
           <>
             <div className="rounded-lg border p-3">
-              <p className="text-[11px] text-muted-foreground">Completed</p>
+              <p className="text-[11px] text-muted-foreground">{t("completed")}</p>
               <p className="mt-0.5 font-mono text-sm font-semibold tabular-nums break-all text-emerald-600 dark:text-emerald-400">
                 {completedCount}
               </p>
             </div>
             <div className="rounded-lg border p-3">
-              <p className="text-[11px] text-muted-foreground">Failed</p>
+              <p className="text-[11px] text-muted-foreground">{t("failed")}</p>
               <p
                 className={cn(
                   "mt-0.5 font-mono text-sm font-semibold tabular-nums break-all",
@@ -405,13 +389,11 @@ function BatchDetails({ id, orgId }: { id: string; orgId: string | null }) {
       {/* Items */}
       <div>
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-          Items ({batch.items.length})
+          {t("items", { count: batch.items.length })}
         </p>
         <div className="rounded-xl border bg-card overflow-hidden divide-y divide-border">
           {batch.items.length === 0 && (
-            <p className="text-xs text-muted-foreground p-4 text-center">
-              No items in this batch
-            </p>
+            <p className="text-xs text-muted-foreground p-4 text-center">{t("noItems")}</p>
           )}
           {batch.items.map((item) => {
             const statusConfig =
@@ -419,7 +401,7 @@ function BatchDetails({ id, orgId }: { id: string; orgId: string | null }) {
             const contactName =
               item.bill?.contact?.name ||
               item.contact?.name ||
-              "Unknown";
+              t("unknown");
 
             return (
               <div
@@ -436,7 +418,7 @@ function BatchDetails({ id, orgId }: { id: string; orgId: string | null }) {
                         variant={statusConfig.variant}
                         className="text-[10px]"
                       >
-                        {statusConfig.label}
+                        {bankPaymentStatus(t, item.status)}
                       </Badge>
                     )}
                   </div>
@@ -455,6 +437,7 @@ function BatchDetails({ id, orgId }: { id: string; orgId: string | null }) {
                       variant="ghost"
                       size="sm"
                       className="h-7 w-7 p-0 text-muted-foreground hover:text-red-600"
+                      aria-label={t("removeItem")}
                       onClick={() => handleRemoveItem(item.id)}
                     >
                       <Trash2 className="size-3.5" />
@@ -471,11 +454,8 @@ function BatchDetails({ id, orgId }: { id: string; orgId: string | null }) {
       <Dialog open={remittanceOpen} onOpenChange={setRemittanceOpen}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Remittance advice</DialogTitle>
-            <DialogDescription>
-              A summary of which bills were paid, grouped by supplier. Email it
-              so each supplier knows their payment is on the way.
-            </DialogDescription>
+            <DialogTitle>{t("remittance")}</DialogTitle>
+            <DialogDescription>{t("remittanceHint")}</DialogDescription>
           </DialogHeader>
 
           {remittanceLoading ? (
@@ -483,9 +463,7 @@ function BatchDetails({ id, orgId }: { id: string; orgId: string | null }) {
               <Loader2 className="size-5 animate-spin text-muted-foreground" />
             </div>
           ) : remittanceGroups && remittanceGroups.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              No suppliers to send remittance advice to.
-            </p>
+            <p className="py-8 text-center text-sm text-muted-foreground">{t("noRemittanceSuppliers")}</p>
           ) : (
             <div className="space-y-4">
               {remittanceGroups?.map((group) => (
@@ -504,9 +482,7 @@ function BatchDetails({ id, orgId }: { id: string; orgId: string | null }) {
                         </p>
                       ) : (
                         <p className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
-                          <AlertCircle className="size-3" />
-                          No email on file - won&apos;t be sent
-                        </p>
+                          <AlertCircle className="size-3" />{t("noEmail")}</p>
                       )}
                     </div>
                     <p className="font-mono text-sm font-semibold tabular-nums break-all shrink-0">
@@ -549,9 +525,7 @@ function BatchDetails({ id, orgId }: { id: string; orgId: string | null }) {
               size="sm"
               onClick={() => setRemittanceOpen(false)}
               disabled={sending}
-            >
-              Close
-            </Button>
+            >{t("close")}</Button>
             <Button
               size="sm"
               onClick={handleSendRemittance}
@@ -567,7 +541,7 @@ function BatchDetails({ id, orgId }: { id: string; orgId: string | null }) {
               ) : (
                 <Send className="mr-2 size-4" />
               )}
-              Email to suppliers
+              {t("emailSuppliers")}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,6 +1,9 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import { useTranslations } from "next-intl";
+import { bankPaymentStatus, paymentFailure, requirePaymentResponse } from "@/i18n/bank-payment-presentation";
+
+import { useEffect, useState, useMemo, useCallback, useRef, useEffectEvent } from "react";
 import {
   Calendar,
   Plus,
@@ -69,16 +72,16 @@ interface BillOption {
 
 const STATUS_CONFIG: Record<
   string,
-  { label: string; variant: "default" | "secondary" | "outline" | "destructive"; icon: React.ElementType }
+  { variant: "default" | "secondary" | "outline" | "destructive"; icon: React.ElementType }
 > = {
-  pending: { label: "Pending", variant: "secondary", icon: Clock },
-  processing: { label: "Processing", variant: "default", icon: Loader2 },
-  completed: { label: "Completed", variant: "outline", icon: CheckCircle2 },
-  failed: { label: "Failed", variant: "destructive", icon: AlertCircle },
-  cancelled: { label: "Cancelled", variant: "outline", icon: XCircle },
+  pending: { variant: "secondary", icon: Clock },
+  processing: { variant: "default", icon: Loader2 },
+  completed: { variant: "outline", icon: CheckCircle2 },
+  failed: { variant: "destructive", icon: AlertCircle },
+  cancelled: { variant: "outline", icon: XCircle },
 };
 
-function getWeekLabel(dateStr: string): string {
+function getWeekLabel(dateStr: string) {
   const date = new Date(dateStr + "T00:00:00");
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -86,12 +89,12 @@ function getWeekLabel(dateStr: string): string {
     (date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
   );
 
-  if (diff < 0) return "Overdue";
-  if (diff === 0) return "Today";
-  if (diff <= 7) return "This Week";
-  if (diff <= 14) return "Next Week";
-  if (diff <= 30) return "This Month";
-  return "Later";
+  if (diff < 0) return "overdue" as const;
+  if (diff === 0) return "today" as const;
+  if (diff <= 7) return "thisWeek" as const;
+  if (diff <= 14) return "nextWeek" as const;
+  if (diff <= 30) return "thisMonth" as const;
+  return "later" as const;
 }
 
 export default function ScheduledPaymentsPage() {
@@ -99,6 +102,8 @@ export default function ScheduledPaymentsPage() {
   return <ScheduledPaymentsList key={orgId} orgId={orgId} />;
 }
 function ScheduledPaymentsList({ orgId }: { orgId: string | null }) {
+  const t = useTranslations("BankPayments");
+  const errors = useTranslations("BankAccountErrors");
   const [items, setItems] = useState<ScheduledPaymentItem[]>([]);
   const [readError, setReadError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -114,7 +119,7 @@ function ScheduledPaymentsList({ orgId }: { orgId: string | null }) {
   const [scheduledDate, setScheduledDate] = useState("");
   const [notes, setNotes] = useState("");
 
-  useDocumentTitle("Accounting \u00B7 Scheduled Payments");
+  useDocumentTitle(t("scheduledTitle"));
 
   const generation = useRef(0);
   const latestFetch = useRef<() => void>(() => {});
@@ -129,9 +134,9 @@ function ScheduledPaymentsList({ orgId }: { orgId: string | null }) {
     })
       .then((res) => { if (!res.ok) throw new Error("Unable to load payments"); return res.json(); })
       .then((data) => { const rows = (data.data || []).map(paymentUiScheduled) as ScheduledPaymentItem[]; if (!signal?.aborted && requestGeneration === generation.current) { setItems(rows); setReadError(""); } })
-      .catch(() => { if (!signal?.aborted && requestGeneration === generation.current) { setItems([]); setReadError("Scheduled payment amounts are unavailable. Reload to try again."); } })
+      .catch(() => { if (!signal?.aborted && requestGeneration === generation.current) { setItems([]); setReadError(t("scheduledUnavailable")); } })
       .finally(() => { if (!signal?.aborted && requestGeneration === generation.current) setLoading(false); });
-  }, [orgId, statusFilter]);
+  }, [orgId, statusFilter, t]);
 
   const fetchBills = useCallback((signal?: AbortSignal) => {
     if (!orgId) return;
@@ -140,8 +145,8 @@ function ScheduledPaymentsList({ orgId }: { orgId: string | null }) {
     })
       .then((res) => { if (!res.ok) throw new Error("Unable to load payments"); return res.json(); })
       .then((data) => { const rows = (data.data || []).map(paymentUiBill) as BillOption[]; if (!signal?.aborted) setBills(rows.filter(b => b.amountDue > 0n && ["received", "partial", "overdue"].includes((b as BillOption & { status: string }).status))); })
-      .catch(() => { if (!signal?.aborted) { setBills([]); toast.error("Bill amounts are unavailable"); } });
-  }, [orgId]);
+      .catch(() => { if (!signal?.aborted) { setBills([]); toast.error(t("billsUnavailable")); } });
+  }, [orgId, t]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -158,6 +163,11 @@ function ScheduledPaymentsList({ orgId }: { orgId: string | null }) {
 
   useEffect(() => { latestFetch.current = fetchItems; }, [fetchItems]);
 
+  const notifyProcessed = useEffectEvent((data: { processed: number; failed: number }) => {
+    if (data.processed > 0) toast.success(t("processedScheduled", { count: data.processed }));
+    if (data.failed > 0) toast.error(t("failedScheduled", { count: data.failed }));
+  });
+
   // Preserve initial processing; changing a list filter never posts cash again.
   useEffect(() => {
     if (!orgId) return;
@@ -166,8 +176,7 @@ function ScheduledPaymentsList({ orgId }: { orgId: string | null }) {
       method: "POST", headers: { "x-organization-id": orgId }, signal: controller.signal,
     }).then(res => res.json()).then(data => {
       if (controller.signal.aborted) return;
-      if (data.processed > 0) toast.success(`Processed ${data.processed} scheduled payment(s)`);
-      if (data.failed > 0) toast.error(`${data.failed} scheduled payment(s) could not be processed and remain pending`);
+      notifyProcessed(data);
     }).catch(() => {}).finally(() => { if (!controller.signal.aborted) latestFetch.current(); });
     return () => controller.abort();
   }, [orgId]);
@@ -175,7 +184,7 @@ function ScheduledPaymentsList({ orgId }: { orgId: string | null }) {
   // Group by week
   const grouped = useMemo(() => {
     const groups: Record<string, ScheduledPaymentItem[]> = {};
-    const order = ["Overdue", "Today", "This Week", "Next Week", "This Month", "Later"];
+    const order: ReturnType<typeof getWeekLabel>[] = ["overdue", "today", "thisWeek", "nextWeek", "thisMonth", "later"];
 
     for (const item of items) {
       const label = getWeekLabel(item.scheduledDate);
@@ -196,7 +205,7 @@ function ScheduledPaymentsList({ orgId }: { orgId: string | null }) {
     try {
       amountMinor = paymentUiBillAmount(amount, selectedBill).amountMinor;
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Enter a valid payment amount");
+      toast.error(paymentFailure(error, t, t("invalidPayment")));
       return;
     }
     setSaving(true);
@@ -218,18 +227,14 @@ function ScheduledPaymentsList({ orgId }: { orgId: string | null }) {
         }),
       });
 
-      if (!res.ok) {
-        const data = await res.json();
-        toast.error(data.error || "Failed to schedule payment");
-        return;
-      }
+      await requirePaymentResponse(res, t, errors, t("scheduleFailed"));
 
-      toast.success("Payment scheduled");
+      toast.success(t("scheduled"));
       setShowDialog(false);
       resetForm();
       fetchItems();
-    } catch {
-      toast.error("Failed to schedule payment");
+    } catch (error) {
+      toast.error(paymentFailure(error, t, t("scheduleFailed")));
     } finally {
       setSaving(false);
     }
@@ -248,14 +253,14 @@ function ScheduledPaymentsList({ orgId }: { orgId: string | null }) {
       });
 
       if (!res.ok) {
-        toast.error("Failed to cancel payment");
+        await requirePaymentResponse(res, t, errors, t("cancelFailed"));
         return;
       }
 
-      toast.success("Scheduled payment cancelled");
+      toast.success(t("scheduleCancelled"));
       fetchItems();
-    } catch {
-      toast.error("Failed to cancel payment");
+    } catch (error) {
+      toast.error(paymentFailure(error, t, t("cancelFailed")));
     }
   }
 
@@ -267,22 +272,19 @@ function ScheduledPaymentsList({ orgId }: { orgId: string | null }) {
         method: "POST",
         headers: { "x-organization-id": orgId },
       });
+      await requirePaymentResponse(res, t, errors, t("processFailed"));
       const data = await res.json();
-      if (!res.ok) {
-        toast.error(data.error || "Failed to process payments");
-        return;
-      }
       if (data.processed > 0) {
-        toast.success(`Processed ${data.processed} payment(s)`);
+        toast.success(t("processedPayments", { count: data.processed }));
       } else if (!data.failed) {
-        toast.info("No payments due for processing");
+        toast.info(t("noneDue"));
       }
       if (data.failed > 0) {
-        toast.error(`${data.failed} payment(s) could not be processed and remain pending`);
+        toast.error(t("failedPayments", { count: data.failed }));
       }
       fetchItems();
-    } catch {
-      toast.error("Failed to process payments");
+    } catch (error) {
+      toast.error(paymentFailure(error, t, t("processFailed")));
     } finally {
       setProcessing(false);
     }
@@ -313,10 +315,8 @@ function ScheduledPaymentsList({ orgId }: { orgId: string | null }) {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold">Scheduled Payments</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Schedule future payments for your bills
-          </p>
+          <h2 className="text-sm font-semibold">{t("scheduledHeading")}</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">{t("scheduledHint")}</p>
         </div>
         <div className="flex items-center gap-2">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -324,11 +324,11 @@ function ScheduledPaymentsList({ orgId }: { orgId: string | null }) {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
-              <SelectItem value="failed">Failed</SelectItem>
+              <SelectItem value="all">{t("allStatuses")}</SelectItem>
+              <SelectItem value="pending">{t("pending")}</SelectItem>
+              <SelectItem value="completed">{t("completed")}</SelectItem>
+              <SelectItem value="cancelled">{t("cancelled")}</SelectItem>
+              <SelectItem value="failed">{t("failed")}</SelectItem>
             </SelectContent>
           </Select>
           <Button
@@ -343,16 +343,14 @@ function ScheduledPaymentsList({ orgId }: { orgId: string | null }) {
             ) : (
               <CheckCircle2 className="mr-1.5 size-3.5" />
             )}
-            Process Due
+            {t("processDue")}
           </Button>
           <Button
             size="sm"
             onClick={openScheduleDialog}
             className="h-8 bg-emerald-600 hover:bg-emerald-700 text-xs"
           >
-            <Plus className="mr-1.5 size-3.5" />
-            Schedule Payment
-          </Button>
+            <Plus className="mr-1.5 size-3.5" />{t("schedulePayment")}</Button>
         </div>
       </div>
 
@@ -363,19 +361,15 @@ function ScheduledPaymentsList({ orgId }: { orgId: string | null }) {
             <Calendar className="size-6 text-muted-foreground" />
           </div>
           <div className="text-center">
-            <p className="text-sm font-medium">No scheduled payments</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Schedule payments to automate your bill payments
-            </p>
+            <p className="text-sm font-medium">{t("noScheduled")}</p>
+            <p className="text-xs text-muted-foreground mt-1">{t("noScheduledHint")}</p>
           </div>
           <Button
             size="sm"
             onClick={openScheduleDialog}
             className="bg-emerald-600 hover:bg-emerald-700"
           >
-            <Plus className="mr-2 size-4" />
-            Schedule Payment
-          </Button>
+            <Plus className="mr-2 size-4" />{t("schedulePayment")}</Button>
         </div>
       )}
 
@@ -386,12 +380,12 @@ function ScheduledPaymentsList({ orgId }: { orgId: string | null }) {
             <p
               className={cn(
                 "text-xs font-medium uppercase tracking-wider",
-                group.label === "Overdue"
+                group.label === "overdue"
                   ? "text-red-600 dark:text-red-400"
                   : "text-muted-foreground"
               )}
             >
-              {group.label}
+              {t(group.label)}
             </p>
             <span className="text-xs text-muted-foreground/50 tabular-nums">
               ({group.items.length})
@@ -405,7 +399,7 @@ function ScheduledPaymentsList({ orgId }: { orgId: string | null }) {
               const contactName =
                 item.bill?.contact?.name ||
                 item.contact?.name ||
-                "Unknown";
+                t("unknown");
 
               return (
                 <div
@@ -432,7 +426,7 @@ function ScheduledPaymentsList({ orgId }: { orgId: string | null }) {
                         {contactName}
                       </p>
                       <Badge variant={config.variant} className="text-[10px]">
-                        {config.label}
+                        {bankPaymentStatus(t, item.status)}
                       </Badge>
                     </div>
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
@@ -467,9 +461,7 @@ function ScheduledPaymentsList({ orgId }: { orgId: string | null }) {
                         size="sm"
                         className="h-7 text-xs text-muted-foreground"
                         onClick={() => handleCancel(item.id)}
-                      >
-                        Cancel
-                      </Button>
+                      >{t("cancel")}</Button>
                     )}
                   </div>
                 </div>
@@ -483,11 +475,11 @@ function ScheduledPaymentsList({ orgId }: { orgId: string | null }) {
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Schedule Payment</DialogTitle>
+            <DialogTitle>{t("schedulePayment")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label className="text-xs">Bill</Label>
+              <Label className="text-xs">{t("bill")}</Label>
               <Select
                 value={selectedBillId}
                 onValueChange={(val) => {
@@ -497,24 +489,24 @@ function ScheduledPaymentsList({ orgId }: { orgId: string | null }) {
                 }}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a bill" />
+                  <SelectValue placeholder={t("selectBill")} />
                 </SelectTrigger>
                 <SelectContent>
                   {bills.map((b) => (
                     <SelectItem key={b.id} value={b.id}>
-                      {b.billNumber} - {b.contact?.name || "Unknown"} (
-                      {formatMoney(b.amountDue, b.currencyCode)} due)
+                      {b.billNumber} - {b.contact?.name || t("unknown")} (
+                      {t("amountDue", { amount: formatMoney(b.amountDue, b.currencyCode) })})
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label className="text-xs">Amount</Label>
+              <Label className="text-xs">{t("amount")}</Label>
               <Input
                 type="text"
                 inputMode="decimal"
-                aria-label={`Payment amount (${selectedBill?.currencyCode || "select a bill"})`}
+                aria-label={t("paymentAmount", { currency: selectedBill?.currencyCode || t("selectBill") })}
                 aria-invalid={!!amount && !preview}
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
@@ -523,7 +515,7 @@ function ScheduledPaymentsList({ orgId }: { orgId: string | null }) {
             </div>
             <PaymentAmountPreview text={amount} bill={selectedBill} />
             <div className="space-y-2">
-              <Label className="text-xs">Scheduled Date</Label>
+              <Label className="text-xs">{t("scheduledDate")}</Label>
               <Input
                 type="date"
                 value={scheduledDate}
@@ -531,11 +523,11 @@ function ScheduledPaymentsList({ orgId }: { orgId: string | null }) {
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-xs">Notes (optional)</Label>
+              <Label className="text-xs">{t("notesOptional")}</Label>
               <Input
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Add a note..."
+                placeholder={t("notePlaceholder")}
               />
             </div>
           </div>
@@ -543,16 +535,14 @@ function ScheduledPaymentsList({ orgId }: { orgId: string | null }) {
             <Button
               variant="outline"
               onClick={() => setShowDialog(false)}
-            >
-              Cancel
-            </Button>
+            >{t("cancel")}</Button>
             <Button
               onClick={handleSchedule}
               disabled={saving || !selectedBill || !scheduledDate || !preview}
               className="bg-emerald-600 hover:bg-emerald-700"
             >
               {saving && <Loader2 className="mr-2 size-4 animate-spin" />}
-              Schedule
+              {t("schedule")}
             </Button>
           </DialogFooter>
         </DialogContent>

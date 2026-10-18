@@ -1,6 +1,8 @@
 "use client";
 import { requireBankAccountResponse, bankAccountFailureMessage } from "@/i18n/bank-account-presentation";
 
+import { requirePaymentResponse, paymentFailure } from "@/i18n/bank-payment-presentation";
+
 import { useTranslations } from "next-intl";
 import { journalPreviewMessage, requireJournalResponse, journalFailureMessage } from "@/i18n/journal-presentation";
 import { requireAccountResponse, accountFailureMessage } from "@/i18n/account-presentation";
@@ -3625,6 +3627,8 @@ function TransferDrawer({ open, onClose }: { open: boolean; onClose: () => void 
 // Bank Transfer Drawer (move money between the org's own bank/cash accounts)
 // ---------------------------------------------------------------------------
 function BankTransferDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useTranslations("BankPayments");
+  const errors = useTranslations("BankAccountErrors");
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [bankAccounts, setBankAccounts] = useState<BankAccountOption[]>([]);
@@ -3644,19 +3648,19 @@ function BankTransferDrawer({ open, onClose }: { open: boolean; onClose: () => v
     if (!orgId) return;
     setBankAccounts([]);
     fetch("/api/v1/bank-accounts", { headers: { "x-organization-id": orgId } })
-      .then((r) => { if (!r.ok) throw new Error("Bank accounts are unavailable"); return r.json(); })
+      .then((r) => { if (!r.ok) throw new Error(t("banksUnavailable")); return r.json(); })
       .then((data) => { if (data.bankAccounts) setBankAccounts(data.bankAccounts.map(bankUiAccount)); })
-      .catch(() => { setBankAccounts([]); toast.error("Bank accounts are unavailable"); });
-  }, [open]);
+      .catch(() => { setBankAccounts([]); toast.error(t("banksUnavailable")); });
+  }, [open, t]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!fromBankAccountId) { toast.error("Choose the account the money is coming from"); return; }
-    if (!toBankAccountId) { toast.error("Choose the account the money is going to"); return; }
-    if (fromBankAccountId === toBankAccountId) { toast.error("Pick two different accounts"); return; }
+    if (!fromBankAccountId) { toast.error(t("chooseFrom")); return; }
+    if (!toBankAccountId) { toast.error(t("chooseTo")); return; }
+    if (fromBankAccountId === toBankAccountId) { toast.error(t("differentAccounts")); return; }
     let amountMinor: string;
     try { amountMinor = bankUiTransfer(amount, bankAccounts.find(b => b.id === fromBankAccountId), bankAccounts.find(b => b.id === toBankAccountId)).amountMinor; }
-    catch (error) { toast.error(error instanceof Error ? error.message : "Invalid transfer amount"); return; }
+    catch (error) { toast.error(paymentFailure(error, t, t("invalidTransfer"))); return; }
     setSaving(true);
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) { setSaving(false); return; }
@@ -3673,16 +3677,13 @@ function BankTransferDrawer({ open, onClose }: { open: boolean; onClose: () => v
           memo: memo.trim() || null,
         }),
       });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(typeof data.error === "string" ? data.error : "Failed to record transfer");
-      }
+      await requirePaymentResponse(res, t, errors, t("transferFailed"));
       const data = await res.json();
-      toast.success("Transfer recorded");
+      toast.success(t("transferRecorded"));
       onClose();
       if (data.journalEntryId) router.push(`/accounting/${data.journalEntryId}`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to record transfer");
+      toast.error(paymentFailure(err, t, t("transferFailed")));
     } finally {
       setSaving(false);
     }
@@ -3693,7 +3694,7 @@ function BankTransferDrawer({ open, onClose }: { open: boolean; onClose: () => v
   let preview: string | null = null;
   let previewError = "";
   try { if (fromCurrency) preview = bankUiMoney(BigInt(bankUiTransfer(amount, bankAccounts.find(b => b.id === fromBankAccountId), bankAccounts.find(b => b.id === toBankAccountId)).amountMinor), fromCurrency); }
-  catch (error) { previewError = error instanceof Error ? error.message : "Enter a valid amount"; }
+  catch (error) { previewError = paymentFailure(error, t, t("invalidTransfer")); }
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
@@ -3702,19 +3703,19 @@ function BankTransferDrawer({ open, onClose }: { open: boolean; onClose: () => v
           <div className="flex items-center gap-3">
             <DrawerIcon><ArrowLeftRight className="size-5" /></DrawerIcon>
             <div>
-              <SheetTitle className="text-lg">Move money between accounts</SheetTitle>
-              <SheetDescription>Record cash moving from one of your bank or cash accounts to another.</SheetDescription>
+              <SheetTitle className="text-lg">{t("transferTitle")}</SheetTitle>
+              <SheetDescription>{t("transferHint")}</SheetDescription>
             </div>
           </div>
         </SheetHeader>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
             <div className="space-y-4">
-              <SectionLabel>Accounts</SectionLabel>
+              <SectionLabel>{t("accounts")}</SectionLabel>
               <div className="space-y-2">
-                <Label>From *</Label>
+                <Label>{t("from")}</Label>
                 <Select value={fromBankAccountId} onValueChange={setFromBankAccountId}>
-                  <SelectTrigger><SelectValue placeholder="Account the money leaves" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t("fromPlaceholder")} /></SelectTrigger>
                   <SelectContent>
                     {bankAccounts.map((b) => (
                       <SelectItem key={b.id} value={b.id} disabled={b.id === toBankAccountId}>
@@ -3725,9 +3726,9 @@ function BankTransferDrawer({ open, onClose }: { open: boolean; onClose: () => v
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>To *</Label>
+                <Label>{t("to")}</Label>
                 <Select value={toBankAccountId} onValueChange={setToBankAccountId}>
-                  <SelectTrigger><SelectValue placeholder="Account the money arrives in" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t("toPlaceholder")} /></SelectTrigger>
                   <SelectContent>
                     {bankAccounts.map((b) => (
                       <SelectItem key={b.id} value={b.id} disabled={b.id === fromBankAccountId || (!!fromCurrency && b.currencyCode !== fromCurrency)}>
@@ -3742,27 +3743,27 @@ function BankTransferDrawer({ open, onClose }: { open: boolean; onClose: () => v
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Details</SectionLabel>
+              <SectionLabel>{t("details")}</SectionLabel>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Amount *</Label>
-                  <CurrencyInput prefix={fromCurrency || ""} fractionDigits={fromCurrency ? currencyMetadata(fromCurrency).minorUnits : 2} aria-label={`Transfer amount (${fromCurrency || "select a bank"})`} value={amount} onChange={setAmount} placeholder="0.00" />
+                  <Label>{t("amountRequired")}</Label>
+                  <CurrencyInput prefix={fromCurrency || ""} fractionDigits={fromCurrency ? currencyMetadata(fromCurrency).minorUnits : 2} aria-label={t("transferAmount", { currency: fromCurrency || t("selectBank") })} value={amount} onChange={setAmount} placeholder="0.00" />
                   {fromCurrency && (
-                    <p className="text-[11px] text-muted-foreground">In {fromCurrency} (the from account&apos;s currency). {preview ? `Transfer: ${preview}` : previewError}</p>
+                    <p className="text-[11px] text-muted-foreground">{t("transferCurrency", { currency: fromCurrency, preview: preview ? t("transferPreview", { amount: preview }) : previewError })}</p>
                   )}
                 </div>
                 <div className="space-y-2">
-                  <Label>Date</Label>
-                  <DatePicker value={date} onChange={setDate} placeholder="Transfer date" />
+                  <Label>{t("date")}</Label>
+                  <DatePicker value={date} onChange={setDate} placeholder={t("transferDate")} />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Memo</Label>
-                <Textarea value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="Optional note about this transfer..." rows={2} />
+                <Label>{t("memo")}</Label>
+                <Textarea value={memo} onChange={(e) => setMemo(e.target.value)} placeholder={t("memoPlaceholder")} rows={2} />
               </div>
             </div>
           </div>
-          <DrawerFooter onClose={onClose} saving={saving} label="Record Transfer" />
+          <DrawerFooter onClose={onClose} saving={saving} label={t("recordTransfer")} cancelLabel={t("cancel")} creatingLabel={t("creating")} />
         </form>
       </SheetContent>
     </Sheet>

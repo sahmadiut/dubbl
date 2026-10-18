@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createElement } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderWithPresentation } from "./helpers/presentation";
 import { PaymentAmountPreview } from "../components/dashboard/payment-amount-preview";
 import { paymentUiAmount, paymentUiBillAmount, paymentUiBill, paymentUiRow, paymentUiBatch,
   paymentUiScheduled, paymentUiRemittance, paymentUiBatchInput, paymentUiDecimal, paymentUiSummary } from "../lib/money/payment-ui";
@@ -70,10 +70,10 @@ test("scheduled English previews show currency precision and suppress invalid or
     const bill = { id: "a", contactId: "supplier", currencyCode, amountDue: 3000000001n };
     const text = paymentUiDecimal(bill.amountDue, currencyCode);
     assert.equal(paymentUiBillAmount(text, bill).amountMinor, "3000000001");
-    const html = renderToStaticMarkup(createElement(PaymentAmountPreview, { text, bill }));
+    const html = renderWithPresentation(createElement(PaymentAmountPreview, { text, bill }));
     assert.match(html, /Payment:/); assert.doesNotMatch(html, /role="alert"/);
     for (const invalid of ["x", paymentUiDecimal(bill.amountDue + 1n, currencyCode)]) {
-      const error = renderToStaticMarkup(createElement(PaymentAmountPreview, { text: invalid, bill }));
+      const error = renderWithPresentation(createElement(PaymentAmountPreview, { text: invalid, bill }));
       assert.match(error, /role="alert"/); assert.doesNotMatch(error, /Payment:/);
     }
   }

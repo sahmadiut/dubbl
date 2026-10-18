@@ -1,5 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { bankPaymentStatus, paymentFailure, requirePaymentResponse } from "@/i18n/bank-payment-presentation";
+
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -69,6 +72,8 @@ export default function PaymentBatchesPage() {
   return <PaymentBatchesList key={orgId} orgId={orgId} />;
 }
 function PaymentBatchesList({ orgId }: { orgId: string | null }) {
+  const t = useTranslations("BankPayments");
+  const errors = useTranslations("BankAccountErrors");
   const router = useRouter();
   const [batches, setBatches] = useState<Batch[]>([]);
   const [readError, setReadError] = useState("");
@@ -83,7 +88,7 @@ function PaymentBatchesList({ orgId }: { orgId: string | null }) {
     { billId: string; contactId: string; amount: string; currencyCode: string }[]
   >([]);
 
-  useDocumentTitle("Accounting \u00B7 Payment Batches");
+  useDocumentTitle(t("batchesTitle"));
 
   const fetchBatches = useCallback((signal?: AbortSignal) => {
     if (!orgId) return;
@@ -92,9 +97,9 @@ function PaymentBatchesList({ orgId }: { orgId: string | null }) {
     })
       .then((res) => { if (!res.ok) throw new Error("Unable to load payments"); return res.json(); })
       .then((data) => { const rows = (data.data || []).map(paymentUiBatch) as Batch[]; if (!signal?.aborted) { setBatches(rows); setReadError(""); } })
-      .catch(() => { if (!signal?.aborted) { setBatches([]); setReadError("Batch amounts are unavailable. Reload to try again."); } })
+      .catch(() => { if (!signal?.aborted) { setBatches([]); setReadError(t("batchesUnavailable")); } })
       .finally(() => { if (!signal?.aborted) setLoading(false); });
-  }, [orgId]);
+  }, [orgId, t]);
 
   const fetchBills = useCallback((signal?: AbortSignal) => {
     if (!orgId) return;
@@ -103,8 +108,8 @@ function PaymentBatchesList({ orgId }: { orgId: string | null }) {
     })
       .then((res) => { if (!res.ok) throw new Error("Unable to load payments"); return res.json(); })
       .then((data) => { const rows = (data.data || []).map(paymentUiBill) as BillOption[]; if (!signal?.aborted) setBills(rows.filter(b => b.amountDue > 0n && ["received", "partial", "overdue"].includes((b as BillOption & { status: string }).status))); })
-      .catch(() => { if (!signal?.aborted) { setBills([]); toast.error("Bill amounts are unavailable"); } });
-  }, [orgId]);
+      .catch(() => { if (!signal?.aborted) { setBills([]); toast.error(t("billsUnavailable")); } });
+  }, [orgId, t]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -129,7 +134,7 @@ function PaymentBatchesList({ orgId }: { orgId: string | null }) {
   let preview: ReturnType<typeof paymentUiBatchInput> | null = null;
   let previewError = "";
   try { if (selectedBills.length) preview = paymentUiBatchInput(selectedBills, bills); }
-  catch (error) { previewError = error instanceof Error ? error.message : "Invalid batch amount"; }
+  catch (error) { previewError = paymentFailure(error, t, t("invalidBatch")); }
 
   function toggleBill(bill: BillOption) {
     setSelectedBills((prev) => {
@@ -173,17 +178,13 @@ function PaymentBatchesList({ orgId }: { orgId: string | null }) {
         }),
       });
 
-      if (!res.ok) {
-        const data = await res.json();
-        toast.error(data.error || "Failed to create batch");
-        return;
-      }
+      await requirePaymentResponse(res, t, errors, t("createFailed"));
 
-      toast.success("Payment batch created");
+      toast.success(t("batchCreated"));
       setShowDialog(false);
       fetchBatches();
-    } catch {
-      toast.error("Failed to create batch");
+    } catch (error) {
+      toast.error(paymentFailure(error, t, t("createFailed")));
     } finally {
       setSaving(false);
     }
@@ -197,19 +198,15 @@ function PaymentBatchesList({ orgId }: { orgId: string | null }) {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold">Payment Batches</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Group multiple bill payments into batches
-          </p>
+          <h2 className="text-sm font-semibold">{t("batchesHeading")}</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">{t("batchesHint")}</p>
         </div>
         <Button
           size="sm"
           onClick={openCreateDialog}
           className="h-8 bg-emerald-600 hover:bg-emerald-700 text-xs"
         >
-          <Plus className="mr-1.5 size-3.5" />
-          Create Batch
-        </Button>
+          <Plus className="mr-1.5 size-3.5" />{t("createBatch")}</Button>
       </div>
 
       {/* Empty state */}
@@ -219,19 +216,15 @@ function PaymentBatchesList({ orgId }: { orgId: string | null }) {
             <Layers className="size-6 text-muted-foreground" />
           </div>
           <div className="text-center">
-            <p className="text-sm font-medium">No payment batches</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Create a batch to process multiple payments at once
-            </p>
+            <p className="text-sm font-medium">{t("noBatches")}</p>
+            <p className="text-xs text-muted-foreground mt-1">{t("noBatchesHint")}</p>
           </div>
           <Button
             size="sm"
             onClick={openCreateDialog}
             className="bg-emerald-600 hover:bg-emerald-700"
           >
-            <Plus className="mr-2 size-4" />
-            Create Batch
-          </Button>
+            <Plus className="mr-2 size-4" />{t("createBatch")}</Button>
         </div>
       )}
 
@@ -257,13 +250,12 @@ function PaymentBatchesList({ orgId }: { orgId: string | null }) {
                     variant={STATUS_VARIANTS[batch.status] || "secondary"}
                     className="text-[10px] capitalize"
                   >
-                    {batch.status}
+                    {bankPaymentStatus(t, batch.status)}
                   </Badge>
                 </div>
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
                   <span>
-                    {batch.paymentCount} payment
-                    {batch.paymentCount !== 1 ? "s" : ""}
+                    {t("paymentCount", { count: batch.paymentCount })}
                   </span>
                   <span className="text-border">{"\u00B7"}</span>
                   <span>
@@ -286,27 +278,25 @@ function PaymentBatchesList({ orgId }: { orgId: string | null }) {
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Create Payment Batch</DialogTitle>
+            <DialogTitle>{t("createBatchTitle")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label className="text-xs">Batch Name</Label>
+              <Label className="text-xs">{t("batchName")}</Label>
               <Input
                 value={batchName}
                 onChange={(e) => setBatchName(e.target.value)}
-                placeholder="e.g., March Supplier Payments"
+                placeholder={t("batchNamePlaceholder")}
               />
             </div>
 
             <div className="space-y-2">
               <Label className="text-xs">
-                Select Bills ({selectedBills.length} selected)
+                {t("selectBills", { count: selectedBills.length })}
               </Label>
               <div className="max-h-[240px] overflow-y-auto rounded-lg border divide-y divide-border">
                 {bills.length === 0 && (
-                  <p className="text-xs text-muted-foreground p-3 text-center">
-                    No unpaid bills found
-                  </p>
+                  <p className="text-xs text-muted-foreground p-3 text-center">{t("noUnpaid")}</p>
                 )}
                 {bills.map((b) => {
                   const isSelected = selectedBills.some(
@@ -349,7 +339,7 @@ function PaymentBatchesList({ orgId }: { orgId: string | null }) {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-medium">
-                            {b.billNumber} - {b.contact?.name || "Unknown"}
+                            {b.billNumber} - {b.contact?.name || t("unknown")}
                           </p>
                         </div>
                         <p className="text-xs font-mono tabular-nums text-muted-foreground">
@@ -361,13 +351,13 @@ function PaymentBatchesList({ orgId }: { orgId: string | null }) {
                           <Input
                             type="text"
                             inputMode="decimal"
-                            aria-label={`Payment amount for ${b.billNumber} (${b.currencyCode})`}
+                            aria-label={t("paymentBillAmount", { bill: b.billNumber, currency: b.currencyCode })}
                             value={selectedItem.amount}
                             onChange={(e) =>
                               updateBillAmount(b.id, e.target.value)
                             }
                             className="h-7 text-xs"
-                            placeholder="Amount"
+                            placeholder={t("amount")}
                           />
                         </div>
                       )}
@@ -379,18 +369,16 @@ function PaymentBatchesList({ orgId }: { orgId: string | null }) {
 
             {selectedBills.length > 0 && (
               <div className="flex items-center justify-between pt-2 border-t">
-                <p className="text-xs text-muted-foreground">Total</p>
+                <p className="text-xs text-muted-foreground">{t("total")}</p>
                 <p className="text-sm font-mono font-semibold tabular-nums">
-                  {preview ? formatMoney(preview.total, preview.currencyCode) : "Unavailable"}
+                  {preview ? formatMoney(preview.total, preview.currencyCode) : t("unavailable")}
                 </p>
               </div>
             )}
           </div>
           {previewError && <p role="alert" className="text-sm text-destructive">{previewError}</p>}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDialog(false)}>
-              Cancel
-            </Button>
+            <Button variant="outline" onClick={() => setShowDialog(false)}>{t("cancel")}</Button>
             <Button
               onClick={handleCreateBatch}
               disabled={
@@ -399,7 +387,7 @@ function PaymentBatchesList({ orgId }: { orgId: string | null }) {
               className="bg-emerald-600 hover:bg-emerald-700"
             >
               {saving && <Loader2 className="mr-2 size-4 animate-spin" />}
-              Create Batch
+              {t("createBatch")}
             </Button>
           </DialogFooter>
         </DialogContent>

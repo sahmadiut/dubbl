@@ -119,7 +119,7 @@ Extraction ownership:
 | LOC-024 | LOC-007 child: assets, loans, budgets and accruals |
 | LOC-034 | LOC-024 child: asset-category management; see [scope](ASSET_CATEGORY_CATALOGS.md) |
 | LOC-035 | LOC-024 child: fixed-asset list/detail and creation drawer; see [scope](FIXED_ASSET_CATALOGS.md) |
-| LOC-036 | LOC-024 child: loan list/detail and creation drawer |
+| LOC-036 | LOC-024 child: loan list/detail and creation drawer; see [scope](LOAN_CATALOGS.md) |
 | LOC-037 | LOC-024 child: budget routes and creation drawer |
 | LOC-038 | LOC-024 child: accrual list/detail and creation drawer |
 | LOC-025 | LOC-007 child: sales and shared document forms |

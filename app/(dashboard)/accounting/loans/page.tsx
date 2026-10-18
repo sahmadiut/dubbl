@@ -1,6 +1,7 @@
 "use client";
 
-import { assetLoanJson } from "@/lib/money/asset-loan-ui";
+import { useTranslations } from "next-intl";
+import { loanJson, loanFailureMessage, loanStatusLabel } from "@/i18n/loan-presentation";
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useDebounce } from "@/lib/hooks/use-debounce";
@@ -36,25 +37,19 @@ const statusColors: Record<string, string> = {
   defaulted: "border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300",
 };
 
-// Plain-language status labels (end users aren't accountants).
-const statusLabels: Record<string, string> = {
-  active: "active",
-  paid_off: "paid off",
-  defaulted: "defaulted",
-};
 
-function buildColumns(): Column<Loan>[] {
+function buildColumns(t: ReturnType<typeof useTranslations<"Loans">>): Column<Loan>[] {
   return [
     {
       key: "name",
-      header: "Name",
+      header: t("name"),
       render: (r) => (
         <span className="text-sm font-medium">{r.name}</span>
       ),
     },
     {
       key: "principal",
-      header: "Amount borrowed",
+      header: t("borrowed"),
       className: "w-36 text-right",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums">
@@ -64,7 +59,7 @@ function buildColumns(): Column<Loan>[] {
     },
     {
       key: "rate",
-      header: "Interest rate",
+      header: t("rate"),
       className: "w-28 text-right",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums">
@@ -74,7 +69,7 @@ function buildColumns(): Column<Loan>[] {
     },
     {
       key: "monthlyPayment",
-      header: "Monthly payment",
+      header: t("monthly"),
       className: "w-36 text-right",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums">
@@ -84,11 +79,11 @@ function buildColumns(): Column<Loan>[] {
     },
     {
       key: "status",
-      header: "Status",
+      header: t("status"),
       className: "w-24",
       render: (r) => (
         <Badge variant="outline" className={statusColors[r.status] || ""}>
-          {statusLabels[r.status] || r.status}
+          {loanStatusLabel(t, r.status)}
         </Badge>
       ),
     },
@@ -96,6 +91,7 @@ function buildColumns(): Column<Loan>[] {
 }
 
 export default function LoansPage() {
+  const t = useTranslations("Loans");
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
   const [loans, setLoans] = useState<Loan[]>([]);
@@ -110,12 +106,12 @@ export default function LoansPage() {
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search);
 
-  useDocumentTitle("Accounting · Loans");
+  useDocumentTitle(t("documentTitle"));
 
   const PAGE_SIZE = 50;
   const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
 
-  const columns = useMemo(() => buildColumns(), []);
+  const columns = useMemo(() => buildColumns(t), [t]);
 
   const buildParams = useCallback((p: number) => {
     const params = new URLSearchParams();
@@ -135,18 +131,18 @@ export default function LoansPage() {
     fetch(`/api/v1/loans?${buildParams(1)}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => assetLoanJson(r))
+      .then((r) => loanJson(r, t, t("readFailed"), "list"))
       .then((data) => {
         if (cancelled) return;
         setLoans(data.data || []);
         setTotalCount(data.pagination?.total || 0);
       })
       .then(() => devDelay())
-      .catch((error) => setReadError(error instanceof Error ? error.message : "Could not load saved money"))
+      .catch((error) => { if (!cancelled) setReadError(loanFailureMessage(error, t, t("readFailed"))); })
       .finally(() => { if (!cancelled) { setInitialLoad(false); setRefetching(false); setFetchKey((k) => k + 1); } });
 
     return () => { cancelled = true; };
-  }, [orgId, buildParams]);
+  }, [orgId, buildParams, t]);
 
   // Load more
   const loadMore = useCallback(() => {
@@ -157,16 +153,16 @@ export default function LoansPage() {
     fetch(`/api/v1/loans?${buildParams(nextPage)}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => assetLoanJson(r))
+      .then((r) => loanJson(r, t, t("readFailed"), "list"))
       .then((data) => {
         if (data.data) {
           setLoans((prev) => [...prev, ...data.data]);
           setPage(nextPage);
         }
       })
-      .catch((error) => setReadError(error instanceof Error ? error.message : "Could not load saved money"))
+      .catch((error) => setReadError(loanFailureMessage(error, t, t("readFailed"))))
       .finally(() => setLoadingMore(false));
-  }, [orgId, page, buildParams, loadingMore]);
+  }, [orgId, page, buildParams, loadingMore, t]);
 
   const hasMore = loans.length < totalCount;
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -220,9 +216,9 @@ export default function LoansPage() {
           {/* Top: title + CTA */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h2 className="text-lg font-semibold tracking-tight">Loans</h2>
+              <h2 className="text-lg font-semibold tracking-tight">{t("loans")}</h2>
               <p className="mt-1 text-sm text-muted-foreground max-w-md">
-                Track money you&apos;ve borrowed, see how each monthly payment splits between the loan and interest, and record payments as you make them.
+                {t("emptyDescription")}
               </p>
             </div>
             <Button
@@ -230,7 +226,7 @@ export default function LoansPage() {
               className="bg-emerald-600 hover:bg-emerald-700 shrink-0"
             >
               <Plus className="mr-2 size-4" />
-              New loan
+              {t("new")}
             </Button>
           </div>
 
@@ -238,7 +234,7 @@ export default function LoansPage() {
             {/* Left: how it works */}
             <div className="rounded-xl border bg-card overflow-hidden">
               <div className="bg-muted/30 px-3 sm:px-5 py-3 border-b">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">How a loan works</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("how")}</p>
               </div>
               <div className="divide-y">
                 <div className="flex items-center justify-between px-3 sm:px-5 py-3.5">
@@ -247,8 +243,8 @@ export default function LoansPage() {
                       <Landmark className="size-3.5 text-blue-500" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium">Amount borrowed</p>
-                      <p className="text-[11px] text-muted-foreground">Equipment loan</p>
+                      <p className="text-sm font-medium">{t("borrowed")}</p>
+                      <p className="text-[11px] text-muted-foreground">{t("equipment")}</p>
                     </div>
                   </div>
                   <span className="font-mono text-sm font-medium">$10,000.00</span>
@@ -259,8 +255,8 @@ export default function LoansPage() {
                       <Wallet className="size-3.5 text-emerald-500" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">Monthly payment</p>
-                      <p className="text-[11px] text-muted-foreground">Part loan, part interest</p>
+                      <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">{t("monthly")}</p>
+                      <p className="text-[11px] text-muted-foreground">{t("split")}</p>
                     </div>
                   </div>
                   <span className="font-mono text-sm font-medium text-emerald-600 dark:text-emerald-400">-$880.00</span>
@@ -268,7 +264,7 @@ export default function LoansPage() {
                 <div className="flex items-center justify-between px-3 sm:px-5 py-3.5">
                   <div className="flex items-center gap-3">
                     <div className="size-7" />
-                    <p className="text-sm font-semibold">Paid off over time</p>
+                    <p className="text-sm font-semibold">{t("paidOverTime")}</p>
                   </div>
                   <span className="font-mono text-sm font-bold">$0.00</span>
                 </div>
@@ -277,26 +273,26 @@ export default function LoansPage() {
 
             {/* Right: Use cases */}
             <div className="space-y-3">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">When to use</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("when")}</p>
               {[
                 {
-                  title: "Bank or business loan",
-                  desc: "Borrowed a lump sum you repay in fixed monthly instalments.",
+                  title: t("bankTitle"),
+                  desc: t("bankDescription"),
                   color: "border-l-blue-400",
                 },
                 {
-                  title: "Equipment or vehicle finance",
-                  desc: "Financed a big purchase? Track what you still owe and each payment.",
+                  title: t("financeTitle"),
+                  desc: t("financeDescription"),
                   color: "border-l-emerald-400",
                 },
                 {
-                  title: "See the interest you pay",
-                  desc: "Every payment is split for you between the loan itself and interest.",
+                  title: t("interestTitle"),
+                  desc: t("interestDescription"),
                   color: "border-l-amber-400",
                 },
                 {
-                  title: "Keep your books accurate",
-                  desc: "Record each payment so your loan balance always matches reality.",
+                  title: t("booksTitle"),
+                  desc: t("booksDescription"),
                   color: "border-l-purple-400",
                 },
               ].map(({ title, desc, color }) => (
@@ -316,9 +312,9 @@ export default function LoansPage() {
     <ContentReveal className="space-y-6">
       {/* Top: Stats */}
       <div className="grid gap-3 sm:grid-cols-3">
-        <StatCard title="Currently borrowed" value={formatMoney(totalBorrowed)} icon={Landmark} />
-        <StatCard title="Monthly payments" value={formatMoney(totalMonthly)} icon={Wallet} />
-        <StatCard title="Loans" value={totalCount.toString()} icon={Landmark} />
+        <StatCard title={t("currentlyBorrowed")} value={formatMoney(totalBorrowed)} icon={Landmark} />
+        <StatCard title={t("monthlyPayments")} value={formatMoney(totalMonthly)} icon={Wallet} />
+        <StatCard title={t("loans")} value={totalCount.toString()} icon={Landmark} />
       </div>
 
       <div className="h-px bg-border" />
@@ -328,10 +324,10 @@ export default function LoansPage() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Tabs value={statusFilter} onValueChange={setStatusFilter}>
             <TabsList className="overflow-x-auto">
-              <TabsTrigger value="all" className="whitespace-nowrap">All</TabsTrigger>
-              <TabsTrigger value="active" className="whitespace-nowrap">Active</TabsTrigger>
-              <TabsTrigger value="paid_off" className="whitespace-nowrap">Paid off</TabsTrigger>
-              <TabsTrigger value="defaulted" className="whitespace-nowrap">Defaulted</TabsTrigger>
+              <TabsTrigger value="all" className="whitespace-nowrap">{t("all")}</TabsTrigger>
+              <TabsTrigger value="active" className="whitespace-nowrap">{t("activeTab")}</TabsTrigger>
+              <TabsTrigger value="paid_off" className="whitespace-nowrap">{t("paidOffTab")}</TabsTrigger>
+              <TabsTrigger value="defaulted" className="whitespace-nowrap">{t("defaultedTab")}</TabsTrigger>
             </TabsList>
           </Tabs>
 
@@ -341,7 +337,7 @@ export default function LoansPage() {
             className="bg-emerald-600 hover:bg-emerald-700"
           >
             <Plus className="mr-2 size-4" />
-            New loan
+            {t("new")}
           </Button>
         </div>
 
@@ -349,7 +345,7 @@ export default function LoansPage() {
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
             <Input
-              placeholder="Search loans..."
+              placeholder={t("search")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="h-8 w-56 pl-8 text-xs"
@@ -363,7 +359,7 @@ export default function LoansPage() {
               onClick={() => { setSearch(""); }}
             >
               <X className="mr-1 size-3" />
-              Clear filters
+              {t("clear")}
             </Button>
           )}
         </div>
@@ -376,7 +372,7 @@ export default function LoansPage() {
               columns={columns}
               data={filteredLoans}
               loading={false}
-              emptyMessage="No loans match your filters."
+              emptyMessage={t("noMatches")}
               onRowClick={(r) => router.push(`/accounting/loans/${r.id}`)}
             />
           </ContentReveal>
@@ -387,7 +383,7 @@ export default function LoansPage() {
           <>
             <div className="flex items-center justify-between pt-1">
               <p className="text-xs text-muted-foreground">
-                Showing {loans.length} of {totalCount} loan{totalCount !== 1 ? "s" : ""}
+                {t("showing", { shown: loans.length, count: totalCount })}
               </p>
             </div>
             {hasMore && (

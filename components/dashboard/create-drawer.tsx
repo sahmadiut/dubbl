@@ -8,7 +8,7 @@ import { useTranslations } from "next-intl";
 import { journalPreviewMessage, requireJournalResponse, journalFailureMessage } from "@/i18n/journal-presentation";
 import { requireAccountResponse, accountFailureMessage } from "@/i18n/account-presentation";
 
-import { assetLoanJson } from "@/lib/money/asset-loan-ui";
+import { loanJson, loanFailureMessage } from "@/i18n/loan-presentation";
 import { currencyMetadata } from "@/lib/money/exact";
 import { bankUiTransfer, bankUiAccount, bankUiMoney } from "@/lib/money/bank-ui";
 
@@ -4412,6 +4412,7 @@ function CustomerCreditForm({ open, onClose, orgId }: { open: boolean; onClose: 
 // Loan Drawer
 // ---------------------------------------------------------------------------
 function LoanDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useTranslations("Loans");
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [name, setName] = useState("");
@@ -4433,17 +4434,20 @@ function LoanDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
     }
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
+    let cancelled = false;
+    setBankAccounts([]);
     fetch("/api/v1/bank-accounts", { headers: { "x-organization-id": orgId } })
-      .then((r) => assetLoanJson(r))
-      .then((data) => { if (data.bankAccounts) setBankAccounts(data.bankAccounts); })
-      .catch(() => {});
-  }, [open]);
+      .then((r) => loanJson(r, t, t("banksFailed"), "banks"))
+      .then((data) => { if (!cancelled) setBankAccounts(data.bankAccounts); })
+      .catch((error) => { if (!cancelled) toast.error(loanFailureMessage(error, t, t("banksFailed"))); });
+    return () => { cancelled = true; };
+  }, [open, t]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!name.trim()) { toast.error("Please enter a loan name"); return; }
-    if (!principalAccountId) { toast.error("Please choose the loan (liability) account"); return; }
-    if (!interestAccountId) { toast.error("Please choose the interest (expense) account"); return; }
+    if (!name.trim()) { toast.error(t("nameMissing")); return; }
+    if (!principalAccountId) { toast.error(t("principalMissing")); return; }
+    if (!interestAccountId) { toast.error(t("interestMissing")); return; }
 
     setSaving(true);
     const orgId = localStorage.getItem("activeOrgId");
@@ -4464,16 +4468,12 @@ function LoanDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
           interestAccountId,
         }),
       });
-      if (!res.ok) {
-        const data = await assetLoanJson(res);
-        throw new Error(data.error || "Failed to create loan");
-      }
-      const data = await assetLoanJson(res);
-      toast.success("Loan created");
+      const data = await loanJson(res, t, t("createFailed"), "loan");
+      toast.success(t("created"));
       onClose();
       router.push(`/accounting/loans/${data.loan.id}`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create loan");
+      toast.error(loanFailureMessage(err, t, t("createFailed")));
     } finally {
       setSaving(false);
     }
@@ -4486,37 +4486,37 @@ function LoanDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
           <div className="flex items-center gap-3">
             <DrawerIcon><Landmark className="size-5" /></DrawerIcon>
             <div>
-              <SheetTitle className="text-lg">New loan</SheetTitle>
-              <SheetDescription>Track a loan you&apos;ve taken out, its repayments and interest.</SheetDescription>
+              <SheetTitle className="text-lg">{t("new")}</SheetTitle>
+              <SheetDescription>{t("drawerDescription")}</SheetDescription>
             </div>
           </div>
         </SheetHeader>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
             <div className="space-y-4">
-              <SectionLabel>Loan Details</SectionLabel>
+              <SectionLabel>{t("details")}</SectionLabel>
               <div className="space-y-2">
-                <Label htmlFor="drawer-loan-name">Name *</Label>
-                <Input id="drawer-loan-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Equipment loan" />
+                <Label htmlFor="drawer-loan-name">{t("nameRequired")}</Label>
+                <Input id="drawer-loan-name" value={name} onChange={(e) => setName(e.target.value)} placeholder={t("nameExample")} />
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="drawer-loan-principal">Loan amount</Label>
+                  <Label htmlFor="drawer-loan-principal">{t("amount")}</Label>
                   <CurrencyInput id="drawer-loan-principal" prefix="$" value={principalAmount} onChange={setPrincipalAmount} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="drawer-loan-rate">Interest rate (%)</Label>
-                  <Input id="drawer-loan-rate" type="number" step="0.01" min={0} value={interestPercent} onChange={(e) => setInterestPercent(e.target.value)} placeholder="e.g. 5" />
+                  <Label htmlFor="drawer-loan-rate">{t("ratePercent")}</Label>
+                  <Input id="drawer-loan-rate" type="number" step="0.01" min={0} value={interestPercent} onChange={(e) => setInterestPercent(e.target.value)} placeholder={t("rateExample")} />
                 </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="drawer-loan-term">Term (months)</Label>
-                  <Input id="drawer-loan-term" type="number" min={1} value={termMonths} onChange={(e) => setTermMonths(e.target.value)} placeholder="e.g. 36" />
+                  <Label htmlFor="drawer-loan-term">{t("term")}</Label>
+                  <Input id="drawer-loan-term" type="number" min={1} value={termMonths} onChange={(e) => setTermMonths(e.target.value)} placeholder={t("termExample")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Start Date</Label>
-                  <DatePicker value={startDate} onChange={setStartDate} placeholder="Start date" />
+                  <Label>{t("startDate")}</Label>
+                  <DatePicker value={startDate} onChange={setStartDate} placeholder={t("startPlaceholder")} />
                 </div>
               </div>
             </div>
@@ -4524,12 +4524,12 @@ function LoanDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Where the money landed</SectionLabel>
+              <SectionLabel>{t("landed")}</SectionLabel>
               <div className="space-y-2">
-                <Label>Paid into</Label>
+                <Label>{t("paidInto")}</Label>
                 <Select value={bankAccountId} onValueChange={setBankAccountId}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Choose where the loan was paid in..." />
+                    <SelectValue placeholder={t("chooseBank")} />
                   </SelectTrigger>
                   <SelectContent>
                     {bankAccounts.map((acc) => (
@@ -4539,7 +4539,7 @@ function LoanDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
                     ))}
                     {bankAccounts.length === 0 && (
                       <div className="px-2 py-4 text-center text-sm text-muted-foreground">
-                        No bank or cash accounts yet
+                        {t("noBanks")}
                       </div>
                     )}
                   </SelectContent>
@@ -4550,20 +4550,20 @@ function LoanDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Accounts</SectionLabel>
+              <SectionLabel>{t("accounts")}</SectionLabel>
               <div className="space-y-2">
-                <Label>Loan account *</Label>
-                <AccountPicker value={principalAccountId} onChange={setPrincipalAccountId} typeFilter={["liability"]} placeholder="Choose the liability account..." />
-                <p className="text-[11px] text-muted-foreground">The liability account that tracks what you owe.</p>
+                <Label>{t("principalAccount")}</Label>
+                <AccountPicker value={principalAccountId} onChange={setPrincipalAccountId} typeFilter={["liability"]} placeholder={t("chooseLiability")} />
+                <p className="text-[11px] text-muted-foreground">{t("liabilityHint")}</p>
               </div>
               <div className="space-y-2">
-                <Label>Interest account *</Label>
-                <AccountPicker value={interestAccountId} onChange={setInterestAccountId} typeFilter={["expense"]} placeholder="Choose the interest expense account..." />
-                <p className="text-[11px] text-muted-foreground">The expense account interest charges are recorded against.</p>
+                <Label>{t("interestAccount")}</Label>
+                <AccountPicker value={interestAccountId} onChange={setInterestAccountId} typeFilter={["expense"]} placeholder={t("chooseExpense")} />
+                <p className="text-[11px] text-muted-foreground">{t("expenseHint")}</p>
               </div>
             </div>
           </div>
-          <DrawerFooter onClose={onClose} saving={saving} label="Create loan" />
+          <DrawerFooter onClose={onClose} saving={saving} label={t("create")} />
         </form>
       </SheetContent>
     </Sheet>

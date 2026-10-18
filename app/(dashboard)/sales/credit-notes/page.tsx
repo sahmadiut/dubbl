@@ -1,5 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { creditNoteStatusLabel, type CreditNoteTranslate } from "@/i18n/credit-note-presentation";
+
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { useRouter } from "next/navigation";
@@ -53,19 +56,11 @@ const statusColors: Record<string, string> = {
   void: "border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300",
 };
 
-// Plain-language status labels (end users aren't accountants).
-const statusLabels: Record<string, string> = {
-  draft: "draft",
-  sent: "sent",
-  applied: "used",
-  void: "cancelled",
-};
-
-function buildColumns(): Column<CreditNote>[] {
+function buildColumns(t: CreditNoteTranslate): Column<CreditNote>[] {
   return [
     {
       key: "number",
-      header: "Number",
+      header: t("number"),
       sortKey: "number",
       className: "w-32",
       render: (r) => (
@@ -74,31 +69,31 @@ function buildColumns(): Column<CreditNote>[] {
     },
     {
       key: "contact",
-      header: "Customer",
+      header: t("customer"),
       render: (r) => (
         <span className="text-sm font-medium">{r.contact?.name || "-"}</span>
       ),
     },
     {
       key: "date",
-      header: "Date",
+      header: t("date"),
       sortKey: "date",
       className: "w-28",
       render: (r) => <span className="text-sm">{r.issueDate}</span>,
     },
     {
       key: "status",
-      header: "Status",
+      header: t("status"),
       className: "w-24",
       render: (r) => (
         <Badge variant="outline" className={statusColors[r.status] || ""}>
-          {statusLabels[r.status] || r.status}
+          {creditNoteStatusLabel(t, r.status)}
         </Badge>
       ),
     },
     {
       key: "total",
-      header: "Total",
+      header: t("total"),
       sortKey: "total",
       className: "w-28 text-right",
       render: (r) => (
@@ -109,7 +104,7 @@ function buildColumns(): Column<CreditNote>[] {
     },
     {
       key: "remaining",
-      header: "Remaining",
+      header: t("remaining"),
       sortKey: "remaining",
       className: "w-28 text-right",
       render: (r) => (
@@ -122,6 +117,7 @@ function buildColumns(): Column<CreditNote>[] {
 }
 
 export default function CreditNotesPage() {
+  const t = useTranslations("CreditNotes");
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
   const [loaded, setLoaded] = useState<{ context: string; rows: CreditNote[]; total: number; page: number; error: string | null } | null>(null);
@@ -134,7 +130,7 @@ export default function CreditNotesPage() {
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search);
 
-  useDocumentTitle("Sales · Credit Notes");
+  useDocumentTitle(t("pageTitle"));
 
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -142,7 +138,7 @@ export default function CreditNotesPage() {
   const PAGE_SIZE = 50;
   const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
 
-  const columns = useMemo(() => buildColumns(), []);
+  const columns = useMemo(() => buildColumns(t), [t]);
 
   const buildParams = useCallback((p: number) => {
     const params = new URLSearchParams();
@@ -178,13 +174,13 @@ export default function CreditNotesPage() {
     })
       .then(r => { if (!r.ok) throw new Error("Unable to load credit notes"); return r.json(); })
       .then(data => {
-        if (!Array.isArray(data.data)) throw new Error("Unable to load credit notes");
+        if (!data || !Array.isArray(data.data)) throw new Error("Unable to load credit notes");
         const rows = data.data.map((row: CreditNoteWire) => creditNoteUiHeader(row));
         if (!controller.signal.aborted) { setLoaded({ context, rows, total: data.pagination?.total ?? rows.length, page: 1, error: null }); setFetchKey(k => k + 1); }
       })
-      .catch(() => { if (!controller.signal.aborted) setLoaded({ context, rows: [], total: 0, page: 1, error: "Unable to load valid credit-note amounts. Try again." }); });
+      .catch(() => { if (!controller.signal.aborted) setLoaded({ context, rows: [], total: 0, page: 1, error: t("readFailed") }); });
     return () => controller.abort();
-  }, [orgId, buildParams, context]);
+  }, [orgId, buildParams, context, t]);
 
   const loadMore = useCallback(() => {
     if (!orgId || loadingMore || refetching) return;
@@ -193,13 +189,13 @@ export default function CreditNotesPage() {
     fetch(`/api/v1/credit-notes?${buildParams(nextPage)}`, { headers: { "x-organization-id": orgId } })
       .then(r => { if (!r.ok) throw new Error("Unable to load credit notes"); return r.json(); })
       .then(data => {
-        if (!Array.isArray(data.data)) throw new Error("Unable to load credit notes");
+        if (!data || !Array.isArray(data.data)) throw new Error("Unable to load credit notes");
         const rows = data.data.map((row: CreditNoteWire) => creditNoteUiHeader(row));
         if (currentContext.current === context) setLoaded(prev => prev?.context === context ? { ...prev, rows: [...prev.rows, ...rows], page: nextPage, error: null } : prev);
       })
-      .catch(() => { if (currentContext.current === context) setLoaded(prev => prev?.context === context ? { ...prev, error: "Unable to load valid credit-note amounts. Try again." } : prev); })
+      .catch(() => { if (currentContext.current === context) setLoaded(prev => prev?.context === context ? { ...prev, error: t("readFailed") } : prev); })
       .finally(() => setMoreContext(prev => prev === context ? null : prev));
-  }, [orgId, page, buildParams, loadingMore, refetching, context]);
+  }, [orgId, page, buildParams, loadingMore, refetching, context, t]);
 
   const hasMore = creditNotes.length < totalCount;
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -228,16 +224,16 @@ export default function CreditNotesPage() {
     })
       .then(async (response) => {
         const data = await response.json();
-        if (!response.ok) throw new Error(data.error || "Credit-note totals are unavailable");
+        if (!response.ok) throw new Error("Credit-note totals are unavailable");
         return data;
       })
       .then((data) => { const summary = creditNoteUiSummary(data as SummaryWire); if (!controller.signal.aborted) setSummaryLoaded({ org: orgId, summary, error: null }); })
-      .catch((error: unknown) => {
+      .catch(() => {
         if (controller.signal.aborted) return;
-        setSummaryLoaded({ org: orgId, summary: null, error: error instanceof Error ? error.message : "Credit-note totals are unavailable" });
+        setSummaryLoaded({ org: orgId, summary: null, error: t("summaryFailed") });
       });
     return () => controller.abort();
-  }, [orgId]);
+  }, [orgId, t]);
 
   const handleSort = useCallback((key: string) => {
     setSortBy((prev) => {
@@ -283,9 +279,9 @@ export default function CreditNotesPage() {
           {/* Top: title + CTA */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h2 className="text-lg font-semibold tracking-tight">Credit Notes</h2>
+              <h2 className="text-lg font-semibold tracking-tight">{t("creditNotes")}</h2>
               <p className="mt-1 text-sm text-muted-foreground max-w-md">
-                Issue credit notes to adjust invoices, handle refunds, or correct billing errors.
+                {t("emptyDescription")}
               </p>
             </div>
             <Button
@@ -293,7 +289,7 @@ export default function CreditNotesPage() {
               className="bg-emerald-600 hover:bg-emerald-700 shrink-0"
             >
               <Plus className="mr-2 size-4" />
-              New Credit Note
+              {t("newCreditNote")}
             </Button>
           </div>
 
@@ -301,7 +297,7 @@ export default function CreditNotesPage() {
             {/* Left: Ledger-style calculation */}
             <div className="rounded-xl border bg-card overflow-hidden">
               <div className="bg-muted/30 px-3 sm:px-5 py-3 border-b">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">How credit notes work</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("howItWorks")}</p>
               </div>
               <div className="divide-y">
                 <div className="flex items-center justify-between px-3 sm:px-5 py-3.5">
@@ -310,7 +306,7 @@ export default function CreditNotesPage() {
                       <ReceiptText className="size-3.5 text-blue-500" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium">Invoice total</p>
+                      <p className="text-sm font-medium">{t("invoiceTotal")}</p>
                       <p className="text-[11px] text-muted-foreground">INV-0042</p>
                     </div>
                   </div>
@@ -322,7 +318,7 @@ export default function CreditNotesPage() {
                       <CreditCard className="size-3.5 text-teal-500" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-teal-700 dark:text-teal-300">Credit applied</p>
+                      <p className="text-sm font-medium text-teal-700 dark:text-teal-300">{t("creditApplied")}</p>
                       <p className="text-[11px] text-muted-foreground">CN-0001</p>
                     </div>
                   </div>
@@ -331,7 +327,7 @@ export default function CreditNotesPage() {
                 <div className="flex items-center justify-between px-3 sm:px-5 py-3.5">
                   <div className="flex items-center gap-3">
                     <div className="size-7" />
-                    <p className="text-sm font-semibold">New balance</p>
+                    <p className="text-sm font-semibold">{t("newBalance")}</p>
                   </div>
                   <span className="font-mono text-sm font-bold">$1,000.00</span>
                 </div>
@@ -340,26 +336,26 @@ export default function CreditNotesPage() {
 
             {/* Right: Use cases */}
             <div className="space-y-3">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">When to use</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("whenToUse")}</p>
               {[
                 {
-                  title: "Overcharged a customer",
-                  desc: "Billed too much on an invoice? Issue a credit to correct the amount.",
+                  title: t("overchargedTitle"),
+                  desc: t("overchargedDescription"),
                   color: "border-l-blue-400",
                 },
                 {
-                  title: "Product returned",
-                  desc: "Customer returned goods? Credit the original invoice and adjust the balance.",
+                  title: t("returnedTitle"),
+                  desc: t("returnedDescription"),
                   color: "border-l-amber-400",
                 },
                 {
-                  title: "Service not delivered",
-                  desc: "Cancelled or incomplete work? Issue a partial or full credit note.",
+                  title: t("serviceTitle"),
+                  desc: t("serviceDescription"),
                   color: "border-l-teal-400",
                 },
                 {
-                  title: "Goodwill discount",
-                  desc: "Offering a retroactive discount? Apply it as a credit against the invoice.",
+                  title: t("discountTitle"),
+                  desc: t("discountDescription"),
                   color: "border-l-purple-400",
                 },
               ].map(({ title, desc, color }) => (
@@ -379,9 +375,9 @@ export default function CreditNotesPage() {
     <ContentReveal className="space-y-6">
       {/* Top: Stats */}
       <div className="grid gap-3 sm:grid-cols-3 [overflow-wrap:anywhere]">
-        <StatCard title="Total Issued" value={summaryError ? "Unavailable" : summaryMoney("totalAmount")} icon={CreditCard} />
-        <StatCard title="Applied" value={summaryError ? "Unavailable" : summaryMoney("totalApplied")} icon={CreditCard} />
-        <StatCard title="Remaining" value={summaryError ? "Unavailable" : summaryMoney("totalRemaining")} icon={CreditCard} />
+        <StatCard title={t("totalIssued")} value={summaryError ? t("unavailable") : summaryMoney("totalAmount")} icon={CreditCard} />
+        <StatCard title={t("applied")} value={summaryError ? t("unavailable") : summaryMoney("totalApplied")} icon={CreditCard} />
+        <StatCard title={t("remaining")} value={summaryError ? t("unavailable") : summaryMoney("totalRemaining")} icon={CreditCard} />
       </div>
       {summaryError && <p role="alert" className="text-sm text-destructive">{summaryError}</p>}
 
@@ -392,11 +388,11 @@ export default function CreditNotesPage() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Tabs value={statusFilter} onValueChange={setStatusFilter}>
             <TabsList className="overflow-x-auto">
-              <TabsTrigger value="all" className="whitespace-nowrap">All</TabsTrigger>
-              <TabsTrigger value="draft" className="whitespace-nowrap">Draft</TabsTrigger>
-              <TabsTrigger value="sent" className="whitespace-nowrap">Sent</TabsTrigger>
-              <TabsTrigger value="applied" className="whitespace-nowrap" title="Credit notes you've used against an invoice">Used</TabsTrigger>
-              <TabsTrigger value="void" className="whitespace-nowrap">Cancelled</TabsTrigger>
+              <TabsTrigger value="all" className="whitespace-nowrap">{t("all")}</TabsTrigger>
+              <TabsTrigger value="draft" className="whitespace-nowrap">{t("draftHeading")}</TabsTrigger>
+              <TabsTrigger value="sent" className="whitespace-nowrap">{t("sentHeading")}</TabsTrigger>
+              <TabsTrigger value="applied" className="whitespace-nowrap" title={t("usedHint")}>{t("usedHeading")}</TabsTrigger>
+              <TabsTrigger value="void" className="whitespace-nowrap">{t("cancelledHeading")}</TabsTrigger>
             </TabsList>
           </Tabs>
 
@@ -406,7 +402,7 @@ export default function CreditNotesPage() {
             className="bg-emerald-600 hover:bg-emerald-700"
           >
             <Plus className="mr-2 size-4" />
-            New Credit Note
+            {t("newCreditNote")}
           </Button>
         </div>
 
@@ -414,27 +410,27 @@ export default function CreditNotesPage() {
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
             <Input
-              placeholder="Search credit notes..."
+              placeholder={t("search")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="h-8 w-56 pl-8 text-xs"
             />
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="text-xs text-muted-foreground shrink-0">From</span>
+            <span className="text-xs text-muted-foreground shrink-0">{t("from")}</span>
             <DatePicker
               value={dateFrom}
               onChange={(v) => setDateFrom(v)}
-              placeholder="Start date"
+              placeholder={t("startDate")}
               className="h-8 w-40 text-xs"
             />
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="text-xs text-muted-foreground shrink-0">To</span>
+            <span className="text-xs text-muted-foreground shrink-0">{t("to")}</span>
             <DatePicker
               value={dateTo}
               onChange={(v) => setDateTo(v)}
-              placeholder="End date"
+              placeholder={t("endDate")}
               className="h-8 w-40 text-xs"
             />
           </div>
@@ -447,15 +443,15 @@ export default function CreditNotesPage() {
             }}
           >
             <SelectTrigger className="h-8 w-44 text-xs">
-              <SelectValue placeholder="Sort by..." />
+              <SelectValue placeholder={t("sortBy")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="created:desc">Newest first</SelectItem>
-              <SelectItem value="created:asc">Oldest first</SelectItem>
-              <SelectItem value="total:desc">Highest amount</SelectItem>
-              <SelectItem value="total:asc">Lowest amount</SelectItem>
-              <SelectItem value="number:desc">Number (desc)</SelectItem>
-              <SelectItem value="number:asc">Number (asc)</SelectItem>
+              <SelectItem value="created:desc">{t("newest")}</SelectItem>
+              <SelectItem value="created:asc">{t("oldest")}</SelectItem>
+              <SelectItem value="total:desc">{t("highest")}</SelectItem>
+              <SelectItem value="total:asc">{t("lowest")}</SelectItem>
+              <SelectItem value="number:desc">{t("numberDesc")}</SelectItem>
+              <SelectItem value="number:asc">{t("numberAsc")}</SelectItem>
             </SelectContent>
           </Select>
           {hasFilters && (
@@ -466,7 +462,7 @@ export default function CreditNotesPage() {
               onClick={() => { setSearch(""); setDateFrom(""); setDateTo(""); }}
             >
               <X className="mr-1 size-3" />
-              Clear filters
+              {t("clearFilters")}
             </Button>
           )}
         </div>
@@ -479,7 +475,7 @@ export default function CreditNotesPage() {
               columns={columns}
               data={filteredCreditNotes}
               loading={false}
-              emptyMessage="No credit notes match your filters."
+              emptyMessage={t("noMatches")}
               onRowClick={(r) => router.push(`/sales/credit-notes/${r.id}`)}
               sortBy={sortBy}
               sortOrder={sortOrder}
@@ -493,7 +489,7 @@ export default function CreditNotesPage() {
           <>
             <div className="flex items-center justify-between pt-1">
               <p className="text-xs text-muted-foreground">
-                Showing {creditNotes.length} of {totalCount} credit note{totalCount !== 1 ? "s" : ""}
+                {t("showing", { loaded: creditNotes.length, total: totalCount })}
               </p>
             </div>
             {hasMore && (

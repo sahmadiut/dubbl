@@ -1,5 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { creditNoteStatusLabel } from "@/i18n/credit-note-presentation";
+
 import { useState, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
@@ -66,14 +69,6 @@ const statusColors: Record<string, string> = {
   void: "border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300",
 };
 
-// Plain-language status labels (end users aren't accountants).
-const statusLabels: Record<string, string> = {
-  draft: "draft",
-  sent: "sent",
-  applied: "used",
-  void: "cancelled",
-};
-
 type CreditNoteWire = Omit<CreditNoteDetail, "subtotal" | "taxTotal" | "total" | "amountApplied" | "amountRemaining" | "lines"> & {
   subtotal: number; taxTotal: number; total: number; amountApplied: number; amountRemaining: number;
   lines: (Omit<CreditNoteDetail["lines"][number], "unitPrice" | "amount" | "taxAmount"> & { unitPrice: number; amount: number; taxAmount: number; [key: string]: unknown })[];
@@ -92,6 +87,7 @@ export default function CreditNoteDetailPage() {
 }
 
 function CreditNoteDetail({ id, orgId }: { id: string; orgId: string | null }) {
+  const t = useTranslations("CreditNotes");
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [cn, setCn] = useState<CreditNoteDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -117,12 +113,12 @@ function CreditNoteDetail({ id, orgId }: { id: string; orgId: string | null }) {
     fetch(`/api/v1/credit-notes/${id}`, { headers: { "x-organization-id": orgId }, signal: controller.signal })
       .then(r => { if (!r.ok) throw new Error("Unable to load credit note"); return r.json(); })
       .then(data => { const credit = creditNoteUiDocument(data.creditNote as CreditNoteWire); if (!controller.signal.aborted) { setCn(credit); setError(null); } })
-      .catch(() => { if (!controller.signal.aborted) { setCn(null); setError("Unable to load valid credit-note amounts. Try again."); } })
+      .catch(() => { if (!controller.signal.aborted) { setCn(null); setError(t("readFailed")); } })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     fetch("/api/v1/organization", { headers: { "x-organization-id": orgId }, signal: controller.signal })
       .then(r => r.json()).then(data => { if (!controller.signal.aborted && data.organization?.name) setOrgName(data.organization.name); }).catch(() => {});
     return () => controller.abort();
-  }, [id, orgId, reload]);
+  }, [id, orgId, reload, t]);
 
   const invoiceContext = `${cn?.contactId}:${cn?.currencyCode}:${cn?.amountRemaining}:${reload}`;
   const invoices = invoiceLoaded?.context === invoiceContext ? invoiceLoaded.rows : [];
@@ -134,13 +130,13 @@ function CreditNoteDetail({ id, orgId }: { id: string; orgId: string | null }) {
     fetch(`/api/v1/invoices?${params}`, { headers: { "x-organization-id": orgId }, signal: controller.signal })
       .then(r => { if (!r.ok) throw new Error("Unable to load invoices"); return r.json(); })
       .then(data => {
-        if (!Array.isArray(data.data)) throw new Error("Unable to load invoices");
+        if (!data || !Array.isArray(data.data)) throw new Error("Unable to load invoices");
         const rows = data.data.map((row: InvoiceWire) => creditNoteUiInvoice(row)).filter((inv: InvoiceOption) => creditNoteUiInvoiceEligible(cn, inv));
         if (!controller.signal.aborted) setInvoiceLoaded({ context: invoiceContext, rows, error: null });
       })
-      .catch(() => { if (!controller.signal.aborted) setInvoiceLoaded({ context: invoiceContext, rows: [], error: "Unable to load valid invoice balances. Try again." }); });
+      .catch(() => { if (!controller.signal.aborted) setInvoiceLoaded({ context: invoiceContext, rows: [], error: t("invoiceReadFailed") }); });
     return () => controller.abort();
-  }, [orgId, applyOpen, cn, invoiceContext]);
+  }, [orgId, applyOpen, cn, invoiceContext, t]);
 
   function handleSendComplete() {
     if (!active.current) return;
@@ -154,7 +150,7 @@ function CreditNoteDetail({ id, orgId }: { id: string; orgId: string | null }) {
   const selectedInvoice = invoices.find(inv => inv.id === applyInvoiceId);
   if (cn && selectedInvoice && applyAmount !== "") {
     try { application = creditNoteUiApplication(applyAmount, cn, selectedInvoice); }
-    catch (error) { applicationError = error instanceof Error ? error.message : "Enter a valid amount"; }
+    catch { applicationError = t("invalidAmount"); }
   }
 
   async function handleApply() {
@@ -176,13 +172,12 @@ function CreditNoteDetail({ id, orgId }: { id: string; orgId: string | null }) {
         setApplyOpen(false);
         setApplyInvoiceId("");
         setApplyAmount("");
-        toast.success("Credit used to reduce the invoice");
+        toast.success(t("applySuccess"));
       } else {
-        const data = await res.json();
-        toast.error(typeof data.error === "string" ? data.error : "Couldn't use this credit");
+        if (active.current) toast.error(t("applyFailed"));
       }
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Couldn't use this credit");
+    } catch {
+      if (active.current) toast.error(t("applyFailed"));
     } finally {
       if (active.current) setApplyLoading(false);
     }
@@ -191,37 +186,40 @@ function CreditNoteDetail({ id, orgId }: { id: string; orgId: string | null }) {
   async function handleVoid() {
     if (!orgId) return;
     await confirm({
-      title: "Cancel this credit note?",
-      description: "This stops the credit from being used against any invoice. You can't undo this.",
-      confirmLabel: "Cancel credit note",
+      title: t("voidTitle"),
+      description: t("voidDescription"),
+      confirmLabel: t("voidAction"),
       destructive: true,
       onConfirm: async () => {
-        const res = await fetch(`/api/v1/credit-notes/${id}/void`, {
-          method: "POST",
-          headers: { "x-organization-id": orgId },
-        });
-        if (res.ok) {
+        try {
+          const res = await fetch(`/api/v1/credit-notes/${id}/void`, {
+            method: "POST",
+            headers: { "x-organization-id": orgId },
+          });
           if (!active.current) return;
+          if (!res.ok) { toast.error(t("voidFailed")); return; }
           handleSendComplete();
-          toast.success("Credit note cancelled");
+          toast.success(t("voidSuccess"));
+        } catch {
+          if (active.current) toast.error(t("voidFailed"));
         }
       },
     });
   }
 
-  if (loading) return <div className="space-y-6"><PageHeader title="Loading..." /></div>;
+  if (loading) return <div className="space-y-6"><PageHeader title={t("loading")} /></div>;
   if (error) return <p role="alert" className="text-sm text-destructive">{error}</p>;
-  if (!cn) return <div className="space-y-6"><PageHeader title="Credit note not found" /></div>;
+  if (!cn) return <div className="space-y-6"><PageHeader title={t("notFound")} /></div>;
 
   return (
     <div className="space-y-6">
-      <PageHeader title={cn.creditNoteNumber} description={`To: ${cn.contact?.name || "Unknown"}`}>
+      <PageHeader title={cn.creditNoteNumber} description={t("recipient", { name: cn.contact?.name || t("unknown") })}>
         <Button variant="outline" size="sm" asChild>
-          <Link href="/sales/credit-notes"><ArrowLeft className="mr-2 size-4" />Back</Link>
+          <Link href="/sales/credit-notes"><ArrowLeft className="mr-2 size-4" />{t("back")}</Link>
         </Button>
         {cn.status === "draft" && (
           <Button size="sm" onClick={() => setSendDialogOpen(true)} className="bg-emerald-600 hover:bg-emerald-700">
-            <Send className="mr-2 size-4" />Send
+            <Send className="mr-2 size-4" />{t("send")}
           </Button>
         )}
         {cn.status === "sent" && cn.amountRemaining > 0n && (
@@ -230,37 +228,37 @@ function CreditNoteDetail({ id, orgId }: { id: string; orgId: string | null }) {
             if (open) { setInvoiceLoaded(null); setApplyInvoiceId(""); setApplyAmount(""); }
           }}>
             <DialogTrigger asChild>
-              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" title="Use this credit to reduce what a customer owes on an invoice">
-                <FileText className="mr-2 size-4" />Use against an invoice
+              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" title={t("applyHint")}>
+                <FileText className="mr-2 size-4" />{t("applyAction")}
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Use this credit against an invoice</DialogTitle>
+                <DialogTitle>{t("applyTitle")}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Invoice</Label>
+                  <Label>{t("invoice")}</Label>
                   <Select value={applyInvoiceId} onValueChange={setApplyInvoiceId}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select an invoice..." />
+                      <SelectValue placeholder={t("selectInvoice")} />
                     </SelectTrigger>
                     <SelectContent>
                       {invoices.map((inv) => (
                         <SelectItem key={inv.id} value={inv.id}>
-                          {inv.invoiceNumber} · {inv.contact?.name || "Unknown"} · Due: {creditNoteUiMoney(inv.amountDue, inv.currencyCode)}
+                          {t("invoiceOption", { number: inv.invoiceNumber, name: inv.contact?.name || t("unknown"), amount: creditNoteUiMoney(inv.amountDue, inv.currencyCode) })}
                         </SelectItem>
                       ))}
                       {invoices.length === 0 && (
                         <div className="px-2 py-4 text-center text-sm text-muted-foreground">
-                          No outstanding invoices for this customer in {cn.currencyCode}
+                          {t("noInvoices", { currency: cn.currencyCode })}
                         </div>
                       )}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Amount</Label>
+                  <Label>{t("amount")}</Label>
                   <InvoiceAmountInput
                     currency={cn.currencyCode}
                     value={applyAmount}
@@ -268,7 +266,7 @@ function CreditNoteDetail({ id, orgId }: { id: string; orgId: string | null }) {
                     placeholder={invoiceUiDecimal(cn.amountRemaining, cn.currencyCode)}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Remaining credit: {creditNoteUiMoney(cn.amountRemaining, cn.currencyCode)}
+                    {t("remainingCredit", { amount: creditNoteUiMoney(cn.amountRemaining, cn.currencyCode) })}
                   </p>
                 </div>
                 {invoiceError && <p role="alert" className="text-xs text-destructive">{invoiceError}</p>}
@@ -279,25 +277,25 @@ function CreditNoteDetail({ id, orgId }: { id: string; orgId: string | null }) {
                   disabled={!application || !!invoiceError}
                   className="w-full bg-emerald-600 hover:bg-emerald-700"
                 >
-                  Reduce the invoice
+                  {t("reduceInvoice")}
                 </Button>
               </div>
             </DialogContent>
           </Dialog>
         )}
         {cn.status !== "void" && (
-          <Button variant="outline" size="sm" onClick={handleVoid} className="text-red-600" title="Stop this credit from being used against any invoice">
-            <Ban className="mr-2 size-4" />Cancel credit note
+          <Button variant="outline" size="sm" onClick={handleVoid} className="text-red-600" title={t("voidHint")}>
+            <Ban className="mr-2 size-4" />{t("voidAction")}
           </Button>
         )}
       </PageHeader>
 
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         <Badge variant="outline" className={statusColors[cn.status] || ""}>
-          {statusLabels[cn.status] || cn.status}
+          {creditNoteStatusLabel(t, cn.status)}
         </Badge>
         <span className="text-xs sm:text-sm text-muted-foreground">
-          Issued {cn.issueDate}
+          {t("issued", { date: cn.issueDate })}
         </span>
       </div>
 
@@ -305,7 +303,7 @@ function CreditNoteDetail({ id, orgId }: { id: string; orgId: string | null }) {
 
       {cn.notes && (
         <div className="rounded-lg border p-4">
-          <p className="text-xs font-medium text-muted-foreground mb-1">Notes</p>
+          <p className="text-xs font-medium text-muted-foreground mb-1">{t("notes")}</p>
           <p className="text-sm">{cn.notes}</p>
         </div>
       )}

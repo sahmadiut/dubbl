@@ -2634,6 +2634,7 @@ function EmployeeDrawer({ open, onClose }: { open: boolean; onClose: () => void 
 // Credit Note Drawer
 // ---------------------------------------------------------------------------
 function CreditNoteDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useTranslations("CreditNotes");
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [currencyCode, setCurrencyCode] = useState("USD");
@@ -2658,9 +2659,9 @@ function CreditNoteDrawer({ open, onClose }: { open: boolean; onClose: () => voi
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!contactId) { toast.error("Please select a customer"); return; }
+    if (!contactId) { toast.error(t("selectCustomer")); return; }
     if (!orgId) return;
-    if (!validLines) { toast.error("Check the credit note line amounts"); return; }
+    if (!validLines) { toast.error(t("checkLines")); return; }
 
     try {
       const exactLines = creditNoteEditorLines(lines);
@@ -2676,15 +2677,15 @@ function CreditNoteDrawer({ open, onClose }: { open: boolean; onClose: () => voi
         }),
       });
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to create credit note");
+        throw new Error("Failed to create credit note");
       }
       const data = await res.json();
-      toast.success("Credit note created");
+      if (typeof data?.creditNote?.id !== "string" || !data.creditNote.id.trim()) throw new Error("Invalid credit note response");
+      toast.success(t("created"));
       onClose();
       router.push(`/sales/credit-notes/${data.creditNote.id}`);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create credit note");
+    } catch {
+      toast.error(t("createFailed"));
     } finally {
       setSaving(false);
     }
@@ -2697,33 +2698,33 @@ function CreditNoteDrawer({ open, onClose }: { open: boolean; onClose: () => voi
           <div className="flex items-center gap-3">
             <DrawerIcon><CreditCard className="size-5" /></DrawerIcon>
             <div>
-              <SheetTitle className="text-lg">New Credit Note</SheetTitle>
-              <SheetDescription>Issue a credit note to reduce a customer&apos;s balance.</SheetDescription>
+              <SheetTitle className="text-lg">{t("newCreditNote")}</SheetTitle>
+              <SheetDescription>{t("drawerDescription")}</SheetDescription>
             </div>
           </div>
         </SheetHeader>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
             <div className="space-y-4">
-              <SectionLabel>Credit Note Details</SectionLabel>
+              <SectionLabel>{t("details")}</SectionLabel>
               <div className="space-y-2">
-                <Label>Credit note currency</Label>
+                <Label>{t("currency")}</Label>
                 <CurrencySelect value={currencyCode} onValueChange={(code) => { setCurrencyCode(code); if (code !== currencyCode) setValidLines(false); }} />
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Customer *</Label>
+                  <Label>{t("customerRequired")}</Label>
                   <ContactPicker value={contactId} onChange={setContactId} type="customer" />
                 </div>
                 <div className="space-y-2">
-                  <Label>Reference</Label>
-                  <Input value={reference} onChange={(e) => setReference(e.target.value)} placeholder="Original invoice, etc." />
+                  <Label>{t("reference")}</Label>
+                  <Input value={reference} onChange={(e) => setReference(e.target.value)} placeholder={t("referencePlaceholder")} />
                 </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Issue Date</Label>
-                  <DatePicker value={issueDate} onChange={setIssueDate} placeholder="Issue date" />
+                  <Label>{t("issueDateHeading")}</Label>
+                  <DatePicker value={issueDate} onChange={setIssueDate} placeholder={t("issueDate")} />
                 </div>
               </div>
             </div>
@@ -2731,7 +2732,7 @@ function CreditNoteDrawer({ open, onClose }: { open: boolean; onClose: () => voi
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Line Items</SectionLabel>
+              <SectionLabel>{t("lineItems")}</SectionLabel>
               <LineItemsEditor key={orgId} lines={lines} onChange={(next) => { setLines(next); setValidLines(false); }} accountTypeFilter={["revenue"]} taxContext="sales"
                 currencyCode={currencyCode} roundPriceFirst={false} priceFractionDigits={18} onValidityChange={setValidLines} />
             </div>
@@ -2739,11 +2740,11 @@ function CreditNoteDrawer({ open, onClose }: { open: boolean; onClose: () => voi
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Notes</SectionLabel>
-              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Reason for credit..." rows={3} />
+              <SectionLabel>{t("notes")}</SectionLabel>
+              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("notesPlaceholder")} rows={3} />
             </div>
           </div>
-          <DrawerFooter onClose={onClose} saving={saving} label="Create Credit Note" disabled={!validLines || !contactId || !orgId || lines.some(line => !line.description.trim())} />
+          <DrawerFooter onClose={onClose} saving={saving} label={t("createAction")} disabled={!validLines || !contactId || !orgId || lines.some(line => !line.description.trim())} />
         </form>
       </SheetContent>
     </Sheet>

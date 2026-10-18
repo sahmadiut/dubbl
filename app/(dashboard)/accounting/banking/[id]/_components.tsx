@@ -1,5 +1,9 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { bankWorkspaceFailure, bankMatchReason, type WorkspaceTranslate } from "@/i18n/bank-workspace-presentation";
+import { requireBankAccountResponse } from "@/i18n/bank-account-presentation";
+
 import { useRef, useState, useMemo, useEffect } from "react";
 import {
   ArrowDownRight,
@@ -77,10 +81,11 @@ import {
 function BankMatchPreview({ text, currencyCode, transaction, document }: {
   text: string; currencyCode: string; transaction: Transaction | null; document: OpenBill | OpenInvoice | undefined;
 }) {
+  const t = useTranslations("BankWorkspace");
   if (!transaction || !document) return null;
   let message: string;
-  try { message = `Payment: ${formatMoney(BigInt(bankUiMatchAmount(text, currencyCode, transaction, document).amountMinor), currencyCode)}`; }
-  catch (error) { message = error instanceof Error ? error.message : "Enter a valid payment amount"; }
+  try { message = t("paymentPreview", { amount: formatMoney(BigInt(bankUiMatchAmount(text, currencyCode, transaction, document).amountMinor), currencyCode) }); }
+  catch (error) { message = bankWorkspaceFailure(error, t, t("validPayment")); }
   return <p role="status" className="text-xs text-muted-foreground">{message}</p>;
 }
 
@@ -243,15 +248,7 @@ export interface BankAccountSummary {
 // Constants
 // ---------------------------------------------------------------------------
 
-export const ACCOUNT_TYPE_LABELS: Record<BankAccountType, string> = {
-  checking: "Checking",
-  savings: "Savings",
-  credit_card: "Credit Card",
-  cash: "Cash",
-  loan: "Loan",
-  investment: "Investment",
-  other: "Other",
-};
+
 
 export const STATUS_STYLES: Record<Transaction["status"], string> = {
   unreconciled: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300",
@@ -284,36 +281,38 @@ export function deriveTxState(tx: Transaction): DerivedTxState {
   return "toReview";
 }
 
-export const DERIVED_STATE_META: Record<
+export function derivedStateMeta(t: WorkspaceTranslate): Record<
   DerivedTxState,
   { label: string; className: string; title?: string }
-> = {
+> { return {
   reconciledStatement: {
-    label: "matched to statement",
+    label: t("matchedToStatement"),
     className: STATUS_STYLES.reconciled,
-    title: "Checked off against a bank statement",
+    title: t("statementChecked"),
   },
   categorized: {
-    label: "in your books",
+    label: t("inBooks"),
     className: "border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-800 dark:bg-indigo-950 dark:text-indigo-300",
-    title: "Recorded in your books — assigned to a category",
+    title: t("categoryRecorded"),
   },
   cleared: {
-    label: "cleared",
+    label: t("cleared"),
     className: STATUS_STYLES.unreconciled,
-    title: "Confirmed against your bank — not yet recorded in your books",
+    title: t("clearedHint"),
   },
   toReview: {
-    label: "to do",
+    label: t("toDoLower"),
     className: STATUS_STYLES.unreconciled,
-    title: "Not recorded in your books yet",
+    title: t("notRecorded"),
   },
   excluded: {
-    label: "ignored",
+    label: t("ignoredLower"),
     className: STATUS_STYLES.excluded,
-    title: "Left out of your books",
+    title: t("leftOut"),
   },
 };
+
+}
 
 export const FORMAT_LABELS: Record<StatementFormat, string> = {
   auto: "Auto Detect",
@@ -375,12 +374,13 @@ export function TransactionRow({
   selected?: boolean;
   onSelectChange?: (id: string, checked: boolean) => void;
 }) {
+  const t = useTranslations("BankWorkspace");
   const isCredit = tx.amount > 0;
   const selectable = !!onSelectChange && tx.status === "unreconciled";
   const [confirmClear, setConfirmClear] = useState(false);
   const [confirmUndo, setConfirmUndo] = useState(false);
   const derived = deriveTxState(tx);
-  const stateMeta = DERIVED_STATE_META[derived];
+  const stateMeta = derivedStateMeta(t)[derived];
   // A plain categorization (single account, no payment/transfer/statement
   // match) can be corrected in place. Payment matches and splits don't set
   // accountId; transfers/statement matches carry extra state — those use Undo.
@@ -400,7 +400,7 @@ export function TransactionRow({
         <Checkbox
           checked={!!selected}
           onCheckedChange={(c) => onSelectChange?.(tx.id, c === true)}
-          aria-label="Select transaction"
+          aria-label={t("selectTransaction")}
           className="shrink-0"
         />
       )}
@@ -418,7 +418,7 @@ export function TransactionRow({
         <div className="flex items-center gap-2">
           <p className="text-sm font-medium truncate">{tx.description}</p>
           {derived === "categorized" && tx.accountName && (
-            <span className="text-xs text-muted-foreground truncate shrink min-w-0" title={`Assigned to ${tx.accountName}`}>
+            <span className="text-xs text-muted-foreground truncate shrink min-w-0" title={t("assignedTo", { account: tx.accountName })}>
               &rarr; {tx.accountName}
             </span>
           )}
@@ -447,10 +447,9 @@ export function TransactionRow({
                 variant="outline"
                 className="h-7 px-2.5 text-xs"
                 onClick={() => onCategorize(tx)}
-                title="Choose what this money was for (the category or account it belongs to)"
+                title={t("categorizeHint")}
               >
-                <Tags className="mr-1.5 size-3.5" />Categorize
-              </Button>
+                <Tags className="mr-1.5 size-3.5" />{t("categorize")}</Button>
               {/* Everything else, one level down */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -458,40 +457,35 @@ export function TransactionRow({
                     size="sm"
                     variant="ghost"
                     className="h-7 px-2 text-xs opacity-0 transition-opacity group-hover:opacity-100 data-[state=open]:opacity-100"
-                    title="More actions"
+                    title={t("moreActions")}
                   >
                     <MoreHorizontal className="size-3.5" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   {onMatch && (
-                    <DropdownMenuItem onClick={() => onMatch(tx)} title="Find a matching invoice, bill, or recorded payment and link this line to it">
-                      <Link2 className="mr-2 size-3.5" />Find a match…
-                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onMatch(tx)} title={t("findMatchHint")}>
+                      <Link2 className="mr-2 size-3.5" />{t("findMatchEllipsis")}</DropdownMenuItem>
                   )}
                   {onSplit && (
-                    <DropdownMenuItem onClick={() => onSplit(tx)} title="Divide this one transaction across more than one category">
-                      <Split className="mr-2 size-3.5" />Split across categories
-                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onSplit(tx)} title={t("splitHint")}>
+                      <Split className="mr-2 size-3.5" />{t("splitCategories")}</DropdownMenuItem>
                   )}
                   {onTransfer && (
-                    <DropdownMenuItem onClick={() => onTransfer(tx)} title="Record this as money moved between your own accounts (not income or expense)">
-                      <ArrowLeftRight className="mr-2 size-3.5" />Record a transfer between accounts
-                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onTransfer(tx)} title={t("recordTransferHint")}>
+                      <ArrowLeftRight className="mr-2 size-3.5" />{t("recordTransferTitle")}</DropdownMenuItem>
                   )}
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setConfirmClear(true)} title="Confirms this matches your bank — moves no money and records no bookkeeping">
-                    <CheckCircle className="mr-2 size-3.5" />Mark as cleared
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onExclude(tx.id)} className="text-muted-foreground" title="Hide this line and leave it out of your books">
-                    <XCircle className="mr-2 size-3.5" />Ignore this transaction
-                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setConfirmClear(true)} title={t("clearHint")}>
+                    <CheckCircle className="mr-2 size-3.5" />{t("markCleared")}</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onExclude(tx.id)} className="text-muted-foreground" title={t("ignoreHint")}>
+                    <XCircle className="mr-2 size-3.5" />{t("ignoreTransaction")}</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </>
           )}
           {tx.status === "excluded" && (
-            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => onExclude(tx.id)} title="Bring this transaction back into your books">Stop ignoring</Button>
+            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => onExclude(tx.id)} title={t("restoreHint")}>{t("stopIgnoring")}</Button>
           )}
           {/* A line you've already dealt with: let the user fix it. Plain
               categorizations can be edited in place; everything else (matches,
@@ -504,30 +498,27 @@ export function TransactionRow({
                   variant="outline"
                   className="h-7 px-2.5 text-xs"
                   onClick={() => onCategorize(tx)}
-                  title="Change the category, tax or contact for this line"
+                  title={t("editHint")}
                 >
-                  <Pencil className="mr-1.5 size-3.5" />Edit
-                </Button>
+                  <Pencil className="mr-1.5 size-3.5" />{t("edit")}</Button>
               ) : derived === "cleared" ? (
                 <Button
                   size="sm"
                   variant="outline"
                   className="h-7 px-2.5 text-xs"
                   onClick={() => onCategorize(tx)}
-                  title="Record what this money was actually for"
+                  title={t("recordPurpose")}
                 >
-                  <Tags className="mr-1.5 size-3.5" />Categorize
-                </Button>
+                  <Tags className="mr-1.5 size-3.5" />{t("categorize")}</Button>
               ) : onUndo ? (
                 <Button
                   size="sm"
                   variant="ghost"
                   className="h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground"
                   onClick={() => setConfirmUndo(true)}
-                  title="Reverse this and move the line back to your to-do list"
+                  title={t("undoHint")}
                 >
-                  <Undo2 className="mr-1.5 size-3.5" />Undo
-                </Button>
+                  <Undo2 className="mr-1.5 size-3.5" />{t("undo")}</Button>
               ) : null}
               {/* When a primary action is shown, tuck Undo into the menu. */}
               {onUndo && (canEditCategory || derived === "cleared") && (
@@ -537,15 +528,14 @@ export function TransactionRow({
                       size="sm"
                       variant="ghost"
                       className="h-7 px-2 text-xs opacity-0 transition-opacity group-hover:opacity-100 data-[state=open]:opacity-100"
-                      title="More actions"
+                      title={t("moreActions")}
                     >
                       <MoreHorizontal className="size-3.5" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuItem onClick={() => setConfirmUndo(true)} title="Reverse this and move the line back to your to-do list so you can redo it">
-                      <Undo2 className="mr-2 size-3.5" />Undo — move back to to-do
-                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setConfirmUndo(true)} title={t("redoHint")}>
+                      <Undo2 className="mr-2 size-3.5" />{t("undoToDo")}</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}
@@ -563,10 +553,9 @@ export function TransactionRow({
       <Dialog open={confirmClear} onOpenChange={setConfirmClear}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Mark as cleared?</DialogTitle>
+            <DialogTitle>{t("clearTitle")}</DialogTitle>
             <DialogDescription>
-              This records that the line has cleared your bank — nothing more.
-            </DialogDescription>
+              {t("clearDescription")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 text-sm">
             <div className="rounded-lg border bg-muted/30 p-3">
@@ -579,22 +568,19 @@ export function TransactionRow({
               </p>
             </div>
             <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
-              <p className="font-medium">It does not record what the money was for.</p>
+              <p className="font-medium">{t("noPurposeRecorded")}</p>
               <p className="mt-1">
-                No money is moved and nothing is added to your books. To record <em>what this was for</em>,
-                use <span className="font-medium">Categorize or Find a match</span> instead.
-                You can undo this at any time.
+                {t.rich("clearGuidance", { em: (chunks) => <em>{chunks}</em>, strong: (chunks) => <span className="font-medium">{chunks}</span> })}
               </p>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmClear(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setConfirmClear(false)}>{t("cancel")}</Button>
             <Button
               className="bg-emerald-600 hover:bg-emerald-700"
               onClick={() => { onReconcile(tx.id); setConfirmClear(false); }}
             >
-              Mark as cleared
-            </Button>
+              {t("markCleared")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -602,16 +588,15 @@ export function TransactionRow({
       <Dialog open={confirmUndo} onOpenChange={setConfirmUndo}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Undo this?</DialogTitle>
+            <DialogTitle>{t("undoTitle")}</DialogTitle>
             <DialogDescription>
-              The line goes back to your to-do list so you can record it differently.
-            </DialogDescription>
+              {t("undoDescription")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 text-sm">
             <div className="rounded-lg border bg-muted/30 p-3">
               <p className="font-medium">{tx.description}</p>
               {derived === "categorized" && tx.accountName && (
-                <p className="mt-0.5 text-xs text-muted-foreground">Currently in your books as {tx.accountName}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">{t("currentlyAssigned", { account: tx.accountName })}</p>
               )}
               <p className={cn(
                 "mt-1 font-mono text-xs tabular-nums",
@@ -622,18 +607,17 @@ export function TransactionRow({
             </div>
             <p className="text-xs text-muted-foreground">
               {derived === "cleared"
-                ? "This just un-marks it as cleared — nothing was in your books."
-                : "We reverse the bookkeeping this created (and unwind any matched invoice, bill, or transfer). Nothing is deleted permanently — you can redo it straight away."}
+                ? t("undoCleared")
+                : t("undoBookkeeping")}
             </p>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmUndo(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setConfirmUndo(false)}>{t("cancel")}</Button>
             <Button
               variant="destructive"
               onClick={() => { onUndo?.(tx); setConfirmUndo(false); }}
             >
-              <Undo2 className="mr-2 size-3.5" />Undo
-            </Button>
+              <Undo2 className="mr-2 size-3.5" />{t("undo")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -888,6 +872,8 @@ export function MatchToBillSheet({
   orgId: string | null;
   onMatched: () => void;
 }) {
+  const t = useTranslations("BankWorkspace");
+  const errors = useTranslations("BankAccountErrors");
   const [selectedBill, setSelectedBill] = useState<string | null>(null);
   const [payAmount, setPayAmount] = useState("");
   const [saving, setSaving] = useState(false);
@@ -930,11 +916,11 @@ export function MatchToBillSheet({
           date: transaction.date,
         }),
       });
-      if (!res.ok) throw new Error((await res.json()).error);
-      toast.success("Linked to bill and marked paid");
+      await requireBankAccountResponse(res, errors, t("requestFailed"));
+      toast.success(t("billLinked"));
       onMatched();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't link to that bill");
+      toast.error(bankWorkspaceFailure(err, t, t("billLinkFailed")));
     } finally {
       setSaving(false);
     }
@@ -946,16 +932,15 @@ export function MatchToBillSheet({
     <Sheet open={!!transaction} onOpenChange={(open) => !open && onClose()}>
       <SheetContent side="right" className="w-full sm:max-w-lg flex flex-col p-0">
         <SheetHeader className="px-4 pt-5 pb-4 sm:px-6 border-b shrink-0">
-          <SheetTitle className="text-lg">Match to a bill you owe</SheetTitle>
+          <SheetTitle className="text-lg">{t("matchBillTitle")}</SheetTitle>
           <SheetDescription>
-            Link this payment to a bill you owe and mark that bill as paid.
-          </SheetDescription>
+            {t("matchBillHint")}</SheetDescription>
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 space-y-5">
           {transaction && (
             <div className="rounded-lg border bg-muted/30 p-3">
-              <p className="text-xs text-muted-foreground mb-1">Bank Transaction</p>
+              <p className="text-xs text-muted-foreground mb-1">{t("bankTransaction")}</p>
               <p className="text-sm font-medium">{transaction.description}</p>
               <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
                 <span>{transaction.date}</span>
@@ -968,7 +953,7 @@ export function MatchToBillSheet({
 
           {suggestions.length > 0 && (
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Likely matches</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">{t("likelyMatches")}</p>
               <div className="space-y-1.5">
                 {suggestions.map((s) => {
                   const b = bills.find((bill) => bill.id === s.candidate.id);
@@ -987,11 +972,11 @@ export function MatchToBillSheet({
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium">{b.billNumber}</span>
                           <Badge variant="outline" className="text-[10px] border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-                            {s.confidence}% match
+                            {t("confidence", { percent: s.confidence })}
                           </Badge>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-0.5">{b.contactName} · Due {b.dueDate}</p>
-                        <p className="text-[10px] text-muted-foreground mt-0.5">{s.reasons.join(", ")}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{b.contactName} · {t("dueOn", { date: b.dueDate })}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">{s.reasons.map(reason => bankMatchReason(t, reason)).join(t("listSeparator"))}</p>
                       </div>
                       <span className="font-mono text-sm font-medium tabular-nums shrink-0 ml-3">
                         {formatMoney(b.amountDue, currencyCode)}
@@ -1005,12 +990,12 @@ export function MatchToBillSheet({
 
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
-              {suggestions.length > 0 ? "All Open Bills" : "Open Bills"}
+              {suggestions.length > 0 ? t("allOpenBills") : t("openBills")}
             </p>
             <div className="relative mb-2">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
               <Input
-                placeholder="Search bills..."
+                placeholder={t("searchBills")}
                 value={billSearch}
                 onChange={(e) => setBillSearch(e.target.value)}
                 className="pl-9 h-8 text-xs"
@@ -1021,7 +1006,7 @@ export function MatchToBillSheet({
                 <Loader2 className="size-5 animate-spin text-muted-foreground" />
               </div>
             ) : filteredBills.length === 0 ? (
-              <p className="text-xs text-muted-foreground py-4 text-center">No open bills found.</p>
+              <p className="text-xs text-muted-foreground py-4 text-center">{t("noOpenBills")}</p>
             ) : (
               <div className="space-y-1.5 max-h-64 overflow-y-auto">
                 {filteredBills.map((b) => (
@@ -1037,11 +1022,11 @@ export function MatchToBillSheet({
                   >
                     <div className="min-w-0">
                       <span className="text-sm font-medium">{b.billNumber}</span>
-                      <p className="text-xs text-muted-foreground mt-0.5">{b.contactName} · Due {b.dueDate}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{b.contactName} · {t("dueOn", { date: b.dueDate })}</p>
                     </div>
                     <div className="text-right shrink-0 ml-3">
                       <span className="font-mono text-sm font-medium tabular-nums">{formatMoney(b.amountDue, currencyCode)}</span>
-                      <p className="text-[10px] text-muted-foreground">of {formatMoney(b.total, currencyCode)}</p>
+                      <p className="text-[10px] text-muted-foreground">{t("ofTotal", { amount: formatMoney(b.total, currencyCode) })}</p>
                     </div>
                   </button>
                 ))}
@@ -1052,13 +1037,13 @@ export function MatchToBillSheet({
           {selected && (
             <div className="space-y-2 rounded-lg border p-3">
               <div className="flex items-center justify-between">
-                <Label className="text-xs">Payment Amount</Label>
+                <Label className="text-xs">{t("paymentAmount")}</Label>
                 <span className="text-[10px] text-muted-foreground">
-                  Bill due: {formatMoney(selected.amountDue, currencyCode)}
+                  {t("billDue", { amount: formatMoney(selected.amountDue, currencyCode) })}
                 </span>
               </div>
               <CurrencyInput
-                prefix={currencyCode} fractionDigits={currencyMetadata(currencyCode).minorUnits} aria-label={`Amount (${currencyCode})`}
+                prefix={currencyCode} fractionDigits={currencyMetadata(currencyCode).minorUnits} aria-label={t("amountInCurrency", { currency: currencyCode })}
                 value={payAmount}
                 onChange={setPayAmount}
               />
@@ -1068,13 +1053,13 @@ export function MatchToBillSheet({
         </div>
 
         <div className="sticky bottom-0 flex items-center justify-end gap-2 border-t bg-background/80 px-4 py-3 sm:px-6 backdrop-blur-sm shrink-0">
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button variant="outline" onClick={onClose}>{t("cancel")}</Button>
           <Button
             onClick={handleMatch}
             disabled={!selectedBill || saving}
             className="bg-emerald-600 hover:bg-emerald-700"
           >
-            {saving ? <><Loader2 className="mr-2 size-3.5 animate-spin" />Linking...</> : "Link & mark paid"}
+            {saving ? <><Loader2 className="mr-2 size-3.5 animate-spin" />{t("linkingDots")}</> : t("linkAndPay")}
           </Button>
         </div>
       </SheetContent>
@@ -1098,6 +1083,9 @@ export function CreateExpenseSheet({
   orgId: string | null;
   onCreated: () => void;
 }) {
+  const t = useTranslations("BankWorkspace");
+  const errors = useTranslations("BankAccountErrors");
+  const messages = t;
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [itemDesc, setItemDesc] = useState("");
@@ -1134,8 +1122,8 @@ export function CreateExpenseSheet({
 
   async function handleCreate() {
     if (!orgId || !transaction) return;
-    if (!title.trim()) { toast.error("Enter a title"); return; }
-    if (!accountId) { toast.error("Choose a category for this expense"); return; }
+    if (!title.trim()) { toast.error(t("titleRequired")); return; }
+    if (!accountId) { toast.error(t("expenseCategoryRequired")); return; }
     setSaving(true);
     try {
       const { amountMinor } = bankUiAmount(itemAmount, currencyCode);
@@ -1159,11 +1147,11 @@ export function CreateExpenseSheet({
           }],
         }),
       });
-      if (!res.ok) throw new Error((await res.json()).error);
-      toast.success("Expense recorded and added to your books");
+      await requireBankAccountResponse(res, errors, t("requestFailed"));
+      toast.success(t("expenseRecorded"));
       onCreated();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't record the expense");
+      toast.error(bankWorkspaceFailure(err, t, t("expenseFailed")));
     } finally {
       setSaving(false);
     }
@@ -1173,16 +1161,15 @@ export function CreateExpenseSheet({
     <Sheet open={!!transaction} onOpenChange={(open) => !open && onClose()}>
       <SheetContent side="right" className="w-full sm:max-w-lg flex flex-col p-0">
         <SheetHeader className="px-4 pt-5 pb-4 sm:px-6 border-b shrink-0">
-          <SheetTitle className="text-lg">Record as an expense</SheetTitle>
+          <SheetTitle className="text-lg">{t("expenseTitle")}</SheetTitle>
           <SheetDescription>
-            Record this payment as a business expense and add it to your books.
-          </SheetDescription>
+            {t("expenseHint")}</SheetDescription>
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 space-y-5">
           {transaction && (
             <div className="rounded-lg border bg-muted/30 p-3">
-              <p className="text-xs text-muted-foreground mb-1">Bank Transaction</p>
+              <p className="text-xs text-muted-foreground mb-1">{t("bankTransaction")}</p>
               <p className="text-sm font-medium">{transaction.description}</p>
               <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
                 <span>{transaction.date}</span>
@@ -1195,55 +1182,53 @@ export function CreateExpenseSheet({
 
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-xs">Title</Label>
-              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Office Supplies" />
+              <Label className="text-xs">{t("title")}</Label>
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("officeSupplies")} />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs">Description (optional)</Label>
-              <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Notes about this expense" />
+              <Label className="text-xs">{t("descriptionOptional")}</Label>
+              <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t("expenseNotes")} />
             </div>
 
             <div className="h-px bg-border" />
 
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Expense Item</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("expenseItem")}</p>
 
             <div className="space-y-1.5">
-              <Label className="text-xs">Item Description</Label>
-              <Input value={itemDesc} onChange={(e) => setItemDesc(e.target.value)} placeholder="What was purchased" />
+              <Label className="text-xs">{t("itemDescription")}</Label>
+              <Input value={itemDesc} onChange={(e) => setItemDesc(e.target.value)} placeholder={t("purchasedHint")} />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs">Amount</Label>
-              <CurrencyInput prefix={currencyCode} fractionDigits={currencyMetadata(currencyCode).minorUnits} aria-label={`Amount (${currencyCode})`} value={itemAmount} onChange={setItemAmount} />
+              <Label className="text-xs">{t("amount")}</Label>
+              <CurrencyInput prefix={currencyCode} fractionDigits={currencyMetadata(currencyCode).minorUnits} aria-label={t("amountInCurrency", { currency: currencyCode })} value={itemAmount} onChange={setItemAmount} />
             </div>
 
             <div className="space-y-1.5">
               <Label className="text-xs">
-                Category <span className="text-muted-foreground font-normal">(what kind of expense)</span>
+                {t("category")}{" "}<span className="text-muted-foreground font-normal">{t("expenseKind")}</span>
               </Label>
               <AccountPicker
                 value={accountId}
                 onChange={setAccountId}
                 typeFilter={["expense"]}
-                placeholder="Choose what this was for, e.g. Bank Fees & Charges"
+                placeholder={t("chooseExpenseCategory")}
                 allowCreate
               />
               <p className="text-[11px] text-muted-foreground">
-                This is what the expense is recorded as in your books. Without it, the amount would land in
-                a generic “Miscellaneous” category.
-              </p>
+                {t("expenseCategoryHint")}</p>
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs">Tax <span className="text-muted-foreground font-normal">(the amount is treated as tax-inclusive)</span></Label>
+              <Label className="text-xs">{t("tax")}{" "}<span className="text-muted-foreground font-normal">{t("taxInclusive")}</span></Label>
               <Select value={taxRateId} onValueChange={setTaxRateId}>
                 <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">No tax</SelectItem>
+                  <SelectItem value="none">{t("noTax")}</SelectItem>
                   {taxRates.map((t) => (
                     <SelectItem key={t.id} value={t.id}>
-                      {taxOptionLabel(t, true)}
+                      {taxOptionLabel(t, true, messages)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -1251,8 +1236,8 @@ export function CreateExpenseSheet({
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs">Who you paid (optional)</Label>
-              <ContactPicker value={contactId} onChange={setContactId} placeholder="Pick a supplier or contact" />
+              <Label className="text-xs">{t("paidWho")}</Label>
+              <ContactPicker value={contactId} onChange={setContactId} placeholder={t("pickSupplier")} />
             </div>
 
             <TrackingPicker
@@ -1269,13 +1254,13 @@ export function CreateExpenseSheet({
         </div>
 
         <div className="sticky bottom-0 flex items-center justify-end gap-2 border-t bg-background/80 px-4 py-3 sm:px-6 backdrop-blur-sm shrink-0">
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button variant="outline" onClick={onClose}>{t("cancel")}</Button>
           <Button
             onClick={handleCreate}
             disabled={saving || !title.trim() || !accountId}
             className="bg-emerald-600 hover:bg-emerald-700"
           >
-            {saving ? <><Loader2 className="mr-2 size-3.5 animate-spin" />Recording...</> : "Record expense"}
+            {saving ? <><Loader2 className="mr-2 size-3.5 animate-spin" />{t("recordingDots")}</> : t("recordExpense")}
           </Button>
         </div>
       </SheetContent>
@@ -1299,17 +1284,17 @@ export interface TaxRateOption {
 // (purchase) contexts we also spell out how much can be claimed back, so users
 // don't silently under-reclaim: "VAT 20% · fully reclaimable", "· 50%
 // reclaimable", or "· not reclaimable" for blocked / US sales tax / 0%.
-function taxOptionLabel(t: TaxRateOption, isPurchase: boolean): string {
-  const pct = (t.rate / 100).toFixed(t.rate % 100 === 0 ? 0 : 2);
-  const base = `${t.name} (${pct}%)`;
+function taxOptionLabel(tax: TaxRateOption, isPurchase: boolean, t: WorkspaceTranslate): string {
+  const pct = (tax.rate / 100).toFixed(tax.rate % 100 === 0 ? 0 : 2);
+  const base = `${tax.name} (${pct}%)`;
   if (!isPurchase) return base;
-  const kind = t.kind || "standard";
-  const recoverableBp = t.recoverablePercent ?? 10000;
+  const kind = tax.kind || "standard";
+  const recoverableBp = tax.recoverablePercent ?? 10000;
   if (kind === "blocked" || kind === "sales_tax_us" || recoverableBp <= 0) {
-    return `${base} · not reclaimable`;
+    return t("notReclaimable", { tax: base });
   }
-  if (recoverableBp >= 10000) return `${base} · fully reclaimable`;
-  return `${base} · ${Math.round(recoverableBp / 100)}% reclaimable`;
+  if (recoverableBp >= 10000) return t("fullyReclaimable", { tax: base });
+  return t("partlyReclaimable", { tax: base, percent: Math.round(recoverableBp / 100) });
 }
 
 const splitTaxPreview = bankUiTax;
@@ -1338,6 +1323,9 @@ export function CategorizeSheet({
   /** Hand off to the "split one line across accounts" flow (e.g. loan repayment). */
   onSwitchToSplit?: (transaction: Transaction) => void;
 }) {
+  const t = useTranslations("BankWorkspace");
+  const errors = useTranslations("BankAccountErrors");
+  const messages = t;
   const [accountId, setAccountId] = useState("");
   const [contactId, setContactId] = useState("");
   const [memo, setMemo] = useState("");
@@ -1433,7 +1421,7 @@ export function CategorizeSheet({
               setAccountId(account.id);
               setChoice(key);
               setPickerType(undefined);
-              setChoiceHint(opts?.hint ?? `Goes to "${account.code} — ${account.name}".`);
+              setChoiceHint(opts?.hint ?? t("goesTo", { code: account.code, account: account.name }));
               if (opts?.memo) setMemo((m) => m || opts.memo!);
             },
           }]
@@ -1461,34 +1449,34 @@ export function CategorizeSheet({
 
     if (isCredit) {
       return [
-        ...guided("sale", "A sale / income", ["revenue"], "Pick the income account this sale belongs to."),
-        ...canonical("capital_in", "Money you put in", capital, { hint: "Recorded as money the owner put in (equity) — kept off your profit." }),
-        ...canonical("loan_in", "Director's / owner's loan in", ownerLoan, { memo: "Director's loan", hint: "Recorded as a loan the business owes you (a liability). 0% is fine — no interest needed." }),
-        ...guided("refund_in", "Refund of a business cost", ["expense"], "Pick the cost it refunds — this reduces that expense, not income."),
-        ...handoff("transfer", "Moved between my accounts", onSwitchToTransfer),
+        ...guided("sale", t("saleIncome"), ["revenue"], t("pickIncome")),
+        ...canonical("capital_in", t("capitalIn"), capital, { hint: t("capitalHint") }),
+        ...canonical("loan_in", t("ownerLoanIn"), ownerLoan, { memo: "Director's loan", hint: t("ownerLoanHint") }),
+        ...guided("refund_in", t("refundCost"), ["expense"], t("refundHint")),
+        ...handoff("transfer", t("ownAccounts"), onSwitchToTransfer),
       ];
     }
 
     return [
-      ...guided("cost", "A business cost", ["expense"], "Pick the expense category this cost belongs to."),
-      ...canonical("drawings", "Money you took out", drawings, { hint: "Recorded as drawings (equity) — never an expense." }),
-      ...canonical("loan_repaid", "Director's / owner's loan repaid", ownerLoan, { memo: "Director's loan", hint: "Reduces the loan the business owes you (a liability)." }),
+      ...guided("cost", t("businessCost"), ["expense"], t("pickExpense")),
+      ...canonical("drawings", t("drawings"), drawings, { hint: t("drawingsHint") }),
+      ...canonical("loan_repaid", t("ownerLoanRepaid"), ownerLoan, { memo: "Director's loan", hint: t("loanRepaidHint") }),
       ...canonical(
         "personal",
-        "Personal — not business",
+        t("personal"),
         isCompany ? ownerLoan : drawings,
-        { hint: isCompany ? "Recorded against the director's loan — it's your money, not a company cost." : "Recorded as drawings — it's your money, not a business cost." },
+        { hint: isCompany ? t("companyPersonalHint") : t("personalHint") },
       ),
-      ...canonical("tax", "Paid the tax office", taxPayable, { hint: "Clears the VAT / sales-tax you owe — not an expense." }),
-      ...canonical("reimburse", "Repaid someone for a business cost", reimburse, { hint: "Clears what you owed them — the original cost is the expense, not this." }),
-      ...handoff("loan_split", "Loan repayment (split interest)", onSwitchToSplit),
-      ...handoff("transfer", "Moved between my accounts", onSwitchToTransfer),
+      ...canonical("tax", t("paidTax"), taxPayable, { hint: t("paidTaxHint") }),
+      ...canonical("reimburse", t("reimbursed"), reimburse, { hint: t("reimbursedHint") }),
+      ...handoff("loan_split", t("loanSplit"), onSwitchToSplit),
+      ...handoff("transfer", t("ownAccounts"), onSwitchToTransfer),
     ];
-  }, [accounts, isCredit, isCompany, transaction, onSwitchToTransfer, onSwitchToSplit]);
+  }, [accounts, isCredit, isCompany, transaction, onSwitchToTransfer, onSwitchToSplit, t]);
 
   async function handleSave() {
     if (!orgId || !transaction) return;
-    if (!accountId) { toast.error("Choose a category"); return; }
+    if (!accountId) { toast.error(t("categoryRequired")); return; }
     setSaving(true);
     try {
       const res = await fetch(`/api/v1/bank-transactions/${transaction.id}/categorize`, {
@@ -1503,11 +1491,11 @@ export function CategorizeSheet({
           projectId: projectId || null,
         }),
       });
-      if (!res.ok) throw new Error((await res.json()).error);
-      toast.success(isEditing ? "Category updated" : "Assigned and added to your books");
+      await requireBankAccountResponse(res, errors, t("requestFailed"));
+      toast.success(isEditing ? t("categoryUpdated") : t("assigned"));
       onCategorized();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't assign this transaction");
+      toast.error(bankWorkspaceFailure(err, t, t("assignFailed")));
     } finally {
       setSaving(false);
     }
@@ -1517,18 +1505,18 @@ export function CategorizeSheet({
     <Sheet open={!!transaction} onOpenChange={(open) => !open && onClose()}>
       <SheetContent side="right" className="w-full sm:max-w-lg flex flex-col p-0">
         <SheetHeader className="px-4 pt-5 pb-4 sm:px-6 border-b shrink-0">
-          <SheetTitle className="text-lg">{isEditing ? "Edit category" : "Assign to a category"}</SheetTitle>
+          <SheetTitle className="text-lg">{isEditing ? t("editCategory") : t("assignCategoryTitle")}</SheetTitle>
           <SheetDescription>
             {isEditing
-              ? "Change what this was recorded as. We update your books to match."
-              : `Choose what this ${isCredit ? "money in" : "money out"} was for. This adds it to your books.`}
+              ? t("editCategoryHint")
+              : t(isCredit ? "assignIncomingHint" : "assignOutgoingHint")}
           </SheetDescription>
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 space-y-5">
           {transaction && (
             <div className="rounded-lg border bg-muted/30 p-3">
-              <p className="text-xs text-muted-foreground mb-1">Bank Transaction</p>
+              <p className="text-xs text-muted-foreground mb-1">{t("bankTransaction")}</p>
               <p className="text-sm font-medium">{transaction.description}</p>
               <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
                 <span>{transaction.date}</span>
@@ -1541,7 +1529,7 @@ export function CategorizeSheet({
 
           <div className="space-y-3">
             <div className="space-y-1.5">
-              <Label className="text-xs">What was this?</Label>
+              <Label className="text-xs">{t("whatWasThis")}</Label>
               <div className="flex flex-wrap gap-1.5">
                 {quickChoices.map((c) => (
                   <Button
@@ -1560,17 +1548,16 @@ export function CategorizeSheet({
                 ))}
               </div>
               <p className="text-[11px] text-muted-foreground">
-                Pick the closest match — or search the full list below. We post it to the right account for you.
-              </p>
+                {t("quickChoiceHint")}</p>
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs">Category</Label>
+              <Label className="text-xs">{t("category")}</Label>
               <AccountPicker
                 value={accountId}
                 onChange={(v) => { setAccountId(v); setChoice(""); }}
                 typeFilter={pickerType}
-                placeholder="Search every category…"
+                placeholder={t("searchCategory")}
                 allowCreate
               />
               {choiceHint && (
@@ -1580,30 +1567,30 @@ export function CategorizeSheet({
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs">Tax <span className="text-muted-foreground font-normal">(the amount is treated as tax-inclusive)</span></Label>
+            <Label className="text-xs">{t("tax")}{" "}<span className="text-muted-foreground font-normal">{t("taxInclusive")}</span></Label>
             <Select value={taxRateId} onValueChange={setTaxRateId}>
               <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">No tax</SelectItem>
+                <SelectItem value="none">{t("noTax")}</SelectItem>
                 {taxRates.map((t) => (
                   <SelectItem key={t.id} value={t.id}>
-                    {taxOptionLabel(t, !isCredit)}
+                    {taxOptionLabel(t, !isCredit, messages)}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             {taxPreview && (
               <div className="rounded-lg border bg-muted/20 p-2.5 text-[11px] text-muted-foreground">
-                <div className="flex justify-between"><span>Net</span><span className="font-mono tabular-nums">{formatMoney(taxPreview.net, currencyCode)}</span></div>
+                <div className="flex justify-between"><span>{t("net")}</span><span className="font-mono tabular-nums">{formatMoney(taxPreview.net, currencyCode)}</span></div>
                 {isCredit ? (
-                  <div className="flex justify-between"><span>Tax collected (→ output VAT)</span><span className="font-mono tabular-nums">{formatMoney(taxPreview.tax, currencyCode)}</span></div>
+                  <div className="flex justify-between"><span>{t("outputTax")}</span><span className="font-mono tabular-nums">{formatMoney(taxPreview.tax, currencyCode)}</span></div>
                 ) : (
                   <>
                     {taxPreview.recoverable > 0 && (
-                      <div className="flex justify-between"><span>VAT reclaimable (→ input VAT)</span><span className="font-mono tabular-nums">{formatMoney(taxPreview.recoverable, currencyCode)}</span></div>
+                      <div className="flex justify-between"><span>{t("inputTax")}</span><span className="font-mono tabular-nums">{formatMoney(taxPreview.recoverable, currencyCode)}</span></div>
                     )}
                     {taxPreview.absorbed > 0 && (
-                      <div className="flex justify-between"><span>VAT absorbed into cost</span><span className="font-mono tabular-nums">{formatMoney(taxPreview.absorbed, currencyCode)}</span></div>
+                      <div className="flex justify-between"><span>{t("absorbedTax")}</span><span className="font-mono tabular-nums">{formatMoney(taxPreview.absorbed, currencyCode)}</span></div>
                     )}
                   </>
                 )}
@@ -1612,8 +1599,8 @@ export function CategorizeSheet({
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs">Contact (optional)</Label>
-            <ContactPicker value={contactId} onChange={setContactId} placeholder="Who was this with?" />
+            <Label className="text-xs">{t("contactOptional")}</Label>
+            <ContactPicker value={contactId} onChange={setContactId} placeholder={t("whoWith")} />
           </div>
 
           <TrackingPicker
@@ -1624,17 +1611,17 @@ export function CategorizeSheet({
           />
 
           <div className="space-y-1.5">
-            <Label className="text-xs">Memo (optional)</Label>
-            <Input value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="Note for your records" />
+            <Label className="text-xs">{t("memoOptional")}</Label>
+            <Input value={memo} onChange={(e) => setMemo(e.target.value)} placeholder={t("recordsNote")} />
           </div>
 
           <ReceiptAttachments orgId={orgId} entityType="bank_transaction" entityId={transaction?.id ?? null} />
         </div>
 
         <div className="sticky bottom-0 flex items-center justify-end gap-2 border-t bg-background/80 px-4 py-3 sm:px-6 backdrop-blur-sm shrink-0">
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button variant="outline" onClick={onClose}>{t("cancel")}</Button>
           <Button onClick={handleSave} disabled={saving || !accountId} className="bg-emerald-600 hover:bg-emerald-700">
-            {saving ? <><Loader2 className="mr-2 size-3.5 animate-spin" />Saving…</> : isEditing ? "Save changes" : "Assign to category"}
+            {saving ? <><Loader2 className="mr-2 size-3.5 animate-spin" />{t("saving")}</> : isEditing ? t("saveChanges") : t("assignCategory")}
           </Button>
         </div>
       </SheetContent>
@@ -1676,6 +1663,8 @@ export function MatchToInvoiceSheet({
   orgId: string | null;
   onMatched: () => void;
 }) {
+  const t = useTranslations("BankWorkspace");
+  const errors = useTranslations("BankAccountErrors");
   const [selectedInvoice, setSelectedInvoice] = useState<string | null>(null);
   const [payAmount, setPayAmount] = useState("");
   const [saving, setSaving] = useState(false);
@@ -1714,11 +1703,11 @@ export function MatchToInvoiceSheet({
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify({ invoiceId: selectedInvoice, amountMinor, date: transaction.date }),
       });
-      if (!res.ok) throw new Error((await res.json()).error);
-      toast.success("Linked to invoice and marked paid");
+      await requireBankAccountResponse(res, errors, t("requestFailed"));
+      toast.success(t("invoiceLinked"));
       onMatched();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't link to that invoice");
+      toast.error(bankWorkspaceFailure(err, t, t("invoiceLinkFailed")));
     } finally {
       setSaving(false);
     }
@@ -1730,16 +1719,15 @@ export function MatchToInvoiceSheet({
     <Sheet open={!!transaction} onOpenChange={(open) => !open && onClose()}>
       <SheetContent side="right" className="w-full sm:max-w-lg flex flex-col p-0">
         <SheetHeader className="px-4 pt-5 pb-4 sm:px-6 border-b shrink-0">
-          <SheetTitle className="text-lg">Match to an invoice you sent</SheetTitle>
+          <SheetTitle className="text-lg">{t("matchInvoiceTitle")}</SheetTitle>
           <SheetDescription>
-            Link this payment received to an invoice you sent and mark that invoice as paid.
-          </SheetDescription>
+            {t("matchInvoiceHint")}</SheetDescription>
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 space-y-5">
           {transaction && (
             <div className="rounded-lg border bg-muted/30 p-3">
-              <p className="text-xs text-muted-foreground mb-1">Bank Transaction</p>
+              <p className="text-xs text-muted-foreground mb-1">{t("bankTransaction")}</p>
               <p className="text-sm font-medium">{transaction.description}</p>
               <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
                 <span>{transaction.date}</span>
@@ -1752,7 +1740,7 @@ export function MatchToInvoiceSheet({
 
           {suggestions.length > 0 && (
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Likely matches</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">{t("likelyMatches")}</p>
               <div className="space-y-1.5">
                 {suggestions.map((s) => {
                   const inv = invoices.find((i) => i.id === s.candidate.id);
@@ -1771,11 +1759,11 @@ export function MatchToInvoiceSheet({
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium">{inv.invoiceNumber}</span>
                           <Badge variant="outline" className="text-[10px] border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-                            {s.confidence}% match
+                            {t("confidence", { percent: s.confidence })}
                           </Badge>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-0.5">{inv.contactName} · Due {inv.dueDate}</p>
-                        <p className="text-[10px] text-muted-foreground mt-0.5">{s.reasons.join(", ")}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{inv.contactName} · {t("dueOn", { date: inv.dueDate })}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">{s.reasons.map(reason => bankMatchReason(t, reason)).join(t("listSeparator"))}</p>
                       </div>
                       <span className="font-mono text-sm font-medium tabular-nums shrink-0 ml-3">
                         {formatMoney(inv.amountDue, currencyCode)}
@@ -1789,12 +1777,12 @@ export function MatchToInvoiceSheet({
 
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
-              {suggestions.length > 0 ? "All Open Invoices" : "Open Invoices"}
+              {suggestions.length > 0 ? t("allOpenInvoices") : t("openInvoices")}
             </p>
             <div className="relative mb-2">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
               <Input
-                placeholder="Search invoices..."
+                placeholder={t("searchInvoices")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-9 h-8 text-xs"
@@ -1805,7 +1793,7 @@ export function MatchToInvoiceSheet({
                 <Loader2 className="size-5 animate-spin text-muted-foreground" />
               </div>
             ) : filtered.length === 0 ? (
-              <p className="text-xs text-muted-foreground py-4 text-center">No open invoices found.</p>
+              <p className="text-xs text-muted-foreground py-4 text-center">{t("noOpenInvoices")}</p>
             ) : (
               <div className="space-y-1.5 max-h-64 overflow-y-auto">
                 {filtered.map((inv) => (
@@ -1821,11 +1809,11 @@ export function MatchToInvoiceSheet({
                   >
                     <div className="min-w-0">
                       <span className="text-sm font-medium">{inv.invoiceNumber}</span>
-                      <p className="text-xs text-muted-foreground mt-0.5">{inv.contactName} · Due {inv.dueDate}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{inv.contactName} · {t("dueOn", { date: inv.dueDate })}</p>
                     </div>
                     <div className="text-right shrink-0 ml-3">
                       <span className="font-mono text-sm font-medium tabular-nums">{formatMoney(inv.amountDue, currencyCode)}</span>
-                      <p className="text-[10px] text-muted-foreground">of {formatMoney(inv.total, currencyCode)}</p>
+                      <p className="text-[10px] text-muted-foreground">{t("ofTotal", { amount: formatMoney(inv.total, currencyCode) })}</p>
                     </div>
                   </button>
                 ))}
@@ -1836,25 +1824,25 @@ export function MatchToInvoiceSheet({
           {selected && (
             <div className="space-y-2 rounded-lg border p-3">
               <div className="flex items-center justify-between">
-                <Label className="text-xs">Amount Received</Label>
+                <Label className="text-xs">{t("amountReceived")}</Label>
                 <span className="text-[10px] text-muted-foreground">
-                  Invoice due: {formatMoney(selected.amountDue, currencyCode)}
+                  {t("invoiceDue", { amount: formatMoney(selected.amountDue, currencyCode) })}
                 </span>
               </div>
-              <CurrencyInput prefix={currencyCode} fractionDigits={currencyMetadata(currencyCode).minorUnits} aria-label={`Amount (${currencyCode})`} value={payAmount} onChange={setPayAmount} />
+              <CurrencyInput prefix={currencyCode} fractionDigits={currencyMetadata(currencyCode).minorUnits} aria-label={t("amountInCurrency", { currency: currencyCode })} value={payAmount} onChange={setPayAmount} />
               <BankMatchPreview text={payAmount} currencyCode={currencyCode} transaction={transaction} document={selected} />
             </div>
           )}
         </div>
 
         <div className="sticky bottom-0 flex items-center justify-end gap-2 border-t bg-background/80 px-4 py-3 sm:px-6 backdrop-blur-sm shrink-0">
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button variant="outline" onClick={onClose}>{t("cancel")}</Button>
           <Button
             onClick={handleMatch}
             disabled={!selectedInvoice || saving}
             className="bg-emerald-600 hover:bg-emerald-700"
           >
-            {saving ? <><Loader2 className="mr-2 size-3.5 animate-spin" />Linking...</> : "Link & mark paid"}
+            {saving ? <><Loader2 className="mr-2 size-3.5 animate-spin" />{t("linkingDots")}</> : t("linkAndPay")}
           </Button>
         </div>
       </SheetContent>
@@ -1871,23 +1859,25 @@ export function MatchToInvoiceSheet({
 //   • a transfer leg in another own account (links, no new JE).
 // All go through POST …/match with a `matchType` discriminator.
 // ---------------------------------------------------------------------------
-const EXISTING_TYPE_META: Record<
+function existingTypeMeta(t: WorkspaceTranslate): Record<
   ExistingMatch["candidate"]["type"],
   { label: string; className: string }
-> = {
+> { return {
   existing_payment: {
-    label: "Payment already recorded",
+    label: t("existingPayment"),
     className: "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-300",
   },
   existing_journal: {
-    label: "Already in your books",
+    label: t("alreadyInBooks"),
     className: "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-800 dark:bg-violet-950 dark:text-violet-300",
   },
   transfer: {
-    label: "Transfer",
+    label: t("transfer"),
     className: "border-cyan-200 bg-cyan-50 text-cyan-700 dark:border-cyan-800 dark:bg-cyan-950 dark:text-cyan-300",
   },
 };
+
+}
 
 export function MatchSheet({
   transaction,
@@ -1912,6 +1902,8 @@ export function MatchSheet({
   orgId: string | null;
   onMatched: () => void;
 }) {
+  const t = useTranslations("BankWorkspace");
+  const errors = useTranslations("BankAccountErrors");
   // A unified selection: either an existing record, or an open document.
   type Selection =
     | { kind: "existing"; match: ExistingMatch }
@@ -1966,11 +1958,11 @@ export function MatchSheet({
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify(body),
       });
-      if (!res.ok) throw new Error((await res.json()).error);
-      toast.success("Linked");
+      await requireBankAccountResponse(res, errors, t("requestFailed"));
+      toast.success(t("linked"));
       onMatched();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't link this transaction");
+      toast.error(bankWorkspaceFailure(err, t, t("linkFailed")));
     } finally {
       setSaving(false);
     }
@@ -1982,17 +1974,16 @@ export function MatchSheet({
     <Sheet open={!!transaction} onOpenChange={(open) => !open && onClose()}>
       <SheetContent side="right" className="w-full sm:max-w-lg flex flex-col p-0">
         <SheetHeader className="px-4 pt-5 pb-4 sm:px-6 border-b shrink-0">
-          <SheetTitle className="text-lg">Find a match</SheetTitle>
+          <SheetTitle className="text-lg">{t("findMatch")}</SheetTitle>
           <SheetDescription>
-            Link this {isCredit ? "money in" : "money out"} to something you&apos;ve already recorded, a
-            transfer, or an open {isCredit ? "invoice" : "bill"}.
+            {t(isCredit ? "matchIncomingHint" : "matchOutgoingHint")}
           </SheetDescription>
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 space-y-5">
           {transaction && (
             <div className="rounded-lg border bg-muted/30 p-3">
-              <p className="text-xs text-muted-foreground mb-1">Bank Transaction</p>
+              <p className="text-xs text-muted-foreground mb-1">{t("bankTransaction")}</p>
               <p className="text-sm font-medium">{transaction.description}</p>
               <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
                 <span>{transaction.date}</span>
@@ -2011,10 +2002,10 @@ export function MatchSheet({
             <>
               {existingMatches.length > 0 && (
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Already in your books</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">{t("alreadyInBooks")}</p>
                   <div className="space-y-1.5">
                     {existingMatches.map((m) => {
-                      const meta = EXISTING_TYPE_META[m.candidate.type];
+                      const meta = existingTypeMeta(t)[m.candidate.type];
                       const isSelected = selection?.kind === "existing" && selection.match.candidate.id === m.candidate.id && selection.match.candidate.type === m.candidate.type;
                       return (
                         <button
@@ -2030,11 +2021,11 @@ export function MatchSheet({
                             <div className="flex items-center gap-2">
                               <Badge variant="outline" className={cn("text-[10px]", meta.className)}>{meta.label}</Badge>
                               <Badge variant="outline" className="text-[10px] border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-                                {m.confidence}% match
+                                {t("confidence", { percent: m.confidence })}
                               </Badge>
                             </div>
                             <p className="text-sm font-medium truncate mt-1">{m.candidate.description}</p>
-                            <p className="text-[10px] text-muted-foreground mt-0.5">{m.candidate.date} · {m.reasons.join(", ")}</p>
+                            <p className="text-[10px] text-muted-foreground mt-0.5">{m.candidate.date} · {m.reasons.map(reason => bankMatchReason(t, reason)).join(t("listSeparator"))}</p>
                           </div>
                           <span className="font-mono text-sm font-medium tabular-nums shrink-0 ml-3">
                             {formatMoney(m.candidate.amount, currencyCode)}
@@ -2044,26 +2035,25 @@ export function MatchSheet({
                     })}
                   </div>
                   <p className="mt-1.5 text-[11px] text-muted-foreground">
-                    Linking to something already in your books just connects this line — it doesn&apos;t record it twice.
-                  </p>
+                    {t("noDuplicateHint")}</p>
                 </div>
               )}
 
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
-                  Open {isCredit ? "Invoices" : "Bills"}
+                  {t(isCredit ? "openInvoices" : "openBills")}
                 </p>
                 <div className="relative mb-2">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
                   <Input
-                    placeholder={`Search ${isCredit ? "invoices" : "bills"}...`}
+                    placeholder={t(isCredit ? "searchInvoices" : "searchBills")}
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="pl-9 h-8 text-xs"
                   />
                 </div>
                 {filteredDocs.length === 0 ? (
-                  <p className="text-xs text-muted-foreground py-4 text-center">No open {isCredit ? "invoices" : "bills"} found.</p>
+                  <p className="text-xs text-muted-foreground py-4 text-center">{t(isCredit ? "noOpenInvoices" : "noOpenBills")}</p>
                 ) : (
                   <div className="space-y-1.5 max-h-56 overflow-y-auto">
                     {filteredDocs.map((d) => {
@@ -2089,15 +2079,15 @@ export function MatchSheet({
                               <span className="text-sm font-medium">{num}</span>
                               {suggested && (
                                 <Badge variant="outline" className="text-[10px] border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-                                  {suggested.confidence}% match
+                                  {t("confidence", { percent: suggested.confidence })}
                                 </Badge>
                               )}
                             </div>
-                            <p className="text-xs text-muted-foreground mt-0.5">{d.contactName} · Due {d.dueDate}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">{d.contactName} · {t("dueOn", { date: d.dueDate })}</p>
                           </div>
                           <div className="text-right shrink-0 ml-3">
                             <span className="font-mono text-sm font-medium tabular-nums">{formatMoney(d.amountDue, currencyCode)}</span>
-                            <p className="text-[10px] text-muted-foreground">of {formatMoney(d.total, currencyCode)}</p>
+                            <p className="text-[10px] text-muted-foreground">{t("ofTotal", { amount: formatMoney(d.total, currencyCode) })}</p>
                           </div>
                         </button>
                       );
@@ -2108,8 +2098,8 @@ export function MatchSheet({
 
               {needsAmount && (
                 <div className="space-y-2 rounded-lg border p-3">
-                  <Label className="text-xs">{isCredit ? "Amount Received" : "Payment Amount"}</Label>
-                  <CurrencyInput prefix={currencyCode} fractionDigits={currencyMetadata(currencyCode).minorUnits} aria-label={`Amount (${currencyCode})`} value={payAmount} onChange={setPayAmount} />
+                  <Label className="text-xs">{isCredit ? t("amountReceived") : t("paymentAmount")}</Label>
+                  <CurrencyInput prefix={currencyCode} fractionDigits={currencyMetadata(currencyCode).minorUnits} aria-label={t("amountInCurrency", { currency: currencyCode })} value={payAmount} onChange={setPayAmount} />
                   <BankMatchPreview text={payAmount} currencyCode={currencyCode} transaction={transaction} document={selection?.doc} />
                 </div>
               )}
@@ -2118,9 +2108,9 @@ export function MatchSheet({
         </div>
 
         <div className="sticky bottom-0 flex items-center justify-end gap-2 border-t bg-background/80 px-4 py-3 sm:px-6 backdrop-blur-sm shrink-0">
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button variant="outline" onClick={onClose}>{t("cancel")}</Button>
           <Button onClick={handleMatch} disabled={!selection || saving} className="bg-emerald-600 hover:bg-emerald-700">
-            {saving ? <><Loader2 className="mr-2 size-3.5 animate-spin" />Linking…</> : "Link"}
+            {saving ? <><Loader2 className="mr-2 size-3.5 animate-spin" />{t("linking")}</> : t("link")}
           </Button>
         </div>
       </SheetContent>
@@ -2150,6 +2140,8 @@ export function TransferSheet({
   orgId: string | null;
   onTransferred: () => void;
 }) {
+  const t = useTranslations("BankWorkspace");
+  const errors = useTranslations("BankAccountErrors");
   const [targetId, setTargetId] = useState("");
   const [counterTx, setCounterTx] = useState<string | null>(null);
   const [counterCandidates, setCounterCandidates] = useState<Transaction[]>([]);
@@ -2199,11 +2191,11 @@ export function TransferSheet({
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify({ targetBankAccountId: targetId, counterTransactionId: counterTx }),
       });
-      if (!res.ok) throw new Error((await res.json()).error);
-      toast.success(counterTx ? "Transfer linked" : "Transfer recorded");
+      await requireBankAccountResponse(res, errors, t("requestFailed"));
+      toast.success(counterTx ? t("transferLinked") : t("transferRecorded"));
       onTransferred();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't record the transfer");
+      toast.error(bankWorkspaceFailure(err, t, t("transferFailed")));
     } finally {
       setSaving(false);
     }
@@ -2215,17 +2207,16 @@ export function TransferSheet({
     <Sheet open={!!transaction} onOpenChange={(open) => !open && onClose()}>
       <SheetContent side="right" className="w-full sm:max-w-lg flex flex-col p-0">
         <SheetHeader className="px-4 pt-5 pb-4 sm:px-6 border-b shrink-0">
-          <SheetTitle className="text-lg">Record a transfer between accounts</SheetTitle>
+          <SheetTitle className="text-lg">{t("recordTransferTitle")}</SheetTitle>
           <SheetDescription>
-            Record this line as money moving {isCredit ? "in from" : "out to"} another of your own
-            bank accounts. It&apos;s not counted as income or an expense.
+            {t(isCredit ? "transferIncomingHint" : "transferOutgoingHint")}
           </SheetDescription>
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 space-y-5">
           {transaction && (
             <div className="rounded-lg border bg-muted/30 p-3">
-              <p className="text-xs text-muted-foreground mb-1">Bank Transaction</p>
+              <p className="text-xs text-muted-foreground mb-1">{t("bankTransaction")}</p>
               <p className="text-sm font-medium">{transaction.description}</p>
               <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
                 <span>{transaction.date}</span>
@@ -2237,18 +2228,18 @@ export function TransferSheet({
           )}
 
           <div className="space-y-1.5">
-            <Label className="text-xs">{isCredit ? "Transferred from" : "Transferred to"}</Label>
+            <Label className="text-xs">{isCredit ? t("transferredFrom") : t("transferredTo")}</Label>
             <Select value={targetId} onValueChange={setTargetId}>
-              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Choose another bank account…" /></SelectTrigger>
+              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder={t("chooseBank")} /></SelectTrigger>
               <SelectContent>
                 {targets.length === 0 ? (
-                  <div className="px-2 py-3 text-xs text-muted-foreground">No other bank accounts.</div>
+                  <div className="px-2 py-3 text-xs text-muted-foreground">{t("noOtherBanks")}</div>
                 ) : (
-                  targets.map((t) => (
-                    <SelectItem key={t.id} value={t.id} disabled={!t.hasLedgerAccount}>
-                      {t.accountName}
-                      {t.bankName ? ` · ${t.bankName}` : ""}
-                      {!t.hasLedgerAccount ? " (not set up for bookkeeping yet)" : ""}
+                  targets.map((target) => (
+                    <SelectItem key={target.id} value={target.id} disabled={!target.hasLedgerAccount}>
+                      {target.accountName}
+                      {target.bankName ? ` · ${target.bankName}` : ""}
+                      {!target.hasLedgerAccount ? t("notSetupSuffix") : ""}
                     </SelectItem>
                   ))
                 )}
@@ -2256,22 +2247,19 @@ export function TransferSheet({
             </Select>
             {selectedTarget && !selectedTarget.hasLedgerAccount && (
               <p className="text-[11px] text-amber-600 dark:text-amber-400">
-                This account isn&apos;t set up for bookkeeping yet — finish setting it up in its settings first.
-              </p>
+                {t("setupFirst")}</p>
             )}
           </div>
 
           {targetId && (
             <div className="space-y-1.5">
-              <Label className="text-xs">Matching line in that account (optional)</Label>
+              <Label className="text-xs">{t("counterLine")}</Label>
               {loadingCounters ? (
                 <div className="flex items-center gap-2 py-3 text-xs text-muted-foreground">
-                  <Loader2 className="size-3.5 animate-spin" /> Looking for a matching line…
-                </div>
+                  <Loader2 className="size-3.5 animate-spin" /> {t("lookingForMatch")}</div>
               ) : counterCandidates.length === 0 ? (
                 <p className="text-[11px] text-muted-foreground">
-                  No matching line found. A mirror transaction will be created in the other account.
-                </p>
+                  {t("mirrorHint")}</p>
               ) : (
                 <div className="space-y-1.5 max-h-44 overflow-y-auto">
                   {counterCandidates.map((c) => (
@@ -2294,8 +2282,7 @@ export function TransferSheet({
                     </button>
                   ))}
                   <p className="text-[11px] text-muted-foreground">
-                    Pick the matching line to link both sides, or leave it unselected to add the other side automatically.
-                  </p>
+                    {t("counterHint")}</p>
                 </div>
               )}
             </div>
@@ -2303,13 +2290,13 @@ export function TransferSheet({
         </div>
 
         <div className="sticky bottom-0 flex items-center justify-end gap-2 border-t bg-background/80 px-4 py-3 sm:px-6 backdrop-blur-sm shrink-0">
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button variant="outline" onClick={onClose}>{t("cancel")}</Button>
           <Button
             onClick={handleTransfer}
             disabled={!targetId || saving || (selectedTarget && !selectedTarget.hasLedgerAccount)}
             className="bg-emerald-600 hover:bg-emerald-700"
           >
-            {saving ? <><Loader2 className="mr-2 size-3.5 animate-spin" />Recording…</> : "Record Transfer"}
+            {saving ? <><Loader2 className="mr-2 size-3.5 animate-spin" />{t("recording")}</> : t("recordTransfer")}
           </Button>
         </div>
       </SheetContent>
@@ -2347,6 +2334,9 @@ export function SplitAccountSheet({
   orgId: string | null;
   onSplit: () => void;
 }) {
+  const t = useTranslations("BankWorkspace");
+  const errors = useTranslations("BankAccountErrors");
+  const messages = t;
   const [rows, setRows] = useState<SplitAllocationDraft[]>([]);
   const [taxRates, setTaxRates] = useState<TaxRateOption[]>([]);
   const [saving, setSaving] = useState(false);
@@ -2394,7 +2384,7 @@ export function SplitAccountSheet({
     if (!orgId || !transaction) return;
     let allocations: ReturnType<typeof bankUiSplit>;
     try { allocations = bankUiSplit(rows, currencyCode, transaction.amount); }
-    catch (error) { toast.error(error instanceof Error ? error.message : "Invalid split"); return; }
+    catch (error) { toast.error(bankWorkspaceFailure(error, t, t("invalidSplit"))); return; }
     setSaving(true);
     try {
       const res = await fetch(`/api/v1/bank-transactions/${transaction.id}/split-account`, {
@@ -2402,11 +2392,11 @@ export function SplitAccountSheet({
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify({ allocations }),
       });
-      if (!res.ok) throw new Error((await res.json()).error);
-      toast.success("Split across categories and added to your books");
+      await requireBankAccountResponse(res, errors, t("requestFailed"));
+      toast.success(t("splitRecorded"));
       onSplit();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't split this transaction");
+      toast.error(bankWorkspaceFailure(err, t, t("splitFailed")));
     } finally {
       setSaving(false);
     }
@@ -2416,17 +2406,16 @@ export function SplitAccountSheet({
     <Sheet open={!!transaction} onOpenChange={(open) => !open && onClose()}>
       <SheetContent side="right" className="w-full sm:max-w-xl flex flex-col p-0">
         <SheetHeader className="px-4 pt-5 pb-4 sm:px-6 border-b shrink-0">
-          <SheetTitle className="text-lg">Split across categories</SheetTitle>
+          <SheetTitle className="text-lg">{t("splitCategories")}</SheetTitle>
           <SheetDescription>
-            Divide this {isCredit ? "money in" : "money out"} across several categories. Each amount
-            includes tax and they must add up to the full transaction.
+            {t(isCredit ? "splitIncomingHint" : "splitOutgoingHint")}
           </SheetDescription>
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 space-y-5">
           {transaction && (
             <div className="rounded-lg border bg-muted/30 p-3">
-              <p className="text-xs text-muted-foreground mb-1">Bank Transaction</p>
+              <p className="text-xs text-muted-foreground mb-1">{t("bankTransaction")}</p>
               <p className="text-sm font-medium">{transaction.description}</p>
               <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
                 <span>{transaction.date}</span>
@@ -2441,7 +2430,7 @@ export function SplitAccountSheet({
             {rows.map((row, i) => (
               <div key={row.key} className="rounded-lg border p-3 space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Part {i + 1}</span>
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t("partNumber", { count: i + 1 })}</span>
                   {rows.length > 1 && (
                     <button
                       type="button"
@@ -2453,23 +2442,23 @@ export function SplitAccountSheet({
                   )}
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Category</Label>
-                  <AccountPicker value={row.accountId} onChange={(v) => updateRow(row.key, { accountId: v })} placeholder="Choose a category…" allowCreate />
+                  <Label className="text-xs">{t("category")}</Label>
+                  <AccountPicker value={row.accountId} onChange={(v) => updateRow(row.key, { accountId: v })} placeholder={t("chooseCategory")} allowCreate />
                 </div>
                 <div className="grid grid-cols-2 gap-2.5">
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Amount</Label>
-                    <CurrencyInput prefix={currencyCode} fractionDigits={currencyMetadata(currencyCode).minorUnits} aria-label={`Amount (${currencyCode})`} value={row.amount} onChange={(v) => updateRow(row.key, { amount: v })} />
+                    <Label className="text-xs">{t("amount")}</Label>
+                    <CurrencyInput prefix={currencyCode} fractionDigits={currencyMetadata(currencyCode).minorUnits} aria-label={t("amountInCurrency", { currency: currencyCode })} value={row.amount} onChange={(v) => updateRow(row.key, { amount: v })} />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Tax</Label>
+                    <Label className="text-xs">{t("tax")}</Label>
                     <Select value={row.taxRateId} onValueChange={(v) => updateRow(row.key, { taxRateId: v })}>
                       <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">No tax</SelectItem>
+                        <SelectItem value="none">{t("noTax")}</SelectItem>
                         {taxRates.map((t) => (
                           <SelectItem key={t.id} value={t.id}>
-                            {taxOptionLabel(t, !isCredit)}
+                            {taxOptionLabel(t, !isCredit, messages)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -2477,14 +2466,13 @@ export function SplitAccountSheet({
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Memo (optional)</Label>
-                  <Input value={row.memo} onChange={(e) => updateRow(row.key, { memo: e.target.value })} placeholder="Note for this part" className="h-8 text-sm" />
+                  <Label className="text-xs">{t("memoOptional")}</Label>
+                  <Input value={row.memo} onChange={(e) => updateRow(row.key, { memo: e.target.value })} placeholder={t("partNote")} className="h-8 text-sm" />
                 </div>
               </div>
             ))}
             <Button variant="outline" size="sm" onClick={addRow} className="w-full">
-              <Plus className="mr-1.5 size-3.5" />Add another part
-            </Button>
+              <Plus className="mr-1.5 size-3.5" />{t("addPart")}</Button>
           </div>
 
           <div className={cn(
@@ -2492,13 +2480,13 @@ export function SplitAccountSheet({
             balanced ? "border-emerald-200 bg-emerald-50/50 dark:border-emerald-800 dark:bg-emerald-950/20" : "border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20"
           )}>
             <div>
-              <p className="text-xs text-muted-foreground">Allocated</p>
-              <p className="font-mono font-medium tabular-nums">{splitPreview.valid ? formatMoney(allocatedCents, currencyCode) : "Enter valid amounts"} of {formatMoney(totalCents, currencyCode)}</p>
+              <p className="text-xs text-muted-foreground">{t("allocated")}</p>
+              <p className="font-mono font-medium tabular-nums">{t("allocatedOf", { amount: splitPreview.valid ? formatMoney(allocatedCents, currencyCode) : t("enterValidAmounts"), total: formatMoney(totalCents, currencyCode) })}</p>
             </div>
             <div className="text-right">
-              <p className="text-xs text-muted-foreground">{remainingCents >= 0 ? "Remaining" : "Over by"}</p>
+              <p className="text-xs text-muted-foreground">{remainingCents >= 0 ? t("remaining") : t("overBy")}</p>
               <p className={cn("font-mono font-medium tabular-nums", balanced ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400")}>
-                {splitPreview.valid ? formatMoney(bankUiAbs(remainingCents), currencyCode) : "Unavailable"}
+                {splitPreview.valid ? formatMoney(bankUiAbs(remainingCents), currencyCode) : t("unavailable")}
               </p>
             </div>
           </div>
@@ -2509,9 +2497,9 @@ export function SplitAccountSheet({
         </div>
 
         <div className="sticky bottom-0 flex items-center justify-end gap-2 border-t bg-background/80 px-4 py-3 sm:px-6 backdrop-blur-sm shrink-0">
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button variant="outline" onClick={onClose}>{t("cancel")}</Button>
           <Button onClick={handleSave} disabled={saving || !balanced} className="bg-emerald-600 hover:bg-emerald-700">
-            {saving ? <><Loader2 className="mr-2 size-3.5 animate-spin" />Saving…</> : "Save split"}
+            {saving ? <><Loader2 className="mr-2 size-3.5 animate-spin" />{t("saving")}</> : t("saveSplit")}
           </Button>
         </div>
       </SheetContent>
@@ -2543,6 +2531,8 @@ export function CashCodingGrid({
   orgId: string | null;
   onDone: () => void;
 }) {
+  const t = useTranslations("BankWorkspace");
+  const errors = useTranslations("BankAccountErrors");
   // Only lines that still need coding (no journal entry yet, not excluded).
   const codeable = useMemo(
     () => transactions.filter((t) => !t.journalEntryId && t.status !== "excluded"),
@@ -2572,7 +2562,7 @@ export function CashCodingGrid({
   // account chosen yet — the classic "fill down" cash-coding shortcut.
   function fillDown() {
     const firstCoded = codeable.find((t) => rowFor(t.id).account);
-    if (!firstCoded) { toast.error("Choose a category on the first row first"); return; }
+    if (!firstCoded) { toast.error(t("firstCategory")); return; }
     const src = rowFor(firstCoded.id);
     setRows((prev) => {
       const next = { ...prev };
@@ -2611,18 +2601,18 @@ export function CashCodingGrid({
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify({ items }),
       });
+      await requireBankAccountResponse(res, errors, t("codeFailed"));
       const data = await res.json();
-      if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : "Failed to code transactions");
       const { succeeded, failed } = data.summary || { succeeded: 0, failed: 0 };
       if (failed > 0) {
-        toast.warning(`Assigned ${succeeded}, ${failed} failed`);
+        toast.warning(t("assignedWithFailures", { count: succeeded, failed }));
       } else {
-        toast.success(`Assigned ${succeeded} transaction${succeeded !== 1 ? "s" : ""}`);
+        toast.success(t("assignedCount", { count: succeeded }));
       }
       setRows({});
       onDone();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't assign these transactions");
+      toast.error(bankWorkspaceFailure(err, t, t("bulkAssignFailed")));
     } finally {
       setSaving(false);
     }
@@ -2632,7 +2622,7 @@ export function CashCodingGrid({
     return (
       <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed py-12 text-center">
         <CheckCircle className="size-8 text-emerald-500" />
-        <p className="text-sm text-muted-foreground">Nothing left to do — every line has a category.</p>
+        <p className="text-sm text-muted-foreground">{t("allAssigned")}</p>
       </div>
     );
   }
@@ -2641,27 +2631,26 @@ export function CashCodingGrid({
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-[13px] text-muted-foreground">
-          <span className="font-medium text-foreground tabular-nums">{codeable.length}</span> line{codeable.length !== 1 ? "s" : ""} to assign
-          {readyIds.length > 0 && <> · <span className="text-emerald-600 dark:text-emerald-400">{readyIds.length} ready</span></>}
+          {t("linesToAssign", { count: codeable.length })}
+          {readyIds.length > 0 && <> · <span className="text-emerald-600 dark:text-emerald-400">{t("readyCount", { count: readyIds.length })}</span></>}
         </p>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={fillDown} title="Copy the first filled-in row's category, tax and contact to every blank row">
-            <ArrowDownRight className="mr-1.5 size-3.5" />Fill down
-          </Button>
+          <Button variant="outline" size="sm" onClick={fillDown} title={t("fillDownHint")}>
+            <ArrowDownRight className="mr-1.5 size-3.5" />{t("fillDown")}</Button>
           <Button
             size="sm"
             onClick={handleSave}
             disabled={saving || readyIds.length === 0}
             className="bg-emerald-600 hover:bg-emerald-700"
           >
-            {saving ? <><Loader2 className="mr-1.5 size-3.5 animate-spin" />Saving…</> : <>Assign {readyIds.length || ""}</>}
+            {saving ? <><Loader2 className="mr-1.5 size-3.5 animate-spin" />{t("saving")}</> : <>{t("assignCount", { count: readyIds.length || "" })}</>}
           </Button>
         </div>
       </div>
 
       <div className="rounded-lg border overflow-x-auto">
         <div className="grid min-w-[900px] grid-cols-[150px_minmax(0,1fr)_220px_150px_180px] gap-2 border-b bg-muted/30 px-3 py-2">
-          {["Transaction", "Amount", "Category", "Tax", "Contact"].map((h) => (
+          {[t("transaction"), t("amount"), t("category"), t("tax"), t("contact")].map((h) => (
             <span key={h} className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{h}</span>
           ))}
         </div>
@@ -2681,11 +2670,11 @@ export function CashCodingGrid({
                 )}>
                   {isCredit ? "+" : ""}{formatMoney(tx.amount, currencyCode)}
                 </span>
-                <AccountPicker value={r.account} onChange={(v) => updateRow(tx.id, { account: v })} placeholder="Category…" />
+                <AccountPicker value={r.account} onChange={(v) => updateRow(tx.id, { account: v })} placeholder={t("categoryPlaceholder")} />
                 <Select value={r.taxRateId} onValueChange={(v) => updateRow(tx.id, { taxRateId: v })}>
                   <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">No tax</SelectItem>
+                    <SelectItem value="none">{t("noTax")}</SelectItem>
                     {taxRates.map((t) => (
                       <SelectItem key={t.id} value={t.id}>
                         {t.name} ({(t.rate / 100).toFixed(t.rate % 100 === 0 ? 0 : 2)}%)
@@ -2693,16 +2682,14 @@ export function CashCodingGrid({
                     ))}
                   </SelectContent>
                 </Select>
-                <ContactPicker value={r.contact} onChange={(v) => updateRow(tx.id, { contact: v })} placeholder="Contact…" />
+                <ContactPicker value={r.contact} onChange={(v) => updateRow(tx.id, { contact: v })} placeholder={t("contactPlaceholder")} />
               </div>
             );
           })}
         </div>
       </div>
       <p className="text-[11px] text-muted-foreground">
-        Choose a category on a line to include it. Amounts include tax. Use Fill down to
-        copy the first filled-in row&apos;s category, tax and contact to every blank row.
-      </p>
+        {t("gridHint")}</p>
     </div>
   );
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { Clock3, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -8,6 +10,7 @@ import { useBankAccountContext } from "./layout";
 import { TransactionRow, ImportRow } from "../_components";
 
 export default function BankAccountOverviewPage() {
+  const t = useTranslations("BankWorkspace");
   const {
     account,
     transactions,
@@ -26,7 +29,7 @@ export default function BankAccountOverviewPage() {
     openImport,
   } = useBankAccountContext();
 
-  useDocumentTitle("Accounting \u00B7 Bank Overview");
+  useDocumentTitle(t("overviewTitle"));
 
   const cur = account.currencyCode;
 
@@ -36,9 +39,9 @@ export default function BankAccountOverviewPage() {
       <div>
         <div className="flex items-center gap-6 text-[13px]">
           {[
-            { label: "To do", count: summary.unreconciled, dot: "bg-amber-500", text: "text-amber-600 dark:text-amber-400" },
-            { label: "Done", count: summary.reconciled, dot: "bg-emerald-500", text: "text-emerald-600 dark:text-emerald-400" },
-            { label: "Ignored", count: summary.excluded, dot: "bg-gray-400", text: "text-muted-foreground" },
+            { label: t("toDo"), count: summary.unreconciled, dot: "bg-amber-500", text: "text-amber-600 dark:text-amber-400" },
+            { label: t("done"), count: summary.reconciled, dot: "bg-emerald-500", text: "text-emerald-600 dark:text-emerald-400" },
+            { label: t("ignored"), count: summary.excluded, dot: "bg-gray-400", text: "text-muted-foreground" },
           ].map(({ label, count, dot, text }) => (
             <div key={label} className="flex items-center gap-2">
               <span className={cn("size-2 rounded-full", dot)} />
@@ -65,18 +68,17 @@ export default function BankAccountOverviewPage() {
       {/* Recent transactions */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold">Recent Transactions</h3>
+          <h3 className="text-sm font-semibold">{t("recentTransactions")}</h3>
         </div>
         {transactions.length === 0 ? (
           <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed py-12 text-center">
             <Clock3 className="size-8 text-muted-foreground" />
             <div>
-              <p className="text-sm font-medium">No transactions yet</p>
-              <p className="text-xs text-muted-foreground mt-1">Import a statement to get started.</p>
+              <p className="text-sm font-medium">{t("noTransactions")}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t("importStartHint")}</p>
             </div>
             <Button size="sm" onClick={openImport} className="mt-2 bg-emerald-600 hover:bg-emerald-700">
-              <Upload className="mr-2 size-3.5" />Import Statement
-            </Button>
+              <Upload className="mr-2 size-3.5" />{t("importStatement")}</Button>
           </div>
         ) : (
           <div className="rounded-lg border">
@@ -106,7 +108,7 @@ export default function BankAccountOverviewPage() {
       {imports.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold">Recent Imports</h3>
+            <h3 className="text-sm font-semibold">{t("recentImports")}</h3>
           </div>
           <div className="rounded-lg border">
             {imports.slice(0, 3).map((imp, i) => (

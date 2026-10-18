@@ -1,4 +1,8 @@
 "use client";
+
+import { useTranslations } from "next-intl";
+import { bankWorkspaceFailure } from "@/i18n/bank-workspace-presentation";
+import { requireBankAccountResponse } from "@/i18n/bank-account-presentation";
 import { bankUiAbs } from "@/lib/money/bank-ui";
 
 import { useState, useMemo, useEffect } from "react";
@@ -26,6 +30,8 @@ import { useBankAccountContext } from "../layout";
 import { TransactionRow, CashCodingGrid } from "../../_components";
 
 export default function BankTransactionsPage() {
+  const t = useTranslations("BankWorkspace");
+  const errors = useTranslations("BankAccountErrors");
   const {
     account,
     transactions,
@@ -46,7 +52,7 @@ export default function BankTransactionsPage() {
   const cur = account.currencyCode;
   const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
 
-  useDocumentTitle("Accounting \u00B7 Bank Transactions");
+  useDocumentTitle(t("transactionsTitle"));
 
   const [viewMode, setViewMode] = useState<"list" | "cash-coding">("list");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -130,17 +136,17 @@ export default function BankTransactionsPage() {
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify({ items }),
       });
-      if (!res.ok) throw new Error((await res.json()).error || "Couldn't categorize");
+      await requireBankAccountResponse(res, errors, t("categorizeFailed"));
       const data = await res.json();
       const ok = data.summary?.succeeded ?? 0;
       const failed = data.summary?.failed ?? 0;
       toast.success(
-        `Categorized ${ok} transaction${ok === 1 ? "" : "s"}${failed ? ` · ${failed} skipped` : ""}`
+        t(failed ? "categorizedWithSkipped" : "categorizedCount", { count: ok, failed })
       );
       clearSelection();
       refetch();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't categorize");
+      toast.error(bankWorkspaceFailure(err, t, t("categorizeFailed")));
     } finally {
       setBatchSaving(false);
     }
@@ -157,14 +163,14 @@ export default function BankTransactionsPage() {
             method: "POST",
             headers: { "Content-Type": "application/json", "x-organization-id": orgId },
             body: JSON.stringify({}),
-          })
+          }).then(res => requireBankAccountResponse(res, errors, t("ignoreFailed")))
         )
       );
-      toast.success(`Ignored ${ids.length} transaction${ids.length === 1 ? "" : "s"}`);
+      toast.success(t("ignoredCount", { count: ids.length }));
       clearSelection();
       refetch();
     } catch {
-      toast.error("Couldn't ignore some transactions");
+      toast.error(t("ignoreFailed"));
     } finally {
       setBatchSaving(false);
     }
@@ -176,8 +182,8 @@ export default function BankTransactionsPage() {
       <div className="flex items-center justify-between gap-3">
         <div className="inline-flex rounded-lg border p-0.5">
           {[
-            { value: "list" as const, label: "List", icon: LayoutList },
-            { value: "cash-coding" as const, label: "Assign in bulk", icon: Table2 },
+            { value: "list" as const, label: t("list"), icon: LayoutList },
+            { value: "cash-coding" as const, label: t("assignBulk"), icon: Table2 },
           ].map(({ value, label, icon: Icon }) => (
             <button
               key={value}
@@ -210,19 +216,18 @@ export default function BankTransactionsPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Tabs value={statusFilter} onValueChange={setStatusFilter}>
           <TabsList>
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="unreconciled" title="Transactions you haven't dealt with yet">
-              To do
-              {summary.unreconciled > 0 && <span className="ml-1 tabular-nums text-amber-600">{summary.unreconciled}</span>}
+            <TabsTrigger value="all">{t("all")}</TabsTrigger>
+            <TabsTrigger value="unreconciled" title={t("toDoHint")}>
+              {t("toDo")}{summary.unreconciled > 0 && <span className="ml-1 tabular-nums text-amber-600">{summary.unreconciled}</span>}
             </TabsTrigger>
-            <TabsTrigger value="reconciled" title="Transactions you've already dealt with">Done</TabsTrigger>
-            <TabsTrigger value="excluded" title="Transactions left out of your books">Ignored</TabsTrigger>
+            <TabsTrigger value="reconciled" title={t("doneHint")}>{t("done")}</TabsTrigger>
+            <TabsTrigger value="excluded" title={t("ignoredHint")}>{t("ignored")}</TabsTrigger>
           </TabsList>
         </Tabs>
         <div className="relative w-full sm:max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <Input
-            placeholder="Search transactions..."
+            placeholder={t("searchTransactions")}
             value={txSearch}
             onChange={(e) => setTxSearch(e.target.value)}
             className="pl-9"
@@ -233,32 +238,32 @@ export default function BankTransactionsPage() {
       {/* Date range + sort */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex items-center gap-1.5">
-          <span className="text-xs text-muted-foreground shrink-0">From</span>
+          <span className="text-xs text-muted-foreground shrink-0">{t("from")}</span>
           <DatePicker
             value={txDateFrom}
             onChange={(v) => setTxDateFrom(v)}
-            placeholder="Start date"
+            placeholder={t("startDate")}
             className="h-8 w-40 text-xs"
           />
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="text-xs text-muted-foreground shrink-0">To</span>
+          <span className="text-xs text-muted-foreground shrink-0">{t("to")}</span>
           <DatePicker
             value={txDateTo}
             onChange={(v) => setTxDateTo(v)}
-            placeholder="End date"
+            placeholder={t("endDate")}
             className="h-8 w-40 text-xs"
           />
         </div>
         <Select value={txSort} onValueChange={setTxSort}>
           <SelectTrigger className="h-8 w-44 text-xs">
-            <SelectValue placeholder="Sort by..." />
+            <SelectValue placeholder={t("sortBy")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="date:desc">Newest first</SelectItem>
-            <SelectItem value="date:asc">Oldest first</SelectItem>
-            <SelectItem value="amount:desc">Highest amount</SelectItem>
-            <SelectItem value="amount:asc">Lowest amount</SelectItem>
+            <SelectItem value="date:desc">{t("newest")}</SelectItem>
+            <SelectItem value="date:asc">{t("oldest")}</SelectItem>
+            <SelectItem value="amount:desc">{t("highest")}</SelectItem>
+            <SelectItem value="amount:asc">{t("lowest")}</SelectItem>
           </SelectContent>
         </Select>
         {(txDateFrom || txDateTo || txSearch) && (
@@ -269,8 +274,7 @@ export default function BankTransactionsPage() {
             onClick={() => { setTxDateFrom(""); setTxDateTo(""); setTxSearch(""); }}
           >
             <X className="mr-1 size-3" />
-            Clear filters
-          </Button>
+            {t("clearFilters")}</Button>
         )}
       </div>
 
@@ -280,15 +284,15 @@ export default function BankTransactionsPage() {
           <Checkbox
             checked={allVisibleSelected}
             onCheckedChange={(c) => toggleSelectAll(c === true)}
-            aria-label="Select all to-do transactions"
+            aria-label={t("selectAll")}
           />
         )}
-        <span className="font-medium text-foreground tabular-nums">{filteredTx.length}</span> transactions
+        {t("transactionCount", { count: filteredTx.length })}
         {statusFilter !== "all" && (
           <>
             <span className="text-border">·</span>
             <span>
-              {statusFilter === "unreconciled" ? "To do" : statusFilter === "reconciled" ? "Done" : "Ignored"}
+              {statusFilter === "unreconciled" ? t("toDo") : statusFilter === "reconciled" ? t("done") : t("ignored")}
             </span>
           </>
         )}
@@ -297,9 +301,9 @@ export default function BankTransactionsPage() {
       {/* Batch bar — categorize several to-do lines at once (great for repeat payees) */}
       {selectedIds.size > 0 && (
         <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/40 px-3 py-2">
-          <span className="text-sm font-medium">{selectedIds.size} selected</span>
+          <span className="text-sm font-medium">{t("selectedCount", { count: selectedIds.size })}</span>
           <span className="text-border">·</span>
-          <span className="shrink-0 text-xs text-muted-foreground">Categorize all as</span>
+          <span className="shrink-0 text-xs text-muted-foreground">{t("categorizeAllAs")}</span>
           <div className="w-56">
             <AccountPicker value={batchAccountId} onChange={setBatchAccountId} allowCreate />
           </div>
@@ -310,14 +314,12 @@ export default function BankTransactionsPage() {
             loading={batchSaving}
             onClick={applyBatchCategorize}
           >
-            Apply to {selectedIds.size}
+            {t("applyCount", { count: selectedIds.size })}
           </Button>
           <Button size="sm" variant="ghost" disabled={batchSaving} onClick={batchIgnore}>
-            Ignore
-          </Button>
+            {t("ignore")}</Button>
           <Button size="sm" variant="ghost" className="text-muted-foreground" onClick={clearSelection}>
-            Clear
-          </Button>
+            {t("clear")}</Button>
         </div>
       )}
 
@@ -327,7 +329,7 @@ export default function BankTransactionsPage() {
         <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed py-12 text-center">
           <Clock3 className="size-8 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">
-            {statusFilter === "all" && !txSearch ? "No transactions yet." : "No transactions match your filters."}
+            {statusFilter === "all" && !txSearch ? t("noTransactionsPeriod") : t("noFilterMatches")}
           </p>
         </div>
       ) : (

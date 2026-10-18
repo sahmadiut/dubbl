@@ -1,5 +1,9 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { bankWorkspaceFailure, type WorkspaceTranslate } from "@/i18n/bank-workspace-presentation";
+import { requireBankAccountResponse } from "@/i18n/bank-account-presentation";
+
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, useRouter, usePathname } from "next/navigation";
 import {
@@ -44,7 +48,7 @@ import {
   TransferSheet,
   SplitAccountSheet,
 } from "../_components";
-import { ACCOUNT_TYPE_LABELS } from "../_components";
+import { bankAccountTypeLabel } from "@/i18n/bank-account-presentation";
 
 // ---------------------------------------------------------------------------
 // Context
@@ -94,12 +98,12 @@ export function useBankAccountContext() {
 // Tabs
 // ---------------------------------------------------------------------------
 
-const PAGE_TABS = [
-  { value: "overview", label: "Overview", icon: Wallet, href: (id: string) => `/accounting/banking/${id}` },
-  { value: "transactions", label: "Transactions", icon: ListFilter, href: (id: string) => `/accounting/banking/${id}/transactions` },
-  { value: "imports", label: "Imports", icon: History, href: (id: string) => `/accounting/banking/${id}/imports` },
-  { value: "settings", label: "Settings", icon: Settings2, href: (id: string) => `/accounting/banking/${id}/settings` },
-] as const;
+function pageTabs(t: WorkspaceTranslate) { return [
+  { value: "overview", label: t("overview"), icon: Wallet, href: (id: string) => `/accounting/banking/${id}` },
+  { value: "transactions", label: t("transactions"), icon: ListFilter, href: (id: string) => `/accounting/banking/${id}/transactions` },
+  { value: "imports", label: t("imports"), icon: History, href: (id: string) => `/accounting/banking/${id}/imports` },
+  { value: "settings", label: t("settings"), icon: Settings2, href: (id: string) => `/accounting/banking/${id}/settings` },
+] as const; }
 
 function getActiveTab(pathname: string): string {
   if (pathname.endsWith("/transactions")) return "transactions";
@@ -113,6 +117,9 @@ function getActiveTab(pathname: string): string {
 // ---------------------------------------------------------------------------
 
 export default function BankAccountDetailLayout({ children }: { children: React.ReactNode }) {
+  const t = useTranslations("BankWorkspace");
+  const accountLabels = useTranslations("BankAccounts");
+  const errors = useTranslations("BankAccountErrors");
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const pathname = usePathname();
@@ -168,9 +175,9 @@ export default function BankAccountDetailLayout({ children }: { children: React.
     const headers = { "x-organization-id": orgId };
 
     Promise.all([
-      fetch(`/api/v1/bank-accounts/${id}`, { headers }).then((r) => { if (!r.ok) throw new Error("Bank data is unavailable"); return r.json(); }),
-      fetch(`/api/v1/bank-accounts/${id}/transactions`, { headers }).then((r) => { if (!r.ok) throw new Error("Bank data is unavailable"); return r.json(); }),
-      fetch(`/api/v1/bank-accounts/${id}/imports`, { headers }).then((r) => { if (!r.ok) throw new Error("Bank data is unavailable"); return r.json(); }),
+      fetch(`/api/v1/bank-accounts/${id}`, { headers }).then((r) => { if (!r.ok) throw new Error(t("bankDataUnavailable")); return r.json(); }),
+      fetch(`/api/v1/bank-accounts/${id}/transactions`, { headers }).then((r) => { if (!r.ok) throw new Error(t("bankDataUnavailable")); return r.json(); }),
+      fetch(`/api/v1/bank-accounts/${id}/imports`, { headers }).then((r) => { if (!r.ok) throw new Error(t("bankDataUnavailable")); return r.json(); }),
     ])
       .then(([accountData, txData, importData]) => {
         const loaded = accountData.bankAccount ? bankUiAccount(accountData.bankAccount) as unknown as BankAccountDetail : null;
@@ -178,9 +185,9 @@ export default function BankAccountDetailLayout({ children }: { children: React.
         setTransactions((txData.data || []).map((row: Record<string, unknown>) => bankUiTransaction(row, loaded?.currencyCode)) as Transaction[]);
         setImports(importData.imports || []);
       })
-      .catch(() => { setAccount(null); setTransactions([]); toast.error("Bank amounts are unavailable. Reload to try again."); })
+      .catch(() => { setAccount(null); setTransactions([]); toast.error(t("readFailed")); })
       .finally(() => setLoading(false));
-  }, [id, orgId]);
+  }, [id, orgId, t]);
 
   useEffect(() => {
     fetchData();
@@ -190,7 +197,7 @@ export default function BankAccountDetailLayout({ children }: { children: React.
   useEffect(() => {
     if (!orgId) return;
     fetch(`/api/v1/bank-accounts`, { headers: { "x-organization-id": orgId } })
-      .then((r) => { if (!r.ok) throw new Error("Bank data is unavailable"); return r.json(); })
+      .then((r) => { if (!r.ok) throw new Error(t("bankDataUnavailable")); return r.json(); })
       .then((data) => {
         const list = (data.bankAccounts ?? []).map(bankUiAccount).map((b: {
           id: string;
@@ -212,7 +219,7 @@ export default function BankAccountDetailLayout({ children }: { children: React.
         setBankAccounts(list);
       })
       .catch(() => {});
-  }, [orgId]);
+  }, [orgId, t]);
 
   const summary = useMemo(() => {
     const unreconciled = transactions.filter((tx) => tx.status === "unreconciled").length;
@@ -236,11 +243,11 @@ export default function BankAccountDetailLayout({ children }: { children: React.
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify({}),
       });
-      if (!res.ok) throw new Error((await res.json()).error);
-      toast.success("Marked as cleared");
+      await requireBankAccountResponse(res, errors, t("requestFailed"));
+      toast.success(t("markedCleared"));
       fetchData();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't mark as cleared");
+      toast.error(bankWorkspaceFailure(err, t, t("clearFailed")));
     }
   }
 
@@ -252,11 +259,11 @@ export default function BankAccountDetailLayout({ children }: { children: React.
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify({}),
       });
-      if (!res.ok) throw new Error((await res.json()).error);
-      toast.success("Transaction status updated");
+      await requireBankAccountResponse(res, errors, t("requestFailed"));
+      toast.success(t("statusUpdated"));
       fetchData();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to update status");
+      toast.error(bankWorkspaceFailure(err, t, t("statusFailed")));
     }
   }
 
@@ -271,11 +278,11 @@ export default function BankAccountDetailLayout({ children }: { children: React.
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify({}),
       });
-      if (!res.ok) throw new Error((await res.json()).error);
-      toast.success("Moved back to your to-do list");
+      await requireBankAccountResponse(res, errors, t("requestFailed"));
+      toast.success(t("backToDo"));
       fetchData();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't undo this");
+      toast.error(bankWorkspaceFailure(err, t, t("undoFailed")));
     }
   }
 
@@ -294,7 +301,7 @@ export default function BankAccountDetailLayout({ children }: { children: React.
         setMatchBills((data.openBills || []).map((row: Record<string, unknown>) => bankUiDocument(row, account!.currencyCode)) as unknown as OpenBill[]);
         setMatchSuggestions((data.suggestedMatches || []).map((row: Record<string, unknown>) => bankUiCandidate(row, account!.currencyCode)) as unknown as SuggestedMatch[]);
       }
-    } catch { toast.error("Matching amounts are unavailable"); } finally {
+    } catch { toast.error(t("matchingUnavailable")); } finally {
       setMatchLoading(false);
     }
   }
@@ -322,7 +329,7 @@ export default function BankAccountDetailLayout({ children }: { children: React.
         setMatchInvoices((data.openInvoices || []).map((row: Record<string, unknown>) => bankUiDocument(row, account!.currencyCode)) as unknown as OpenInvoice[]);
         setMatchInvoiceSuggestions((data.suggestedMatches || []).map((row: Record<string, unknown>) => bankUiCandidate(row, account!.currencyCode)) as unknown as SuggestedMatch[]);
       }
-    } catch { toast.error("Matching amounts are unavailable"); } finally {
+    } catch { toast.error(t("matchingUnavailable")); } finally {
       setMatchInvoiceLoading(false);
     }
   }
@@ -348,7 +355,7 @@ export default function BankAccountDetailLayout({ children }: { children: React.
         setUnifiedDocSuggestions((data.suggestedMatches || []).map((row: Record<string, unknown>) => bankUiCandidate(row, account!.currencyCode)) as unknown as SuggestedMatch[]);
         setUnifiedExistingMatches((data.existingMatches || []).map((row: Record<string, unknown>) => bankUiCandidate(row, account!.currencyCode)) as unknown as ExistingMatch[]);
       }
-    } catch { toast.error("Matching amounts are unavailable"); } finally {
+    } catch { toast.error(t("matchingUnavailable")); } finally {
       setUnifiedMatchLoading(false);
     }
   }
@@ -377,11 +384,11 @@ export default function BankAccountDetailLayout({ children }: { children: React.
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify({ mode: "preview", content, fileName, format: format === "auto" ? null : format }),
       });
+      await requireBankAccountResponse(res, errors, t("requestFailed"));
       const data = await res.json();
-      if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : "Request failed");
       setPreview(bankUiPreview(data.preview, account!.currencyCode) as unknown as ImportPreview);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to preview");
+      toast.error(bankWorkspaceFailure(err, t, t("previewFailed")));
     } finally {
       setPreviewing(false);
     }
@@ -397,9 +404,9 @@ export default function BankAccountDetailLayout({ children }: { children: React.
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify({ mode: "commit", content, fileName, format: format === "auto" ? null : format }),
       });
+      await requireBankAccountResponse(res, errors, t("requestFailed"));
       const data = await res.json();
-      if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : "Request failed");
-      toast.success(`Imported ${data.import.imported} transactions`);
+      toast.success(t("importedCount", { count: data.import.imported }));
       setImportOpen(false);
       setSelectedFile(null);
       setManualContent("");
@@ -407,7 +414,7 @@ export default function BankAccountDetailLayout({ children }: { children: React.
       setPreview(null);
       fetchData();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to import");
+      toast.error(bankWorkspaceFailure(err, t, t("importFailed")));
     } finally {
       setImporting(false);
     }
@@ -418,8 +425,8 @@ export default function BankAccountDetailLayout({ children }: { children: React.
   if (!account) {
     return (
       <div className="space-y-4 pt-12 text-center">
-        <p className="text-sm text-muted-foreground">Account not found</p>
-        <Button variant="outline" size="sm" onClick={() => router.push("/accounting/banking")}>Back to Banking</Button>
+        <p className="text-sm text-muted-foreground">{t("accountNotFound")}</p>
+        <Button variant="outline" size="sm" onClick={() => router.push("/accounting/banking")}>{t("backBanking")}</Button>
       </div>
     );
   }
@@ -456,8 +463,7 @@ export default function BankAccountDetailLayout({ children }: { children: React.
           className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors mb-6"
         >
           <ArrowLeft className="size-3.5" />
-          Back to banking
-        </button>
+          {t("backBankingLower")}</button>
 
         {/* Header */}
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between mb-5">
@@ -471,44 +477,42 @@ export default function BankAccountDetailLayout({ children }: { children: React.
             <div>
               <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
                 <h1 className="text-base sm:text-lg font-semibold tracking-tight">{account.accountName}</h1>
-                <Badge variant="outline">{ACCOUNT_TYPE_LABELS[account.accountType]}</Badge>
+                <Badge variant="outline">{bankAccountTypeLabel(accountLabels, account.accountType)}</Badge>
                 <Badge variant="outline" className="text-[10px]">{account.currencyCode}</Badge>
               </div>
               <p className="text-sm text-muted-foreground mt-0.5">
                 {[account.bankName, account.countryCode, account.accountNumber ? `····${account.accountNumber.slice(-4)}` : null]
                   .filter(Boolean)
-                  .join(" · ") || "Manual imports"}
+                  .join(" · ") || t("manualImports")}
               </p>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => router.push(`/accounting/banking/${id}/reconcile`)} title="Tick off transactions against your bank statement">
+            <Button variant="outline" size="sm" onClick={() => router.push(`/accounting/banking/${id}/reconcile`)} title={t("statementCheckHint")}>
               <RefreshCcw className="mr-2 size-3.5" />
-              Match statement to your books
-            </Button>
+              {t("matchStatement")}</Button>
             <Button size="sm" onClick={() => setImportOpen(true)} className="bg-emerald-600 hover:bg-emerald-700">
               <Upload className="mr-2 size-3.5" />
-              Import
-            </Button>
+              {t("import")}</Button>
           </div>
         </div>
 
         {/* Stats row */}
         <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-4 mb-8">
           <div>
-            <p className="text-[11px] text-muted-foreground">Balance</p>
+            <p className="text-[11px] text-muted-foreground">{t("balance")}</p>
             <p className="mt-0.5 font-mono text-xl font-semibold tabular-nums">{formatMoney(account.balance, cur)}</p>
           </div>
           <div>
-            <p className="text-[11px] text-muted-foreground flex items-center gap-1"><ArrowDownRight className="size-3 text-emerald-500" />Money In</p>
+            <p className="text-[11px] text-muted-foreground flex items-center gap-1"><ArrowDownRight className="size-3 text-emerald-500" />{t("moneyIn")}</p>
             <p className="mt-0.5 font-mono text-lg font-semibold tabular-nums text-emerald-600">{formatMoney(summary.credits, cur)}</p>
           </div>
           <div>
-            <p className="text-[11px] text-muted-foreground flex items-center gap-1"><ArrowUpRight className="size-3 text-red-500" />Money Out</p>
+            <p className="text-[11px] text-muted-foreground flex items-center gap-1"><ArrowUpRight className="size-3 text-red-500" />{t("moneyOut")}</p>
             <p className="mt-0.5 font-mono text-lg font-semibold tabular-nums text-red-600">{formatMoney(summary.debits, cur)}</p>
           </div>
           <div>
-            <p className="text-[11px] text-muted-foreground">Done</p>
+            <p className="text-[11px] text-muted-foreground">{t("done")}</p>
             <div className="flex items-center gap-2 mt-1">
               <div className="h-2 flex-1 rounded-full bg-gray-200 dark:bg-muted overflow-hidden">
                 <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${reconciledPct}%` }} />
@@ -520,13 +524,13 @@ export default function BankAccountDetailLayout({ children }: { children: React.
 
         {/* Page tabs */}
         <nav className="-mt-2 mb-8 flex items-center gap-1 overflow-x-auto border-b border-border">
-          {PAGE_TABS.map((t) => {
-            const Icon = t.icon;
-            const tabHref = t.href(id);
-            const active = activeTab === t.value;
+          {pageTabs(t).map((tab) => {
+            const Icon = tab.icon;
+            const tabHref = tab.href(id);
+            const active = activeTab === tab.value;
             return (
               <button
-                key={t.value}
+                key={tab.value}
                 onClick={() => router.push(tabHref)}
                 className={cn(
                   "flex shrink-0 items-center gap-1.5 border-b-2 px-2.5 pb-2.5 text-[13px] font-medium transition-colors",
@@ -536,11 +540,11 @@ export default function BankAccountDetailLayout({ children }: { children: React.
                 )}
               >
                 <Icon className="size-3.5" />
-                {t.label}
-                {t.value === "transactions" && summary.unreconciled > 0 && (
+                {tab.label}
+                {tab.value === "transactions" && summary.unreconciled > 0 && (
                   <span className="ml-1 text-[11px] tabular-nums text-amber-600">{summary.unreconciled}</span>
                 )}
-                {t.value === "imports" && imports.length > 0 && (
+                {tab.value === "imports" && imports.length > 0 && (
                   <span className="ml-1 text-[11px] tabular-nums text-muted-foreground">{imports.length}</span>
                 )}
               </button>

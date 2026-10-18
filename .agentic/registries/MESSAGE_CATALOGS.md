@@ -112,7 +112,7 @@ Extraction ownership:
 | LOC-022 | LOC-007 child: journals and opening balances; see [scope](JOURNAL_CATALOGS.md) |
 | LOC-023 | LOC-007 child: banking |
 | LOC-029 | LOC-023 child: bank-account list, creation and settings; see [scope](BANK_ACCOUNT_CATALOGS.md) |
-| LOC-030 | LOC-023 child: transaction workspace and shared matching/categorization sheets |
+| LOC-030 | LOC-023 child: transaction workspace and shared matching/categorization sheets; see [scope](BANK_WORKSPACE_CATALOGS.md) |
 | LOC-031 | LOC-023 child: imports and shared import presentation |
 | LOC-032 | LOC-023 child: reconciliation |
 | LOC-033 | LOC-023 child: scheduled payments, batches and bank-transfer drawer |

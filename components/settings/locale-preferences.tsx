@@ -6,6 +6,7 @@ import { Section } from "@/components/dashboard/section";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { localePreferencesSchema } from "@/i18n/preferences-schema";
 import { toast } from "sonner";
 
@@ -44,12 +45,18 @@ export function LocalePreferences() {
   }
   const select = (field: "language" | "numerals" | "calendar", options: [string, string][]) => <div className="space-y-1.5">
     <Label htmlFor={`locale-${field}`} className="text-xs">{t(field)}</Label>
-    <select id={`locale-${field}`} className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-      disabled={!form || saving} value={form?.[field] ?? ""}
-      onChange={event => setForm(form && { ...form, [field]: event.target.value || null })}>
-      <option value="">{t("inherit")}</option>
-      {options.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-    </select>
+    <Select
+      value={form?.[field] ?? undefined}
+      onValueChange={value => setForm(form && { ...form, [field]: value })}
+      disabled={!form || saving}
+    >
+      <SelectTrigger id={`locale-${field}`}>
+        <SelectValue placeholder={t("inherit")} />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}
+      </SelectContent>
+    </Select>
   </div>;
   return <Section title={t("title")} description={t("description")}>
     {error && <p role="alert" className="text-xs text-destructive mb-2">{t("error")}</p>}

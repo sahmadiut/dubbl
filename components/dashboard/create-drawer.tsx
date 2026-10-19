@@ -784,6 +784,7 @@ function InvoiceDrawer({ open, onClose }: { open: boolean; onClose: () => void }
 // Bill Drawer
 // ---------------------------------------------------------------------------
 function BillDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useTranslations("SupplierBills");
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [contactId, setContactId] = useState("");
@@ -835,19 +836,19 @@ function BillDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
       const code = billEditorCurrency(null, supplierData.contact.currencyCode, orgData.organization.defaultCurrency);
       if (!controller.signal.aborted) setCurrencyContext({ orgId, contactId, code });
     }).catch(() => {
-      if (!controller.signal.aborted) setCurrencyContext({ orgId, contactId, error: "Unable to load the supplier's bill currency. Select a currency to continue." });
+      if (!controller.signal.aborted) setCurrencyContext({ orgId, contactId, error: t("currencyFailed") });
     });
     return () => controller.abort();
-  }, [open, orgId, contactId]);
+  }, [open, orgId, contactId, t]);
 
   async function submitBill(confirmDuplicate: boolean) {
-    if (!contactId) { toast.error("Please select a supplier"); return; }
+    if (!contactId) { toast.error(t("selectSupplier")); return; }
     if (!orgId) return;
-    if (!currencyCode || !validLines) { toast.error("Check the bill currency and line amounts"); return; }
+    if (!currencyCode || !validLines) { toast.error(t("checkLines")); return; }
 
+    if (lines.some(line => !line.description.trim())) { toast.error(t("lineDescriptionRequired")); return; }
     try {
       const exactLines = billLineInputs(lines);
-      if (exactLines.some(line => !line.description.trim())) throw new Error("Add a description for every line");
       setSaving(true);
       const res = await fetch("/api/v1/bills", {
         method: "POST",
@@ -866,21 +867,22 @@ function BillDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
         const data = await res.json();
         // A soft duplicate warning lets the user create anyway; a hard block does not.
         if (res.status === 409 && data.warning === "duplicate_bill") {
-          setDuplicateBillNumber(data.duplicate?.billNumber || billNumber.trim() || "this number");
+          setDuplicateBillNumber((typeof data.duplicate?.billNumber === "string" && data.duplicate.billNumber) || billNumber.trim() || t("thisNumber"));
           return;
         }
-        throw new Error(data.error || "Failed to create bill");
+        throw new Error(t("createFailed"));
       }
       const data = await res.json();
+      if (typeof data.bill?.id !== "string" || typeof data.bill?.status !== "string") throw new Error(t("createFailed"));
       toast.success(
         data.bill.status === "pending_approval"
-          ? "Bill saved for approval — approve it from the bill's page to post it"
-          : "Bill created"
+          ? t("savedForApproval")
+          : t("created")
       );
       onClose();
       router.push(`/purchases/${data.bill.id}`);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create bill");
+    } catch {
+      toast.error(t("createFailed"));
     } finally {
       setSaving(false);
     }
@@ -899,44 +901,44 @@ function BillDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
           <div className="flex items-center gap-3">
             <DrawerIcon><ShoppingCart className="size-5" /></DrawerIcon>
             <div>
-              <SheetTitle className="text-lg">New Bill</SheetTitle>
-              <SheetDescription>Record a purchase bill from a supplier.</SheetDescription>
+              <SheetTitle className="text-lg">{t("newBill")}</SheetTitle>
+              <SheetDescription>{t("drawerDescription")}</SheetDescription>
             </div>
           </div>
         </SheetHeader>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
             <div className="space-y-4">
-              <SectionLabel>Bill Details</SectionLabel>
+              <SectionLabel>{t("billDetails")}</SectionLabel>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Supplier *</Label>
+                  <Label>{t("supplierRequired")}</Label>
                   <ContactPicker value={contactId} onChange={(id) => { if (id !== contactId) { setContactId(id); setSelectedCurrency(""); setValidLines(false); setDuplicateBillNumber(null); } }} type="supplier" />
                 </div>
                 <div className="space-y-2">
-                  <Label>Supplier bill number</Label>
-                  <Input value={billNumber} onChange={(e) => { setBillNumber(e.target.value); setDuplicateBillNumber(null); }} placeholder="The number on their invoice" />
+                  <Label>{t("supplierBillNumber")}</Label>
+                  <Input value={billNumber} onChange={(e) => { setBillNumber(e.target.value); setDuplicateBillNumber(null); }} placeholder={t("numberPlaceholder")} />
                 </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Reference</Label>
-                  <Input value={reference} onChange={(e) => setReference(e.target.value)} placeholder="Bill reference" />
+                  <Label>{t("reference")}</Label>
+                  <Input value={reference} onChange={(e) => setReference(e.target.value)} placeholder={t("referencePlaceholder")} />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Bill currency</Label>
+                <Label>{t("currency")}</Label>
                 <CurrencySelect value={currencyCode ?? ""} onValueChange={(code) => { setSelectedCurrency(code); if (code !== currencyCode) setValidLines(false); setDuplicateBillNumber(null); }} />
                 {!selectedCurrency && currentCurrencyContext?.error && <p role="alert" className="text-xs text-red-600">{currentCurrencyContext.error}</p>}
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Issue Date</Label>
-                  <DatePicker value={issueDate} onChange={setIssueDate} placeholder="Issue date" />
+                  <Label>{t("issueDate")}</Label>
+                  <DatePicker value={issueDate} onChange={setIssueDate} placeholder={t("issueDatePlaceholder")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Due Date</Label>
-                  <DatePicker value={dueDate} onChange={setDueDate} placeholder="Due date" />
+                  <Label>{t("dueDate")}</Label>
+                  <DatePicker value={dueDate} onChange={setDueDate} placeholder={t("dueDatePlaceholder")} />
                 </div>
               </div>
               <label className="flex items-start gap-3 rounded-lg border bg-muted/30 px-3 py-3 cursor-pointer">
@@ -947,19 +949,19 @@ function BillDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
                   className="mt-0.5 size-4 accent-emerald-600"
                 />
                 <span className="space-y-0.5">
-                  <span className="block text-sm font-medium">Submit for approval instead of posting</span>
+                  <span className="block text-sm font-medium">{t("forApproval")}</span>
                   <span className="block text-[11px] text-muted-foreground">
-                    Save the bill for someone to approve. It stays a draft and isn&apos;t added to your books until it&apos;s approved.
+                    {t("forApprovalHint")}
                   </span>
                 </span>
               </label>
               {duplicateBillNumber && (
                 <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-3 text-sm dark:border-amber-900/50 dark:bg-amber-950/30">
                   <p className="font-medium text-amber-800 dark:text-amber-300">
-                    You already have a bill with number &ldquo;{duplicateBillNumber}&rdquo; for this supplier.
+                    {t("duplicate", { number: duplicateBillNumber })}
                   </p>
                   <p className="mt-0.5 text-amber-700 dark:text-amber-400/90">
-                    This might be a duplicate. Create it anyway?
+                    {t("duplicateHint")}
                   </p>
                   <div className="mt-3 flex gap-2">
                     <Button
@@ -969,7 +971,7 @@ function BillDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
                       disabled={saving || !currencyCode || !validLines}
                       onClick={() => submitBill(true)}
                     >
-                      {saving ? "Creating..." : "Create anyway"}
+                      {saving ? t("creating") : t("createAnyway")}
                     </Button>
                     <Button
                       type="button"
@@ -977,7 +979,7 @@ function BillDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
                       variant="outline"
                       onClick={() => setDuplicateBillNumber(null)}
                     >
-                      Go back
+                      {t("goBack")}
                     </Button>
                   </div>
                 </div>
@@ -987,18 +989,18 @@ function BillDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Line Items</SectionLabel>
+              <SectionLabel>{t("lineItems")}</SectionLabel>
               <LineItemsEditor key={orgId} lines={lines} onChange={(next) => { setLines(next); setValidLines(false); setDuplicateBillNumber(null); }} accountTypeFilter={["expense"]} taxContext="purchase" documentKind="bill" currencyCode={currencyCode} priceFractionDigits={18} onValidityChange={setValidLines} />
             </div>
 
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Notes</SectionLabel>
-              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Internal notes..." rows={3} />
+              <SectionLabel>{t("notes")}</SectionLabel>
+              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("notesPlaceholder")} rows={3} />
             </div>
           </div>
-          <DrawerFooter onClose={onClose} saving={saving} label="Create Bill" disabled={!contactId || !currencyCode || !validLines} />
+          <DrawerFooter onClose={onClose} saving={saving} label={t("createBill")} disabled={!contactId || !currencyCode || !validLines} />
         </form>
       </SheetContent>
     </Sheet>

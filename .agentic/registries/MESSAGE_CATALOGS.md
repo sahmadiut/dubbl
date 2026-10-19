@@ -134,7 +134,7 @@ Extraction ownership:
 | LOC-047 | LOC-025 child: sales navigation and shared document/line forms; see [scope](SHARED_DOCUMENT_CATALOGS.md) |
 | LOC-026 | LOC-007 child: purchasing |
 | LOC-048 | LOC-026 child: goods receipt list/detail and shared procurement line details; see [scope](GOODS_RECEIPT_CATALOGS.md) |
-| LOC-049 | LOC-026 child: supplier bills |
+| LOC-049 | LOC-026 child: supplier bills; see [scope](SUPPLIER_BILL_CATALOGS.md) |
 | LOC-050 | LOC-026 child: recurring bills |
 | LOC-051 | LOC-026 child: expenses and recurring expenses |
 | LOC-052 | LOC-026 child: supplier debit notes |

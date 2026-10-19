@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { taxUiMinor, taxUiCurrency, taxUiMoney, taxUiRate, taxUiRateInput } from "@/lib/money/tax-ui";
 import {
   Plus,
@@ -82,6 +83,7 @@ function AddCurrencySheet({
   setOpen: (v: boolean) => void;
   onCreated: () => void;
 }) {
+  const t = useTranslations("TaxCurrencies");
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [symbol, setSymbol] = useState("");
@@ -104,18 +106,17 @@ function AddCurrencySheet({
         }),
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Failed");
+        throw new Error("Request failed");
       }
-      toast.success("Currency added");
+      toast.success(t("currencyAdded"));
       setOpen(false);
       setCode("");
       setName("");
       setSymbol("");
       setDecimalPlaces("2");
       onCreated();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to add currency");
+    } catch {
+      toast.error(t("currencyFailed"));
     } finally {
       setSaving(false);
     }
@@ -125,39 +126,39 @@ function AddCurrencySheet({
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetContent>
         <SheetHeader>
-          <SheetTitle>Add Currency</SheetTitle>
+          <SheetTitle>{t("addCurrency")}</SheetTitle>
         </SheetHeader>
         <form onSubmit={handleCreate} className="space-y-4 px-4">
           <div className="space-y-2">
-            <Label>Code</Label>
+            <Label>{t("code")}</Label>
             <Input
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              placeholder="e.g. JPY"
+              placeholder={t("codePlaceholder")}
               maxLength={3}
               required
             />
           </div>
           <div className="space-y-2">
-            <Label>Name</Label>
+            <Label>{t("name")}</Label>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Japanese Yen"
+              placeholder={t("namePlaceholder")}
               required
             />
           </div>
           <div className="space-y-2">
-            <Label>Symbol</Label>
+            <Label>{t("symbol")}</Label>
             <Input
               value={symbol}
               onChange={(e) => setSymbol(e.target.value)}
-              placeholder="e.g. ¥"
+              placeholder={t("symbolPlaceholder")}
               required
             />
           </div>
           <div className="space-y-2">
-            <Label>Decimal Places</Label>
+            <Label>{t("decimalPlaces")}</Label>
             <Input
               type="number"
               min="0"
@@ -169,13 +170,13 @@ function AddCurrencySheet({
           </div>
         </form>
         <SheetFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button variant="outline" onClick={() => setOpen(false)}>{t("cancel")}</Button>
           <Button
             onClick={handleCreate}
             disabled={saving}
             className="bg-emerald-600 hover:bg-emerald-700"
           >
-            {saving ? "Adding..." : "Add Currency"}
+            {saving ? t("adding") : t("addCurrency")}
           </Button>
         </SheetFooter>
       </SheetContent>
@@ -194,6 +195,7 @@ function AddRateSheet({
   onCreated: () => void;
   orgId: string | null;
 }) {
+  const t = useTranslations("TaxCurrencies");
   const [baseCurrency, setBaseCurrency] = useState("");
   const [targetCurrency, setTargetCurrency] = useState("");
   const [rate, setRate] = useState("");
@@ -225,18 +227,17 @@ function AddRateSheet({
         }),
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Failed");
+        throw new Error("Request failed");
       }
-      toast.success("Exchange rate created");
+      toast.success(t("rateCreated"));
       setOpen(false);
       setBaseCurrency("");
       setTargetCurrency("");
       setRate("");
       setDate(new Date().toISOString().slice(0, 10));
       onCreated();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create exchange rate");
+    } catch {
+      toast.error(t("rateFailed"));
     } finally {
       setSaving(false);
     }
@@ -246,19 +247,19 @@ function AddRateSheet({
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetContent>
         <SheetHeader>
-          <SheetTitle>New Exchange Rate</SheetTitle>
+          <SheetTitle>{t("newRate")}</SheetTitle>
         </SheetHeader>
         <form onSubmit={handleCreate} className="space-y-4 px-4">
           <div className="space-y-2">
-            <Label>Base Currency</Label>
+            <Label>{t("baseCurrency")}</Label>
             <CurrencySelect value={baseCurrency} onValueChange={setBaseCurrency} />
           </div>
           <div className="space-y-2">
-            <Label>Target Currency</Label>
+            <Label>{t("targetCurrency")}</Label>
             <CurrencySelect value={targetCurrency} onValueChange={setTargetCurrency} />
           </div>
           <div className="space-y-2">
-            <Label>Rate</Label>
+            <Label>{t("rate")}</Label>
             <Input
               type="number"
               step="0.000001"
@@ -269,11 +270,11 @@ function AddRateSheet({
               required
             />
             <p className="text-[11px] text-muted-foreground">
-              How much 1 unit of base currency is worth in target currency
+              {t("rateHelp")}
             </p>
           </div>
           <div className="space-y-2">
-            <Label>Date</Label>
+            <Label>{t("date")}</Label>
             <Input
               type="date"
               value={date}
@@ -283,13 +284,13 @@ function AddRateSheet({
           </div>
         </form>
         <SheetFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button variant="outline" onClick={() => setOpen(false)}>{t("cancel")}</Button>
           <Button
             onClick={handleCreate}
             disabled={saving}
             className="bg-emerald-600 hover:bg-emerald-700"
           >
-            {saving ? "Creating..." : "Create"}
+            {saving ? t("creating") : t("create")}
           </Button>
         </SheetFooter>
       </SheetContent>
@@ -303,6 +304,7 @@ export default function CurrenciesPage() {
 }
 
 function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
+  const t = useTranslations("TaxCurrencies");
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [exchangeRates, setExchangeRates] = useState<ExchangeRate[]>([]);
   const [baseCurrency, setBaseCurrency] = useState<string | null>(null);
@@ -312,9 +314,9 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [currencySheetOpen, setCurrencySheetOpen] = useState(false);
   const [refOpen, setRefOpen] = useState(false);
-  const [fxError, setFxError] = useState<string | null>(null);
+  const [fxError, setFxError] = useState(false);
   const [fxReport, setFxReport] = useState<UnrealizedFxReport | null>(null);
-  useDocumentTitle("Tax · Currencies");
+  useDocumentTitle(t("documentTitle"));
 
 
   async function fetchOrganization() {
@@ -323,7 +325,7 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
         headers: orgId ? { "x-organization-id": orgId } : {},
       });
       const data = await res.json();
-      if (data.organization?.defaultCurrency) {
+      if (res.ok && data.organization?.defaultCurrency) {
         setBaseCurrency(data.organization.defaultCurrency);
       }
     } catch {
@@ -341,14 +343,12 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
         headers: { "x-organization-id": orgId },
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Could not load rates");
-      if (data.data) {
-        for (const row of data.data as ExchangeRate[]) taxUiRate(row.rate, row.rateExact);
-        setExchangeRates(data.data);
-      }
+      if (!res.ok || !Array.isArray(data.data)) throw new Error("Invalid rates response");
+      for (const row of data.data as ExchangeRate[]) taxUiRate(row.rate, row.rateExact);
+      setExchangeRates(data.data);
     } catch {
       setExchangeRates([]);
-      toast.error("Could not load exact exchange rates");
+      toast.error(t("ratesFailed"));
     } finally {
       setRatesLoading(false);
     }
@@ -358,7 +358,10 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
     try {
       const res = await fetch("/api/currencies");
       const data = await res.json();
-      if (data.currencies) setCurrencies(data.currencies);
+      if (!res.ok || !Array.isArray(data.currencies)) throw new Error("Invalid currencies response");
+      setCurrencies(data.currencies);
+    } catch {
+      toast.error(t("currenciesFailed"));
     } finally {
       setLoading(false);
     }
@@ -371,17 +374,17 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
         headers: { "x-organization-id": orgId },
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Unable to load unrealized FX report.");
-      setFxError(null);
+      if (!res.ok) throw new Error("Invalid FX response");
       const defaultCurrency = taxUiCurrency(data.defaultCurrency);
       const summary = { ...data.summary };
       for (const key of ["totalUnrealizedGain", "totalUnrealizedLoss", "netUnrealizedGainLoss"]) summary[key] = taxUiMinor(data.summary[key], data.summary[`${key}Minor`]);
       const items = data.items.map((item: Record<string, unknown>) => ({ ...item, currencyCode: taxUiCurrency(item.currencyCode), amountDue: taxUiMinor(item.amountDue, item.amountDueMinor),
         unrealizedGainLoss: item.unrealizedGainLoss === null && (item.unrealizedGainLossMinor === undefined || item.unrealizedGainLossMinor === null) ? null : taxUiMinor(item.unrealizedGainLoss, item.unrealizedGainLossMinor) }));
       setFxReport({ ...data, defaultCurrency, summary, items });
-    } catch (err: unknown) {
+      setFxError(false);
+    } catch {
       setFxReport(null);
-      setFxError(err instanceof Error ? err.message : "Unable to load unrealized FX report.");
+      setFxError(true);
     }
   }
 
@@ -410,8 +413,8 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
     return (
       <div className="w-full space-y-6">
         <PageHeader
-          title="Currencies & Exchange Rates"
-          description="Manage exchange rates and browse ISO 4217 currencies for transactions, invoices, and reporting."
+          title={t("title")}
+          description={t("description")}
         />
         <BrandLoader className="h-48" />
       </div>
@@ -421,8 +424,8 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
   return (
     <div className="w-full space-y-6">
       <PageHeader
-        title="Currencies & Exchange Rates"
-        description="Manage exchange rates and browse ISO 4217 currencies for transactions, invoices, and reporting."
+        title={t("title")}
+        description={t("description")}
       >
         <Button
           size="sm"
@@ -430,7 +433,7 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
           onClick={() => setCurrencySheetOpen(true)}
         >
           <Plus className="mr-1.5 size-3.5" />
-          Add Currency
+          {t("addCurrency")}
         </Button>
         <Button
           size="sm"
@@ -438,7 +441,7 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
           onClick={() => setSheetOpen(true)}
         >
           <Plus className="mr-1.5 size-3.5" />
-          Add Rate
+          {t("addRate")}
         </Button>
       </PageHeader>
 
@@ -446,13 +449,13 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
       {baseCurrency && (
         <div className="rounded-lg border border-emerald-200 bg-emerald-50 dark:border-emerald-800/40 dark:bg-emerald-950/20 p-4">
           <p className="text-[11px] font-medium uppercase tracking-wide text-emerald-700/70 dark:text-emerald-400/70">
-            Organization Base Currency
+            {t("organizationCurrency")}
           </p>
           <p className="mt-1 text-2xl font-bold tabular-nums text-emerald-700 dark:text-emerald-300">
             {baseCurrency}
           </p>
           <p className="mt-1 text-[12px] text-emerald-600/60 dark:text-emerald-400/50">
-            All exchange rates are relative to this base currency
+            {t("baseHelp")}
           </p>
         </div>
       )}
@@ -461,7 +464,7 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <div className="rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800/40 dark:bg-blue-950/20 p-4">
           <p className="text-[11px] font-medium uppercase tracking-wide text-blue-700/70 dark:text-blue-400/70">
-            Exchange Rates
+            {t("exchangeRates")}
           </p>
           <p className="mt-1 text-2xl font-bold tabular-nums text-blue-700 dark:text-blue-300">
             {exchangeRates.length}
@@ -469,7 +472,7 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
         </div>
         <div className="rounded-lg border border-emerald-200 bg-emerald-50 dark:border-emerald-800/40 dark:bg-emerald-950/20 p-4">
           <p className="text-[11px] font-medium uppercase tracking-wide text-emerald-700/70 dark:text-emerald-400/70">
-            Currency Pairs
+            {t("currencyPairs")}
           </p>
           <p className="mt-1 text-2xl font-bold tabular-nums text-emerald-700 dark:text-emerald-300">
             {new Set(
@@ -479,7 +482,7 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
         </div>
         <div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800/40 dark:bg-amber-950/20 p-4">
           <p className="text-[11px] font-medium uppercase tracking-wide text-amber-700/70 dark:text-amber-400/70">
-            ISO Currencies
+            {t("isoCurrencies")}
           </p>
           <p className="mt-1 text-2xl font-bold tabular-nums text-amber-700 dark:text-amber-300">
             {currencies.length}
@@ -493,29 +496,28 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
           <div className="flex items-center gap-2">
             <ArrowRightLeft className="size-4 text-muted-foreground" />
             <h3 className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-              Unrealised FX Gains &amp; Losses
+              {t("fxTitle")}
             </h3>
             <span className="text-[11px] text-muted-foreground/70">
-              estimate using saved quotes at issue date and today, in{" "}
-              {fxReport.defaultCurrency}
+              {t("fxEstimate", { currency: fxReport.defaultCurrency })}
             </span>
           </div>
 
           {fxReport.summary.totalItems === 0 ? (
             <div className="rounded-lg border bg-card px-4 py-3 text-sm text-muted-foreground">
-              No open foreign-currency invoices or bills to revalue.
+              {t("fxEmpty")}
             </div>
           ) : (
             <>
               {fxReport.summary.missingRateItems > 0 && (
                 <p role="status" className="text-sm text-muted-foreground">
-                  {fxReport.summary.missingRateItems} items have missing exchange rates and are excluded from totals.
+                  {t("missingRates", { count: fxReport.summary.missingRateItems })}
                 </p>
               )}
               <div className="grid grid-cols-3 gap-3">
                 <div className="rounded-lg border bg-card p-4">
                   <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                    Net Unrealised
+                    {t("netUnrealized")}
                   </p>
                   <p
                     className={`mt-1 text-xl font-bold tabular-nums ${
@@ -532,7 +534,7 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
                 </div>
                 <div className="rounded-lg border bg-card p-4">
                   <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                    Gains
+                    {t("gains")}
                   </p>
                   <p className="mt-1 text-xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
                     {taxUiMoney(
@@ -543,7 +545,7 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
                 </div>
                 <div className="rounded-lg border bg-card p-4">
                   <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                    Losses
+                    {t("losses")}
                   </p>
                   <p className="mt-1 text-xl font-bold tabular-nums text-red-600 dark:text-red-400">
                     {taxUiMoney(
@@ -562,13 +564,13 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
                   >
                     <div className="flex items-center gap-3">
                       <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase text-muted-foreground">
-                        {item.type}
+                        {item.type === "invoice" ? t("invoice") : item.type === "bill" ? t("bill") : item.type}
                       </span>
                       <span className="font-mono text-sm font-medium">
                         {item.number}
                       </span>
                       <span className="text-sm text-muted-foreground">
-                        {taxUiMoney(item.amountDue, item.currencyCode)} due
+                        {t("amountDue", { amount: taxUiMoney(item.amountDue, item.currencyCode) })}
                       </span>
                     </div>
                     <span
@@ -593,22 +595,22 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
         </div>
       )}
 
-      {fxError && <p role="alert" className="text-sm text-destructive">{fxError}</p>}
+      {fxError && <p role="alert" className="text-sm text-destructive">{t("fxFailed")}</p>}
 
       {/* Exchange Rates Section */}
       <div className="space-y-3">
         <div className="flex items-center gap-2">
           <ArrowRightLeft className="size-4 text-muted-foreground" />
           <h3 className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-            Exchange Rates
+            {t("exchangeRates")}
           </h3>
         </div>
 
         {exchangeRates.length === 0 ? (
           <EmptyState
             icon={ArrowRightLeft}
-            title="No exchange rates"
-            description="Add your first exchange rate to get started."
+            title={t("noRates")}
+            description={t("noRatesHelp")}
           />
         ) : (
           <div className="divide-y rounded-lg border bg-card">
@@ -648,11 +650,11 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
                     )}
                     title={
                       rate.source === "manual"
-                        ? "Rate you entered manually"
-                        : "Rate fetched automatically from the exchange-rate feed"
+                        ? t("manualHelp")
+                        : t("autoHelp")
                     }
                   >
-                    {rate.source === "manual" ? "Manual" : "Auto"}
+                    {rate.source === "manual" ? t("manual") : t("auto")}
                   </Badge>
                 </div>
               </div>
@@ -666,7 +668,7 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
         <div className="flex items-center gap-2">
           <Coins className="size-4 text-muted-foreground" />
           <h3 className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-            Currency Reference
+            {t("reference")}
           </h3>
           {currencies.length > 0 && (
             <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
@@ -682,7 +684,7 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
                 )}
               />
               <span className="ml-1 text-xs">
-                {refOpen ? "Hide" : "Show"}
+                {refOpen ? t("hide") : t("show")}
               </span>
             </Button>
           </CollapsibleTrigger>
@@ -692,15 +694,15 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
           {currencies.length === 0 ? (
             <EmptyState
               icon={Coins}
-              title="No currencies found"
-              description="Run the seed script to populate ISO 4217 currencies."
+              title={t("noCurrencies")}
+              description={t("noCurrenciesHelp")}
             />
           ) : (
             <>
               <div className="relative max-w-sm">
                 <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="Filter by code or name..."
+                  placeholder={t("filterPlaceholder")}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="pl-9"
@@ -711,10 +713,10 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
                 <div className="flex flex-col items-center justify-center py-16 text-center">
                   <Search className="mb-3 size-10 text-muted-foreground/40" />
                   <p className="text-sm font-medium text-muted-foreground">
-                    No currencies match &quot;{search}&quot;
+                    {t("noMatches", { query: search })}
                   </p>
                   <p className="mt-1 text-[12px] text-muted-foreground/70">
-                    Try a different code or name
+                    {t("trySearch")}
                   </p>
                 </div>
               ) : (
@@ -739,8 +741,7 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
                           {c.name}
                         </p>
                         <p className="mt-1.5 text-[11px] text-muted-foreground/60">
-                          {c.decimalPlaces} decimal
-                          {c.decimalPlaces !== 1 ? "s" : ""}
+                          {t("decimals", { count: c.decimalPlaces })}
                         </p>
                       </div>
                     ))}
@@ -748,8 +749,7 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
 
                   {search && (
                     <p className="mt-4 text-[12px] text-muted-foreground">
-                      Showing {filtered.length} of {currencies.length} currenc
-                      {currencies.length !== 1 ? "ies" : "y"}
+                      {t("showing", { count: filtered.length, total: currencies.length })}
                     </p>
                   )}
                 </div>

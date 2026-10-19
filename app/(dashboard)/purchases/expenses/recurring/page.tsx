@@ -1,4 +1,7 @@
 "use client";
+import { useTranslations } from "next-intl";
+import { expenseStatusLabel, expenseFrequencyLabel, expenseInputError, type ExpenseErrorKey } from "@/i18n/expense-presentation";
+
 
 import { toast } from "sonner";
 import { ExpenseAmountInput } from "@/components/dashboard/expense-amount-input";
@@ -59,15 +62,6 @@ const statusColors: Record<string, string> = {
     "border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300",
 };
 
-const frequencyLabels: Record<string, string> = {
-  weekly: "Weekly",
-  fortnightly: "Fortnightly",
-  monthly: "Monthly",
-  quarterly: "Quarterly",
-  semi_annual: "Semi-Annual",
-  annual: "Annual",
-};
-
 const emptyLine = (): LineItem => ({
   description: "",
   amount: "",
@@ -80,10 +74,12 @@ export default function RecurringExpensesPage() {
 }
 
 function RecurringExpensesWorkspace() {
+  const t = useTranslations("Expenses");
   const [templates, setTemplates] = useState<RecurringTemplate[]>([]);
+  const [error, setError] = useState<ExpenseErrorKey | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useDocumentTitle("Purchases · Recurring Expenses");
+  useDocumentTitle(t("recurringDocumentTitle"));
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -104,18 +100,24 @@ function RecurringExpensesWorkspace() {
     []
   );
 
+  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
   const fetchTemplates = useCallback(() => {
+    if (!orgId) return;
+    const controller = new AbortController();
     setLoading(true);
+    setError(null);
     fetch("/api/v1/recurring?type=expense", {
-      headers: orgHeaders(),
+      headers: orgHeaders(), signal: controller.signal,
     })
-      .then((r) => r.json())
-      .then((data) => setTemplates(data.data || []))
-      .finally(() => setLoading(false));
-  }, [orgHeaders]);
+      .then(async r => { if (!r.ok) throw new Error("Recurring read failed"); const data = await r.json(); if (!Array.isArray(data.data)) throw new Error("Invalid recurring list"); return data.data; })
+      .then(rows => { if (!controller.signal.aborted) setTemplates(rows); })
+      .catch(() => { if (!controller.signal.aborted) { setTemplates([]); setError("recurringReadFailed"); } })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
+  }, [orgHeaders, orgId]);
 
   useEffect(() => {
-    fetchTemplates();
+    return fetchTemplates();
   }, [fetchTemplates]);
 
   const preview = recurringExpensePreview(lines, currencyCode);
@@ -132,24 +134,28 @@ function RecurringExpensesWorkspace() {
   };
 
   const handleSubmit = async () => {
-    if (!name || !contactId || !startDate || lines.length === 0) return;
+    if (!orgId || submitting || !name || !contactId || !startDate || lines.length === 0) return;
 
     try {
-      const payload = recurringExpensePayload({ name, contactId, frequency, startDate, endDate, maxOccurrences, currencyCode }, lines);
+      let payload;
+      try { payload = recurringExpensePayload({ name, contactId, frequency, startDate, endDate, maxOccurrences, currencyCode }, lines); }
+      catch (error) { toast.error(t(expenseInputError(error))); return; }
       setSubmitting(true);
       const res = await fetch("/api/v1/recurring", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...orgHeaders() },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) { const data = await res.json(); throw new Error(data.error || "Unable to create recurring expense"); }
+      if (!res.ok) throw new Error("Recurring create failed");
+      const data = await res.json();
+      if (typeof data.template?.id !== "string" || !data.template.id) throw new Error("Invalid recurring identity");
       if (res.ok) {
         setDrawerOpen(false);
         resetForm();
         fetchTemplates();
       }
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to create recurring expense");
+    } catch {
+      toast.error(t("recurringCreateFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -170,67 +176,62 @@ function RecurringExpensesWorkspace() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-lg font-semibold tracking-tight">
-            Recurring Expenses
-          </h1>
+            {t("recurringTitle")}</h1>
           <p className="text-sm text-muted-foreground">
-            Manage recurring expense templates that generate automatically on a
-            schedule.
-          </p>
+            {t("recurringDescription")}</p>
         </div>
         <Button
           onClick={() => setDrawerOpen(true)}
           className="bg-emerald-600 hover:bg-emerald-700"
         >
           <Plus className="mr-2 size-4" />
-          New Recurring Expense
-        </Button>
+          {t("newRecurring")}</Button>
       </div>
 
+      {error && <p role="alert" className="text-sm text-destructive">{t(error)}</p>}
       <div className="rounded-lg border">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Contact</TableHead>
-              <TableHead>Frequency</TableHead>
-              <TableHead>Next Run</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>{t("name")}</TableHead>
+              <TableHead>{t("contact")}</TableHead>
+              <TableHead>{t("frequency")}</TableHead>
+              <TableHead>{t("nextRun")}</TableHead>
+              <TableHead>{t("status")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center py-8 text-sm text-muted-foreground">
-                  Loading...
-                </TableCell>
+                  {t("loading")}</TableCell>
               </TableRow>
             ) : templates.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center py-8 text-sm text-muted-foreground">
-                  No recurring expenses yet. Create one to get started.
-                </TableCell>
+                  {t("recurringEmpty")}</TableCell>
               </TableRow>
             ) : (
-              templates.map((t) => (
-                <TableRow key={t.id}>
+              templates.map((row) => (
+                <TableRow key={row.id}>
                   <TableCell className="text-sm font-medium">
-                    {t.name}
+                    {row.name}
                   </TableCell>
                   <TableCell className="text-sm">
-                    {t.contact?.name || "-"}
+                    {row.contact?.name || "-"}
                   </TableCell>
                   <TableCell className="text-sm">
-                    {frequencyLabels[t.frequency] || t.frequency}
+                    {expenseFrequencyLabel(t, row.frequency)}
                   </TableCell>
                   <TableCell className="text-sm">
-                    {t.nextRunDate || "-"}
+                    {row.nextRunDate || "-"}
                   </TableCell>
                   <TableCell>
                     <Badge
                       variant="outline"
-                      className={statusColors[t.status] || ""}
+                      className={statusColors[row.status] || ""}
                     >
-                      {t.status}
+                      {expenseStatusLabel(t, row.status)}
                     </Badge>
                   </TableCell>
                 </TableRow>
@@ -243,55 +244,55 @@ function RecurringExpensesWorkspace() {
       <Sheet open={drawerOpen} onOpenChange={open => { setDrawerOpen(open); if (!open) resetForm(); }}>
         <SheetContent className="sm:max-w-lg w-full p-0 flex flex-col overflow-y-auto">
           <SheetHeader className="px-4 pt-4 pb-3 sm:px-6 sm:pt-6 sm:pb-4 border-b">
-            <SheetTitle>New Recurring Expense</SheetTitle>
+            <SheetTitle>{t("newRecurring")}</SheetTitle>
           </SheetHeader>
 
           <div className="px-4 pb-6 pt-4 sm:px-6 space-y-4 flex-1 overflow-y-auto">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Currency</label>
+              <label className="text-sm font-medium">{t("currency")}</label>
               <CurrencySelect value={currencyCode} onValueChange={setCurrencyCode} />
-              <p className="text-xs text-muted-foreground">Recurring amounts use two-decimal input in every currency. 12.50 stores 1250 minor units. Expenses generate gross amounts without tax or discount.</p>
+              <p className="text-xs text-muted-foreground">{t("recurringScale")}</p>
             </div>
-            {preview.error && <p role="alert" className="text-sm text-destructive">{preview.error}</p>}
+            {preview.error && <p role="alert" className="text-sm text-destructive">{t(expenseInputError(preview.error))}</p>}
             <div className="space-y-2">
-              <label className="text-sm font-medium">Name</label>
+              <label className="text-sm font-medium">{t("name")}</label>
               <Input
-                placeholder="e.g. Monthly Office Rent"
+                placeholder={t("nameExample")}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Contact</label>
+              <label className="text-sm font-medium">{t("contact")}</label>
               <ContactPicker
                 value={contactId}
                 onChange={setContactId}
                 type="supplier"
-                placeholder="Select supplier..."
+                placeholder={t("supplierPlaceholder")}
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Frequency</label>
+              <label className="text-sm font-medium">{t("frequency")}</label>
               <Select value={frequency} onValueChange={setFrequency}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue>{expenseFrequencyLabel(t, frequency)}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="weekly">Weekly</SelectItem>
-                  <SelectItem value="fortnightly">Fortnightly</SelectItem>
-                  <SelectItem value="monthly">Monthly</SelectItem>
-                  <SelectItem value="quarterly">Quarterly</SelectItem>
-                  <SelectItem value="semi_annual">Semi-Annual</SelectItem>
-                  <SelectItem value="annual">Annual</SelectItem>
+                  <SelectItem value="weekly">{t("weekly")}</SelectItem>
+                  <SelectItem value="fortnightly">{t("fortnightly")}</SelectItem>
+                  <SelectItem value="monthly">{t("monthly")}</SelectItem>
+                  <SelectItem value="quarterly">{t("quarterly")}</SelectItem>
+                  <SelectItem value="semi_annual">{t("semiAnnual")}</SelectItem>
+                  <SelectItem value="annual">{t("annual")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Start Date</label>
+                <label className="text-sm font-medium">{t("startDate")}</label>
                 <Input
                   type="date"
                   value={startDate}
@@ -299,7 +300,7 @@ function RecurringExpensesWorkspace() {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">End Date</label>
+                <label className="text-sm font-medium">{t("endDate")}</label>
                 <Input
                   type="date"
                   value={endDate}
@@ -309,11 +310,11 @@ function RecurringExpensesWorkspace() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Max Occurrences</label>
+              <label className="text-sm font-medium">{t("maxOccurrences")}</label>
               <Input
                 type="number"
                 min="1"
-                placeholder="Unlimited"
+                placeholder={t("unlimited")}
                 value={maxOccurrences}
                 onChange={(e) => setMaxOccurrences(e.target.value)}
               />
@@ -321,7 +322,7 @@ function RecurringExpensesWorkspace() {
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-medium">Line Items</label>
+                <label className="text-sm font-medium">{t("lineItems")}</label>
                 <Button
                   type="button"
                   variant="ghost"
@@ -329,27 +330,26 @@ function RecurringExpensesWorkspace() {
                   onClick={() => setLines((prev) => [...prev, emptyLine()])}
                 >
                   <Plus className="mr-1 size-3" />
-                  Add Line
-                </Button>
+                  {t("addLine")}</Button>
               </div>
 
               {lines.map((line, i) => (
                 <div key={i} className="flex items-start gap-2">
                   <div className="flex-1 space-y-2">
                     <Input
-                      placeholder="Description"
+                      placeholder={t("itemDescription")}
                       value={line.description}
                       onChange={(e) =>
                         updateLine(i, "description", e.target.value)
                       }
                     />
                     <div className="grid grid-cols-2 gap-2">
-                      <ExpenseAmountInput currency="Fixed-two" label={`Recurring amount for line ${i + 1}`} value={line.amount} onChange={value => updateLine(i, "amount", value)} />
+                      <ExpenseAmountInput currency={t("fixedTwo")} label={t("lineAmount", { number: i + 1 })} value={line.amount} onChange={value => updateLine(i, "amount", value)} />
                       <AccountPicker
                         value={line.accountId || ""}
                         onChange={(v) => updateLine(i, "accountId", v)}
                         typeFilter={["expense"]}
-                        placeholder="Account..."
+                        placeholder={t("accountPlaceholder")}
                       />
                     </div>
                   </div>
@@ -359,7 +359,7 @@ function RecurringExpensesWorkspace() {
                       variant="ghost"
                       size="icon"
                       className="mt-1 shrink-0"
-                      onClick={() => removeLine(i)}
+                      aria-label={t("removeItem", { number: i + 1 })} onClick={() => removeLine(i)}
                     >
                       <Trash2 className="size-4 text-destructive" />
                     </Button>
@@ -368,13 +368,13 @@ function RecurringExpensesWorkspace() {
               ))}
             </div>
 
-            <p className="text-sm font-mono">Total: {preview.error ? "\u2014" : expenseUiMoney(preview.total, currencyCode)}</p>
+            <p className="text-sm font-mono">{t("totalValue", { amount: preview.error ? "\u2014" : expenseUiMoney(preview.total, currencyCode) })}</p>
             <Button
               className="w-full bg-emerald-600 hover:bg-emerald-700"
               onClick={handleSubmit}
               disabled={submitting || !name || !contactId || !startDate}
             >
-              {submitting ? "Creating..." : "Create Recurring Expense"}
+              {submitting ? t("creating") : t("createRecurring")}
             </Button>
           </div>
         </SheetContent>

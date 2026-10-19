@@ -1,4 +1,7 @@
 "use client";
+import { useTranslations } from "next-intl";
+import { expenseStatusLabel, expenseSortLabel, type ExpenseTranslator, type ExpenseErrorKey } from "@/i18n/expense-presentation";
+
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useDebounce } from "@/lib/hooks/use-debounce";
@@ -48,17 +51,17 @@ const statusColors: Record<string, string> = {
   paid: "border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-800 dark:bg-purple-950 dark:text-purple-300",
 };
 
-function buildColumns(): Column<ExpenseClaim>[] {
+function buildColumns(t: ExpenseTranslator): Column<ExpenseClaim>[] {
   return [
     {
       key: "title",
-      header: "Title",
+      header: t("columnTitle"),
       sortKey: "title",
       render: (r) => <span className="text-sm font-medium">{r.title}</span>,
     },
     {
       key: "submittedBy",
-      header: "Submitted By",
+      header: t("submittedBy"),
       render: (r) => (
         <span className="text-sm">
           {r.submittedByUser?.name || r.submittedByUser?.email || "-"}
@@ -67,7 +70,7 @@ function buildColumns(): Column<ExpenseClaim>[] {
     },
     {
       key: "date",
-      header: "Date",
+      header: t("date"),
       sortKey: "date",
       className: "w-28",
       render: (r) => (
@@ -78,17 +81,17 @@ function buildColumns(): Column<ExpenseClaim>[] {
     },
     {
       key: "status",
-      header: "Status",
+      header: t("status"),
       className: "w-28",
       render: (r) => (
         <Badge variant="outline" className={statusColors[r.status] || ""}>
-          {r.status}
+          {expenseStatusLabel(t, r.status)}
         </Badge>
       ),
     },
     {
       key: "total",
-      header: "Amount",
+      header: t("amount"),
       sortKey: "total",
       className: "w-28 text-right",
       render: (r) => (
@@ -106,12 +109,13 @@ export default function ExpensesPage() {
 }
 
 function ExpensesWorkspace() {
+  const t = useTranslations("Expenses");
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
   const [claims, setClaims] = useState<ExpenseClaim[]>([]);
   const [countsData, setCountsData] = useState<{ counts: Record<string, { count: number; amount: number; amountMinor: string; currencyCode: string }>; total: number } | null>(null);
-  const [countsError, setCountsError] = useState<string | null>(null);
-  const [claimsError, setClaimsError] = useState<string | null>(null);
+  const [countsError, setCountsError] = useState<ExpenseErrorKey | null>(null);
+  const [claimsError, setClaimsError] = useState<ExpenseErrorKey | null>(null);
   const [loading, setLoading] = useState(true);
   const [refetching, setRefetching] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
@@ -129,9 +133,9 @@ function ExpensesWorkspace() {
 
   const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
 
-  useDocumentTitle("Purchases · Expenses");
+  useDocumentTitle(t("documentTitle"));
 
-  const columns = useMemo(() => buildColumns(), []);
+  const columns = useMemo(() => buildColumns(t), [t]);
 
   const buildParams = useCallback((pg: number) => {
     const params = new URLSearchParams();
@@ -157,7 +161,7 @@ function ExpensesWorkspace() {
       .then((data) => {
         if (!cancelled) { setCountsData(expenseUiCounts(data)); setCountsError(null); }
       })
-      .catch((err) => { if (!cancelled) { setCountsData(null); setCountsError(err instanceof Error ? err.message : "Unable to load expense totals"); } });
+      .catch(() => { if (!cancelled) { setCountsData(null); setCountsError("countsFailed"); } });
     return () => { cancelled = true; };
   }, [orgId]);
 
@@ -178,13 +182,14 @@ function ExpensesWorkspace() {
       .then((data) => {
         if (cancelled) return;
         setClaimsError(null);
-        if (data.data) setClaims(data.data.map(expenseUiHeader));
+        if (!Array.isArray(data.data)) throw new Error("Invalid expense list");
+        setClaims(data.data.map(expenseUiHeader));
         if (data.pagination) {
 
           setHasMore(data.pagination.page < data.pagination.totalPages);
         }
       })
-      .catch((err) => { if (!cancelled) { setClaims([]); setClaimsError(err instanceof Error ? err.message : "Unable to load expense claims"); setHasMore(false); } })
+      .catch(() => { if (!cancelled) { setClaims([]); setClaimsError("readFailed"); setHasMore(false); } })
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
@@ -209,14 +214,15 @@ function ExpensesWorkspace() {
       .then(async (r) => { const data = await r.json(); if (!r.ok) throw new Error(data.error || "Unable to load more expense claims"); return data; })
       .then((data) => {
         setClaimsError(null);
-        if (data.data) { const adopted = data.data.map(expenseUiHeader); setClaims((prev) => [...prev, ...adopted]); }
+        if (!Array.isArray(data.data)) throw new Error("Invalid expense list");
+        const adopted = data.data.map(expenseUiHeader); setClaims((prev) => [...prev, ...adopted]);
         if (data.pagination) {
           setPage(data.pagination.page);
 
           setHasMore(data.pagination.page < data.pagination.totalPages);
         }
       })
-      .catch((err) => { setClaimsError(err instanceof Error ? err.message : "Unable to load more expense claims"); setHasMore(false); })
+      .catch(() => { setClaimsError("moreFailed"); setHasMore(false); })
       .finally(() => setLoadingMore(false));
   }, [loadingMore, hasMore, orgId, page, buildParams]);
 
@@ -255,11 +261,13 @@ function ExpensesWorkspace() {
     return c;
   }, [countsData]);
 
-  const totalAmount = countsData ? expenseSummaryDisplay(Object.values(countsData.counts)) : "\u2014";
+  const summaryDisplay = (buckets: Parameters<typeof expenseSummaryDisplay>[0]) => new Set(buckets.map(row => row.currencyCode)).size > 1 ? t("multipleCurrencies") : expenseSummaryDisplay(buckets);
+
+  const totalAmount = countsData ? summaryDisplay(Object.values(countsData.counts)) : "\u2014";
   const pending = countsData?.counts.submitted;
   const approved = countsData?.counts.approved;
-  const pendingAmount = countsData ? expenseSummaryDisplay(pending ? [pending] : []) : "\u2014";
-  const approvedAmount = countsData ? expenseSummaryDisplay(approved ? [approved] : []) : "\u2014";
+  const pendingAmount = countsData ? summaryDisplay(pending ? [pending] : []) : "\u2014";
+  const approvedAmount = countsData ? summaryDisplay(approved ? [approved] : []) : "\u2014";
 
   if (loading) return <BrandLoader />;
 
@@ -270,10 +278,10 @@ function ExpensesWorkspace() {
           {/* Full-width pipeline steps */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-0 rounded-lg border overflow-hidden mb-8">
             {[
-              { label: "Draft", desc: "Create expense claim", color: "bg-gray-400", bg: "bg-gray-50 dark:bg-gray-900/30" },
-              { label: "Submitted", desc: "Submit for review", color: "bg-blue-500", bg: "bg-blue-50 dark:bg-blue-900/20" },
-              { label: "Approved", desc: "Manager approves", color: "bg-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-900/20" },
-              { label: "Paid", desc: "Reimbursement sent", color: "bg-purple-500", bg: "bg-purple-50 dark:bg-purple-900/20" },
+              { label: t("draft"), desc: t("draftStep"), color: "bg-gray-400", bg: "bg-gray-50 dark:bg-gray-900/30" },
+              { label: t("submitted"), desc: t("submittedStep"), color: "bg-blue-500", bg: "bg-blue-50 dark:bg-blue-900/20" },
+              { label: t("approved"), desc: t("approvedStep"), color: "bg-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-900/20" },
+              { label: t("paid"), desc: t("paidStep"), color: "bg-purple-500", bg: "bg-purple-50 dark:bg-purple-900/20" },
             ].map(({ label, desc, color, bg }, i) => (
               <div key={label} className={`relative flex flex-col items-center py-6 px-3 text-center border-r last:border-r-0 ${bg}`}>
                 <div className={`absolute top-0 left-0 right-0 h-1 ${color} opacity-30`} />
@@ -307,7 +315,7 @@ function ExpensesWorkspace() {
                     i % 3 === 1 ? "bg-emerald-100 text-emerald-400 dark:bg-emerald-900/40 dark:text-emerald-500" :
                     "bg-purple-100 text-purple-400 dark:bg-purple-900/40 dark:text-purple-500"
                   }`}>
-                    {i % 3 === 0 ? "submitted" : i % 3 === 1 ? "approved" : "paid"}
+                    {expenseStatusLabel(t, i % 3 === 0 ? "submitted" : i % 3 === 1 ? "approved" : "paid")}
                   </div>
                   <div className={`h-2.5 rounded bg-muted/40 ${i % 2 === 0 ? "w-16" : "w-14"}`} />
                 </div>
@@ -320,19 +328,16 @@ function ExpensesWorkspace() {
                 <Receipt className="size-7 text-purple-600 dark:text-purple-400" />
               </div>
               <h2 className="mt-5 text-xl font-semibold tracking-tight">
-                No expense claims yet
-              </h2>
+                {t("emptyTitle")}</h2>
               <p className="mt-2 max-w-md text-sm text-muted-foreground leading-relaxed">
-                Submit expenses and track them through approval to reimbursement.
-              </p>
+                {t("emptyDescription")}</p>
               <Button
                 onClick={() => openDrawer("expense")}
                 size="lg"
                 className="mt-6 bg-emerald-600 hover:bg-emerald-700"
               >
                 <Plus className="mr-2 size-4" />
-                New Expense Claim
-              </Button>
+                {t("newClaim")}</Button>
             </div>
           </div>
         </div>
@@ -345,8 +350,8 @@ function ExpensesWorkspace() {
       <div className="space-y-3 sm:space-y-6">
         {/* Header */}
         <PageHeader
-          title="Expenses"
-          description="Submit and manage expense claims through approval."
+          title={t("title")}
+          description={t("description")}
         >
           <Button
             size="sm"
@@ -354,15 +359,14 @@ function ExpensesWorkspace() {
             className="bg-emerald-600 hover:bg-emerald-700"
           >
             <Plus className="mr-2 size-4" />
-            New Expense
-          </Button>
+            {t("newExpense")}</Button>
         </PageHeader>
 
-        {(countsError || claimsError) && <p role="alert" className="text-sm text-destructive">{countsError || claimsError}</p>}
+        {(countsError || claimsError) && <p role="alert" className="text-sm text-destructive">{t((countsError || claimsError)!)}</p>}
         {/* Stats strip */}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
           <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Total</p>
+            <p className="text-xs text-muted-foreground">{t("total")}</p>
             <p className="text-lg sm:text-2xl font-bold font-mono tabular-nums tracking-tight">
               {totalAmount}
             </p>
@@ -370,8 +374,7 @@ function ExpensesWorkspace() {
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground flex items-center gap-1.5">
               <span className="size-1.5 rounded-full bg-blue-500" />
-              Pending
-            </p>
+              {t("pending")}</p>
             <p className="text-lg sm:text-2xl font-bold font-mono tabular-nums tracking-tight text-blue-600 dark:text-blue-400">
               {pendingAmount}
             </p>
@@ -379,14 +382,13 @@ function ExpensesWorkspace() {
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground flex items-center gap-1.5">
               <span className="size-1.5 rounded-full bg-emerald-500" />
-              Approved
-            </p>
+              {t("approved")}</p>
             <p className="text-lg sm:text-2xl font-bold font-mono tabular-nums tracking-tight text-emerald-600 dark:text-emerald-400">
               {approvedAmount}
             </p>
           </div>
           <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Claims</p>
+            <p className="text-xs text-muted-foreground">{t("claims")}</p>
             <p className="text-lg sm:text-2xl font-bold tabular-nums tracking-tight">
               {countsData?.total || 0}
             </p>
@@ -400,19 +402,19 @@ function ExpensesWorkspace() {
           <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
             <Tabs value={statusFilter} onValueChange={setStatusFilter}>
               <TabsList>
-                <TabsTrigger value="all" className="whitespace-nowrap">All ({countsData?.total || 0})</TabsTrigger>
-                <TabsTrigger value="draft" className="whitespace-nowrap">Draft ({statusCounts.draft || 0})</TabsTrigger>
-                <TabsTrigger value="submitted" className="whitespace-nowrap">Submitted ({statusCounts.submitted || 0})</TabsTrigger>
-                <TabsTrigger value="approved" className="whitespace-nowrap">Approved ({statusCounts.approved || 0})</TabsTrigger>
-                <TabsTrigger value="rejected" className="whitespace-nowrap">Rejected ({statusCounts.rejected || 0})</TabsTrigger>
-                <TabsTrigger value="paid" className="whitespace-nowrap">Paid ({statusCounts.paid || 0})</TabsTrigger>
+                <TabsTrigger value="all" className="whitespace-nowrap">{t("all")} ({countsData?.total || 0})</TabsTrigger>
+                <TabsTrigger value="draft" className="whitespace-nowrap">{t("draft")} ({statusCounts.draft || 0})</TabsTrigger>
+                <TabsTrigger value="submitted" className="whitespace-nowrap">{t("submitted")} ({statusCounts.submitted || 0})</TabsTrigger>
+                <TabsTrigger value="approved" className="whitespace-nowrap">{t("approved")} ({statusCounts.approved || 0})</TabsTrigger>
+                <TabsTrigger value="rejected" className="whitespace-nowrap">{t("rejected")} ({statusCounts.rejected || 0})</TabsTrigger>
+                <TabsTrigger value="paid" className="whitespace-nowrap">{t("paid")} ({statusCounts.paid || 0})</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
           <div className="relative w-full sm:max-w-xs">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <Input
-              placeholder="Search expenses..."
+              placeholder={t("search")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9"
@@ -422,20 +424,20 @@ function ExpensesWorkspace() {
 
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-1.5">
-            <span className="text-xs text-muted-foreground shrink-0">From</span>
+            <span className="text-xs text-muted-foreground shrink-0">{t("from")}</span>
             <DatePicker
               value={dateFrom}
               onChange={(v) => setDateFrom(v)}
-              placeholder="Start date"
+              placeholder={t("startDateFilter")}
               className="h-8 w-40 text-xs"
             />
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="text-xs text-muted-foreground shrink-0">To</span>
+            <span className="text-xs text-muted-foreground shrink-0">{t("to")}</span>
             <DatePicker
               value={dateTo}
               onChange={(v) => setDateTo(v)}
-              placeholder="End date"
+              placeholder={t("endDateFilter")}
               className="h-8 w-40 text-xs"
             />
           </div>
@@ -448,15 +450,15 @@ function ExpensesWorkspace() {
             }}
           >
             <SelectTrigger className="h-8 w-44 text-xs">
-              <SelectValue placeholder="Sort by..." />
+              <SelectValue placeholder={t("sortBy")}>{expenseSortLabel(t, `${sortBy}:${sortOrder}`)}</SelectValue>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="created:desc">Newest first</SelectItem>
-              <SelectItem value="created:asc">Oldest first</SelectItem>
-              <SelectItem value="total:desc">Highest amount</SelectItem>
-              <SelectItem value="total:asc">Lowest amount</SelectItem>
-              <SelectItem value="title:asc">Title (A-Z)</SelectItem>
-              <SelectItem value="title:desc">Title (Z-A)</SelectItem>
+              <SelectItem value="created:desc">{t("newest")}</SelectItem>
+              <SelectItem value="created:asc">{t("oldest")}</SelectItem>
+              <SelectItem value="total:desc">{t("highest")}</SelectItem>
+              <SelectItem value="total:asc">{t("lowest")}</SelectItem>
+              <SelectItem value="title:asc">{t("titleAsc")}</SelectItem>
+              <SelectItem value="title:desc">{t("titleDesc")}</SelectItem>
             </SelectContent>
           </Select>
           {hasFilters && (
@@ -470,8 +472,7 @@ function ExpensesWorkspace() {
               }}
             >
               <X className="mr-1 size-3" />
-              Clear dates
-            </Button>
+              {t("clearDates")}</Button>
           )}
         </div>
 
@@ -495,7 +496,7 @@ function ExpensesWorkspace() {
                 columns={columns}
                 data={claims}
                 loading={loading}
-                emptyMessage="No expense claims match your filters."
+                emptyMessage={t("emptyFiltered")}
                 onRowClick={(r) =>
                   router.push(`/purchases/expenses/${r.id}`)
                 }

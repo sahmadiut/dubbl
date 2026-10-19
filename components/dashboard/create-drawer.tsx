@@ -1,4 +1,6 @@
 "use client";
+import { expenseInputError, type ExpenseErrorKey } from "@/i18n/expense-presentation";
+
 import { fixedAssetJson, fixedAssetFailureMessage } from "@/i18n/fixed-asset-presentation";
 import { requireBankAccountResponse, bankAccountFailureMessage } from "@/i18n/bank-account-presentation";
 
@@ -1720,6 +1722,7 @@ interface ExpenseTaxRateOption {
 }
 
 function ExpenseDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useTranslations("Expenses");
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [title, setTitle] = useState("");
@@ -1728,7 +1731,7 @@ function ExpenseDrawer({ open, onClose }: { open: boolean; onClose: () => void }
   const [taxRates, setTaxRates] = useState<ExpenseTaxRateOption[]>([]);
 
   const [settings, setSettings] = useState<{ currencyCode: string; rate: string } | null>(null);
-  const [settingsError, setSettingsError] = useState<string | null>(null);
+  const [settingsError, setSettingsError] = useState<ExpenseErrorKey | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -1738,12 +1741,12 @@ function ExpenseDrawer({ open, onClose }: { open: boolean; onClose: () => void }
     const options = { headers: { "x-organization-id": orgId }, signal: controller.signal };
     fetch("/api/v1/organization/mileage-rate", options)
       .then(async r => { const data = await r.json(); if (!r.ok) throw new Error(data.error || "Unable to load expense currency"); return expenseUiMileageSetting(data); })
-      .then(data => { setSettings(data); setItems(previous => previous.map(item => ({ ...item, mileageRate: item.mileageRate || data.rate }))); })
-      .catch(error => { if (!controller.signal.aborted) setSettingsError(error instanceof Error ? error.message : "Unable to load expense currency"); });
+      .then(data => { if (controller.signal.aborted) return; setSettings(data); setItems(previous => previous.map(item => ({ ...item, mileageRate: item.mileageRate || data.rate }))); })
+      .catch(() => { if (!controller.signal.aborted) setSettingsError("currencyFailed"); });
     fetch("/api/v1/tax-rates", options)
-      .then(async r => { const data = await r.json(); if (!r.ok) throw new Error("Unable to load expense taxes"); return data; })
-      .then(data => setTaxRates(data.taxRates || []))
-      .catch(error => { if (!controller.signal.aborted) setSettingsError(error instanceof Error ? error.message : "Unable to load expense taxes"); });
+      .then(async r => { const data = await r.json(); if (!r.ok || !Array.isArray(data.taxRates)) throw new Error("Unable to load expense taxes"); return data; })
+      .then(data => { if (!controller.signal.aborted) setTaxRates(data.taxRates || []); })
+      .catch(() => { if (!controller.signal.aborted) setSettingsError("taxesFailed"); });
     return () => controller.abort();
   }, [open]);
 
@@ -1755,14 +1758,16 @@ function ExpenseDrawer({ open, onClose }: { open: boolean; onClose: () => void }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!title.trim()) { toast.error("Please enter a title"); return; }
+    if (!title.trim()) { toast.error(t("enterTitle")); return; }
     if (items.some((item) => !item.description.trim())) {
-      toast.error("Please fill in all item descriptions"); return;
+      toast.error(t("fillDescriptions")); return;
     }
     const orgId = localStorage.getItem("activeOrgId");
-    if (!orgId || !settings || settingsError) { toast.error(settingsError || "Load the expense currency first"); return; }
+    if (!orgId || !settings || settingsError) { toast.error(settingsError ? t(settingsError) : t("loadCurrencyFirst")); return; }
     try {
-      const payload = expenseEditorItems(items, settings.currencyCode, true);
+      let payload;
+      try { payload = expenseEditorItems(items, settings.currencyCode, true); }
+      catch (error) { toast.error(t(expenseInputError(error))); return; }
       setSaving(true);
       const res = await fetch("/api/v1/expenses", {
         method: "POST",
@@ -1774,11 +1779,12 @@ function ExpenseDrawer({ open, onClose }: { open: boolean; onClose: () => void }
         throw new Error(data.error || "Failed to create expense claim");
       }
       const data = await res.json();
-      toast.success("Expense claim created");
+      if (typeof data.expenseClaim?.id !== "string" || !data.expenseClaim.id) throw new Error("Invalid expense identity");
+      toast.success(t("created"));
       onClose();
       router.push(`/purchases/expenses/${data.expenseClaim.id}`);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create expense claim");
+    } catch {
+      toast.error(t("createFailed"));
     } finally {
       setSaving(false);
     }
@@ -1791,24 +1797,24 @@ function ExpenseDrawer({ open, onClose }: { open: boolean; onClose: () => void }
           <div className="flex items-center gap-3">
             <DrawerIcon><Receipt className="size-5" /></DrawerIcon>
             <div>
-              <SheetTitle className="text-lg">New Expense Claim</SheetTitle>
-              <SheetDescription>Submit expenses for reimbursement.</SheetDescription>
+              <SheetTitle className="text-lg">{t("newClaim")}</SheetTitle>
+              <SheetDescription>{t("newDescription")}</SheetDescription>
             </div>
           </div>
         </SheetHeader>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
             <div className="space-y-4">
-              <SectionLabel>Claim Info</SectionLabel>
-              <p className="text-sm text-muted-foreground">Currency: {settings?.currencyCode || "Loading..."}. Amounts include tax.</p>
-              {(settingsError || preview.error) && <p role="alert" className="text-sm text-destructive">{settingsError || preview.error}</p>}
+              <SectionLabel>{t("claimInfo")}</SectionLabel>
+              <p className="text-sm text-muted-foreground">{t("createCurrency", { currency: settings?.currencyCode || t("loading") })}</p>
+              {(settingsError || preview.error) && <p role="alert" className="text-sm text-destructive">{settingsError ? t(settingsError) : t(expenseInputError(preview.error))}</p>}
               <div className="space-y-2">
-                <Label>Title *</Label>
-                <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Business trip to NYC" />
+                <Label>{t("titleRequired")}</Label>
+                <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("titleExample")} />
               </div>
               <div className="space-y-2">
-                <Label>Description</Label>
-                <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} placeholder="Optional description" />
+                <Label>{t("itemDescription")}</Label>
+                <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} placeholder={t("descriptionExample")} />
               </div>
             </div>
 
@@ -1816,18 +1822,17 @@ function ExpenseDrawer({ open, onClose }: { open: boolean; onClose: () => void }
 
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <SectionLabel>Expense Items</SectionLabel>
+                <SectionLabel>{t("expenseItems")}</SectionLabel>
                 <Button type="button" variant="outline" size="sm" onClick={() => setItems((prev) => [...prev, { ...emptyExpenseItem(), mileageRate: settings?.rate || "" }])}>
-                  <Plus className="mr-2 size-3.5" />Add Item
-                </Button>
+                  <Plus className="mr-2 size-3.5" />{t("addItem")}</Button>
               </div>
               <div className="space-y-4">
                 {items.map((item, index) => (
                   <div key={index} className="rounded-lg border p-4 space-y-4">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-muted-foreground">Item {index + 1}</span>
+                      <span className="text-sm font-medium text-muted-foreground">{t("itemNumber", { number: index + 1 })}</span>
                       {items.length > 1 && (
-                        <Button type="button" variant="ghost" size="sm" onClick={() => setItems((prev) => prev.filter((_, i) => i !== index))} className="text-red-600 hover:text-red-700">
+                        <Button type="button" variant="ghost" size="sm" aria-label={t("removeItem", { number: index + 1 })} onClick={() => setItems((prev) => prev.filter((_, i) => i !== index))} className="text-red-600 hover:text-red-700">
                           <Trash2 className="size-4" />
                         </Button>
                       )}
@@ -1839,61 +1844,61 @@ function ExpenseDrawer({ open, onClose }: { open: boolean; onClose: () => void }
                         onChange={(e) => updateItem(index, { isMileage: e.target.checked })}
                         className="size-4 accent-emerald-600"
                       />
-                      <span className="text-sm font-medium">Mileage claim (work out the amount from distance)</span>
+                      <span className="text-sm font-medium">{t("mileageClaim")}</span>
                     </label>
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                       <div className="space-y-2">
-                        <Label>Date</Label>
-                        <DatePicker value={item.date} onChange={(val) => updateItem(index, { date: val })} placeholder="Expense date" />
+                        <Label>{t("date")}</Label>
+                        <DatePicker value={item.date} onChange={(val) => updateItem(index, { date: val })} placeholder={t("expenseDate")} />
                       </div>
                       <div className="space-y-2">
-                        <Label>Description *</Label>
-                        <Input value={item.description} onChange={(e) => updateItem(index, { description: e.target.value })} placeholder="What was this for?" />
+                        <Label>{t("descriptionRequired")}</Label>
+                        <Input value={item.description} onChange={(e) => updateItem(index, { description: e.target.value })} placeholder={t("itemExample")} />
                       </div>
                       {item.isMileage ? (
                         <>
                           <div className="space-y-2">
-                            <Label>Distance (miles) *</Label>
-                            <Input type="text" inputMode="decimal" aria-label="Distance in miles" value={item.distanceMiles} onChange={(e) => updateItem(index, { distanceMiles: e.target.value })} placeholder="0" />
+                            <Label>{t("distanceRequired")}</Label>
+                            <Input type="text" inputMode="decimal" aria-label={t("distanceLabel")} value={item.distanceMiles} onChange={(e) => updateItem(index, { distanceMiles: e.target.value })} placeholder="0" />
                           </div>
                           <div className="space-y-2">
-                            <Label>Rate per mile *</Label>
-                            <ExpenseAmountInput currency={settings?.currencyCode || ""} label={`Mileage rate per mile for item ${index + 1}`} value={item.mileageRate} onChange={(v) => updateItem(index, { mileageRate: v })} />
+                            <Label>{t("rateRequired")}</Label>
+                            <ExpenseAmountInput currency={settings?.currencyCode || ""} label={t("itemRate", { number: index + 1 })} value={item.mileageRate} onChange={(v) => updateItem(index, { mileageRate: v })} />
                           </div>
                         </>
                       ) : (
                         <>
                           <div className="space-y-2">
-                            <Label>Amount *</Label>
-                            <ExpenseAmountInput currency={settings?.currencyCode || ""} label={`Amount for item ${index + 1}`} value={item.amount} onChange={(v) => updateItem(index, { amount: v })} />
+                            <Label>{t("amountRequired")}</Label>
+                            <ExpenseAmountInput currency={settings?.currencyCode || ""} label={t("itemAmount", { number: index + 1 })} value={item.amount} onChange={(v) => updateItem(index, { amount: v })} />
                           </div>
                           <div className="space-y-2">
-                            <Label>Category</Label>
-                            <Input value={item.category} onChange={(e) => updateItem(index, { category: e.target.value })} placeholder="e.g. Travel" />
+                            <Label>{t("category")}</Label>
+                            <Input value={item.category} onChange={(e) => updateItem(index, { category: e.target.value })} placeholder={t("categoryExample")} />
                           </div>
                         </>
                       )}
                     </div>
                     {item.isMileage && (
                       <div className="flex items-center justify-between rounded-md bg-muted/40 px-3 py-2 text-sm">
-                        <span className="text-muted-foreground">Computed amount</span>
+                        <span className="text-muted-foreground">{t("computedAmount")}</span>
                         <span className="font-mono font-medium tabular-nums">{!preview.error && settings ? expenseUiMoney(preview.amounts[index], settings.currencyCode) : "\u2014"}</span>
                       </div>
                     )}
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                       <div className="space-y-2">
-                        <Label>Account</Label>
+                        <Label>{t("account")}</Label>
                         <AccountPicker value={item.accountId} onChange={(val) => updateItem(index, { accountId: val })} typeFilter={["expense"]} />
                       </div>
                       <div className="space-y-2">
-                        <Label>Tax</Label>
+                        <Label>{t("tax")}</Label>
                         <Select
                           value={item.taxRateId || "none"}
                           onValueChange={(val) => updateItem(index, { taxRateId: val === "none" ? "" : val })}
                         >
-                          <SelectTrigger><SelectValue placeholder="No tax" /></SelectTrigger>
+                          <SelectTrigger><SelectValue placeholder={t("noTax")} /></SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="none">No tax</SelectItem>
+                            <SelectItem value="none">{t("noTax")}</SelectItem>
                             {taxRates
                               .filter((t) => t.type !== "sales")
                               .map((t) => (
@@ -1905,7 +1910,7 @@ function ExpenseDrawer({ open, onClose }: { open: boolean; onClose: () => void }
                         </Select>
                       </div>
                       <div className="space-y-2">
-                        <Label>Receipt</Label>
+                        <Label>{t("receipt")}</Label>
                         <FileUploader accept="image/*,.pdf" onUpload={(fileKey, fileName) => updateItem(index, { receiptFileKey: fileKey, receiptFileName: fileName })} />
                       </div>
                     </div>
@@ -1915,11 +1920,11 @@ function ExpenseDrawer({ open, onClose }: { open: boolean; onClose: () => void }
             </div>
 
             <div className="flex items-center justify-between rounded-lg border bg-muted/50 px-4 py-3">
-              <span className="text-sm font-medium">Total</span>
+              <span className="text-sm font-medium">{t("total")}</span>
               <span className="text-lg font-bold font-mono tabular-nums">{!preview.error && settings ? expenseUiMoney(preview.total, settings.currencyCode) : "\u2014"}</span>
             </div>
           </div>
-          <DrawerFooter onClose={onClose} saving={saving} label="Create Expense Claim" />
+          <DrawerFooter onClose={onClose} saving={saving} label={t("createClaim")} cancelLabel={t("cancel")} creatingLabel={t("creating")} />
         </form>
       </SheetContent>
     </Sheet>

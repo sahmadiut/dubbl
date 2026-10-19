@@ -1,4 +1,7 @@
 "use client";
+import { useTranslations } from "next-intl";
+import { expenseStatusLabel, expenseInputError, type ExpenseErrorKey } from "@/i18n/expense-presentation";
+
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -119,21 +122,25 @@ function formatDate(dateStr: string) {
 }
 
 function ReceiptViewer({ fileKey, fileName }: { fileKey: string; fileName: string }) {
+  const t = useTranslations("Expenses");
   const [open, setOpen] = useState(false);
   const [url, setUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const loadUrl = useCallback(async () => {
     if (url) return;
-    setLoading(true);
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
+    setLoading(true);
     try {
       const res = await fetch(`/api/v1/expenses/receipt-url?fileKey=${encodeURIComponent(fileKey)}`, {
         headers: { "x-organization-id": orgId },
       });
       const data = await res.json();
-      if (data.downloadUrl) setUrl(data.downloadUrl);
+      if (!res.ok || typeof data.downloadUrl !== "string" || !data.downloadUrl) throw new Error("Invalid receipt response");
+      setUrl(data.downloadUrl);
+    } catch {
+      setUrl(null);
     } finally {
       setLoading(false);
     }
@@ -171,20 +178,19 @@ function ReceiptViewer({ fileKey, fileName }: { fileKey: string; fileName: strin
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 rounded-lg border bg-muted/30">
                   <FileText className="size-12 text-muted-foreground/40" />
-                  <p className="mt-3 text-sm text-muted-foreground">Preview not available for this file type</p>
+                  <p className="mt-3 text-sm text-muted-foreground">{t("previewUnavailable")}</p>
                 </div>
               )}
               <div className="flex justify-end">
                 <Button variant="outline" size="sm" asChild>
                   <a href={url} target="_blank" rel="noopener noreferrer" download={fileName}>
                     <Download className="mr-2 size-3.5" />
-                    Download
-                  </a>
+                    {t("download")}</a>
                 </Button>
               </div>
             </div>
           ) : (
-            <p className="py-8 text-center text-sm text-muted-foreground">Failed to load receipt</p>
+            <p className="py-8 text-center text-sm text-muted-foreground">{t("receiptFailed")}</p>
           )}
         </div>
       </DialogContent>
@@ -221,17 +227,17 @@ function DrawerFooter({
   saving: boolean;
   label: string;
 }) {
+  const t = useTranslations("Expenses");
   return (
     <div className="sticky bottom-0 z-10 flex items-center justify-end gap-3 border-t bg-background/80 px-4 py-3 sm:px-6 sm:py-4 backdrop-blur-sm">
       <Button type="button" variant="outline" onClick={onClose}>
-        Cancel
-      </Button>
+        {t("cancel")}</Button>
       <Button
         type="submit"
         disabled={saving}
         className="bg-emerald-600 hover:bg-emerald-700"
       >
-        {saving ? "Saving..." : label}
+        {saving ? t("saving") : label}
       </Button>
     </div>
   );
@@ -252,6 +258,7 @@ function EditExpenseDrawer({
   claim: ExpenseDetail;
   onSaved: () => void;
 }) {
+  const t = useTranslations("Expenses");
   const [saving, setSaving] = useState(false);
   const [editTitle, setEditTitle] = useState(claim.title);
   const [editDescription, setEditDescription] = useState(claim.description || "");
@@ -286,16 +293,18 @@ function EditExpenseDrawer({
 
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId || !editTitle.trim()) {
-      toast.error("Title is required");
+      toast.error(t("titleRequiredError"));
       return;
     }
     if (editItems.some((item) => !item.description.trim() || !item.amount)) {
-      toast.error("All items need a description and amount");
+      toast.error(t("itemsRequiredError"));
       return;
     }
 
     try {
-      const payload = expenseEditorItems(editItems, claim.currencyCode);
+      let payload;
+      try { payload = expenseEditorItems(editItems, claim.currencyCode); }
+      catch (error) { toast.error(t(expenseInputError(error))); return; }
       setSaving(true);
       const res = await fetch(`/api/v1/expenses/${claim.id}`, {
         method: "PATCH",
@@ -312,11 +321,11 @@ function EditExpenseDrawer({
         throw new Error(data.error || "Failed to update");
       }
 
-      toast.success("Expense claim updated");
+      toast.success(t("updated"));
       onClose();
       onSaved();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to update");
+    } catch {
+      toast.error(t("updateFailed"));
     } finally {
       setSaving(false);
     }
@@ -329,23 +338,23 @@ function EditExpenseDrawer({
           <div className="flex items-center gap-3">
             <DrawerIcon><Receipt className="size-5" /></DrawerIcon>
             <div>
-              <SheetTitle className="text-lg">Edit Expense Claim</SheetTitle>
-              <SheetDescription>Update expense claim details.</SheetDescription>
+              <SheetTitle className="text-lg">{t("editClaim")}</SheetTitle>
+              <SheetDescription>{t("editDescription")}</SheetDescription>
             </div>
           </div>
         </SheetHeader>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
             <div className="space-y-4">
-              <SectionLabel>Claim Info</SectionLabel>
-              <p className="text-sm text-muted-foreground">Currency: {claim.currencyCode}. Amounts include tax; saved mileage metadata is retained.</p>
-              {preview.error && <p role="alert" className="text-sm text-destructive">{preview.error}</p>}
+              <SectionLabel>{t("claimInfo")}</SectionLabel>
+              <p className="text-sm text-muted-foreground">{t("editCurrency", { currency: claim.currencyCode })}</p>
+              {preview.error && <p role="alert" className="text-sm text-destructive">{t(expenseInputError(preview.error))}</p>}
               <div className="space-y-2">
-                <Label>Title *</Label>
+                <Label>{t("titleRequired")}</Label>
                 <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>Description</Label>
+                <Label>{t("itemDescription")}</Label>
                 <Textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} rows={2} />
               </div>
             </div>
@@ -354,52 +363,51 @@ function EditExpenseDrawer({
 
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <SectionLabel>Expense Items</SectionLabel>
+                <SectionLabel>{t("expenseItems")}</SectionLabel>
                 <Button type="button" variant="outline" size="sm" onClick={addEditItem}>
-                  <Plus className="mr-2 size-3.5" />Add Item
-                </Button>
+                  <Plus className="mr-2 size-3.5" />{t("addItem")}</Button>
               </div>
               <div className="space-y-4">
                 {editItems.map((item, index) => (
                   <div key={index} className="rounded-lg border p-4 space-y-4">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-muted-foreground">Item {index + 1}</span>
+                      <span className="text-sm font-medium text-muted-foreground">{t("itemNumber", { number: index + 1 })}</span>
                       {editItems.length > 1 && (
-                        <Button type="button" variant="ghost" size="sm" onClick={() => removeEditItem(index)} className="text-red-600 hover:text-red-700">
+                        <Button type="button" variant="ghost" size="sm" aria-label={t("removeItem", { number: index + 1 })} onClick={() => removeEditItem(index)} className="text-red-600 hover:text-red-700">
                           <Trash2 className="size-4" />
                         </Button>
                       )}
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                       <div className="space-y-2">
-                        <Label className="text-xs">Date</Label>
+                        <Label className="text-xs">{t("date")}</Label>
                         <Input type="date" value={item.date} onChange={(e) => updateEditItem(index, { date: e.target.value })} />
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-xs">Description *</Label>
+                        <Label className="text-xs">{t("descriptionRequired")}</Label>
                         <Input value={item.description} onChange={(e) => updateEditItem(index, { description: e.target.value })} />
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-xs">Amount *</Label>
-                        <ExpenseAmountInput currency={claim.currencyCode} label={`Amount for item ${index + 1}`} value={item.amount} onChange={(v) => updateEditItem(index, { amount: v })} />
+                        <Label className="text-xs">{t("amountRequired")}</Label>
+                        <ExpenseAmountInput currency={claim.currencyCode} label={t("itemAmount", { number: index + 1 })} value={item.amount} onChange={(v) => updateEditItem(index, { amount: v })} />
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-xs">Category</Label>
+                        <Label className="text-xs">{t("category")}</Label>
                         <Input value={item.category} onChange={(e) => updateEditItem(index, { category: e.target.value })} />
                       </div>
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-2">
-                        <Label className="text-xs">Account</Label>
+                        <Label className="text-xs">{t("account")}</Label>
                         <AccountPicker value={item.accountId} onChange={(val) => updateEditItem(index, { accountId: val })} typeFilter={["expense"]} />
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-xs">Receipt</Label>
+                        <Label className="text-xs">{t("receipt")}</Label>
                         {item.receiptFileName ? (
                           <div className="flex items-center gap-2 rounded-lg border px-3 py-2">
                             <FileText className="size-4 text-emerald-600 shrink-0" />
                             <span className="text-xs truncate flex-1">{item.receiptFileName}</span>
-                            <button type="button" onClick={() => updateEditItem(index, { receiptFileKey: "", receiptFileName: "" })} className="text-muted-foreground hover:text-foreground">
+                            <button type="button" aria-label={t("removeReceipt")} onClick={() => updateEditItem(index, { receiptFileKey: "", receiptFileName: "" })} className="text-muted-foreground hover:text-foreground">
                               <X className="size-3.5" />
                             </button>
                           </div>
@@ -414,11 +422,11 @@ function EditExpenseDrawer({
             </div>
 
             <div className="flex items-center justify-between rounded-lg border bg-muted/50 px-4 py-3">
-              <span className="text-sm font-medium">Total</span>
+              <span className="text-sm font-medium">{t("total")}</span>
               <span className="text-lg font-bold font-mono tabular-nums">{editTotal}</span>
             </div>
           </div>
-          <DrawerFooter onClose={onClose} saving={saving} label="Save Changes" />
+          <DrawerFooter onClose={onClose} saving={saving} label={t("saveChanges")} />
         </form>
       </SheetContent>
     </Sheet>
@@ -436,11 +444,12 @@ export default function ExpenseDetailPage() {
 }
 
 function ExpenseDetailWorkspace({ id }: { id: string }) {
+  const t = useTranslations("Expenses");
   const router = useRouter();
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [claim, setClaim] = useState<ExpenseDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<ExpenseErrorKey | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
@@ -449,7 +458,7 @@ function ExpenseDetailWorkspace({ id }: { id: string }) {
 
   const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
 
-  useDocumentTitle("Purchases · Expense Details");
+  useDocumentTitle(t("detailDocumentTitle"));
   useEntityTitle(claim?.title);
 
   const loadClaim = useCallback(() => {
@@ -459,7 +468,7 @@ function ExpenseDetailWorkspace({ id }: { id: string }) {
     })
       .then(async r => { const data = await r.json(); if (!r.ok) throw new Error(data.error || "Unable to load expense claim"); return data; })
       .then(data => { setClaim(expenseUiDocument(data.expenseClaim)); setLoadError(null); })
-      .catch(error => { setClaim(null); setLoadError(error instanceof Error ? error.message : "Unable to load expense claim"); })
+      .catch(() => { setClaim(null); setLoadError("detailFailed"); })
       .finally(() => setLoading(false));
   }, [id, orgId]);
 
@@ -467,132 +476,44 @@ function ExpenseDetailWorkspace({ id }: { id: string }) {
     loadClaim();
   }, [loadClaim]);
 
-  async function handleSubmit() {
-    if (!orgId) return;
-    const res = await fetch(`/api/v1/expenses/${id}/submit`, {
-      method: "POST",
-      headers: { "x-organization-id": orgId },
-    });
-    if (res.ok) {
-      loadClaim();
-      toast.success("Expense claim submitted for approval");
-    } else {
-      const data = await res.json();
-      toast.error(typeof data.error === "string" ? data.error : "Failed to submit");
+  async function runAction(action: "submit" | "reverse" | "recall" | "approve" | "reject" | "pay" | "delete", body?: object) {
+    if (!orgId) return false;
+    const failures = { submit: "submitFailed", reverse: "reverseFailed", recall: "recallFailed", approve: "approveFailed", reject: "rejectFailed", pay: "payFailed", delete: "deleteFailed" } as const;
+    const successes = { submit: "submittedSuccess", reverse: "reversedSuccess", recall: "recalledSuccess", approve: "approvedSuccess", reject: "rejectedSuccess", pay: "paidSuccess", delete: "deletedSuccess" } as const;
+    try {
+      const res = await fetch(`/api/v1/expenses/${id}${action === "delete" ? "" : "/" + action}`, {
+        method: action === "delete" ? "DELETE" : "POST",
+        headers: { ...(body ? { "Content-Type": "application/json" } : {}), "x-organization-id": orgId },
+        ...(body ? { body: JSON.stringify(body) } : {}),
+      });
+      if (!res.ok) throw new Error("Expense operation failed");
+      toast.success(t(successes[action]));
+      if (action !== "delete") loadClaim();
+      return true;
+    } catch {
+      toast.error(t(failures[action]));
+      return false;
     }
   }
 
+  async function handleSubmit() { await runAction("submit"); }
+  async function handleRecall() { await runAction("recall"); }
+  async function handleApprove() { await runAction("approve"); }
   async function handleReverse() {
     if (!orgId) return;
-    const confirmed = await confirm({
-      title: "Reverse this expense claim?",
-      description:
-        "We reverse the bookkeeping it posted (the approval, and the payment if it was paid) and move it back to a draft so you can fix and resubmit it. Nothing is deleted — the reversal stays in your books.",
-      confirmLabel: "Reverse",
-      destructive: true,
-    });
-    if (!confirmed) return;
-    const res = await fetch(`/api/v1/expenses/${id}/reverse`, {
-      method: "POST",
-      headers: { "x-organization-id": orgId },
-    });
-    if (res.ok) {
-      loadClaim();
-      toast.success("Reversed and moved back to draft");
-    } else {
-      const data = await res.json();
-      toast.error(typeof data.error === "string" ? data.error : "Failed to reverse");
-    }
+    if (await confirm({ title: t("reverseTitle"), description: t("reverseDescription"), confirmLabel: t("reverse"), destructive: true })) await runAction("reverse");
   }
-
-  async function handleRecall() {
-    if (!orgId) return;
-    const res = await fetch(`/api/v1/expenses/${id}/recall`, {
-      method: "POST",
-      headers: { "x-organization-id": orgId },
-    });
-    if (res.ok) {
-      loadClaim();
-      toast.success("Pulled back to draft — you can edit it now");
-    } else {
-      const data = await res.json();
-      toast.error(typeof data.error === "string" ? data.error : "Failed to recall");
-    }
-  }
-
-  async function handleApprove() {
-    if (!orgId) return;
-    const res = await fetch(`/api/v1/expenses/${id}/approve`, {
-      method: "POST",
-      headers: { "x-organization-id": orgId },
-    });
-    if (res.ok) {
-      loadClaim();
-      toast.success("Expense claim approved");
-    } else {
-      const data = await res.json();
-      toast.error(typeof data.error === "string" ? data.error : "Failed to approve");
-    }
-  }
-
   async function handleReject() {
-    if (!orgId || !rejectReason.trim()) {
-      toast.error("Please provide a rejection reason");
-      return;
-    }
-    const res = await fetch(`/api/v1/expenses/${id}/reject`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-organization-id": orgId },
-      body: JSON.stringify({ reason: rejectReason }),
-    });
-    if (res.ok) {
-      loadClaim();
-      setRejectOpen(false);
-      setRejectReason("");
-      toast.success("Expense claim rejected");
-    } else {
-      const data = await res.json();
-      toast.error(typeof data.error === "string" ? data.error : "Failed to reject");
-    }
-  }
-
-  async function handlePay() {
     if (!orgId) return;
-    const res = await fetch(`/api/v1/expenses/${id}/pay`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-organization-id": orgId },
-      body: JSON.stringify({ date: payDate }),
-    });
-    if (res.ok) {
-      loadClaim();
-      setPayOpen(false);
-      toast.success("Expense claim marked as paid");
-    } else {
-      const data = await res.json();
-      toast.error(typeof data.error === "string" ? data.error : "Failed to mark as paid");
-    }
+    if (!rejectReason.trim()) { toast.error(t("reasonRequiredError")); return; }
+    if (await runAction("reject", { reason: rejectReason })) { setRejectOpen(false); setRejectReason(""); }
   }
-
+  async function handlePay() {
+    if (await runAction("pay", { date: payDate })) setPayOpen(false);
+  }
   async function handleDelete() {
     if (!orgId) return;
-    const confirmed = await confirm({
-      title: "Delete this expense claim?",
-      description: "This action cannot be undone.",
-      confirmLabel: "Delete",
-      destructive: true,
-    });
-    if (!confirmed) return;
-    const res = await fetch(`/api/v1/expenses/${id}`, {
-      method: "DELETE",
-      headers: { "x-organization-id": orgId },
-    });
-    if (res.ok) {
-      toast.success("Expense claim deleted");
-      router.push("/purchases/expenses");
-    } else {
-      const data = await res.json();
-      toast.error(typeof data.error === "string" ? data.error : "Failed to delete");
-    }
+    if (await confirm({ title: t("deleteTitle"), description: t("deleteDescription"), confirmLabel: t("delete"), destructive: true }) && await runAction("delete")) router.push("/purchases/expenses");
   }
 
   if (loading) return <BrandLoader />;
@@ -600,9 +521,9 @@ function ExpenseDetailWorkspace({ id }: { id: string }) {
   if (!claim) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh]">
-        <p role={loadError ? "alert" : undefined} className="text-sm text-muted-foreground">{loadError || "Expense claim not found"}</p>
+        <p role={loadError ? "alert" : undefined} className="text-sm text-muted-foreground">{loadError ? t(loadError) : t("notFound")}</p>
         <Button variant="ghost" size="sm" asChild className="mt-2">
-          <Link href="/purchases/expenses">Back to expenses</Link>
+          <Link href="/purchases/expenses">{t("back")}</Link>
         </Button>
       </div>
     );
@@ -616,17 +537,17 @@ function ExpenseDetailWorkspace({ id }: { id: string }) {
         {/* Top bar */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" asChild className="size-8 p-0">
+            <Button variant="ghost" size="sm" asChild className="size-8 p-0" aria-label={t("back")}>
               <Link href="/purchases/expenses"><ArrowLeft className="size-4" /></Link>
             </Button>
             <div>
               <div className="flex items-center gap-2.5">
                 <h1 className="text-lg font-semibold tracking-tight">{claim.title}</h1>
-                <Badge variant="outline" className={sc.class}>{claim.status}</Badge>
+                <Badge variant="outline" className={sc.class}>{expenseStatusLabel(t, claim.status)}</Badge>
               </div>
               <p className="text-sm text-muted-foreground mt-0.5">
-                {claim.submittedByUser?.name || claim.submittedByUser?.email || "Unknown"}
-                {claim.submittedAt && <span> · Submitted {formatDate(claim.submittedAt)}</span>}
+                {claim.submittedByUser?.name || claim.submittedByUser?.email || t("unknown")}
+                {claim.submittedAt && <span>{t("submittedMeta", { date: formatDate(claim.submittedAt) })}</span>}
               </p>
             </div>
           </div>
@@ -634,72 +555,63 @@ function ExpenseDetailWorkspace({ id }: { id: string }) {
             {claim.status === "draft" && (
               <>
                 <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
-                  <Pencil className="mr-2 size-3.5" />Edit
-                </Button>
+                  <Pencil className="mr-2 size-3.5" />{t("edit")}</Button>
                 <Button size="sm" onClick={handleSubmit} className="bg-emerald-600 hover:bg-emerald-700">
-                  <Send className="mr-2 size-3.5" />Submit
-                </Button>
+                  <Send className="mr-2 size-3.5" />{t("submit")}</Button>
                 <Button variant="outline" size="sm" onClick={handleDelete} className="text-red-600 hover:text-red-700">
-                  <Trash2 className="mr-2 size-3.5" />Delete
-                </Button>
+                  <Trash2 className="mr-2 size-3.5" />{t("delete")}</Button>
               </>
             )}
             {claim.status === "submitted" && (
               <>
-                <Button variant="outline" size="sm" onClick={handleRecall} title="Pull this back to a draft so you can change it">
-                  <Undo2 className="mr-2 size-3.5" />Recall to edit
-                </Button>
+                <Button variant="outline" size="sm" onClick={handleRecall} title={t("recallHint")}>
+                  <Undo2 className="mr-2 size-3.5" />{t("recall")}</Button>
                 <Button size="sm" onClick={handleApprove} className="bg-emerald-600 hover:bg-emerald-700">
-                  <Check className="mr-2 size-3.5" />Approve
-                </Button>
+                  <Check className="mr-2 size-3.5" />{t("approve")}</Button>
                 <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
                   <DialogTrigger asChild>
                     <Button variant="outline" size="sm" className="text-red-600">
-                      <X className="mr-2 size-3.5" />Reject
-                    </Button>
+                      <X className="mr-2 size-3.5" />{t("reject")}</Button>
                   </DialogTrigger>
                   <DialogContent>
-                    <DialogHeader><DialogTitle>Reject Expense Claim</DialogTitle></DialogHeader>
+                    <DialogHeader><DialogTitle>{t("rejectClaim")}</DialogTitle></DialogHeader>
                     <div className="space-y-4">
                       <div className="space-y-2">
-                        <Label>Reason *</Label>
-                        <Textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} rows={3} placeholder="Explain why this expense claim is being rejected..." />
+                        <Label>{t("reasonRequired")}</Label>
+                        <Textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} rows={3} placeholder={t("reasonPlaceholder")} />
                       </div>
-                      <Button onClick={handleReject} className="w-full bg-red-600 hover:bg-red-700">Reject Expense Claim</Button>
+                      <Button onClick={handleReject} className="w-full bg-red-600 hover:bg-red-700">{t("rejectClaim")}</Button>
                     </div>
                   </DialogContent>
                 </Dialog>
               </>
             )}
             {claim.status === "approved" && (
-              <Button variant="outline" size="sm" onClick={handleReverse} className="text-red-600 hover:text-red-700" title="Undo the approval and move it back to a draft">
-                <Undo2 className="mr-2 size-3.5" />Reverse
-              </Button>
+              <Button variant="outline" size="sm" onClick={handleReverse} className="text-red-600 hover:text-red-700" title={t("reverseApprovalHint")}>
+                <Undo2 className="mr-2 size-3.5" />{t("reverse")}</Button>
             )}
             {claim.status === "paid" && (
-              <Button variant="outline" size="sm" onClick={handleReverse} className="text-red-600 hover:text-red-700" title="Reverse the payment and approval, back to a draft">
-                <Undo2 className="mr-2 size-3.5" />Reverse
-              </Button>
+              <Button variant="outline" size="sm" onClick={handleReverse} className="text-red-600 hover:text-red-700" title={t("reversePaymentHint")}>
+                <Undo2 className="mr-2 size-3.5" />{t("reverse")}</Button>
             )}
             {claim.status === "approved" && (
               <Dialog open={payOpen} onOpenChange={setPayOpen}>
                 <DialogTrigger asChild>
                   <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700">
-                    <DollarSign className="mr-2 size-3.5" />Mark as Paid
-                  </Button>
+                    <DollarSign className="mr-2 size-3.5" />{t("markPaid")}</Button>
                 </DialogTrigger>
                 <DialogContent>
-                  <DialogHeader><DialogTitle>Mark as Paid</DialogTitle></DialogHeader>
+                  <DialogHeader><DialogTitle>{t("markPaid")}</DialogTitle></DialogHeader>
                   <div className="space-y-4">
                     <div className="rounded-lg border bg-muted/50 px-4 py-3">
-                      <p className="text-xs text-muted-foreground">Total Amount</p>
+                      <p className="text-xs text-muted-foreground">{t("totalAmount")}</p>
                       <p className="text-xl font-bold font-mono">{expenseUiMoney(expenseUiMinor(claim, "totalAmount"), claim.currencyCode)}</p>
                     </div>
                     <div className="space-y-2">
-                      <Label>Payment Date</Label>
+                      <Label>{t("paymentDate")}</Label>
                       <Input type="date" value={payDate} onChange={(e) => setPayDate(e.target.value)} />
                     </div>
-                    <Button onClick={handlePay} className="w-full bg-emerald-600 hover:bg-emerald-700">Confirm Payment</Button>
+                    <Button onClick={handlePay} className="w-full bg-emerald-600 hover:bg-emerald-700">{t("confirmPayment")}</Button>
                   </div>
                 </DialogContent>
               </Dialog>
@@ -707,14 +619,11 @@ function ExpenseDetailWorkspace({ id }: { id: string }) {
             {claim.status === "rejected" && (
               <>
                 <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
-                  <Pencil className="mr-2 size-3.5" />Edit
-                </Button>
-                <Button size="sm" onClick={handleSubmit} className="bg-emerald-600 hover:bg-emerald-700" title="Send it back for approval after fixing it">
-                  <Send className="mr-2 size-3.5" />Resubmit
-                </Button>
+                  <Pencil className="mr-2 size-3.5" />{t("edit")}</Button>
+                <Button size="sm" onClick={handleSubmit} className="bg-emerald-600 hover:bg-emerald-700" title={t("resubmitHint")}>
+                  <Send className="mr-2 size-3.5" />{t("resubmit")}</Button>
                 <Button variant="outline" size="sm" onClick={handleDelete} className="text-red-600 hover:text-red-700">
-                  <Trash2 className="mr-2 size-3.5" />Delete
-                </Button>
+                  <Trash2 className="mr-2 size-3.5" />{t("delete")}</Button>
               </>
             )}
           </div>
@@ -725,24 +634,24 @@ function ExpenseDetailWorkspace({ id }: { id: string }) {
 
         {/* Timeline / status info */}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-          <span>Created {formatDate(claim.createdAt)}</span>
-          {claim.submittedAt && <span>Submitted {formatDate(claim.submittedAt)}</span>}
+          <span>{t("createdDate", { date: formatDate(claim.createdAt) })}</span>
+          {claim.submittedAt && <span>{t("submittedDate", { date: formatDate(claim.submittedAt) })}</span>}
           {claim.approvedAt && (
-            <span>Approved {formatDate(claim.approvedAt)}{claim.approvedByUser ? ` by ${claim.approvedByUser.name || claim.approvedByUser.email}` : ""}</span>
+            <span>{claim.approvedByUser ? t("approvedByDate", { date: formatDate(claim.approvedAt), user: claim.approvedByUser.name || claim.approvedByUser.email }) : t("approvedDate", { date: formatDate(claim.approvedAt) })}</span>
           )}
-          {claim.paidAt && <span>Paid {formatDate(claim.paidAt)}</span>}
+          {claim.paidAt && <span>{t("paidDate", { date: formatDate(claim.paidAt) })}</span>}
         </div>
 
         {claim.status === "rejected" && claim.rejectionReason && (
           <div className="rounded-lg border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950 p-4">
-            <p className="text-xs font-medium text-red-700 dark:text-red-300 mb-1">Rejection Reason</p>
+            <p className="text-xs font-medium text-red-700 dark:text-red-300 mb-1">{t("rejectionReason")}</p>
             <p className="text-sm text-red-600 dark:text-red-400">{claim.rejectionReason}</p>
           </div>
         )}
 
         {claim.description && (
           <div className="rounded-lg border p-4">
-            <p className="text-xs text-muted-foreground mb-1">Description</p>
+            <p className="text-xs text-muted-foreground mb-1">{t("itemDescription")}</p>
             <p className="text-sm">{claim.description}</p>
           </div>
         )}
@@ -750,15 +659,15 @@ function ExpenseDetailWorkspace({ id }: { id: string }) {
         {/* Summary cards */}
         <div className="grid gap-4 grid-cols-2 sm:grid-cols-3">
           <div className="rounded-lg border bg-card p-4">
-            <p className="text-xs text-muted-foreground">Total Amount</p>
+            <p className="text-xs text-muted-foreground">{t("totalAmount")}</p>
             <p className="mt-1 text-xl font-bold font-mono tabular-nums">{expenseUiMoney(expenseUiMinor(claim, "totalAmount"), claim.currencyCode)}</p>
           </div>
           <div className="rounded-lg border bg-card p-4">
-            <p className="text-xs text-muted-foreground">Items</p>
+            <p className="text-xs text-muted-foreground">{t("items")}</p>
             <p className="mt-1 text-xl font-bold font-mono tabular-nums">{claim.items.length}</p>
           </div>
           <div className="rounded-lg border bg-card p-4">
-            <p className="text-xs text-muted-foreground">Currency</p>
+            <p className="text-xs text-muted-foreground">{t("currency")}</p>
             <p className="mt-1 text-xl font-bold">{claim.currencyCode}</p>
           </div>
         </div>
@@ -767,18 +676,18 @@ function ExpenseDetailWorkspace({ id }: { id: string }) {
         <div className="rounded-lg border overflow-hidden">
           <div className="overflow-x-auto">
             <div className="grid min-w-[580px] grid-cols-[100px_1fr_100px_140px_100px] gap-2 border-b bg-muted/50 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              <span>Date</span>
-              <span>Description</span>
-              <span>Category</span>
-              <span>Receipt</span>
-              <span className="text-right">Amount</span>
+              <span>{t("date")}</span>
+              <span>{t("itemDescription")}</span>
+              <span>{t("category")}</span>
+              <span>{t("receipt")}</span>
+              <span className="text-right">{t("amount")}</span>
             </div>
             {claim.items.map((item) => (
               <div key={item.id} className="grid min-w-[580px] grid-cols-[100px_1fr_100px_140px_100px] gap-2 border-b px-4 py-3 last:border-b-0 hover:bg-muted/30 transition-colors">
                 <span className="text-sm tabular-nums">{item.date}</span>
                 <div>
                   <p className="text-sm font-medium">{item.description}</p>
-                  {item.isMileage && item.distanceMiles !== null && item.mileageRate !== null && <p className="text-xs text-muted-foreground">{expenseDistanceText(item.distanceMiles)} miles · {expenseUiMoney(expenseUiMinor(item, "mileageRate"), claim.currencyCode)}/mile</p>}
+                  {item.isMileage && item.distanceMiles !== null && item.mileageRate !== null && <p className="text-xs text-muted-foreground">{t("mileageDetail", { distance: expenseDistanceText(item.distanceMiles), rate: expenseUiMoney(expenseUiMinor(item, "mileageRate"), claim.currencyCode) })}</p>}
                   {item.account && (
                     <p className="text-xs text-muted-foreground">{item.account.code} · {item.account.name}</p>
                   )}
@@ -801,7 +710,7 @@ function ExpenseDetailWorkspace({ id }: { id: string }) {
               <span />
               <span />
               <span />
-              <span className="text-sm font-semibold">Total</span>
+              <span className="text-sm font-semibold">{t("total")}</span>
               <span className="text-right text-sm font-mono font-bold tabular-nums">
                 {expenseUiMoney(expenseUiMinor(claim, "totalAmount"), claim.currencyCode)}
               </span>

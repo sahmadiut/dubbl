@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useTranslations } from "next-intl";
+import { vatBoxLabelKey } from "@/lib/i18n/vat-return-presentation";
 import { ArrowUpRight, ArrowDownLeft, Printer, ChevronDown, ChevronRight } from "lucide-react";
 import { DateRangeFilter } from "@/components/dashboard/date-range-filter";
 import { ExportButton } from "@/components/dashboard/export-button";
@@ -52,6 +54,7 @@ export default function VatReturnPage() {
 }
 
 function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
+  const t = useTranslations("VatReturn");
   const now = new Date();
   const [startDate, setStartDate] = useState(`${now.getFullYear()}-01-01`);
   const [endDate, setEndDate] = useState(now.toISOString().slice(0, 10));
@@ -68,7 +71,7 @@ function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
   const [openBox, setOpenBox] = useState<string | null>(null);
   const [drillData, setDrillData] = useState<Record<string, BoxTransaction[]>>({});
   const [drillLoading, setDrillLoading] = useState<string | null>(null);
-  useDocumentTitle("Tax · VAT Return");
+  useDocumentTitle(t("documentTitle"));
 
   useEffect(() => {
     if (!orgId) return;
@@ -92,14 +95,14 @@ function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
         setBoxes(rows);
         setCurrency(code); setError(null);
       })
-      .catch((err) => { if (!cancelled) { setError(err instanceof Error ? err.message : "Invalid tax report"); setCurrency(null); } })
+      .catch(() => { if (!cancelled) { setError(t("loadFailed")); setCurrency(null); } })
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
         }
       });
     return () => { cancelled = true; };
-  }, [startDate, endDate, basis, flatRateOn, flatRatePercent, orgId]);
+  }, [startDate, endDate, basis, flatRateOn, flatRatePercent, orgId, t]);
 
   // Any change to the period/basis invalidates the cached drill-down rows.
   useEffect(() => {
@@ -131,10 +134,10 @@ function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
           const rows = taxUiRows(data.transactions as (Omit<BoxTransaction, "amount" | "debit" | "credit"> & { amount: number; debit: number; credit: number })[], ["amount", "debit", "credit"]);
           setDrillData((prev) => ({ ...prev, [box]: rows }));
         })
-        .catch(err => { if (generation === drillGeneration.current) setError(err instanceof Error ? err.message : "Invalid tax drill rows"); })
+        .catch(() => { if (generation === drillGeneration.current) setError(t("drillFailed")); })
         .finally(() => { if (generation === drillGeneration.current) setDrillLoading((cur) => (cur === box ? null : cur)); });
     },
-    [openBox, drillData, startDate, endDate, basis, orgId, currency]
+    [openBox, drillData, startDate, endDate, basis, orgId, currency, t]
   );
 
   const outputVat = boxes.find((b) => b.box === "1")?.amount ?? 0n;
@@ -147,12 +150,12 @@ function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="VAT Return"
-        description="UK/EU VAT return calculation with HMRC boxes 1-9."
+        title={t("title")}
+        description={t("description")}
       >
         <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5" onClick={() => window.print()}>
           <Printer className="size-3.5" />
-          Print
+          {t("print")}
         </Button>
         <ExportButton
           data={(error || loading || !currency ? [] : boxes).map((b) => ({ box: b.box, description: b.label, amount: b.amount.toString(), currencyCode: currency }))}
@@ -162,7 +165,7 @@ function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
         <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5" asChild>
           <Link href="/tax/periods">
             <ArrowUpRight className="size-3.5" />
-            Tax Periods
+            {t("taxPeriods")}
           </Link>
         </Button>
       </PageHeader>
@@ -177,7 +180,7 @@ function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
       <div className="flex flex-col gap-4 rounded-lg border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1.5">
           <Label className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-            Count VAT
+            {t("countVat")}
           </Label>
           <div className="inline-flex rounded-md border p-0.5">
             <Button
@@ -187,7 +190,7 @@ function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
               className="h-7 text-xs"
               onClick={() => setBasis("accrual")}
             >
-              When you record it
+              {t("accrual")}
             </Button>
             <Button
               type="button"
@@ -196,13 +199,13 @@ function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
               className="h-7 text-xs"
               onClick={() => setBasis("cash")}
             >
-              When money moves
+              {t("cash")}
             </Button>
           </div>
           <p className="text-[11px] text-muted-foreground">
             {basis === "accrual"
-              ? "Counts VAT on the date you raise or enter a document."
-              : "Counts VAT only when the payment actually goes in or out."}
+              ? t("accrualHelp")
+              : t("cashHelp")}
           </p>
         </div>
 
@@ -214,7 +217,7 @@ function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
               onCheckedChange={setFlatRateOn}
             />
             <Label htmlFor="flat-rate-toggle" className="text-sm font-medium">
-              Use a flat rate
+              {t("flatRate")}
             </Label>
           </div>
           <div className="flex items-center gap-2">
@@ -227,15 +230,14 @@ function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
               disabled={!flatRateOn}
               value={flatRatePercent}
               onChange={(e) => setFlatRatePercent(e.target.value)}
-              placeholder="e.g. 14.5"
+              placeholder={t("flatRatePlaceholder")}
               className="h-8 w-28 text-sm"
-              aria-label="Flat rate percentage"
+              aria-label={t("flatRatePercent")}
             />
             <span className="text-sm text-muted-foreground">%</span>
           </div>
           <p className="text-[11px] text-muted-foreground">
-            Pay a fixed percentage of your total sales instead of working out
-            VAT line by line.
+            {t("flatRateHelp")}
           </p>
         </div>
       </div>
@@ -247,14 +249,14 @@ function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
           {/* Output vs Input comparison */}
           <div className="rounded-lg border bg-card p-5">
             <h3 className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-              Output vs Input VAT
+              {t("comparison")}
             </h3>
             <div className="mt-4 space-y-3">
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2">
                     <ArrowUpRight className="size-3.5 text-blue-500" />
-                    <span className="text-muted-foreground">Output VAT (Sales)</span>
+                    <span className="text-muted-foreground">{t("outputVat")}</span>
                   </div>
                   <span className="font-mono text-sm tabular-nums font-medium">
                     {taxUiMoney(outputVat, currency!)}
@@ -271,7 +273,7 @@ function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2">
                     <ArrowDownLeft className="size-3.5 text-orange-500" />
-                    <span className="text-muted-foreground">Input VAT (Purchases)</span>
+                    <span className="text-muted-foreground">{t("inputVat")}</span>
                   </div>
                   <span className="font-mono text-sm tabular-nums font-medium">
                     {taxUiMoney(inputVat, currency!)}
@@ -286,7 +288,7 @@ function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
               </div>
               <div className="flex items-center justify-between border-t pt-3">
                 <span className="text-sm font-medium">
-                  {netVat >= 0 ? "Net VAT Due" : "Net VAT Refund"}
+                  {netVat >= 0 ? t("netDue") : t("netRefund")}
                 </span>
                 <span className={cn(
                   "font-mono text-sm tabular-nums font-semibold",
@@ -308,7 +310,7 @@ function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-                  Box 5 · {netVat >= 0 ? "Amount Due to HMRC" : "Refund Due to You"}
+                  {netVat >= 0 ? t("boxFiveDue") : t("boxFiveRefund")}
                 </p>
                 <p className={cn(
                   "mt-1 text-2xl font-bold font-mono tabular-nums",
@@ -335,13 +337,14 @@ function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
           {/* Box breakdown */}
           <div>
             <h3 className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground mb-2">
-              All Boxes
+              {t("allBoxes")}
             </h3>
             <p className="text-[11px] text-muted-foreground mb-2">
-              Tap Box 1 or Box 4 to see the transactions behind the figure.
+              {t("drillHelp")}
             </p>
             <div className="rounded-lg border overflow-hidden">
               {boxes.map((b, i) => {
+                const labelKey = vatBoxLabelKey(b.box);
                 const isKey = b.box === KEY_BOX;
                 const isCalc = CALCULATED_BOXES.includes(b.box);
                 const isDrillable = DRILLABLE_BOXES.includes(b.box);
@@ -368,9 +371,9 @@ function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
                         {b.box}
                       </div>
                       <div>
-                        <p className={cn("text-sm", isKey && "font-semibold")}>{b.label}</p>
+                        <p className={cn("text-sm", isKey && "font-semibold")}>{labelKey ? t(labelKey) : b.label}</p>
                         {isCalc && (
-                          <Badge variant="outline" className="text-[9px] mt-0.5">Calculated</Badge>
+                          <Badge variant="outline" className="text-[9px] mt-0.5">{t("calculated")}</Badge>
                         )}
                       </div>
                     </div>
@@ -415,21 +418,21 @@ function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
                     {isDrillable && isOpen && (
                       <div className="border-t bg-muted/20 px-4 py-3">
                         {isDrillLoading ? (
-                          <p className="py-2 text-xs text-muted-foreground">Loading transactions…</p>
+                          <p className="py-2 text-xs text-muted-foreground">{t("loadingTransactions")}</p>
                         ) : !rows || rows.length === 0 ? (
                           <p className="py-2 text-xs text-muted-foreground">
-                            No transactions contribute to this box for the selected period.
+                            {t("noTransactions")}
                           </p>
                         ) : (
                           <div className="overflow-x-auto">
                             <table className="w-full text-xs">
                               <thead>
                                 <tr className="text-left text-muted-foreground">
-                                  <th className="py-1.5 pr-3 font-medium">Date</th>
-                                  <th className="py-1.5 pr-3 font-medium">Entry</th>
-                                  <th className="py-1.5 pr-3 font-medium">Description</th>
-                                  <th className="py-1.5 pr-3 font-medium">Reference</th>
-                                  <th className="py-1.5 pl-3 text-right font-medium">Amount</th>
+                                  <th className="py-1.5 pr-3 font-medium">{t("date")}</th>
+                                  <th className="py-1.5 pr-3 font-medium">{t("entry")}</th>
+                                  <th className="py-1.5 pr-3 font-medium">{t("transactionDescription")}</th>
+                                  <th className="py-1.5 pr-3 font-medium">{t("reference")}</th>
+                                  <th className="py-1.5 pl-3 text-right font-medium">{t("amount")}</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -450,7 +453,7 @@ function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
                               <tfoot>
                                 <tr className="border-t border-border font-medium">
                                   <td className="py-1.5 pr-3" colSpan={4}>
-                                    Total ({rows.length} {rows.length === 1 ? "line" : "lines"})
+                                    {t("totalLines", { count: rows.length })}
                                   </td>
                                   <td className="py-1.5 pl-3 text-right font-mono tabular-nums">
                                     {taxUiMoney(rows.reduce((s, t) => s + t.amount, 0n), currency!)}

@@ -53,3 +53,4 @@ next-env.d.ts
 
 # Resumable documentation translation reviews (responses, backups, progress)
 /.mdx-review/
+/.mdx-review-history/

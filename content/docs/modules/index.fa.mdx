@@ -1,70 +1,70 @@
 ---
-title: ماژول‌ها و بخش‌های سیستم
-description: نمای کلی تمامی ماژول‌ها، ابزارها و امکانات سامانه دابل.
+title: "ماژول‌ها"
+description: "نمای کلی تمام ماژول‌ها و قابلیت‌های دابل (Dubbl)."
 ---
 
 import { Cards, Card } from "fumadocs-ui/components/card";
 
-دابل در قالب ماژول‌های یکپارچه‌ای سازمان‌دهی شده که چرخه کامل عملیات حسابداری و مدیریت مالی را پوشش می‌دهند. روی هر ماژول کلیک کنید تا با جزئیات آن آشنا شوید.
+دابل در قالب ماژول‌هایی سازمان‌دهی شده است که تمام چرخه حسابداری را پوشش می‌دهند. برای کسب اطلاعات بیشتر روی هر ماژول کلیک کنید.
 
-## حسابداری پایه (Core Accounting)
+## حسابداری اصلی
 
 <Cards>
-  <Card title="سرفصل و کدینگ حساب‌ها" description="مدیریت سرفصل حساب‌های کل، معین و تفصیلی" href="/docs/modules/chart-of-accounts" />
-  <Card title="اسناد حسابداری (دفتر روزنامه)" description="ثبت و مدیریت اسناد دوبل حسابداری" href="/docs/modules/journal-entries" />
+  <Card title="سرفصل حساب‌ها" description="مدیریت حساب‌های دفتر کل" href="/docs/modules/chart-of-accounts" />
+  <Card title="اسناد حسابداری" description="ثبت تراکنش‌های حسابداری دوطرفه" href="/docs/modules/journal-entries" />
 </Cards>
 
-## فروش و درآمدها (Sales)
+## فروش
 
 <Cards>
-  <Card title="طرف‌های حساب (مخاطبین)" description="مدیریت مشخصات مشتریان و تأمین‌کنندگان" href="/docs/modules/contacts" />
-  <Card title="فاکتورهای فروش" description="صدور، ارسال، پیگیری و تسویه فاکتورها" href="/docs/modules/invoicing" />
+  <Card title="مخاطبان" description="مدیریت مشتریان و تأمین‌کنندگان" href="/docs/modules/contacts" />
+  <Card title="فاکتورها" description="ایجاد، ارسال و پیگیری فاکتورها" href="/docs/modules/invoicing" />
   <Card title="پیش‌فاکتورها" description="ارسال پیش‌فاکتور و تبدیل به فاکتور فروش" href="/docs/modules/quotes" />
-  <Card title="اعلامیه‌های بستانکار (Credit Notes)" description="صدور اعلامیه بستانکار و ثبت برگشت از فروش" href="/docs/modules/credit-notes" />
-  <Card title="فاکتورهای تکرارشونده" description="خودکارسازی صدور فاکتورهای دوره‌ای و اشتراکی" href="/docs/modules/recurring" />
-  <Card title="دریافت‌ها و پرداخت‌ها" description="رهگیری و ثبت مبالغ دریافتی از مشتریان" href="/docs/modules/payments" />
+  <Card title="اعلامیه‌های بستانکار" description="صدور اعلامیه بستانکار و استرداد وجه" href="/docs/modules/credit-notes" />
+  <Card title="فاکتورهای دوره‌ای" description="خودکارسازی صدور فاکتورهای تکرارشونده" href="/docs/modules/recurring" />
+  <Card title="دریافت‌ها" description="پیگیری پرداخت‌های دریافتی" href="/docs/modules/payments" />
 </Cards>
 
-## خرید و مخارج (Purchases)
+## خرید
 
 <Cards>
-  <Card title="قبوض خرید (Bills)" description="ثبت فاکتورهای خرید تأمین‌کنندگان و مدیریت پرداخت‌ها" href="/docs/modules/bills" />
-  <Card title="سفارش‌های خرید (PO)" description="ایجاد و رهگیری سفارش‌های خرید رسمی" href="/docs/modules/purchase-orders" />
-  <Card title="درخواست‌های خرید (Requisitions)" description="ثبت تقاضای خرید داخلی و اخذ تأییدیه‌ها" href="/docs/modules/purchase-requisitions" />
-  <Card title="بهای تمام‌شده ورودی (Landed Costs)" description="تسهیم هزینه‌های حمل، گمرک و باربری روی بهای کالا" href="/docs/modules/landed-costs" />
-  <Card title="تنخواه و هزینه‌ها" description="ثبت، بازبینی و بازپرداخت ادعاهای هزینه کارکنان" href="/docs/modules/expenses" />
+  <Card title="فاکتورهای خرید" description="پیگیری صورت‌حساب‌های تأمین‌کننده و پرداخت‌ها" href="/docs/modules/bills" />
+  <Card title="سفارش‌های خرید" description="ایجاد و مدیریت سفارش‌های خرید" href="/docs/modules/purchase-orders" />
+  <Card title="درخواست‌های خرید" description="ثبت درخواست و تأیید خریدها" href="/docs/modules/purchase-requisitions" />
+  <Card title="بهای تمام‌شده کالای وارده" description="تخصیص هزینه‌های حمل‌ونقل و گمرک به موجودی کالا" href="/docs/modules/landed-costs" />
+  <Card title="هزینه‌های تنخواه و پرسنلی" description="ثبت و تأیید درخواست‌های بازپرداخت هزینه" href="/docs/modules/expenses" />
 </Cards>
 
-## بانکداری (Banking)
+## امور بانکی
 
 <Cards>
-  <Card title="حساب‌های بانکی" description="مدیریت حساب‌ها، ایمپورت صورت‌حساب و مغایرت‌گیری" href="/docs/modules/banking" />
+  <Card title="حساب‌های بانکی" description="مدیریت حساب‌ها، وارد کردن صورت‌حساب و مغایرت‌گیری بانکی" href="/docs/modules/banking" />
 </Cards>
 
-## عملیات و منابع سازمانی (Operations)
+## عملیات
 
 <Cards>
-  <Card title="پروژه‌ها" description="مدیریت زمان کاری، نقاط عطف و هزینه‌های قابل فاکتور" href="/docs/modules/projects" />
-  <Card title="ارتباط با مشتریان (CRM)" description="خط لوله فروش، فرصت‌های تجاری و تحلیل‌ها" href="/docs/modules/crm" />
-  <Card title="مدیریت اسناد" description="بایگانی، الصاق و نگهداری فایل‌ها و مدارک" href="/docs/modules/documents" />
-  <Card title="تیم‌ها" description="مدیریت گروه‌ها و همکاری‌های تیمی" href="/docs/modules/teams" />
-  <Card title="انبار و کالاها" description="سطوح موجودی، دسته‌بندی کالاها و ارزیابی ریالی انبار" href="/docs/modules/inventory" />
-  <Card title="انبارها و شعب" description="رهگیری موجودی در چند موقعیت مکانی و انبار مجزا" href="/docs/modules/warehouses" />
-  <Card title="انبارگردانی (Stock Takes)" description="شمارش عینی موجودی و ثبت کسری و فزونی" href="/docs/modules/stock-takes" />
-  <Card title="مونتاژ و فرمول ساخت (BOM)" description="فرمول ساخت کالاها و سفارش‌های مونتاژ" href="/docs/modules/assembly-bom" />
-  <Card title="اموال و دارایی‌های ثابت" description="ثبت دارایی‌ها و محاسبه استهلاک دوره‌ای" href="/docs/modules/fixed-assets" />
-  <Card title="حقوق و دستمزد (Payroll)" description="کارکنان، پیمانکاران، لیست‌های حقوق و مرخصی‌ها" href="/docs/modules/payroll" />
-  <Card title="بودجه‌بندی" description="تعریف بودجه‌های دوره‌ای و مقایسه با عملکرد واقعی" href="/docs/modules/budgets" />
+  <Card title="پروژه‌ها" description="ثبت کارکرد زمانی، نقاط عطف و ساعات قابل صورت‌حساب" href="/docs/modules/projects" />
+  <Card title="مدیریت ارتباط با مشتری (CRM)" description="مدیریت قیف فروش، فرصت‌ها و تحلیل‌ها" href="/docs/modules/crm" />
+  <Card title="اسناد و مدارک" description="ذخیره‌سازی و مدیریت فایل‌ها" href="/docs/modules/documents" />
+  <Card title="تیم‌ها" description="مدیریت اعضای تیم و همکاری گروهی" href="/docs/modules/teams" />
+  <Card title="موجودی کالا" description="سطوح موجودی، دسته‌بندی‌ها و ارزش‌گذاری انبار" href="/docs/modules/inventory" />
+  <Card title="انبارها" description="ردیابی موجودی در چند انبار و موقعیت مکانی" href="/docs/modules/warehouses" />
+  <Card title="انبارگردانی" description="شمارش فیزیکی موجودی کالا" href="/docs/modules/stock-takes" />
+  <Card title="مونتاژ و ساختار کالا (BOM)" description="فرمول ساخت (BOM) و سفارش‌های مونتاژ" href="/docs/modules/assembly-bom" />
+  <Card title="دارایی‌های ثابت" description="پیگیری و محاسبه استهلاک دارایی‌ها" href="/docs/modules/fixed-assets" />
+  <Card title="حقوق و دستمزد" description="کارکنان، پیمانکاران، دوره‌های پرداخت و مرخصی‌ها" href="/docs/modules/payroll" />
+  <Card title="بودجه‌بندی" description="تعریف و پیگیری بودجه‌ها" href="/docs/modules/budgets" />
 </Cards>
 
-## گزارش‌ها (Reports)
+## گزارش‌ها
 
 <Cards>
-  <Card title="گزارش‌های مالی" description="بیش از ۲۵ گزارش مالی: سود و زیان، ترازنامه، جریان وجوه نقد و غیره" href="/docs/modules/reports" />
+  <Card title="گزارش‌های مالی" description="بیش از ۲۵ گزارش: سود و زیان، ترازنامه، جریان وجوه نقد و موارد دیگر" href="/docs/modules/reports" />
 </Cards>
 
-## مالیات (Tax)
+## مالیات
 
 <Cards>
-  <Card title="نرخ‌های مالیاتی" description="تعریف و مدیریت نرخ‌های مالیات و ارزش افزوده" href="/docs/modules/tax-rates" />
+  <Card title="نرخ‌های مالیاتی" description="پیکربندی و تنظیم نرخ‌های مالیات" href="/docs/modules/tax-rates" />
 </Cards>

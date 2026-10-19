@@ -1,6 +1,6 @@
 ---
-title: شروع سریع
-description: راه‌اندازی دابل و مدیریت امور مالی در چند دقیقه.
+title: شروع به کار
+description: راه‌اندازی دابل و آغاز مدیریت امور مالی در چند دقیقه.
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -8,8 +8,8 @@ import { Tabs, Tab } from "fumadocs-ui/components/tabs";
 
 ## پیش‌نیازها
 
-- **Node.js** نسخه ۲۰ یا بالاتر و npm
-- **PostgreSQL** نسخه ۱۵ یا بالاتر (یا استفاده از داکر)
+- **Node.js** نسخه ۲۰ به بالا و npm
+- **PostgreSQL** نسخه ۱۵ به بالا (یا استفاده از Docker)
 - **فضای ذخیره‌سازی سازگار با S3** (اختیاری، برای آپلود فایل‌ها)
 
 ## نصب
@@ -26,21 +26,21 @@ pnpm install
 cp .env.example .env
 ```
 
-فایل `.env` را بر اساس پیکربندی خود ویرایش کنید:
+فایل `.env` را با مقادیر پیکربندی خود ویرایش کنید:
 
 ```bash title=".env"
-# پایگاه داده
+# Database
 DATABASE_URL=postgresql://user:password@localhost:5432/dubbl
 
-# احراز هویت
+# Auth
 AUTH_SECRET=your-random-secret-here
 AUTH_URL=http://localhost:3000
 
-# درگاه پرداخت استرایپ (اختیاری)
+# Stripe (optional)
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 
-# فضای ابری S3 (اختیاری)
+# S3 Storage (optional)
 S3_BUCKET=dubbl-uploads
 S3_REGION=us-east-1
 S3_ACCESS_KEY_ID=...
@@ -50,8 +50,8 @@ S3_ENDPOINT=https://s3.amazonaws.com
 
 ## راه‌اندازی پایگاه داده
 
-<Tabs items={["پایگاه داده جدید", "همراه با داده‌های نمایشی"]}>
-  <Tab value="پایگاه داده جدید">
+<Tabs items={["پایگاه داده خام", "همراه با داده‌های نمایشی"]}>
+  <Tab value="پایگاه داده خام">
     ```bash
     pnpm db:push
     ```
@@ -64,21 +64,21 @@ S3_ENDPOINT=https://s3.amazonaws.com
   </Tab>
 </Tabs>
 
-## اجرای محیط توسعه
+## شروع محیط توسعه
 
 ```bash
 pnpm dev
 ```
 
-آدرس [http://localhost:3000](http://localhost:3000) را در مرورگر خود باز کنید.
+نشانی [http://localhost:3000](http://localhost:3000) را در مرورگر خود باز کنید.
 
 <Callout type="info">
-  اگر اسکریپت seed را اجرا کرده‌اید، می‌توانید با نام کاربری **demo@dubbl.dev** و رمز عبور **password123** وارد شوید. با این کار به یک سازمان نمایشی با داده‌های کامل شامل سرفصل حساب‌ها، مخاطبان، فاکتورهای فروش، فاکتورهای خرید، حساب‌های بانکی، پروژه‌ها و موارد دیگر دسترسی خواهید داشت.
+  اگر اسکریپت seed را اجرا کرده‌اید، با اطلاعات کاربری **demo@dubbl.dev** / **password123** وارد شوید. این کار دسترسی به یک سازمان نمایشی با داده‌های کامل از جمله سرفصل حساب‌ها، مخاطبان، فاکتورهای فروش، صورت‌حساب‌های خرید، حساب‌های بانکی، پروژه‌ها و موارد دیگر را در اختیارتان قرار می‌دهد.
 </Callout>
 
 ## مراحل بعدی
 
-- [راهنمای میزبانی شخصی](/docs/self-hosting) - استقرار روی پروداکشن با داکر
-- [سرفصل حساب‌ها](/docs/modules/chart-of-accounts) - تنظیم حساب‌های مالی
+- [راهنمای میزبانی شخصی](/docs/self-hosting) - استقرار در محیط عملیاتی با Docker
+- [سرفصل حساب‌ها](/docs/modules/chart-of-accounts) - تنظیم و پیکربندی حساب‌های مالی
 - [صدور فاکتور](/docs/modules/invoicing) - ایجاد و ارسال فاکتورها
-- [مفاهیم حسابداری](/docs/concepts) - یادگیری اصول حسابداری دوبل
+- [مفاهیم حسابداری](/docs/concepts) - یادگیری مبانی حسابداری دوطرفه

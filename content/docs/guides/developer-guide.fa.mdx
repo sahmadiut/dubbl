@@ -1,6 +1,6 @@
 ---
 title: راهنمای توسعه‌دهندگان
-description: نمای کلی معماری فنی، ساختار پروژه و استانداردهای مشارکت در دابل.
+description: نمای کلی معماری و قراردادها برای مشارکت در توسعه dubbl.
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -9,51 +9,51 @@ import { Steps, Step } from "fumadocs-ui/components/steps";
 ## پشته فناوری (Tech Stack)
 
 - **فریم‌ورک** - [Next.js](https://nextjs.org) نسخه ۱۶ (App Router)
-- **پایگاه داده** - [PostgreSQL](https://www.postgresql.org) نسخه ۱۵+ با [Drizzle ORM](https://orm.drizzle.team)
+- **پایگاه داده** - [PostgreSQL](https://www.postgresql.org) نسخه ۱۵ به بالا به همراه [Drizzle ORM](https://orm.drizzle.team)
 - **احراز هویت** - [NextAuth.js](https://next-auth.js.org) نسخه ۵
-- **رابط کاربری** - [Tailwind CSS](https://tailwindcss.com) نسخه ۴ + [shadcn/ui](https://ui.shadcn.com) + [Radix UI](https://www.radix-ui.com)
+- **رابط کاربری (UI)** - [Tailwind CSS](https://tailwindcss.com) نسخه ۴ + [shadcn/ui](https://ui.shadcn.com) + [Radix UI](https://www.radix-ui.com)
 - **اعتبارسنجی** - [Zod](https://zod.dev)
 - **مستندات** - [Fumadocs](https://fumadocs.vercel.app)
 - **پرداخت‌ها** - [Stripe](https://stripe.com)
 
-## ساختار پوشه‌ها و پروژه
+## ساختار پروژه
 
 ```
 dubbl/
-├── app/                    # ساختار App Router در Next.js
-│   ├── (landing)/          # صفحات عمومی معرفی
-│   ├── (auth)/             # ورود، ثبت‌نام، رضایت OAuth
+├── app/                    # مسیرهای App Router در Next.js
+│   ├── (landing)/          # صفحات فرود عمومی
+│   ├── (auth)/             # ورود، ثبت‌نام، رضایت‌نامه OAuth
 │   ├── (dashboard)/        # مسیرهای محافظت‌شده پیشخوان
-│   ├── api/                # مسیرهای REST API + سرور MCP
+│   ├── api/                # وب‌سرویس REST + سرور MCP
 │   ├── docs/               # صفحات مستندات
 │   └── .well-known/        # متادیتای OAuth
 ├── components/
 │   ├── dashboard/          # کامپوننت‌های اختصاصی پیشخوان
-│   ├── shared/             # کامپوننت‌های مشترک (لوگو، تغییر پوسته)
+│   ├── shared/             # کامپوننت‌های با قابلیت استفاده مجدد (لوگو، تغییر تم)
 │   ├── ui/                 # کامپوننت‌های پایه shadcn/ui
 │   ├── landing/            # کامپوننت‌های صفحه فرود
-│   └── onboarding/         # فرآیند آنبوردینگ و شروع
+│   └── onboarding/         # فرایند آشناسازی و راه‌اندازی اولیه
 ├── lib/
-│   ├── api/                # توابع کمکی API (احراز هویت، صفحه‌بندی، پاسخ‌ها)
-│   ├── db/                 # اینستنس و اسکیماهای Drizzle ORM
+│   ├── api/                # ابزارهای کمکی API (احراز هویت، صفحه‌بندی، پاسخ‌ها)
+│   ├── db/                 # نمونه Drizzle ORM و اسکیمای پایگاه داده
 │   ├── mcp/                # سرور MCP، احراز هویت و ابزارها
-│   ├── banking/            # توابع بانکی و مغایرت‌گیری
-│   ├── currency/           # پشتیبانی از چندارزی
-│   ├── documents/          # تولید اسناد و PDF
+│   ├── banking/            # یکپارچه‌سازی‌های بانکی
+│   ├── currency/           # پشتیبانی از چند ارزی
+│   ├── documents/          # تولید اسناد PDF
 │   ├── email/              # قالب‌های ایمیل
 │   ├── payroll/            # محاسبات حقوق و دستمزد
-│   ├── tax/                # منطق محاسبات مالیاتی حوزه‌های مختلف
-│   └── workflows/          # گردش‌های کاری خودکار
-├── content/docs/           # محتوای مستندات MDX
+│   ├── tax/                # منطق مالیات به تفکیک حوزه قضایی
+│   └── workflows/          # جریان‌های کاری خودکار
+├── content/docs/           # محتوای MDX مستندات
 ├── drizzle/                # مایگریشن‌های پایگاه داده
-└── public/                 # دارایی‌های ایستا
+└── public/                 # فایل‌های استاتیک
 ```
 
 ## راه‌اندازی محیط توسعه
 
 <Steps>
   <Step>
-    ### کلون مخزن و نصب وابستگی‌ها
+    ### کلون کردن و نصب وابستگی‌ها
 
     ```bash
     git clone https://github.com/dubbl-org/dubbl.git
@@ -61,24 +61,24 @@ dubbl/
     ```
   </Step>
   <Step>
-    ### تنظیم متغیرهای محیطی
+    ### پیکربندی متغیرهای محیطی
 
     ```bash
     cp .env.example .env
     ```
 
-    در کمترین حالت مقادیر `DATABASE_URL`، `AUTH_SECRET` و `AUTH_URL` باید مقداردهی شوند.
+    در حداقل حالت، به مقادیر `DATABASE_URL`، `AUTH_SECRET` و `AUTH_URL` نیاز خواهید داشت.
   </Step>
   <Step>
-    ### راه‌اندازی دیتابیس
+    ### راه‌اندازی پایگاه داده
 
     ```bash
     pnpm db:push    # اعمال اسکیما روی پایگاه داده
-    pnpm db:seed    # درج داده‌های نمونه و اولیه (اختیاری)
+    pnpm db:seed    # پر کردن با داده‌های آزمایشی (اختیاری)
     ```
   </Step>
   <Step>
-    ### اجرای سرور توسعه
+    ### شروع محیط توسعه
 
     ```bash
     pnpm dev
@@ -86,25 +86,226 @@ dubbl/
   </Step>
 </Steps>
 
-### اسکریپت‌های در دسترس
+### اسکریپت‌های موجود
 
-| دستور | شرح |
-|---|---|
-| `pnpm dev` | اجرای سرور محلی Next.js |
-| `pnpm lint` | بررسی کدها با ESLint |
-| `pnpm db:push` | اعمال تغییرات اسکیما روی دیتابیس |
-| `pnpm db:generate` | تولید فایل‌های مایگریشن Drizzle |
-| `pnpm db:studio` | باز کردن رابط کاربری گرافیکی Drizzle Studio |
-| `pnpm db:seed` | تزریق داده‌های آزمایشی به دیتابیس |
+| اسکریپت | توضیحات |
+|--------|-------------|
+| `pnpm dev` | راه‌اندازی سرور توسعه Next.js |
+| `pnpm lint` | اجرای ESLint |
+| `pnpm db:push` | اعمال اسکیمای Drizzle روی پایگاه داده |
+| `pnpm db:generate` | تولید مایگریشن‌های Drizzle |
+| `pnpm db:studio` | باز کردن رابط کاربری Drizzle Studio |
+| `pnpm db:seed` | درج داده‌های نمونه و نمایشی در پایگاه داده |
 
 <Callout type="info">
-  برای اعتبارسنجی تغییرات در جریان توسعه از `pnpm lint` یا `pnpm typecheck` استفاده کنید و از اجرای بیلد کامل اجتناب نمایید.
+  برای بررسی صحت تغییرات، از `pnpm lint` یا دستور `npx tsc --noEmit` استفاده کنید. در حین توسعه از اجرای بیلد کامل (`pnpm build`) خودداری نمایید.
 </Callout>
 
-## پایگاه داده و اصول ذخیره‌سازی
+## پایگاه داده
 
-- شناسه‌های اصلی (Primary Keys) از نوع UUID هستند
-- مبالغ مالی به صورت **عدد صحیح بر حسب کوچک‌ترین واحد پول (Minor Units/Cents)** ذخیره می‌شوند (مثلاً ۱۲.۵۰ دلار به صورت ۱۲۵۰)
-- برای حذف نرم (Soft-delete) از ستون برچسب زمانی `deletedAt` استفاده می‌شود
-- تمام جداول وابسته به سازمان دارای کلید خارجی `organizationId` هستند
-- جهت تبدیل مقادیر از توابع کمکی `lib/money.ts` بهره ببرید
+### طرحواره (اسکما)
+
+طرحواره‌های پایگاه داده در مسیر `lib/db/schema/` قرار دارند و بر اساس دامنه دسته‌بندی شده‌اند:
+
+| فایل | دامنه |
+|------|--------|
+| `auth.ts` | کاربران، حساب‌ها، نشست‌ها |
+| `bookkeeping.ts` | فهرست حساب‌ها (کدینگ)، اسناد روزنامه |
+| `invoicing.ts` | فاکتورها، اعلامیه‌های بستانکار، فاکتورهای دوره‌ای |
+| `bills.ts` | صورت‌حساب‌ها، سفارش‌های خرید، هزینه‌ها |
+| `contacts.ts` | مشتریان، تأمین‌کنندگان |
+| `banking.ts` | حساب‌های بانکی، تراکنش‌ها، مغایرت‌گیری |
+| `inventory.ts` | اقلام، انبارها، انبارگردانی |
+| `payroll.ts` | کارکنان، دوره‌های پرداخت حقوق، تایم‌شیت‌ها |
+| `crm.ts` | پایپ‌لاین‌ها، معاملات |
+| `budgets.ts` | بودجه‌ها، ردیف‌های بودجه |
+| `projects.ts` | پروژه‌ها، وظایف، نقاط عطف |
+| `mcp.ts` | کلاینت‌های OAuth، توکن‌ها، کدهای احراز مجوز |
+
+تمامی طرحواره‌ها از فایل `lib/db/schema/index.ts` مجدداً صادر (re-export) می‌شوند.
+
+### قراردادها
+
+- کلیدهای اصلی (Primary keys) از نوع UUID هستند که با `crypto.randomUUID()` ایجاد می‌شوند.
+- مبالغ مالی به صورت **عدد صحیح بر حسب سنت** ذخیره می‌شوند (مثلاً `$12.50` = `1250`).
+- حذف نرم (Soft delete) از ستون برچسب زمانی `deletedAt` استفاده می‌کند.
+- هر جدولی که متعلق به یک سازمان است، دارای یک کلید خارجی `organizationId` است.
+- برای تبدیل‌ها از `centsToDecimal()` و `decimalToCents()` در `lib/money.ts` استفاده کنید.
+
+### اعمال تغییرات در طرحواره
+
+```bash
+# ویرایش یک فایل طرحواره در lib/db/schema/
+# سپس اعمال تغییرات روی پایگاه داده محلی خود:
+pnpm db:push
+```
+
+## مسیرهای API
+
+### ساختار
+
+مسیرهای REST API در مسیر `app/api/v1/` قرار دارند. هر فایل مسیر، توابع پردازشگر متدهای HTTP را صادر (export) می‌کند:
+
+```ts
+// app/api/v1/contacts/route.ts
+import { getAuthContext } from "@/lib/api/auth-context";
+import { ok, created, handleError } from "@/lib/api/response";
+
+export async function GET(req: Request) {
+  try {
+    const ctx = await getAuthContext(req);
+    // ... استعلام از پایگاه داده
+    return ok({ data: contacts });
+  } catch (e) {
+    return handleError(e);
+  }
+}
+```
+
+### توابع کمکی کلیدی
+
+- **`getAuthContext(req)`** - کاربر، سازمان و نقش احراز هویت شده را از درخواست استخراج می‌کند. در صورت عدم احراز هویت، خطای `AuthError` ایجاد می‌کند.
+- **`requireRole(ctx, permission)`** - بررسی می‌کند که آیا کاربر مجوز خاصی دارد یا خیر (مثلاً `"manage:invoices"`). در صورت عدم دسترسی، خطا ایجاد می‌کند.
+- **`ok()` / `created()` / `error()`** - توابع کمکی استاندارد برای ارسال پاسخ JSON در `lib/api/response.ts`.
+- **`handleError(e)`** - خطاهای `AuthError`، `ZodError` و خطاهای عمومی را دریافت کرده و پاسخ‌های HTTP مناسب را بازمی‌گرداند.
+- **`parsePagination(url)`** - پارامترهای `page` و `limit` را از پارامترهای پرسمان (query params) استخراج می‌کند. تابع `paginatedResponse()` نتیجه را قالب‌بندی می‌کند.
+- **`getNextNumber(orgId, type)`** - شماره‌های متوالی را برای فاکتورها، صورت‌حساب‌ها و غیره تولید می‌کند.
+
+### احراز هویت
+
+مسیرهای API از دو روش احراز هویت پشتیبانی می‌کنند:
+
+1. **کوکی‌های نشست (Session cookies)** - هنگام ارسال درخواست از برنامه تحت وب، به‌طور خودکار ضمیمه می‌شوند.
+2. **کلیدهای API** - از طریق هدر `Authorization: Bearer <api-key>` به همراه هدر `x-organization-id` ارسال می‌شوند.
+
+هر دو روش به شیء یکسان `AuthContext` منتهی می‌شوند: `{ userId, organizationId, role }`.
+
+### مجوزها
+
+نقش‌ها در `lib/plans.ts` تعریف شده‌اند. هر نقش به مجموعه‌ای از مجوزها نگاشت می‌شود:
+
+- `owner` - دسترسی کامل
+- `admin` - همه‌چیز به جز صدور صورت‌حساب و پلن‌ها
+- `accountant` - عملیات مالی
+- `member` - دسترسی خواندن، دسترسی محدود برای نوشتن
+
+بررسی مجوزها با استفاده از `requireRole(ctx, "manage:invoices")` انجام می‌شود.
+
+## سرور MCP
+
+سرور MCP به عامل‌های هوش مصنوعی (AI Agents) اجازه می‌دهد از طریق [پروتکل کانتکست مدل (Model Context Protocol)](https://modelcontextprotocol.io) با dubbl تعامل داشته باشند. برای مستندات سمت کاربر، [راهنمای MCP](/docs/guides/mcp) را مشاهده کنید.
+
+### معماری
+
+- **نقطه پایانی (Endpoint)** - فایل `app/api/mcp/route.ts` انتقال از نوع Streamable HTTP را مدیریت می‌کند
+- **کارخانه سرور (Server factory)** - فایل `lib/mcp/server.ts` به ازای هر درخواست یک `McpServer` با ابزارهای ثبت‌شده ایجاد می‌کند
+- **احراز هویت (Auth)** - فایل `lib/mcp/auth.ts` توکن‌های Bearer را به `AuthContext` ترجمه می‌کند
+- **ابزارها (Tools)** - پوشه `lib/mcp/tools/` شامل تعاریف ابزارهاست که بر اساس دامنه گروه‌بندی شده‌اند
+
+### افزودن یک ابزار جدید
+
+<Steps>
+  <Step>
+    ### ایجاد یا ویرایش فایل ابزار
+
+    فایل‌های ابزار در `lib/mcp/tools/` قرار دارند و یک تابع ثبت (register function) را خروجی می‌دهند:
+
+    ```ts
+    // lib/mcp/tools/example.ts
+    import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+    import { z } from "zod";
+    import { db } from "@/lib/db";
+    import { wrapTool } from "@/lib/mcp/errors";
+    import type { AuthContext } from "@/lib/api/auth-context";
+
+    export function registerExampleTools(server: McpServer, ctx: AuthContext) {
+      server.tool(
+        "tool_name",
+        "Clear description of what this tool does and what it returns.",
+        {
+          param: z.string().describe("What this parameter is for"),
+        },
+        (params) =>
+          wrapTool(ctx, async () => {
+            // Direct database access, not HTTP calls
+            const result = await db.query.someTable.findMany({
+              where: eq(someTable.organizationId, ctx.organizationId),
+            });
+            return { data: result };
+          })
+      );
+    }
+    ```
+  </Step>
+  <Step>
+    ### ثبت در فایل اصلی (Barrel file)
+
+    تابع ثبت خود را به `lib/mcp/tools/index.ts` اضافه کنید:
+
+    ```ts
+    import { registerExampleTools } from "./example";
+
+    export function registerAllTools(server: McpServer, ctx: AuthContext) {
+      // ... existing registrations
+      registerExampleTools(server, ctx);
+    }
+    ```
+  </Step>
+  <Step>
+    ### به‌روزرسانی مستندات
+
+    ابزار جدید را به بخش ابزارهای موجود (Available Tools) در `content/docs/guides/mcp.mdx` اضافه کنید.
+  </Step>
+</Steps>
+
+### قراردادهای ابزارها
+
+- برای هر فیلد Zod از متد `.describe()` استفاده کنید
+- برای هر عملیات یک ابزار مجزا در نظر بگیرید (از ساخت ابزارهای چندمنظوره خودداری کنید)
+- کلیه مبالغ پولی به صورت عدد صحیح و به سنت (یا کوچک‌ترین واحد پولی) هستند
+- ابزارها به طور مستقیم از طریق Drizzle به پایگاه داده دسترسی پیدا می‌کنند، نه از طریق فراخوانی‌های داخلی HTTP
+- برای مدیریت یکپارچه خطاها، همواره از `wrapTool()` استفاده کنید
+- برای عملیات‌های نوشتن (Write)، دسترسی‌ها را با `requireRole(ctx, "manage:...")` بررسی کنید
+
+## فرانت‌اند (Frontend)
+
+### ساختار کامپوننت‌ها
+
+- **`components/ui/`** - کامپوننت‌های پایه‌ای shadcn/ui (دکمه‌ها، ورودی‌ها، کادرهای محاوره‌ای و غیره)
+- **`components/dashboard/`** - کامپوننت‌های مختص داشبورد (نوار کناری، نوار بالا، کشوی ایجاد، جداول داده‌ها)
+- **`components/shared/`** - کامپوننت‌های مشترک بین طرح‌بندی‌ها (لوگو، تغییردهنده تم)
+
+### طرح‌بندی داشبورد (Dashboard Layout)
+
+داشبورد از یک طرح‌بندی شامل نوار کناری (Sidebar) + نوار بالا (Topbar) استفاده می‌کند که در `app/(dashboard)/layout.tsx` تعریف شده است:
+
+- **نوار کناری (Sidebar)** (`components/dashboard/sidebar.tsx`) - ناوبری، فهرست پروژه‌ها، تغییردهنده سازمان
+- **نوار بالا (Topbar)** (`components/dashboard/topbar.tsx`) - مسیر راهنما (Breadcrumbs)، جستجو، اعلان‌ها، دکمه‌های اقدام به عمل زمینه‌ای (Contextual CTAs)
+- **کشوی ایجاد (Create Drawer)** (`components/dashboard/create-drawer.tsx`) - فرم‌های کشویی بازشونده از کنار برای ایجاد موجودیت‌ها
+
+### استایل‌دهی
+
+- استفاده از Tailwind CSS 4 همراه با متغیرهای تم اختصاصی در `app/globals.css`
+- پشتیبانی از حالت روشن و تاریک از طریق متغیرهای CSS
+- استفاده از تابع `cn()` از مسیر `lib/utils.ts` برای ادغام شرطی کلاس‌ها
+
+## مستندات
+
+مستندات با [Fumadocs](https://fumadocs.vercel.app) ساخته شده‌اند و در مسیر `content/docs/` قرار دارند:
+
+- فایل‌های MDX همراه با فرانت‌متر (`title`، `description`، `full`)
+- ترتیب صفحات توسط فایل‌های `meta.json` در هر دایرکتوری کنترل می‌شود
+- طرح‌بندی (layout) مستندات در `app/docs/layout.tsx` قرار دارد
+- پیکربندی منبع در `lib/source.ts` قرار دارد
+
+برای افزودن یک صفحه جدید:
+
+1. فایل `content/docs/<section>/my-page.mdx` را ایجاد کنید
+2. مقدار `"my-page"` را به `meta.json` آن بخش اضافه کنید
+
+## سبک کدنویسی
+
+- ابزار ESLint فرمت‌بندی یکنواخت را اعمال می‌کند
+- از الگوهای موجود در پایگاه کد استفاده کنید
+- پی‌آرها (PRها) را بر یک تغییر واحد متمرکز نگه دارید
+- در متن رابط کاربری از خط تیره بلند (em dash) استفاده نکنید — برای جداکننده‌ها از `·` و برای مقادیر خالی از `-` استفاده کنید

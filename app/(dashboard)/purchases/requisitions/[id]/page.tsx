@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
+import { requisitionStatusLabel } from "@/i18n/requisition-presentation";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -74,15 +76,16 @@ export default function RequisitionDetailPage() {
 }
 
 function RequisitionDetailContent() {
+  const t = useTranslations("Requisitions");
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [req, setReq] = useState<RequisitionDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [readError, setReadError] = useState<string | null>(null);
+  const [readError, setReadError] = useState<"detailReadFailed" | null>(null);
   const [rejectSheetOpen, setRejectSheetOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [acting, setActing] = useState(false);
-  useDocumentTitle("Purchases · Requisition Details");
+  useDocumentTitle(t("detailTitle"));
   useEntityTitle(req?.requisitionNumber);
   const orgId =
     typeof window !== "undefined"
@@ -95,13 +98,13 @@ function RequisitionDetailContent() {
     fetch(`/api/v1/purchase-requisitions/${id}`, { headers: { "x-organization-id": orgId }, signal: controller.signal })
       .then(r => { if (!r.ok) throw new Error("Could not load procurement document"); return r.json(); })
       .then(data => { if (!controller.signal.aborted) setReq(procurementDocument(data as ProcurementWire<RequisitionDetail>)); })
-      .catch(error => { if (!controller.signal.aborted) { setReq(null); setReadError(error instanceof Error ? error.message : "Invalid procurement amounts"); } })
+      .catch(() => { if (!controller.signal.aborted) { setReq(null); setReadError("detailReadFailed"); } })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
   }, [id, orgId]);
 
   async function handleSubmit() {
-    if (!orgId || !req) return;
+    if (!orgId || !req || acting) return;
     setActing(true);
     try {
       const submitRes = await fetch(`/api/v1/purchase-requisitions/${id}`, {
@@ -114,20 +117,21 @@ function RequisitionDetailContent() {
       });
       if (submitRes.ok) {
         const data = await submitRes.json();
+        if (data?.status !== "submitted") throw new Error("Invalid submit response");
         setReq((prev) => (prev ? { ...prev, status: data.status } : prev));
-        toast.success("Requisition submitted for approval");
+        toast.success(t("submitSuccess"));
       } else {
-        toast.error("Failed to submit");
+        toast.error(t("submitFailed"));
       }
     } catch {
-      toast.error("Failed to submit");
+      toast.error(t("submitFailed"));
     } finally {
       setActing(false);
     }
   }
 
   async function handleApprove() {
-    if (!orgId) return;
+    if (!orgId || acting) return;
     setActing(true);
     try {
       const res = await fetch(
@@ -138,23 +142,24 @@ function RequisitionDetailContent() {
         }
       );
       if (res.ok) {
-        await res.json();
+        const data = await res.json();
+        if (data?.status !== "approved") throw new Error("Invalid approval response");
         setReq((prev) =>
           prev ? { ...prev, status: "approved" } : prev
         );
-        toast.success("Requisition approved");
+        toast.success(t("approveSuccess"));
       } else {
-        toast.error("Failed to approve");
+        toast.error(t("approveFailed"));
       }
     } catch {
-      toast.error("Failed to approve");
+      toast.error(t("approveFailed"));
     } finally {
       setActing(false);
     }
   }
 
   async function handleReject() {
-    if (!orgId) return;
+    if (!orgId || acting) return;
     setActing(true);
     try {
       const res = await fetch(
@@ -169,7 +174,8 @@ function RequisitionDetailContent() {
         }
       );
       if (res.ok) {
-        await res.json();
+        const data = await res.json();
+        if (data?.status !== "rejected") throw new Error("Invalid rejection response");
         setReq((prev) =>
           prev
             ? {
@@ -181,19 +187,19 @@ function RequisitionDetailContent() {
         );
         setRejectSheetOpen(false);
         setRejectReason("");
-        toast.success("Requisition rejected");
+        toast.success(t("rejectSuccess"));
       } else {
-        toast.error("Failed to reject");
+        toast.error(t("rejectFailed"));
       }
     } catch {
-      toast.error("Failed to reject");
+      toast.error(t("rejectFailed"));
     } finally {
       setActing(false);
     }
   }
 
   async function handleConvert() {
-    if (!orgId) return;
+    if (!orgId || acting) return;
     setActing(true);
     try {
       const res = await fetch(
@@ -205,30 +211,30 @@ function RequisitionDetailContent() {
       );
       if (res.ok) {
         const data = await res.json();
-        toast.success("Purchase order created from this request");
+        if (typeof data?.purchaseOrder?.id !== "string" || !data.purchaseOrder.id.trim()) throw new Error("Invalid purchase order response");
+        toast.success(t("convertSuccess"));
         router.push(`/purchases/orders/${data.purchaseOrder.id}`);
       } else {
-        const err = await res.json();
-        toast.error(err.error || "Couldn't create a purchase order");
+        toast.error(t("convertFailed"));
       }
     } catch {
-      toast.error("Failed to convert");
+      toast.error(t("convertFailed"));
     } finally {
       setActing(false);
     }
   }
 
-  if (readError) return <p role="alert" className="text-sm text-red-600">{readError}</p>;
+  if (readError) return <p role="alert" className="text-sm text-red-600">{t(readError)}</p>;
   if (loading)
     return (
       <div className="space-y-6">
-        <PageHeader title="Loading..." />
+        <PageHeader title={t("loading")} />
       </div>
     );
   if (!req)
     return (
       <div className="space-y-6">
-        <PageHeader title="Requisition not found" />
+        <PageHeader title={t("notFound")} />
       </div>
     );
 
@@ -236,12 +242,12 @@ function RequisitionDetailContent() {
     <div className="space-y-6">
       <PageHeader
         title={req.requisitionNumber}
-        description={`Supplier: ${req.contact?.name || "Not assigned"}`}
+        description={t("supplierName", { name: req.contact?.name || t("notAssigned") })}
       >
         <Button variant="outline" size="sm" asChild>
           <Link href="/purchases/requisitions">
             <ArrowLeft className="mr-2 size-4" />
-            Back
+            {t("back")}
           </Link>
         </Button>
         {req.status === "draft" && (
@@ -252,7 +258,7 @@ function RequisitionDetailContent() {
             className="bg-emerald-600 hover:bg-emerald-700"
           >
             <Send className="mr-2 size-4" />
-            Submit
+            {t("submit")}
           </Button>
         )}
         {req.status === "submitted" && (
@@ -264,7 +270,7 @@ function RequisitionDetailContent() {
               className="bg-emerald-600 hover:bg-emerald-700"
             >
               <Check className="mr-2 size-4" />
-              Approve
+              {t("approve")}
             </Button>
             <Button
               size="sm"
@@ -274,7 +280,7 @@ function RequisitionDetailContent() {
               className="text-red-600"
             >
               <X className="mr-2 size-4" />
-              Reject
+              {t("reject")}
             </Button>
           </>
         )}
@@ -286,7 +292,7 @@ function RequisitionDetailContent() {
             className="bg-emerald-600 hover:bg-emerald-700"
           >
             <FileText className="mr-2 size-4" />
-            Create a purchase order
+            {t("createOrder")}
           </Button>
         )}
       </PageHeader>
@@ -296,11 +302,11 @@ function RequisitionDetailContent() {
           variant="outline"
           className={statusColors[req.status] || ""}
         >
-          {req.status}
+          {requisitionStatusLabel(t, req.status)}
         </Badge>
         <span className="text-xs sm:text-sm text-muted-foreground">
-          Requested {req.requestDate}
-          {req.requiredDate ? ` · Required by ${req.requiredDate}` : ""}
+          {t("requested", { date: req.requestDate })}
+          {req.requiredDate ? t("requiredDate", { date: req.requiredDate }) : ""}
         </span>
       </div>
 
@@ -310,7 +316,7 @@ function RequisitionDetailContent() {
           <AlertCircle className="size-5 shrink-0 text-red-600 dark:text-red-400 mt-0.5" />
           <div>
             <p className="text-sm font-medium text-red-800 dark:text-red-300">
-              Rejection Reason
+              {t("rejectionReason")}
             </p>
             <p className="text-sm text-red-700 dark:text-red-400 mt-1">
               {req.rejectionReason}
@@ -324,11 +330,11 @@ function RequisitionDetailContent() {
         <div className="flex items-center gap-2 rounded-lg border border-purple-200 bg-purple-50 p-4 dark:border-purple-900 dark:bg-purple-950/30">
           <FileText className="size-5 text-purple-600 dark:text-purple-400" />
           <p className="text-sm text-purple-800 dark:text-purple-300">
-            Converted to purchase order.
+            {t("convertedNotice")}
           </p>
           <Button variant="link" size="sm" asChild className="text-purple-700 dark:text-purple-300">
             <Link href={`/purchases/orders/${req.convertedPoId}`}>
-              View PO
+              {t("viewOrder")}
             </Link>
           </Button>
         </div>
@@ -339,13 +345,13 @@ function RequisitionDetailContent() {
         <div className="grid gap-4 sm:grid-cols-2">
           {req.reference && (
             <div className="space-y-1">
-              <p className="text-xs text-muted-foreground">Reference</p>
+              <p className="text-xs text-muted-foreground">{t("reference")}</p>
               <p className="text-sm">{req.reference}</p>
             </div>
           )}
           {req.notes && (
             <div className="space-y-1">
-              <p className="text-xs text-muted-foreground">Notes</p>
+              <p className="text-xs text-muted-foreground">{t("notes")}</p>
               <p className="text-sm">{req.notes}</p>
             </div>
           )}
@@ -365,15 +371,15 @@ function RequisitionDetailContent() {
       <Sheet open={rejectSheetOpen} onOpenChange={setRejectSheetOpen}>
         <SheetContent>
           <SheetHeader>
-            <SheetTitle>Reject Requisition</SheetTitle>
+            <SheetTitle>{t("rejectRequisition")}</SheetTitle>
           </SheetHeader>
           <div className="px-4 pb-6 space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-xs">Reason (optional)</Label>
+              <Label className="text-xs">{t("optionalReason")}</Label>
               <Textarea
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
-                placeholder="Provide a reason for rejection..."
+                placeholder={t("reasonPlaceholder")}
                 rows={3}
               />
             </div>
@@ -383,7 +389,7 @@ function RequisitionDetailContent() {
               className="w-full bg-red-600 hover:bg-red-700"
             >
               <X className="mr-2 size-4" />
-              Reject Requisition
+              {t("rejectRequisition")}
             </Button>
           </div>
         </SheetContent>

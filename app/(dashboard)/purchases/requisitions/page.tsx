@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useTranslations } from "next-intl";
+import { requisitionStatusLabel, type RequisitionTranslate } from "@/i18n/requisition-presentation";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { useRouter } from "next/navigation";
 import {
@@ -68,11 +70,11 @@ const statusColors: Record<string, string> = {
     "border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-800 dark:bg-purple-950 dark:text-purple-300",
 };
 
-function buildColumns(): Column<Requisition>[] {
+function buildColumns(t: RequisitionTranslate): Column<Requisition>[] {
   return [
     {
       key: "number",
-      header: "Number",
+      header: t("number"),
       sortKey: "number",
       className: "w-32",
       render: (r) => (
@@ -81,7 +83,7 @@ function buildColumns(): Column<Requisition>[] {
     },
     {
       key: "contact",
-      header: "Supplier",
+      header: t("supplier"),
       render: (r) => (
         <span className="text-sm font-medium">
           {r.contact?.name || "-"}
@@ -90,24 +92,24 @@ function buildColumns(): Column<Requisition>[] {
     },
     {
       key: "date",
-      header: "Request Date",
+      header: t("requestDate"),
       sortKey: "date",
       className: "w-28",
       render: (r) => <span className="text-sm">{r.requestDate}</span>,
     },
     {
       key: "status",
-      header: "Status",
+      header: t("status"),
       className: "w-28",
       render: (r) => (
         <Badge variant="outline" className={statusColors[r.status] || ""}>
-          {r.status}
+          {requisitionStatusLabel(t, r.status)}
         </Badge>
       ),
     },
     {
       key: "total",
-      header: "Total",
+      header: t("total"),
       sortKey: "total",
       className: "w-28 text-right",
       render: (r) => (
@@ -125,8 +127,9 @@ export default function RequisitionsPage() {
 }
 
 function RequisitionsContent() {
+  const t = useTranslations("Requisitions");
   const router = useRouter();
-  const [readError, setReadError] = useState<string | null>(null);
+  const [readError, setReadError] = useState<"readFailed" | null>(null);
   const generation = useRef(0);
   const [items, setItems] = useState<Requisition[]>([]);
   const [loading, setLoading] = useState(true);
@@ -163,9 +166,9 @@ function RequisitionsContent() {
       ? localStorage.getItem("activeOrgId")
       : null;
 
-  useDocumentTitle("Purchases · Requisitions");
+  useDocumentTitle(t("documentTitle"));
 
-  const columns = useMemo(() => buildColumns(), []);
+  const columns = useMemo(() => buildColumns(t), [t]);
 
   const buildParams = useCallback(
     (pg: number) => {
@@ -202,14 +205,16 @@ function RequisitionsContent() {
       .then((r) => { if (!r.ok) throw new Error("Could not load procurement documents"); return r.json(); })
       .then((data) => {
         if (cancelled) return;
-        if (data.data) setItems(data.data.map(procurementList));
+        if (!Array.isArray(data?.data)) throw new Error("Invalid requisition response");
+        const adopted = data.data.map(procurementList);
+        setItems(adopted);
         setReadError(null);
         if (data.pagination) {
           setTotalCount(data.pagination.total);
           setHasMore(data.pagination.page < data.pagination.totalPages);
         }
       })
-      .catch((error) => { if (!cancelled) { setItems([]); setReadError(error instanceof Error ? error.message : "Invalid procurement amounts"); } })
+      .catch(() => { if (!cancelled) { setItems([]); setReadError("readFailed"); } })
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
@@ -242,16 +247,19 @@ function RequisitionsContent() {
     fetch(`/api/v1/purchase-requisitions?${buildParams(nextPage)}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("Could not load requisitions"); return r.json(); })
       .then((data) => {
         if (requestGeneration !== generation.current) return;
-        if (data.data) { const adopted = data.data.map(procurementList); setItems((prev) => [...prev, ...adopted]); }
+        if (!Array.isArray(data?.data)) throw new Error("Invalid requisition response");
+        const adopted = data.data.map(procurementList);
+        setItems((prev) => [...prev, ...adopted]);
+        setReadError(null);
         if (data.pagination) {
           setPage(data.pagination.page);
           setHasMore(data.pagination.page < data.pagination.totalPages);
         }
       })
-      .catch((error) => { if (requestGeneration === generation.current) { setItems([]); setReadError(error instanceof Error ? error.message : "Invalid procurement amounts"); } })
+      .catch(() => { if (requestGeneration === generation.current) setReadError("readFailed"); })
       .finally(() => { if (requestGeneration === generation.current) setLoadingMore(false); });
   }, [loadingMore, hasMore, orgId, page, buildParams]);
 
@@ -288,9 +296,9 @@ function RequisitionsContent() {
     { search: debouncedSearch, from: dateFrom, to: dateTo, sortBy, sortOrder }), [items, debouncedSearch, dateFrom, dateTo, sortBy, sortOrder]);
 
   async function handleCreate() {
-    if (!orgId) return;
+    if (!orgId || creating) return;
     if (preview.error || formLines.some(line => !line.description.trim())) {
-      toast.error("Check every requisition line description, quantity and price"); return;
+      toast.error(t("checkLines")); return;
     }
 
     setCreating(true);
@@ -310,18 +318,15 @@ function RequisitionsContent() {
         }),
       });
 
-      if (res.ok) {
-        toast.success("Requisition created");
-        setSheetOpen(false);
-        resetForm();
-        const data = await res.json();
-        router.push(`/purchases/requisitions/${data.requisition.id}`);
-      } else {
-        const err = await res.json();
-        toast.error(err.error || "Failed to create");
-      }
+      if (!res.ok) throw new Error("Create request failed");
+      const data = await res.json();
+      if (typeof data?.requisition?.id !== "string" || !data.requisition.id.trim()) throw new Error("Invalid saved requisition");
+      toast.success(t("created"));
+      setSheetOpen(false);
+      resetForm();
+      router.push(`/purchases/requisitions/${data.requisition.id}`);
     } catch {
-      toast.error("Failed to create requisition");
+      toast.error(t("createFailed"));
     } finally {
       setCreating(false);
     }
@@ -341,12 +346,12 @@ function RequisitionsContent() {
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetContent className="max-h-[85vh]">
           <SheetHeader>
-            <SheetTitle>New Purchase Requisition</SheetTitle>
+            <SheetTitle>{t("newPurchaseRequisition")}</SheetTitle>
           </SheetHeader>
           <div className="overflow-y-auto px-4 pb-6 space-y-4">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label className="text-xs">Request Date</Label>
+                <Label className="text-xs">{t("requestDate")}</Label>
                 <Input
                   type="date"
                   value={formRequestDate}
@@ -354,7 +359,7 @@ function RequisitionsContent() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Required By</Label>
+                <Label className="text-xs">{t("requiredBy")}</Label>
                 <Input
                   type="date"
                   value={formRequiredDate}
@@ -364,27 +369,27 @@ function RequisitionsContent() {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs">Reference</Label>
+              <Label className="text-xs">{t("reference")}</Label>
               <Input
                 value={formReference}
                 onChange={(e) => setFormReference(e.target.value)}
-                placeholder="Optional reference"
+                placeholder={t("referencePlaceholder")}
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs">Notes</Label>
+              <Label className="text-xs">{t("notes")}</Label>
               <Textarea
                 value={formNotes}
                 onChange={(e) => setFormNotes(e.target.value)}
-                placeholder="Optional notes"
+                placeholder={t("notesPlaceholder")}
                 rows={2}
               />
             </div>
 
-            <Label>Supplier (optional until order conversion)</Label>
+            <Label>{t("optionalSupplier")}</Label>
             <ContactPicker value={contactId} onChange={setContactId} type="supplier" />
-            <Label>Currency</Label>
+            <Label>{t("currency")}</Label>
             <CurrencySelect value={currencyCode} onValueChange={setCurrencyCode} />
             <RequisitionLineEditor lines={formLines} onChange={setFormLines} currencyCode={currencyCode} />
 
@@ -398,7 +403,7 @@ function RequisitionsContent() {
               ) : (
                 <Plus className="mr-2 size-4" />
               )}
-              Create Requisition
+              {t("createRequisition")}
             </Button>
           </div>
         </SheetContent>
@@ -406,7 +411,7 @@ function RequisitionsContent() {
   );
 
   if (loading) return <BrandLoader />;
-  if (readError) return <p role="alert" className="text-sm text-red-600">{readError}</p>;
+  if (readError && items.length === 0) return <p role="alert" className="text-sm text-red-600">{t(readError)}</p>;
 
   if (
     totalCount === 0 &&
@@ -421,32 +426,32 @@ function RequisitionsContent() {
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-0 rounded-lg border overflow-hidden mb-8">
             {[
               {
-                label: "Draft",
-                desc: "Create requisition",
+                label: t("draft"),
+                desc: t("pipelineDraft"),
                 color: "bg-gray-400",
                 bg: "bg-gray-50 dark:bg-gray-900/30",
               },
               {
-                label: "Submitted",
-                desc: "Submit for approval",
+                label: t("submitted"),
+                desc: t("pipelineSubmitted"),
                 color: "bg-blue-500",
                 bg: "bg-blue-50 dark:bg-blue-900/20",
               },
               {
-                label: "Approved",
-                desc: "Manager approves",
+                label: t("approved"),
+                desc: t("pipelineApproved"),
                 color: "bg-emerald-500",
                 bg: "bg-emerald-50 dark:bg-emerald-900/20",
               },
               {
-                label: "Rejected",
-                desc: "Request denied",
+                label: t("rejected"),
+                desc: t("pipelineRejected"),
                 color: "bg-red-500",
                 bg: "bg-red-50 dark:bg-red-900/20",
               },
               {
-                label: "Converted",
-                desc: "Becomes a PO",
+                label: t("converted"),
+                desc: t("pipelineConverted"),
                 color: "bg-purple-500",
                 bg: "bg-purple-50 dark:bg-purple-900/20",
               },
@@ -504,10 +509,10 @@ function RequisitionsContent() {
                     }`}
                   >
                     {i % 3 === 0
-                      ? "submitted"
+                      ? t("submitted")
                       : i % 3 === 1
-                        ? "approved"
-                        : "converted"}
+                        ? t("approved")
+                        : t("converted")}
                   </div>
                   <div
                     className={`h-2.5 rounded bg-muted/40 ${i % 2 === 0 ? "w-16" : "w-14"}`}
@@ -522,11 +527,10 @@ function RequisitionsContent() {
                 <ClipboardCheck className="size-7 text-purple-600 dark:text-purple-400" />
               </div>
               <h2 className="mt-5 text-xl font-semibold tracking-tight">
-                No purchase requisitions yet
+                {t("emptyTitle")}
               </h2>
               <p className="mt-2 max-w-md text-sm text-muted-foreground leading-relaxed">
-                Create purchase requisitions to request purchases that require
-                approval before ordering.
+                {t("emptyDescription")}
               </p>
               <Button
                 onClick={() => setSheetOpen(true)}
@@ -534,7 +538,7 @@ function RequisitionsContent() {
                 className="mt-6 bg-emerald-600 hover:bg-emerald-700"
               >
                 <Plus className="mr-2 size-4" />
-                New Requisition
+                {t("newRequisition")}
               </Button>
             </div>
           </div>
@@ -551,8 +555,8 @@ function RequisitionsContent() {
       <div className="space-y-3 sm:space-y-6">
         {/* Header */}
         <PageHeader
-          title="Purchase Requisitions"
-          description="Request and approve purchases before ordering."
+          title={t("title")}
+          description={t("description")}
         >
           <Button
             size="sm"
@@ -560,35 +564,36 @@ function RequisitionsContent() {
             className="bg-emerald-600 hover:bg-emerald-700"
           >
             <Plus className="mr-2 size-4" />
-            New Requisition
+            {t("newRequisition")}
           </Button>
         </PageHeader>
 
         <div className="h-px bg-border" />
 
-        <p className="text-xs text-muted-foreground">Search, dates and sorting apply to loaded requisitions. Amount sorting groups requisitions by currency.</p>
+        {readError && <p role="alert" className="text-sm text-red-600">{t(readError)}</p>}
+        <p className="text-xs text-muted-foreground">{t("loadedScope")}</p>
         {/* Status tabs + search */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
             <Tabs value={statusFilter} onValueChange={setStatusFilter}>
               <TabsList>
                 <TabsTrigger value="all" className="whitespace-nowrap">
-                  All ({totalCount})
+                  {t("allCount", { count: totalCount })}
                 </TabsTrigger>
                 <TabsTrigger value="draft" className="whitespace-nowrap">
-                  Draft
+                  {t("draft")}
                 </TabsTrigger>
                 <TabsTrigger value="submitted" className="whitespace-nowrap">
-                  Submitted
+                  {t("submitted")}
                 </TabsTrigger>
                 <TabsTrigger value="approved" className="whitespace-nowrap">
-                  Approved
+                  {t("approved")}
                 </TabsTrigger>
                 <TabsTrigger value="rejected" className="whitespace-nowrap">
-                  Rejected
+                  {t("rejected")}
                 </TabsTrigger>
                 <TabsTrigger value="converted" className="whitespace-nowrap">
-                  Converted
+                  {t("converted")}
                 </TabsTrigger>
               </TabsList>
             </Tabs>
@@ -596,7 +601,7 @@ function RequisitionsContent() {
           <div className="relative w-full sm:max-w-xs">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <Input
-              placeholder="Search requisitions..."
+              placeholder={t("search")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9"
@@ -608,21 +613,21 @@ function RequisitionsContent() {
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-1.5">
             <span className="text-xs text-muted-foreground shrink-0">
-              From
+              {t("from")}
             </span>
             <DatePicker
               value={dateFrom}
               onChange={(v) => setDateFrom(v)}
-              placeholder="Start date"
+              placeholder={t("startDate")}
               className="h-8 w-40 text-xs"
             />
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="text-xs text-muted-foreground shrink-0">To</span>
+            <span className="text-xs text-muted-foreground shrink-0">{t("to")}</span>
             <DatePicker
               value={dateTo}
               onChange={(v) => setDateTo(v)}
-              placeholder="End date"
+              placeholder={t("endDate")}
               className="h-8 w-40 text-xs"
             />
           </div>
@@ -635,15 +640,15 @@ function RequisitionsContent() {
             }}
           >
             <SelectTrigger className="h-8 w-44 text-xs">
-              <SelectValue placeholder="Sort by..." />
+              <SelectValue placeholder={t("sortBy")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="created:desc">Newest first</SelectItem>
-              <SelectItem value="created:asc">Oldest first</SelectItem>
-              <SelectItem value="total:desc">Highest amount</SelectItem>
-              <SelectItem value="total:asc">Lowest amount</SelectItem>
-              <SelectItem value="number:asc">Number (A-Z)</SelectItem>
-              <SelectItem value="number:desc">Number (Z-A)</SelectItem>
+              <SelectItem value="created:desc">{t("newest")}</SelectItem>
+              <SelectItem value="created:asc">{t("oldest")}</SelectItem>
+              <SelectItem value="total:desc">{t("highest")}</SelectItem>
+              <SelectItem value="total:asc">{t("lowest")}</SelectItem>
+              <SelectItem value="number:asc">{t("numberAsc")}</SelectItem>
+              <SelectItem value="number:desc">{t("numberDesc")}</SelectItem>
             </SelectContent>
           </Select>
           {hasFilters && (
@@ -657,7 +662,7 @@ function RequisitionsContent() {
               }}
             >
               <X className="mr-1 size-3" />
-              Clear dates
+              {t("clearDates")}
             </Button>
           )}
         </div>
@@ -682,7 +687,7 @@ function RequisitionsContent() {
                 columns={columns}
                 data={filteredItems}
                 loading={loading}
-                emptyMessage="No requisitions match your filters."
+                emptyMessage={t("noMatches")}
                 onRowClick={(r) =>
                   router.push(`/purchases/requisitions/${r.id}`)
                 }

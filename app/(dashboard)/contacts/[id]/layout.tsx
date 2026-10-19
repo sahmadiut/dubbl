@@ -3,6 +3,8 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { useParams, useRouter, usePathname } from "next/navigation";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
+import { richTextTags } from "@/i18n/rich-text";
 import {
   ArrowLeft,
   FileText,
@@ -160,12 +162,12 @@ export function getOrgId() {
 // ---------------------------------------------------------------------------
 
 const TABS = [
-  { value: "details", label: "Details", icon: FileText },
-  { value: "activity", label: "Activity", icon: Activity },
-  { value: "statement", label: "Statement", icon: BarChart3 },
-  { value: "bookkeeping", label: "Bookkeeping", icon: BookOpen },
-  { value: "people", label: "People", icon: Users },
-  { value: "files", label: "Files", icon: Paperclip },
+  { value: "details", labelKey: "tabsDetails", icon: FileText },
+  { value: "activity", labelKey: "tabsActivity", icon: Activity },
+  { value: "statement", labelKey: "tabsStatement", icon: BarChart3 },
+  { value: "bookkeeping", labelKey: "tabsBookkeeping", icon: BookOpen },
+  { value: "people", labelKey: "tabsPeople", icon: Users },
+  { value: "files", labelKey: "tabsFiles", icon: Paperclip },
 ] as const;
 
 // ---------------------------------------------------------------------------
@@ -212,6 +214,7 @@ export function useContactContext() {
 // ---------------------------------------------------------------------------
 
 export default function ContactDetailLayout({ children }: { children: React.ReactNode }) {
+  const t = useTranslations("ContactDetails");
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const pathname = usePathname();
@@ -254,30 +257,35 @@ export default function ContactDetailLayout({ children }: { children: React.Reac
       fetch(`/api/v1/contacts?${params}`, {
         headers: { "x-organization-id": orgId },
       })
-        .then((r) => r.json())
-        .then((data) => {
-          if (data.data) {
-            setMergeResults(
-              data.data.filter(
-                (c: { id: string }) => c.id !== id
-              )
-            );
-          }
+        .then((r) => {
+          if (!r.ok) throw new Error("Contact search failed");
+          return r.json();
         })
-        .catch(() => {});
+        .then((data) => {
+          if (!Array.isArray(data.data) || !data.data.every((c: { id?: unknown; name?: unknown; email?: unknown }) =>
+            typeof c?.id === "string" && typeof c?.name === "string" && (c.email == null || typeof c.email === "string"))) {
+            throw new Error("Invalid contact search response");
+          }
+          setMergeResults(data.data.filter((c: { id: string }) => c.id !== id));
+        })
+        .catch(() => {
+          setMergeResults([]);
+          toast.error(t("searchFailed"));
+        });
     }, 250);
     return () => clearTimeout(handle);
-  }, [mergeOpen, mergeSearch, id]);
+  }, [mergeOpen, mergeSearch, id, t]);
 
   // Fold the picked duplicate INTO the contact being viewed (this one survives).
   async function handleMerge(duplicateId: string, duplicateName: string) {
     const orgId = getOrgId();
     if (!orgId || !contact) return;
     const confirmed = await confirm({
-      title: `Combine "${duplicateName}" into "${contact.name}"?`,
+      title: t("mergeConfirmTitle", { source: duplicateName, target: contact.name }),
       description:
-        "All invoices, bills, payments and other records from the duplicate will be moved onto this contact. The duplicate is then removed. This can't be undone.",
-      confirmLabel: "Combine them",
+        t("mergeConfirmDescription"),
+      confirmLabel: t("mergeConfirm"),
+      cancelLabel: t("cancel"),
       destructive: true,
     });
     if (!confirmed) return;
@@ -295,18 +303,15 @@ export default function ContactDetailLayout({ children }: { children: React.Reac
         body: JSON.stringify({ targetContactId: contact.id }),
       });
       if (res.ok) {
-        toast.success("Duplicate combined into this contact");
+        toast.success(t("merged"));
         setMergeOpen(false);
         setMergeSearch("");
         fetchContact();
       } else {
-        const data = await res.json().catch(() => ({}));
-        toast.error(
-          typeof data.error === "string"
-            ? data.error
-            : "Couldn't combine the contacts"
-        );
+        toast.error(t("mergeFailed"));
       }
+    } catch {
+      toast.error(t("mergeFailed"));
     } finally {
       setMerging(false);
     }
@@ -314,7 +319,10 @@ export default function ContactDetailLayout({ children }: { children: React.Reac
 
   const fetchContact = useCallback(async () => {
     const orgId = getOrgId();
-    if (!orgId) return;
+    if (!orgId) {
+      setLoading(false);
+      return;
+    }
 
     try {
       const res = await fetch(`/api/v1/contacts/${id}`, {
@@ -335,11 +343,11 @@ export default function ContactDetailLayout({ children }: { children: React.Reac
       }
     } catch {
       setContact(null);
-      toast.error("Unable to load valid contact amounts");
+      toast.error(t("loadFailed"));
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, t]);
 
   useEffect(() => {
     fetchContact();
@@ -358,10 +366,10 @@ export default function ContactDetailLayout({ children }: { children: React.Reac
     return (
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          This contact does not exist or has been deleted.
+          {t("missing")}
         </p>
         <Button variant="outline" size="sm" onClick={() => router.push("/contacts")}>
-          Back to Contacts
+          {t("backMissing")}
         </Button>
       </div>
     );
@@ -404,7 +412,7 @@ export default function ContactDetailLayout({ children }: { children: React.Reac
             className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="size-3.5" />
-            Back to contacts
+            {t("back")}
           </button>
           <div className="flex items-center gap-2">
             <Button
@@ -412,20 +420,20 @@ export default function ContactDetailLayout({ children }: { children: React.Reac
               size="sm"
               className="h-7 text-xs gap-1.5"
               onClick={() => setMergeOpen(true)}
-              title="Found the same contact entered twice? Combine the other one's records into this contact and remove the duplicate."
+              title={t("mergeHint")}
             >
               <Merge className="size-3" />
-              Merge duplicates
+              {t("merge")}
             </Button>
             <Button
               variant="outline"
               size="sm"
               className="h-7 text-xs gap-1.5"
               onClick={() => openDrawer("deal", { contactId: contact.id, contactName: contact.name })}
-              title="Start tracking a potential sale with this contact"
+              title={t("opportunityHint")}
             >
               <Target className="size-3" />
-              Add a sales opportunity
+              {t("opportunity")}
             </Button>
           </div>
         </div>
@@ -434,12 +442,12 @@ export default function ContactDetailLayout({ children }: { children: React.Reac
         <Dialog open={mergeOpen} onOpenChange={setMergeOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Merge a duplicate into this contact</DialogTitle>
+              <DialogTitle>{t("mergeTitle")}</DialogTitle>
               <DialogDescription>
-                Pick the other contact that&apos;s the same as this one. Its
-                invoices, bills, payments and notes move onto{" "}
-                <span className="font-medium">{contact.name}</span>, and the
-                duplicate is removed.
+                {t.rich("mergeDescription", {
+                  ...richTextTags,
+                  name: contact.name,
+                })}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-3">
@@ -447,7 +455,7 @@ export default function ContactDetailLayout({ children }: { children: React.Reac
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                 <Input
                   autoFocus
-                  placeholder="Search for the duplicate contact..."
+                  placeholder={t("mergeSearch")}
                   value={mergeSearch}
                   onChange={(e) => setMergeSearch(e.target.value)}
                   className="pl-9"
@@ -456,7 +464,7 @@ export default function ContactDetailLayout({ children }: { children: React.Reac
               <div className="max-h-72 space-y-1 overflow-y-auto">
                 {mergeResults.length === 0 ? (
                   <p className="px-1 py-6 text-center text-sm text-muted-foreground">
-                    No other contacts found.
+                    {t("mergeEmpty")}
                   </p>
                 ) : (
                   mergeResults.map((c) => (
@@ -478,7 +486,7 @@ export default function ContactDetailLayout({ children }: { children: React.Reac
                         )}
                       </span>
                       <span className="shrink-0 text-xs text-emerald-600">
-                        Merge in
+                        {t("mergeIn")}
                       </span>
                     </button>
                   ))
@@ -490,13 +498,13 @@ export default function ContactDetailLayout({ children }: { children: React.Reac
 
         {/* Tab nav */}
         <nav className="-mt-2 mb-8 flex items-center gap-1 overflow-x-auto border-b border-border">
-          {TABS.map((t) => {
-            const Icon = t.icon;
-            const tabHref = t.value === "details" ? `/contacts/${id}` : `/contacts/${id}/${t.value}`;
-            const active = activeTab === t.value;
+          {TABS.map((tab) => {
+            const Icon = tab.icon;
+            const tabHref = tab.value === "details" ? `/contacts/${id}` : `/contacts/${id}/${tab.value}`;
+            const active = activeTab === tab.value;
             return (
               <button
-                key={t.value}
+                key={tab.value}
                 onClick={() => router.push(tabHref)}
                 className={cn(
                   "flex shrink-0 items-center gap-1.5 border-b-2 px-2.5 pb-2.5 text-[13px] font-medium transition-colors",
@@ -506,8 +514,8 @@ export default function ContactDetailLayout({ children }: { children: React.Reac
                 )}
               >
                 <Icon className="size-3.5" />
-                {t.label}
-                {t.value === "people" && peopleCount > 0 && (
+                {t(tab.labelKey)}
+                {tab.value === "people" && peopleCount > 0 && (
                   <span className="ml-1 text-[11px] tabular-nums text-muted-foreground">
                     {peopleCount}
                   </span>

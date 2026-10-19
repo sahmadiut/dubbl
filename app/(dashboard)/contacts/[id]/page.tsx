@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { Section } from "@/components/dashboard/section";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +26,7 @@ import { useContactContext, getOrgId } from "./layout";
 import type { Account, TaxRate, ContactDetail } from "./layout";
 
 export default function ContactDetailsPage() {
+  const t = useTranslations("ContactDetails");
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const {
@@ -62,21 +64,35 @@ export default function ContactDetailsPage() {
     fetch("/api/v1/accounts", {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.accounts) setAccounts(data.accounts);
+      .then((r) => {
+        if (!r.ok) throw new Error("Reference request failed");
+        return r.json();
       })
-      .catch(() => {});
+      .then((data) => {
+        if (!Array.isArray(data.accounts) || !data.accounts.every((a: Partial<Account> | null) =>
+          a && typeof a.id === "string" && typeof a.code === "string" && typeof a.name === "string" && typeof a.type === "string")) {
+          throw new Error("Invalid accounts response");
+        }
+        setAccounts(data.accounts);
+      })
+      .catch(() => toast.error(t("referenceFailed")));
 
     fetch("/api/v1/tax-rates", {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.taxRates) setTaxRates(data.taxRates);
+      .then((r) => {
+        if (!r.ok) throw new Error("Reference request failed");
+        return r.json();
       })
-      .catch(() => {});
-  }, []);
+      .then((data) => {
+        if (!Array.isArray(data.taxRates) || !data.taxRates.every((rate: Partial<TaxRate> | null) =>
+          rate && typeof rate.id === "string" && typeof rate.name === "string" && typeof rate.rate === "number" && Number.isFinite(rate.rate))) {
+          throw new Error("Invalid tax rates response");
+        }
+        setTaxRates(data.taxRates);
+      })
+      .catch(() => toast.error(t("referenceFailed")));
+  }, [t]);
 
   useEffect(() => {
     fetchReferenceData();
@@ -84,10 +100,10 @@ export default function ContactDetailsPage() {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setSaving(true);
     const form = new FormData(e.currentTarget);
     const orgId = getOrgId();
     if (!orgId) return;
+    setSaving(true);
 
     const creditLimitValue = formCreditLimit;
 
@@ -128,9 +144,9 @@ export default function ContactDetailsPage() {
       setForm1099Vendor(c.is1099Vendor ?? false);
       setFormCreditLimit(c.creditLimit != null ? contactCreditDecimal(c.creditLimit, c.currencyCode) : "");
       setFormCurrencyCode(c.currencyCode || "");
-      toast.success("Contact updated");
+      toast.success(t("updated"));
     } catch {
-      toast.error("Failed to update contact");
+      toast.error(t("updateFailed"));
     } finally {
       setSaving(false);
     }
@@ -138,19 +154,26 @@ export default function ContactDetailsPage() {
 
   async function handleDelete() {
     await confirm({
-      title: "Delete this contact?",
-      description: "This contact and all associated data will be permanently deleted.",
-      confirmLabel: "Delete",
+      title: t("deleteTitle"),
+      description: t("deleteDescription"),
+      confirmLabel: t("delete"),
+      cancelLabel: t("cancel"),
       destructive: true,
       onConfirm: async () => {
         const orgId = getOrgId();
-        if (!orgId) return;
-        await fetch(`/api/v1/contacts/${id}`, {
-          method: "DELETE",
-          headers: { "x-organization-id": orgId },
-        });
-        toast.success("Contact deleted");
-        router.push("/contacts");
+        try {
+          if (!orgId) throw new Error("Organization required");
+          const res = await fetch(`/api/v1/contacts/${id}`, {
+            method: "DELETE",
+            headers: { "x-organization-id": orgId },
+          });
+          if (!res.ok) throw new Error("Contact delete failed");
+          toast.success(t("deleted"));
+          router.push("/contacts");
+        } catch {
+          toast.error(t("deleteFailed"));
+          throw new Error(t("deleteFailed"));
+        }
       },
     });
   }
@@ -161,39 +184,39 @@ export default function ContactDetailsPage() {
   return (
     <ContentReveal key="details">
       <form onSubmit={handleSubmit} className="space-y-10">
-        <Section title="General" description="Basic contact information and identification.">
+        <Section title={t("general")} description={t("generalDescription")}>
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-xs">Name</Label>
-              <Input name="name" required defaultValue={contact.name} placeholder="Contact name" />
+              <Label className="text-xs">{t("name")}</Label>
+              <Input name="name" required defaultValue={contact.name} placeholder={t("namePlaceholder")} />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label className="text-xs">Email</Label>
+                <Label className="text-xs">{t("email")}</Label>
                 <Input name="email" type="email" defaultValue={contact.email || ""} placeholder="email@example.com" />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Phone</Label>
+                <Label className="text-xs">{t("phone")}</Label>
                 <Input name="phone" defaultValue={contact.phone || ""} placeholder="+1 (555) 000-0000" />
               </div>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label className="text-xs">Type</Label>
+                <Label className="text-xs">{t("type")}</Label>
                 <Select value={formType} onValueChange={setFormType}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="customer">Customer</SelectItem>
-                    <SelectItem value="supplier">Supplier</SelectItem>
-                    <SelectItem value="both">Both</SelectItem>
+                    <SelectItem value="customer">{t("customer")}</SelectItem>
+                    <SelectItem value="supplier">{t("supplier")}</SelectItem>
+                    <SelectItem value="both">{t("both")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Tax number / VAT</Label>
-                <Input name="taxNumber" defaultValue={contact.taxNumber || ""} placeholder="e.g. US12-3456789" />
+                <Label className="text-xs">{t("taxNumber")}</Label>
+                <Input name="taxNumber" defaultValue={contact.taxNumber || ""} placeholder={t("taxPlaceholder")} />
               </div>
             </div>
           </div>
@@ -201,21 +224,21 @@ export default function ContactDetailsPage() {
 
         <div className="h-px bg-border" />
 
-        <Section title="Payment" description="Payment terms, currency, and credit settings.">
+        <Section title={t("payment")} description={t("paymentDescription")}>
           <div className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label className="text-xs">Payment terms (days)</Label>
+                <Label className="text-xs">{t("terms")}</Label>
                 <Input
                   name="paymentTermsDays"
                   type="number"
                   min={0}
                   defaultValue={contact.paymentTermsDays}
-                  placeholder="e.g. 30"
+                  placeholder={t("termsPlaceholder")}
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Currency code</Label>
+                <Label className="text-xs">{t("currency")}</Label>
                 <CurrencySelect
                   value={formCurrencyCode}
                   onValueChange={setFormCurrencyCode}
@@ -224,17 +247,17 @@ export default function ContactDetailsPage() {
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label className="text-xs">Credit limit</Label>
+                <Label className="text-xs">{t("creditLimit")}</Label>
                 <CurrencyInput
                   prefix={formCurrencyCode || undefined}
                   fractionDigits={formCurrencyCode ? currencyMetadata(formCurrencyCode).minorUnits : 2}
                   value={formCreditLimit}
                   onChange={setFormCreditLimit}
-                  placeholder="No limit"
+                  placeholder={t("noLimit")}
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Tax status</Label>
+                <Label className="text-xs">{t("taxStatus")}</Label>
                 <div className="flex h-9 items-center space-x-2">
                   <Checkbox
                     id="isTaxExempt"
@@ -247,13 +270,13 @@ export default function ContactDetailsPage() {
                     htmlFor="isTaxExempt"
                     className="cursor-pointer text-sm font-normal"
                   >
-                    Don&apos;t charge tax to this contact
+                    {t("taxExempt")}
                   </Label>
                 </div>
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">US tax reporting</Label>
+              <Label className="text-xs">{t("usTax")}</Label>
               <div className="flex items-start space-x-2">
                 <Checkbox
                   id="is1099Vendor"
@@ -267,10 +290,9 @@ export default function ContactDetailsPage() {
                   htmlFor="is1099Vendor"
                   className="cursor-pointer text-sm font-normal leading-snug"
                 >
-                  Track this supplier for a 1099
+                  {t("vendor1099")}
                   <span className="block text-[12px] font-normal text-muted-foreground">
-                    Turn on for US contractors you pay $600 or more in a year, so
-                    they appear on your year-end 1099 list.
+                    {t("vendor1099Hint")}
                   </span>
                 </Label>
               </div>
@@ -280,19 +302,19 @@ export default function ContactDetailsPage() {
 
         <div className="h-px bg-border" />
 
-        <Section title="Default accounts" description="Where money from this contact lands in your books by default.">
+        <Section title={t("accounts")} description={t("accountsDescription")}>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label className="text-xs">Income account (money they pay you)</Label>
+              <Label className="text-xs">{t("incomeAccount")}</Label>
               <Select
                 value={formRevenueAccountId}
                 onValueChange={setFormRevenueAccountId}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select account" />
+                  <SelectValue placeholder={t("selectAccount")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
+                  <SelectItem value="none">{t("none")}</SelectItem>
                   {revenueAccounts.map((a) => (
                     <SelectItem key={a.id} value={a.id}>
                       {a.code} - {a.name}
@@ -302,16 +324,16 @@ export default function ContactDetailsPage() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Spending account (money you pay them)</Label>
+              <Label className="text-xs">{t("expenseAccount")}</Label>
               <Select
                 value={formExpenseAccountId}
                 onValueChange={setFormExpenseAccountId}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select account" />
+                  <SelectValue placeholder={t("selectAccount")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
+                  <SelectItem value="none">{t("none")}</SelectItem>
                   {expenseAccounts.map((a) => (
                     <SelectItem key={a.id} value={a.id}>
                       {a.code} - {a.name}
@@ -325,17 +347,17 @@ export default function ContactDetailsPage() {
 
         <div className="h-px bg-border" />
 
-        <Section title="Default tax rate" description="Automatically applied when creating invoices or bills for this contact.">
+        <Section title={t("taxRate")} description={t("taxRateDescription")}>
           <div className="max-w-xs">
             <Select
               value={formTaxRateId}
               onValueChange={setFormTaxRateId}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select tax rate" />
+                <SelectValue placeholder={t("selectTaxRate")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">None</SelectItem>
+                <SelectItem value="none">{t("none")}</SelectItem>
                 {taxRates.map((t) => (
                   <SelectItem key={t.id} value={t.id}>
                     {t.name} ({(t.rate / 100).toFixed(1)}%)
@@ -348,12 +370,12 @@ export default function ContactDetailsPage() {
 
         <div className="h-px bg-border" />
 
-        <Section title="Notes" description="Internal notes about this contact.">
+        <Section title={t("notes")} description={t("notesDescription")}>
           <Textarea
             name="notes"
             defaultValue={contact.notes || ""}
             rows={3}
-            placeholder="Internal notes..."
+            placeholder={t("notesPlaceholder")}
           />
         </Section>
 
@@ -366,28 +388,29 @@ export default function ContactDetailsPage() {
             size="sm"
             className="bg-emerald-600 hover:bg-emerald-700"
           >
-            Save changes
+            {saving ? t("saving") : t("save")}
           </Button>
         </div>
 
         <div className="h-px bg-border" />
 
         {/* Danger zone */}
-        <Section title="Danger zone" description="Irreversible actions for this contact.">
+        <Section title={t("danger")} description={t("dangerDescription")}>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-md border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900/50 dark:bg-red-950/20">
             <div>
-              <p className="text-sm font-medium text-red-600 dark:text-red-400">Delete contact</p>
+              <p className="text-sm font-medium text-red-600 dark:text-red-400">{t("deleteContact")}</p>
               <p className="text-[12px] text-muted-foreground">
-                Permanently delete this contact and all associated data.
+                {t("deleteHint")}
               </p>
             </div>
             <Button
               variant="destructive"
+              type="button"
               size="sm"
               loading={deleting}
               onClick={handleDelete}
             >
-              Delete
+              {t("delete")}
             </Button>
           </div>
         </Section>

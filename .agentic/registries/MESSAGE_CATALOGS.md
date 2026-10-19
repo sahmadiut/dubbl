@@ -160,7 +160,7 @@ Extraction ownership:
 | LOC-027 | LOC-007 child: contacts |
 | LOC-057 | LOC-027 child: contact people/files; see [scope](CONTACT_PEOPLE_FILES_CATALOGS.md) |
 | LOC-058 | LOC-027 child: contact list/picker/creation; see [scope](CONTACT_LIST_CATALOGS.md) |
-| LOC-059 | LOC-027 child: contact detail shell/overview |
+| LOC-059 | LOC-027 child: contact detail shell/overview; see [scope](CONTACT_DETAIL_CATALOGS.md) |
 | LOC-060 | LOC-027 child: contact financial tabs |
 | LOC-028 | LOC-007 child: tax |
 | LOC-061 | LOC-028 child: tax rate and navigation; see [scope](TAX_RATE_CATALOGS.md) |

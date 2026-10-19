@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
+import { taxPeriodTypeKey, taxPeriodStatusKey } from "@/lib/i18n/tax-period-presentation";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -67,12 +69,6 @@ const STATUS_STYLES: Record<string, string> = {
     "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300",
 };
 
-const STATUS_LABELS: Record<string, string> = {
-  open: "Open",
-  filed: "Submitted",
-  amended: "Amended",
-};
-
 function fmtDate(d: string | null): string {
   if (!d) return "—";
   return new Date(d).toLocaleDateString("en-US", {
@@ -105,6 +101,7 @@ function SettleSheet({
   netAmount: bigint | null;
   currency: string;
 }) {
+  const t = useTranslations("TaxPeriods");
   const [bankGlAccountId, setBankGlAccountId] = useState("");
   const [amount, setAmount] = useState("");
   const [direction, setDirection] = useState<"pay" | "refund">(
@@ -129,15 +126,16 @@ function SettleSheet({
     e.preventDefault();
     if (!orgId || localStorage.getItem("activeOrgId") !== orgId) return;
     if (!bankGlAccountId) {
-      toast.error("Choose which account the money moves through");
+      toast.error(t("chooseAccount"));
       return;
     }
     const parsed = taxUiSettlement(amount, currency);
     if (parsed.error) {
-      toast.error(parsed.error);
+      toast.error(amount === "" ? t("enterAmount") : t("invalidAmount"));
       return;
     }
     setSaving(true);
+    let mismatch = false;
     try {
       const res = await fetch(`/api/v1/tax-periods/${period.id}/file`, {
         method: "POST",
@@ -155,24 +153,22 @@ function SettleSheet({
         }),
       });
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Failed");
+        throw new Error("Failed");
       }
       const saved = await res.json();
-      if (taxUiCurrency(saved.currencyCode) !== currency || taxUiMinor(saved.amount, saved.amountMinor) !== parsed.amount) throw new Error("Settlement amount or currency disagrees with the preview");
+      if (taxUiCurrency(saved.currencyCode) !== currency || taxUiMinor(saved.amount, saved.amountMinor) !== parsed.amount) {
+        mismatch = true;
+        throw new Error("Settlement mismatch");
+      }
       toast.success(
         direction === "refund"
-          ? "Refund recorded"
-          : "Payment to the tax office recorded"
+          ? t("refundRecorded")
+          : t("paymentRecorded")
       );
       onClose();
       onSettled();
-    } catch (err) {
-      toast.error(
-        err instanceof Error && err.message !== "Failed"
-          ? err.message
-          : "Couldn't record the settlement"
-      );
+    } catch {
+      toast.error(mismatch ? t("settlementMismatch") : t("settlementFailed"));
     } finally {
       setSaving(false);
     }
@@ -187,16 +183,15 @@ function SettleSheet({
     >
       <SheetContent>
         <SheetHeader>
-          <SheetTitle>Record settlement</SheetTitle>
+          <SheetTitle>{t("settlementTitle")}</SheetTitle>
         </SheetHeader>
         <form onSubmit={handleSettle} className="space-y-4 px-4">
           <p className="text-sm text-muted-foreground">
-            Record the money you paid to the tax office, or the refund you
-            received from them, for &quot;{period.name}&quot;.
+            {t("settlementHelp", { name: period.name })}
           </p>
 
           <div className="space-y-2">
-            <Label>What happened</Label>
+            <Label>{t("whatHappened")}</Label>
             <Select
               value={direction}
               onValueChange={(v) => setDirection(v as "pay" | "refund")}
@@ -205,9 +200,9 @@ function SettleSheet({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="pay">I paid the tax office</SelectItem>
+                <SelectItem value="pay">{t("paidOffice")}</SelectItem>
                 <SelectItem value="refund">
-                  I received a refund from the tax office
+                  {t("receivedRefund")}
                 </SelectItem>
               </SelectContent>
             </Select>
@@ -216,8 +211,8 @@ function SettleSheet({
           <div className="space-y-2">
             <Label>
               {direction === "refund"
-                ? "Account the refund went into"
-                : "Account the payment came from"}
+                ? t("refundAccount")
+                : t("paymentAccount")}
             </Label>
             <AccountPicker
               value={bankGlAccountId}
@@ -225,12 +220,12 @@ function SettleSheet({
               typeFilter={["asset"]}
               currencyFilter={currency}
               subTypeFilter="bank"
-              placeholder="Select bank or cash account..."
+              placeholder={t("accountPlaceholder")}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="tax-settlement-amount">Amount ({currency})</Label>
+            <Label htmlFor="tax-settlement-amount">{t("amountCurrency", { currency })}</Label>
             <Input
               id="tax-settlement-amount"
               inputMode="decimal"
@@ -244,7 +239,7 @@ function SettleSheet({
           <TaxSettlementPreview amount={amount} currency={currency} />
 
           <div className="space-y-2">
-            <Label>Date</Label>
+            <Label>{t("date")}</Label>
             <Input
               type="date"
               value={date}
@@ -254,11 +249,11 @@ function SettleSheet({
           </div>
 
           <div className="space-y-2">
-            <Label>Reference (optional)</Label>
+            <Label>{t("reference")}</Label>
             <Input
               value={reference}
               onChange={(e) => setReference(e.target.value)}
-              placeholder="e.g. payment confirmation"
+              placeholder={t("referencePlaceholder")}
             />
           </div>
 
@@ -268,10 +263,10 @@ function SettleSheet({
             className="w-full bg-emerald-600 hover:bg-emerald-700"
           >
             {saving
-              ? "Saving..."
+              ? t("saving")
               : direction === "refund"
-                ? "Record refund"
-                : "Record payment"}
+                ? t("recordRefund")
+                : t("recordPayment")}
           </Button>
         </form>
       </SheetContent>
@@ -290,6 +285,7 @@ export default function TaxPeriodDetailPage() {
 }
 
 function TaxPeriodWorkspace({ id, orgId }: { id: string; orgId: string | null }) {
+  const t = useTranslations("TaxPeriods");
   const [period, setPeriod] = useState<TaxPeriodDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [settleOpen, setSettleOpen] = useState(false);
@@ -300,7 +296,7 @@ function TaxPeriodWorkspace({ id, orgId }: { id: string; orgId: string | null })
   useEntityTitle(period?.name);
 
   const fetchPeriod = useCallback(async (signal?: AbortSignal) => {
-    if (!orgId) return;
+    if (!orgId) { setLoading(false); return; }
     try {
       const options = { headers: { "x-organization-id": orgId }, signal };
       const [res, orgRes] = await Promise.all([fetch(`/api/v1/tax-periods/${id}`, options), fetch("/api/v1/organization", options)]);
@@ -309,12 +305,12 @@ function TaxPeriodWorkspace({ id, orgId }: { id: string; orgId: string | null })
       const code = taxUiCurrency(orgData.organization?.defaultCurrency);
       const lines = taxUiRows(data.taxPeriod?.lines as (Omit<TaxReturnLine, "amount"> & { amount: number })[], ["amount"]);
       if (!signal?.aborted) { setPeriod({ ...data.taxPeriod, lines }); setCurrency(code); setError(null); }
-    } catch (err) {
-      if (!signal?.aborted) { setPeriod(null); setError(err instanceof Error ? err.message : "Invalid tax period"); }
+    } catch {
+      if (!signal?.aborted) { setPeriod(null); setError(t("loadDetailFailed")); }
     } finally {
       if (!signal?.aborted) setLoading(false);
     }
-  }, [id, orgId]);
+  }, [id, orgId, t]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -325,7 +321,7 @@ function TaxPeriodWorkspace({ id, orgId }: { id: string; orgId: string | null })
   if (loading) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Loading..." />
+        <PageHeader title={t("loading")} />
         <BrandLoader className="h-48" />
       </div>
     );
@@ -335,11 +331,11 @@ function TaxPeriodWorkspace({ id, orgId }: { id: string; orgId: string | null })
     return (
       <div className="space-y-6">
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-        <PageHeader title="Tax period not found">
+        <PageHeader title={t("notFound")}>
           <Button variant="outline" size="sm" asChild>
             <Link href="/tax/periods">
               <ArrowLeft className="mr-2 size-4" />
-              Back
+              {t("back")}
             </Link>
           </Button>
         </PageHeader>
@@ -366,7 +362,7 @@ function TaxPeriodWorkspace({ id, orgId }: { id: string; orgId: string | null })
         <Button variant="outline" size="sm" asChild>
           <Link href="/tax/periods">
             <ArrowLeft className="mr-2 size-4" />
-            Back
+            {t("back")}
           </Link>
         </Button>
       </PageHeader>
@@ -377,20 +373,20 @@ function TaxPeriodWorkspace({ id, orgId }: { id: string; orgId: string | null })
           variant="outline"
           className={cn(STATUS_STYLES[period.status] || "")}
         >
-          {STATUS_LABELS[period.status] || period.status}
+          {t(taxPeriodStatusKey(period.status))}
         </Badge>
         <span className="flex items-center gap-1.5 text-xs sm:text-sm text-muted-foreground">
           <CalendarDays className="size-3.5" />
-          {period.type.charAt(0).toUpperCase() + period.type.slice(1)}
+          {t(taxPeriodTypeKey(period.type))}
         </span>
         {period.filedAt && (
           <span className="text-xs sm:text-sm text-muted-foreground">
-            Submitted {fmtDate(period.filedAt)}
+            {t("submittedDate", { date: fmtDate(period.filedAt) })}
           </span>
         )}
         {period.filedReference && (
           <span className="text-xs sm:text-sm text-muted-foreground">
-            Ref: {period.filedReference}
+            {t("referenceValue", { reference: period.filedReference })}
           </span>
         )}
       </div>
@@ -402,15 +398,15 @@ function TaxPeriodWorkspace({ id, orgId }: { id: string; orgId: string | null })
             <Banknote className="size-4 text-emerald-600 dark:text-emerald-400" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium">Settle this return</p>
+            <p className="text-sm font-medium">{t("settleTitle")}</p>
             <p className="text-xs text-muted-foreground">
               {netAmount == null
-                ? "Record the payment to, or refund from, the tax office."
+                ? t("settleHelp")
                 : netAmount < 0
-                  ? `You should receive ${taxUiMoney(taxUiAbs(netAmount), currency)} back from the tax office.`
+                  ? t("refundDue", { amount: taxUiMoney(taxUiAbs(netAmount), currency) })
                   : netAmount > 0
-                    ? `You owe ${taxUiMoney(netAmount, currency)} to the tax office.`
-                    : "Nothing to pay or reclaim for this return."}
+                    ? t("paymentDue", { amount: taxUiMoney(netAmount, currency) })
+                    : t("nothingDue")}
             </p>
           </div>
           <Button
@@ -419,7 +415,7 @@ function TaxPeriodWorkspace({ id, orgId }: { id: string; orgId: string | null })
             onClick={() => setSettleOpen(true)}
           >
             <Banknote className="mr-1.5 size-3.5" />
-            Record payment / refund
+            {t("recordSettlement")}
           </Button>
         </div>
       )}
@@ -428,20 +424,20 @@ function TaxPeriodWorkspace({ id, orgId }: { id: string; orgId: string | null })
       {lines.length > 0 ? (
         <div className="space-y-3">
           <p className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-            Return boxes
+            {t("returnBoxes")}
           </p>
           <div className="overflow-x-auto rounded-lg border">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/30">
                   <th className="w-16 px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">
-                    Box
+                    {t("box")}
                   </th>
                   <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">
-                    Description
+                    {t("boxDescription")}
                   </th>
                   <th className="px-4 py-2.5 text-right text-xs font-medium text-muted-foreground">
-                    Amount
+                    {t("amount")}
                   </th>
                 </tr>
               </thead>
@@ -481,8 +477,8 @@ function TaxPeriodWorkspace({ id, orgId }: { id: string; orgId: string | null })
             <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <CheckCircle2 className="size-3.5 text-emerald-600" />
               {netAmount < 0
-                ? "Box 5 is negative — this is a refund due to you."
-                : "Box 5 is the net amount payable to the tax office."}
+                ? t("negativeBoxHelp")
+                : t("netBoxHelp")}
             </p>
           )}
         </div>
@@ -491,11 +487,11 @@ function TaxPeriodWorkspace({ id, orgId }: { id: string; orgId: string | null })
           <div className="flex size-12 items-center justify-center rounded-2xl bg-muted">
             <Receipt className="size-6 text-muted-foreground" />
           </div>
-          <h3 className="mt-4 text-sm font-medium">No filed boxes yet</h3>
+          <h3 className="mt-4 text-sm font-medium">{t("noBoxes")}</h3>
           <p className="mt-1 max-w-sm text-xs text-muted-foreground">
             {isFiled
-              ? "This return was submitted but no box figures were frozen."
-              : "Box figures are frozen when you submit this return. Submit it from the Tax Periods list to see the filed numbers here."}
+              ? t("noFrozenBoxes")
+              : t("submitBoxesHelp")}
           </p>
         </div>
       )}
@@ -503,7 +499,7 @@ function TaxPeriodWorkspace({ id, orgId }: { id: string; orgId: string | null })
       {/* Notes */}
       {period.notes && (
         <div className="rounded-lg border p-4">
-          <p className="mb-1 text-xs font-medium text-muted-foreground">Notes</p>
+          <p className="mb-1 text-xs font-medium text-muted-foreground">{t("notes")}</p>
           <p className="text-sm">{period.notes}</p>
         </div>
       )}

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createElement } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderToStaticMarkup } from "./helpers/presentation";
 import { TaxSettlementPreview } from "../components/dashboard/tax-settlement-preview";
 import { taxUiMinor, taxUiCurrency, taxUiRows, taxUiAbs, taxUiMax, taxUiPercent, taxUiMoney, taxUiDecimal, taxUiSettlement, taxUiConditions, taxUiRate, taxUiRateInput } from "../lib/money/tax-ui";
 

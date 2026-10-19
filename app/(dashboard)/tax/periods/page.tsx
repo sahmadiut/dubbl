@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
+import { taxPeriodTypeKey } from "@/lib/i18n/tax-period-presentation";
 import Link from "next/link";
 import {
   Plus,
@@ -57,18 +59,18 @@ function getDaysUntil(dateStr: string): number {
   return Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 }
 
-function getFilingStatus(period: TaxPeriod): {
+function getFilingStatus(period: TaxPeriod, t: ReturnType<typeof useTranslations<"TaxPeriods">>): {
   label: string;
   variant: "overdue" | "due-soon" | "filed" | "open";
   daysText: string;
 } {
   if (period.status === "filed") {
     return {
-      label: "Submitted",
+      label: t("filed"),
       variant: "filed",
       daysText: period.filedAt
-        ? `Submitted ${new Date(period.filedAt).toLocaleDateString()}`
-        : "Submitted",
+        ? t("submittedDate", { date: new Date(period.filedAt).toLocaleDateString() })
+        : t("filed"),
     };
   }
 
@@ -76,26 +78,26 @@ function getFilingStatus(period: TaxPeriod): {
 
   if (days < 0) {
     return {
-      label: "Overdue",
+      label: t("overdue"),
       variant: "overdue",
-      daysText: `${Math.abs(days)} day${Math.abs(days) !== 1 ? "s" : ""} overdue`,
+      daysText: t("daysOverdue", { count: Math.abs(days) }),
     };
   }
 
   if (days <= 14) {
     return {
-      label: "Due Soon",
+      label: t("dueSoon"),
       variant: "due-soon",
       daysText: days === 0
-        ? "Due today"
-        : `${days} day${days !== 1 ? "s" : ""} left`,
+        ? t("dueToday")
+        : t("daysLeft", { count: days }),
     };
   }
 
   return {
-    label: "Open",
+    label: t("open"),
     variant: "open",
-    daysText: `${days} day${days !== 1 ? "s" : ""} left`,
+    daysText: t("daysLeft", { count: days }),
   };
 }
 
@@ -125,6 +127,7 @@ function CreatePeriodSheet({
   onCreated: () => void;
   orgId: string | null;
 }) {
+  const t = useTranslations("TaxPeriods");
   const [name, setName] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -152,7 +155,7 @@ function CreatePeriodSheet({
         }),
       });
       if (!res.ok) throw new Error("Failed");
-      toast.success("Tax period created");
+      toast.success(t("created"));
       setOpen(false);
       setName("");
       setStartDate("");
@@ -160,7 +163,7 @@ function CreatePeriodSheet({
       setNotes("");
       onCreated();
     } catch {
-      toast.error("Failed to create tax period");
+      toast.error(t("createFailed"));
     } finally {
       setSaving(false);
     }
@@ -171,25 +174,25 @@ function CreatePeriodSheet({
       <SheetTrigger asChild>
         <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700">
           <Plus className="mr-1.5 size-3.5" />
-          New Tax Period
+          {t("newPeriod")}
         </Button>
       </SheetTrigger>
       <SheetContent>
         <SheetHeader>
-          <SheetTitle>New Tax Period</SheetTitle>
+          <SheetTitle>{t("newPeriod")}</SheetTitle>
         </SheetHeader>
         <form onSubmit={handleCreate} className="space-y-4 px-4">
           <div className="space-y-2">
-            <Label>Name</Label>
+            <Label>{t("name")}</Label>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Q1 2026"
+              placeholder={t("namePlaceholder")}
               required
             />
           </div>
           <div className="space-y-2">
-            <Label>Start Date</Label>
+            <Label>{t("startDate")}</Label>
             <Input
               type="date"
               value={startDate}
@@ -198,7 +201,7 @@ function CreatePeriodSheet({
             />
           </div>
           <div className="space-y-2">
-            <Label>End Date</Label>
+            <Label>{t("endDate")}</Label>
             <Input
               type="date"
               value={endDate}
@@ -207,24 +210,24 @@ function CreatePeriodSheet({
             />
           </div>
           <div className="space-y-2">
-            <Label>Type</Label>
+            <Label>{t("type")}</Label>
             <Select value={type} onValueChange={setType}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="monthly">Monthly</SelectItem>
-                <SelectItem value="quarterly">Quarterly</SelectItem>
-                <SelectItem value="annual">Annual</SelectItem>
+                <SelectItem value="monthly">{t("monthly")}</SelectItem>
+                <SelectItem value="quarterly">{t("quarterly")}</SelectItem>
+                <SelectItem value="annual">{t("annual")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>Notes</Label>
+            <Label>{t("notes")}</Label>
             <Textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Optional notes"
+              placeholder={t("notesPlaceholder")}
             />
           </div>
           <Button
@@ -232,7 +235,7 @@ function CreatePeriodSheet({
             disabled={saving}
             className="w-full bg-emerald-600 hover:bg-emerald-700"
           >
-            {saving ? "Creating..." : "Create"}
+            {saving ? t("creating") : t("create")}
           </Button>
         </form>
       </SheetContent>
@@ -255,6 +258,7 @@ function FileSheet({
   onFiled: () => void;
   orgId: string | null;
 }) {
+  const t = useTranslations("TaxPeriods");
   const [reference, setReference] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -272,12 +276,12 @@ function FileSheet({
         body: JSON.stringify({ filedReference: reference || undefined }),
       });
       if (!res.ok) throw new Error("Failed");
-      toast.success("Marked as submitted");
+      toast.success(t("filedSuccess"));
       onClose();
       setReference("");
       onFiled();
     } catch {
-      toast.error("Couldn't mark this period as submitted");
+      toast.error(t("fileFailed"));
     } finally {
       setSaving(false);
     }
@@ -292,19 +296,18 @@ function FileSheet({
     >
       <SheetContent>
         <SheetHeader>
-          <SheetTitle>Mark as submitted</SheetTitle>
+          <SheetTitle>{t("markSubmitted")}</SheetTitle>
         </SheetHeader>
         <form onSubmit={handleFile} className="space-y-4 px-4">
           <p className="text-sm text-muted-foreground">
-            Mark &quot;{period?.name}&quot; as submitted to the tax office. Use this once
-            you&apos;ve sent it in. This can&apos;t be undone.
+            {t("fileHelp", { name: period?.name ?? "" })}
           </p>
           <div className="space-y-2">
-            <Label>Reference number (optional)</Label>
+            <Label>{t("referenceNumber")}</Label>
             <Input
               value={reference}
               onChange={(e) => setReference(e.target.value)}
-              placeholder="e.g. confirmation number"
+              placeholder={t("referenceNumberPlaceholder")}
             />
           </div>
           <Button
@@ -312,7 +315,7 @@ function FileSheet({
             disabled={saving}
             className="w-full bg-emerald-600 hover:bg-emerald-700"
           >
-            {saving ? "Saving..." : "Mark as submitted"}
+            {saving ? t("saving") : t("markSubmitted")}
           </Button>
         </form>
       </SheetContent>
@@ -335,6 +338,7 @@ function EmptyState({
   fetchPeriods: () => void;
   orgId: string | null;
 }) {
+  const t = useTranslations("TaxPeriods");
   return (
     <div className="relative">
       <div className="pointer-events-none w-full space-y-6">
@@ -387,11 +391,10 @@ function EmptyState({
           <CalendarDays className="size-7 text-blue-600 dark:text-blue-400" />
         </div>
         <h2 className="mt-5 text-xl font-semibold tracking-tight">
-          No tax periods yet
+          {t("emptyTitle")}
         </h2>
         <p className="mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
-          Create tax periods to track your filing deadlines and mark them as
-          filed when submitted to the tax authority.
+          {t("emptyHelp")}
         </p>
         <div className="mt-6">
           <CreatePeriodSheet
@@ -411,11 +414,12 @@ function EmptyState({
 /* ------------------------------------------------------------------ */
 
 export default function TaxPeriodsPage() {
+  const t = useTranslations("TaxPeriods");
   const [periods, setPeriods] = useState<TaxPeriod[]>([]);
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
   const [filing, setFiling] = useState<TaxPeriod | null>(null);
-  useDocumentTitle("Tax · Periods");
+  useDocumentTitle(t("documentTitle"));
 
   const orgId =
     typeof window !== "undefined"
@@ -423,17 +427,20 @@ export default function TaxPeriodsPage() {
       : null;
 
   const fetchPeriods = useCallback(async () => {
-    if (!orgId) return;
+    if (!orgId) { setLoading(false); return; }
     try {
       const res = await fetch("/api/v1/tax-periods", {
         headers: { "x-organization-id": orgId },
       });
       const data = await res.json();
-      if (data.taxPeriods) setPeriods(data.taxPeriods);
+      if (!res.ok || !Array.isArray(data.taxPeriods)) throw new Error("Invalid tax periods");
+      setPeriods(data.taxPeriods);
+    } catch {
+      toast.error(t("loadListFailed"));
     } finally {
       setLoading(false);
     }
-  }, [orgId]);
+  }, [orgId, t]);
 
   useEffect(() => {
     fetchPeriods();
@@ -447,10 +454,10 @@ export default function TaxPeriodsPage() {
         headers: { "x-organization-id": orgId },
       });
       if (!res.ok) throw new Error("Failed");
-      toast.success("Tax period deleted");
+      toast.success(t("deleted"));
       fetchPeriods();
     } catch {
-      toast.error("Failed to delete tax period");
+      toast.error(t("deleteFailed"));
     }
   }
 
@@ -462,8 +469,8 @@ export default function TaxPeriodsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Tax Periods"
-        description="Track filing deadlines, manage tax periods, and stay on top of submissions."
+        title={t("title")}
+        description={t("description")}
       >
         {!loading && periods.length > 0 && (
           <CreatePeriodSheet
@@ -496,7 +503,7 @@ export default function TaxPeriodsPage() {
                 <CalendarDays className="size-4 text-muted-foreground" />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Total Periods</p>
+                <p className="text-xs text-muted-foreground">{t("totalPeriods")}</p>
                 <p className="text-lg font-semibold tabular-nums">
                   {periods.length}
                 </p>
@@ -509,7 +516,7 @@ export default function TaxPeriodsPage() {
                 <Clock className="size-4 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Open</p>
+                <p className="text-xs text-muted-foreground">{t("open")}</p>
                 <p className="text-lg font-semibold tabular-nums text-blue-700 dark:text-blue-300">
                   {openCount}
                 </p>
@@ -522,7 +529,7 @@ export default function TaxPeriodsPage() {
                 <FileCheck className="size-4 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Submitted</p>
+                <p className="text-xs text-muted-foreground">{t("filed")}</p>
                 <p className="text-lg font-semibold tabular-nums text-emerald-700 dark:text-emerald-300">
                   {filedCount}
                 </p>
@@ -532,7 +539,7 @@ export default function TaxPeriodsPage() {
             {/* Progress */}
             <div className="flex flex-col justify-center gap-2 rounded-xl border bg-card px-4 py-3">
               <div className="flex items-center justify-between">
-                <p className="text-xs text-muted-foreground">Submitted so far</p>
+                <p className="text-xs text-muted-foreground">{t("submittedSoFar")}</p>
                 <p className="text-xs font-medium tabular-nums">
                   {progressPercent}%
                 </p>
@@ -544,14 +551,14 @@ export default function TaxPeriodsPage() {
                 />
               </div>
               <p className="text-[11px] text-muted-foreground">
-                {filedCount} of {periods.length} periods submitted
+                {t("submittedCount", { count: filedCount, total: periods.length })}
               </p>
             </div>
           </div>
 
           {/* Section header */}
           <p className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-            All Periods
+            {t("allPeriods")}
           </p>
 
           {/* Table */}
@@ -560,28 +567,28 @@ export default function TaxPeriodsPage() {
               <thead>
                 <tr className="border-b bg-muted/30">
                   <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">
-                    Name
+                    {t("name")}
                   </th>
                   <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">
-                    Period
+                    {t("period")}
                   </th>
                   <th className="hidden px-4 py-2.5 text-left text-xs font-medium text-muted-foreground sm:table-cell">
-                    Type
+                    {t("type")}
                   </th>
                   <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">
-                    Status
+                    {t("status")}
                   </th>
                   <th className="hidden px-4 py-2.5 text-left text-xs font-medium text-muted-foreground sm:table-cell">
-                    Due / Submitted
+                    {t("dueSubmitted")}
                   </th>
                   <th className="px-4 py-2.5 text-right text-xs font-medium text-muted-foreground">
-                    Actions
+                    {t("actions")}
                   </th>
                 </tr>
               </thead>
               <tbody>
                 {periods.map((p) => {
-                  const filing_status = getFilingStatus(p);
+                  const filing_status = getFilingStatus(p, t);
 
                   return (
                     <tr
@@ -614,7 +621,7 @@ export default function TaxPeriodsPage() {
                         </span>
                       </td>
                       <td className="hidden px-4 py-2.5 capitalize text-muted-foreground sm:table-cell">
-                        {p.type}
+                        {t(taxPeriodTypeKey(p.type))}
                       </td>
                       <td className="px-4 py-2.5">
                         <Badge
@@ -654,7 +661,7 @@ export default function TaxPeriodsPage() {
                               onClick={() => setFiling(p)}
                             >
                               <FileCheck className="mr-1 size-3" />
-                              Mark submitted
+                              {t("markSubmittedShort")}
                             </Button>
                           )}
                           <Button
@@ -662,6 +669,7 @@ export default function TaxPeriodsPage() {
                             size="icon"
                             className="size-7 text-muted-foreground hover:text-destructive"
                             onClick={() => handleDelete(p.id)}
+                            aria-label={t("delete")}
                           >
                             <Trash2 className="size-3" />
                           </Button>

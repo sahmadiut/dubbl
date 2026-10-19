@@ -170,7 +170,7 @@ Extraction ownership:
 | LOC-028 | LOC-007 child: tax |
 | LOC-061 | LOC-028 child: tax rate and navigation; see [scope](TAX_RATE_CATALOGS.md) |
 | LOC-062 | LOC-028 child: currency workspace; see [scope](CURRENCY_WORKSPACE_CATALOGS.md) |
-| LOC-063 | LOC-028 child: tax period |
+| LOC-063 | LOC-028 child: tax period; see [scope](TAX_PERIOD_CATALOGS.md) |
 | LOC-064 | LOC-028 child: VAT filing |
 | LOC-065 | LOC-028 child: remaining tax filing |
 | LOC-008 | Inventory, payroll, projects, CRM, reports, dashboard and documents |

@@ -1,5 +1,11 @@
 # Message catalog foundation
 
+LOC-026 independently accepts combined purchasing coverage in
+[purchasing catalog acceptance](PURCHASING_CATALOG_ACCEPTANCE.md): all 18 route
+files, four creation drawers and shared controls, with 863 purchasing messages
+and 38 reused DocumentForms messages. LOC-007/002, native terminology and
+complete RTL qualification remain independent.
+
 LOC-056 purchasing navigation uses the paired `PurchasingNavigation` namespace.
 Shared purchasing form/preview/loading ownership is reconciled without duplicate
 extraction in [scope and exceptions](SHARED_PURCHASING_CATALOGS.md).
@@ -141,7 +147,7 @@ Extraction ownership:
 | LOC-045 | LOC-025 child: recurring invoices; see [scope](RECURRING_INVOICE_CATALOGS.md) |
 | LOC-046 | LOC-025 child: revenue schedules; see [scope](REVENUE_SCHEDULE_CATALOGS.md) |
 | LOC-047 | LOC-025 child: sales navigation and shared document/line forms; see [scope](SHARED_DOCUMENT_CATALOGS.md) |
-| LOC-026 | LOC-007 child: purchasing |
+| LOC-026 | LOC-007 child: purchasing; see [combined acceptance](PURCHASING_CATALOG_ACCEPTANCE.md) |
 | LOC-048 | LOC-026 child: goods receipt list/detail and shared procurement line details; see [scope](GOODS_RECEIPT_CATALOGS.md) |
 | LOC-049 | LOC-026 child: supplier bills; see [scope](SUPPLIER_BILL_CATALOGS.md) |
 | LOC-050 | LOC-026 child: recurring bills; see [scope](RECURRING_BILL_CATALOGS.md) |

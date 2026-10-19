@@ -215,18 +215,18 @@ export function LineItemsEditor({ lines, onChange, accountTypeFilter, taxContext
             <Plus className="mr-1 size-3" />
             {t("addLine")}
           </Button>
-          <div className="space-y-0.5 text-right text-sm font-mono tabular-nums">
+          <div className="space-y-0.5 text-right text-sm tabular-nums">
             <div className="flex justify-between gap-6">
               <span className="text-muted-foreground">{t("subtotal")}</span>
-              <span>{decimal(preview.subtotal)}</span>
+              <span className="font-mono">{decimal(preview.subtotal)}</span>
             </div>
             <div className="flex justify-between gap-6">
               <span className="text-muted-foreground">{t("tax")}</span>
-              <span>{decimal(preview.taxTotal)}</span>
+              <span className="font-mono">{decimal(preview.taxTotal)}</span>
             </div>
             <div className="flex justify-between gap-6 font-semibold">
               <span>{t("total")}</span>
-              <span>{decimal(preview.total)}</span>
+              <span className="font-mono">{decimal(preview.total)}</span>
             </div>
             {"amountDue" in preview && typeof preview.amountDue === "bigint" && <div className="flex justify-between gap-6 font-semibold">
               <span>{t("amountDue")}</span>

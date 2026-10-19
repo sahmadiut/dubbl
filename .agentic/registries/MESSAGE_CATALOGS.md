@@ -167,7 +167,7 @@ Extraction ownership:
 | LOC-058 | LOC-027 child: contact list/picker/creation; see [scope](CONTACT_LIST_CATALOGS.md) |
 | LOC-059 | LOC-027 child: contact detail shell/overview; see [scope](CONTACT_DETAIL_CATALOGS.md) |
 | LOC-060 | LOC-027 child: contact financial tabs; see [scope](CONTACT_FINANCIAL_CATALOGS.md) |
-| LOC-028 | LOC-007 child: tax |
+| LOC-028 | LOC-007 child: tax; see [combined acceptance](TAX_CATALOG_ACCEPTANCE.md) |
 | LOC-061 | LOC-028 child: tax rate and navigation; see [scope](TAX_RATE_CATALOGS.md) |
 | LOC-062 | LOC-028 child: currency workspace; see [scope](CURRENCY_WORKSPACE_CATALOGS.md) |
 | LOC-063 | LOC-028 child: tax period; see [scope](TAX_PERIOD_CATALOGS.md) |

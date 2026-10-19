@@ -1,0 +1,84 @@
+---
+title: شروع سریع
+description: راه‌اندازی دابل و مدیریت امور مالی در چند دقیقه.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tabs, Tab } from "fumadocs-ui/components/tabs";
+
+## پیش‌نیازها
+
+- **Node.js** نسخه ۲۰ یا بالاتر و npm
+- **PostgreSQL** نسخه ۱۵ یا بالاتر (یا استفاده از داکر)
+- **فضای ذخیره‌سازی سازگار با S3** (اختیاری، برای آپلود فایل‌ها)
+
+## نصب
+
+```bash
+git clone https://github.com/dubbl-org/dubbl.git
+cd dubbl
+pnpm install
+```
+
+## متغیرهای محیطی
+
+```bash
+cp .env.example .env
+```
+
+فایل `.env` را بر اساس پیکربندی خود ویرایش کنید:
+
+```bash title=".env"
+# پایگاه داده
+DATABASE_URL=postgresql://user:password@localhost:5432/dubbl
+
+# احراز هویت
+AUTH_SECRET=your-random-secret-here
+AUTH_URL=http://localhost:3000
+
+# درگاه پرداخت استرایپ (اختیاری)
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+
+# فضای ابری S3 (اختیاری)
+S3_BUCKET=dubbl-uploads
+S3_REGION=us-east-1
+S3_ACCESS_KEY_ID=...
+S3_SECRET_ACCESS_KEY=...
+S3_ENDPOINT=https://s3.amazonaws.com
+```
+
+## راه‌اندازی پایگاه داده
+
+<Tabs items={["پایگاه داده جدید", "همراه با داده‌های نمایشی"]}>
+  <Tab value="پایگاه داده جدید">
+    ```bash
+    pnpm db:push
+    ```
+  </Tab>
+  <Tab value="همراه با داده‌های نمایشی">
+    ```bash
+    pnpm db:push
+    pnpm db:seed
+    ```
+  </Tab>
+</Tabs>
+
+## اجرای محیط توسعه
+
+```bash
+pnpm dev
+```
+
+آدرس [http://localhost:3000](http://localhost:3000) را در مرورگر خود باز کنید.
+
+<Callout type="info">
+  اگر اسکریپت seed را اجرا کرده‌اید، می‌توانید با نام کاربری **demo@dubbl.dev** و رمز عبور **password123** وارد شوید. با این کار به یک سازمان نمایشی با داده‌های کامل شامل سرفصل حساب‌ها، مخاطبان، فاکتورهای فروش، فاکتورهای خرید، حساب‌های بانکی، پروژه‌ها و موارد دیگر دسترسی خواهید داشت.
+</Callout>
+
+## مراحل بعدی
+
+- [راهنمای میزبانی شخصی](/docs/self-hosting) - استقرار روی پروداکشن با داکر
+- [سرفصل حساب‌ها](/docs/modules/chart-of-accounts) - تنظیم حساب‌های مالی
+- [صدور فاکتور](/docs/modules/invoicing) - ایجاد و ارسال فاکتورها
+- [مفاهیم حسابداری](/docs/concepts) - یادگیری اصول حسابداری دوبل

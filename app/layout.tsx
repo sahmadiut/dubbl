@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { CSSProperties } from "react";
 import { Geist_Mono, Playfair_Display, Vazirmatn } from "next/font/google";
 import { SessionProvider } from "next-auth/react";
 import { RootProvider } from "fumadocs-ui/provider/next";
@@ -19,6 +20,8 @@ const vazirmatn = Vazirmatn({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  // Let missing Persian glyphs reach the selected site font before system fonts.
+  adjustFontFallback: false,
 });
 
 const playfairDisplay = Playfair_Display({
@@ -114,6 +117,9 @@ export default async function RootLayout({
     <html
       lang={presentation.locale}
       className={`${vazirmatn.variable} ${geistMono.variable} ${playfairDisplay.variable} scroll-smooth`}
+      // Turbopack can retain its Arial fallback despite adjustFontFallback: false.
+      // Keep only Geist Mono here; globals.css supplies the selected site font.
+      style={{ "--font-geist-mono": geistMono.style.fontFamily.split(",")[0] } as CSSProperties}
       suppressHydrationWarning
     >
       <head>
@@ -124,7 +130,26 @@ export default async function RootLayout({
       >
         <PresentationProvider presentation={presentation} messages={messages} now={now}>
           <ThemeProvider>
-            <RootProvider>
+            <RootProvider
+              i18n={{
+                locale: presentation.locale === "fa-IR" ? "fa" : "en",
+                translations:
+                  presentation.locale === "fa-IR"
+                    ? {
+                        search: "جستجو",
+                        searchNoResult: "نتیجه‌ای یافت نشد",
+                        toc: "فهرست مطالب",
+                        tocNoHeadings: "عنوانی وجود ندارد",
+                        lastUpdate: "آخرین به‌روزرسانی",
+                        chooseLanguage: "انتخاب زبان",
+                        nextPage: "صفحه بعدی",
+                        previousPage: "صفحه قبلی",
+                        chooseTheme: "انتخاب تم",
+                        editOnGithub: "ویرایش در گیت‌هاب",
+                      }
+                    : undefined,
+              }}
+            >
               <SessionProvider>{children}</SessionProvider>
             </RootProvider>
             <Toaster richColors position="bottom-right" />

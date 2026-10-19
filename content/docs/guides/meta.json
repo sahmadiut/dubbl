@@ -1,3 +1,15 @@
 {
-  "pages": ["index", "developer-guide", "api-integration", "stripe-integration", "mcp", "multi-currency", "solopreneur-setup", "tax-filing-prep", "jurisdictions", "import-export"]
+  "title": "Guides",
+  "pages": [
+    "index",
+    "developer-guide",
+    "api-integration",
+    "stripe-integration",
+    "mcp",
+    "multi-currency",
+    "solopreneur-setup",
+    "tax-filing-prep",
+    "jurisdictions",
+    "import-export"
+  ]
 }

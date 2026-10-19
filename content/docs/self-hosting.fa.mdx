@@ -1,0 +1,246 @@
+---
+title: میزبانی شخصی
+description: استقرار دابل با Docker Compose برای استفاده در محیط عملیاتی و پروداکشن.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Steps, Step } from "fumadocs-ui/components/steps";
+import { Tabs, Tab } from "fumadocs-ui/components/tabs";
+
+## استفاده از Docker Compose
+
+ساده‌ترین روش برای میزبانی شخصی دابل، استفاده از Docker Compose است.
+
+```yaml title="docker-compose.yml"
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://dubbl:dubbl@db:5432/dubbl
+      AUTH_SECRET: change-me-in-production
+      AUTH_URL: https://your-domain.com
+    depends_on:
+      - db
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: dubbl
+      POSTGRES_PASSWORD: dubbl
+      POSTGRES_DB: dubbl
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
+```
+
+## استقرار در محیط عملیاتی
+
+<Steps>
+  <Step>
+    ### بیلد و اجرا
+
+    ```bash
+    docker compose up -d
+    ```
+  </Step>
+  <Step>
+    ### اعمال ساختار پایگاه داده
+
+    ```bash
+    docker compose exec app pnpm db:push
+    ```
+  </Step>
+  <Step>
+    ### بارگذاری داده‌های نمایشی (اختیاری)
+
+    ```bash
+    docker compose exec app pnpm db:seed
+    ```
+  </Step>
+</Steps>
+
+## متغیرهای محیطی
+
+| متغیر | الزامی | توضیحات |
+|-------|--------|---------|
+| `DATABASE_URL` | بله | رشته اتصال به پایگاه داده PostgreSQL |
+| `AUTH_SECRET` | بله | کلید تصادفی برای امضای توکن‌های JWT |
+| `NEXT_PUBLIC_APP_URL` | بله | آدرس اینترنتی عمومی برنامه |
+| `AUTH_GOOGLE_ID` | خیر | شناسه کلاینت احراز هویت گوگل (OAuth) |
+| `AUTH_GOOGLE_SECRET` | خیر | کلید محرمانه احراز هویت گوگل |
+| `AUTH_APPLE_ID` | خیر | شناسه سرویس ورود با اپل |
+| `AUTH_APPLE_TEAM_ID` | خیر | شناسه تیم توسعه‌دهنده اپل |
+| `AUTH_APPLE_KEY_ID` | خیر | شناسه کلید ورود با اپل |
+| `AUTH_APPLE_KEY_BASE64` | خیر | کلید خصوصی p8 کدگذاری شده با Base64 |
+| `STRIPE_SECRET_KEY` | خیر | کلید API استرایپ برای اشتراک‌ها |
+| `STRIPE_WEBHOOK_SECRET` | خیر | کلید امضای وبهوک استرایپ |
+| `RESEND_API_KEY` | خیر | کلید API سرویس Resend برای ارسال ایمیل‌ها |
+| `TRIGGER_PROJECT_REF` | بله | شناسه پروژه Trigger.dev برای وظایف پس‌زمینه |
+| `TRIGGER_SECRET_KEY` | بله | کلید امنیتی Trigger.dev برای صف‌ها و تلاش مجدد |
+| `S3_BUCKET` | خیر | نام باکت S3 برای ذخیره‌سازی فایل‌ها |
+| `S3_REGION` | خیر | منطقه ذخیره‌سازی S3 |
+| `S3_ACCESS_KEY_ID` | خیر | کلید دسترسی S3 |
+| `S3_SECRET_ACCESS_KEY` | خیر | کلید محرمانه S3 |
+| `S3_ENDPOINT` | خیر | آدرس اندپوینت سفارشی S3 (برای MinIO و غیره) |
+
+<Callout type="warn">
+  همیشه در محیط عملیاتی یک کلید قوی و امن برای `AUTH_SECRET` تنظیم کنید. می‌توانید با دستور `openssl rand -base64 32` آن را تولید کنید.
+</Callout>
+
+## احراز هویت
+
+دابل از سه روش احراز هویت پشتیبانی می‌کند:
+
+- **ایمیل و رمز عبور** - به صورت پیش‌فرض فعال است و به تنظیمات اضافی نیاز ندارد.
+- **گوگل OAuth** - نیازمند تنظیم `AUTH_GOOGLE_ID` و `AUTH_GOOGLE_SECRET` از [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
+- **ورود با اپل** - نیازمند تنظیم شناسه‌های مربوطه از [Apple Developer](https://developer.apple.com).
+
+برای سرویس‌های OAuth، آدرس کال‌بک را روی `https://your-domain.com/api/auth/callback/google` (یا `/apple`) تنظیم کنید.
+
+## راه‌اندازی اولین کاربر
+
+اولین کاربری که روی یک نمونه جدید ثبت‌نام می‌کند، به طور خودکار به عنوان **مدیر کل سیستم (Site Admin)** تعیین می‌شود. مدیران کل می‌توانند به پنل مدیریت در `/admin` و تنظیمات سراسری در `/admin/settings` دسترسی داشته باشند.
+
+## کنترل ثبت‌نام کاربران
+
+| حالت | توضیحات |
+|------|---------|
+| `open` | ثبت‌نام برای همه آزاد است (پیش‌فرض) |
+| `invite_only` | تنها کاربران دارای دعوت‌نامه می‌توانند ثبت‌نام کنند |
+| `disabled` | ثبت‌نام جدید غیرفعال است (به جز اولین کاربر) |
+
+این مقدار از طریق متغیر محیطی (`REGISTRATION_MODE`) یا صفحه تنظیمات ادمین در `/admin/settings` قابل تنظیم است.
+
+## محدودسازی دامنه‌های ایمیل
+
+با تنظیم `ALLOWED_EMAIL_DOMAINS` (جدا شده با کاما) یا در تنظیمات ادمین، ثبت‌نام را به دامنه‌های ایمیل سازمانی خاصی محدود کنید:
+
+```bash
+ALLOWED_EMAIL_DOMAINS="acme.com,example.com"
+```
+
+## حالت نامحدود در میزبانی شخصی
+
+در صورتی که استرایپ تنظیم نشده باشد، تمامی سازمان‌ها به صورت خودکار از تمامی امکانات نسخه پرو (نامحدود) بدون محدودیت و اشتراک بهره‌مند می‌شوند.
+
+همچنین می‌توانید این رفتار را از صفحه تنظیمات مدیریت کنید:
+- **Auto** (پیش‌فرض) - در نبود استرایپ همه چیز نامحدود است.
+- **Always on** - فعال‌سازی دائمی حالت نامحدود فارغ از تنظیمات استرایپ.
+- **Always off** - اعمال محدودیت‌های طرح‌ها حتی بدون استرایپ.
+
+## تنظیمات ادمین
+
+مدیران سامانه می‌توانند تمامی تنظیمات میزبانی شخصی را از `/admin/settings` پیکربندی کنند:
+- وضعیت ثبت‌نام و دامنه‌های مجاز ایمیل
+- مجوز ایجاد سازمان توسط کاربران
+- وضعیت حالت نامحدود میزبانی شخصی
+
+## صورت‌حساب و اشتراک‌ها (Stripe)
+
+سیستم اشتراک کاملاً اختیاری است. در صورت عدم فعال‌سازی استرایپ، تمام کاربران به کلیه امکانات دسترسی نامحدود دارند.
+
+<Callout type="info">
+  نمونه‌های میزبانی شخصی نیازی به تنظیم درگاه ندارند؛ تمام امکانات به صورت خودکار باز هستند.
+</Callout>
+
+## سرویس ایمیل
+
+ایمیل‌های پلتفرم از Resend استفاده می‌کنند. ایمیل‌های سازمانی (فاکتورها، یادآوری‌ها، صورت‌حساب‌ها) از پیکربندی SMTP اختصاصی هر سازمان که در تنظیمات > ایمیل تعریف می‌شود، ارسال می‌گردند.
+
+## کارهای پس‌زمینه (Background Jobs)
+
+دابل از Trigger.dev برای وظایف زمان‌بندی‌شده و تلاش مجدد با تاخیر استفاده می‌کند. در محیط پروداکشن قبل از شروع دریافت ترافیک، `TRIGGER_PROJECT_REF` و `TRIGGER_SECRET_KEY` را تنظیم کنید.
+
+وظایف زمان‌بندی‌شده در `trigger/scheduled.ts` قرار دارند:
+- جمع‌بندی نوتیفیکیشن‌ها هر ۱۵ دقیقه
+- زمان‌بندی گزارش‌ها به صورت ساعتی
+- پاکسازی سطل زباله، فاکتورها، پشتیبان‌گیری و دفترداری روزانه
+
+برای توسعه محلی:
+
+```bash
+pnpm trigger:dev
+```
+
+برای پروداکشن، تسک‌های Trigger.dev را دیپلوی کنید:
+
+```bash
+pnpm trigger:deploy
+```
+
+## پایگاه داده
+
+دابل از پایگاه داده PostgreSQL (نسخه ۱۵ به بالا) استفاده می‌کند. ساختار دیتابیس توسط Drizzle ORM مدیریت می‌شود. جهت اعمال تغییرات اسکیما:
+
+```bash
+pnpm db:push
+```
+
+## ذخیره‌سازی فایل‌ها
+
+آپلود فایل‌ها (رسیدها، اسناد پیوست) نیازمند فضای سازگار با S3 است:
+
+<Tabs items={["AWS S3", "MinIO", "Cloudflare R2"]}>
+  <Tab value="AWS S3">
+    ذخیره‌سازی ابری استاندارد آمازون.
+  </Tab>
+  <Tab value="MinIO">
+    ذخیره‌سازی سازگار با S3 به صورت لوکال و میزبانی شخصی.
+  </Tab>
+  <Tab value="Cloudflare R2">
+    جایگزین مقرون‌به‌صرفه کلودفلر.
+  </Tab>
+</Tabs>
+
+<Callout type="info">
+  بدون تنظیم S3، امکان آپلود فایل غیرفعال خواهد بود ولی سایر بخش‌های اپلیکیشن به درستی کار می‌کنند.
+</Callout>
+
+## وب‌سرور معکوس (Reverse Proxy)
+
+برای پروداکشن، دابل را پشت یک پراکسی معکوس قرار دهید:
+
+<Tabs items={["Nginx", "Caddy"]}>
+  <Tab value="Nginx">
+    ```nginx
+    server {
+        server_name accounting.example.com;
+
+        location / {
+            proxy_pass http://localhost:3000;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+    }
+    ```
+  </Tab>
+  <Tab value="Caddy">
+    ```
+    accounting.example.com {
+        reverse_proxy localhost:3000
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## پشتیبان‌گیری (Backups)
+
+به طور منظم از پایگاه داده PostgreSQL خود نسخه پشتیبان تهیه کنید:
+
+```bash
+# تهیه خروجی از دیتابیس
+docker compose exec db pg_dump -U dubbl dubbl > backup.sql
+
+# بازیابی دیتابیس
+docker compose exec -T db psql -U dubbl dubbl < backup.sql
+```
+
+<Callout type="warn">
+  حتماً فرایند پشتیبان‌گیری خودکار و منظم را راه‌اندازی کنید؛ از دست رفتن داده‌های مالی جبران‌ناپذیر است.
+</Callout>

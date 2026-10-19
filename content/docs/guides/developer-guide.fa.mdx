@@ -1,0 +1,110 @@
+---
+title: راهنمای توسعه‌دهندگان
+description: نمای کلی معماری فنی، ساختار پروژه و استانداردهای مشارکت در دابل.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Steps, Step } from "fumadocs-ui/components/steps";
+
+## پشته فناوری (Tech Stack)
+
+- **فریم‌ورک** - [Next.js](https://nextjs.org) نسخه ۱۶ (App Router)
+- **پایگاه داده** - [PostgreSQL](https://www.postgresql.org) نسخه ۱۵+ با [Drizzle ORM](https://orm.drizzle.team)
+- **احراز هویت** - [NextAuth.js](https://next-auth.js.org) نسخه ۵
+- **رابط کاربری** - [Tailwind CSS](https://tailwindcss.com) نسخه ۴ + [shadcn/ui](https://ui.shadcn.com) + [Radix UI](https://www.radix-ui.com)
+- **اعتبارسنجی** - [Zod](https://zod.dev)
+- **مستندات** - [Fumadocs](https://fumadocs.vercel.app)
+- **پرداخت‌ها** - [Stripe](https://stripe.com)
+
+## ساختار پوشه‌ها و پروژه
+
+```
+dubbl/
+├── app/                    # ساختار App Router در Next.js
+│   ├── (landing)/          # صفحات عمومی معرفی
+│   ├── (auth)/             # ورود، ثبت‌نام، رضایت OAuth
+│   ├── (dashboard)/        # مسیرهای محافظت‌شده پیشخوان
+│   ├── api/                # مسیرهای REST API + سرور MCP
+│   ├── docs/               # صفحات مستندات
+│   └── .well-known/        # متادیتای OAuth
+├── components/
+│   ├── dashboard/          # کامپوننت‌های اختصاصی پیشخوان
+│   ├── shared/             # کامپوننت‌های مشترک (لوگو، تغییر پوسته)
+│   ├── ui/                 # کامپوننت‌های پایه shadcn/ui
+│   ├── landing/            # کامپوننت‌های صفحه فرود
+│   └── onboarding/         # فرآیند آنبوردینگ و شروع
+├── lib/
+│   ├── api/                # توابع کمکی API (احراز هویت، صفحه‌بندی، پاسخ‌ها)
+│   ├── db/                 # اینستنس و اسکیماهای Drizzle ORM
+│   ├── mcp/                # سرور MCP، احراز هویت و ابزارها
+│   ├── banking/            # توابع بانکی و مغایرت‌گیری
+│   ├── currency/           # پشتیبانی از چندارزی
+│   ├── documents/          # تولید اسناد و PDF
+│   ├── email/              # قالب‌های ایمیل
+│   ├── payroll/            # محاسبات حقوق و دستمزد
+│   ├── tax/                # منطق محاسبات مالیاتی حوزه‌های مختلف
+│   └── workflows/          # گردش‌های کاری خودکار
+├── content/docs/           # محتوای مستندات MDX
+├── drizzle/                # مایگریشن‌های پایگاه داده
+└── public/                 # دارایی‌های ایستا
+```
+
+## راه‌اندازی محیط توسعه
+
+<Steps>
+  <Step>
+    ### کلون مخزن و نصب وابستگی‌ها
+
+    ```bash
+    git clone https://github.com/dubbl-org/dubbl.git
+    cd dubbl && pnpm install
+    ```
+  </Step>
+  <Step>
+    ### تنظیم متغیرهای محیطی
+
+    ```bash
+    cp .env.example .env
+    ```
+
+    در کمترین حالت مقادیر `DATABASE_URL`، `AUTH_SECRET` و `AUTH_URL` باید مقداردهی شوند.
+  </Step>
+  <Step>
+    ### راه‌اندازی دیتابیس
+
+    ```bash
+    pnpm db:push    # اعمال اسکیما روی پایگاه داده
+    pnpm db:seed    # درج داده‌های نمونه و اولیه (اختیاری)
+    ```
+  </Step>
+  <Step>
+    ### اجرای سرور توسعه
+
+    ```bash
+    pnpm dev
+    ```
+  </Step>
+</Steps>
+
+### اسکریپت‌های در دسترس
+
+| دستور | شرح |
+|---|---|
+| `pnpm dev` | اجرای سرور محلی Next.js |
+| `pnpm lint` | بررسی کدها با ESLint |
+| `pnpm db:push` | اعمال تغییرات اسکیما روی دیتابیس |
+| `pnpm db:generate` | تولید فایل‌های مایگریشن Drizzle |
+| `pnpm db:studio` | باز کردن رابط کاربری گرافیکی Drizzle Studio |
+| `pnpm db:seed` | تزریق داده‌های آزمایشی به دیتابیس |
+
+<Callout type="info">
+  برای اعتبارسنجی تغییرات در جریان توسعه از `pnpm lint` یا `pnpm typecheck` استفاده کنید و از اجرای بیلد کامل اجتناب نمایید.
+</Callout>
+
+## پایگاه داده و اصول ذخیره‌سازی
+
+- شناسه‌های اصلی (Primary Keys) از نوع UUID هستند
+- مبالغ مالی به صورت **عدد صحیح بر حسب کوچک‌ترین واحد پول (Minor Units/Cents)** ذخیره می‌شوند (مثلاً ۱۲.۵۰ دلار به صورت ۱۲۵۰)
+- برای حذف نرم (Soft-delete) از ستون برچسب زمانی `deletedAt` استفاده می‌شود
+- تمام جداول وابسته به سازمان دارای کلید خارجی `organizationId` هستند
+- جهت تبدیل مقادیر از توابع کمکی `lib/money.ts` بهره ببرید

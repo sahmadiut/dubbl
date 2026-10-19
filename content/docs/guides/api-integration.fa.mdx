@@ -1,0 +1,97 @@
+---
+title: اتصال از طریق API
+description: ساخت یکپارچه‌سازی‌ها و اتصال سرویس‌ها با استفاده از REST API دابل.
+---
+
+## ایجاد کلید API
+
+۱. به منوی **تنظیمات ← کلیدهای API** بروید
+۲. روی دکمه **کلید API جدید** کلیک کنید
+۳. مقدار کلید را کپی نمایید — این کلید دیگر نمایش داده نخواهد شد
+
+## نحوه ارسال درخواست‌ها
+
+در تمامی درخواست‌ها، کلید API و شناسه سازمان را در هدرهای HTTP درج کنید:
+
+```bash
+curl -X GET \
+  -H "Authorization: Bearer your-api-key-here" \
+  -H "x-organization-id: your-org-id" \
+  https://your-instance.com/api/v1/contacts
+```
+
+## نمونه: صدور فاکتور فروش
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer your-api-key" \
+  -H "x-organization-id: your-org-id" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "contactId": "contact-id",
+    "issueDate": "2026-03-01",
+    "dueDate": "2026-03-31",
+    "lines": [
+      {
+        "description": "توسعه وب‌سایت",
+        "quantity": 100,
+        "unitPrice": 15000,
+        "accountId": "revenue-account-id"
+      }
+    ]
+  }' \
+  https://your-instance.com/api/v1/invoices
+```
+
+## صفحه‌بندی (Pagination)
+
+اندپوینت‌های فهرستی از پارامترهای صفحه‌بندی پشتیبانی می‌کنند:
+
+| پارامتر | مقدار پیش‌فرض | شرح |
+|---|---|---|
+| `page` | 1 | شماره صفحه |
+| `limit` | 20 | تعداد اقلام در هر صفحه (حداکثر ۱۰۰) |
+
+پاسخ شامل متادیتای صفحه‌بندی است:
+
+```json
+{
+  "data": [...],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 45,
+    "totalPages": 3
+  }
+}
+```
+
+## مدیریت خطاها
+
+کدهای وضعیت HTTP استاندارد در صورت بروز خطا بازگردانده می‌شوند:
+
+| کد | شرح |
+|---|---|
+| 400 | خطای اعتبارسنجی ورودی (فیلد `error` را بررسی کنید) |
+| 401 | نبود یا نامعتبر بودن اطلاعات احراز هویت |
+| 403 | عدم کفایت دسترسی‌ها و مجوزها |
+| 404 | منبع مورد نظر یافت نشد |
+| 500 | خطای داخلی سرور |
+
+## سطوح دسترسی (Permissions)
+
+دسترسی کلید API منطبق بر نقش کاربری سازنده آن است:
+
+- `manage:contacts` — مدیریت طرف‌های حساب
+- `manage:invoices` — صدور و ویرایش فاکتورها
+- `approve:invoices` — تأیید، ارسال یا ابطال فاکتورها
+- `manage:bills` — ثبت و ویرایش قبوض خرید
+- `manage:banking` — عملیات و تراکنش‌های بانکی
+- `manage:expenses` — ثبت هزینه‌ها
+- `approve:expenses` — تأیید یا رد هزینه‌ها
+- `manage:inventory` — مدیریت کالاها و انبار
+- `manage:projects` — مدیریت پروژه‌ها
+- `manage:assets` — دارایی‌های ثابت
+- `manage:payroll` — حقوق و دستمزد
+- `manage:budgets` — مدیریت بودجه‌ها
+- `view:audit-log` — مشاهده گزارش ممیزی

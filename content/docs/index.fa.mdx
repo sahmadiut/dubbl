@@ -1,0 +1,107 @@
+---
+title: مستندات دابل
+description: پلتفرم حسابداری متن‌باز برای کسب‌وکارهای مدرن.
+full: true
+---
+
+import { Cards, Card } from "fumadocs-ui/components/card";
+import { Callout } from "fumadocs-ui/components/callout";
+import { Steps, Step } from "fumadocs-ui/components/steps";
+import {
+  BookOpenIcon,
+  RocketIcon,
+  ServerIcon,
+  LayoutGridIcon,
+  ReceiptIcon,
+  SettingsIcon,
+  BookIcon,
+  CodeIcon,
+  MapIcon,
+  UsersIcon,
+} from "lucide-react";
+
+<div className="mx-auto max-w-5xl px-4 py-16 md:py-24">
+
+<div className="flex flex-col items-center text-center mb-16">
+  <div className="mb-6">
+    <svg viewBox="0 0 40 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-16 w-20 mx-auto">
+      <path d="M18 4h8a10 10 0 0 1 10 10v4a10 10 0 0 1-10 10h-8V4z" fill="#34d399" />
+      <path d="M4 4h8a10 10 0 0 1 10 10v4a10 10 0 0 1-10 10H4V4z" fill="#059669" />
+    </svg>
+  </div>
+  <h1 className="text-4xl font-bold tracking-tight md:text-5xl mb-4">مستندات دابل</h1>
+  <span className="text-lg text-fd-muted-foreground max-w-2xl block">
+    جایگزین متن‌باز و کامل برای نرم‌افزارهای حسابداری تجاری. حسابداری دوبل، صدور فاکتور، انبارداری، حقوق و دستمزد، CRM، انطباق مالیاتی و بیش از ۲۵ گزارش مالی.
+  </span>
+</div>
+
+<Cards>
+  <Card icon={<RocketIcon />} title="شروع سریع" description="راه‌اندازی دابل و مدیریت امور مالی در چند دقیقه." href="/docs/getting-started" />
+  <Card icon={<ServerIcon />} title="میزبانی شخصی" description="استقرار دابل با داکر روی زیرساخت و سرور اختصاصی خودتان." href="/docs/self-hosting" />
+  <Card icon={<LayoutGridIcon />} title="ماژول‌ها" description="بررسی تمام امکانات: فاکتورها، هزینه‌ها، موجودی کالا، حقوق و دستمزد و بیشتر." href="/docs/modules" />
+  <Card icon={<ReceiptIcon />} title="مالیات و انطباق" description="اظهارنامه‌های مالیاتی، مالیات بر ارزش افزوده و چندارزی." href="/docs/tax" />
+  <Card icon={<SettingsIcon />} title="تنظیمات" description="سازمان، جریان‌های کاری، قالب‌های اسناد، کلیدهای API و لاگ تغییرات." href="/docs/settings" />
+  <Card icon={<BookIcon />} title="مفاهیم حسابداری" description="آشنایی با اصول دفترداری دوبل، سرفصل حساب‌ها و مغایرت‌گیری بانکی." href="/docs/concepts" />
+  <Card icon={<CodeIcon />} title="مرجع API" description="مستندات کامل REST API برای یکپارچه‌سازی با سامانه‌های بیرونی." href="/docs/api-reference" />
+  <Card icon={<MapIcon />} title="راهنماها" description="آموزش‌های گام‌به‌گام برای فرایندها و پیکربندی‌های متداول." href="/docs/guides" />
+  <Card icon={<UsersIcon />} title="مشارکت" description="کمک به بهبود دابل: توسعه کد، به‌روزرسانی مستندات و قوانین مالیاتی." href="/docs/contributing" />
+</Cards>
+
+<div className="mt-16">
+
+## شروع سریع
+
+<Steps>
+  <Step>
+    ### کلون و نصب وابستگی‌ها
+
+    ```bash
+    git clone https://github.com/dubbl-org/dubbl.git
+    cd dubbl && pnpm install
+    ```
+  </Step>
+  <Step>
+    ### پیکربندی متغیرهای محیطی
+
+    ```bash
+    cp .env.example .env
+    # فایل .env را با اطلاعات دیتابیس و کلیدهای امنیتی ویرایش کنید
+    ```
+  </Step>
+  <Step>
+    ### راه‌اندازی پایگاه داده
+
+    ```bash
+    pnpm db:push
+    pnpm db:seed  # اطلاعات نمایشی تستی (اختیاری)
+    ```
+  </Step>
+  <Step>
+    ### اجرای برنامه
+
+    ```bash
+    pnpm dev
+    ```
+
+    آدرس [http://localhost:3000](http://localhost:3000) را در مرورگر باز کنید.
+  </Step>
+</Steps>
+
+</div>
+
+<div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6">
+  <div className="rounded-lg border border-fd-border bg-fd-card p-6">
+    <h3 className="font-semibold mb-2">توسعه داده شده با</h3>
+    <p className="text-sm text-fd-muted-foreground">Next.js، Drizzle ORM، PostgreSQL، Tailwind CSS، shadcn/ui</p>
+  </div>
+  <div className="rounded-lg border border-fd-border bg-fd-card p-6">
+    <h3 className="font-semibold mb-2">مجوز</h3>
+    <p className="text-sm text-fd-muted-foreground">Apache 2.0 - استفاده، ویرایش و توزیع کاملاً رایگان</p>
+  </div>
+  <div className="rounded-lg border border-fd-border bg-fd-card p-6">
+    <h3 className="font-semibold mb-2">جامعه کاربری</h3>
+    <p className="text-sm text-fd-muted-foreground">متن‌باز در گیت‌هاب. از پول‌ریکوئست‌ها، گزارش باگ‌ها و ارتقای مالیاتی استقبال می‌کنیم.</p>
+  </div>
+</div>
+
+</div>

@@ -1,0 +1,158 @@
+---
+title: مرجع API
+description: مستندات REST API دابل.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tabs, Tab } from "fumadocs-ui/components/tabs";
+
+دابل یک REST API کامل برای دسترسی برنامه‌نویسی به تمامی قابلیت‌ها ارائه می‌دهد.
+
+## احراز هویت
+
+<Tabs items={["کلید API (پیشنهادی)", "کوکی نشست (Session Cookie)"]}>
+  <Tab value="کلید API (پیشنهادی)">
+    کلیدهای API را در مسیر **تنظیمات > کلیدهای API** ایجاد کرده و در درخواست‌ها قرار دهید:
+
+    ```bash
+    curl -H "Authorization: Bearer your-api-key" \
+         -H "x-organization-id: org-id" \
+         https://your-instance.com/api/v1/contacts
+    ```
+  </Tab>
+  <Tab value="کوکی نشست (Session Cookie)">
+    هنگام ارسال درخواست از داخل برنامه تحت وب دابل به طور خودکار ارسال می‌شود و نیاز به تنظیمات اضافی ندارد.
+  </Tab>
+</Tabs>
+
+### شناسه سازمان (Organization Context)
+
+تمامی مسیرهای API نیازمند تعیین شناسه سازمان از طریق هدر `x-organization-id` هستند:
+
+```
+x-organization-id: your-org-id
+```
+
+## آدرس پایه (Base URL)
+
+```
+/api/v1/
+```
+
+## فرمت پاسخ‌ها
+
+<Tabs items={["موفقیت‌آمیز (Success)", "خطا (Error)"]}>
+  <Tab value="موفقیت‌آمیز (Success)">
+    ```json
+    {
+      "data": [...],
+      "pagination": {
+        "page": 1,
+        "limit": 20,
+        "total": 100,
+        "totalPages": 5
+      }
+    }
+    ```
+  </Tab>
+  <Tab value="خطا (Error)">
+    ```json
+    {
+      "error": "شرح خطای رخ‌داده"
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## اندپوینت‌های اصلی
+
+### طرف‌های حساب (Contacts)
+| متد | مسیر | شرح |
+|---|---|---|
+| GET | `/api/v1/contacts` | دریافت فهرست طرف‌های حساب |
+| POST | `/api/v1/contacts` | ایجاد طرف حساب جدید |
+| GET | `/api/v1/contacts/:id` | دریافت جزئیات یک طرف حساب |
+| PATCH | `/api/v1/contacts/:id` | به‌روزرسانی مشخصات طرف حساب |
+| DELETE | `/api/v1/contacts/:id` | حذف طرف حساب |
+
+### فاکتورهای فروش (Invoices)
+| متد | مسیر | شرح |
+|---|---|---|
+| GET | `/api/v1/invoices` | فهرست فاکتورها |
+| GET | `/api/v1/invoices/summary` | جمع مبالغ و تحلیل سنی فاکتورها همراه با فیلدهای معادل دقیق در واحد خرد پول |
+| POST | `/api/v1/invoices` | ایجاد فاکتور جدید |
+| GET | `/api/v1/invoices/:id` | مشاهده جزئیات فاکتور |
+| PATCH | `/api/v1/invoices/:id` | به‌روزرسانی فاکتور |
+| DELETE | `/api/v1/invoices/:id` | حذف فاکتور |
+| POST | `/api/v1/invoices/:id/send` | ارسال فاکتور |
+| POST | `/api/v1/invoices/:id/pay` | ثبت دریافت وجه فاکتور |
+| POST | `/api/v1/invoices/:id/void` | باطل کردن فاکتور |
+
+### پیش‌فاکتورها (Quotes)
+| متد | مسیر | شرح |
+|---|---|---|
+| GET | `/api/v1/quotes` | فهرست پیش‌فاکتورها با صفحه‌بندی و فیلتر اختیاری وضعیت |
+| POST | `/api/v1/quotes` | ایجاد پیش‌نویس پیش‌فاکتور |
+| GET | `/api/v1/quotes/:id` | دریافت پیش‌فاکتور همراه با ردیف‌ها و طرف حساب |
+| PATCH | `/api/v1/quotes/:id` | ویرایش فیلدهای مجاز سربرگ پیش‌نویس یا جایگزینی ردیف‌ها |
+| DELETE | `/api/v1/quotes/:id` | حذف پیش‌نویس پیش‌فاکتور |
+| POST | `/api/v1/quotes/:id/send` | تغییر وضعیت پیش‌نویس به ارسال‌شده؛ ارسال ایمیل اختیاری است |
+| POST | `/api/v1/quotes/:id/accept` | پذیرش پیش‌فاکتور ارسال‌شده‌ای که منقضی نشده است |
+| POST | `/api/v1/quotes/:id/convert` | تبدیل پیش‌فاکتور پذیرفته‌شده به پیش‌نویس فاکتور فروش یا صورت‌حساب مرحله‌ای |
+
+### فاکتورهای خرید (Bills)
+| متد | مسیر | شرح |
+|---|---|---|
+| GET | `/api/v1/bills` | فهرست فاکتورهای خرید |
+| POST | `/api/v1/bills` | ایجاد فاکتور خرید |
+| GET | `/api/v1/bills/:id` | دریافت مشخصات فاکتور خرید |
+| PATCH | `/api/v1/bills/:id` | ویرایش سربرگ پیش‌نویس فاکتور خرید یا جایگزینی ردیف‌ها |
+| DELETE | `/api/v1/bills/:id` | حذف نرم پیش‌نویس فاکتور خرید و حذف ردیف‌های آن |
+| POST | `/api/v1/bills/:id/receive` | ثبت دریافت فاکتور خرید |
+| POST | `/api/v1/bills/:id/pay` | ثبت پرداخت |
+| POST | `/api/v1/bills/:id/void` | ابطال فاکتور خرید |
+
+### سرفصل و کدینگ حساب‌ها (Chart of Accounts)
+| متد | مسیر | شرح |
+|---|---|---|
+| GET | `/api/v1/accounts` | دریافت فهرست حساب‌ها |
+| POST | `/api/v1/accounts` | تعریف حساب جدید |
+| GET | `/api/v1/accounts/:id` | دریافت جزئیات حساب |
+| PATCH | `/api/v1/accounts/:id` | ویرایش حساب |
+
+### اسناد حسابداری (Journal Entries)
+| متد | مسیر | شرح |
+|---|---|---|
+| GET | `/api/v1/entries` | فهرست اسناد حسابداری |
+| POST | `/api/v1/entries` | ایجاد سند حسابداری |
+| GET | `/api/v1/entries/:id` | دریافت سند حسابداری |
+| PUT/PATCH | `/api/v1/entries/:id` | جایگزینی سربرگ و ردیف‌های پیش‌نویس سند |
+| DELETE | `/api/v1/entries/:id` | حذف پیش‌نویس سند و ردیف‌های آن |
+| POST | `/api/v1/entries/:id/post` | قطعی کردن سند حسابداری |
+| POST | `/api/v1/entries/:id/void` | ابطال سند حسابداری |
+
+### بانکداری (Banking)
+| متد | مسیر | شرح |
+|---|---|---|
+| GET | `/api/v1/bank-accounts` | فهرست حساب‌های بانکی |
+| POST | `/api/v1/bank-accounts` | تعریف حساب بانکی جدید |
+| GET | `/api/v1/bank-accounts/:id/transactions` | فهرست تراکنش‌های حساب بانکی |
+| POST | `/api/v1/bank-transactions/:id/reconcile` | مغایرت‌گیری تراکنش |
+| POST | `/api/v1/bank-transactions/:id/categorize` | کدگذاری یا اصلاح دسته‌بندی ساده تراکنش |
+| POST | `/api/v1/bank-transfers` | ثبت انتقال وجه میان حساب‌های بانکی خود سازمان |
+
+### گزارش‌های مالی (Reports)
+| متد | مسیر | شرح |
+|---|---|---|
+| GET | `/api/v1/reports/trial-balance` | تراز آزمایشی |
+| GET | `/api/v1/reports/balance-sheet` | ترازنامه |
+| GET | `/api/v1/reports/profit-and-loss` | صورت سود و زیان (P&L) |
+| GET | `/api/v1/reports/aged-receivables` | تحلیل سنی مطالبات دریافتنی |
+| GET | `/api/v1/reports/aged-payables` | تحلیل سنی بدهی‌های پرداختنی |
+| GET | `/api/v1/reports/general-ledger` | دفتر کل |
+| GET | `/api/v1/reports/cash-flow` | صورت جریان وجوه نقد |
+| GET | `/api/v1/reports/budget-vs-actual` | گزارش مقایسه بودجه و عملکرد |
+
+<Callout type="info">
+  برای مثال‌های تفصیلی و تنظیم احراز هویت به [راهنمای یکپارچه‌سازی با API](/docs/guides/api-integration) مراجعه کنید.
+</Callout>

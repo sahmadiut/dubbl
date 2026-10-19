@@ -37,8 +37,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-vazirmatn), sans-serif;
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-site);
+  --font-mono: var(--font-geist-mono), var(--font-site), monospace;
   --font-display: var(--font-display);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-content-bg: var(--content-bg);
@@ -91,6 +91,8 @@
 }
 
 :root {
+  --font-site: var(--font-vazirmatn), sans-serif;
+
   /* Fumadocs theme */
   --color-fd-background: #ffffff;
   --color-fd-foreground: #0a0a0a;
@@ -150,6 +152,13 @@
   }
   body {
     @apply bg-background text-foreground text-sm antialiased;
+    /* Fumadocs utilities also read this variable directly. */
+    --font-mono: var(--font-geist-mono), var(--font-site), monospace;
+    --default-mono-font-family: var(--font-mono);
+  }
+  /* Resolve the fallback here so code also follows the selected body font. */
+  code, kbd, samp, pre {
+    font-family: var(--font-geist-mono), var(--font-site), monospace;
   }
   /* Modern Dense: tighter table rows */
   table {
@@ -161,18 +170,23 @@
     letter-spacing: 0.02em;
   }
   body.font-abar {
+    --font-site: "Abar", sans-serif;
     font-family: "Abar", sans-serif !important;
   }
   body.font-filimo {
+    --font-site: "Filimo", sans-serif;
     font-family: "Filimo", sans-serif !important;
   }
   body.font-estedad {
+    --font-site: "Estedad", sans-serif;
     font-family: "Estedad", sans-serif !important;
   }
   body.font-iransansx {
+    --font-site: "IRANSansX", sans-serif;
     font-family: "IRANSansX", sans-serif !important;
   }
   body.font-digikala {
+    --font-site: "Digikala", sans-serif;
     font-family: "Digikala", sans-serif !important;
   }
 }

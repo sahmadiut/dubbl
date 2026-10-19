@@ -8,12 +8,15 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { source } from "@/lib/source";
 import { getMDXComponents } from "@/mdx-components";
+import { getPresentation } from "@/i18n/server";
 
 export default async function Page(props: {
   params: Promise<{ slug?: string[] }>;
 }) {
   const params = await props.params;
-  const page = source.getPage(params.slug);
+  const { locale } = await getPresentation();
+  const lang = locale === "fa-IR" ? "fa" : "en";
+  const page = source.getPage(params.slug, lang);
 
   if (!page) notFound();
 
@@ -35,14 +38,17 @@ export default async function Page(props: {
 }
 
 export async function generateStaticParams() {
-  return source.generateParams();
+  const pages = source.getPages();
+  return pages.map((page) => ({ slug: page.slugs }));
 }
 
 export async function generateMetadata(props: {
   params: Promise<{ slug?: string[] }>;
 }): Promise<Metadata> {
   const params = await props.params;
-  const page = source.getPage(params.slug);
+  const { locale } = await getPresentation();
+  const lang = locale === "fa-IR" ? "fa" : "en";
+  const page = source.getPage(params.slug, lang);
   if (!page) notFound();
 
   return {

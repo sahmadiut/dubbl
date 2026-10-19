@@ -6424,5 +6424,19 @@
     "boxSeven": "Total purchases ex-VAT",
     "boxEight": "Total supplies to EU ex-VAT",
     "boxNine": "Total acquisitions from EU ex-VAT"
+  },
+  "Docs": {
+    "app": "App",
+    "github": "GitHub",
+    "title": "Documentation",
+    "gettingStarted": "Getting Started",
+    "selfHosting": "Self-Hosting",
+    "modules": "Modules",
+    "tax": "Tax & Compliance",
+    "settings": "Settings",
+    "concepts": "Accounting Concepts",
+    "apiReference": "API Reference",
+    "guides": "Guides",
+    "contributing": "Contributing"
   }
 }

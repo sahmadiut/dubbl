@@ -1,4 +1,5 @@
 {
+  "title": "Settings",
   "pages": [
     "index",
     "organization",
@@ -9,6 +10,8 @@
     "workflows",
     "document-templates",
     "api-keys",
-    "audit-log"
+    "audit-log",
+    "backups",
+    "trash"
   ]
 }

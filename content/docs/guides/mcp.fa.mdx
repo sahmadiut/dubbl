@@ -1,0 +1,77 @@
+---
+title: سرور MCP (Model Context Protocol)
+description: اتصال عامل‌ها و دستیاران هوش مصنوعی به دابل با استاندارد پروتکل کانتکست مدل.
+---
+
+## پروتکل MCP چیست؟
+
+پروتکل [Model Context Protocol](https://modelcontextprotocol.io) (MCP) یک استاندارد باز است که به دستیاران و عامل‌های کدنویسی و برنامه‌نویسی هوش مصنوعی اجازه می‌دهد با ابزارها، سرویس‌ها و پایگاه‌های داده خارجی تعامل داشته باشند. سرور داخلی MCP در دابل به هر عامل سازگار امکان دسترسی مستقیم به داده‌های حسابداری شما — ایجاد اسناد، مدیریت فاکتورها، تهیه گزارش‌های مالی و غیره — را می‌دهد.
+
+## پیش‌نیازها
+
+- دسترسی MCP در تمام پلن‌ها از جمله پلن رایگان فراهم است
+- هر کلاینت سازگار با MCP (مانند Claude Desktop، Claude Code، Cursor، Windsurf، Cline، VS Code Copilot یا سایر ابزارها)
+
+## نحوه اتصال کلاینت‌ها
+
+سرور MCP از پروتکل استاندارد Streamable HTTP در مسیر `/api/mcp` و استاندارد OAuth 2.1 برای احراز هویت بهره می‌برد.
+
+### تنظیم در Claude Desktop
+
+کد زیر را به فایل `claude_desktop_config.json` اضافه کنید:
+
+```json
+{
+  "mcpServers": {
+    "dubbl": {
+      "url": "https://dubbl.dev/api/mcp"
+    }
+  }
+}
+```
+
+### تنظیم در Claude Code
+
+```bash
+claude mcp add dubbl --transport streamable-http https://dubbl.dev/api/mcp
+```
+
+### تنظیم در Cursor
+
+به مسیر **Cursor Settings > MCP** رفته و سرور جدید بیفزایید، یا در فایل `.cursor/mcp.json` پروژه خود قرار دهید:
+
+```json
+{
+  "mcpServers": {
+    "dubbl": {
+      "url": "https://dubbl.dev/api/mcp"
+    }
+  }
+}
+```
+
+### تنظیم در VS Code (GitHub Copilot)
+
+در فایل `.vscode/mcp.json` قرار دهید:
+
+```json
+{
+  "servers": {
+    "dubbl": {
+      "type": "http",
+      "url": "https://dubbl.dev/api/mcp"
+    }
+  }
+}
+```
+
+## ابزارهای در دسترس (Available Tools)
+
+- **سازمان** - دریافت جزئیات و مشخصات سازمان (`get_organization`)
+- **سرفصل حساب‌ها** - فهرست، ایجاد و به‌روزرسانی کدینگ حساب‌ها (`list_accounts`، `create_account`)
+- **اسناد حسابداری** - ایجاد، ثبت و ابطال اسناد روزنامه (`create_entry`، `post_entry`)
+- **طرف‌های حساب** - مدیریت مشتریان و تأمین‌کنندگان (`list_contacts`، `create_contact`)
+- **فاکتورهای فروش** - صدور، مدیریت و تسویه فاکتورها (`list_invoices`، `create_invoice`)
+- **قبوض خرید** - صدور و تأیید قبوض هزینه‌ها و خریدها (`list_bills`، `approve_bill`)
+- **سفارش‌ها و درخواست‌های خرید** - مدیریت زنجیره تأمین و فرآیند خرید (`create_purchase_order`)
+- **گزارش‌های مالی** - تراز آزمایشی، ترازنامه، سود و زیان و مطالبات معوق (`trial_balance`، `balance_sheet`، `profit_and_loss`)

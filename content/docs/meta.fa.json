@@ -1,0 +1,14 @@
+{
+  "root": true,
+  "pages": [
+    "getting-started",
+    "self-hosting",
+    "modules",
+    "tax",
+    "settings",
+    "concepts",
+    "api-reference",
+    "guides",
+    "contributing"
+  ]
+}

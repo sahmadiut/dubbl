@@ -1,5 +1,10 @@
 # Message catalog foundation
 
+LOC-027 independently accepts combined contacts coverage in
+[contacts catalog acceptance](CONTACT_CATALOG_ACCEPTANCE.md): all nine route
+files, the picker and creation drawer, with 295 paired contacts messages.
+LOC-007/002, native terminology and complete RTL qualification remain independent.
+
 LOC-026 independently accepts combined purchasing coverage in
 [purchasing catalog acceptance](PURCHASING_CATALOG_ACCEPTANCE.md): all 18 route
 files, four creation drawers and shared controls, with 863 purchasing messages
@@ -157,7 +162,7 @@ Extraction ownership:
 | LOC-054 | LOC-026 child: purchase orders and receiving forms; see [scope](PURCHASE_ORDER_CATALOGS.md) |
 | LOC-055 | LOC-026 child: landed costs |
 | LOC-056 | LOC-026 child: shared purchasing navigation/forms; see [scope](SHARED_PURCHASING_CATALOGS.md) |
-| LOC-027 | LOC-007 child: contacts |
+| LOC-027 | LOC-007 child: contacts; see [combined acceptance](CONTACT_CATALOG_ACCEPTANCE.md) |
 | LOC-057 | LOC-027 child: contact people/files; see [scope](CONTACT_PEOPLE_FILES_CATALOGS.md) |
 | LOC-058 | LOC-027 child: contact list/picker/creation; see [scope](CONTACT_LIST_CATALOGS.md) |
 | LOC-059 | LOC-027 child: contact detail shell/overview; see [scope](CONTACT_DETAIL_CATALOGS.md) |

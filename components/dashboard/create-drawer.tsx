@@ -4105,6 +4105,7 @@ function DealDrawer({ open, onClose, initialData }: { open: boolean; onClose: ()
 // Debit Note Drawer (supplier credit — money a supplier owes you back)
 // ---------------------------------------------------------------------------
 function DebitNoteDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useTranslations("DebitNotes");
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [contactId, setContactId] = useState("");
@@ -4128,9 +4129,9 @@ function DebitNoteDrawer({ open, onClose }: { open: boolean; onClose: () => void
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!contactId) { toast.error("Please select a supplier"); return; }
-    if (!orgId) return;
-    if (!validLines) { toast.error("Check the supplier credit line amounts"); return; }
+    if (!contactId) { toast.error(t("selectSupplier")); return; }
+    if (!orgId || saving) return;
+    if (!validLines) { toast.error(t("checkLines")); return; }
 
     try {
       const exactLines = debitNoteEditorLines(lines);
@@ -4147,15 +4148,15 @@ function DebitNoteDrawer({ open, onClose }: { open: boolean; onClose: () => void
         }),
       });
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to create supplier credit");
+        throw new Error("create failed");
       }
       const data = await res.json();
-      toast.success("Supplier credit created");
+      if (typeof data?.debitNote?.id !== "string" || !data.debitNote.id.trim()) throw new Error("invalid saved identity");
+      toast.success(t("created"));
       onClose();
       router.push(`/purchases/debit-notes/${data.debitNote.id}`);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create supplier credit");
+    } catch {
+      toast.error(t("createFailed"));
     } finally {
       setSaving(false);
     }
@@ -4168,32 +4169,32 @@ function DebitNoteDrawer({ open, onClose }: { open: boolean; onClose: () => void
           <div className="flex items-center gap-3">
             <DrawerIcon><Undo2 className="size-5" /></DrawerIcon>
             <div>
-              <SheetTitle className="text-lg">New supplier credit</SheetTitle>
-              <SheetDescription>Record money a supplier owes you back, to reduce what you owe them.</SheetDescription>
+              <SheetTitle className="text-lg">{t("newSupplierCredit")}</SheetTitle>
+              <SheetDescription>{t("drawerDescription")}</SheetDescription>
             </div>
           </div>
         </SheetHeader>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
             <div className="space-y-4">
-              <SectionLabel>Credit Details</SectionLabel>
+              <SectionLabel>{t("details")}</SectionLabel>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Supplier *</Label>
+                  <Label>{t("supplierRequired")}</Label>
                   <ContactPicker value={contactId} onChange={setContactId} type="supplier" />
                 </div>
                 <div className="space-y-2">
-                  <Label>Reference</Label>
-                  <Input value={reference} onChange={(e) => setReference(e.target.value)} placeholder="Original bill, etc." />
+                  <Label>{t("reference")}</Label>
+                  <Input value={reference} onChange={(e) => setReference(e.target.value)} placeholder={t("referencePlaceholder")} />
                 </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Issue Date</Label>
-                  <DatePicker value={issueDate} onChange={setIssueDate} placeholder="Issue date" />
+                  <Label>{t("issueDateHeading")}</Label>
+                  <DatePicker value={issueDate} onChange={setIssueDate} placeholder={t("issueDate")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Currency</Label>
+                  <Label>{t("currency")}</Label>
                   <CurrencySelect value={currencyCode} onValueChange={(code) => { setCurrencyCode(code); if (code !== currencyCode) setValidLines(false); }} />
                 </div>
               </div>
@@ -4202,7 +4203,7 @@ function DebitNoteDrawer({ open, onClose }: { open: boolean; onClose: () => void
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Line Items</SectionLabel>
+              <SectionLabel>{t("lineItems")}</SectionLabel>
               <LineItemsEditor key={orgId} lines={lines} onChange={(next) => { setLines(next); setValidLines(false); }} accountTypeFilter={["expense"]} taxContext="purchase"
                 currencyCode={currencyCode} roundPriceFirst={false} priceFractionDigits={18} onValidityChange={setValidLines} />
             </div>
@@ -4210,11 +4211,11 @@ function DebitNoteDrawer({ open, onClose }: { open: boolean; onClose: () => void
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Notes</SectionLabel>
-              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Reason for the credit..." rows={3} />
+              <SectionLabel>{t("notes")}</SectionLabel>
+              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("notesPlaceholder")} rows={3} />
             </div>
           </div>
-          <DrawerFooter onClose={onClose} saving={saving} label="Create supplier credit" disabled={!validLines || !contactId || !orgId || lines.some(line => !line.description.trim())} />
+          <DrawerFooter onClose={onClose} saving={saving} label={t("createAction")} cancelLabel={t("cancel")} creatingLabel={t("creating")} disabled={!validLines || !contactId || !orgId || lines.some(line => !line.description.trim())} />
         </form>
       </SheetContent>
     </Sheet>

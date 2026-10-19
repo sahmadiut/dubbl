@@ -137,7 +137,7 @@ Extraction ownership:
 | LOC-049 | LOC-026 child: supplier bills; see [scope](SUPPLIER_BILL_CATALOGS.md) |
 | LOC-050 | LOC-026 child: recurring bills; see [scope](RECURRING_BILL_CATALOGS.md) |
 | LOC-051 | LOC-026 child: expenses and recurring expenses; see [scope](EXPENSE_CATALOGS.md) |
-| LOC-052 | LOC-026 child: supplier debit notes |
+| LOC-052 | LOC-026 child: supplier debit notes; see [scope](DEBIT_NOTE_CATALOGS.md) |
 | LOC-053 | LOC-026 child: purchase requisitions |
 | LOC-054 | LOC-026 child: purchase orders and receiving forms |
 | LOC-055 | LOC-026 child: landed costs |

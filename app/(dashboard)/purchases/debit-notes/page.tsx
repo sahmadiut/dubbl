@@ -1,5 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { debitNoteStatusLabel, type DebitNoteTranslate } from "@/i18n/debit-note-presentation";
+
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { useRouter } from "next/navigation";
@@ -50,19 +53,11 @@ const statusColors: Record<string, string> = {
   void: "border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300",
 };
 
-// Plain-language status labels (end users aren't accountants).
-const statusLabels: Record<string, string> = {
-  draft: "draft",
-  sent: "sent",
-  applied: "used",
-  void: "cancelled",
-};
-
-function buildColumns(): Column<DebitNote>[] {
+function buildColumns(t: DebitNoteTranslate): Column<DebitNote>[] {
   return [
     {
       key: "number",
-      header: "Number",
+      header: t("number"),
       sortKey: "number",
       className: "w-32",
       render: (r) => (
@@ -71,31 +66,31 @@ function buildColumns(): Column<DebitNote>[] {
     },
     {
       key: "contact",
-      header: "Supplier",
+      header: t("supplier"),
       render: (r) => (
         <span className="text-sm font-medium">{r.contact?.name || "-"}</span>
       ),
     },
     {
       key: "date",
-      header: "Date",
+      header: t("date"),
       sortKey: "date",
       className: "w-28",
       render: (r) => <span className="text-sm">{r.issueDate}</span>,
     },
     {
       key: "status",
-      header: "Status",
+      header: t("status"),
       className: "w-24",
       render: (r) => (
         <Badge variant="outline" className={statusColors[r.status] || ""}>
-          {statusLabels[r.status] || r.status}
+          {debitNoteStatusLabel(t, r.status)}
         </Badge>
       ),
     },
     {
       key: "total",
-      header: "Total",
+      header: t("total"),
       sortKey: "total",
       className: "w-28 text-right",
       render: (r) => (
@@ -106,7 +101,7 @@ function buildColumns(): Column<DebitNote>[] {
     },
     {
       key: "remaining",
-      header: "Remaining",
+      header: t("remaining"),
       className: "w-28 text-right",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums">
@@ -118,9 +113,10 @@ function buildColumns(): Column<DebitNote>[] {
 }
 
 export default function DebitNotesPage() {
+  const t = useTranslations("DebitNotes");
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
-  const [loaded, setLoaded] = useState<{ context: string; rows: DebitNote[]; total: number; page: number; error: string | null } | null>(null);
+  const [loaded, setLoaded] = useState<{ context: string; rows: DebitNote[]; total: number; page: number; error: "readFailed" | null } | null>(null);
   const [moreContext, setMoreContext] = useState<string | null>(null);
   const [fetchKey, setFetchKey] = useState(0);
   const [statusFilter, setStatusFilter] = useState("all");
@@ -129,7 +125,7 @@ export default function DebitNotesPage() {
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search);
 
-  useDocumentTitle("Purchases · Supplier Credits");
+  useDocumentTitle(t("pageTitle"));
 
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -137,7 +133,7 @@ export default function DebitNotesPage() {
   const PAGE_SIZE = 50;
   const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
 
-  const columns = useMemo(() => buildColumns(), []);
+  const columns = useMemo(() => buildColumns(t), [t]);
 
   const buildParams = useCallback((p: number) => {
     const params = new URLSearchParams();
@@ -177,7 +173,7 @@ export default function DebitNotesPage() {
         const rows = data.data.map((row: DebitNoteWire) => debitNoteUiHeader(row));
         if (!controller.signal.aborted) { setLoaded({ context, rows, total: data.pagination?.total ?? rows.length, page: 1, error: null }); setMoreContext(null); setFetchKey(k => k + 1); }
       })
-      .catch(() => { if (!controller.signal.aborted) { setMoreContext(null); setLoaded({ context, rows: [], total: 0, page: 1, error: "Unable to load valid debit-note amounts. Try again." }); } });
+      .catch(() => { if (!controller.signal.aborted) { setMoreContext(null); setLoaded({ context, rows: [], total: 0, page: 1, error: "readFailed" }); } });
     return () => controller.abort();
   }, [orgId, buildParams, context]);
 
@@ -193,7 +189,7 @@ export default function DebitNotesPage() {
         const rows = data.data.map((row: DebitNoteWire) => debitNoteUiHeader(row));
         if (currentContext.current === context && readGeneration.current === generation) setLoaded(prev => prev?.context === context ? { ...prev, rows: [...prev.rows, ...rows], page: nextPage, error: null } : prev);
       })
-      .catch(() => { if (currentContext.current === context && readGeneration.current === generation) setLoaded(prev => prev?.context === context ? { ...prev, error: "Unable to load valid debit-note amounts. Try again." } : prev); })
+      .catch(() => { if (currentContext.current === context && readGeneration.current === generation) setLoaded(prev => prev?.context === context ? { ...prev, error: "readFailed" } : prev); })
       .finally(() => { if (readGeneration.current === generation) setMoreContext(prev => prev === context ? null : prev); });
   }, [orgId, page, buildParams, loadingMore, refetching, context]);
 
@@ -248,7 +244,7 @@ export default function DebitNotesPage() {
   const overview = useMemo(() => debitNoteUiOverview(filteredDebitNotes), [filteredDebitNotes]);
 
   if (initialLoad) return <BrandLoader />;
-  if (listError) return <p role="alert" className="text-sm text-destructive">{listError}</p>;
+  if (listError) return <p role="alert" className="text-sm text-destructive">{t(listError)}</p>;
 
   if (!initialLoad && !refetching && debitNotes.length === 0 && statusFilter === "all" && !hasFilters) {
     return (
@@ -257,9 +253,9 @@ export default function DebitNotesPage() {
           {/* Top: title + CTA */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h2 className="text-lg font-semibold tracking-tight">Supplier Credits</h2>
+              <h2 className="text-lg font-semibold tracking-tight">{t("supplierCredits")}</h2>
               <p className="mt-1 text-sm text-muted-foreground max-w-md">
-                A supplier credit is money a supplier owes you back — a reduction on what you owe them. Use it against a bill instead of paying full price.
+                {t("emptyDescription")}
               </p>
             </div>
             <Button
@@ -267,7 +263,7 @@ export default function DebitNotesPage() {
               className="bg-emerald-600 hover:bg-emerald-700 shrink-0"
             >
               <Plus className="mr-2 size-4" />
-              New supplier credit
+              {t("newSupplierCredit")}
             </Button>
           </div>
 
@@ -275,7 +271,7 @@ export default function DebitNotesPage() {
             {/* Left: Ledger-style calculation */}
             <div className="rounded-xl border bg-card overflow-hidden">
               <div className="bg-muted/30 px-3 sm:px-5 py-3 border-b">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">How a supplier credit works</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("howItWorks")}</p>
               </div>
               <div className="divide-y">
                 <div className="flex items-center justify-between px-3 sm:px-5 py-3.5">
@@ -284,7 +280,7 @@ export default function DebitNotesPage() {
                       <ReceiptText className="size-3.5 text-blue-500" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium">Bill total</p>
+                      <p className="text-sm font-medium">{t("billTotal")}</p>
                       <p className="text-[11px] text-muted-foreground">BILL-0042</p>
                     </div>
                   </div>
@@ -296,7 +292,7 @@ export default function DebitNotesPage() {
                       <CreditCard className="size-3.5 text-teal-500" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-teal-700 dark:text-teal-300">Credit applied</p>
+                      <p className="text-sm font-medium text-teal-700 dark:text-teal-300">{t("creditApplied")}</p>
                       <p className="text-[11px] text-muted-foreground">DN-0001</p>
                     </div>
                   </div>
@@ -305,7 +301,7 @@ export default function DebitNotesPage() {
                 <div className="flex items-center justify-between px-3 sm:px-5 py-3.5">
                   <div className="flex items-center gap-3">
                     <div className="size-7" />
-                    <p className="text-sm font-semibold">Now owed to supplier</p>
+                    <p className="text-sm font-semibold">{t("newBalance")}</p>
                   </div>
                   <span className="font-mono text-sm font-bold">$1,000.00</span>
                 </div>
@@ -314,26 +310,26 @@ export default function DebitNotesPage() {
 
             {/* Right: Use cases */}
             <div className="space-y-3">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">When to use</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("whenToUse")}</p>
               {[
                 {
-                  title: "Supplier overcharged you",
-                  desc: "Billed too much by a supplier? Record a credit to get the amount back.",
+                  title: t("overchargedTitle"),
+                  desc: t("overchargedDescription"),
                   color: "border-l-blue-400",
                 },
                 {
-                  title: "You returned goods",
-                  desc: "Sent stock back to a supplier? Record the credit and use it against a bill.",
+                  title: t("returnedTitle"),
+                  desc: t("returnedDescription"),
                   color: "border-l-amber-400",
                 },
                 {
-                  title: "Service not delivered",
-                  desc: "Paid for work that wasn't done? Record a partial or full credit from the supplier.",
+                  title: t("serviceTitle"),
+                  desc: t("serviceDescription"),
                   color: "border-l-teal-400",
                 },
                 {
-                  title: "Agreed discount",
-                  desc: "Supplier gave you a retroactive discount? Apply it against what you owe.",
+                  title: t("discountTitle"),
+                  desc: t("discountDescription"),
                   color: "border-l-purple-400",
                 },
               ].map(({ title, desc, color }) => (
@@ -352,7 +348,7 @@ export default function DebitNotesPage() {
   return (
     <ContentReveal className="space-y-6">
       {/* Top: Stats */}
-      <p className="text-xs text-muted-foreground">Totals for the {filteredDebitNotes.length} loaded matching supplier credits, excluding cancelled credits.</p>
+      <p className="text-xs text-muted-foreground">{t("overviewScope", { count: filteredDebitNotes.length })}</p>
       <DebitNoteOverview groups={overview} />
 
       <div className="h-px bg-border" />
@@ -362,11 +358,11 @@ export default function DebitNotesPage() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Tabs value={statusFilter} onValueChange={setStatusFilter}>
             <TabsList className="overflow-x-auto">
-              <TabsTrigger value="all" className="whitespace-nowrap">All</TabsTrigger>
-              <TabsTrigger value="draft" className="whitespace-nowrap">Draft</TabsTrigger>
-              <TabsTrigger value="sent" className="whitespace-nowrap">Sent</TabsTrigger>
-              <TabsTrigger value="applied" className="whitespace-nowrap" title="Credits you've used against a bill">Used</TabsTrigger>
-              <TabsTrigger value="void" className="whitespace-nowrap">Cancelled</TabsTrigger>
+              <TabsTrigger value="all" className="whitespace-nowrap">{t("all")}</TabsTrigger>
+              <TabsTrigger value="draft" className="whitespace-nowrap">{t("draftHeading")}</TabsTrigger>
+              <TabsTrigger value="sent" className="whitespace-nowrap">{t("sentHeading")}</TabsTrigger>
+              <TabsTrigger value="applied" className="whitespace-nowrap" title={t("usedHint")}>{t("usedHeading")}</TabsTrigger>
+              <TabsTrigger value="void" className="whitespace-nowrap">{t("cancelledHeading")}</TabsTrigger>
             </TabsList>
           </Tabs>
 
@@ -376,7 +372,7 @@ export default function DebitNotesPage() {
             className="bg-emerald-600 hover:bg-emerald-700"
           >
             <Plus className="mr-2 size-4" />
-            New supplier credit
+            {t("newSupplierCredit")}
           </Button>
         </div>
 
@@ -384,27 +380,27 @@ export default function DebitNotesPage() {
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
             <Input
-              placeholder="Search supplier credits..."
+              placeholder={t("search")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="h-8 w-56 pl-8 text-xs"
             />
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="text-xs text-muted-foreground shrink-0">From</span>
+            <span className="text-xs text-muted-foreground shrink-0">{t("from")}</span>
             <DatePicker
               value={dateFrom}
               onChange={(v) => setDateFrom(v)}
-              placeholder="Start date"
+              placeholder={t("startDate")}
               className="h-8 w-40 text-xs"
             />
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="text-xs text-muted-foreground shrink-0">To</span>
+            <span className="text-xs text-muted-foreground shrink-0">{t("to")}</span>
             <DatePicker
               value={dateTo}
               onChange={(v) => setDateTo(v)}
-              placeholder="End date"
+              placeholder={t("endDate")}
               className="h-8 w-40 text-xs"
             />
           </div>
@@ -417,15 +413,15 @@ export default function DebitNotesPage() {
             }}
           >
             <SelectTrigger className="h-8 w-44 text-xs">
-              <SelectValue placeholder="Sort by..." />
+              <SelectValue placeholder={t("sortBy")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="created:desc">Newest first</SelectItem>
-              <SelectItem value="created:asc">Oldest first</SelectItem>
-              <SelectItem value="total:desc">Highest amount</SelectItem>
-              <SelectItem value="total:asc">Lowest amount</SelectItem>
-              <SelectItem value="number:desc">Number (desc)</SelectItem>
-              <SelectItem value="number:asc">Number (asc)</SelectItem>
+              <SelectItem value="created:desc">{t("newest")}</SelectItem>
+              <SelectItem value="created:asc">{t("oldest")}</SelectItem>
+              <SelectItem value="total:desc">{t("highest")}</SelectItem>
+              <SelectItem value="total:asc">{t("lowest")}</SelectItem>
+              <SelectItem value="number:desc">{t("numberDesc")}</SelectItem>
+              <SelectItem value="number:asc">{t("numberAsc")}</SelectItem>
             </SelectContent>
           </Select>
           {hasFilters && (
@@ -436,7 +432,7 @@ export default function DebitNotesPage() {
               onClick={() => { setSearch(""); setDateFrom(""); setDateTo(""); }}
             >
               <X className="mr-1 size-3" />
-              Clear filters
+              {t("clearFilters")}
             </Button>
           )}
         </div>
@@ -449,7 +445,7 @@ export default function DebitNotesPage() {
               columns={columns}
               data={filteredDebitNotes}
               loading={false}
-              emptyMessage="No supplier credits match your filters."
+              emptyMessage={t("noMatches")}
               onRowClick={(r) => router.push(`/purchases/debit-notes/${r.id}`)}
               sortBy={sortBy}
               sortOrder={sortOrder}
@@ -463,7 +459,7 @@ export default function DebitNotesPage() {
           <>
             <div className="flex items-center justify-between pt-1">
               <p className="text-xs text-muted-foreground">
-                Showing {debitNotes.length} of {totalCount} supplier credit{totalCount !== 1 ? "s" : ""}
+                {t("showing", { loaded: debitNotes.length, total: totalCount })}
               </p>
             </div>
             {hasMore && (

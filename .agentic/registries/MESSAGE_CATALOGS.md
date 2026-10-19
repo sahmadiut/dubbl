@@ -1,5 +1,12 @@
 # Message catalog foundation
 
+LOC-007 independently accepts the combined accounting, sales, purchasing,
+contacts and tax catalogs in [combined acceptance](ACCOUNTING_SALES_PURCHASING_CATALOG_ACCEPTANCE.md):
+all 87 route files and owned shared forms, 53 namespaces and 4,142 paired messages.
+Complete catalogs retain 6,328 compatible keys per locale. Earlier entries below
+record child acceptance boundaries at the time; LOC-007 is now independently
+accepted. LOC-002, native terminology and full RTL qualification remain open.
+
 LOC-027 independently accepts combined contacts coverage in
 [contacts catalog acceptance](CONTACT_CATALOG_ACCEPTANCE.md): all nine route
 files, the picker and creation drawer, with 295 paired contacts messages.

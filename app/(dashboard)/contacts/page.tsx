@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
@@ -263,6 +263,7 @@ function buildColumns(t: ContactTranslator, onDelete: (c: Contact) => void, onOp
 
 export default function ContactsPage() {
   const t = useTranslations("Contacts");
+  const format = useFormatter();
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
   const { confirm, dialog: confirmDialog } = useConfirm();
@@ -576,31 +577,52 @@ export default function ContactsPage() {
           </div>
         </PageHeader>
 
-        {/* Summary + search */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-[13px] text-muted-foreground">
-            <span className="font-medium text-foreground tabular-nums">{t("contactCount", { count: contacts.length })}</span>
-            <span className="text-border">·</span>
-            <span className="inline-flex items-center gap-1.5">
-              <span className="size-2 rounded-full bg-blue-500" />
-              <span className="tabular-nums">{t("customerCount", { count: customers.length })}</span>
-            </span>
-            <span className="text-border">·</span>
-            <span className="inline-flex items-center gap-1.5">
-              <span className="size-2 rounded-full bg-orange-500" />
-              <span className="tabular-nums">{t("supplierCount", { count: suppliers.length })}</span>
-            </span>
-            {taxExemptCount > 0 && (
-              <>
-                <span className="text-border">·</span>
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="size-2 rounded-full bg-violet-500" />
-                  <span className="tabular-nums">{t("noTaxCount", { count: taxExemptCount })}</span>
-                </span>
-              </>
-            )}
-          </div>
-        </div>
+        {/* Contact summary */}
+        <dl className={`grid overflow-hidden rounded-lg border ${taxExemptCount > 0 ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3"}`}>
+          {[
+            {
+              label: t("title"),
+              count: contacts.length,
+              accessibleLabel: t("contactCount", { count: contacts.length }),
+              panel: "border-t-emerald-500/40 bg-emerald-50/60 dark:bg-emerald-950/20",
+              dot: "bg-emerald-500",
+            },
+            {
+              label: t("customers"),
+              count: customers.length,
+              accessibleLabel: t("customerCount", { count: customers.length }),
+              panel: "border-t-blue-500/40 bg-blue-50/60 dark:bg-blue-950/20",
+              dot: "bg-blue-500",
+            },
+            {
+              label: t("suppliers"),
+              count: suppliers.length,
+              accessibleLabel: t("supplierCount", { count: suppliers.length }),
+              panel: "border-t-orange-500/40 bg-orange-50/60 dark:bg-orange-950/20",
+              dot: "bg-orange-500",
+            },
+            ...(taxExemptCount > 0 ? [{
+              label: t("noTax"),
+              count: taxExemptCount,
+              accessibleLabel: t("noTaxCount", { count: taxExemptCount }),
+              panel: "border-t-violet-500/40 bg-violet-50/60 dark:bg-violet-950/20",
+              dot: "bg-violet-500",
+            }] : []),
+          ].map(({ label, count, accessibleLabel, panel, dot }) => (
+            <div
+              key={label}
+              role="group"
+              aria-label={accessibleLabel}
+              className={`flex min-w-0 flex-col items-center justify-center border-t-4 border-e border-e-border last:border-e-0 px-3 py-6 text-center sm:px-5 sm:py-7 ${panel}`}
+            >
+              <dt className="order-2 mt-2 text-xs font-semibold sm:text-sm">{label}</dt>
+              <dd className="order-1 flex items-center gap-2 text-lg font-semibold tabular-nums sm:text-xl">
+                <span aria-hidden="true" className={`size-2.5 rounded-full ${dot}`} />
+                {format.number(count)}
+              </dd>
+            </div>
+          ))}
+        </dl>
 
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative w-full sm:max-w-xs">

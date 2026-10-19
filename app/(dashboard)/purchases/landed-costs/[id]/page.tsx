@@ -1,7 +1,9 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { landedCostStatusLabel, landedCostMethodLabel } from "@/i18n/landed-cost-presentation";
 import { useState, useEffect, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -52,11 +54,12 @@ const formatMoney = (amount: number, currency: string) => `${currency} ${toMajor
 
 export default function LandedCostDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const router = useRouter();
+  const t = useTranslations("LandedCosts");
+  const [readError, setReadError] = useState(false);
   const [item, setItem] = useState<LandedCostDetail | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useDocumentTitle("Purchases · Landed Cost Details");
+  useDocumentTitle(t("detailDocumentTitle"));
 
   const orgId =
     typeof window !== "undefined"
@@ -64,14 +67,17 @@ export default function LandedCostDetailPage() {
       : "";
 
   const loadItem = useCallback(() => {
-    if (!orgId) return;
+    if (!orgId) { setLoading(false); return; }
     fetch(`/api/v1/landed-costs/${id}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
       .then((data) => {
-        if (data.id) setItem(data);
+        if (!data || typeof data.id !== "string" || !Array.isArray(data.components) || !Array.isArray(data.lineAllocations)) throw new Error();
+        setItem(data);
+        setReadError(false);
       })
+      .catch(() => setReadError(true))
       .finally(() => setLoading(false));
   }, [id, orgId]);
 
@@ -87,21 +93,22 @@ export default function LandedCostDetailPage() {
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to allocate");
+        throw new Error();
       }
 
-      toast.success("Costs allocated successfully");
+      const data = await res.json();
+      if (typeof data?.allocation?.id !== "string" || data.allocation.id !== id || data.allocation.status !== "allocated") throw new Error();
+      toast.success(t("allocatedSuccess"));
       loadItem();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to allocate");
+    } catch {
+      toast.error(t("allocateFailed"));
     }
   }
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <p className="text-sm text-muted-foreground">Loading...</p>
+        <p className="text-sm text-muted-foreground">{t("loading")}</p>
       </div>
     );
   }
@@ -109,9 +116,9 @@ export default function LandedCostDetailPage() {
   if (!item) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh]">
-        <p className="text-sm text-muted-foreground">Allocation not found</p>
+        <p className="text-sm text-muted-foreground">{readError ? t("readFailed") : t("notFound")}</p>
         <Button variant="ghost" size="sm" asChild className="mt-2">
-          <Link href="/purchases/landed-costs">Back to landed costs</Link>
+          <Link href="/purchases/landed-costs">{t("back")}</Link>
         </Button>
       </div>
     );
@@ -119,11 +126,12 @@ export default function LandedCostDetailPage() {
 
   return (
     <div className="space-y-6">
+      {readError && <p role="alert" className="text-sm text-destructive">{t("readFailed")}</p>}
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" asChild className="size-8 p-0">
-            <Link href="/purchases/landed-costs">
+            <Link href="/purchases/landed-costs" aria-label={t("back")}>
               <ArrowLeft className="size-4" />
             </Link>
           </Button>
@@ -140,12 +148,11 @@ export default function LandedCostDetailPage() {
                     : ""
                 }
               >
-                {item.status}
+                {landedCostStatusLabel(t, item.status)}
               </Badge>
             </div>
             <p className="text-sm text-muted-foreground mt-0.5">
-              {item.allocationMethod.replace(/_/g, " ")} · Total{" "}
-              {formatMoney(item.totalCostAmount, item.currencyCode)}
+              {t("summary", { method: landedCostMethodLabel(t, item.allocationMethod), amount: formatMoney(item.totalCostAmount, item.currencyCode) })}
             </p>
           </div>
         </div>
@@ -155,7 +162,7 @@ export default function LandedCostDetailPage() {
             onClick={handleAllocate}
             className="bg-emerald-600 hover:bg-emerald-700"
           >
-            Allocate
+            {t("allocate")}
           </Button>
         )}
       </div>
@@ -165,44 +172,44 @@ export default function LandedCostDetailPage() {
       {/* PO / Bill reference */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
         {item.purchaseOrder && (
-          <span>PO: {item.purchaseOrder.poNumber}</span>
+          <span>{t("poReference", { number: item.purchaseOrder.poNumber })}</span>
         )}
-        {item.bill && <span>Bill: {item.bill.billNumber}</span>}
-        {!item.purchaseOrder && !item.bill && <span>No PO or Bill linked</span>}
+        {item.bill && <span>{t("billReference", { number: item.bill.billNumber })}</span>}
+        {!item.purchaseOrder && !item.bill && <span>{t("noSource")}</span>}
       </div>
 
       {/* Summary cards */}
       <div className="grid gap-4 grid-cols-2 sm:grid-cols-3">
         <div className="rounded-lg border bg-card p-4">
-          <p className="text-xs text-muted-foreground">Total Cost</p>
+          <p className="text-xs text-muted-foreground">{t("totalCost")}</p>
           <p className="mt-1 text-xl font-bold font-mono tabular-nums">
             {formatMoney(item.totalCostAmount, item.currencyCode)}
           </p>
         </div>
         <div className="rounded-lg border bg-card p-4">
-          <p className="text-xs text-muted-foreground">Components</p>
+          <p className="text-xs text-muted-foreground">{t("components")}</p>
           <p className="mt-1 text-xl font-bold font-mono tabular-nums">
             {item.components.length}
           </p>
         </div>
         <div className="rounded-lg border bg-card p-4">
-          <p className="text-xs text-muted-foreground">Method</p>
+          <p className="text-xs text-muted-foreground">{t("method")}</p>
           <p className="mt-1 text-xl font-bold truncate">
-            {item.allocationMethod.replace(/_/g, " ")}
+            {landedCostMethodLabel(t, item.allocationMethod)}
           </p>
         </div>
       </div>
 
       {/* Cost components table */}
       <div className="space-y-3">
-        <h2 className="text-sm font-semibold">Cost Components</h2>
+        <h2 className="text-sm font-semibold">{t("costComponents")}</h2>
         <div className="rounded-lg border">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Description</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-                <TableHead>Account</TableHead>
+                <TableHead>{t("componentDescription")}</TableHead>
+                <TableHead className="text-right">{t("amount")}</TableHead>
+                <TableHead>{t("account")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -227,16 +234,16 @@ export default function LandedCostDetailPage() {
       {/* Allocation results */}
       {item.status === "allocated" && item.lineAllocations.length > 0 && (
         <div className="space-y-3">
-          <h2 className="text-sm font-semibold">Allocation Results</h2>
+          <h2 className="text-sm font-semibold">{t("results")}</h2>
           <div className="rounded-lg border">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>PO Line ID</TableHead>
-                  <TableHead>Component ID</TableHead>
-                  <TableHead className="text-right">Basis</TableHead>
+                  <TableHead>{t("poLineId")}</TableHead>
+                  <TableHead>{t("componentId")}</TableHead>
+                  <TableHead className="text-right">{t("basis")}</TableHead>
                   <TableHead className="text-right">
-                    Allocated Amount
+                    {t("allocatedAmount")}
                   </TableHead>
                 </TableRow>
               </TableHeader>

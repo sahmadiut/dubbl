@@ -1,5 +1,9 @@
 # Message catalog foundation
 
+LOC-055 landed cost list/detail and inline creation/allocation feedback use the
+paired `LandedCosts` namespace. See [scope and exceptions](LANDED_COST_CATALOGS.md).
+LOC-026/007/002 and native/RTL acceptance remain independent.
+
 LOC-005 is the validation/preference slice of LOC-002. The parent remains open
 for full extraction and independent integration acceptance. Current coverage is
 `LocalePreferences`, LOC-010 authentication/onboarding/invitation namespaces and

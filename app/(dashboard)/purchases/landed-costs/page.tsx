@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { landedCostStatusLabel, landedCostMethodLabel } from "@/i18n/landed-cost-presentation";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -54,10 +56,12 @@ const formatMoney = (amount: number, currency: string) => `${currency} ${toMajor
 
 export default function LandedCostsPage() {
   const router = useRouter();
+  const t = useTranslations("LandedCosts");
+  const [readError, setReadError] = useState(false);
   const [items, setItems] = useState<LandedCost[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useDocumentTitle("Purchases · Landed Costs");
+  useDocumentTitle(t("documentTitle"));
   const [sheetOpen, setSheetOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -76,14 +80,17 @@ export default function LandedCostsPage() {
       : "";
 
   const fetchItems = useCallback(() => {
-    if (!orgId) return;
+    if (!orgId) { setLoading(false); return; }
     fetch("/api/v1/landed-costs", {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
       .then((data) => {
-        if (data.data) setItems(data.data);
+        if (!data || !Array.isArray(data.data)) throw new Error();
+        setItems(data.data);
+        setReadError(false);
       })
+      .catch(() => setReadError(true))
       .finally(() => setLoading(false));
   }, [orgId]);
 
@@ -119,12 +126,13 @@ export default function LandedCostsPage() {
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
+    if (saving) return;
     if (!name.trim()) {
-      toast.error("Name is required");
+      toast.error(t("nameRequired"));
       return;
     }
     if (components.some((c) => !c.description.trim() || !c.amount)) {
-      toast.error("All components need a description and amount");
+      toast.error(t("componentsRequired"));
       return;
     }
 
@@ -150,16 +158,17 @@ export default function LandedCostsPage() {
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to create");
+        throw new Error();
       }
 
-      toast.success("Landed cost allocation created");
+      const data = await res.json();
+      if (typeof data?.allocation?.id !== "string" || !data.allocation.id.trim()) throw new Error();
+      toast.success(t("created"));
       setSheetOpen(false);
       resetForm();
       fetchItems();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create");
+    } catch {
+      toast.error(t("createFailed"));
     } finally {
       setSaving(false);
     }
@@ -173,14 +182,15 @@ export default function LandedCostsPage() {
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to allocate");
+        throw new Error();
       }
 
-      toast.success("Costs allocated successfully");
+      const data = await res.json();
+      if (typeof data?.allocation?.id !== "string" || data.allocation.id !== id || data.allocation.status !== "allocated") throw new Error();
+      toast.success(t("allocatedSuccess"));
       fetchItems();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to allocate");
+    } catch {
+      toast.error(t("allocateFailed"));
     }
   }
 
@@ -192,34 +202,36 @@ export default function LandedCostsPage() {
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to delete");
+        throw new Error();
       }
 
-      toast.success("Allocation deleted");
+      const data = await res.json();
+      if (data?.success !== true) throw new Error();
+      toast.success(t("deleted"));
       fetchItems();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to delete");
+    } catch {
+      toast.error(t("deleteFailed"));
     }
   }
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <p className="text-sm text-muted-foreground">Loading...</p>
+        <p className="text-sm text-muted-foreground">{t("loading")}</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
+      {readError && <p role="alert" className="text-sm text-destructive">{t("readFailed")}</p>}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-lg font-semibold tracking-tight">
-            Landed Costs
+            {t("title")}
           </h1>
           <p className="text-sm text-muted-foreground">
-            Extra costs like freight &amp; duty added to the cost of stock.
+            {t("description")}
           </p>
         </div>
         <Button
@@ -228,7 +240,7 @@ export default function LandedCostsPage() {
           className="bg-emerald-600 hover:bg-emerald-700"
         >
           <Plus className="mr-2 size-4" />
-          New Allocation
+          {t("newAllocation")}
         </Button>
       </div>
 
@@ -236,13 +248,13 @@ export default function LandedCostsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>PO / Bill</TableHead>
-              <TableHead>Method</TableHead>
-              <TableHead className="text-right">Total Cost</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead>{t("name")}</TableHead>
+              <TableHead>{t("source")}</TableHead>
+              <TableHead>{t("method")}</TableHead>
+              <TableHead className="text-right">{t("totalCost")}</TableHead>
+              <TableHead>{t("status")}</TableHead>
+              <TableHead>{t("date")}</TableHead>
+              <TableHead className="text-right">{t("actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -252,7 +264,7 @@ export default function LandedCostsPage() {
                   colSpan={7}
                   className="text-center text-muted-foreground py-8"
                 >
-                  No landed cost allocations yet
+                  {t("empty")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -271,7 +283,7 @@ export default function LandedCostsPage() {
                       "-"}
                   </TableCell>
                   <TableCell className="text-sm">
-                    {item.allocationMethod.replace(/_/g, " ")}
+                    {landedCostMethodLabel(t, item.allocationMethod)}
                   </TableCell>
                   <TableCell className="text-right font-mono text-sm tabular-nums">
                     {formatMoney(item.totalCostAmount, item.currencyCode)}
@@ -287,7 +299,7 @@ export default function LandedCostsPage() {
                           : ""
                       }
                     >
-                      {item.status}
+                      {landedCostStatusLabel(t, item.status)}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-sm">
@@ -305,11 +317,12 @@ export default function LandedCostsPage() {
                             size="sm"
                             onClick={() => handleAllocate(item.id)}
                           >
-                            Allocate
+                            {t("allocate")}
                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
+                            aria-label={t("delete")}
                             onClick={() => handleDelete(item.id)}
                             className="text-red-600 hover:text-red-700"
                           >
@@ -336,7 +349,7 @@ export default function LandedCostsPage() {
       >
         <SheetContent className="sm:max-w-xl w-full p-0 flex flex-col">
           <SheetHeader className="px-4 pt-4 pb-3 sm:px-6 sm:pt-6 sm:pb-4 border-b">
-            <SheetTitle>New Allocation</SheetTitle>
+            <SheetTitle>{t("newAllocation")}</SheetTitle>
           </SheetHeader>
           <form
             onSubmit={handleCreate}
@@ -345,38 +358,38 @@ export default function LandedCostsPage() {
             <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Name *</label>
+                  <label className="text-sm font-medium">{t("requiredName")}</label>
                   <Input
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g. Shipping costs for PO-001"
+                    placeholder={t("namePlaceholder")}
                   />
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">
-                      Purchase Order ID
+                      {t("purchaseOrderId")}
                     </label>
                     <Input
                       value={purchaseOrderId}
                       onChange={(e) => setPurchaseOrderId(e.target.value)}
-                      placeholder="PO ID"
+                      placeholder={t("poIdPlaceholder")}
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Bill ID</label>
+                    <label className="text-sm font-medium">{t("billId")}</label>
                     <Input
                       value={billId}
                       onChange={(e) => setBillId(e.target.value)}
-                      placeholder="Bill ID"
+                      placeholder={t("billId")}
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium">
-                    Allocation Method
+                    {t("allocationMethod")}
                   </label>
                   <Select
                     value={allocationMethod}
@@ -386,8 +399,8 @@ export default function LandedCostsPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="by_value">By Value</SelectItem>
-                      <SelectItem value="by_quantity">By Quantity</SelectItem>
+                      <SelectItem value="by_value">{t("byValue")}</SelectItem>
+                      <SelectItem value="by_quantity">{t("byQuantity")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -398,7 +411,7 @@ export default function LandedCostsPage() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <label className="text-sm font-medium">
-                    Cost Components *
+                    {t("requiredComponents")}
                   </label>
                   <Button
                     type="button"
@@ -407,20 +420,21 @@ export default function LandedCostsPage() {
                     onClick={addComponent}
                   >
                     <Plus className="mr-2 size-3.5" />
-                    Add
+                    {t("add")}
                   </Button>
                 </div>
                 {components.map((comp, index) => (
                   <div key={index} className="rounded-lg border p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium text-muted-foreground">
-                        Component {index + 1}
+                        {t("component", { number: index + 1 })}
                       </span>
                       {components.length > 1 && (
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
+                          aria-label={t("removeComponent", { number: index + 1 })}
                           onClick={() => removeComponent(index)}
                           className="text-red-600 hover:text-red-700"
                         >
@@ -430,7 +444,7 @@ export default function LandedCostsPage() {
                     </div>
                     <div className="space-y-2">
                       <label className="text-xs font-medium">
-                        Description *
+                        {t("requiredDescription")}
                       </label>
                       <Input
                         value={comp.description}
@@ -439,12 +453,12 @@ export default function LandedCostsPage() {
                             description: e.target.value,
                           })
                         }
-                        placeholder="e.g. Freight charges"
+                        placeholder={t("descriptionPlaceholder")}
                       />
                     </div>
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div className="space-y-2">
-                        <label className="text-xs font-medium">Amount *</label>
+                        <label className="text-xs font-medium">{t("requiredAmount")}</label>
                         <Input
                           type="number"
                           step="0.01"
@@ -458,7 +472,7 @@ export default function LandedCostsPage() {
                       </div>
                       <div className="space-y-2">
                         <label className="text-xs font-medium">
-                          Account ID
+                          {t("accountId")}
                         </label>
                         <Input
                           value={comp.accountId}
@@ -467,7 +481,7 @@ export default function LandedCostsPage() {
                               accountId: e.target.value,
                             })
                           }
-                          placeholder="Account ID"
+                          placeholder={t("accountId")}
                         />
                       </div>
                     </div>
@@ -482,14 +496,14 @@ export default function LandedCostsPage() {
                 variant="outline"
                 onClick={() => setSheetOpen(false)}
               >
-                Cancel
+                {t("cancel")}
               </Button>
               <Button
                 type="submit"
                 disabled={saving}
                 className="bg-emerald-600 hover:bg-emerald-700"
               >
-                {saving ? "Creating..." : "Create Allocation"}
+                {saving ? t("creating") : t("create")}
               </Button>
             </div>
           </form>

@@ -5944,5 +5944,19 @@
     "componentId": "Component ID",
     "basis": "Basis",
     "allocatedAmount": "Allocated Amount"
+  },
+  "PurchasingNavigation": {
+    "bills": "Bills",
+    "recurringBills": "Recurring Bills",
+    "recurringBillsHint": "Supplier bills that repeat on a schedule",
+    "supplierCredits": "Supplier Credits",
+    "supplierCreditsHint": "Credit a supplier owes you back, applied against bills",
+    "expenses": "Expenses",
+    "purchaseOrders": "Purchase Orders",
+    "goodsReceived": "Goods Received",
+    "goodsReceivedHint": "Items received from suppliers against a purchase order",
+    "requisitions": "Requisitions",
+    "landedCosts": "Landed Costs",
+    "landedCostsHint": "Extra costs like freight & duty added to the cost of stock"
   }
 }

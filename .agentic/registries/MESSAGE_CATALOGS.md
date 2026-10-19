@@ -1,5 +1,10 @@
 # Message catalog foundation
 
+LOC-056 purchasing navigation uses the paired `PurchasingNavigation` namespace.
+Shared purchasing form/preview/loading ownership is reconciled without duplicate
+extraction in [scope and exceptions](SHARED_PURCHASING_CATALOGS.md).
+LOC-026/007/002 and native/RTL acceptance remain independent.
+
 LOC-055 landed cost list/detail and inline creation/allocation feedback use the
 paired `LandedCosts` namespace. See [scope and exceptions](LANDED_COST_CATALOGS.md).
 LOC-026/007/002 and native/RTL acceptance remain independent.
@@ -145,7 +150,7 @@ Extraction ownership:
 | LOC-053 | LOC-026 child: purchase requisitions; see [scope](REQUISITION_CATALOGS.md) |
 | LOC-054 | LOC-026 child: purchase orders and receiving forms; see [scope](PURCHASE_ORDER_CATALOGS.md) |
 | LOC-055 | LOC-026 child: landed costs |
-| LOC-056 | LOC-026 child: shared purchasing navigation/forms |
+| LOC-056 | LOC-026 child: shared purchasing navigation/forms; see [scope](SHARED_PURCHASING_CATALOGS.md) |
 | LOC-027 | LOC-007 child: contacts |
 | LOC-057 | LOC-027 child: contact people/files; see [scope](CONTACT_PEOPLE_FILES_CATALOGS.md) |
 | LOC-058 | LOC-027 child: contact list/picker/creation |

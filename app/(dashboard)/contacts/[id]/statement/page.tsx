@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
 import { X, BarChart3, Loader2, Download, Send } from "lucide-react";
@@ -17,9 +18,11 @@ import { ContentReveal } from "@/components/ui/content-reveal";
 import { displayMoney, displayJson, contactStatementUi, type ContactStatementUi } from "@/lib/money/contact-dashboard-ui";
 import { CurrencySelect } from "@/components/ui/currency-select";
 import { DatePicker } from "@/components/ui/date-picker";
+import { statementTypeKey } from "@/lib/i18n/contact-financial-presentation";
 import { useContactContext, getOrgId } from "../layout";
 
 export default function ContactStatementPage() {
+  const t = useTranslations("ContactStatement");
   const { id } = useParams<{ id: string }>();
   const { contact } = useContactContext();
 
@@ -31,14 +34,6 @@ export default function ContactStatementPage() {
   const [sendingStatement, setSendingStatement] = useState(false);
 
   const formatMoney = (amount: bigint) => displayMoney(amount, statementData!.currencyCode);
-
-  const statementTypeLabels: Record<string, string> = {
-    invoice: "Invoice",
-    credit_note: "Credit note (refund/reduction)",
-    payment: "Payment",
-    bill: "Bill",
-    debit_note: "Debit note (extra charge)",
-  };
 
   const fetchStatement = useCallback(async (signal: AbortSignal) => {
     const orgId = getOrgId();
@@ -63,12 +58,12 @@ export default function ContactStatementPage() {
     } catch {
       if (!signal.aborted) {
         setStatementData(null);
-        toast.error("Unable to load valid statement amounts. Select a currency if documents use multiple currencies.");
+        toast.error(t("readFailed"));
       }
     } finally {
       if (!signal.aborted) setStatementLoading(false);
     }
-  }, [id, statementStartDate, statementEndDate, statementCurrency]);
+  }, [id, statementStartDate, statementEndDate, statementCurrency, t]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -142,13 +137,10 @@ export default function ContactStatementPage() {
         }),
       });
 
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to send");
-      }
-      toast.success("Statement emailed successfully");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to email statement");
+      if (!res.ok) throw new Error("Statement email failed");
+      toast.success(t("emailed"));
+    } catch {
+      toast.error(t("emailFailed"));
     } finally {
       setSendingStatement(false);
     }
@@ -161,27 +153,27 @@ export default function ContactStatementPage() {
         <div className="flex flex-wrap items-center gap-3">
           <Select onValueChange={applyStatementPreset}>
             <SelectTrigger className="w-44 h-8 text-sm">
-              <SelectValue placeholder="Select period" />
+              <SelectValue placeholder={t("period")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="this_month">This Month</SelectItem>
-              <SelectItem value="last_month">Last Month</SelectItem>
-              <SelectItem value="this_quarter">This Quarter</SelectItem>
-              <SelectItem value="last_quarter">Last Quarter</SelectItem>
-              <SelectItem value="ytd">Year to Date</SelectItem>
-              <SelectItem value="last_12">Last 12 Months</SelectItem>
+              <SelectItem value="this_month">{t("thisMonth")}</SelectItem>
+              <SelectItem value="last_month">{t("lastMonth")}</SelectItem>
+              <SelectItem value="this_quarter">{t("thisQuarter")}</SelectItem>
+              <SelectItem value="last_quarter">{t("lastQuarter")}</SelectItem>
+              <SelectItem value="ytd">{t("ytd")}</SelectItem>
+              <SelectItem value="last_12">{t("last12")}</SelectItem>
             </SelectContent>
           </Select>
           <DatePicker
             value={statementStartDate}
             onChange={setStatementStartDate}
-            placeholder="From date"
+            placeholder={t("from")}
             className="w-36 h-8 text-sm"
           />
           <DatePicker
             value={statementEndDate}
             onChange={setStatementEndDate}
-            placeholder="To date"
+            placeholder={t("to")}
             className="w-36 h-8 text-sm"
           />
           <CurrencySelect value={statementCurrency} onValueChange={setStatementCurrency} compact />
@@ -197,7 +189,7 @@ export default function ContactStatementPage() {
               }}
             >
               <X className="mr-1 size-3" />
-              Clear
+              {t("clear")}
             </Button>
           )}
 
@@ -210,7 +202,7 @@ export default function ContactStatementPage() {
               disabled={statementLoading || !statementData}
             >
               <Download className="mr-1.5 size-3.5" />
-              PDF
+              {t("pdf")}
             </Button>
             <Button
               variant="outline"
@@ -218,21 +210,21 @@ export default function ContactStatementPage() {
               className="h-8"
               onClick={handleEmailStatement}
               disabled={statementLoading || !statementData || sendingStatement || !contact.email}
-              title={!contact.email ? "Contact has no email address" : undefined}
+              title={!contact.email ? t("noEmail") : undefined}
             >
               {sendingStatement ? (
                 <Loader2 className="mr-1.5 size-3.5 animate-spin" />
               ) : (
                 <Send className="mr-1.5 size-3.5" />
               )}
-              Email
+              {t("email")}
             </Button>
           </div>
         </div>
 
         {statementLoading && (
           <div className="flex items-center justify-center py-16">
-            <div className="brand-loader" aria-label="Loading">
+            <div className="brand-loader" aria-label={t("loading")}>
               <div className="brand-loader-circle brand-loader-circle-1" />
               <div className="brand-loader-circle brand-loader-circle-2" />
             </div>
@@ -245,25 +237,25 @@ export default function ContactStatementPage() {
               {/* Summary cards */}
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <div className="rounded-lg border p-3">
-                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground" title="What was owed at the start of this period">Starting balance</p>
+                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground" title={t("openingHint")}>{t("opening")}</p>
                   <p className="mt-1 text-sm font-semibold tabular-nums font-mono">
                     {formatMoney(statementData.openingBalance)}
                   </p>
                 </div>
                 <div className="rounded-lg border p-3">
-                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground" title="New invoices and charges added this period">Total charged</p>
+                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground" title={t("chargedHint")}>{t("charged")}</p>
                   <p className="mt-1 text-sm font-semibold tabular-nums font-mono">
                     {formatMoney(statementData.totalDebit)}
                   </p>
                 </div>
                 <div className="rounded-lg border p-3">
-                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground" title="Payments and credits applied this period">Total paid</p>
+                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground" title={t("paidHint")}>{t("paid")}</p>
                   <p className="mt-1 text-sm font-semibold tabular-nums font-mono">
                     {formatMoney(statementData.totalCredit)}
                   </p>
                 </div>
                 <div className="rounded-lg border p-3">
-                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground" title="What's owed at the end of this period">Ending balance</p>
+                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground" title={t("closingHint")}>{t("closing")}</p>
                   <p className="mt-1 text-sm font-semibold tabular-nums font-mono">
                     {formatMoney(statementData.closingBalance)}
                   </p>
@@ -275,20 +267,20 @@ export default function ContactStatementPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b text-left text-xs text-muted-foreground">
-                      <th className="px-3 py-2 font-medium">Date</th>
-                      <th className="px-3 py-2 font-medium">Type</th>
-                      <th className="px-3 py-2 font-medium">Reference</th>
-                      <th className="px-3 py-2 font-medium">Description</th>
-                      <th className="px-3 py-2 text-right font-medium" title="Invoices and charges that add to what's owed">Charges</th>
-                      <th className="px-3 py-2 text-right font-medium" title="Payments and credits that reduce what's owed">Payments</th>
-                      <th className="px-3 py-2 text-right font-medium" title="Running total owed">Balance</th>
+                      <th className="px-3 py-2 font-medium">{t("date")}</th>
+                      <th className="px-3 py-2 font-medium">{t("type")}</th>
+                      <th className="px-3 py-2 font-medium">{t("reference")}</th>
+                      <th className="px-3 py-2 font-medium">{t("description")}</th>
+                      <th className="px-3 py-2 text-right font-medium" title={t("chargesHint")}>{t("charges")}</th>
+                      <th className="px-3 py-2 text-right font-medium" title={t("paymentsHint")}>{t("payments")}</th>
+                      <th className="px-3 py-2 text-right font-medium" title={t("balanceHint")}>{t("balance")}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {/* Opening balance row */}
                     <tr className="border-b bg-muted/30">
                       <td colSpan={6} className="px-3 py-2 text-sm font-medium">
-                        Starting balance
+                        {t("opening")}
                       </td>
                       <td className="px-3 py-2 text-right font-mono text-sm font-medium tabular-nums">
                         {formatMoney(statementData.openingBalance)}
@@ -298,7 +290,7 @@ export default function ContactStatementPage() {
                     {statementData.transactions.length === 0 ? (
                       <tr>
                         <td colSpan={7} className="px-3 py-8 text-center text-muted-foreground">
-                          No transactions in this period
+                          {t("emptyTransactions")}
                         </td>
                       </tr>
                     ) : (
@@ -313,7 +305,7 @@ export default function ContactStatementPage() {
                           </td>
                           <td className="px-3 py-2">
                             <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                              {statementTypeLabels[tx.type] || tx.type}
+                              {t(statementTypeKey(tx.type))}
                             </Badge>
                           </td>
                           <td className="px-3 py-2 font-mono text-xs">{tx.documentNumber}</td>
@@ -334,7 +326,7 @@ export default function ContactStatementPage() {
                     {/* Closing balance row */}
                     <tr className="bg-muted/30">
                       <td colSpan={6} className="px-3 py-2 text-sm font-medium">
-                        Ending balance
+                        {t("closing")}
                       </td>
                       <td className="px-3 py-2 text-right font-mono text-sm font-medium tabular-nums">
                         {formatMoney(statementData.closingBalance)}
@@ -351,9 +343,9 @@ export default function ContactStatementPage() {
           <ContentReveal key="statement-empty">
             <div className="flex flex-col items-center justify-center py-16 text-center rounded-lg border border-dashed">
               <BarChart3 className="mb-2 size-8 text-muted-foreground/30" />
-              <p className="text-sm text-muted-foreground">No statement data</p>
+              <p className="text-sm text-muted-foreground">{t("empty")}</p>
               <p className="text-xs text-muted-foreground/70 mt-1">
-                Select a date range to generate a statement
+                {t("emptyHint")}
               </p>
             </div>
           </ContentReveal>

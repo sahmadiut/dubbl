@@ -110,42 +110,42 @@ export interface ActivityItem {
 }
 
 export const activityTypeConfig: Record<ActivityItem["type"], {
-  label: string;
+  labelKey: "typeInvoice" | "typeQuote" | "typeCreditNote" | "typePayment" | "typeBill";
   icon: typeof FileText;
   color: string;
   bg: string;
   href: (id: string) => string;
 }> = {
   invoice: {
-    label: "Invoice",
+    labelKey: "typeInvoice",
     icon: FileText,
     color: "text-blue-600 dark:text-blue-400",
     bg: "bg-blue-50 dark:bg-blue-950/40",
     href: (id) => `/sales/${id}`,
   },
   quote: {
-    label: "Quote",
+    labelKey: "typeQuote",
     icon: ScrollText,
     color: "text-violet-600 dark:text-violet-400",
     bg: "bg-violet-50 dark:bg-violet-950/40",
     href: (id) => `/sales/quotes/${id}`,
   },
   credit_note: {
-    label: "Credit Note",
+    labelKey: "typeCreditNote",
     icon: CreditCard,
     color: "text-amber-600 dark:text-amber-400",
     bg: "bg-amber-50 dark:bg-amber-950/40",
     href: (id) => `/sales/credit-notes/${id}`,
   },
   payment: {
-    label: "Payment",
+    labelKey: "typePayment",
     icon: Banknote,
     color: "text-emerald-600 dark:text-emerald-400",
     bg: "bg-emerald-50 dark:bg-emerald-950/40",
     href: (id) => `/payments/${id}`,
   },
   bill: {
-    label: "Bill",
+    labelKey: "typeBill",
     icon: Receipt,
     color: "text-orange-600 dark:text-orange-400",
     bg: "bg-orange-50 dark:bg-orange-950/40",

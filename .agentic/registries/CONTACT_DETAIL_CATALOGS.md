@@ -24,10 +24,11 @@ complete its parent.
   names, IDs, tab/type/account/filter codes, URLs, organization headers, currency
   units, validation exceptions and the context-hook developer diagnostic are
   not translated. Internal errors are caught behind localized operation messages.
-- `activityTypeConfig` lives in the layout module but its English labels are
-  consumed exclusively by the activity sibling. It remains unchanged for
-  LOC-060, together with activity/statement/bookkeeping page copy. People/files
-  content belongs to LOC-057; navigation labels are owned here.
+- `activityTypeConfig` lives in the layout module and its labels are consumed
+  exclusively by the activity sibling. LOC-060 now owns its typed message keys
+  and activity/statement/bookkeeping copy; see
+  [financial tab scope](CONTACT_FINANCIAL_CATALOGS.md). People/files content
+  belongs to LOC-057; navigation labels are owned here.
 - Existing US/1099 copy is translated as existing product presentation. It does
   not introduce a tax-policy change or qualify statutory compliance. Existing
   delete warnings are preserved; actual REST/MCP deletion remains soft deletion.

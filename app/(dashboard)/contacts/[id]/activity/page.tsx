@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useTranslations } from "next-intl";
 import { useParams, useRouter } from "next/navigation";
 import { X, Activity, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,9 +19,11 @@ import { displayMoney as formatMoney, displayJson, contactActivityUi } from "@/l
 import { toast } from "sonner";
 import { DatePicker } from "@/components/ui/date-picker";
 import { useContactContext, getOrgId, activityTypeConfig } from "../layout";
+import { activityStatusKey } from "@/lib/i18n/contact-financial-presentation";
 import type { ActivityItem } from "../layout";
 
 export default function ContactActivityPage() {
+  const t = useTranslations("ContactActivity");
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   useContactContext();
@@ -66,13 +69,13 @@ export default function ContactActivityPage() {
           setActivityHasMore(data.hasMore ?? false);
           setActivityCursor(data.nextCursor ?? null);
         })
-        .catch(() => { setActivityItems([]); toast.error("Unable to load valid activity amounts"); })
+        .catch(() => { setActivityItems([]); toast.error(t("readFailed")); })
         .finally(() => {
           setActivityLoading(false);
           setActivityLoadingMore(false);
         });
     },
-    [id, activityStartDate, activityEndDate, activityTypeFilter]
+    [id, activityStartDate, activityEndDate, activityTypeFilter, t]
   );
 
   // Fetch activity on mount and when filters change
@@ -105,27 +108,27 @@ export default function ContactActivityPage() {
         <div className="flex flex-wrap items-center gap-3">
           <Select value={activityTypeFilter} onValueChange={setActivityTypeFilter}>
             <SelectTrigger className="w-40 h-8 text-sm">
-              <SelectValue placeholder="All types" />
+              <SelectValue placeholder={t("all")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All types</SelectItem>
-              <SelectItem value="invoice">Invoices</SelectItem>
-              <SelectItem value="quote">Quotes</SelectItem>
-              <SelectItem value="credit_note">Credit Notes</SelectItem>
-              <SelectItem value="payment">Payments</SelectItem>
-              <SelectItem value="bill">Bills</SelectItem>
+              <SelectItem value="all">{t("all")}</SelectItem>
+              <SelectItem value="invoice">{t("invoices")}</SelectItem>
+              <SelectItem value="quote">{t("quotes")}</SelectItem>
+              <SelectItem value="credit_note">{t("creditNotes")}</SelectItem>
+              <SelectItem value="payment">{t("payments")}</SelectItem>
+              <SelectItem value="bill">{t("bills")}</SelectItem>
             </SelectContent>
           </Select>
           <DatePicker
             value={activityStartDate}
             onChange={setActivityStartDate}
-            placeholder="From date"
+            placeholder={t("from")}
             className="w-36 h-8 text-sm"
           />
           <DatePicker
             value={activityEndDate}
             onChange={setActivityEndDate}
-            placeholder="To date"
+            placeholder={t("to")}
             className="w-36 h-8 text-sm"
           />
           {(activityStartDate || activityEndDate || activityTypeFilter !== "all") && (
@@ -140,14 +143,14 @@ export default function ContactActivityPage() {
               }}
             >
               <X className="mr-1 size-3" />
-              Clear
+              {t("clear")}
             </Button>
           )}
         </div>
 
         {activityLoading && (
           <div className="flex items-center justify-center py-16">
-            <div className="brand-loader" aria-label="Loading">
+            <div className="brand-loader" aria-label={t("loading")}>
               <div className="brand-loader-circle brand-loader-circle-1" />
               <div className="brand-loader-circle brand-loader-circle-2" />
             </div>
@@ -158,11 +161,11 @@ export default function ContactActivityPage() {
           <ContentReveal key={`activity-empty-${activityTypeFilter}-${activityStartDate}-${activityEndDate}`}>
             <div className="flex flex-col items-center justify-center py-16 text-center rounded-lg border border-dashed">
               <Activity className="mb-2 size-8 text-muted-foreground/30" />
-              <p className="text-sm text-muted-foreground">No activity found</p>
+              <p className="text-sm text-muted-foreground">{t("empty")}</p>
               <p className="text-xs text-muted-foreground/70 mt-1">
                 {activityStartDate || activityEndDate || activityTypeFilter !== "all"
-                  ? "Try adjusting your filters"
-                  : "Invoices, quotes, payments, and bills will appear here"}
+                  ? t("adjust")
+                  : t("emptyHint")}
               </p>
             </div>
           </ContentReveal>
@@ -191,10 +194,10 @@ export default function ContactActivityPage() {
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium">{item.number}</span>
                           <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                            {config.label}
+                            {t(config.labelKey)}
                           </Badge>
                           <Badge variant="outline" className="text-[10px] px-1.5 py-0 capitalize">
-                            {item.status.replace("_", " ")}
+                            {t(activityStatusKey(item.status))}
                           </Badge>
                         </div>
                         <p className="text-xs text-muted-foreground mt-0.5">

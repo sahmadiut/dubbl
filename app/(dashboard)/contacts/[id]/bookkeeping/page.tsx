@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
 import { Section } from "@/components/dashboard/section";
@@ -19,6 +20,7 @@ import { useContactContext, getOrgId } from "../layout";
 import type { Account, TaxRate, ContactDetail } from "../layout";
 
 export default function ContactBookkeepingPage() {
+  const t = useTranslations("ContactBookkeeping");
   const { id } = useParams<{ id: string }>();
   const {
     contact,
@@ -48,21 +50,23 @@ export default function ContactBookkeepingPage() {
     fetch("/api/v1/accounts", {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("Reference request failed"); return r.json(); })
       .then((data) => {
-        if (data.accounts) setAccounts(data.accounts);
+        if (!Array.isArray(data.accounts) || !data.accounts.every((a: Account) => a && typeof a.id === "string" && typeof a.code === "string" && typeof a.name === "string" && typeof a.type === "string")) throw new Error("Invalid accounts");
+        setAccounts(data.accounts);
       })
-      .catch(() => {});
+      .catch(() => { toast.error(t("referenceFailed")); });
 
     fetch("/api/v1/tax-rates", {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("Reference request failed"); return r.json(); })
       .then((data) => {
-        if (data.taxRates) setTaxRates(data.taxRates);
+        if (!Array.isArray(data.taxRates) || !data.taxRates.every((r: TaxRate) => r && typeof r.id === "string" && typeof r.name === "string" && Number.isFinite(r.rate))) throw new Error("Invalid tax rates");
+        setTaxRates(data.taxRates);
       })
-      .catch(() => {});
-  }, []);
+      .catch(() => { toast.error(t("referenceFailed")); });
+  }, [t]);
 
   useEffect(() => {
     fetchReferenceData();
@@ -73,9 +77,9 @@ export default function ContactBookkeepingPage() {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setSaving(true);
     const orgId = getOrgId();
     if (!orgId) return;
+    setSaving(true);
 
     try {
       const res = await fetch(`/api/v1/contacts/${id}`, {
@@ -108,9 +112,9 @@ export default function ContactBookkeepingPage() {
       setFormRevenueAccountId(c.defaultRevenueAccountId || "none");
       setFormExpenseAccountId(c.defaultExpenseAccountId || "none");
       setFormTaxRateId(c.defaultTaxRateId || "none");
-      toast.success("Contact updated");
+      toast.success(t("updated"));
     } catch {
-      toast.error("Failed to update contact");
+      toast.error(t("updateFailed"));
     } finally {
       setSaving(false);
     }
@@ -119,19 +123,19 @@ export default function ContactBookkeepingPage() {
   return (
     <ContentReveal key="bookkeeping">
       <form onSubmit={handleSubmit} className="space-y-10">
-        <Section title="Default accounts" description="Where money from this contact lands in your books by default.">
+        <Section title={t("accounts")} description={t("accountsDescription")}>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label className="text-xs">Income account (money they pay you)</Label>
+              <Label className="text-xs">{t("income")}</Label>
               <Select
                 value={formRevenueAccountId}
                 onValueChange={setFormRevenueAccountId}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select account" />
+                  <SelectValue placeholder={t("selectAccount")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
+                  <SelectItem value="none">{t("none")}</SelectItem>
                   {revenueAccounts.map((a) => (
                     <SelectItem key={a.id} value={a.id}>
                       {a.code} - {a.name}
@@ -141,16 +145,16 @@ export default function ContactBookkeepingPage() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Spending account (money you pay them)</Label>
+              <Label className="text-xs">{t("expense")}</Label>
               <Select
                 value={formExpenseAccountId}
                 onValueChange={setFormExpenseAccountId}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select account" />
+                  <SelectValue placeholder={t("selectAccount")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
+                  <SelectItem value="none">{t("none")}</SelectItem>
                   {expenseAccounts.map((a) => (
                     <SelectItem key={a.id} value={a.id}>
                       {a.code} - {a.name}
@@ -164,17 +168,17 @@ export default function ContactBookkeepingPage() {
 
         <div className="h-px bg-border" />
 
-        <Section title="Default tax rate" description="Automatically applied when creating invoices or bills for this contact.">
+        <Section title={t("tax")} description={t("taxDescription")}>
           <div className="max-w-xs">
             <Select
               value={formTaxRateId}
               onValueChange={setFormTaxRateId}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select tax rate" />
+                <SelectValue placeholder={t("selectTax")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">None</SelectItem>
+                <SelectItem value="none">{t("none")}</SelectItem>
                 {taxRates.map((t) => (
                   <SelectItem key={t.id} value={t.id}>
                     {t.name} ({(t.rate / 100).toFixed(1)}%)
@@ -194,7 +198,7 @@ export default function ContactBookkeepingPage() {
             size="sm"
             className="bg-emerald-600 hover:bg-emerald-700"
           >
-            Save changes
+            {t("save")}
           </Button>
         </div>
       </form>

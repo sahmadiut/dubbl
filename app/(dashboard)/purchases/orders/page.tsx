@@ -1,5 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { purchaseOrderStatusLabel, type PurchaseOrderTranslate } from "@/i18n/purchase-order-presentation";
+
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { useRouter } from "next/navigation";
@@ -57,58 +60,50 @@ const statusColors: Record<string, string> = {
   void: "border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300",
 };
 
-// Plain-language status labels (end users aren't accountants).
-const statusLabels: Record<string, string> = {
-  draft: "draft",
-  sent: "ordered",
-  partial: "some items in",
-  received: "all items in",
-  closed: "fully billed",
-  void: "cancelled",
-};
 
-function buildColumns(): Column<PO>[] {
+
+function buildColumns(t: PurchaseOrderTranslate): Column<PO>[] {
   return [
     {
       key: "number",
-      header: "Number",
+      header: t("number"),
       sortKey: "number",
       className: "w-32",
       render: (r) => <span className="font-mono text-sm">{r.poNumber}</span>,
     },
     {
       key: "contact",
-      header: "Supplier",
+      header: t("supplier"),
       render: (r) => (
         <span className="text-sm font-medium">{r.contact?.name || "-"}</span>
       ),
     },
     {
       key: "date",
-      header: "Date",
+      header: t("date"),
       sortKey: "date",
       className: "w-28",
       render: (r) => <span className="text-sm">{r.issueDate}</span>,
     },
     {
       key: "delivery",
-      header: "Delivery",
+      header: t("delivery"),
       className: "w-28",
       render: (r) => <span className="text-sm">{r.deliveryDate || "-"}</span>,
     },
     {
       key: "status",
-      header: "Status",
+      header: t("status"),
       className: "w-24",
       render: (r) => (
-        <Badge variant="outline" className={statusColors[r.status] || ""}>
-          {statusLabels[r.status] || r.status}
+        <Badge variant="outline" className={Object.hasOwn(statusColors, r.status) ? statusColors[r.status] : ""}>
+          {purchaseOrderStatusLabel(t, r.status)}
         </Badge>
       ),
     },
     {
       key: "total",
-      header: "Total",
+      header: t("total"),
       sortKey: "total",
       className: "w-28 text-right",
       render: (r) => (
@@ -126,6 +121,7 @@ export default function PurchaseOrdersPage() {
 }
 
 function PurchaseOrdersContent() {
+  const t = useTranslations("PurchaseOrders");
   const router = useRouter();
   const [readError, setReadError] = useState<string | null>(null);
   const generation = useRef(0);
@@ -151,9 +147,9 @@ function PurchaseOrdersContent() {
 
   const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
 
-  useDocumentTitle("Purchases · Purchase Orders");
+  useDocumentTitle(t("documentTitle"));
 
-  const columns = useMemo(() => buildColumns(), []);
+  const columns = useMemo(() => buildColumns(t), [t]);
 
   const buildParams = useCallback((pg: number) => {
     const params = new URLSearchParams();
@@ -175,7 +171,7 @@ function PurchaseOrdersContent() {
     fetch(`/api/v1/purchase-orders/counts`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("Read failed"); return r.json(); })
       .then((data) => {
         if (!cancelled) { if (!data.counts) throw new Error("Counts unavailable"); setCountsData(billUiCounts(data)); }
       })
@@ -202,14 +198,16 @@ function PurchaseOrdersContent() {
       .then((r) => { if (!r.ok) throw new Error("Could not load procurement documents"); return r.json(); })
       .then((data) => {
         if (cancelled) return;
-        if (data.data) setPos(data.data.map(procurementList));
+        if (!Array.isArray(data?.data) || !Number.isSafeInteger(data.pagination?.total) || !Number.isSafeInteger(data.pagination?.page) || !Number.isSafeInteger(data.pagination?.totalPages)) throw new Error("Invalid orders");
+        const adopted = data.data.map(procurementList);
+        setPos(adopted);
         setReadError(null);
         if (data.pagination) {
           setTotalCount(data.pagination.total);
           setHasMore(data.pagination.page < data.pagination.totalPages);
         }
       })
-      .catch((error) => { if (!cancelled) { setPos([]); setReadError(error instanceof Error ? error.message : "Invalid procurement amounts"); } })
+      .catch(() => { if (!cancelled) { setPos([]); setReadError("readFailed"); } })
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
@@ -232,17 +230,19 @@ function PurchaseOrdersContent() {
     fetch(`/api/v1/purchase-orders?${buildParams(nextPage)}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("Read failed"); return r.json(); })
       .then((data) => {
         if (requestGeneration !== generation.current) return;
-        if (data.data) { const adopted = data.data.map(procurementList); setPos((prev) => [...prev, ...adopted]); }
+        if (!Array.isArray(data?.data) || !Number.isSafeInteger(data.pagination?.total) || !Number.isSafeInteger(data.pagination?.page) || !Number.isSafeInteger(data.pagination?.totalPages)) throw new Error("Invalid orders");
+        const adopted = data.data.map(procurementList); setPos((prev) => [...prev, ...adopted]);
+        setReadError(null);
         if (data.pagination) {
           setPage(data.pagination.page);
           setTotalCount(data.pagination.total);
           setHasMore(data.pagination.page < data.pagination.totalPages);
         }
       })
-      .catch((error) => { if (requestGeneration === generation.current) { setPos([]); setReadError(error instanceof Error ? error.message : "Invalid procurement amounts"); } })
+      .catch(() => { if (requestGeneration === generation.current) setReadError("readFailed"); })
       .finally(() => { if (requestGeneration === generation.current) setLoadingMore(false); });
   }, [loadingMore, hasMore, orgId, page, buildParams]);
 
@@ -288,7 +288,7 @@ function PurchaseOrdersContent() {
   const receivedValue = procurementOverviewText(filteredPos, ["received"]);
 
   if (loading) return <BrandLoader />;
-  if (readError) return <p role="alert" className="text-sm text-red-600">{readError}</p>;
+  if (readError && pos.length === 0) return <p role="alert" className="text-sm text-red-600">{t("readFailed")}</p>;
 
   if (totalCount === 0 && statusFilter === "all" && !debouncedSearch && !hasFilters) {
     return (
@@ -300,8 +300,8 @@ function PurchaseOrdersContent() {
               {
                 icon: ClipboardList,
                 step: "1",
-                label: "Create",
-                desc: "Draft a purchase order with items, quantities, and pricing",
+                label: t("pipelineCreate"),
+                desc: t("pipelineCreateDescription"),
                 color: "text-blue-600 dark:text-blue-400",
                 bg: "bg-blue-50 dark:bg-blue-950/40",
                 top: "bg-blue-500",
@@ -309,8 +309,8 @@ function PurchaseOrdersContent() {
               {
                 icon: Truck,
                 step: "2",
-                label: "Send to Supplier",
-                desc: "Send the purchase order directly to your supplier for fulfillment",
+                label: t("pipelineSend"),
+                desc: t("pipelineSendDescription"),
                 color: "text-amber-600 dark:text-amber-400",
                 bg: "bg-amber-50 dark:bg-amber-950/40",
                 top: "bg-amber-500",
@@ -318,8 +318,8 @@ function PurchaseOrdersContent() {
               {
                 icon: Package,
                 step: "3",
-                label: "Receive Goods",
-                desc: "Mark items as received and track delivery against the order",
+                label: t("pipelineReceive"),
+                desc: t("pipelineReceiveDescription"),
                 color: "text-emerald-600 dark:text-emerald-400",
                 bg: "bg-emerald-50 dark:bg-emerald-950/40",
                 top: "bg-emerald-500",
@@ -358,11 +358,11 @@ function PurchaseOrdersContent() {
 
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
               <h2 className="text-lg sm:text-xl font-semibold tracking-tight">
-                No purchase orders yet
+                {t("emptyTitle")}
+
               </h2>
               <p className="mt-2 max-w-md text-sm text-muted-foreground leading-relaxed">
-                Create purchase orders to track what you&apos;re buying from suppliers
-                and when you expect delivery.
+                {t("emptyDescription")}
               </p>
               <Button
                 onClick={() => openDrawer("purchaseOrder")}
@@ -370,7 +370,8 @@ function PurchaseOrdersContent() {
                 className="mt-6 bg-emerald-600 hover:bg-emerald-700"
               >
                 <Plus className="mr-2 size-4" />
-                New Purchase Order
+                {t("newPurchaseOrder")}
+
               </Button>
             </div>
           </div>
@@ -384,8 +385,8 @@ function PurchaseOrdersContent() {
       <div className="space-y-3 sm:space-y-6">
         {/* Header */}
         <PageHeader
-          title="Purchase Orders"
-          description="Create and manage purchase orders for suppliers."
+          title={t("title")}
+          description={t("description")}
         >
           <Button
             size="sm"
@@ -393,15 +394,17 @@ function PurchaseOrdersContent() {
             className="bg-emerald-600 hover:bg-emerald-700"
           >
             <Plus className="mr-2 size-4" />
-            New purchase order
+            {t("newOrder")}
+
           </Button>
         </PageHeader>
 
-        {countsError && <p role="alert" className="text-xs text-muted-foreground">Status counts are unavailable. Amounts below describe loaded matching orders by currency.</p>}
+        {readError && <p role="alert" className="text-sm text-red-600">{t("readFailed")}</p>}
+        {countsError && <p role="alert" className="text-xs text-muted-foreground">{t("countsFailed")}</p>}
         {/* Stats strip */}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
           <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Value in loaded matching orders</p>
+            <p className="text-xs text-muted-foreground">{t("loadedValue")}</p>
             <p className="text-lg sm:text-2xl font-bold font-mono tabular-nums tracking-tight break-all">
               {totalValue}
             </p>
@@ -409,7 +412,8 @@ function PurchaseOrdersContent() {
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground flex items-center gap-1.5">
               <span className="size-1.5 rounded-full bg-blue-500" />
-              Active in loaded matching orders
+              {t("loadedActive")}
+
             </p>
             <p className="text-lg sm:text-2xl font-bold font-mono tabular-nums tracking-tight break-all text-blue-600 dark:text-blue-400">
               {activeValue}
@@ -418,14 +422,15 @@ function PurchaseOrdersContent() {
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground flex items-center gap-1.5">
               <span className="size-1.5 rounded-full bg-emerald-500" />
-              Received in loaded matching orders
+              {t("loadedReceived")}
+
             </p>
             <p className="text-lg sm:text-2xl font-bold font-mono tabular-nums tracking-tight break-all text-emerald-600 dark:text-emerald-400">
               {receivedValue}
             </p>
           </div>
           <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Orders</p>
+            <p className="text-xs text-muted-foreground">{t("orders")}</p>
             <p className="text-lg sm:text-2xl font-bold tabular-nums tracking-tight">
               {countsData?.total ?? totalCount}
             </p>
@@ -434,25 +439,25 @@ function PurchaseOrdersContent() {
 
         <div className="h-px bg-border" />
 
-        <p className="text-xs text-muted-foreground">Search, dates and sorting apply to loaded orders. Amount sorting groups orders by currency.</p>
+        <p className="text-xs text-muted-foreground">{t("loadedScope")}</p>
         {/* Status tabs + search */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
             <Tabs value={statusFilter} onValueChange={setStatusFilter}>
               <TabsList>
-                <TabsTrigger value="all" className="whitespace-nowrap">All ({countsData?.total ?? totalCount})</TabsTrigger>
-                <TabsTrigger value="draft" className="whitespace-nowrap">Draft ({statusCounts.draft || 0})</TabsTrigger>
-                <TabsTrigger value="sent" className="whitespace-nowrap">Ordered ({statusCounts.sent || 0})</TabsTrigger>
-                <TabsTrigger value="partial" className="whitespace-nowrap">Some items in ({statusCounts.partial || 0})</TabsTrigger>
-                <TabsTrigger value="received" className="whitespace-nowrap">All items in ({statusCounts.received || 0})</TabsTrigger>
-                <TabsTrigger value="closed" className="whitespace-nowrap" title="Fully turned into bills">Fully billed ({statusCounts.closed || 0})</TabsTrigger>
+                <TabsTrigger value="all" className="whitespace-nowrap">{t("allCount", { count: countsData?.total ?? totalCount })}</TabsTrigger>
+                <TabsTrigger value="draft" className="whitespace-nowrap">{t("draftCount", { count: statusCounts.draft || 0 })}</TabsTrigger>
+                <TabsTrigger value="sent" className="whitespace-nowrap">{t("sentCount", { count: statusCounts.sent || 0 })}</TabsTrigger>
+                <TabsTrigger value="partial" className="whitespace-nowrap">{t("partialCount", { count: statusCounts.partial || 0 })}</TabsTrigger>
+                <TabsTrigger value="received" className="whitespace-nowrap">{t("receivedCount", { count: statusCounts.received || 0 })}</TabsTrigger>
+                <TabsTrigger value="closed" className="whitespace-nowrap" title={t("fullyBilledHint")}>{t("closedCount", { count: statusCounts.closed || 0 })}</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
           <div className="relative w-full sm:max-w-xs">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <Input
-              placeholder="Search orders..."
+              placeholder={t("search")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9"
@@ -463,20 +468,20 @@ function PurchaseOrdersContent() {
         {/* Date filters + sort */}
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-1.5">
-            <span className="text-xs text-muted-foreground shrink-0">From</span>
+            <span className="text-xs text-muted-foreground shrink-0">{t("from")}</span>
             <DatePicker
               value={dateFrom}
               onChange={(v) => setDateFrom(v)}
-              placeholder="Start date"
+              placeholder={t("startDate")}
               className="h-8 w-40 text-xs"
             />
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="text-xs text-muted-foreground shrink-0">To</span>
+            <span className="text-xs text-muted-foreground shrink-0">{t("to")}</span>
             <DatePicker
               value={dateTo}
               onChange={(v) => setDateTo(v)}
-              placeholder="End date"
+              placeholder={t("endDate")}
               className="h-8 w-40 text-xs"
             />
           </div>
@@ -489,15 +494,15 @@ function PurchaseOrdersContent() {
             }}
           >
             <SelectTrigger className="h-8 w-44 text-xs">
-              <SelectValue placeholder="Sort by..." />
+              <SelectValue placeholder={t("sortBy")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="created:desc">Newest first</SelectItem>
-              <SelectItem value="created:asc">Oldest first</SelectItem>
-              <SelectItem value="total:desc">Highest amount</SelectItem>
-              <SelectItem value="total:asc">Lowest amount</SelectItem>
-              <SelectItem value="number:asc">Number (A-Z)</SelectItem>
-              <SelectItem value="number:desc">Number (Z-A)</SelectItem>
+              <SelectItem value="created:desc">{t("newest")}</SelectItem>
+              <SelectItem value="created:asc">{t("oldest")}</SelectItem>
+              <SelectItem value="total:desc">{t("highest")}</SelectItem>
+              <SelectItem value="total:asc">{t("lowest")}</SelectItem>
+              <SelectItem value="number:asc">{t("numberAsc")}</SelectItem>
+              <SelectItem value="number:desc">{t("numberDesc")}</SelectItem>
             </SelectContent>
           </Select>
           {hasFilters && (
@@ -511,7 +516,8 @@ function PurchaseOrdersContent() {
               }}
             >
               <X className="mr-1 size-3" />
-              Clear dates
+              {t("clearDates")}
+
             </Button>
           )}
         </div>
@@ -536,7 +542,7 @@ function PurchaseOrdersContent() {
                 columns={columns}
               data={filteredPos}
                 loading={loading}
-                emptyMessage="No purchase orders match your filters."
+                emptyMessage={t("noMatches")}
                 onRowClick={(r) => router.push(`/purchases/orders/${r.id}`)}
                 sortBy={sortBy}
                 sortOrder={sortOrder}

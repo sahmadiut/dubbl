@@ -1563,6 +1563,7 @@ function SalesReceiptDrawer({ open, onClose }: { open: boolean; onClose: () => v
 // Purchase Order Drawer
 // ---------------------------------------------------------------------------
 function PurchaseOrderDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useTranslations("PurchaseOrders");
   const router = useRouter();
   const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
   const [currencyCode, setCurrencyCode] = useState("USD");
@@ -1588,8 +1589,9 @@ function PurchaseOrderDrawer({ open, onClose }: { open: boolean; onClose: () => 
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!contactId) { toast.error("Please select a supplier"); return; }
-    if (!orgId || !validLines) { toast.error("Check the purchase order amounts"); return; }
+    if (saving) return;
+    if (!contactId) { toast.error(t("selectSupplier")); return; }
+    if (!orgId || !validLines) { toast.error(t("checkAmounts")); return; }
     setSaving(true);
 
     try {
@@ -1604,16 +1606,14 @@ function PurchaseOrderDrawer({ open, onClose }: { open: boolean; onClose: () => 
           lines: procurementEditorLines(lines, "purchaseOrder"),
         }),
       });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to create purchase order");
-      }
+      if (!res.ok) throw new Error("Create failed");
       const data = await res.json();
-      toast.success("Purchase order created");
+      if (typeof data?.purchaseOrder?.id !== "string" || !data.purchaseOrder.id.trim()) throw new Error("Invalid saved order");
+      toast.success(t("created"));
       onClose();
       router.push(`/purchases/orders/${data.purchaseOrder.id}`);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create purchase order");
+    } catch {
+      toast.error(t("createFailed"));
     } finally {
       setSaving(false);
     }
@@ -1626,35 +1626,35 @@ function PurchaseOrderDrawer({ open, onClose }: { open: boolean; onClose: () => 
           <div className="flex items-center gap-3">
             <DrawerIcon><Receipt className="size-5" /></DrawerIcon>
             <div>
-              <SheetTitle className="text-lg">New Purchase Order</SheetTitle>
-              <SheetDescription>Create a purchase order for your supplier.</SheetDescription>
+              <SheetTitle className="text-lg">{t("newPurchaseOrder")}</SheetTitle>
+              <SheetDescription>{t("createDescription")}</SheetDescription>
             </div>
           </div>
         </SheetHeader>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
             <div className="space-y-4">
-              <SectionLabel>Order Details</SectionLabel>
-              <Label>Currency</Label>
+              <SectionLabel>{t("orderDetails")}</SectionLabel>
+              <Label>{t("currency")}</Label>
               <CurrencySelect value={currencyCode} onValueChange={(code) => { setCurrencyCode(code); setValidLines(false); }} />
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Supplier *</Label>
+                  <Label>{t("requiredSupplier")}</Label>
                   <ContactPicker value={contactId} onChange={setContactId} type="supplier" />
                 </div>
                 <div className="space-y-2">
-                  <Label>Reference</Label>
-                  <Input value={reference} onChange={(e) => setReference(e.target.value)} placeholder="PO reference" />
+                  <Label>{t("reference")}</Label>
+                  <Input value={reference} onChange={(e) => setReference(e.target.value)} placeholder={t("referencePlaceholder")} />
                 </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Issue Date</Label>
-                  <DatePicker value={issueDate} onChange={setIssueDate} placeholder="Issue date" />
+                  <Label>{t("issueDate")}</Label>
+                  <DatePicker value={issueDate} onChange={setIssueDate} placeholder={t("issueDatePlaceholder")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Delivery Date</Label>
-                  <DatePicker value={deliveryDate} onChange={setDeliveryDate} placeholder="Expected delivery" />
+                  <Label>{t("deliveryDate")}</Label>
+                  <DatePicker value={deliveryDate} onChange={setDeliveryDate} placeholder={t("expectedDelivery")} />
                 </div>
               </div>
             </div>
@@ -1662,18 +1662,18 @@ function PurchaseOrderDrawer({ open, onClose }: { open: boolean; onClose: () => 
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Line Items</SectionLabel>
+              <SectionLabel>{t("lineItems")}</SectionLabel>
               <LineItemsEditor key={orgId} lines={lines} onChange={(next) => { setLines(next); setValidLines(false); }} documentKind="purchaseOrder" currencyCode={currencyCode} priceFractionDigits={18} onValidityChange={setValidLines} accountTypeFilter={["expense"]} taxContext="purchase" />
             </div>
 
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Notes</SectionLabel>
-              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Internal notes..." rows={3} />
+              <SectionLabel>{t("notes")}</SectionLabel>
+              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("internalNotes")} rows={3} />
             </div>
           </div>
-          <DrawerFooter onClose={onClose} saving={saving} disabled={!orgId || !contactId || !validLines || lines.some(line => !line.description.trim())} label="Create purchase order" />
+          <DrawerFooter cancelLabel={t("cancel")} creatingLabel={t("saving")} onClose={onClose} saving={saving} disabled={!orgId || !contactId || !validLines || lines.some(line => !line.description.trim())} label={t("createOrder")} />
         </form>
       </SheetContent>
     </Sheet>

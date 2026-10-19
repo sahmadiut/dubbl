@@ -1,5 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { purchaseOrderStatusLabel } from "@/i18n/purchase-order-presentation";
+
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -74,15 +77,7 @@ const statusConfig: Record<string, { class: string }> = {
   void: { class: "border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300" },
 };
 
-// Plain-language status labels (end users aren't accountants).
-const statusLabels: Record<string, string> = {
-  draft: "draft",
-  sent: "ordered",
-  partial: "some items in",
-  received: "all items in",
-  closed: "fully billed",
-  void: "cancelled",
-};
+
 
 // ---------------------------------------------------------------------------
 // Drawer helper components
@@ -115,17 +110,19 @@ function DrawerFooter({
   label: string;
   disabled?: boolean;
 }) {
+  const t = useTranslations("PurchaseOrders");
   return (
     <div className="sticky bottom-0 z-10 flex items-center justify-end gap-3 border-t bg-background/80 px-4 py-3 sm:px-6 sm:py-4 backdrop-blur-sm">
       <Button type="button" variant="outline" onClick={onClose}>
-        Cancel
+        {t("cancel")}
+
       </Button>
       <Button
         type="submit"
         disabled={saving || disabled}
         className="bg-emerald-600 hover:bg-emerald-700"
       >
-        {saving ? "Saving..." : label}
+        {saving ? t("saving") : label}
       </Button>
     </div>
   );
@@ -146,6 +143,7 @@ function EditPODrawer({
   po: PODetail;
   onSaved: () => void;
 }) {
+  const t = useTranslations("PurchaseOrders");
   const [saving, setSaving] = useState(false);
   const [contactId, setContactId] = useState("");
   const [issueDate, setIssueDate] = useState("");
@@ -188,13 +186,14 @@ function EditPODrawer({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (saving) return;
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId || !contactId) {
-      toast.error("Supplier is required");
+      toast.error(t("supplierRequired"));
       return;
     }
     if (preview.error || lines.some((l) => !l.description.trim())) {
-      toast.error("Check every line description, quantity and price");
+      toast.error(t("checkLines"));
       return;
     }
 
@@ -212,16 +211,15 @@ function EditPODrawer({
         }),
       });
 
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to update");
-      }
+      if (!res.ok) throw new Error("Update failed");
+      const data = await res.json();
+      if (data?.purchaseOrder?.id !== po.id) throw new Error("Invalid saved order");
 
-      toast.success("Purchase order updated");
+      toast.success(t("updated"));
       onClose();
       onSaved();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to update");
+    } catch {
+      toast.error(t("updateFailed"));
     } finally {
       setSaving(false);
     }
@@ -234,28 +232,28 @@ function EditPODrawer({
           <div className="flex items-center gap-3">
             <DrawerIcon><Package className="size-5" /></DrawerIcon>
             <div>
-              <SheetTitle className="text-lg">Edit Purchase Order</SheetTitle>
-              <SheetDescription>Update purchase order details.</SheetDescription>
+              <SheetTitle className="text-lg">{t("editTitle")}</SheetTitle>
+              <SheetDescription>{t("editDescription")}</SheetDescription>
             </div>
           </div>
         </SheetHeader>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
             <div className="space-y-4">
-              <SectionLabel>Order Details</SectionLabel>
+              <SectionLabel>{t("orderDetails")}</SectionLabel>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Supplier *</Label>
+                  <Label>{t("requiredSupplier")}</Label>
                   <ContactPicker value={contactId} onChange={setContactId} type="supplier" />
                 </div>
                 <div className="space-y-2">
-                  <Label>Issue Date</Label>
-                  <DatePicker value={issueDate} onChange={setIssueDate} placeholder="Issue date" />
+                  <Label>{t("issueDate")}</Label>
+                  <DatePicker value={issueDate} onChange={setIssueDate} placeholder={t("issueDatePlaceholder")} />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Delivery Date</Label>
-                <DatePicker value={deliveryDate} onChange={setDeliveryDate} placeholder="Expected delivery" />
+                <Label>{t("deliveryDate")}</Label>
+                <DatePicker value={deliveryDate} onChange={setDeliveryDate} placeholder={t("expectedDelivery")} />
               </div>
             </div>
 
@@ -263,37 +261,37 @@ function EditPODrawer({
 
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <SectionLabel>Line Items</SectionLabel>
+                <SectionLabel>{t("lineItems")}</SectionLabel>
                 <Button type="button" variant="outline" size="sm" onClick={addLine}>
-                  <Plus className="mr-2 size-3.5" />Add Line
+                  <Plus className="mr-2 size-3.5" />{t("addLine")}
                 </Button>
               </div>
               <div className="space-y-4">
                 {lines.map((line, index) => (
                   <div key={index} className="rounded-lg border p-4 space-y-4">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-muted-foreground">Line {index + 1}</span>
+                      <span className="text-sm font-medium text-muted-foreground">{t("line", { line: index + 1 })}</span>
                       {lines.length > 1 && (
-                        <Button type="button" variant="ghost" size="sm" onClick={() => removeLine(index)} className="text-red-600 hover:text-red-700">
+                        <Button type="button" variant="ghost" size="sm" onClick={() => removeLine(index)} aria-label={t("removeLine", { line: index + 1 })} className="text-red-600 hover:text-red-700">
                           <Trash2 className="size-4" />
                         </Button>
                       )}
                     </div>
                     <div className="grid gap-4 sm:grid-cols-3">
                       <div className="space-y-2 sm:col-span-3">
-                        <Label className="text-xs">Description *</Label>
-                        <Input value={line.description} onChange={(e) => updateLine(index, { description: e.target.value })} />
+                        <Label className="text-xs">{t("requiredDescription")}</Label>
+                        <Input aria-label={t("lineDescription", { line: index + 1 })} value={line.description} onChange={(e) => updateLine(index, { description: e.target.value })} />
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-xs">Quantity</Label>
-                        <Input type="number" step="any" value={line.quantity} onChange={(e) => updateLine(index, { quantity: e.target.value })} />
+                        <Label className="text-xs">{t("quantity")}</Label>
+                        <Input type="number" step="any" aria-label={t("lineQuantity", { line: index + 1 })} value={line.quantity} onChange={(e) => updateLine(index, { quantity: e.target.value })} />
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-xs">Unit Price ({po.currencyCode})</Label>
-                        <Input inputMode="decimal" value={line.unitPrice} onChange={(e) => updateLine(index, { unitPrice: e.target.value })} />
+                        <Label className="text-xs">{t("unitPrice", { currency: po.currencyCode })}</Label>
+                        <Input inputMode="decimal" aria-label={t("linePrice", { line: index + 1 })} value={line.unitPrice} onChange={(e) => updateLine(index, { unitPrice: e.target.value })} />
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-xs">Account</Label>
+                        <Label className="text-xs">{t("account")}</Label>
                         <AccountPicker value={line.accountId} onChange={(val) => updateLine(index, { accountId: val })} typeFilter={["expense"]} />
                       </div>
                     </div>
@@ -304,14 +302,14 @@ function EditPODrawer({
 
             <div className="h-px bg-border" />
 
-            <p className="text-sm">Prices shown are the saved rounded prices. Saving recalculates totals without tax or discounts.</p>
-            {preview.error ? <p role="alert" className="text-sm text-red-600">{preview.error}</p> : <p className="text-right font-mono break-all">Preview total: {procurementMoney(preview.total, po.currencyCode)}</p>}
+            <p className="text-sm">{t("editPolicy")}</p>
+            {preview.error ? <p role="alert" className="text-sm text-red-600">{t("checkLines")}</p> : <p className="text-right font-mono break-all">{t("previewTotal", { amount: procurementMoney(preview.total, po.currencyCode) })}</p>}
             <div className="space-y-4">
-              <SectionLabel>Notes</SectionLabel>
-              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Internal notes..." rows={3} />
+              <SectionLabel>{t("notes")}</SectionLabel>
+              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("internalNotes")} rows={3} />
             </div>
           </div>
-          <DrawerFooter onClose={onClose} saving={saving} disabled={!!preview.error || !contactId || lines.some(line => !line.description.trim())} label="Save Changes" />
+          <DrawerFooter onClose={onClose} saving={saving} disabled={!!preview.error || !contactId || lines.some(line => !line.description.trim())} label={t("saveChanges")} />
         </form>
       </SheetContent>
     </Sheet>
@@ -329,6 +327,7 @@ export default function PODetailPage() {
 }
 
 function PODetailContent() {
+  const t = useTranslations("PurchaseOrders");
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { confirm, dialog: confirmDialog } = useConfirm();
@@ -339,6 +338,7 @@ function PODetailContent() {
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
   const [emailHistoryKey, setEmailHistoryKey] = useState(0);
   const [orgName, setOrgName] = useState("");
+  const [acting, setActing] = useState(false);
   const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
 
   useEntityTitle(po?.poNumber);
@@ -350,7 +350,7 @@ function PODetailContent() {
       if (!res.ok) throw new Error("Could not load purchase order");
       const data = await res.json();
       if (!signal?.aborted) { setPo(procurementDocument(data.purchaseOrder as ProcurementWire<PODetail>)); setReadError(null); }
-    } catch (error) { if (!signal?.aborted) { setPo(null); setReadError(error instanceof Error ? error.message : "Invalid purchase order amounts"); } }
+    } catch { if (!signal?.aborted) { setPo(null); setReadError("detailReadFailed"); } }
     finally { if (!signal?.aborted) setLoading(false); }
   }, [id, orgId]);
 
@@ -370,91 +370,105 @@ function PODetailContent() {
   }
 
   async function handleConvert() {
-    if (!orgId) return;
-    const res = await fetch(`/api/v1/purchase-orders/${id}/convert`, { method: "POST", headers: { "x-organization-id": orgId } });
-    if (res.ok) {
+    if (!orgId || acting) return;
+    setActing(true);
+    try {
+      const res = await fetch(`/api/v1/purchase-orders/${id}/convert`, { method: "POST", headers: { "x-organization-id": orgId } });
+      if (!res.ok) throw new Error("Conversion failed");
       const data = await res.json();
-      toast.success("Bill created from this order");
+      if (typeof data?.bill?.id !== "string" || !data.bill.id.trim()) throw new Error("Invalid bill");
+      toast.success(t("converted"));
       router.push(`/purchases/${data.bill.id}`);
-    } else {
-      toast.error("Couldn't create a bill from this order");
+    } catch {
+      toast.error(t("convertFailed"));
+    } finally {
+      setActing(false);
     }
   }
 
   // Record that the items you ordered have arrived (for the quantities still
   // outstanding on each line). Adds stock you track to your inventory.
   async function handleReceiveItems() {
-    if (!orgId || !po) return;
-    const linesToReceive = procurementReceiveLines(po.lines);
+    if (!orgId || !po || acting) return;
+    setActing(true);
+    try {
+      const linesToReceive = procurementReceiveLines(po.lines);
 
-    if (linesToReceive.length === 0) {
-      toast.info("All items on this order are already marked as received");
-      return;
-    }
+      if (linesToReceive.length === 0) {
+        toast.info(t("alreadyReceived"));
+        return;
+      }
 
-    const confirmed = await confirm({
-      title: "Mark all items as received?",
-      description:
-        "Records that everything still outstanding on this order has arrived. Anything you track as stock is added to your inventory.",
-      confirmLabel: "Mark items as received",
-    });
-    if (!confirmed) return;
+      const confirmed = await confirm({
+        title: t("receiveTitle"),
+        description: t("receiveDescription"),
+        confirmLabel: t("receive"),
+      });
+      if (!confirmed) return;
 
-    const res = await fetch(`/api/v1/goods-receipts`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-organization-id": orgId },
-      body: JSON.stringify({
-        purchaseOrderId: id,
-        date: new Date().toISOString().split("T")[0],
-        lines: linesToReceive,
-      }),
-    });
-    if (res.ok) {
-      toast.success("Items marked as received");
-      loadPO();
-    } else {
-      const data = await res.json().catch(() => ({}));
-      toast.error(typeof data.error === "string" ? data.error : "Couldn't record the items as received");
+      const res = await fetch(`/api/v1/goods-receipts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-organization-id": orgId },
+        body: JSON.stringify({
+          purchaseOrderId: id,
+          date: new Date().toISOString().split("T")[0],
+          lines: linesToReceive,
+        }),
+      });
+      if (!res.ok) throw new Error("Receipt failed");
+      const data = await res.json();
+      if (typeof data?.goodsReceipt?.id !== "string" || !data.goodsReceipt.id.trim()) throw new Error("Invalid receipt");
+      toast.success(t("receivedSuccess"));
+      void loadPO();
+    } catch {
+      toast.error(t("receiveFailed"));
+    } finally {
+      setActing(false);
     }
   }
 
   async function handleDelete() {
-    if (!orgId) return;
-    const confirmed = await confirm({
-      title: "Delete this purchase order?",
-      description: "This action cannot be undone.",
-      confirmLabel: "Delete",
-      destructive: true,
-    });
-    if (!confirmed) return;
-    const res = await fetch(`/api/v1/purchase-orders/${id}`, {
-      method: "DELETE",
-      headers: { "x-organization-id": orgId },
-    });
-    if (res.ok) {
-      toast.success("Purchase order deleted");
-      router.push("/purchases/orders");
-    } else {
+    if (!orgId || acting) return;
+    setActing(true);
+    try {
+      const confirmed = await confirm({
+        title: t("deleteTitle"),
+        description: t("deleteDescription"),
+        confirmLabel: t("delete"),
+        destructive: true,
+      });
+      if (!confirmed) return;
+      const res = await fetch(`/api/v1/purchase-orders/${id}`, {
+        method: "DELETE",
+        headers: { "x-organization-id": orgId },
+      });
+      if (!res.ok) throw new Error("Delete failed");
       const data = await res.json();
-      toast.error(typeof data.error === "string" ? data.error : "Failed to delete");
+      if (data?.success !== true) throw new Error("Invalid deletion");
+      toast.success(t("deleted"));
+      router.push("/purchases/orders");
+    } catch {
+      toast.error(t("deleteFailed"));
+    } finally {
+      setActing(false);
     }
   }
 
-  if (readError) return <p role="alert" className="text-sm text-red-600">{readError}</p>;
+  if (readError) return <p role="alert" className="text-sm text-red-600">{t("detailReadFailed")}</p>;
   if (loading) return <BrandLoader />;
 
   if (!po) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh]">
-        <p className="text-sm text-muted-foreground">Purchase order not found</p>
+        <p className="text-sm text-muted-foreground">{t("notFound")}</p>
         <Button variant="ghost" size="sm" asChild className="mt-2">
-          <Link href="/purchases/orders">Back to orders</Link>
+          <Link href="/purchases/orders">{t("back")}</Link>
         </Button>
       </div>
     );
   }
 
-  const sc = statusConfig[po.status] || statusConfig.draft;
+  const sc = Object.hasOwn(statusConfig, po.status) ? statusConfig[po.status] : statusConfig.draft;
 
   return (
     <ContentReveal>
@@ -462,17 +476,17 @@ function PODetailContent() {
         {/* Top bar */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" asChild className="size-8 p-0">
+            <Button variant="ghost" size="sm" asChild className="size-8 p-0" aria-label={t("back")}>
               <Link href="/purchases/orders"><ArrowLeft className="size-4" /></Link>
             </Button>
             <div>
               <div className="flex items-center gap-2.5">
                 <h1 className="text-lg font-semibold tracking-tight">{po.poNumber}</h1>
-                <Badge variant="outline" className={sc.class}>{statusLabels[po.status] || po.status}</Badge>
+                <Badge variant="outline" className={sc.class}>{purchaseOrderStatusLabel(t, po.status)}</Badge>
               </div>
               <p className="text-sm text-muted-foreground mt-0.5">
-                {po.contact?.name || "Unknown supplier"}
-                {po.deliveryDate && <span> · Delivery {po.deliveryDate}</span>}
+                {po.contact?.name || t("unknownSupplier")}
+                {po.deliveryDate && <span>{t("deliveryInline", { date: po.deliveryDate })}</span>}
               </p>
             </div>
           </div>
@@ -480,13 +494,13 @@ function PODetailContent() {
             {po.status === "draft" && (
               <>
                 <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
-                  <Pencil className="mr-2 size-3.5" />Edit
+                  <Pencil className="mr-2 size-3.5" />{t("edit")}
                 </Button>
                 <Button size="sm" onClick={() => setSendDialogOpen(true)} className="bg-emerald-600 hover:bg-emerald-700">
-                  <Send className="mr-2 size-3.5" />Send
+                  <Send className="mr-2 size-3.5" />{t("send")}
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleDelete} className="text-red-600 hover:text-red-700">
-                  <Trash2 className="mr-2 size-3.5" />Delete
+                <Button variant="outline" size="sm" disabled={acting} onClick={handleDelete} className="text-red-600 hover:text-red-700">
+                  <Trash2 className="mr-2 size-3.5" />{t("delete")}
                 </Button>
               </>
             )}
@@ -495,14 +509,15 @@ function PODetailContent() {
                 variant="outline"
                 size="sm"
                 onClick={handleReceiveItems}
-                title="Record that the items you ordered have arrived. Anything you track as stock is added to your inventory."
+                disabled={acting}
+                title={t("receiveHint")}
               >
-                <PackageCheck className="mr-2 size-3.5" />Mark items as received
+                <PackageCheck className="mr-2 size-3.5" />{t("receive")}
               </Button>
             )}
             {["sent", "partial", "received"].includes(po.status) && (
-              <Button size="sm" onClick={handleConvert} className="bg-emerald-600 hover:bg-emerald-700" title="Turn this order into a bill you can pay">
-                <ShoppingCart className="mr-2 size-3.5" />Create a bill from this order
+              <Button size="sm" disabled={acting} onClick={handleConvert} className="bg-emerald-600 hover:bg-emerald-700" title={t("convertHint")}>
+                <ShoppingCart className="mr-2 size-3.5" />{t("convert")}
               </Button>
             )}
           </div>
@@ -513,13 +528,13 @@ function PODetailContent() {
 
         {/* Info */}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-          <span>Issued {po.issueDate}</span>
-          {po.deliveryDate && <span>Delivery {po.deliveryDate}</span>}
+          <span>{t("issued", { date: po.issueDate })}</span>
+          {po.deliveryDate && <span>{t("deliveryOn", { date: po.deliveryDate })}</span>}
         </div>
 
         {po.notes && (
           <div className="rounded-lg border p-4">
-            <p className="text-xs text-muted-foreground mb-1">Notes</p>
+            <p className="text-xs text-muted-foreground mb-1">{t("notes")}</p>
             <p className="text-sm">{po.notes}</p>
           </div>
         )}
@@ -527,15 +542,15 @@ function PODetailContent() {
         {/* Summary cards */}
         <div className="grid gap-4 grid-cols-2 sm:grid-cols-3">
           <div className="rounded-lg border bg-card p-4">
-            <p className="text-xs text-muted-foreground">Total</p>
+            <p className="text-xs text-muted-foreground">{t("total")}</p>
             <p className="mt-1 text-xl font-bold font-mono tabular-nums break-all">{procurementMoney(po.total, po.currencyCode)}</p>
           </div>
           <div className="rounded-lg border bg-card p-4">
-            <p className="text-xs text-muted-foreground">Items</p>
+            <p className="text-xs text-muted-foreground">{t("items")}</p>
             <p className="mt-1 text-xl font-bold font-mono tabular-nums">{po.lines.length}</p>
           </div>
           <div className="rounded-lg border bg-card p-4">
-            <p className="text-xs text-muted-foreground">Supplier</p>
+            <p className="text-xs text-muted-foreground">{t("supplier")}</p>
             <p className="mt-1 text-xl font-bold truncate">{po.contact?.name || "-"}</p>
           </div>
         </div>

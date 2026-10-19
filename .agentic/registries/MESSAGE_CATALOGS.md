@@ -181,6 +181,19 @@ Extraction ownership:
 | LOC-064 | LOC-028 child: VAT filing; see [scope](VAT_RETURN_CATALOGS.md) |
 | LOC-065 | LOC-028 child: remaining tax filing; see [scope](TAX_FILING_CATALOGS.md) |
 | LOC-008 | Inventory, payroll, projects, CRM, reports, dashboard and documents |
+| LOC-066 | LOC-008 child: inventory combined acceptance, split across LOC-072..078 |
+| LOC-072 | LOC-066 child: inventory categories, picker, creation drawer and navigation; see [scope](INVENTORY_CATEGORY_CATALOGS.md) |
+| LOC-073 | LOC-066 child: inventory item list/detail/history, creation and item picker |
+| LOC-074 | LOC-066 child: inventory variants and suppliers |
+| LOC-075 | LOC-066 child: warehouse management, creation and picker |
+| LOC-076 | LOC-066 child: stock-takes, transfers and movement creation |
+| LOC-077 | LOC-066 child: BOM and assembly |
+| LOC-078 | LOC-066 child: valuation, alerts, loading and residual inventory strings |
+| LOC-067 | LOC-008 child: payroll routes, creation and shared controls |
+| LOC-068 | LOC-008 child: projects and shared controls |
+| LOC-069 | LOC-008 child: CRM and shared controls |
+| LOC-070 | LOC-008 child: reporting and shared controls |
+| LOC-071 | LOC-008 child: dashboard, documents and residual operations shared components |
 | LOC-009 | Public surfaces, landing/help, email/PDF and user-visible background content; remaining source audit |
 | LOC-002 | Independent combined key coverage, plural and safe rendering acceptance |
 

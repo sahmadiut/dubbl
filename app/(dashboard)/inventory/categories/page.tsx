@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { categoryJson } from "@/i18n/inventory-category-presentation";
 import { useState, useEffect, useCallback } from "react";
 import { Tag, Plus, Pencil, Trash2, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
@@ -35,6 +37,7 @@ const COLORS = [
 ];
 
 export default function CategoriesPage() {
+  const t = useTranslations("InventoryCategories");
   const [categories, setCategories] = useState<Category[]>([]);
   const [flat, setFlat] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,22 +45,25 @@ export default function CategoriesPage() {
   const [editCategory, setEditCategory] = useState<Category | null>(null);
   const [saving, setSaving] = useState(false);
   const { confirm, dialog: confirmDialog } = useConfirm();
-  useDocumentTitle("Inventory · Categories");
+  useDocumentTitle(t("documentTitle"));
 
   const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
 
-  const fetchCategories = useCallback(() => {
-    if (!orgId) return;
-    fetch("/api/v1/inventory/categories", {
-      headers: { "x-organization-id": orgId },
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        setCategories(data.data || []);
-        setFlat(data.flat || []);
-      })
-      .finally(() => setLoading(false));
-  }, [orgId]);
+  const fetchCategories = useCallback(async () => {
+    if (!orgId) { setLoading(false); return; }
+    try {
+      const res = await fetch("/api/v1/inventory/categories", {
+        headers: { "x-organization-id": orgId },
+      });
+      const data = await categoryJson(res, "list");
+      setCategories(data.data);
+      setFlat(data.flat);
+    } catch {
+      toast.error(t("readFailed"));
+    } finally {
+      setLoading(false);
+    }
+  }, [orgId, t]);
 
   useEffect(() => {
     fetchCategories();
@@ -92,16 +98,13 @@ export default function CategoriesPage() {
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify(body),
       });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed");
-      }
-      toast.success(isEdit ? "Category updated" : "Category created");
+      await categoryJson(res, "category");
+      toast.success(t(isEdit ? "updated" : "created"));
       setEditOpen(false);
       setEditCategory(null);
       fetchCategories();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed");
+    } catch {
+      toast.error(t(editCategory ? "updateFailed" : "createFailed"));
     } finally {
       setSaving(false);
     }
@@ -109,94 +112,85 @@ export default function CategoriesPage() {
 
   async function handleDelete(cat: Category) {
     const confirmed = await confirm({
-      title: `Delete "${cat.name}"?`,
-      description: "This will remove the category. Items using it will keep their text category.",
-      confirmLabel: "Delete",
+      title: t("deleteTitle", { name: cat.name }),
+      description: t("deleteDescription"),
+      confirmLabel: t("delete"),
       destructive: true,
     });
     if (!confirmed || !orgId) return;
 
     try {
-      await fetch(`/api/v1/inventory/categories/${cat.id}`, {
+      const res = await fetch(`/api/v1/inventory/categories/${cat.id}`, {
         method: "DELETE",
         headers: { "x-organization-id": orgId },
       });
-      toast.success("Category deleted");
+      await categoryJson(res, "delete");
+      toast.success(t("deleted"));
       fetchCategories();
     } catch {
-      toast.error("Failed to delete category");
+      toast.error(t("deleteFailed"));
     }
   }
 
   if (loading) return <BrandLoader />;
 
-  if (categories.length === 0) {
-    return (
-      <ContentReveal>
-        <EmptyState
-          icon={Tag}
-          title="No categories yet"
-          description="Organize your inventory items with categories."
-        >
-          <Button
-            onClick={() => { setEditCategory(null); setEditOpen(true); }}
-            className="bg-emerald-600 hover:bg-emerald-700"
-          >
-            <Plus className="size-3.5 mr-1.5" />
-            New Category
-          </Button>
-        </EmptyState>
-      </ContentReveal>
-    );
-  }
-
   return (
     <ContentReveal className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-muted-foreground">{flat.length} categor{flat.length === 1 ? "y" : "ies"}</p>
-        </div>
-        <Button
-          size="sm"
-          className="h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700"
-          onClick={() => { setEditCategory(null); setEditOpen(true); }}
-        >
-          <Plus className="size-3" />
-          New Category
-        </Button>
-      </div>
+      {categories.length === 0 ? (
+        <EmptyState icon={Tag} title={t("emptyTitle")} description={t("emptyDescription")}>
+          <Button onClick={() => { setEditCategory(null); setEditOpen(true); }} className="bg-emerald-600 hover:bg-emerald-700">
+            <Plus className="size-3.5 mr-1.5" />{t("newCategory")}
+          </Button>
+        </EmptyState>
+      ) : (
+        <>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">{t("count", { count: flat.length })}</p>
+            </div>
+            <Button
+              size="sm"
+              className="h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700"
+              onClick={() => { setEditCategory(null); setEditOpen(true); }}
+            >
+              <Plus className="size-3" />
+              {t("newCategory")}
+            </Button>
+          </div>
 
-      <div className="rounded-xl border bg-card divide-y">
-        {categories.map((cat) => (
-          <div key={cat.id}>
-            <CategoryRow
-              category={cat}
-              depth={0}
-              onEdit={(c) => { setEditCategory(c); setEditOpen(true); }}
-              onDelete={handleDelete}
-            />
-            {cat.children?.map((child) => (
-              <CategoryRow
-                key={child.id}
-                category={child}
-                depth={1}
-                onEdit={(c) => { setEditCategory(c); setEditOpen(true); }}
-                onDelete={handleDelete}
-              />
+          <div className="rounded-xl border bg-card divide-y">
+            {categories.map((cat) => (
+              <div key={cat.id}>
+                <CategoryRow
+                  category={cat}
+                  depth={0}
+                  onEdit={(c) => { setEditCategory(c); setEditOpen(true); }}
+                  onDelete={handleDelete}
+                />
+                {cat.children?.map((child) => (
+                  <CategoryRow
+                    key={child.id}
+                    category={child}
+                    depth={1}
+                    onEdit={(c) => { setEditCategory(c); setEditOpen(true); }}
+                    onDelete={handleDelete}
+                  />
+                ))}
+              </div>
             ))}
           </div>
-        ))}
-      </div>
+        </>
+      )}
 
       {/* Edit/Create Sheet */}
       <Sheet open={editOpen} onOpenChange={(v) => { if (!v) { setEditOpen(false); setEditCategory(null); } }}>
         <SheetContent>
           <SheetHeader>
-            <SheetTitle>{editCategory ? "Edit Category" : "New Category"}</SheetTitle>
+            <SheetTitle>{t(editCategory ? "editCategory" : "newCategory")}</SheetTitle>
           </SheetHeader>
           <form onSubmit={handleSubmit} className="space-y-4 px-4">
             <div className="space-y-2">
-              <Label htmlFor="cat-name">Name *</Label>
+              <Label htmlFor="cat-name">{t("nameRequired")}</Label>
               <Input
                 id="cat-name"
                 name="name"
@@ -206,11 +200,11 @@ export default function CategoriesPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Color</Label>
+              <Label>{t("color")}</Label>
               <div className="flex gap-2 flex-wrap">
                 {COLORS.map((c) => (
                   <label key={c} className="cursor-pointer">
-                    <input type="radio" name="color" value={c} className="sr-only peer" defaultChecked={editCategory?.color === c} />
+                    <input type="radio" name="color" aria-label={t("colorValue", { color: c })} value={c} className="sr-only peer" defaultChecked={editCategory?.color === c} />
                     <div
                       className="size-7 rounded-full border-2 border-transparent peer-checked:border-foreground transition-colors"
                       style={{ backgroundColor: c }}
@@ -220,7 +214,7 @@ export default function CategoriesPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="cat-parent">Parent Category</Label>
+              <Label htmlFor="cat-parent">{t("parentCategory")}</Label>
               <select
                 id="cat-parent"
                 name="parentId"
@@ -228,7 +222,7 @@ export default function CategoriesPage() {
                 defaultValue={editCategory?.parentId || ""}
                 key={editCategory?.id || "new-p"}
               >
-                <option value="">None (root)</option>
+                <option value="">{t("root")}</option>
                 {flat
                   .filter((c) => c.id !== editCategory?.id && !c.parentId)
                   .map((c) => (
@@ -237,7 +231,7 @@ export default function CategoriesPage() {
               </select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="cat-desc">Description</Label>
+              <Label htmlFor="cat-desc">{t("description")}</Label>
               <Textarea
                 id="cat-desc"
                 name="description"
@@ -247,9 +241,9 @@ export default function CategoriesPage() {
               />
             </div>
             <SheetFooter>
-              <Button type="button" variant="outline" onClick={() => { setEditOpen(false); setEditCategory(null); }}>Cancel</Button>
+              <Button type="button" variant="outline" onClick={() => { setEditOpen(false); setEditCategory(null); }}>{t("cancel")}</Button>
               <Button type="submit" disabled={saving} className="bg-emerald-600 hover:bg-emerald-700">
-                {saving ? "Saving..." : editCategory ? "Update" : "Create"}
+                {t(saving ? "saving" : editCategory ? "update" : "create")}
               </Button>
             </SheetFooter>
           </form>
@@ -272,6 +266,7 @@ function CategoryRow({
   onEdit: (c: Category) => void;
   onDelete: (c: Category) => void;
 }) {
+  const t = useTranslations("InventoryCategories");
   return (
     <div
       className="group flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors"
@@ -293,6 +288,7 @@ function CategoryRow({
           variant="ghost"
           size="icon"
           className="size-7"
+          aria-label={t("editCategory")}
           onClick={() => onEdit(category)}
         >
           <Pencil className="size-3" />
@@ -301,6 +297,7 @@ function CategoryRow({
           variant="ghost"
           size="icon"
           className="size-7 text-red-500 hover:text-red-600"
+          aria-label={t("delete")}
           onClick={() => onDelete(category)}
         >
           <Trash2 className="size-3" />

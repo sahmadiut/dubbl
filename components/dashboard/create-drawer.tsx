@@ -6,6 +6,7 @@ import { requireBankAccountResponse, bankAccountFailureMessage } from "@/i18n/ba
 
 import { requirePaymentResponse, paymentFailure } from "@/i18n/bank-payment-presentation";
 
+import { categoryJson } from "@/i18n/inventory-category-presentation";
 import { useTranslations } from "next-intl";
 import { journalPreviewMessage, requireJournalResponse, journalFailureMessage } from "@/i18n/journal-presentation";
 import { requireAccountResponse, accountFailureMessage } from "@/i18n/account-presentation";
@@ -3381,15 +3382,16 @@ const CATEGORY_COLORS = [
 ];
 
 function CategoryDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useTranslations("InventoryCategories");
   const [saving, setSaving] = useState(false);
   const [color, setColor] = useState(CATEGORY_COLORS[0]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setSaving(true);
-    const form = new FormData(e.currentTarget);
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
+    setSaving(true);
+    const form = new FormData(e.currentTarget);
 
     try {
       const res = await fetch("/api/v1/inventory/categories", {
@@ -3401,15 +3403,12 @@ function CategoryDrawer({ open, onClose }: { open: boolean; onClose: () => void 
           description: form.get("description") || null,
         }),
       });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to create category");
-      }
-      toast.success("Category created");
+      await categoryJson(res, "category");
+      toast.success(t("created"));
       onClose();
       window.dispatchEvent(new CustomEvent("refetch-categories"));
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create category");
+    } catch {
+      toast.error(t("createFailed"));
     } finally {
       setSaving(false);
     }
@@ -3422,43 +3421,43 @@ function CategoryDrawer({ open, onClose }: { open: boolean; onClose: () => void 
           <div className="flex items-center gap-3">
             <DrawerIcon><Tag className="size-5" /></DrawerIcon>
             <div>
-              <SheetTitle className="text-lg">New Category</SheetTitle>
-              <SheetDescription>Organize inventory items with categories.</SheetDescription>
+              <SheetTitle className="text-lg">{t("newCategory")}</SheetTitle>
+              <SheetDescription>{t("createDescription")}</SheetDescription>
             </div>
           </div>
         </SheetHeader>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
             <div className="space-y-4">
-              <SectionLabel>Category Info</SectionLabel>
+              <SectionLabel>{t("categoryInfo")}</SectionLabel>
               <div className="space-y-2">
-                <Label htmlFor="drawer-cat-name">Name *</Label>
-                <Input id="drawer-cat-name" name="name" required placeholder="e.g. Electronics" />
+                <Label htmlFor="drawer-cat-name">{t("nameRequired")}</Label>
+                <Input id="drawer-cat-name" name="name" required placeholder={t("nameExample")} />
               </div>
             </div>
 
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Details</SectionLabel>
+              <SectionLabel>{t("details")}</SectionLabel>
               <div className="space-y-2">
-                <Label>Color</Label>
+                <Label>{t("color")}</Label>
                 <div className="flex gap-2 flex-wrap">
                   {CATEGORY_COLORS.map((c) => (
                     <label key={c} className="cursor-pointer">
-                      <input type="radio" name="color" value={c} checked={color === c} onChange={() => setColor(c)} className="sr-only peer" />
+                      <input type="radio" name="color" aria-label={t("colorValue", { color: c })} value={c} checked={color === c} onChange={() => setColor(c)} className="sr-only peer" />
                       <div className="size-6 rounded-full ring-2 ring-transparent peer-checked:ring-offset-2 peer-checked:ring-gray-400 transition-all" style={{ backgroundColor: c }} />
                     </label>
                   ))}
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="drawer-cat-desc">Description</Label>
-                <Textarea id="drawer-cat-desc" name="description" placeholder="Optional description..." rows={2} />
+                <Label htmlFor="drawer-cat-desc">{t("description")}</Label>
+                <Textarea id="drawer-cat-desc" name="description" placeholder={t("optionalDescription")} rows={2} />
               </div>
             </div>
           </div>
-          <DrawerFooter onClose={onClose} saving={saving} label="Create Category" />
+          <DrawerFooter onClose={onClose} saving={saving} label={t("createCategory")} cancelLabel={t("cancel")} creatingLabel={t("creating")} />
         </form>
       </SheetContent>
     </Sheet>

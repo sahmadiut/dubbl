@@ -316,3 +316,19 @@ Verified scope: nine route TSX files (2,965 lines including blanks), plus the sh
 - [LOC-058](../tasks/LOC-058.md): Extract contact list and creation catalogs.
 - [LOC-059](../tasks/LOC-059.md): Extract contact detail shell catalogs.
 - [LOC-060](../tasks/LOC-060.md): Extract contact financial tab catalogs.
+
+## LOC-008 operations and reporting catalog children
+
+- [LOC-066](../tasks/LOC-066.md): Extract inventory catalogs.
+- [LOC-067](../tasks/LOC-067.md): Extract payroll catalogs.
+- [LOC-068](../tasks/LOC-068.md): Extract project catalogs.
+- [LOC-069](../tasks/LOC-069.md): Extract CRM catalogs.
+- [LOC-070](../tasks/LOC-070.md): Extract reporting catalogs.
+- [LOC-071](../tasks/LOC-071.md): Extract dashboard and document catalogs.
+- [LOC-072](../tasks/LOC-072.md): Extract inventory category catalogs.
+- [LOC-073](../tasks/LOC-073.md): Extract inventory item catalogs.
+- [LOC-074](../tasks/LOC-074.md): Extract inventory variant and supplier catalogs.
+- [LOC-075](../tasks/LOC-075.md): Extract inventory warehouse catalogs.
+- [LOC-076](../tasks/LOC-076.md): Extract inventory movement catalogs.
+- [LOC-077](../tasks/LOC-077.md): Extract inventory assembly catalogs.
+- [LOC-078](../tasks/LOC-078.md): Extract inventory valuation and alert catalogs.

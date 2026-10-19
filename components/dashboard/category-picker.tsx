@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { categoryJson } from "@/i18n/inventory-category-presentation";
 import { useState, useEffect, useRef } from "react";
 import { Check, ChevronsUpDown, Plus, Loader2, Tag, Trash2, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -52,7 +54,8 @@ interface CategoryPickerProps {
   triggerClassName?: string;
 }
 
-export function CategoryPicker({ value, onChange, placeholder = "Select category...", triggerClassName }: CategoryPickerProps) {
+export function CategoryPicker({ value, onChange, placeholder, triggerClassName }: CategoryPickerProps) {
+  const t = useTranslations("InventoryCategories");
   const [open, setOpen] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [search, setSearch] = useState("");
@@ -78,11 +81,11 @@ export function CategoryPicker({ value, onChange, placeholder = "Select category
     fetch("/api/v1/inventory/categories", {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then((r) => categoryJson(r, "list"))
       .then((data) => {
-        if (id === fetchIdRef.current && data.flat) setCategories(data.flat);
+        if (id === fetchIdRef.current) setCategories(data.flat);
       })
-      .catch(() => {})
+      .catch(() => { if (id === fetchIdRef.current) toast.error(t("readFailed")); })
       .finally(() => setFetchCount((c) => c - 1));
   }
 
@@ -123,9 +126,9 @@ export function CategoryPicker({ value, onChange, placeholder = "Select category
     e.preventDefault();
 
     const confirmed = await confirm({
-      title: `Delete "${cat.name}"?`,
-      description: "This category will be removed. Items using it will be unlinked.",
-      confirmLabel: "Delete",
+      title: t("deleteTitle", { name: cat.name }),
+      description: t("deleteDescription"),
+      confirmLabel: t("delete"),
       destructive: true,
     });
     if (!confirmed || !orgId) return;
@@ -135,15 +138,12 @@ export function CategoryPicker({ value, onChange, placeholder = "Select category
         method: "DELETE",
         headers: { "x-organization-id": orgId },
       });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to delete category");
-      }
-      toast.success("Category deleted");
+      await categoryJson(res, "delete");
+      toast.success(t("deleted"));
       if (value === cat.id) onChange("");
       setCategories((prev) => prev.filter((c) => c.id !== cat.id));
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to delete category");
+    } catch {
+      toast.error(t("deleteFailed"));
     }
   }
 
@@ -172,19 +172,15 @@ export function CategoryPicker({ value, onChange, placeholder = "Select category
           description: form.get("description") || null,
         }),
       });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to update category");
-      }
-      const data = await res.json();
-      toast.success("Category updated");
+      const data = await categoryJson(res, "category");
+      toast.success(t("updated"));
       setCategories((prev) =>
         prev.map((c) => (c.id === editCategory.id ? { ...c, ...data.category } : c))
       );
       setEditOpen(false);
       setEditCategory(null);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to update category");
+    } catch {
+      toast.error(t("updateFailed"));
     } finally {
       setSaving(false);
     }
@@ -212,7 +208,7 @@ export function CategoryPicker({ value, onChange, placeholder = "Select category
                 <span className="truncate">{selected.name}</span>
               </span>
             ) : (
-              <span className="text-muted-foreground">{placeholder}</span>
+              <span className="text-muted-foreground">{placeholder ?? t("selectCategory")}</span>
             )}
             <ChevronsUpDown className="ml-auto size-4 shrink-0 opacity-50" />
           </Button>
@@ -220,7 +216,7 @@ export function CategoryPicker({ value, onChange, placeholder = "Select category
         <PopoverContent className="p-0" align="start">
           <Command shouldFilter={false}>
             <CommandInput
-              placeholder="Search categories..."
+              placeholder={t("searchCategories")}
               value={search}
               onValueChange={setSearch}
             />
@@ -234,7 +230,7 @@ export function CategoryPicker({ value, onChange, placeholder = "Select category
                   <div className="flex flex-col items-center gap-1.5 py-2">
                     <Tag className="size-4 text-muted-foreground" />
                     <span className="text-muted-foreground">
-                      {search ? "No categories match your search" : "No categories found"}
+                      {t(search ? "noMatches" : "noCategories")}
                     </span>
                   </div>
                 </CommandEmpty>
@@ -270,6 +266,7 @@ export function CategoryPicker({ value, onChange, placeholder = "Select category
                           <button
                             type="button"
                             className="p-0.5 rounded hover:bg-accent"
+                            aria-label={t("editCategory")}
                             onClick={(e) => handleEdit(e, cat)}
                           >
                             <Pencil className="size-3.5 text-muted-foreground" />
@@ -277,6 +274,7 @@ export function CategoryPicker({ value, onChange, placeholder = "Select category
                           <button
                             type="button"
                             className="p-0.5 rounded hover:bg-destructive/10"
+                            aria-label={t("delete")}
                             onClick={(e) => handleDelete(e, cat)}
                           >
                             <Trash2 className="size-3.5 text-destructive" />
@@ -298,7 +296,7 @@ export function CategoryPicker({ value, onChange, placeholder = "Select category
                 }}
               >
                 <Plus className="size-4 text-muted-foreground" />
-                Add category
+                {t("addCategory")}
               </button>
             </div>
           </Command>
@@ -314,8 +312,8 @@ export function CategoryPicker({ value, onChange, placeholder = "Select category
                 <Tag className="size-5" />
               </div>
               <div>
-                <SheetTitle className="text-lg">Edit Category</SheetTitle>
-                <SheetDescription>Update category details.</SheetDescription>
+                <SheetTitle className="text-lg">{t("editCategory")}</SheetTitle>
+                <SheetDescription>{t("editDescription")}</SheetDescription>
               </div>
             </div>
           </SheetHeader>
@@ -323,7 +321,7 @@ export function CategoryPicker({ value, onChange, placeholder = "Select category
             <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="picker-cat-name">Name *</Label>
+                  <Label htmlFor="picker-cat-name">{t("nameRequired")}</Label>
                   <Input
                     id="picker-cat-name"
                     name="name"
@@ -338,13 +336,14 @@ export function CategoryPicker({ value, onChange, placeholder = "Select category
 
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Color</Label>
+                  <Label>{t("color")}</Label>
                   <div className="flex gap-2 flex-wrap">
                     {COLORS.map((c) => (
                       <label key={c} className="cursor-pointer">
                         <input
                           type="radio"
                           name="color"
+                          aria-label={t("colorValue", { color: c })}
                           value={c}
                           className="sr-only peer"
                           defaultChecked={editCategory?.color === c}
@@ -359,12 +358,12 @@ export function CategoryPicker({ value, onChange, placeholder = "Select category
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="picker-cat-desc">Description</Label>
+                  <Label htmlFor="picker-cat-desc">{t("description")}</Label>
                   <Textarea
                     id="picker-cat-desc"
                     name="description"
                     rows={2}
-                    placeholder="Optional description..."
+                    placeholder={t("optionalDescription")}
                     defaultValue={editCategory?.description || ""}
                     key={editCategory?.id || "new-d"}
                   />
@@ -373,10 +372,10 @@ export function CategoryPicker({ value, onChange, placeholder = "Select category
             </div>
             <div className="sticky bottom-0 z-10 flex items-center justify-end gap-3 border-t bg-background/80 px-4 py-3 sm:px-6 sm:py-4 backdrop-blur-sm">
               <Button type="button" variant="outline" onClick={() => { setEditOpen(false); setEditCategory(null); }}>
-                Cancel
+                {t("cancel")}
               </Button>
               <Button type="submit" disabled={saving} className="bg-emerald-600 hover:bg-emerald-700">
-                {saving ? "Saving..." : "Update Category"}
+                {t(saving ? "saving" : "updateCategory")}
               </Button>
             </div>
           </form>

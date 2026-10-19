@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { recurringBillFrequencyLabel, recurringBillStatusLabel, recurringBillInputError, type RecurringBillError } from "@/i18n/recurring-bill-presentation";
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,21 +56,6 @@ const statusColors: Record<string, string> = {
     "border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300",
 };
 
-const statusLabels: Record<string, string> = {
-  active: "Active",
-  paused: "Paused",
-  completed: "Finished",
-};
-
-const frequencyLabels: Record<string, string> = {
-  weekly: "Weekly",
-  fortnightly: "Fortnightly",
-  monthly: "Monthly",
-  quarterly: "Quarterly",
-  semi_annual: "Semi-Annual",
-  annual: "Annual",
-};
-
 const emptyLine = (): LineItem => ({
   description: "",
   quantity: "1",
@@ -83,10 +70,11 @@ export default function RecurringBillsPage() {
 }
 
 function RecurringBillsWorkspace({ orgId }: { orgId: string }) {
+  const t = useTranslations("RecurringBills");
   const [templates, setTemplates] = useState<RecurringTemplate[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useDocumentTitle("Purchases · Recurring Bills");
+  useDocumentTitle(t("documentTitle"));
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -100,21 +88,27 @@ function RecurringBillsWorkspace({ orgId }: { orgId: string }) {
   const [reference, setReference] = useState("");
   const [currencyCode, setCurrencyCode] = useState("USD");
   const [validLines, setValidLines] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<RecurringBillError | null>(null);
   const [reload, setReload] = useState(0);
   const [lines, setLines] = useState<LineItem[]>([emptyLine()]);
 
   const orgHeaders = useCallback(() => ({ "x-organization-id": orgId }), [orgId]);
   useEffect(() => {
+    if (!orgId) return;
     const controller = new AbortController();
     setLoading(true);
+    setError(null);
     fetch("/api/v1/recurring?type=bill", { headers: orgHeaders(), signal: controller.signal })
       .then(async r => { if (!r.ok) throw new Error("Unable to load recurring bills"); return r.json(); })
-      .then(data => { if (!controller.signal.aborted) setTemplates((data.data || []).map(recurringBillUiDocument)); })
-      .catch(() => { if (!controller.signal.aborted) { setTemplates([]); setError("Unable to load recurring bill amounts"); } })
+      .then(data => {
+        if (!Array.isArray(data?.data)) throw new Error("Invalid recurring bill list");
+        const rows = data.data.map(recurringBillUiDocument);
+        if (!controller.signal.aborted) setTemplates(rows);
+      })
+      .catch(() => { if (!controller.signal.aborted) { setTemplates([]); setError("readFailed"); } })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [orgHeaders, reload]);
+  }, [orgId, orgHeaders, reload]);
 
   const resetForm = () => {
     setName("");
@@ -127,14 +121,18 @@ function RecurringBillsWorkspace({ orgId }: { orgId: string }) {
     setLines([emptyLine()]);
     setCurrencyCode("USD");
     setValidLines(false);
-    setError("");
+    setError(null);
   };
 
   const handleSubmit = async () => {
-    if (!name || !contactId || !startDate || lines.length === 0) return;
+    if (!orgId || submitting || !name || !contactId || !startDate || lines.length === 0) return;
 
-    if (!validLines) { setError("Check the currency and line amounts"); return; }
-    setError("");
+    if (!validLines) { setError("checkAmounts"); return; }
+    let payload: ReturnType<typeof recurringBillEditorPayload>;
+    try {
+      payload = recurringBillEditorPayload({ name, contactId, frequency, startDate, endDate, maxOccurrences, reference, currencyCode }, lines);
+    } catch (error) { setError(recurringBillInputError(error)); return; }
+    setError(null);
     setSubmitting(true);
     try {
       const res = await fetch("/api/v1/recurring", {
@@ -143,20 +141,20 @@ function RecurringBillsWorkspace({ orgId }: { orgId: string }) {
           "Content-Type": "application/json",
           ...orgHeaders(),
         },
-        body: JSON.stringify(recurringBillEditorPayload({ name, contactId, frequency, startDate, endDate, maxOccurrences, reference, currencyCode }, lines)),
+        body: JSON.stringify(payload),
       });
 
       if (res.ok) {
+        const data = await res.json();
+        if (typeof data?.template?.id !== "string" || !data.template.id) throw new Error("Invalid recurring bill creation response");
         setDrawerOpen(false);
         resetForm();
         setReload(value => value + 1);
       } else {
-        const data = await res.json();
-        setError(data.error || "Unable to create recurring bill");
+        setError("createFailed");
       }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Unable to create recurring bill";
-      setError(message.startsWith("[") ? "Check the name, supplier, dates and occurrence limit" : message);
+    } catch {
+      setError("createFailed");
     } finally {
       setSubmitting(false);
     }
@@ -167,11 +165,10 @@ function RecurringBillsWorkspace({ orgId }: { orgId: string }) {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-lg font-semibold tracking-tight">
-            Recurring Bills
+            {t("title")}
           </h1>
           <p className="text-sm text-muted-foreground">
-            Set up supplier bills that get created automatically on a schedule,
-            so you never have to re-key the same monthly bill.
+            {t("description")}
           </p>
         </div>
         <Button
@@ -179,22 +176,22 @@ function RecurringBillsWorkspace({ orgId }: { orgId: string }) {
           className="bg-emerald-600 hover:bg-emerald-700"
         >
           <Plus className="mr-2 size-4" />
-          New Recurring Bill
+          {t("newBill")}
         </Button>
       </div>
 
-      {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+      {error && <p role="alert" className="text-sm text-red-600">{t(error)}</p>}
       <div className="rounded-lg border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Supplier</TableHead>
-              <TableHead>Frequency</TableHead>
-              <TableHead>Next Bill</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Currency</TableHead>
-              <TableHead className="text-right">Gross Amount (before discount and tax)</TableHead>
+              <TableHead>{t("name")}</TableHead>
+              <TableHead>{t("supplier")}</TableHead>
+              <TableHead>{t("frequency")}</TableHead>
+              <TableHead>{t("nextBill")}</TableHead>
+              <TableHead>{t("status")}</TableHead>
+              <TableHead>{t("currency")}</TableHead>
+              <TableHead className="text-right">{t("grossAmount")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -204,7 +201,7 @@ function RecurringBillsWorkspace({ orgId }: { orgId: string }) {
                   colSpan={7}
                   className="text-center py-8 text-sm text-muted-foreground"
                 >
-                  Loading...
+                  {t("loading")}
                 </TableCell>
               </TableRow>
             ) : templates.length === 0 ? (
@@ -213,34 +210,34 @@ function RecurringBillsWorkspace({ orgId }: { orgId: string }) {
                   colSpan={7}
                   className="text-center py-8 text-sm text-muted-foreground"
                 >
-                  No recurring bills yet. Create one to get started.
+                  {t("empty")}
                 </TableCell>
               </TableRow>
             ) : (
-              templates.map((t) => (
-                <TableRow key={t.id}>
+              templates.map((template) => (
+                <TableRow key={template.id}>
                   <TableCell className="text-sm font-medium">
-                    {t.name}
+                    {template.name}
                   </TableCell>
                   <TableCell className="text-sm">
-                    {t.contact?.name || "-"}
+                    {template.contact?.name || "-"}
                   </TableCell>
                   <TableCell className="text-sm">
-                    {frequencyLabels[t.frequency] || t.frequency}
+                    {recurringBillFrequencyLabel(t, template.frequency)}
                   </TableCell>
                   <TableCell className="text-sm">
-                    {t.nextRunDate || "-"}
+                    {template.nextRunDate || "-"}
                   </TableCell>
                   <TableCell>
                     <Badge
                       variant="outline"
-                      className={statusColors[t.status] || ""}
+                      className={statusColors[template.status] || ""}
                     >
-                      {statusLabels[t.status] || t.status}
+                      {recurringBillStatusLabel(t, template.status)}
                     </Badge>
                   </TableCell>
-                  <TableCell>{t.currencyCode}</TableCell>
-                  <TableCell className="text-right font-mono break-words">{invoiceUiMoney(t.lines.reduce((sum, line) => sum + line.grossMinor, 0n), t.currencyCode)}</TableCell>
+                  <TableCell>{template.currencyCode}</TableCell>
+                  <TableCell className="text-right font-mono break-words">{invoiceUiMoney(template.lines.reduce((sum, line) => sum + line.grossMinor, 0n), template.currencyCode)}</TableCell>
                 </TableRow>
               ))
             )}
@@ -251,63 +248,63 @@ function RecurringBillsWorkspace({ orgId }: { orgId: string }) {
       <Sheet open={drawerOpen} onOpenChange={(open) => { setDrawerOpen(open); if (!open) resetForm(); }}>
         <SheetContent className="sm:max-w-3xl w-full p-0 flex flex-col overflow-y-auto">
           <SheetHeader className="px-4 pt-4 pb-3 sm:px-6 sm:pt-6 sm:pb-4 border-b">
-            <SheetTitle>New Recurring Bill</SheetTitle>
+            <SheetTitle>{t("newBill")}</SheetTitle>
           </SheetHeader>
 
           <div className="px-4 pb-6 pt-4 sm:px-6 space-y-4 flex-1 overflow-y-auto">
-            {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+            {error && <p role="alert" className="text-sm text-red-600">{t(error)}</p>}
             <div className="space-y-2">
-              <label className="text-sm font-medium">Currency</label>
+              <label className="text-sm font-medium">{t("currency")}</label>
               <CurrencySelect value={currencyCode} onValueChange={(code) => { setCurrencyCode(code); setValidLines(false); }} />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Name</label>
+              <label className="text-sm font-medium">{t("name")}</label>
               <Input
-                placeholder="e.g. Monthly Software Subscription"
+                placeholder={t("namePlaceholder")}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Supplier</label>
+              <label className="text-sm font-medium">{t("supplier")}</label>
               <ContactPicker
                 value={contactId}
                 onChange={setContactId}
                 type="supplier"
-                placeholder="Select supplier..."
+                placeholder={t("supplierPlaceholder")}
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Reference</label>
+              <label className="text-sm font-medium">{t("reference")}</label>
               <Input
-                placeholder="Optional bill reference"
+                placeholder={t("referencePlaceholder")}
                 value={reference}
                 onChange={(e) => setReference(e.target.value)}
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Frequency</label>
+              <label className="text-sm font-medium">{t("frequency")}</label>
               <Select value={frequency} onValueChange={setFrequency}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue>{recurringBillFrequencyLabel(t, frequency)}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="weekly">Weekly</SelectItem>
-                  <SelectItem value="fortnightly">Fortnightly</SelectItem>
-                  <SelectItem value="monthly">Monthly</SelectItem>
-                  <SelectItem value="quarterly">Quarterly</SelectItem>
-                  <SelectItem value="semi_annual">Semi-Annual</SelectItem>
-                  <SelectItem value="annual">Annual</SelectItem>
+                  <SelectItem value="weekly">{t("weekly")}</SelectItem>
+                  <SelectItem value="fortnightly">{t("fortnightly")}</SelectItem>
+                  <SelectItem value="monthly">{t("monthly")}</SelectItem>
+                  <SelectItem value="quarterly">{t("quarterly")}</SelectItem>
+                  <SelectItem value="semi_annual">{t("semiAnnual")}</SelectItem>
+                  <SelectItem value="annual">{t("annual")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Start Date</label>
+                <label className="text-sm font-medium">{t("startDate")}</label>
                 <Input
                   type="date"
                   value={startDate}
@@ -315,7 +312,7 @@ function RecurringBillsWorkspace({ orgId }: { orgId: string }) {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">End Date</label>
+                <label className="text-sm font-medium">{t("endDate")}</label>
                 <Input
                   type="date"
                   value={endDate}
@@ -325,11 +322,11 @@ function RecurringBillsWorkspace({ orgId }: { orgId: string }) {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Max Occurrences</label>
+              <label className="text-sm font-medium">{t("maxOccurrences")}</label>
               <Input
                 type="number"
                 min="1"
-                placeholder="Unlimited"
+                placeholder={t("unlimited")}
                 value={maxOccurrences}
                 onChange={(e) => setMaxOccurrences(e.target.value)}
               />
@@ -344,7 +341,7 @@ function RecurringBillsWorkspace({ orgId }: { orgId: string }) {
               onClick={handleSubmit}
               disabled={submitting || !name.trim() || !contactId || !startDate || !validLines}
             >
-              {submitting ? "Creating..." : "Create Recurring Bill"}
+              {submitting ? t("creating") : t("create")}
             </Button>
           </div>
         </SheetContent>

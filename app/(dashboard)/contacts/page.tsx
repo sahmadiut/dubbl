@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
@@ -52,23 +53,19 @@ interface Contact {
   overdue: bigint; // total overdue across customer + supplier (cents)
 }
 
-const typeLabel: Record<Contact["type"], string> = {
-  customer: "Customer",
-  supplier: "Supplier",
-  both: "Customer & supplier",
-};
-
 const typeBadgeClass: Record<Contact["type"], string> = {
   customer: "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-300",
   supplier: "border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-800 dark:bg-orange-950 dark:text-orange-300",
   both: "border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-800 dark:bg-purple-950 dark:text-purple-300",
 };
 
-function buildColumns(onDelete: (c: Contact) => void, onOpen: (c: Contact) => void, onCreateLead: (c: Contact) => void): Column<Contact>[] {
+type ContactTranslator = ReturnType<typeof useTranslations<"Contacts">>;
+
+function buildColumns(t: ContactTranslator, onDelete: (c: Contact) => void, onOpen: (c: Contact) => void, onCreateLead: (c: Contact) => void): Column<Contact>[] {
   return [
     {
       key: "name",
-      header: "Name",
+      header: t("name"),
       sortKey: "name",
       render: (r) => (
         <div className="min-w-0">
@@ -81,17 +78,17 @@ function buildColumns(onDelete: (c: Contact) => void, onOpen: (c: Contact) => vo
     },
     {
       key: "type",
-      header: "Type",
+      header: t("type"),
       className: "w-28",
       render: (r) => (
         <Badge variant="outline" className={typeBadgeClass[r.type]}>
-          {typeLabel[r.type]}
+          {r.type === "customer" ? t("customer") : r.type === "supplier" ? t("supplier") : r.type === "both" ? t("both") : r.type}
         </Badge>
       ),
     },
     {
       key: "phone",
-      header: "Phone",
+      header: t("phone"),
       className: "w-36",
       render: (r) => (
         <span className="text-sm text-muted-foreground">{r.phone || "-"}</span>
@@ -99,31 +96,31 @@ function buildColumns(onDelete: (c: Contact) => void, onOpen: (c: Contact) => vo
     },
     {
       key: "terms",
-      header: "Payment Terms",
+      header: t("paymentTerms"),
       sortKey: "terms",
       className: "w-36",
       render: (r) => (
         <span className="text-sm text-muted-foreground">
-          {r.paymentTermsDays === 0 ? "Due on receipt" : `Net ${r.paymentTermsDays}`}
+          {r.paymentTermsDays === 0 ? t("dueOnReceipt") : t("netTerms", { days: r.paymentTermsDays })}
         </span>
       ),
     },
     {
       key: "creditLimit",
-      header: "Credit Limit",
+      header: t("creditLimit"),
       sortKey: "creditLimit",
       className: "w-32 text-right",
       render: (r) => (
         <span className="text-sm tabular-nums text-muted-foreground">
           {r.creditLimit != null
             ? formatMoney(r.creditLimit, r.currencyCode || "USD")
-            : "No limit"}
+            : t("noLimit")}
         </span>
       ),
     },
     {
       key: "owesYou",
-      header: "Owes you",
+      header: t("owesYou"),
       className: "w-28 text-right",
       render: (r) => (
         <span className="text-sm tabular-nums">
@@ -139,7 +136,7 @@ function buildColumns(onDelete: (c: Contact) => void, onOpen: (c: Contact) => vo
     },
     {
       key: "youOwe",
-      header: "You owe",
+      header: t("youOwe"),
       className: "w-28 text-right",
       render: (r) => (
         <span className="text-sm tabular-nums">
@@ -155,7 +152,7 @@ function buildColumns(onDelete: (c: Contact) => void, onOpen: (c: Contact) => vo
     },
     {
       key: "overdue",
-      header: "Overdue",
+      header: t("overdue"),
       className: "w-28 text-right",
       render: (r) => (
         <span className="text-sm tabular-nums">
@@ -171,7 +168,7 @@ function buildColumns(onDelete: (c: Contact) => void, onOpen: (c: Contact) => vo
     },
     {
       key: "taxExempt",
-      header: "Tax",
+      header: t("tax"),
       className: "w-32 text-center",
       render: (r) => (
         <div className="flex flex-wrap items-center justify-center gap-1">
@@ -179,16 +176,16 @@ function buildColumns(onDelete: (c: Contact) => void, onOpen: (c: Contact) => vo
             <Badge
               variant="outline"
               className="border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
-              title="You don't charge tax to this contact"
+              title={t("taxHint")}
             >
-              No tax
+              {t("noTax")}
             </Badge>
           )}
           {r.is1099Vendor && (
             <Badge
               variant="outline"
               className="border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300"
-              title="Tracked for a year-end 1099 (US contractor)"
+              title={t("vendorHint")}
             >
               1099
             </Badge>
@@ -201,7 +198,7 @@ function buildColumns(onDelete: (c: Contact) => void, onOpen: (c: Contact) => vo
     },
     {
       key: "currency",
-      header: "Currency",
+      header: t("currency"),
       className: "w-24 text-center",
       render: (r) => (
         <span className="text-xs font-medium text-muted-foreground">
@@ -211,7 +208,7 @@ function buildColumns(onDelete: (c: Contact) => void, onOpen: (c: Contact) => vo
     },
     {
       key: "createdAt",
-      header: "Created",
+      header: t("created"),
       sortKey: "created",
       className: "w-28 text-right",
       render: (r) => (
@@ -235,6 +232,7 @@ function buildColumns(onDelete: (c: Contact) => void, onOpen: (c: Contact) => vo
               variant="ghost"
               size="sm"
               className="size-7 p-0"
+              aria-label={t("actions")}
               onClick={(e) => e.stopPropagation()}
             >
               <MoreHorizontal className="size-4" />
@@ -243,18 +241,18 @@ function buildColumns(onDelete: (c: Contact) => void, onOpen: (c: Contact) => vo
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onOpen(r); }}>
               <ExternalLink className="size-4" />
-              Open
+              {t("open")}
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onCreateLead(r); }} title="Start tracking a potential sale with this contact">
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onCreateLead(r); }} title={t("opportunityHint")}>
               <Target className="size-4" />
-              Add a sales opportunity
+              {t("opportunity")}
             </DropdownMenuItem>
             <DropdownMenuItem
               variant="destructive"
               onClick={(e) => { e.stopPropagation(); onDelete(r); }}
             >
               <Trash2 className="size-4" />
-              Delete
+              {t("delete")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -264,6 +262,7 @@ function buildColumns(onDelete: (c: Contact) => void, onOpen: (c: Contact) => vo
 }
 
 export default function ContactsPage() {
+  const t = useTranslations("Contacts");
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
   const { confirm, dialog: confirmDialog } = useConfirm();
@@ -284,7 +283,7 @@ export default function ContactsPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [total, setTotal] = useState(0);
   const sentinelRef = useRef<HTMLDivElement>(null);
-  useDocumentTitle("Contacts · All Contacts");
+  useDocumentTitle(t("documentTitle"));
 
   // Reset and fetch page 1 when filters change
   useEffect(() => {
@@ -325,12 +324,12 @@ export default function ContactsPage() {
         }
       })
       .then(() => devDelay())
-      .catch(() => { if (!cancelled) { setContacts([]); toast.error("Unable to load valid contact balances"); } })
+      .catch(() => { if (!cancelled) { setContacts([]); toast.error(t("readFailed")); } })
       .finally(() => { if (!cancelled) { setLoading(false); setRefetching(false); setFetchKey((k) => k + 1); } });
 
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch, typeFilter, sortBy, sortOrder, dateFrom, dateTo]);
+  }, [debouncedSearch, typeFilter, sortBy, sortOrder, dateFrom, dateTo, t]);
 
   // Load next page
   const loadMore = useCallback(() => {
@@ -367,9 +366,9 @@ export default function ContactsPage() {
           setHasMore(data.pagination.page < data.pagination.totalPages);
         }
       })
-      .catch(() => { setContacts([]); toast.error("Unable to load valid contact balances"); })
+      .catch(() => { setContacts([]); toast.error(t("readFailed")); })
       .finally(() => setLoadingMore(false));
-  }, [loadingMore, hasMore, page, debouncedSearch, typeFilter, sortBy, sortOrder, dateFrom, dateTo]);
+  }, [loadingMore, hasMore, page, debouncedSearch, typeFilter, sortBy, sortOrder, dateFrom, dateTo, t]);
 
   // IntersectionObserver to trigger loadMore
   useEffect(() => {
@@ -385,20 +384,27 @@ export default function ContactsPage() {
 
   async function handleDelete(c: Contact) {
     await confirm({
-      title: `Delete "${c.name}"?`,
-      description: "This contact and all associated data will be permanently deleted.",
-      confirmLabel: "Delete",
+      title: t("deleteTitle", { name: c.name }),
+      description: t("deleteDescription"),
+      confirmLabel: t("delete"),
+      cancelLabel: t("cancel"),
       destructive: true,
       onConfirm: async () => {
         const orgId = localStorage.getItem("activeOrgId");
         if (!orgId) return;
-        await fetch(`/api/v1/contacts/${c.id}`, {
-          method: "DELETE",
-          headers: { "x-organization-id": orgId },
-        });
-        setContacts((prev) => prev.filter((x) => x.id !== c.id));
-        setTotal((t) => t - 1);
-        toast.success("Contact deleted");
+        try {
+          const res = await fetch(`/api/v1/contacts/${c.id}`, {
+            method: "DELETE",
+            headers: { "x-organization-id": orgId },
+          });
+          if (!res.ok) throw new Error("Contact delete failed");
+          setContacts((prev) => prev.filter((x) => x.id !== c.id));
+          setTotal((t) => t - 1);
+          toast.success(t("deleted"));
+        } catch {
+          toast.error(t("deleteFailed"));
+          throw new Error(t("deleteFailed"));
+        }
       },
     });
   }
@@ -415,6 +421,7 @@ export default function ContactsPage() {
   }, []);
 
   const columns = buildColumns(
+    t,
     handleDelete,
     (c) => router.push(`/contacts/${c.id}`),
     (c) => openDrawer("deal", { contactId: c.id, contactName: c.name }),
@@ -466,7 +473,7 @@ export default function ContactsPage() {
                     <div className={`h-2 rounded bg-muted/50 ${i % 2 === 0 ? "w-36" : "w-28"}`} />
                   </div>
                   <div className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[10px] font-medium ${row.badge} hidden sm:block`}>
-                    {i % 3 === 0 ? "customer" : i % 3 === 1 ? "supplier" : "both"}
+                    {t(i % 3 === 0 ? "customer" : i % 3 === 1 ? "supplier" : "both")}
                   </div>
                   <div className={`h-2.5 rounded bg-muted/50 hidden sm:block ${i % 2 === 0 ? "w-20" : "w-16"}`} />
                   <div className={`h-2.5 rounded bg-muted/40 hidden sm:block ${i % 2 === 0 ? "w-16" : "w-12"}`} />
@@ -482,9 +489,9 @@ export default function ContactsPage() {
             <div className="flex size-12 sm:size-14 items-center justify-center rounded-2xl bg-emerald-100 dark:bg-emerald-950/50">
               <Users className="size-6 sm:size-7 text-emerald-600 dark:text-emerald-400" />
             </div>
-            <h2 className="mt-4 sm:mt-5 text-lg sm:text-xl font-semibold tracking-tight">Manage your contacts</h2>
+            <h2 className="mt-4 sm:mt-5 text-lg sm:text-xl font-semibold tracking-tight">{t("emptyTitle")}</h2>
             <p className="mt-2 max-w-md text-xs sm:text-sm text-muted-foreground leading-relaxed">
-              Keep track of everyone you do business with. Add customers, suppliers, or contacts that are both.
+              {t("emptyDescription")}
             </p>
             <Button
               onClick={() => openDrawer("contact")}
@@ -492,7 +499,7 @@ export default function ContactsPage() {
               className="mt-6 bg-emerald-600 hover:bg-emerald-700"
             >
               <UserPlus className="mr-2 size-4" />
-              Add your first contact
+              {t("firstContact")}
             </Button>
           </div>
 
@@ -501,22 +508,22 @@ export default function ContactsPage() {
             {[
               {
                 icon: Building2,
-                title: "Customers",
-                description: "Track who you sell to, their payment terms, and outstanding balances.",
+                title: t("customers"),
+                description: t("customersHint"),
                 color: "text-blue-600 dark:text-blue-400",
                 bg: "bg-blue-50 dark:bg-blue-950/40",
               },
               {
                 icon: Truck,
-                title: "Suppliers",
-                description: "Manage who you buy from, your purchase history, and what you owe them.",
+                title: t("suppliers"),
+                description: t("suppliersHint"),
                 color: "text-orange-600 dark:text-orange-400",
                 bg: "bg-orange-50 dark:bg-orange-950/40",
               },
               {
                 icon: ArrowRight,
-                title: "Linked data",
-                description: "Contacts connect to their invoices, bills, and bookkeeping entries automatically.",
+                title: t("linkedData"),
+                description: t("linkedHint"),
                 color: "text-purple-600 dark:text-purple-400",
                 bg: "bg-purple-50 dark:bg-purple-950/40",
               },
@@ -545,8 +552,8 @@ export default function ContactsPage() {
       <div className="space-y-4 sm:space-y-6">
         {/* Header */}
         <PageHeader
-          title="Contacts"
-          description="Manage your customers, suppliers, and business relationships."
+          title={t("title")}
+          description={t("description")}
         >
           <div className="flex items-center gap-2">
             <Button
@@ -554,16 +561,16 @@ export default function ContactsPage() {
               size="sm"
               className="h-9"
               onClick={() => router.push("/reports/duplicate-detection")}
-              title="Check for contacts entered twice (duplicate invoices or bills)"
+              title={t("duplicatesHint")}
             >
               <Copy className="mr-1.5 size-4" />
-              Find duplicates
+              {t("duplicates")}
             </Button>
             <Tabs value={typeFilter} onValueChange={setTypeFilter}>
               <TabsList>
-                <TabsTrigger value="all">All</TabsTrigger>
-                <TabsTrigger value="customer">Customers</TabsTrigger>
-                <TabsTrigger value="supplier">Suppliers</TabsTrigger>
+                <TabsTrigger value="all">{t("all")}</TabsTrigger>
+                <TabsTrigger value="customer">{t("customers")}</TabsTrigger>
+                <TabsTrigger value="supplier">{t("suppliers")}</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
@@ -572,23 +579,23 @@ export default function ContactsPage() {
         {/* Summary + search */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-[13px] text-muted-foreground">
-            <span className="font-medium text-foreground tabular-nums">{contacts.length}</span> contacts
+            <span className="font-medium text-foreground tabular-nums">{t("contactCount", { count: contacts.length })}</span>
             <span className="text-border">·</span>
             <span className="inline-flex items-center gap-1.5">
               <span className="size-2 rounded-full bg-blue-500" />
-              <span className="tabular-nums">{customers.length}</span> customers
+              <span className="tabular-nums">{t("customerCount", { count: customers.length })}</span>
             </span>
             <span className="text-border">·</span>
             <span className="inline-flex items-center gap-1.5">
               <span className="size-2 rounded-full bg-orange-500" />
-              <span className="tabular-nums">{suppliers.length}</span> suppliers
+              <span className="tabular-nums">{t("supplierCount", { count: suppliers.length })}</span>
             </span>
             {taxExemptCount > 0 && (
               <>
                 <span className="text-border">·</span>
                 <span className="inline-flex items-center gap-1.5">
                   <span className="size-2 rounded-full bg-violet-500" />
-                  <span className="tabular-nums">{taxExemptCount}</span> no tax
+                  <span className="tabular-nums">{t("noTaxCount", { count: taxExemptCount })}</span>
                 </span>
               </>
             )}
@@ -599,27 +606,27 @@ export default function ContactsPage() {
           <div className="relative w-full sm:max-w-xs">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <Input
-              placeholder="Search contacts..."
+              placeholder={t("search")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9"
             />
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="text-xs text-muted-foreground shrink-0">From</span>
+            <span className="text-xs text-muted-foreground shrink-0">{t("from")}</span>
             <DatePicker
               value={dateFrom}
               onChange={(v) => setDateFrom(v)}
-              placeholder="Start date"
+              placeholder={t("startDate")}
               className="h-8 w-40 text-xs"
             />
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="text-xs text-muted-foreground shrink-0">To</span>
+            <span className="text-xs text-muted-foreground shrink-0">{t("to")}</span>
             <DatePicker
               value={dateTo}
               onChange={(v) => setDateTo(v)}
-              placeholder="End date"
+              placeholder={t("endDate")}
               className="h-8 w-40 text-xs"
             />
           </div>
@@ -632,15 +639,15 @@ export default function ContactsPage() {
             }}
           >
             <SelectTrigger className="h-8 w-44 text-xs">
-              <SelectValue placeholder="Sort by..." />
+              <SelectValue placeholder={t("sortBy")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="created:desc">Newest first</SelectItem>
-              <SelectItem value="created:asc">Oldest first</SelectItem>
-              <SelectItem value="name:asc">Name (A-Z)</SelectItem>
-              <SelectItem value="name:desc">Name (Z-A)</SelectItem>
-              <SelectItem value="terms:asc">Shortest terms</SelectItem>
-              <SelectItem value="terms:desc">Longest terms</SelectItem>
+              <SelectItem value="created:desc">{t("newest")}</SelectItem>
+              <SelectItem value="created:asc">{t("oldest")}</SelectItem>
+              <SelectItem value="name:asc">{t("nameAsc")}</SelectItem>
+              <SelectItem value="name:desc">{t("nameDesc")}</SelectItem>
+              <SelectItem value="terms:asc">{t("shortest")}</SelectItem>
+              <SelectItem value="terms:desc">{t("longest")}</SelectItem>
             </SelectContent>
           </Select>
           {hasFilters && (
@@ -654,7 +661,7 @@ export default function ContactsPage() {
               }}
             >
               <X className="mr-1 size-3" />
-              Clear dates
+              {t("clearDates")}
             </Button>
           )}
         </div>
@@ -662,7 +669,7 @@ export default function ContactsPage() {
         {/* Table */}
         {refetching || pendingSearch ? (
           <div className="flex items-center justify-center py-20">
-            <div className="brand-loader" aria-label="Loading">
+            <div className="brand-loader" aria-label={t("loading")}>
               <div className="brand-loader-circle brand-loader-circle-1" />
               <div className="brand-loader-circle brand-loader-circle-2" />
             </div>
@@ -681,7 +688,7 @@ export default function ContactsPage() {
                 columns={columns}
                 data={contacts}
                 loading={loading}
-                emptyMessage="No contacts found."
+                emptyMessage={t("empty")}
                 onRowClick={(r) => router.push(`/contacts/${r.id}`)}
                 sortBy={sortBy}
                 sortOrder={sortOrder}

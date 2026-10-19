@@ -159,7 +159,7 @@ Extraction ownership:
 | LOC-056 | LOC-026 child: shared purchasing navigation/forms; see [scope](SHARED_PURCHASING_CATALOGS.md) |
 | LOC-027 | LOC-007 child: contacts |
 | LOC-057 | LOC-027 child: contact people/files; see [scope](CONTACT_PEOPLE_FILES_CATALOGS.md) |
-| LOC-058 | LOC-027 child: contact list/picker/creation |
+| LOC-058 | LOC-027 child: contact list/picker/creation; see [scope](CONTACT_LIST_CATALOGS.md) |
 | LOC-059 | LOC-027 child: contact detail shell/overview |
 | LOC-060 | LOC-027 child: contact financial tabs |
 | LOC-028 | LOC-007 child: tax |

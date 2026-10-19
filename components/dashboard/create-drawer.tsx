@@ -226,15 +226,16 @@ function DrawerFooter({
 // Contact Drawer
 // ---------------------------------------------------------------------------
 function ContactDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useTranslations("Contacts");
   const router = useRouter();
   const [saving, setSaving] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setSaving(true);
     const form = new FormData(e.currentTarget);
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
+    setSaving(true);
 
     try {
       const res = await fetch("/api/v1/contacts", {
@@ -251,15 +252,15 @@ function ContactDrawer({ open, onClose }: { open: boolean; onClose: () => void }
         }),
       });
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to create contact");
+        throw new Error("Contact create failed");
       }
       const data = await res.json();
-      toast.success("Contact created");
+      if (typeof data.contact?.id !== "string" || !data.contact.id) throw new Error("Missing contact ID");
+      toast.success(t("createdSuccess"));
       onClose();
       router.push(`/contacts/${data.contact.id}`);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create contact");
+    } catch {
+      toast.error(t("createFailed"));
     } finally {
       setSaving(false);
     }
@@ -272,26 +273,26 @@ function ContactDrawer({ open, onClose }: { open: boolean; onClose: () => void }
           <div className="flex items-center gap-3">
             <DrawerIcon><Users className="size-5" /></DrawerIcon>
             <div>
-              <SheetTitle className="text-lg">New Contact</SheetTitle>
-              <SheetDescription>Add a customer or supplier to your organization.</SheetDescription>
+              <SheetTitle className="text-lg">{t("newContact")}</SheetTitle>
+              <SheetDescription>{t("newDescription")}</SheetDescription>
             </div>
           </div>
         </SheetHeader>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
             <div className="space-y-4">
-              <SectionLabel>Basic Info</SectionLabel>
+              <SectionLabel>{t("basicInfo")}</SectionLabel>
               <div className="space-y-2">
-                <Label htmlFor="drawer-contact-name">Name *</Label>
-                <Input id="drawer-contact-name" name="name" required placeholder="Contact name" />
+                <Label htmlFor="drawer-contact-name">{t("nameRequired")}</Label>
+                <Input id="drawer-contact-name" name="name" required placeholder={t("contactName")} />
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="drawer-contact-email">Email</Label>
+                  <Label htmlFor="drawer-contact-email">{t("email")}</Label>
                   <Input id="drawer-contact-email" name="email" type="email" placeholder="email@example.com" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="drawer-contact-phone">Phone</Label>
+                  <Label htmlFor="drawer-contact-phone">{t("phone")}</Label>
                   <Input id="drawer-contact-phone" name="phone" placeholder="+1 (555) 000-0000" />
                 </div>
               </div>
@@ -300,38 +301,38 @@ function ContactDrawer({ open, onClose }: { open: boolean; onClose: () => void }
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Details</SectionLabel>
+              <SectionLabel>{t("details")}</SectionLabel>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Type</Label>
+                  <Label>{t("type")}</Label>
                   <Select name="type" defaultValue="customer">
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="customer">Customer</SelectItem>
-                      <SelectItem value="supplier">Supplier</SelectItem>
-                      <SelectItem value="both">Both</SelectItem>
+                      <SelectItem value="customer">{t("customer")}</SelectItem>
+                      <SelectItem value="supplier">{t("supplier")}</SelectItem>
+                      <SelectItem value="both">{t("bothShort")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="drawer-contact-terms">Payment Terms (days)</Label>
+                  <Label htmlFor="drawer-contact-terms">{t("termsDays")}</Label>
                   <Input id="drawer-contact-terms" name="paymentTermsDays" type="number" min={0} defaultValue={30} />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="drawer-contact-tax">Tax Number</Label>
-                <Input id="drawer-contact-tax" name="taxNumber" placeholder="Tax ID / VAT number" />
+                <Label htmlFor="drawer-contact-tax">{t("taxNumber")}</Label>
+                <Input id="drawer-contact-tax" name="taxNumber" placeholder={t("taxPlaceholder")} />
               </div>
             </div>
 
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Notes</SectionLabel>
-              <Textarea name="notes" placeholder="Internal notes about this contact..." rows={3} />
+              <SectionLabel>{t("notes")}</SectionLabel>
+              <Textarea name="notes" placeholder={t("notesPlaceholder")} rows={3} />
             </div>
           </div>
-          <DrawerFooter onClose={onClose} saving={saving} label="Create Contact" />
+          <DrawerFooter onClose={onClose} saving={saving} label={t("create")} cancelLabel={t("cancel")} creatingLabel={t("creating")} />
         </form>
       </SheetContent>
     </Sheet>

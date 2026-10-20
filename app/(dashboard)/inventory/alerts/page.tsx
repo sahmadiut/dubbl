@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { inventoryAlertsJson, type ReorderItem } from "@/i18n/inventory-report-presentation";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -17,45 +19,37 @@ import { useCreateDrawer } from "@/components/dashboard/create-drawer";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { cn } from "@/lib/utils";
 
-interface ReorderItem {
-  id: string;
-  code: string;
-  name: string;
-  sku: string | null;
-  quantityOnHand: number;
-  reorderPoint: number;
-  suggestedReorderQuantity: number;
-  preferredSupplier: {
-    contactId: string;
-    contactName: string;
-    purchasePrice: number;
-  } | null;
-}
-
 export default function AlertsPage() {
+  const t = useTranslations("InventoryReports");
+  const [readError, setReadError] = useState(false);
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
   const [items, setItems] = useState<ReorderItem[]>([]);
   const [loading, setLoading] = useState(true);
-  useDocumentTitle("Inventory · Stock Alerts");
+  useDocumentTitle(t("alertsDocumentTitle"));
 
   const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
 
   useEffect(() => {
-    if (!orgId) return;
     let cancelled = false;
-    fetch("/api/v1/inventory/reorder-suggestions", {
-      headers: { "x-organization-id": orgId },
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        if (!cancelled) setItems(data.data || []);
-      })
-      .finally(() => { if (!cancelled) setLoading(false); });
+    async function load() {
+      setLoading(true);
+      setReadError(false);
+      try {
+        if (!orgId) throw new Error("Organization required");
+        const rows = await inventoryAlertsJson(await fetch("/api/v1/inventory/reorder-suggestions", {
+          headers: { "x-organization-id": orgId },
+        }));
+        if (!cancelled) setItems(rows);
+      } catch { if (!cancelled) setReadError(true); }
+      finally { if (!cancelled) setLoading(false); }
+    }
+    void load();
     return () => { cancelled = true; };
   }, [orgId]);
 
   if (loading) return <BrandLoader />;
+  if (readError) return <p role="alert">{t("alertsReadFailed")}</p>;
 
   const criticalCount = items.filter((i) => i.quantityOnHand === 0).length;
   const lowCount = items.length;
@@ -65,8 +59,8 @@ export default function AlertsPage() {
       <ContentReveal>
         <EmptyState
           icon={AlertTriangle}
-          title="No reorder alerts"
-          description="All items are above their reorder point. You're in good shape!"
+          title={t("noAlerts")}
+          description={t("noAlertsDescription")}
         />
       </ContentReveal>
     );
@@ -79,7 +73,7 @@ export default function AlertsPage() {
         <div className="rounded-xl border bg-card p-4">
           <div className="flex items-center gap-2 text-muted-foreground">
             <AlertTriangle className="size-3.5 text-amber-500" />
-            <span className="text-[11px] font-medium uppercase tracking-wide">Total Alerts</span>
+            <span className="text-[11px] font-medium uppercase tracking-wide">{t("totalAlerts")}</span>
           </div>
           <p className="mt-2 text-2xl font-bold font-mono tabular-nums truncate text-amber-600 dark:text-amber-400">
             {lowCount}
@@ -88,7 +82,7 @@ export default function AlertsPage() {
         <div className="rounded-xl border bg-card p-4">
           <div className="flex items-center gap-2 text-muted-foreground">
             <AlertCircle className="size-3.5 text-red-500" />
-            <span className="text-[11px] font-medium uppercase tracking-wide">Out of Stock</span>
+            <span className="text-[11px] font-medium uppercase tracking-wide">{t("outOfStock")}</span>
           </div>
           <p className={cn(
             "mt-2 text-2xl font-bold font-mono tabular-nums truncate",
@@ -100,7 +94,7 @@ export default function AlertsPage() {
         <div className="rounded-xl border bg-card p-4">
           <div className="flex items-center gap-2 text-muted-foreground">
             <Package className="size-3.5" />
-            <span className="text-[11px] font-medium uppercase tracking-wide">Below Reorder</span>
+            <span className="text-[11px] font-medium uppercase tracking-wide">{t("belowReorder")}</span>
           </div>
           <p className="mt-2 text-2xl font-bold font-mono tabular-nums truncate">
             {lowCount - criticalCount}
@@ -138,19 +132,19 @@ export default function AlertsPage() {
                   <p className="text-sm font-medium truncate">{item.name}</p>
                   {isCritical && (
                     <Badge variant="outline" className="border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300 text-[10px] px-1.5 py-0">
-                      Out of Stock
+                      {t("outOfStock")}
                     </Badge>
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {item.code}{item.sku ? ` · ${item.sku}` : ""} · Qty: {item.quantityOnHand} / Reorder at {item.reorderPoint}
+                  {t("alertSummary", { code: item.code, sku: item.sku ? ` · ${item.sku}` : "", quantity: item.quantityOnHand, point: item.reorderPoint })}
                 </p>
               </div>
 
               {/* Suggested quantity */}
               <div className="hidden sm:flex flex-col items-end gap-0.5 w-24">
                 <span className="text-xs font-mono tabular-nums font-medium">+{item.suggestedReorderQuantity}</span>
-                <span className="text-[11px] text-muted-foreground">suggested</span>
+                <span className="text-[11px] text-muted-foreground">{t("suggested")}</span>
               </div>
 
               {/* Supplier + PO action */}
@@ -162,6 +156,7 @@ export default function AlertsPage() {
                 )}
                 <Button
                   size="sm"
+                  aria-label={t("createPo")}
                   variant="outline"
                   className="h-7 text-xs gap-1"
                   onClick={(e) => {
@@ -170,7 +165,7 @@ export default function AlertsPage() {
                   }}
                 >
                   <ShoppingCart className="size-3" />
-                  <span className="hidden sm:inline">Create PO</span>
+                  <span className="hidden sm:inline">{t("createPo")}</span>
                 </Button>
               </div>
             </div>

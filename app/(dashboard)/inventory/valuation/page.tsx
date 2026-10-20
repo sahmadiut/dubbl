@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { inventoryValuationJson, type ValuationItem, type ValuationSummary } from "@/i18n/inventory-report-presentation";
 import { useState, useEffect, useCallback } from "react";
 import {
   Package,
@@ -22,43 +24,9 @@ import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { cn } from "@/lib/utils";
-import { inventoryUiValuation, inventoryPercent, inventoryShare, inventoryValuationMarginCompare } from "@/lib/money/inventory-ui";
+import { inventoryPercent, inventoryShare, inventoryValuationMarginCompare } from "@/lib/money/inventory-ui";
 import { money, toMajorDecimal } from "@/lib/money/exact";
 import { motion } from "motion/react";
-
-interface ValuationItem {
-  id: string;
-  code: string;
-  name: string;
-  category: string | null;
-  quantityOnHand: number;
-  unitCost: number;
-  unitCostMinor: string;
-  salePrice: number;
-  salePriceMinor: string;
-  totalCost: number;
-  totalCostMinor: string;
-  totalValue: number;
-  totalValueMinor: string;
-  marginPercent: number;
-  margin: number; marginMinor: string;
-  averageCost: number; averageCostMinor: string;
-  carryingValue: number;
-  carryingValueMinor: string;
-  currencyCode: string;
-}
-
-interface ValuationSummary {
-  totalItems: number;
-  totalCost: number;
-  totalCostMinor: string;
-  totalValue: number;
-  totalValueMinor: string;
-  totalMargin: number;
-  carryingValue: number;
-  carryingValueMinor: string;
-  currencyCode: string;
-}
 
 type SortKey =
   | "code"
@@ -72,20 +40,21 @@ type SortKey =
   | "totalValue"
   | "marginPercent";
 
-const COLUMNS: { key: SortKey; label: string; align?: "right" }[] = [
-  { key: "code", label: "Code" },
-  { key: "name", label: "Name" },
-  { key: "category", label: "Category" },
-  { key: "quantityOnHand", label: "Qty On Hand", align: "right" },
-  { key: "unitCost", label: "Unit Cost", align: "right" },
-  { key: "totalCost", label: "Purchase Price Value", align: "right" },
-  { key: "carryingValue", label: "Book Value", align: "right" },
-  { key: "salePrice", label: "Sale Price", align: "right" },
-  { key: "totalValue", label: "Total Value", align: "right" },
-  { key: "marginPercent", label: "Margin %", align: "right" },
+const COLUMNS: { key: SortKey; label: SortKey; align?: "right" }[] = [
+  { key: "code", label: "code" },
+  { key: "name", label: "name" },
+  { key: "category", label: "category" },
+  { key: "quantityOnHand", label: "quantityOnHand", align: "right" },
+  { key: "unitCost", label: "unitCost", align: "right" },
+  { key: "totalCost", label: "totalCost", align: "right" },
+  { key: "carryingValue", label: "carryingValue", align: "right" },
+  { key: "salePrice", label: "salePrice", align: "right" },
+  { key: "totalValue", label: "totalValue", align: "right" },
+  { key: "marginPercent", label: "marginPercent", align: "right" },
 ];
 
 export default function InventoryValuationPage() {
+  const t = useTranslations("InventoryReports");
   const { open: openDrawer } = useCreateDrawer();
   const [items, setItems] = useState<ValuationItem[]>([]);
   const [summary, setSummary] = useState<ValuationSummary>({
@@ -96,12 +65,12 @@ export default function InventoryValuationPage() {
     carryingValue: 0, carryingValueMinor: "0",
     currencyCode: "USD",
   });
-  const [readError, setReadError] = useState("");
+  const [readError, setReadError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [searchQuery, setSearchQuery] = useState("");
-  useDocumentTitle("Inventory · Stock value");
+  useDocumentTitle(t("valuationDocumentTitle"));
 
   const orgId =
     typeof window !== "undefined"
@@ -109,28 +78,21 @@ export default function InventoryValuationPage() {
       : null;
 
   useEffect(() => {
-    if (!orgId) return;
     let cancelled = false;
-
-    fetch("/api/v1/reports/inventory-valuation", {
-      headers: { "x-organization-id": orgId },
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        if (cancelled) return;
-        inventoryUiValuation(data);
-        setItems(data.items);
-        setSummary(data.summary);
-        setReadError("");
-      })
-      .catch(() => { if (!cancelled) setReadError("Unable to verify saved inventory valuation. Reload to retry."); })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
+    async function load() {
+      setLoading(true);
+      setReadError(false);
+      try {
+        if (!orgId) throw new Error("Organization required");
+        const data = await inventoryValuationJson(await fetch("/api/v1/reports/inventory-valuation", {
+          headers: { "x-organization-id": orgId },
+        }));
+        if (!cancelled) { setItems(data.items); setSummary(data.summary); }
+      } catch { if (!cancelled) setReadError(true); }
+      finally { if (!cancelled) setLoading(false); }
+    }
+    void load();
+    return () => { cancelled = true; };
   }, [orgId]);
 
   const handleSort = useCallback(
@@ -212,21 +174,21 @@ export default function InventoryValuationPage() {
     a.download = `inventory-valuation-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success("CSV exported");
+    toast.success(t("csvExported"));
   }
 
   if (loading) return <BrandLoader />;
-  if (readError) return <p role="alert">{readError}</p>;
+  if (readError) return <p role="alert">{t("valuationReadFailed")}</p>;
 
   const formatMoney = (amount: number | bigint) => `${summary.currencyCode} ${toMajorDecimal(money(BigInt(amount), summary.currencyCode))}`;
   const profitAmount = BigInt(summary.totalValueMinor) - BigInt(summary.totalCostMinor);
 
   const stats = [
-    { label: "Total Items", value: String(summary.totalItems), icon: Package },
-    { label: "Book value", value: formatMoney(BigInt(summary.carryingValueMinor)), icon: DollarSign },
-    { label: "What it could sell for", value: formatMoney(BigInt(summary.totalValueMinor)), icon: BarChart3, color: "text-emerald-600 dark:text-emerald-400" },
+    { label: t("totalItems"), value: String(summary.totalItems), icon: Package },
+    { label: t("bookValue"), value: formatMoney(BigInt(summary.carryingValueMinor)), icon: DollarSign },
+    { label: t("saleProjection"), value: formatMoney(BigInt(summary.totalValueMinor)), icon: BarChart3, color: "text-emerald-600 dark:text-emerald-400" },
     {
-      label: "Avg profit margin",
+      label: t("averageMargin"),
       value: (BigInt(summary.totalCostMinor) > 0n && profitAmount > 0n) ? `${inventoryPercent(profitAmount, BigInt(summary.totalCostMinor))}%` : "-",
       icon: TrendingUp,
       color: (BigInt(summary.totalCostMinor) > 0n && profitAmount > 0n) ? "text-emerald-600 dark:text-emerald-400" : undefined,
@@ -236,8 +198,8 @@ export default function InventoryValuationPage() {
   return (
     <ContentReveal className="space-y-6">
       <PageHeader
-        title="Stock value"
-        description="Review your stock book value, purchase and sale price projections, and estimated margin."
+        title={t("valuationTitle")}
+        description={t("valuationDescription")}
       >
         {items.length > 0 && (
           <div className="relative w-full sm:w-64">
@@ -245,7 +207,7 @@ export default function InventoryValuationPage() {
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search items..."
+              placeholder={t("search")} aria-label={t("search")}
               className="pl-9 h-9 text-sm"
             />
           </div>
@@ -264,7 +226,7 @@ export default function InventoryValuationPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-muted-foreground">
               <BarChart3 className="size-4" />
-              <span className="text-xs font-medium uppercase tracking-wide">Stock value</span>
+              <span className="text-xs font-medium uppercase tracking-wide">{t("valuationTitle")}</span>
             </div>
             <Button
               variant="outline"
@@ -274,16 +236,16 @@ export default function InventoryValuationPage() {
               disabled={items.length === 0}
             >
               <Download className="size-3" />
-              Export CSV
+              {t("exportCsv")}
             </Button>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-xs text-muted-foreground mb-0.5">Purchase price value</p>
+              <p className="text-xs text-muted-foreground mb-0.5">{t("purchaseValue")}</p>
               <p className="text-2xl font-bold font-mono tabular-nums truncate">{formatMoney(BigInt(summary.totalCostMinor))}</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground mb-0.5">What it could sell for</p>
+              <p className="text-xs text-muted-foreground mb-0.5">{t("saleProjection")}</p>
               <p className="text-2xl font-bold font-mono tabular-nums truncate text-emerald-600 dark:text-emerald-400">{formatMoney(BigInt(summary.totalValueMinor))}</p>
             </div>
           </div>
@@ -303,8 +265,8 @@ export default function InventoryValuationPage() {
                 )}
               </div>
               <div className="flex items-center gap-4 text-[11px] text-muted-foreground">
-                <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-emerald-500" />Cost ({formatMoney(BigInt(summary.totalCostMinor))})</span>
-                <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-emerald-300 dark:bg-emerald-700" />Profit ({formatMoney(profitAmount)})</span>
+                <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-emerald-500" />{t("costAmount", { amount: formatMoney(BigInt(summary.totalCostMinor)) })}</span>
+                <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-emerald-300 dark:bg-emerald-700" />{t("profitAmount", { amount: formatMoney(profitAmount) })}</span>
               </div>
             </div>
           )}
@@ -343,31 +305,31 @@ export default function InventoryValuationPage() {
       {items.length === 0 ? (
         <div className="rounded-xl border bg-card overflow-hidden">
           <div className="bg-muted/30 px-5 py-3 border-b flex items-center justify-between">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Stock value preview</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("preview")}</p>
             <Button
               onClick={() => openDrawer("inventory")}
               size="sm"
               className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700"
             >
               <Plus className="mr-1.5 size-3" />
-              Add Item
+              {t("addItem")}
             </Button>
           </div>
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b text-xs text-muted-foreground">
-                <th className="px-4 py-3 text-left font-medium">Item</th>
-                <th className="px-4 py-3 text-right font-medium">Qty</th>
-                <th className="px-4 py-3 text-right font-medium">Cost</th>
-                <th className="px-4 py-3 text-right font-medium">Retail</th>
-                <th className="px-4 py-3 text-right font-medium">Margin</th>
+                <th className="px-4 py-3 text-left font-medium">{t("item")}</th>
+                <th className="px-4 py-3 text-right font-medium">{t("quantity")}</th>
+                <th className="px-4 py-3 text-right font-medium">{t("cost")}</th>
+                <th className="px-4 py-3 text-right font-medium">{t("retail")}</th>
+                <th className="px-4 py-3 text-right font-medium">{t("margin")}</th>
               </tr>
             </thead>
             <tbody className="text-muted-foreground/40">
               {[
-                { name: "Widget A", code: "WDG-001", qty: 120, cost: "$4.50", retail: "$9.99", margin: "55%" },
-                { name: "Gadget Pro", code: "GDG-042", qty: 45, cost: "$22.00", retail: "$39.99", margin: "45%" },
-                { name: "Cable USB-C", code: "CBL-100", qty: 300, cost: "$1.20", retail: "$4.99", margin: "76%" },
+                { name: t("sampleWidget"), code: "WDG-001", qty: 120, cost: "$4.50", retail: "$9.99", margin: "55%" },
+                { name: t("sampleGadget"), code: "GDG-042", qty: 45, cost: "$22.00", retail: "$39.99", margin: "45%" },
+                { name: t("sampleCable"), code: "CBL-100", qty: 300, cost: "$1.20", retail: "$4.99", margin: "76%" },
               ].map(({ name, code, qty, cost, retail, margin }) => (
                 <tr key={code} className="border-b last:border-0">
                   <td className="px-4 py-3">
@@ -384,7 +346,7 @@ export default function InventoryValuationPage() {
           </table>
           <div className="border-t px-5 py-4 text-center">
             <p className="text-sm text-muted-foreground">
-              Add inventory items with pricing to see real valuation data here.
+              {t("previewHelp")}
             </p>
           </div>
         </div>
@@ -394,7 +356,7 @@ export default function InventoryValuationPage() {
             <Package className="size-5 text-muted-foreground" />
           </div>
           <p className="text-sm font-medium text-muted-foreground">
-            No items match your search
+            {t("noMatches")}
           </p>
         </div>
       ) : (
@@ -412,7 +374,7 @@ export default function InventoryValuationPage() {
                     onClick={() => handleSort(col.key)}
                   >
                     <span className="inline-flex items-center gap-1">
-                      {col.label}
+                      {t(col.label)}
                       {sortKey === col.key ? (
                         sortOrder === "asc" ? (
                           <ChevronUp className="size-3" />

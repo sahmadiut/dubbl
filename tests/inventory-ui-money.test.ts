@@ -89,7 +89,7 @@ test("nullable stock values and live-stock discrepancy retain saved units; input
 });
 
 test("remaining inventory pages keep validated adoption and exact money guards", () => {
-  const files = ["page", "valuation/page", "[id]/page", "[id]/history/page"];
+  const files = ["page", "[id]/page", "[id]/history/page"];
   for (const path of files) assert.match(readFileSync(`app/(dashboard)/inventory/${path}.tsx`, "utf8"), /inventoryUi/);
   const assembly = readFileSync("i18n/inventory-assembly-presentation.ts", "utf8");
   for (const validator of ["inventoryUiBom(row)", "inventoryUiAssembly(row)", "inventoryUiBomDetail({ bom: body.bom, costBreakdown: body.costBreakdown })"]) assert.ok(assembly.includes(validator));
@@ -108,6 +108,8 @@ test("remaining inventory pages keep validated adoption and exact money guards",
     assert.ok(source.includes(`${reader}(await fetch(`) && source.includes(`${row}(data.`));
   }
   const valuation = readFileSync("app/(dashboard)/inventory/valuation/page.tsx", "utf8");
+  assert.match(valuation, /inventoryValuationJson\(await fetch\(/);
+  assert.match(readFileSync("i18n/inventory-report-presentation.ts", "utf8"), /inventoryUiValuation\(\{ items: body.items, summary: body.summary \}\)/);
   assert.doesNotMatch(valuation, /\.toFixed\(|Number\(profitAmount\)|summary\.totalCost\s*\//);
   assert.match(valuation, /inventoryShare\(/);
   assert.doesNotMatch(readFileSync("app/(dashboard)/inventory/[id]/page.tsx", "utf8"), /item\.totalValue\s*\?\?/);

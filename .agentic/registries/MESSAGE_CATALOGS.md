@@ -1,5 +1,11 @@
 # Message catalog foundation
 
+LOC-078 valuation and alerts use 46 paired `InventoryReports` messages (7,010
+keys per locale). See [scope and exceptions](INVENTORY_REPORT_CATALOGS.md) for
+exact valuation, canonical CSV, saved reorder/supplier display and finite read
+feedback. The existing shared inventory loader is verified in both locales.
+LOC-066/008/002 and native terminology/RTL qualification remain independent.
+
 LOC-075 warehouse management, WarehouseDrawer and WarehousePicker use 77 paired
 `Warehouses` messages (6,712 keys per locale). See
 [scope and exceptions](WAREHOUSE_CATALOGS.md) for location/default contracts,

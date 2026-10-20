@@ -9,6 +9,8 @@ import { organization, users, member, apiKey, contact } from "../../lib/db/schem
 import { GET as list, POST as create } from "../../app/api/v1/inventory/route";
 import { POST as adjust } from "../../app/api/v1/inventory/[id]/adjust/route";
 import { GET as valuation } from "../../app/api/v1/reports/inventory-valuation/route";
+import { GET as reorder } from "../../app/api/v1/inventory/reorder-suggestions/route";
+import { inventoryValuationJson, inventoryAlertsJson } from "../../i18n/inventory-report-presentation";
 import { GET as variants, POST as createVariant } from "../../app/api/v1/inventory/[id]/variants/route";
 import { GET as suppliers, POST as createSupplier } from "../../app/api/v1/inventory/[id]/suppliers/route";
 import { GET as movements } from "../../app/api/v1/inventory/[id]/movements/route";
@@ -58,7 +60,7 @@ async function run() {
       return Promise.all(tables.map(table => db.execute(sql.raw(`select coalesce(jsonb_agg(to_jsonb(t)::text order by t.id),'[]'::jsonb) as rows from ${table} t`)).then(r => r.rows)));
     };
     try {
-      const payload = { code: "LOW", name: "Low digits", quantityOnHand: 3, purchasePriceMinor: catalogPriceMinor("30000000.01"), salePriceMinor: catalogPriceMinor("30000000.02") };
+      const payload = { code: "LOW", name: "Low digits", quantityOnHand: 3, reorderPoint: 10, purchasePriceMinor: catalogPriceMinor("30000000.01"), salePriceMinor: catalogPriceMinor("30000000.02") };
       const created = transport === "rest" ? await data(await create(req(payload)), 201) : await call("create_inventory_item", payload);
       const item = inventoryUiItem(created.inventoryItem), id = item.id;
       await data(await adjust(req({ adjustmentType: "write_down", valueDeltaMinor: "3000000001", reason: "Damage" }), params(id)));
@@ -72,6 +74,7 @@ async function run() {
       assert.equal(inventoryAverageMargin(restList.summary.avgMarginExact), "0.0");
       const restReport = inventoryUiValuation(await data(await valuation(req()))), mcpReport = inventoryUiValuation(await call("get_inventory_valuation"));
       assert.deepEqual(restReport, mcpReport);
+      assert.deepEqual(await inventoryValuationJson(await valuation(req())), await inventoryValuationJson(Response.json(mcpReport)));
       assert.equal(restReport.items[0].totalCostMinor, "9000000003");
       assert.equal(restReport.items[0].carryingValueMinor, "6000000002");
       assert.equal(restReport.items[0].marginMinor, "3");
@@ -83,9 +86,17 @@ async function run() {
       const restVariants = (await data(await variants(req(), params(id)))).data, mcpVariants = (await call("list_inventory_variants", { inventoryItemId: id })).data;
       restVariants.forEach(inventoryUiCatalog); mcpVariants.forEach(inventoryUiCatalog); assert.deepEqual(restVariants, mcpVariants);
       const [supplier] = await db.insert(contact).values({ organizationId: org.id, name: "Supplier", type: "supplier" }).returning();
-      await data(await createSupplier(req({ contactId: supplier.id, purchasePriceMinor: "3000000001" }), params(id)), 201);
+      await data(await createSupplier(req({ contactId: supplier.id, purchasePriceMinor: "3000000001", isPreferred: true }), params(id)), 201);
       const restSuppliers = (await data(await suppliers(req(), params(id)))).data, mcpSuppliers = (await call("list_inventory_suppliers", { inventoryItemId: id })).data;
       restSuppliers.forEach(inventoryUiCatalog); mcpSuppliers.forEach(inventoryUiCatalog); assert.deepEqual(restSuppliers, mcpSuppliers);
+      const restAlerts = await inventoryAlertsJson(await reorder(req()));
+      const mcpAlerts = await inventoryAlertsJson(Response.json(await call("list_inventory_reorder_suggestions")));
+      assert.deepEqual(restAlerts, mcpAlerts);
+      assert.equal(restAlerts[0].id, id);
+      assert.equal(restAlerts[0].suggestedReorderQuantity, 17);
+      assert.deepEqual(restAlerts[0].preferredSupplier, { contactId: supplier.id, contactName: "Supplier" });
+      assert.deepEqual((await db.execute(sql`select quantity_on_hand::text as quantity, reorder_point::text as point, (reorder_point::bigint*2-quantity_on_hand)::text as suggestion from inventory_item where id=${id}`)).rows,
+        [{ quantity: "3", point: "10", suggestion: "17" }]);
       const restMoves = (await data(await movements(req(), params(id)))).data, mcpMoves = (await call("list_inventory_movements", { inventoryItemId: id })).movements;
       restMoves.forEach(inventoryUiMovement); mcpMoves.forEach(inventoryUiMovement); assert.deepEqual(restMoves, mcpMoves);
 

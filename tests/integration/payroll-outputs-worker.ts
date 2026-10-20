@@ -1,4 +1,5 @@
 import { payrollJson, payrollUiPayload } from "../../lib/money/payroll-ui";
+import { payrollOutputJson } from "../../i18n/payroll-output-presentation";
 import { payrollRunDetailJson } from "../../i18n/payroll-run-detail-presentation";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -79,6 +80,8 @@ async function run() {
   };
   const data = async (r: Response, status = 200) => { const body = await payrollJson(r); assert.equal(r.status, status, JSON.stringify(body)); return body; };
   const checkedGeneration = async <T,>(name: string, body: T): Promise<T> => {
+    const kinds = { list_payslips: "payslips", get_payslip: "payslip", list_tax_forms: "generations", get_tax_form: "form", generate_tax_forms: "generated" } as const;
+    if (name in kinds) assert.deepEqual(await payrollOutputJson(Response.json(body), kinds[name as keyof typeof kinds]), body);
     if (name === "generate_payslips") assert.deepEqual(await payrollRunDetailJson(Response.json(body), "payslips"), body);
     return body;
   };

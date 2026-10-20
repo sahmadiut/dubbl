@@ -1,6 +1,7 @@
 "use client";
 
-import { payrollJson } from "@/lib/money/payroll-ui";
+import { useTranslations } from "next-intl";
+import { payrollOutputJson, payrollOutputOrganization, w2Fields, taxMetadata, type PayrollTaxForm } from "@/i18n/payroll-output-presentation";
 
 import { toast } from "sonner";
 import { useState, useEffect, useCallback } from "react";
@@ -13,92 +14,72 @@ import { payrollMoneyDisplay as formatMoney } from "@/lib/money/payroll-display"
 import { downloadTaxFormData } from "@/lib/payroll/output-client";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 
-interface TaxFormDetail {
-  id: string;
-  recipientName: string;
-  recipientTaxId: string | null;
-  recipientType: string;
-  formType: string;
-  taxYear: number;
-  formData: Record<string, unknown>;
-  status: string;
-  generation?: {
-    id: string;
-    status: string;
-  };
-}
+type TaxFormDetail = PayrollTaxForm;
 
 
-const statusBadge = (status: string) => {
-  switch (status) {
-    case "draft":
-      return <Badge variant="secondary">draft</Badge>;
-    case "generated":
-      return <Badge variant="default">generated</Badge>;
-    case "sent":
-      return <Badge variant="outline">sent</Badge>;
-    case "filed":
-      return (
-        <Badge
-          variant="default"
-          className="bg-emerald-600 hover:bg-emerald-700"
-        >
-          filed
-        </Badge>
-      );
-    default:
-      return <Badge variant="secondary">{status}</Badge>;
-  }
-};
-
-const w2Labels: Record<string, string> = {
-  box1_wages: "Box 1 - Wages, tips, other compensation",
-  box2_federal_tax: "Box 2 - Federal income tax withheld",
-  box3_ss_wages: "Box 3 - Social security wages",
-  box4_ss_tax: "Box 4 - Social security tax withheld",
-  box5_medicare_wages: "Box 5 - Medicare wages and tips",
-  box6_medicare_tax: "Box 6 - Medicare tax withheld",
-  box12_retirement_deferrals: "Box 12 - Pre-tax deductions",
-  box14_other: "Box 14 - Other deductions and taxes",
-  box17_state_income_tax: "Box 17 - State income tax",
-  box19_local_income_tax: "Box 19 - Local income tax",
-};
 
 export default function TaxFormDetailPage() {
+  const t = useTranslations("PayrollOutputs");
+  const statusBadge = (status: PayrollTaxForm["status"]) => {
+    switch (status) {
+      case "draft":
+        return <Badge variant="secondary">{t("taxStatus_draft")}</Badge>;
+      case "generated":
+        return <Badge variant="default">{t("taxStatus_generated")}</Badge>;
+      case "sent":
+        return <Badge variant="outline">{t("taxStatus_sent")}</Badge>;
+      case "corrected":
+        return <Badge variant="secondary">{t("taxStatus_corrected")}</Badge>;
+      case "filed":
+        return (
+          <Badge
+            variant="default"
+            className="bg-emerald-600 hover:bg-emerald-700"
+          >
+            {t("taxStatus_filed")}
+          </Badge>
+        );
+    }
+  };
   const { id } = useParams<{ id: string }>();
   const [form, setForm] = useState<TaxFormDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [moneyError, setMoneyError] = useState<string | null>(null);
-  useDocumentTitle("Payroll · Tax Form Details");
+  useDocumentTitle(t("taxDetailDocumentTitle"));
 
-  const orgId =
-    typeof window !== "undefined"
-      ? localStorage.getItem("activeOrgId") || ""
-      : "";
-
-  const loadForm = useCallback(() => {
-    if (!orgId) return;
-    fetch(`/api/v1/payroll/tax-forms/${id}`, {
-      headers: { "x-organization-id": orgId },
-    })
-      .then((r) => payrollJson(r))
-      .then((data) => {
-        if (data.error) toast.error(data.error);
-        if (data.id) setForm(data);
-      })
-      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"))
-      .finally(() => setLoading(false));
-  }, [id, orgId]);
+  const loadForm = useCallback(async (active: () => boolean) => {
+    const orgId = payrollOutputOrganization();
+    if (!orgId) { if (active()) { setMoneyError("organizationRequired"); setLoading(false); } return; }
+    try {
+      const response = await fetch(`/api/v1/payroll/tax-forms/${id}`, { headers: { "x-organization-id": orgId } });
+      if (!active()) return;
+      if (response.status === 404) { setForm(null); return; }
+      const data = await payrollOutputJson(response, "form");
+      if (!active()) return;
+      if (data.id !== id) throw new Error("Invalid tax form link");
+      setForm(data); setMoneyError(null);
+    } catch { if (active()) setMoneyError("taxReadFailed"); }
+    finally { if (active()) setLoading(false); }
+  }, [id]);
 
   useEffect(() => {
-    loadForm();
+    let active = true;
+    void loadForm(() => active);
+    return () => { active = false; };
   }, [loadForm]);
 
-  if (moneyError) return <p role="alert">{moneyError}</p>;
+  async function download(id: string) {
+    const orgId = payrollOutputOrganization();
+    if (!orgId) { toast.error(t("organizationRequired")); return; }
+    try { await downloadTaxFormData(orgId, id); }
+    catch { toast.error(t("downloadFailed")); }
+  }
+
+  if (moneyError) return <p role="alert">{t(moneyError as "organizationRequired" | "taxReadFailed")}</p>;
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <p className="text-sm text-muted-foreground">Loading...</p>
+        <p className="text-sm text-muted-foreground">{t("loading")}</p>
       </div>
     );
   }
@@ -106,22 +87,16 @@ export default function TaxFormDetailPage() {
   if (!form) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh]">
-        <p className="text-sm text-muted-foreground">Tax form not found</p>
+        <p className="text-sm text-muted-foreground">{t("formNotFound")}</p>
         <Button variant="ghost" size="sm" asChild className="mt-2">
-          <Link href="/payroll/tax-forms">Back to tax forms</Link>
+          <Link href="/payroll/tax-forms">{t("backToTaxForms")}</Link>
         </Button>
       </div>
     );
   }
 
-  const formTypeLabel =
-    form.formType === "1099_nec"
-      ? "1099-NEC"
-      : form.formType === "1099_misc"
-        ? "1099-MISC"
-        : "W-2";
-
-  const data = form.formData as Record<string, number | string>;
+  const formTypeLabel = t(`formType_${form.formType}`);
+  const data = form.formData;
 
   return (
     <div className="space-y-6">
@@ -129,19 +104,19 @@ export default function TaxFormDetailPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" asChild className="size-8 p-0">
-            <Link href="/payroll/tax-forms">
+            <Link href="/payroll/tax-forms" aria-label={t("backToTaxForms")}>
               <ArrowLeft className="size-4" />
             </Link>
           </Button>
           <div>
             <div className="flex items-center gap-2.5">
               <h1 className="text-lg font-semibold tracking-tight">
-                {formTypeLabel} · {form.taxYear}
+                {t("formHeading", { type: formTypeLabel, year: String(form.taxYear) })}
               </h1>
               {statusBadge(form.status)}
             </div>
             <p className="text-sm text-muted-foreground mt-0.5">
-              {form.recipientName} · {form.recipientType}
+              {t("recipientHeading", { name: form.recipientName, type: t(`recipientType_${form.recipientType}`) })}
             </p>
           </div>
         </div>
@@ -149,11 +124,11 @@ export default function TaxFormDetailPage() {
           variant="outline"
           size="sm"
           onClick={() =>
-            void downloadTaxFormData(orgId, form.id).catch(error => toast.error(error.message))
+            void download(form.id)
           }
         >
           <Download className="mr-2 size-3.5" />
-          Download form data
+          {t("download")}
         </Button>
       </div>
 
@@ -162,23 +137,23 @@ export default function TaxFormDetailPage() {
       {/* Summary cards */}
       <div className="grid gap-4 grid-cols-2 sm:grid-cols-4">
         <div className="rounded-lg border bg-card p-4">
-          <p className="text-xs text-muted-foreground">Form Type</p>
+          <p className="text-xs text-muted-foreground">{t("formType")}</p>
           <p className="mt-1 text-lg font-bold">{formTypeLabel}</p>
         </div>
         <div className="rounded-lg border bg-card p-4">
-          <p className="text-xs text-muted-foreground">Tax Year</p>
+          <p className="text-xs text-muted-foreground">{t("taxYear")}</p>
           <p className="mt-1 text-lg font-bold font-mono tabular-nums">
             {form.taxYear}
           </p>
         </div>
         <div className="rounded-lg border bg-card p-4">
-          <p className="text-xs text-muted-foreground">Recipient</p>
+          <p className="text-xs text-muted-foreground">{t("recipient")}</p>
           <p className="mt-1 text-lg font-bold truncate">
             {form.recipientName}
           </p>
         </div>
         <div className="rounded-lg border bg-card p-4">
-          <p className="text-xs text-muted-foreground">Tax ID</p>
+          <p className="text-xs text-muted-foreground">{t("taxId")}</p>
           <p className="mt-1 text-lg font-bold font-mono">
             {form.recipientTaxId
               ? `***-${form.recipientTaxId.slice(-4)}`
@@ -189,12 +164,12 @@ export default function TaxFormDetailPage() {
 
       {/* Form data */}
       <div className="space-y-3">
-        <h2 className="text-sm font-semibold">Form Data</h2>
+        <h2 className="text-sm font-semibold">{t("formData")}</h2>
         <div className="rounded-lg border divide-y">
           {form.formType === "1099_nec" && (
             <div className="flex items-center justify-between px-4 py-3">
               <span className="text-sm text-muted-foreground">
-                Box 1 - Nonemployee Compensation
+                {t("box1_nonemployee_compensation")}
               </span>
               <span className="text-sm font-mono font-bold tabular-nums">
                 {typeof data.box1_nonemployee_compensation === "number"
@@ -205,12 +180,12 @@ export default function TaxFormDetailPage() {
           )}
 
           {form.formType === "w2" &&
-            Object.entries(w2Labels).map(([key, label]) => (
+            w2Fields.map(key => (
               <div
                 key={key}
                 className="flex items-center justify-between px-4 py-3"
               >
-                <span className="text-sm text-muted-foreground">{label}</span>
+                <span className="text-sm text-muted-foreground">{t(key)}</span>
                 <span className="text-sm font-mono font-bold tabular-nums">
                   {typeof data[key] === "number"
                     ? formatMoney(data[key] as number)
@@ -220,21 +195,16 @@ export default function TaxFormDetailPage() {
             ))}
 
           {/* Additional info fields */}
-          {Object.entries(data)
-            .filter(
-              ([key]) =>
-                !key.startsWith("box") &&
-                !Object.keys(w2Labels).includes(key)
-            )
+          {taxMetadata.filter(key => key in data).map(key => [key, data[key]] as const)
             .map(([key, value]) => (
               <div
                 key={key}
                 className="flex items-center justify-between px-4 py-3"
               >
                 <span className="text-sm text-muted-foreground">
-                  {key.replace(/_/g, " ")}
+                  {t(`metadata_${key}`)}
                 </span>
-                <span className="text-sm">{String(value) || "-"}</span>
+                <span className="text-sm">{value === null ? "-" : String(value) || "-"}</span>
               </div>
             ))}
         </div>

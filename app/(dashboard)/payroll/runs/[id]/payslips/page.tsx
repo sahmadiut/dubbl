@@ -1,6 +1,7 @@
 "use client";
 
-import { payrollJson } from "@/lib/money/payroll-ui";
+import { useTranslations } from "next-intl";
+import { payrollOutputJson, payrollOutputOrganization, type PayrollPayslip } from "@/i18n/payroll-output-presentation";
 
 import { toast } from "sonner";
 import { useState, useEffect, useCallback } from "react";
@@ -27,33 +28,7 @@ interface RunDetail {
   items: RunItem[];
 }
 
-interface DeductionLine {
-  name?: string;
-  amount?: number;
-  category?: string;
-}
-
-interface Payslip {
-  currency: string;
-  id: string;
-  employeeId: string;
-  payrollRunId: string;
-  status: string;
-  grossAmount: number;
-  netAmount: number;
-  taxAmount: number;
-  deductionsBreakdown: DeductionLine[] | null;
-  ytdGross: number;
-  ytdNet: number;
-  ytdTax: number;
-}
-
-// Plain-language payslip status labels for non-accountants.
-const statusLabels: Record<string, string> = {
-  generated: "Ready",
-  sent: "Sent",
-  viewed: "Opened",
-};
+type Payslip = PayrollPayslip;
 
 interface Row {
   payrollItemId: string;
@@ -64,6 +39,7 @@ interface Row {
 }
 
 export default function RunPayslipsPage() {
+  const t = useTranslations("PayrollOutputs");
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [run, setRun] = useState<RunDetail | null>(null);
@@ -72,75 +48,61 @@ export default function RunPayslipsPage() {
   const [moneyError, setMoneyError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
 
-  useDocumentTitle("Payroll · Payslips");
+  useDocumentTitle(t("payslipsDocumentTitle"));
 
-  const load = useCallback(async () => {
-    const orgId = localStorage.getItem("activeOrgId");
+  const load = useCallback(async (active: () => boolean) => {
+    const orgId = payrollOutputOrganization();
     if (!orgId) {
-      setLoading(false);
+      if (active()) { setMoneyError("organizationRequired"); setLoading(false); }
       return;
     }
     const headers = { "x-organization-id": orgId };
-
-    // 1. Get the run so we know every employee on it (and the pay period).
-    const runRes = await fetch(`/api/v1/payroll/runs/${id}`, { headers });
-    const runData = await payrollJson(runRes);
-    const runDetail: RunDetail | undefined = runData.run;
-    if (!runDetail) {
-      setLoading(false);
-      return;
-    }
-    setRun(runDetail);
-
-    const psRes = await fetch(`/api/v1/payroll/runs/${id}/payslips`, { headers });
-    const psData = await payrollJson(psRes);
-    if (!psRes.ok) { toast.error(psData.error || "Unable to load payslips"); setLoading(false); return; }
-    const slips: (Payslip & { payrollItemId: string })[] = psData.payslips;
-    const built: Row[] = runDetail.items.map(item => ({
-      payrollItemId: item.id,
-      employeeId: item.employeeId,
-      name: item.employee?.name || "-",
-      employeeNumber: item.employee?.employeeNumber || "",
-      payslip: slips.find(p => p.payrollItemId === item.id) || null,
-    }));
-    setRows(built);
-    setLoading(false);
+    try {
+      const response = await fetch(`/api/v1/payroll/runs/${id}`, { headers });
+      if (!active()) return;
+      if (response.status === 404) { setRun(null); setRows([]); return; }
+      const { run: detail } = await payrollOutputJson(response, "run");
+      if (!active()) return;
+      const { payslips } = await payrollOutputJson(await fetch(`/api/v1/payroll/runs/${id}/payslips`, { headers }), "payslips");
+      if (!active()) return;
+      if (detail.id !== id || payslips.some(p => p.payrollRunId !== id || !detail.items.some(item => item.id === p.payrollItemId && item.employeeId === p.employeeId)) || new Set(payslips.map(p => p.payrollItemId)).size !== payslips.length) throw new Error("Invalid payslip links");
+      const built: Row[] = detail.items.map(item => ({
+        payrollItemId: item.id, employeeId: item.employeeId,
+        name: item.employee?.name || "-", employeeNumber: item.employee?.employeeNumber || "",
+        payslip: payslips.find(p => p.payrollItemId === item.id) || null,
+      }));
+      setRun(detail); setRows(built); setMoneyError(null);
+    } catch { if (active()) setMoneyError("payslipsReadFailed"); }
+    finally { if (active()) setLoading(false); }
   }, [id]);
 
   useEffect(() => {
-    void load().catch(error => { setMoneyError(error instanceof Error ? error.message : "Unable to load payslips"); setLoading(false); });
+    let active = true;
+    void load(() => active);
+    return () => { active = false; };
   }, [load]);
 
-  // Opening a payslip detail marks it as viewed on the server. Refresh that
-  // row's status so the badge reflects it.
+  // The existing GET marks an owned payslip viewed. Adopt its status only after validation.
   async function toggle(row: Row) {
     if (!row.payslip) return;
     const next = expanded === row.payslip.id ? null : row.payslip.id;
     setExpanded(next);
     if (next && row.payslip.status !== "viewed") {
-      const orgId = localStorage.getItem("activeOrgId");
-      if (!orgId) return;
+      const orgId = payrollOutputOrganization();
+      if (!orgId) { toast.error(t("organizationRequired")); return; }
       try {
-        const response = await fetch(`/api/v1/payroll/payslips/${row.payslip.id}`, {
+        const { payslip } = await payrollOutputJson(await fetch(`/api/v1/payroll/payslips/${row.payslip.id}`, {
           headers: { "x-organization-id": orgId },
-        });
-        if (!response.ok) { toast.error("Unable to mark payslip viewed"); return; }
-        await payrollJson(response);
-        setRows((prev) =>
-          prev.map((r) =>
-            r.payslip && r.payslip.id === row.payslip!.id
-              ? { ...r, payslip: { ...r.payslip, status: "viewed" } }
-              : r
-          )
-        );
-      } catch {
-        /* non-fatal */
-      }
+        }), "payslip");
+        if (payslip.id !== row.payslip.id || payslip.payrollRunId !== id || payslip.employeeId !== row.employeeId || payslip.payrollItemId !== row.payrollItemId || payslip.status !== "viewed") throw new Error("Invalid viewed payslip");
+        setRows(prev => prev.map(r => r.payslip?.id === payslip.id ? { ...r, payslip: { ...r.payslip, status: payslip.status } } : r));
+      } catch { toast.error(t("viewFailed")); }
     }
   }
 
   if (loading) return <BrandLoader />;
-  if (moneyError) return <p role="alert">{moneyError}</p>;
+  if (moneyError) return <p role="alert">{t(moneyError as "payslipsReadFailed" | "organizationRequired")}</p>;
+  if (!run) return <p>{t("runNotFound")}</p>;
 
   const generated = rows.filter((r) => r.payslip).length;
 
@@ -150,7 +112,7 @@ export default function RunPayslipsPage() {
         onClick={() => router.push(`/payroll/runs/${id}`)}
         className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors"
       >
-        <ArrowLeft className="size-3.5" /> Back to run
+        <ArrowLeft className="size-3.5" /> {t("backToRun")}
       </button>
 
       <div className="flex items-center gap-3">
@@ -158,10 +120,10 @@ export default function RunPayslipsPage() {
           <ScrollText className="size-5 text-muted-foreground" />
         </div>
         <div>
-          <h1 className="text-lg font-semibold">Payslips</h1>
+          <h1 className="text-lg font-semibold">{t("payslips")}</h1>
           {run && (
             <p className="text-sm text-muted-foreground">
-              {run.payPeriodStart} to {run.payPeriodEnd}
+              {t("period", { start: run.payPeriodStart, end: run.payPeriodEnd })}
             </p>
           )}
         </div>
@@ -172,10 +134,9 @@ export default function RunPayslipsPage() {
           <div className="mx-auto flex size-10 items-center justify-center rounded-xl bg-muted mb-3">
             <FileText className="size-5 text-muted-foreground" />
           </div>
-          <p className="text-sm font-medium">No payslips yet</p>
+          <p className="text-sm font-medium">{t("noPayslips")}</p>
           <p className="text-xs text-muted-foreground mt-1">
-            Use the &quot;Generate Payslips&quot; button on the run page to create a
-            payslip for every employee.
+            {t("noPayslipsHelp")}
           </p>
           <Button
             variant="outline"
@@ -183,7 +144,7 @@ export default function RunPayslipsPage() {
             className="mt-4"
             onClick={() => router.push(`/payroll/runs/${id}`)}
           >
-            Go to run
+            {t("goToRun")}
           </Button>
         </div>
       ) : (
@@ -212,7 +173,7 @@ export default function RunPayslipsPage() {
                       <>
                         <div className="hidden sm:block text-right">
                           <p className="text-xs text-muted-foreground">
-                            Before deductions
+                            {t("beforeDeductions")}
                           </p>
                           <p className="text-sm font-mono tabular-nums">
                             {formatMoney(ps.grossAmount, ps.currency)}
@@ -220,7 +181,7 @@ export default function RunPayslipsPage() {
                         </div>
                         <div className="hidden sm:block text-right">
                           <p className="text-xs text-muted-foreground">
-                            Taxes &amp; deductions
+                            {t("taxesDeductions")}
                           </p>
                           <p className="text-sm font-mono tabular-nums text-red-600 dark:text-red-400">
                             {formatMoney(totalDeductions, ps.currency)}
@@ -228,21 +189,21 @@ export default function RunPayslipsPage() {
                         </div>
                         <div className="text-right">
                           <p className="text-xs text-muted-foreground">
-                            Take-home
+                            {t("takeHome")}
                           </p>
                           <p className="text-sm font-mono tabular-nums font-medium">
                             {formatMoney(ps.netAmount, ps.currency)}
                           </p>
                         </div>
                         <Badge variant="outline" className="text-[10px]">
-                          {statusLabels[ps.status] || ps.status}
+                          {t(`payslipStatus_${ps.status}`)}
                         </Badge>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => toggle(row)}
                         >
-                          {isOpen ? "Hide" : "View payslip"}
+                          {t(isOpen ? "hide" : "viewPayslip")}
                           <ChevronDown
                             className={cn(
                               "ml-1.5 size-3.5 transition-transform",
@@ -253,7 +214,7 @@ export default function RunPayslipsPage() {
                       </>
                     ) : (
                       <Badge variant="outline" className="text-[10px]">
-                        No payslip
+                        {t("noPayslip")}
                       </Badge>
                     )}
                   </div>
@@ -262,16 +223,16 @@ export default function RunPayslipsPage() {
                 {isOpen && ps && (
                   <div className="border-t bg-muted/30 px-4 py-4">
                     <div className="grid grid-cols-2 gap-x-8 gap-y-3 sm:grid-cols-4">
-                      <Detail label="Before deductions" value={formatMoney(ps.grossAmount, ps.currency)} />
-                      <Detail label="Tax withheld" value={formatMoney(ps.taxAmount, ps.currency)} />
-                      <Detail label="Other deductions" value={formatMoney(otherDeductions, ps.currency)} />
-                      <Detail label="Take-home" value={formatMoney(ps.netAmount, ps.currency)} emphasize />
+                      <Detail label={t("beforeDeductions")} value={formatMoney(ps.grossAmount, ps.currency)} />
+                      <Detail label={t("taxWithheld")} value={formatMoney(ps.taxAmount, ps.currency)} />
+                      <Detail label={t("otherDeductions")} value={formatMoney(otherDeductions, ps.currency)} />
+                      <Detail label={t("takeHome")} value={formatMoney(ps.netAmount, ps.currency)} emphasize />
                     </div>
 
                     {ps.deductionsBreakdown && ps.deductionsBreakdown.length > 0 && (
                       <div className="mt-4">
                         <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground mb-1.5">
-                          Deductions
+                          {t("deductions")}
                         </p>
                         <div className="rounded-lg border bg-card divide-y">
                           {ps.deductionsBreakdown.map((d, i) => (
@@ -280,7 +241,7 @@ export default function RunPayslipsPage() {
                               className="flex items-center justify-between px-3 py-2"
                             >
                               <span className="text-xs capitalize">
-                                {d.name || d.category || "Deduction"}
+                                {d.name || t(`deductionCategory_${d.category}`)}
                               </span>
                               <span className="text-xs font-mono tabular-nums">
                                 {formatMoney(d.amount || 0, ps.currency)}
@@ -293,12 +254,12 @@ export default function RunPayslipsPage() {
 
                     <div className="mt-4">
                       <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground mb-1.5">
-                        This year so far
+                        {t("yearSoFar")}
                       </p>
                       <div className="grid grid-cols-3 gap-x-8 gap-y-2">
-                        <Detail label="Earned" value={formatMoney(ps.ytdGross, ps.currency)} small />
-                        <Detail label="Tax" value={formatMoney(ps.ytdTax, ps.currency)} small />
-                        <Detail label="Take-home" value={formatMoney(ps.ytdNet, ps.currency)} small />
+                        <Detail label={t("earned")} value={formatMoney(ps.ytdGross, ps.currency)} small />
+                        <Detail label={t("tax")} value={formatMoney(ps.ytdTax, ps.currency)} small />
+                        <Detail label={t("takeHome")} value={formatMoney(ps.ytdNet, ps.currency)} small />
                       </div>
                     </div>
                   </div>
@@ -311,9 +272,7 @@ export default function RunPayslipsPage() {
 
       {generated > 0 && generated < rows.length && (
         <p className="text-xs text-muted-foreground">
-          {rows.length - generated} employee
-          {rows.length - generated === 1 ? " has" : "s have"} no payslip yet. Use
-          &quot;Generate Payslips&quot; on the run page to create the missing ones.
+          {t("missingPayslips", { count: rows.length - generated })}
         </p>
       )}
     </ContentReveal>

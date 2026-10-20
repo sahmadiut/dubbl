@@ -1,5 +1,11 @@
 # Message catalog foundation
 
+LOC-085 payslip and tax form list/detail use 83 paired `PayrollOutputs`
+messages (7,519 keys per locale). See [scope and output ownership](PAYROLL_OUTPUT_CATALOGS.md)
+for checked reads/view/generation/download feedback, statutory/metadata labels,
+adjacent generated JSON ownership and preserved exact cents/REST/MCP contracts.
+LOC-067/008/002 and native terminology/RTL qualification remain independent.
+
 LOC-084 payroll run detail uses 99 paired `PayrollRunDetail` messages (7,436
 keys per locale). See [scope and exceptions](PAYROLL_RUN_DETAIL_CATALOGS.md)
 for checked detail/lifecycle/bonus/generation feedback and preserved exact
@@ -261,6 +267,7 @@ Extraction ownership:
 | LOC-082 | LOC-067 child: contractor list/detail and ContractorDrawer; [scope and exceptions](PAYROLL_CONTRACTOR_CATALOGS.md) |
 | LOC-083 | LOC-067 child: run list and regular/off-cycle creation; [scope and exceptions](PAYROLL_RUN_CATALOGS.md) |
 | LOC-084 | LOC-067 child: run detail, lifecycle, bonus and generation controls; [scope and exceptions](PAYROLL_RUN_DETAIL_CATALOGS.md) |
+| LOC-085 | LOC-067 child: run payslips and tax form list/detail; [scope and output ownership](PAYROLL_OUTPUT_CATALOGS.md) |
 | LOC-002 | Independent combined key coverage, plural and safe rendering acceptance |
 
 Later L10N/RTL tasks retain native-reviewed financial wording, complete Persian

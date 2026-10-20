@@ -225,6 +225,7 @@ Extraction ownership:
 | LOC-070 | LOC-008 child: reporting and shared controls |
 | LOC-071 | LOC-008 child: dashboard, documents and residual operations shared components |
 | LOC-009 | Public surfaces, landing/help, email/PDF and user-visible background content; remaining source audit |
+| LOC-079 | LOC-067 child: payroll overview/navigation; [scope and exceptions](PAYROLL_OVERVIEW_CATALOGS.md) |
 | LOC-002 | Independent combined key coverage, plural and safe rendering acceptance |
 
 Later L10N/RTL tasks retain native-reviewed financial wording, complete Persian

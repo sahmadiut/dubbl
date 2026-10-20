@@ -1,5 +1,6 @@
 import { payrollCentsInput, payrollCentsDecimal } from "../../lib/money/payroll-input";
 import { payrollJson, payrollUiPayload } from "../../lib/money/payroll-ui";
+import { payrollOverviewJson } from "../../i18n/payroll-overview-presentation";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
@@ -94,8 +95,12 @@ async function run() {
     const er = (await data(await employee(req(), p(e.id)))).employee;
     assert.equal(er.member.user.email, owner.email); assert.equal(JSON.stringify(er).includes("SECRET-HASH"), false); assert.equal("passwordHash" in er.member.user, false);
     assert.deepEqual((await ma.call("get_payroll_employee", { employeeId: e.id })).body.employee, er);
-    const list = await data(await employees(req())); assert.deepEqual((await ma.call("list_payroll_employees", {})).body.employees, list.data);
-    assert.equal(list.pagination.total, list.data.length); assert.equal(JSON.stringify(list).includes("passwordHash"), false);
+    const listResponse = await employees(req());
+    const list = await payrollOverviewJson(listResponse.clone(), "employees");
+    const mlist = (await ma.call("list_payroll_employees", {})).body;
+    assert.deepEqual((await payrollOverviewJson(Response.json({ data: mlist.employees }), "employees")).data, list.data);
+    const listMetadata = await data(listResponse);
+    assert.equal(listMetadata.pagination.total, list.data.length); assert.equal(JSON.stringify(list).includes("passwordHash"), false);
     assert.equal((await data(await employees(req({}, keys.b)))).pagination.total, 0);
     assert.equal((await mb.call("list_payroll_employees", {})).body.total, 0);
     assert.equal((await data(await contractors(req({}, keys.b)))).pagination.total, 0);

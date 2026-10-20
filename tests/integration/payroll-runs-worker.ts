@@ -1,4 +1,5 @@
 import { payrollJson, payrollUiPayload } from "../../lib/money/payroll-ui";
+import { payrollOverviewJson } from "../../i18n/payroll-overview-presentation";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { and, eq, sql } from "drizzle-orm";
@@ -119,6 +120,8 @@ async function run() {
     assert.deepEqual(await read("get_payroll_run", { id: r.id }), await call("get_payroll_run", { id: r.id }));
     assert.deepEqual(await read("list_payroll_run_items", { id: r.id }), await call("list_payroll_run_items", { id: r.id }));
     const list = await read("list_payroll_runs"), mlist = await call("list_payroll_runs"); assert.deepEqual(list.data, mlist.runs); assert.deepEqual(list.pagination, mlist.pagination);
+    assert.deepEqual((await payrollOverviewJson(Response.json(list), "runs")).data, list.data);
+    assert.deepEqual((await payrollOverviewJson(Response.json({ data: mlist.runs }), "runs")).data, list.data);
     assert.equal(mlist.total, list.pagination.total); assert.equal((await call("list_payroll_runs", { limit: 200 })).limit, 200);
     assert.equal((await read("update_payroll_run", { id: r.id, notes: "Legacy note" })).run.notes, "Legacy note");
     assert.equal((await call("update_payroll_run", { id: rm.id, notes: null })).run.notes, null);

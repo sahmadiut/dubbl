@@ -473,3 +473,22 @@ Verified scope: nine route TSX files (2,965 lines including blanks), plus the sh
 - [LOC-076](../tasks/LOC-076.md): Extract inventory movement catalogs.
 - [LOC-077](../tasks/LOC-077.md): Extract inventory assembly catalogs.
 - [LOC-078](../tasks/LOC-078.md): Extract inventory valuation and alert catalogs.
+
+## LOC-067 payroll catalog children
+
+27 route components plus two creation drawers; parent retains independent combined acceptance.
+
+- [LOC-079](../tasks/LOC-079.md): Extract payroll overview and navigation catalogs.
+- [LOC-080](../tasks/LOC-080.md): Extract payroll employee list and creation catalogs.
+- [LOC-081](../tasks/LOC-081.md): Extract payroll employee detail catalogs.
+- [LOC-082](../tasks/LOC-082.md): Extract payroll contractor catalogs.
+- [LOC-083](../tasks/LOC-083.md): Extract payroll run list and creation catalogs.
+- [LOC-084](../tasks/LOC-084.md): Extract payroll run detail catalogs.
+- [LOC-085](../tasks/LOC-085.md): Extract payroll payslip and tax form catalogs.
+- [LOC-086](../tasks/LOC-086.md): Extract payroll time and leave configuration catalogs.
+- [LOC-087](../tasks/LOC-087.md): Extract payroll leave and timesheet detail catalogs.
+- [LOC-088](../tasks/LOC-088.md): Extract payroll self-service catalogs.
+- [LOC-089](../tasks/LOC-089.md): Extract payroll compensation catalogs.
+- [LOC-090](../tasks/LOC-090.md): Extract payroll analytics forecasting and reports catalogs.
+- [LOC-091](../tasks/LOC-091.md): Extract payroll tax liability catalogs.
+- [LOC-092](../tasks/LOC-092.md): Extract payroll settings catalogs.

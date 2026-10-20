@@ -1,6 +1,7 @@
 "use client";
 
-import { payrollJson } from "@/lib/money/payroll-ui";
+import { useTranslations } from "next-intl";
+import { payrollTimeJson, payrollTimeOrganization } from "@/i18n/payroll-time-presentation";
 
 import { useState, useEffect, useCallback, useMemo, useRef, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
@@ -128,14 +129,23 @@ type LeaveFilter = "all" | "pending" | "approved" | "rejected";
 /* ------------------------------------------------------------------ */
 
 export default function TimeLeavePage() {
+  const t = useTranslations("PayrollTimeLeave");
   const router = useRouter();
   const { confirm, dialog: confirmDialog } = useConfirm();
-  useDocumentTitle("Payroll · Time & Leave");
+  useDocumentTitle(t("documentTitle"));
 
-  const orgId =
-    typeof window !== "undefined"
-      ? localStorage.getItem("activeOrgId")
-      : null;
+  const orgId = payrollTimeOrganization();
+  function statusLabel(status: string) {
+    switch (status) {
+      case "draft": return t("draft");
+      case "submitted": return t("submitted");
+      case "pending": return t("pending");
+      case "approved": return t("approved");
+      case "rejected": return t("rejected");
+      case "cancelled": return t("cancelled");
+      default: return t("unknownStatus");
+    }
+  }
 
   /* ---- view ---- */
   const [view, setView] = useState<View>("timesheets");
@@ -191,7 +201,7 @@ export default function TimeLeavePage() {
             className="h-7 text-xs gap-1"
             onClick={() => setTsDrawerOpen(true)}
           >
-            <Plus className="size-3" /> New Timesheet
+            <Plus className="size-3" /> {t("newTimesheet")}
           </Button>
         ) : (
           <Button
@@ -199,10 +209,10 @@ export default function TimeLeavePage() {
             className="h-7 text-xs gap-1"
             onClick={() => setLeaveDrawerOpen(true)}
           >
-            <Plus className="size-3" /> New Request
+            <Plus className="size-3" /> {t("newRequest")}
           </Button>
         ),
-      [view]
+      [view, t]
     )
   );
 
@@ -257,7 +267,7 @@ export default function TimeLeavePage() {
   /* ---------------------------------------------------------------- */
 
   useEffect(() => {
-    if (!orgId) return;
+    if (!orgId) { setTsInitialLoad(false); setLeaveInitialLoad(false); return; }
     let cancelled = false;
     setTsRefetching(true);
     setTsPage(1);
@@ -265,12 +275,13 @@ export default function TimeLeavePage() {
     fetch(`/api/v1/payroll/timesheets?${buildTsParams(1)}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => payrollJson(r))
+      .then((r) => payrollTimeJson(r, "timesheets"))
       .then((data) => {
         if (cancelled) return;
-        setTimesheets(data.data || []);
-        setTsTotalCount(data.pagination?.total || 0);
+        setTimesheets(data.data);
+        setTsTotalCount(data.pagination.total);
       })
+      .catch(() => { if (!cancelled) toast.error(t("loadTimesheetsFailed")); })
       .finally(() => {
         if (!cancelled) {
           setTsInitialLoad(false);
@@ -282,14 +293,14 @@ export default function TimeLeavePage() {
     return () => {
       cancelled = true;
     };
-  }, [orgId, buildTsParams]);
+  }, [orgId, buildTsParams, t]);
 
   /* ---------------------------------------------------------------- */
   /*  Fetch first page - leave                                         */
   /* ---------------------------------------------------------------- */
 
   useEffect(() => {
-    if (!orgId) return;
+    if (!orgId) { setTsInitialLoad(false); setLeaveInitialLoad(false); return; }
     let cancelled = false;
     setLeaveRefetching(true);
     setLeavePage(1);
@@ -297,12 +308,13 @@ export default function TimeLeavePage() {
     fetch(`/api/v1/payroll/leave/requests?${buildLeaveParams(1)}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => payrollJson(r))
+      .then((r) => payrollTimeJson(r, "leave"))
       .then((data) => {
         if (cancelled) return;
-        setLeaveRequests(data.data || []);
-        setLeaveTotalCount(data.pagination?.total || 0);
+        setLeaveRequests(data.data);
+        setLeaveTotalCount(data.pagination.total);
       })
+      .catch(() => { if (!cancelled) toast.error(t("loadLeaveFailed")); })
       .finally(() => {
         if (!cancelled) {
           setLeaveInitialLoad(false);
@@ -314,7 +326,7 @@ export default function TimeLeavePage() {
     return () => {
       cancelled = true;
     };
-  }, [orgId, buildLeaveParams]);
+  }, [orgId, buildLeaveParams, t]);
 
   /* ---------------------------------------------------------------- */
   /*  Fetch employees + policies (independent of filters)              */
@@ -322,26 +334,18 @@ export default function TimeLeavePage() {
 
   useEffect(() => {
     if (!orgId) return;
+    let cancelled = false;
     const headers = { "x-organization-id": orgId };
-
     fetch("/api/v1/payroll/employees", { headers })
-      .then((r) => payrollJson(r))
-      .then((data) => {
-        if (data.data)
-          setEmployees(
-            data.data.map((e: { id: string; name: string }) => ({ id: e.id, name: e.name })),
-          );
-      });
-
+      .then(r => payrollTimeJson(r, "employees"))
+      .then(data => { if (!cancelled) setEmployees(data.data.map(({ id, name }) => ({ id, name }))); })
+      .catch(() => { if (!cancelled) toast.error(t("loadChoicesFailed")); });
     fetch("/api/v1/payroll/leave/policies", { headers })
-      .then((r) => payrollJson(r))
-      .then((data) => {
-        if (data.data)
-          setPolicies(
-            data.data.map((p: { id: string; name: string }) => ({ id: p.id, name: p.name })),
-          );
-      });
-  }, [orgId]);
+      .then(r => payrollTimeJson(r, "policies"))
+      .then(data => { if (!cancelled) setPolicies(data.data.map(({ id, name }) => ({ id, name }))); })
+      .catch(() => { if (!cancelled) toast.error(t("loadChoicesFailed")); });
+    return () => { cancelled = true; };
+  }, [orgId, t]);
 
   /* ---------------------------------------------------------------- */
   /*  Load more - timesheets                                           */
@@ -355,15 +359,16 @@ export default function TimeLeavePage() {
     fetch(`/api/v1/payroll/timesheets?${buildTsParams(nextPage)}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => payrollJson(r))
+      .then((r) => payrollTimeJson(r, "timesheets"))
       .then((data) => {
         if (data.data) {
           setTimesheets((prev) => [...prev, ...data.data]);
           setTsPage(nextPage);
         }
       })
+      .catch(() => toast.error(t("loadTimesheetsFailed")))
       .finally(() => setTsLoadingMore(false));
-  }, [orgId, tsPage, buildTsParams, tsLoadingMore]);
+  }, [orgId, tsPage, buildTsParams, tsLoadingMore, t]);
 
   /* ---------------------------------------------------------------- */
   /*  Load more - leave                                                */
@@ -377,15 +382,16 @@ export default function TimeLeavePage() {
     fetch(`/api/v1/payroll/leave/requests?${buildLeaveParams(nextPage)}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => payrollJson(r))
+      .then((r) => payrollTimeJson(r, "leave"))
       .then((data) => {
         if (data.data) {
           setLeaveRequests((prev) => [...prev, ...data.data]);
           setLeavePage(nextPage);
         }
       })
+      .catch(() => toast.error(t("loadLeaveFailed")))
       .finally(() => setLeaveLoadingMore(false));
-  }, [orgId, leavePage, buildLeaveParams, leaveLoadingMore]);
+  }, [orgId, leavePage, buildLeaveParams, leaveLoadingMore, t]);
 
   /* ---------------------------------------------------------------- */
   /*  IntersectionObserver - timesheets                                */
@@ -550,15 +556,13 @@ export default function TimeLeavePage() {
         },
         body: JSON.stringify(newTs),
       });
-      if (res.ok) {
-        const data = await payrollJson(res);
-        toast.success("Timesheet created");
-        setTsDrawerOpen(false);
-        setNewTs({ employeeId: "", periodStart: "", periodEnd: "" });
-        router.push(`/payroll/timesheets/${data.timesheet.id}`);
-      }
+      const data = await payrollTimeJson(res, "timesheetCreated");
+      toast.success(t("timesheetCreated"));
+      setTsDrawerOpen(false);
+      setNewTs({ employeeId: "", periodStart: "", periodEnd: "" });
+      router.push(`/payroll/timesheets/${data.timesheet.id}`);
     } catch {
-      toast.error("Failed to create timesheet");
+      toast.error(t("createTimesheetFailed"));
     } finally {
       setSavingTs(false);
     }
@@ -580,107 +584,59 @@ export default function TimeLeavePage() {
           hours: parseFloat(leaveForm.hours || "0"),
         }),
       });
-      if (res.ok) {
-      await payrollJson(res);
-        toast.success("Leave request created");
-        setLeaveDrawerOpen(false);
-        setLeaveForm({
-          employeeId: "",
-          policyId: "",
-          startDate: "",
-          endDate: "",
-          hours: "",
-          reason: "",
-        });
-        // Trigger refetch for leave
-        setLeaveRefetching(true);
-        setLeavePage(1);
-        fetch(`/api/v1/payroll/leave/requests?${buildLeaveParams(1)}`, {
-          headers: { "x-organization-id": orgId },
-        })
-          .then((r) => payrollJson(r))
-          .then((data) => {
-            setLeaveRequests(data.data || []);
-            setLeaveTotalCount(data.pagination?.total || 0);
-          })
-          .finally(() => {
-            setLeaveRefetching(false);
-            setLeaveFetchKey((k) => k + 1);
-          });
-      } else {
-        const data = await payrollJson(res);
-        toast.error(typeof data.error === "string" ? data.error : "Failed to create leave request");
-      }
+      await payrollTimeJson(res, "leaveCreated");
+      toast.success(t("leaveCreated"));
+      setLeaveDrawerOpen(false);
+      setLeaveForm({
+        employeeId: "",
+        policyId: "",
+        startDate: "",
+        endDate: "",
+        hours: "",
+        reason: "",
+      });
+      await refreshLeave();
     } catch {
-      toast.error("Failed to create leave request");
+      toast.error(t("createLeaveFailed"));
     } finally {
       setSavingLeave(false);
     }
   }
 
+  async function refreshLeave() {
+    if (!orgId) return;
+    setLeaveRefetching(true);
+    try {
+      const data = await payrollTimeJson(await fetch(`/api/v1/payroll/leave/requests?${buildLeaveParams(1)}`, {
+        headers: { "x-organization-id": orgId },
+      }), "leave");
+      setLeaveRequests(data.data); setLeaveTotalCount(data.pagination.total); setLeavePage(1);
+    } catch { toast.error(t("loadLeaveFailed")); }
+    finally { setLeaveRefetching(false); setLeaveFetchKey(k => k + 1); }
+  }
+
   async function handleApprove(id: string) {
     if (!orgId) return;
-    const res = await fetch(`/api/v1/payroll/leave/requests/${id}/approve`, {
-      method: "POST",
-      headers: { "x-organization-id": orgId },
-    });
-    if (res.ok) {
-      await payrollJson(res);
-      toast.success("Request approved");
-      // Refetch leave
-      setLeaveRefetching(true);
-      setLeavePage(1);
-      fetch(`/api/v1/payroll/leave/requests?${buildLeaveParams(1)}`, {
-        headers: { "x-organization-id": orgId },
-      })
-        .then((r) => payrollJson(r))
-        .then((data) => {
-          setLeaveRequests(data.data || []);
-          setLeaveTotalCount(data.pagination?.total || 0);
-        })
-        .finally(() => {
-          setLeaveRefetching(false);
-          setLeaveFetchKey((k) => k + 1);
-        });
-    }
+    try {
+      const data = await payrollTimeJson(await fetch(`/api/v1/payroll/leave/requests/${id}/approve`, {
+        method: "POST", headers: { "x-organization-id": orgId },
+      }), "approved");
+      if (data.request.id !== id) throw new Error("Mismatched request");
+      toast.success(t("requestApproved")); await refreshLeave();
+    } catch { toast.error(t("approveFailed")); }
   }
 
   async function handleReject(id: string) {
     if (!orgId) return;
-    const confirmed = await confirm({
-      title: "Reject leave request?",
-      description: "The employee will be notified of the rejection.",
-      confirmLabel: "Reject",
-      destructive: true,
-    });
+    const confirmed = await confirm({ title: t("rejectTitle"), description: t("rejectDescription"), confirmLabel: t("reject"), destructive: true });
     if (!confirmed) return;
-    const res = await fetch(`/api/v1/payroll/leave/requests/${id}/reject`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-organization-id": orgId,
-      },
-      body: JSON.stringify({}),
-    });
-    if (res.ok) {
-      await payrollJson(res);
-      toast.success("Request rejected");
-      // Refetch leave
-      setLeaveRefetching(true);
-      setLeavePage(1);
-      fetch(`/api/v1/payroll/leave/requests?${buildLeaveParams(1)}`, {
-        headers: { "x-organization-id": orgId },
-      })
-        .then((r) => payrollJson(r))
-        .then((data) => {
-          setLeaveRequests(data.data || []);
-          setLeaveTotalCount(data.pagination?.total || 0);
-        })
-        .finally(() => {
-          setLeaveRefetching(false);
-          setLeaveFetchKey((k) => k + 1);
-        });
-    }
+    try {
+      const data = await payrollTimeJson(await fetch(`/api/v1/payroll/leave/requests/${id}/reject`, {
+        method: "POST", headers: { "Content-Type": "application/json", "x-organization-id": orgId }, body: JSON.stringify({}),
+      }), "rejected");
+      if (data.request.id !== id) throw new Error("Mismatched request");
+      toast.success(t("requestRejected")); await refreshLeave();
+    } catch { toast.error(t("rejectFailed")); }
   }
 
   /* ---------------------------------------------------------------- */
@@ -700,23 +656,23 @@ export default function TimeLeavePage() {
         {[
           {
             icon: Clock,
-            label: "Active Timesheets",
+            label: t("activeTimesheets"),
             value: activeTimesheets,
           },
           {
             icon: ClipboardCheck,
-            label: "Pending Approvals",
+            label: t("pendingApprovals"),
             value: pendingApprovals,
           },
           {
             icon: CheckCircle2,
-            label: "Approved This Month",
+            label: t("approvedThisMonth"),
             value: approvedThisMonth,
           },
           {
             icon: Timer,
-            label: "Leave Hours Used",
-            value: `${leaveHoursUsed}h`,
+            label: t("leaveHoursUsed"),
+            value: t("hoursValue", { hours: String(leaveHoursUsed) }),
             highlight: true,
           },
         ].map((card, i) => (
@@ -749,8 +705,8 @@ export default function TimeLeavePage() {
       <div className="space-y-4">
         <div className="inline-flex h-10 items-center gap-1 rounded-lg bg-muted p-[3px]">
           {([
-            { value: "timesheets" as const, icon: Clock, label: "Timesheets" },
-            { value: "leave" as const, icon: CalendarDays, label: "Leave Requests" },
+            { value: "timesheets" as const, icon: Clock, label: t("timesheets") },
+            { value: "leave" as const, icon: CalendarDays, label: t("leaveRequests") },
           ]).map((tab) => (
             <button
               key={tab.value}
@@ -807,11 +763,11 @@ export default function TimeLeavePage() {
                 onValueChange={(v) => setTsFilter(v as TsFilter)}
               >
                 <TabsList className="overflow-x-auto">
-                  <TabsTrigger value="all" className="whitespace-nowrap">All</TabsTrigger>
-                  <TabsTrigger value="draft" className="whitespace-nowrap">Draft</TabsTrigger>
-                  <TabsTrigger value="submitted" className="whitespace-nowrap">Submitted</TabsTrigger>
-                  <TabsTrigger value="approved" className="whitespace-nowrap">Approved</TabsTrigger>
-                  <TabsTrigger value="rejected" className="whitespace-nowrap">Rejected</TabsTrigger>
+                  <TabsTrigger value="all" className="whitespace-nowrap">{t("all")}</TabsTrigger>
+                  <TabsTrigger value="draft" className="whitespace-nowrap">{t("draft")}</TabsTrigger>
+                  <TabsTrigger value="submitted" className="whitespace-nowrap">{t("submitted")}</TabsTrigger>
+                  <TabsTrigger value="approved" className="whitespace-nowrap">{t("approved")}</TabsTrigger>
+                  <TabsTrigger value="rejected" className="whitespace-nowrap">{t("rejected")}</TabsTrigger>
                 </TabsList>
               </Tabs>
 
@@ -821,7 +777,7 @@ export default function TimeLeavePage() {
                 onClick={() => setTsDrawerOpen(true)}
               >
                 <Plus className="mr-2 size-4" />
-                New Timesheet
+                {t("newTimesheet")}
               </Button>
             </div>
 
@@ -830,13 +786,14 @@ export default function TimeLeavePage() {
               <div className="relative">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
                 <Input
-                  placeholder="Search employee..."
+                  placeholder={t("searchEmployee")}
                   value={tsSearch}
                   onChange={(e) => setTsSearch(e.target.value)}
                   className="h-8 w-56 pl-8 pr-7 text-xs"
                 />
                 {tsSearch && (
                   <button
+                    aria-label={t("clear")}
                     onClick={() => setTsSearch("")}
                     className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   >
@@ -854,17 +811,17 @@ export default function TimeLeavePage() {
                 }}
               >
                 <SelectTrigger className="h-8 w-44 text-xs">
-                  <SelectValue placeholder="Sort by..." />
+                  <SelectValue placeholder={t("sortBy")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="period:desc">Newest period</SelectItem>
-                  <SelectItem value="period:asc">Oldest period</SelectItem>
-                  <SelectItem value="employee:asc">Employee A-Z</SelectItem>
-                  <SelectItem value="employee:desc">Employee Z-A</SelectItem>
-                  <SelectItem value="hours:desc">Most hours</SelectItem>
-                  <SelectItem value="hours:asc">Fewest hours</SelectItem>
-                  <SelectItem value="status:asc">Status A-Z</SelectItem>
-                  <SelectItem value="status:desc">Status Z-A</SelectItem>
+                  <SelectItem value="period:desc">{t("newestPeriod")}</SelectItem>
+                  <SelectItem value="period:asc">{t("oldestPeriod")}</SelectItem>
+                  <SelectItem value="employee:asc">{t("employeeAsc")}</SelectItem>
+                  <SelectItem value="employee:desc">{t("employeeDesc")}</SelectItem>
+                  <SelectItem value="hours:desc">{t("mostHours")}</SelectItem>
+                  <SelectItem value="hours:asc">{t("fewestHours")}</SelectItem>
+                  <SelectItem value="status:asc">{t("statusAsc")}</SelectItem>
+                  <SelectItem value="status:desc">{t("statusDesc")}</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -873,10 +830,11 @@ export default function TimeLeavePage() {
                   variant="ghost"
                   size="sm"
                   className="h-8 text-xs text-muted-foreground"
-                  onClick={() => setTsSearch("")}
+                  aria-label={t("clear")}
+                    onClick={() => setTsSearch("")}
                 >
                   <X className="mr-1 size-3" />
-                  Clear
+                  {t("clear")}
                 </Button>
               )}
             </div>
@@ -889,11 +847,11 @@ export default function TimeLeavePage() {
                 <div className="mx-auto flex size-10 items-center justify-center rounded-xl bg-muted mb-3">
                   <Clock className="size-5 text-muted-foreground" />
                 </div>
-                <p className="text-sm font-medium">No timesheets found</p>
+                <p className="text-sm font-medium">{t("noTimesheets")}</p>
                 <p className="text-xs text-muted-foreground mt-1">
                   {tsSearch
-                    ? "Try a different search"
-                    : "Create a timesheet to start tracking hours"}
+                    ? t("trySearch")
+                    : t("startTracking")}
                 </p>
               </div>
             ) : (
@@ -916,13 +874,13 @@ export default function TimeLeavePage() {
                             {ts.employee?.name || "-"}
                           </p>
                           <p className="text-[11px] text-muted-foreground">
-                            {ts.periodStart} to {ts.periodEnd}
+                            {t("dateRange", { start: ts.periodStart, end: ts.periodEnd })}
                           </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <span className="text-xs font-mono tabular-nums">
-                          {ts.totalHours}h
+                          {t("hoursValue", { hours: String(ts.totalHours) })}
                         </span>
                         <Badge
                           variant="outline"
@@ -931,7 +889,7 @@ export default function TimeLeavePage() {
                             tsStatusColors[ts.status] || "",
                           )}
                         >
-                          {ts.status}
+                          {statusLabel(ts.status)}
                         </Badge>
                       </div>
                     </button>
@@ -945,8 +903,7 @@ export default function TimeLeavePage() {
               <>
                 <div className="flex items-center justify-between pt-1">
                   <p className="text-xs text-muted-foreground">
-                    Showing {timesheets.length} of {tsTotalCount} timesheet
-                    {tsTotalCount !== 1 ? "s" : ""}
+                    {t("showingTimesheets", { loaded: timesheets.length, total: tsTotalCount })}
                   </p>
                 </div>
                 {tsHasMore && (
@@ -986,10 +943,10 @@ export default function TimeLeavePage() {
                 onValueChange={(v) => setLeaveFilter(v as LeaveFilter)}
               >
                 <TabsList className="overflow-x-auto">
-                  <TabsTrigger value="all" className="whitespace-nowrap">All</TabsTrigger>
-                  <TabsTrigger value="pending" className="whitespace-nowrap">Pending</TabsTrigger>
-                  <TabsTrigger value="approved" className="whitespace-nowrap">Approved</TabsTrigger>
-                  <TabsTrigger value="rejected" className="whitespace-nowrap">Rejected</TabsTrigger>
+                  <TabsTrigger value="all" className="whitespace-nowrap">{t("all")}</TabsTrigger>
+                  <TabsTrigger value="pending" className="whitespace-nowrap">{t("pending")}</TabsTrigger>
+                  <TabsTrigger value="approved" className="whitespace-nowrap">{t("approved")}</TabsTrigger>
+                  <TabsTrigger value="rejected" className="whitespace-nowrap">{t("rejected")}</TabsTrigger>
                 </TabsList>
               </Tabs>
 
@@ -999,7 +956,7 @@ export default function TimeLeavePage() {
                 onClick={() => setLeaveDrawerOpen(true)}
               >
                 <Plus className="mr-2 size-4" />
-                New Request
+                {t("newRequest")}
               </Button>
             </div>
 
@@ -1008,13 +965,14 @@ export default function TimeLeavePage() {
               <div className="relative">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
                 <Input
-                  placeholder="Search employee or policy..."
+                  placeholder={t("searchPolicy")}
                   value={leaveSearch}
                   onChange={(e) => setLeaveSearch(e.target.value)}
                   className="h-8 w-56 pl-8 pr-7 text-xs"
                 />
                 {leaveSearch && (
                   <button
+                    aria-label={t("clear")}
                     onClick={() => setLeaveSearch("")}
                     className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   >
@@ -1032,17 +990,17 @@ export default function TimeLeavePage() {
                 }}
               >
                 <SelectTrigger className="h-8 w-44 text-xs">
-                  <SelectValue placeholder="Sort by..." />
+                  <SelectValue placeholder={t("sortBy")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="date:desc">Newest first</SelectItem>
-                  <SelectItem value="date:asc">Oldest first</SelectItem>
-                  <SelectItem value="employee:asc">Employee A-Z</SelectItem>
-                  <SelectItem value="employee:desc">Employee Z-A</SelectItem>
-                  <SelectItem value="hours:desc">Most hours</SelectItem>
-                  <SelectItem value="hours:asc">Fewest hours</SelectItem>
-                  <SelectItem value="status:asc">Status A-Z</SelectItem>
-                  <SelectItem value="status:desc">Status Z-A</SelectItem>
+                  <SelectItem value="date:desc">{t("newest")}</SelectItem>
+                  <SelectItem value="date:asc">{t("oldest")}</SelectItem>
+                  <SelectItem value="employee:asc">{t("employeeAsc")}</SelectItem>
+                  <SelectItem value="employee:desc">{t("employeeDesc")}</SelectItem>
+                  <SelectItem value="hours:desc">{t("mostHours")}</SelectItem>
+                  <SelectItem value="hours:asc">{t("fewestHours")}</SelectItem>
+                  <SelectItem value="status:asc">{t("statusAsc")}</SelectItem>
+                  <SelectItem value="status:desc">{t("statusDesc")}</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -1051,10 +1009,11 @@ export default function TimeLeavePage() {
                   variant="ghost"
                   size="sm"
                   className="h-8 text-xs text-muted-foreground"
-                  onClick={() => setLeaveSearch("")}
+                  aria-label={t("clear")}
+                    onClick={() => setLeaveSearch("")}
                 >
                   <X className="mr-1 size-3" />
-                  Clear
+                  {t("clear")}
                 </Button>
               )}
             </div>
@@ -1067,11 +1026,11 @@ export default function TimeLeavePage() {
                 <div className="mx-auto flex size-10 items-center justify-center rounded-xl bg-muted mb-3">
                   <CalendarDays className="size-5 text-muted-foreground" />
                 </div>
-                <p className="text-sm font-medium">No leave requests found</p>
+                <p className="text-sm font-medium">{t("noLeave")}</p>
                 <p className="text-xs text-muted-foreground mt-1">
                   {leaveSearch
-                    ? "Try a different search"
-                    : "Submit a leave request to get started"}
+                    ? t("trySearch")
+                    : t("startLeave")}
                 </p>
               </div>
             ) : (
@@ -1087,8 +1046,7 @@ export default function TimeLeavePage() {
                           {r.employee?.name || "-"}
                         </p>
                         <p className="text-[11px] text-muted-foreground">
-                          {r.policy?.name || "-"} · {r.startDate} to{" "}
-                          {r.endDate} · {r.hours}h
+                          {t("leaveSummary", { policy: r.policy?.name || "-", start: r.startDate, end: r.endDate, hours: String(r.hours) })}
                         </p>
                         {r.reason && (
                           <p className="text-[11px] text-muted-foreground mt-0.5 truncate max-w-[200px]">
@@ -1104,7 +1062,7 @@ export default function TimeLeavePage() {
                             leaveStatusColors[r.status] || "",
                           )}
                         >
-                          {r.status}
+                          {statusLabel(r.status)}
                         </Badge>
                         {r.status === "pending" && (
                           <>
@@ -1114,7 +1072,7 @@ export default function TimeLeavePage() {
                               className="h-6 text-[10px] px-2"
                               onClick={() => handleApprove(r.id)}
                             >
-                              Approve
+                              {t("approve")}
                             </Button>
                             <Button
                               size="sm"
@@ -1122,7 +1080,7 @@ export default function TimeLeavePage() {
                               className="h-6 text-[10px] px-2 text-red-600"
                               onClick={() => handleReject(r.id)}
                             >
-                              Reject
+                              {t("reject")}
                             </Button>
                           </>
                         )}
@@ -1138,8 +1096,7 @@ export default function TimeLeavePage() {
               <>
                 <div className="flex items-center justify-between pt-1">
                   <p className="text-xs text-muted-foreground">
-                    Showing {leaveRequests.length} of {leaveTotalCount} request
-                    {leaveTotalCount !== 1 ? "s" : ""}
+                    {t("showingLeave", { loaded: leaveRequests.length, total: leaveTotalCount })}
                   </p>
                 </div>
                 {leaveHasMore && (
@@ -1171,9 +1128,9 @@ export default function TimeLeavePage() {
                 <Clock className="size-5" />
               </div>
               <div>
-                <SheetTitle>New Timesheet</SheetTitle>
+                <SheetTitle>{t("newTimesheet")}</SheetTitle>
                 <SheetDescription>
-                  Create a timesheet to track employee hours.
+                  {t("timesheetHelp")}
                 </SheetDescription>
               </div>
             </div>
@@ -1181,7 +1138,7 @@ export default function TimeLeavePage() {
           <form onSubmit={handleCreateTs} className="flex flex-col flex-1">
             <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
               <div className="space-y-2">
-                <Label>Employee</Label>
+                <Label>{t("employee")}</Label>
                 <select
                   className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
                   value={newTs.employeeId}
@@ -1189,7 +1146,7 @@ export default function TimeLeavePage() {
                     setNewTs({ ...newTs, employeeId: e.target.value })
                   }
                 >
-                  <option value="">Select employee...</option>
+                  <option value="">{t("selectEmployee")}</option>
                   {employees.map((e) => (
                     <option key={e.id} value={e.id}>
                       {e.name}
@@ -1198,7 +1155,7 @@ export default function TimeLeavePage() {
                 </select>
               </div>
               <div className="space-y-2">
-                <Label>Period Start</Label>
+                <Label>{t("periodStart")}</Label>
                 <Input
                   type="date"
                   value={newTs.periodStart}
@@ -1208,7 +1165,7 @@ export default function TimeLeavePage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Period End</Label>
+                <Label>{t("periodEnd")}</Label>
                 <Input
                   type="date"
                   value={newTs.periodEnd}
@@ -1224,14 +1181,14 @@ export default function TimeLeavePage() {
                 variant="outline"
                 onClick={() => setTsDrawerOpen(false)}
               >
-                Cancel
+                {t("cancel")}
               </Button>
               <Button
                 type="submit"
                 disabled={savingTs}
                 className="bg-emerald-600 hover:bg-emerald-700"
               >
-                {savingTs ? "Creating..." : "Create Timesheet"}
+                {savingTs ? t("creating") : t("createTimesheet")}
               </Button>
             </div>
           </form>
@@ -1249,9 +1206,9 @@ export default function TimeLeavePage() {
                 <CalendarDays className="size-5" />
               </div>
               <div>
-                <SheetTitle>New Leave Request</SheetTitle>
+                <SheetTitle>{t("newLeave")}</SheetTitle>
                 <SheetDescription>
-                  Submit a leave request for an employee.
+                  {t("leaveHelp")}
                 </SheetDescription>
               </div>
             </div>
@@ -1259,7 +1216,7 @@ export default function TimeLeavePage() {
           <form onSubmit={handleCreateLeave} className="flex flex-col flex-1">
             <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
               <div className="space-y-2">
-                <Label>Employee</Label>
+                <Label>{t("employee")}</Label>
                 <select
                   className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
                   value={leaveForm.employeeId}
@@ -1270,7 +1227,7 @@ export default function TimeLeavePage() {
                     })
                   }
                 >
-                  <option value="">Select employee...</option>
+                  <option value="">{t("selectEmployee")}</option>
                   {employees.map((e) => (
                     <option key={e.id} value={e.id}>
                       {e.name}
@@ -1279,7 +1236,7 @@ export default function TimeLeavePage() {
                 </select>
               </div>
               <div className="space-y-2">
-                <Label>Policy</Label>
+                <Label>{t("policy")}</Label>
                 <select
                   className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
                   value={leaveForm.policyId}
@@ -1290,7 +1247,7 @@ export default function TimeLeavePage() {
                     })
                   }
                 >
-                  <option value="">Select policy...</option>
+                  <option value="">{t("selectPolicy")}</option>
                   {policies.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name}
@@ -1299,7 +1256,7 @@ export default function TimeLeavePage() {
                 </select>
               </div>
               <div className="space-y-2">
-                <Label>Start Date</Label>
+                <Label>{t("startDate")}</Label>
                 <Input
                   type="date"
                   value={leaveForm.startDate}
@@ -1312,7 +1269,7 @@ export default function TimeLeavePage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>End Date</Label>
+                <Label>{t("endDate")}</Label>
                 <Input
                   type="date"
                   value={leaveForm.endDate}
@@ -1325,7 +1282,7 @@ export default function TimeLeavePage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Hours</Label>
+                <Label>{t("hours")}</Label>
                 <Input
                   type="number"
                   step="0.5"
@@ -1336,13 +1293,13 @@ export default function TimeLeavePage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Reason</Label>
+                <Label>{t("reason")}</Label>
                 <Input
                   value={leaveForm.reason}
                   onChange={(e) =>
                     setLeaveForm({ ...leaveForm, reason: e.target.value })
                   }
-                  placeholder="Optional reason..."
+                  placeholder={t("reasonPlaceholder")}
                 />
               </div>
             </div>
@@ -1352,14 +1309,14 @@ export default function TimeLeavePage() {
                 variant="outline"
                 onClick={() => setLeaveDrawerOpen(false)}
               >
-                Cancel
+                {t("cancel")}
               </Button>
               <Button
                 type="submit"
                 disabled={savingLeave}
                 className="bg-emerald-600 hover:bg-emerald-700"
               >
-                {savingLeave ? "Submitting..." : "Submit Request"}
+                {savingLeave ? t("submitting") : t("submitRequest")}
               </Button>
             </div>
           </form>

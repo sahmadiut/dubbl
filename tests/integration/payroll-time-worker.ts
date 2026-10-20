@@ -1,4 +1,5 @@
 import { payrollEmployeeDetailJson } from "../../i18n/payroll-employee-detail-presentation";
+import { payrollTimeJson } from "../../i18n/payroll-time-presentation";
 import { payrollJson, payrollUiPayload } from "../../lib/money/payroll-ui";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -73,6 +74,12 @@ async function run() {
   };
   const data = async (response: Response, status = 200) => { const body = await payrollJson(response); assert.equal(response.status, status, JSON.stringify(body)); return body; };
   const checkDetail = async <T extends Record<string, unknown>>(name: string, body: T, mcp = false) => {
+    const timeKinds: Record<string, Parameters<typeof payrollTimeJson>[1]> = { list_payroll_timesheets: "timesheets", list_payroll_leave_requests: "leave",
+      list_payroll_leave_policies: "policies", create_payroll_timesheet: "timesheetCreated",
+      create_payroll_leave_request: "leaveCreated", approve_payroll_leave_request: "approved",
+      reject_payroll_leave_request: "rejected" };
+    const timeKind = timeKinds[name];
+    if (timeKind) await payrollTimeJson(Response.json(body), timeKind);
     const kind = name === "get_employee_leave_balances" ? "leave" : null;
     if (kind) {
       if (mcp) {
@@ -125,6 +132,7 @@ async function run() {
     }
     const leave = (await read("create_payroll_leave_request", { employeeId: ea.id, policyId: policy.id, ...dates, hours: 7.5 })).request;
     const leaveM = (await call("create_payroll_leave_request", { employeeId: ea2.id, policyId: policyM.id, ...dates, hours: 0.25 })).request;
+    await read("list_payroll_leave_requests"); await call("list_payroll_leave_requests");
     await read("get_payroll_leave_request", { id: leave.id }); await call("get_payroll_leave_request", { id: leaveM.id });
     await read("update_payroll_leave_request", { id: leave.id, reason: "Reason", status: "pending" }); await call("update_payroll_leave_request", { id: leaveM.id, reason: null });
     const balances = await db.insert(employeeLeaveBalance).values([{ employeeId: ea.id, policyId: policy.id, year: 2024, balance: 8 },

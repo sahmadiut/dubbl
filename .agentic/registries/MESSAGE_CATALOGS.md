@@ -1,5 +1,11 @@
 # Message catalog foundation
 
+LOC-086 payroll time and leave uses 75 paired `PayrollTimeLeave` messages
+(7,594 keys per locale). See [scope and exceptions](PAYROLL_TIME_LEAVE_CATALOGS.md)
+for checked list/choice/create/approval feedback, provisional Persian and
+preserved physical hours, canonical dates, exact money and REST/MCP contracts.
+LOC-067/008/002 and native terminology/RTL qualification remain independent.
+
 LOC-085 payslip and tax form list/detail use 83 paired `PayrollOutputs`
 messages (7,519 keys per locale). See [scope and output ownership](PAYROLL_OUTPUT_CATALOGS.md)
 for checked reads/view/generation/download feedback, statutory/metadata labels,

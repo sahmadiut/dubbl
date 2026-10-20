@@ -9,6 +9,7 @@ import { requireBankAccountResponse, bankAccountFailureMessage } from "@/i18n/ba
 import { requirePaymentResponse, paymentFailure } from "@/i18n/bank-payment-presentation";
 
 import { categoryJson } from "@/i18n/inventory-category-presentation";
+import { movementStockCreatedJson, movementTransferJson } from "@/i18n/inventory-movement-presentation";
 import { useTranslations } from "next-intl";
 import { journalPreviewMessage, requireJournalResponse, journalFailureMessage } from "@/i18n/journal-presentation";
 import { requireAccountResponse, accountFailureMessage } from "@/i18n/account-presentation";
@@ -3295,16 +3296,17 @@ function WarehouseDrawer({ open, onClose }: { open: boolean; onClose: () => void
 // Stock Take Drawer
 // ---------------------------------------------------------------------------
 function StockTakeDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useTranslations("InventoryMovements");
   const [saving, setSaving] = useState(false);
   const [warehouseId, setWarehouseId] = useState("");
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setSaving(true);
     const form = new FormData(e.currentTarget);
     const orgId = localStorage.getItem("activeOrgId");
-    if (!orgId) return;
+    if (!orgId) { toast.error(t("organizationRequired")); return; }
 
+    setSaving(true);
     try {
       const res = await fetch("/api/v1/stock-takes", {
         method: "POST",
@@ -3315,15 +3317,12 @@ function StockTakeDrawer({ open, onClose }: { open: boolean; onClose: () => void
           notes: form.get("notes") || null,
         }),
       });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to create stock take");
-      }
-      toast.success("Stock take created");
+      await movementStockCreatedJson(res);
+      toast.success(t("stockCreated"));
       onClose();
       window.dispatchEvent(new CustomEvent("refetch-stock-takes"));
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create stock take");
+    } catch {
+      toast.error(t("stockCreateFailed"));
     } finally {
       setSaving(false);
     }
@@ -3336,34 +3335,34 @@ function StockTakeDrawer({ open, onClose }: { open: boolean; onClose: () => void
           <div className="flex items-center gap-3">
             <DrawerIcon><ClipboardList className="size-5" /></DrawerIcon>
             <div>
-              <SheetTitle className="text-lg">New Stock Take</SheetTitle>
-              <SheetDescription>Create a physical inventory count to reconcile stock levels.</SheetDescription>
+              <SheetTitle className="text-lg">{t("newStockTake")}</SheetTitle>
+              <SheetDescription>{t("stockCreateHelp")}</SheetDescription>
             </div>
           </div>
         </SheetHeader>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
             <div className="space-y-4">
-              <SectionLabel>Details</SectionLabel>
+              <SectionLabel>{t("details")}</SectionLabel>
               <div className="space-y-2">
-                <Label htmlFor="drawer-st-name">Name *</Label>
-                <Input id="drawer-st-name" name="name" required placeholder="e.g. Q1 2026 Full Count" />
+                <Label htmlFor="drawer-st-name">{t("nameRequired")}</Label>
+                <Input id="drawer-st-name" name="name" required placeholder={t("countExample")} />
               </div>
               <div className="space-y-1.5">
-                <Label>Warehouse (optional)</Label>
-                <WarehousePicker value={warehouseId} onChange={setWarehouseId} placeholder="All warehouses" />
-                <p className="text-xs text-muted-foreground">Leave empty to count all items across all warehouses.</p>
+                <Label>{t("optionalWarehouse")}</Label>
+                <WarehousePicker value={warehouseId} onChange={setWarehouseId} placeholder={t("allWarehouses")} />
+                <p className="text-xs text-muted-foreground">{t("allWarehousesHelp")}</p>
               </div>
             </div>
 
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Notes</SectionLabel>
-              <Textarea name="notes" placeholder="Optional notes about this stock take..." rows={3} />
+              <SectionLabel>{t("notes")}</SectionLabel>
+              <Textarea name="notes" placeholder={t("stockNotesPlaceholder")} rows={3} />
             </div>
           </div>
-          <DrawerFooter onClose={onClose} saving={saving} label="Create Stock Take" />
+          <DrawerFooter onClose={onClose} saving={saving} label={t("createStock")} cancelLabel={t("cancel")} creatingLabel={t("creating")} />
         </form>
       </SheetContent>
     </Sheet>
@@ -3465,6 +3464,7 @@ function CategoryDrawer({ open, onClose }: { open: boolean; onClose: () => void 
 // Transfer Drawer
 // ---------------------------------------------------------------------------
 function TransferDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useTranslations("InventoryMovements");
   const [saving, setSaving] = useState(false);
   const [lines, setLines] = useState<{ inventoryItemId: string; quantity: string }[]>([{ inventoryItemId: "", quantity: "1" }]);
   const [fromWarehouseId, setFromWarehouseId] = useState("");
@@ -3490,12 +3490,11 @@ function TransferDrawer({ open, onClose }: { open: boolean; onClose: () => void 
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setSaving(true);
     const orgId = localStorage.getItem("activeOrgId");
-    if (!orgId) return;
+    if (!orgId) { toast.error(t("organizationRequired")); return; }
 
     if (!fromWarehouseId || !toWarehouseId) {
-      toast.error("Select both warehouses");
+      toast.error(t("selectWarehouses"));
       setSaving(false);
       return;
     }
@@ -3503,17 +3502,18 @@ function TransferDrawer({ open, onClose }: { open: boolean; onClose: () => void 
     let validLines: { inventoryItemId: string; quantity: number }[];
     try {
       validLines = inventoryTransferLines(lines);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Invalid transfer quantity");
+    } catch {
+      toast.error(t("invalidTransfer"));
       setSaving(false);
       return;
     }
     if (validLines.length === 0) {
-      toast.error("Add at least one item");
+      toast.error(t("addOneItem"));
       setSaving(false);
       return;
     }
 
+    setSaving(true);
     try {
       const res = await fetch("/api/v1/inventory/transfers", {
         method: "POST",
@@ -3525,16 +3525,13 @@ function TransferDrawer({ open, onClose }: { open: boolean; onClose: () => void 
           lines: validLines,
         }),
       });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to create transfer");
-      }
-      toast.success("Transfer created");
+      await movementTransferJson(res);
+      toast.success(t("transferCreated"));
       onClose();
       resetState();
       window.dispatchEvent(new CustomEvent("refetch-transfers"));
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create transfer");
+    } catch {
+      toast.error(t("transferCreateFailed"));
     } finally {
       setSaving(false);
     }
@@ -3547,8 +3544,8 @@ function TransferDrawer({ open, onClose }: { open: boolean; onClose: () => void 
           <div className="flex items-center gap-3">
             <DrawerIcon><ArrowLeftRight className="size-5" /></DrawerIcon>
             <div>
-              <SheetTitle className="text-lg">New Transfer</SheetTitle>
-              <SheetDescription>Move inventory between warehouses.</SheetDescription>
+              <SheetTitle className="text-lg">{t("newTransfer")}</SheetTitle>
+              <SheetDescription>{t("transferCreateHelp")}</SheetDescription>
             </div>
           </div>
         </SheetHeader>
@@ -3556,14 +3553,14 @@ function TransferDrawer({ open, onClose }: { open: boolean; onClose: () => void 
           <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
             {/* Warehouses */}
             <div className="space-y-3">
-              <SectionLabel>Warehouses</SectionLabel>
+              <SectionLabel>{t("warehouses")}</SectionLabel>
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <Label className="text-xs">From *</Label>
+                  <Label className="text-xs">{t("fromRequired")}</Label>
                   <WarehousePicker value={fromWarehouseId} onChange={setFromWarehouseId} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">To *</Label>
+                  <Label className="text-xs">{t("toRequired")}</Label>
                   <WarehousePicker value={toWarehouseId} onChange={setToWarehouseId} />
                 </div>
               </div>
@@ -3573,7 +3570,7 @@ function TransferDrawer({ open, onClose }: { open: boolean; onClose: () => void 
 
             {/* Line items */}
             <div className="space-y-3">
-              <SectionLabel>Items</SectionLabel>
+              <SectionLabel>{t("items")}</SectionLabel>
               <div className="space-y-2">
                 {lines.map((line, idx) => (
                   <div key={idx} className="flex items-center gap-2">
@@ -3586,14 +3583,14 @@ function TransferDrawer({ open, onClose }: { open: boolean; onClose: () => void 
                     <Input
                       type="text"
                       inputMode="numeric"
-                      aria-label="Whole-unit transfer quantity"
+                      aria-label={t("transferQuantity")}
                       value={line.quantity}
                       onChange={(e) => updateLine(idx, "quantity", e.target.value)}
                       className="w-20 shrink-0"
-                      placeholder="Qty"
+                      placeholder={t("qty")}
                     />
                     {lines.length > 1 && (
-                      <Button type="button" variant="ghost" size="icon" className="size-9 shrink-0" onClick={() => removeLine(idx)}>
+                      <Button type="button" variant="ghost" size="icon" aria-label={t("removeItem")} className="size-9 shrink-0" onClick={() => removeLine(idx)}>
                         <Trash2 className="size-3.5" />
                       </Button>
                     )}
@@ -3601,19 +3598,18 @@ function TransferDrawer({ open, onClose }: { open: boolean; onClose: () => void 
                 ))}
               </div>
               <Button type="button" variant="outline" size="sm" className="text-xs" onClick={addLine}>
-                <Plus className="size-3 mr-1.5" />Add Item
-              </Button>
+                <Plus className="size-3 mr-1.5" />{t("addItem")}</Button>
             </div>
 
             <div className="h-px bg-border" />
 
             {/* Notes */}
             <div className="space-y-3">
-              <SectionLabel>Notes</SectionLabel>
-              <Textarea name="notes" placeholder="Optional notes about this transfer..." rows={2} />
+              <SectionLabel>{t("notes")}</SectionLabel>
+              <Textarea name="notes" placeholder={t("transferNotesPlaceholder")} rows={2} />
             </div>
           </div>
-          <DrawerFooter onClose={onClose} saving={saving} label="Create Transfer" />
+          <DrawerFooter onClose={onClose} saving={saving} label={t("createTransfer")} cancelLabel={t("cancel")} creatingLabel={t("creating")} />
         </form>
       </SheetContent>
     </Sheet>

@@ -33,6 +33,7 @@ import { recordInventoryReceipt } from "../../lib/api/inventory-valuation";
 import { billStockMovement } from "../../lib/api/bill-stock";
 import { inventoryWarehouseJson, inventoryMovementsJson, inventoryChartJson } from "../../i18n/inventory-item-presentation";
 import { warehouseJson } from "../../i18n/warehouse-presentation";
+import { movementStockCreatedJson, movementStockDetail, movementStockLine, movementStockListJson, movementTransfer, movementTransfersJson, movementAppliedJson } from "../../i18n/inventory-movement-presentation";
 
 async function mcp(ctx: AuthContext, full = false) {
   const server = new McpServer({ name: "Movement fixture", version: "1" });
@@ -63,8 +64,18 @@ async function run() {
   const req = (body: unknown = {}, key = keys.a, query = "") => new Request(`http://fixture.test/api/v1/inventory${query}`, { method: "POST", headers: { authorization: `Bearer ${key}`, "content-type": "application/json", "x-organization-id": b.id }, body: JSON.stringify(body) });
   const cp = (id: string) => ({ params: Promise.resolve({ id }) });
   const lp = (id: string, lineId: string) => ({ params: Promise.resolve({ id, lineId }) });
-  const data = async (r: Response, status = 200) => { const body = await r.json(); assert.equal(r.status, status, JSON.stringify(body)); return body; };
-  const good = async (name: string, args: Record<string, unknown> = {}, client = ma) => { const r = await client.call(name, args); assert.equal(r.isError, false, JSON.stringify(r.body)); return r.body; };
+  const verifyMovementPresentation = async (body: Record<string, unknown>) => {
+    if (body.stockTake) {
+      if ("adjustedCount" in body) await movementAppliedJson(Response.json(body));
+      else if ("lines" in (body.stockTake as object)) movementStockDetail(body.stockTake);
+      else await movementStockCreatedJson(Response.json(body));
+    }
+    if (body.stockTakes) await movementStockListJson(Response.json(body));
+    if (body.transfer) movementTransfer(body.transfer);
+    if (body.line) movementStockLine(body.line);
+  };
+  const data = async (r: Response, status = 200) => { const body = await r.json(); assert.equal(r.status, status, JSON.stringify(body)); if (status < 400) await verifyMovementPresentation(body); return body; };
+  const good = async (name: string, args: Record<string, unknown> = {}, client = ma) => { const r = await client.call(name, args); assert.equal(r.isError, false, JSON.stringify(r.body)); await verifyMovementPresentation(r.body); return r.body; };
   const tables = ["inventory_item", "inventory_movement", "warehouse", "warehouse_stock", "inventory_cost_layer", "inventory_layer_consumption", "inventory_transfer", "inventory_transfer_line", "stock_take", "stock_take_line", "serial_number", "lot_batch", "journal_entry", "journal_line", "chart_account", "audit_log"];
   const snapshot = async () => Promise.all(tables.map(t => db.execute(sql.raw(`select coalesce(jsonb_agg(to_jsonb(t)::text order by t.id),'[]'::jsonb) as rows from ${t} t`)).then(r => r.rows)));
   const denied = async (fn: () => Promise<Response>, status: number) => { const before = await snapshot(); await data(await fn(), status); assert.deepEqual(await snapshot(), before); };
@@ -109,7 +120,10 @@ async function run() {
     const transfer = (await data(await trCreate(req({ fromWarehouseId: w1.id, toWarehouseId: w2.id, lines: [{ inventoryItemId: item.id, quantity: 2 }] })), 201)).transfer;
     assert.equal((await data(await trGet(req(), cp(transfer.id)))).transfer.status, "draft");
     await data(await trPatch(req({ status: "in_transit" }), cp(transfer.id)));
-    await good("get_inventory_transfer", { transferId: transfer.id }); await good("list_inventory_transfers"); await data(await trList(req()));
+    await good("get_inventory_transfer", { transferId: transfer.id });
+    const transfers = await good("list_inventory_transfers");
+    await movementTransfersJson(Response.json(transfers));
+    assert.equal((await movementTransfersJson(await trList(req())))[0].id, transfer.id);
     const beforeValue = await saved(item.id); await data(await trComplete(req(), cp(transfer.id))); assert.deepEqual(await saved(item.id), beforeValue);
     await denied(() => trComplete(req(), cp(transfer.id)), 409); await mdenied("update_inventory_transfer", { transferId: transfer.id, status: "draft" }, ma, 409);
     const mt = (await good("create_inventory_transfer", { fromWarehouseId: w2.id, toWarehouseId: w1.id, lines: [{ inventoryItemId: item.id, quantity: 1 }] })).transfer;
@@ -122,6 +136,10 @@ async function run() {
     const line = (await data(await takeGet(req(), cp(take.id)))).stockTake.lines.find((l: { inventoryItemId: string }) => l.inventoryItemId === item.id);
     assert.equal(line.expectedQuantity, 6); await data(await count(req({ countedQuantity: 5 }), lp(take.id, line.id)));
     const applied = await data(await apply(req(), cp(take.id))); assert.equal(applied.adjustedCount, 1); assert.equal(applied.stockTake.lines[0].valueAdjustmentMinor, "-29");
+    const countedSql = await db.execute(sql`select expected_quantity::text, counted_quantity::text, discrepancy::text, value_adjustment::text, adjusted from stock_take_line where id=${line.id}`);
+    assert.deepEqual(countedSql.rows, [{ expected_quantity: "6", counted_quantity: "5", discrepancy: "-1", value_adjustment: "-29", adjusted: true }]);
+    const transferredSql = await db.execute(sql`select quantity::text, received_quantity::text from inventory_transfer_line where transfer_id=${transfer.id}`);
+    assert.deepEqual(transferredSql.rows, [{ quantity: "2", received_quantity: "2" }]);
     assert.equal((await saved(item.id)).quantityOnHand, 9); assert.equal((await data(await whStock(req(), cp(w1.id)))).data[0].quantity, 5);
     await mdenied("apply_stock_take", { stockTakeId: take.id }, ma, 400); await denied(() => takePatch(req({ status: "draft" }), cp(take.id)), 409);
     const global = (await good("create_stock_take", { name: "Global" })).stockTake;

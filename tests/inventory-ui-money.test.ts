@@ -89,8 +89,13 @@ test("nullable stock values and live-stock discrepancy retain saved units; input
 });
 
 test("remaining inventory pages keep validated adoption and exact money guards", () => {
-  const files = ["page", "valuation/page", "[id]/page", "[id]/history/page", "bom/page", "bom/[id]/page", "assembly/page", "stock-takes/[id]/page", "transfers/page"];
+  const files = ["page", "valuation/page", "[id]/page", "[id]/history/page", "bom/page", "bom/[id]/page", "assembly/page"];
   for (const path of files) assert.match(readFileSync(`app/(dashboard)/inventory/${path}.tsx`, "utf8"), /inventoryUi/);
+  const movement = readFileSync("i18n/inventory-movement-presentation.ts", "utf8");
+  assert.match(movement, /inventoryUiStockTakeLine\(row\)/);
+  assert.match(movement, /inventoryUiItem\(value\)/);
+  assert.match(readFileSync("app/(dashboard)/inventory/stock-takes/[id]/page.tsx", "utf8"), /movementStockJson\(res\)/);
+  assert.match(readFileSync("app/(dashboard)/inventory/transfers/page.tsx", "utf8"), /\.then\(movementItemsJson\)/);
   // Catalog routes now validate full presentation rows before state adoption;
   // that shared boundary retains the exact-money/count inventory validator.
   assert.match(readFileSync("i18n/inventory-catalog-presentation.ts", "utf8"), /inventoryUiCatalog\(/);

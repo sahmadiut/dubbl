@@ -203,7 +203,7 @@ Extraction ownership:
 | LOC-073 | LOC-066 child: inventory item list/detail/history, creation and item picker |
 | LOC-074 | LOC-066 child: inventory variants and suppliers; see [scope](INVENTORY_VARIANT_SUPPLIER_CATALOGS.md) |
 | LOC-075 | LOC-066 child: warehouse management, creation and picker; see [scope](WAREHOUSE_CATALOGS.md) |
-| LOC-076 | LOC-066 child: stock-takes, transfers and movement creation |
+| LOC-076 | LOC-066 child: stock-takes, transfers and movement creation; see [scope](INVENTORY_MOVEMENT_CATALOGS.md) |
 | LOC-077 | LOC-066 child: BOM and assembly |
 | LOC-078 | LOC-066 child: valuation, alerts, loading and residual inventory strings |
 | LOC-067 | LOC-008 child: payroll routes, creation and shared controls |

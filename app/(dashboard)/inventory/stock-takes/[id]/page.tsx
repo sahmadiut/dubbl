@@ -1,6 +1,8 @@
 "use client";
 
-import { inventoryUiStockTake, inventoryUiStockTakeLine } from "@/lib/money/inventory-ui";
+import { useTranslations } from "next-intl";
+
+import { movementStockJson, movementStockLine, movementJson, movementAppliedJson } from "@/i18n/inventory-movement-presentation";
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence, MotionConfig } from "motion/react";
@@ -43,12 +45,12 @@ import { catalogWholeInput } from "@/lib/money/catalog-input";
 
 type SortKey = "name" | "code" | "expected" | "counted" | "discrepancy";
 
-const SORT_OPTIONS: { value: SortKey; label: string }[] = [
-  { value: "name", label: "Name" },
-  { value: "code", label: "Code" },
-  { value: "expected", label: "Expected Qty" },
-  { value: "counted", label: "Counted Qty" },
-  { value: "discrepancy", label: "Discrepancy" },
+const SORT_OPTIONS: { value: SortKey; label: keyof typeof import("@/messages/en-US.json").InventoryMovements }[] = [
+  { value: "name", label: "name" },
+  { value: "code", label: "code" },
+  { value: "expected", label: "expectedQty" },
+  { value: "counted", label: "countedQty" },
+  { value: "discrepancy", label: "discrepancy" },
 ];
 
 interface StockTakeLine {
@@ -57,7 +59,7 @@ interface StockTakeLine {
   expectedQuantity: number;
   countedQuantity: number | null;
   discrepancy: number | null;
-  adjusted: boolean;
+  adjusted: boolean | null;
 }
 
 interface StockTakeDetail {
@@ -76,25 +78,25 @@ type LineFilter = "all" | "uncounted" | "matched" | "discrepancies";
 
 const STATUS_CONFIG: Record<
   StockTakeDetail["status"],
-  { label: string; className: string }
+  { label: keyof typeof import("@/messages/en-US.json").InventoryMovements; className: string }
 > = {
   draft: {
-    label: "Draft",
+    label: "draft",
     className:
       "border-zinc-200 bg-zinc-50 text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300",
   },
   in_progress: {
-    label: "In Progress",
+    label: "inProgress",
     className:
       "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-300",
   },
   completed: {
-    label: "Completed",
+    label: "completed",
     className:
       "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300",
   },
   cancelled: {
-    label: "Cancelled",
+    label: "cancelled",
     className:
       "border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300",
   },
@@ -112,6 +114,7 @@ function CounterCell({
   isSaving: boolean;
   onUpdate: (lineId: string, qty: number) => void;
 }) {
+  const t = useTranslations("InventoryMovements");
   const isUncounted = line.countedQuantity === null;
   // Local editing state - only active while user is typing
   const [editing, setEditing] = useState(false);
@@ -132,7 +135,7 @@ function CounterCell({
     setEditing(false);
     if (editValue === "") return;
     let num: number | undefined;
-    try { num = catalogWholeInput(editValue, false); } catch { toast.error("Enter nonnegative whole units within the supported range"); return; }
+    try { num = catalogWholeInput(editValue, false); } catch { toast.error(t("invalidCount")); return; }
     if (num === undefined) return;
     if (num !== line.countedQuantity) {
       onUpdate(line.id, num);
@@ -150,7 +153,7 @@ function CounterCell({
             : "text-muted-foreground hover:text-foreground hover:bg-muted/80"
         )}
         disabled={isSaving}
-        title={isUncounted ? "Match expected quantity" : "Decrease"}
+        title={isUncounted ? t("matchExpected") : t("decrease")}
         onClick={() => {
           if (isUncounted) {
             onUpdate(line.id, line.expectedQuantity);
@@ -170,6 +173,7 @@ function CounterCell({
         ) : (
           <input
             type="text"
+            aria-label={t("countInput")}
             inputMode="numeric"
             pattern="[0-9]*"
             value={displayValue}
@@ -194,6 +198,7 @@ function CounterCell({
       <button
         className="flex size-7 items-center justify-center rounded-r-md border border-l-0 text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors disabled:opacity-40 disabled:pointer-events-none"
         disabled={isSaving}
+        title={t("increase")}
         onClick={() => {
           const next = isUncounted ? 0 : (line.countedQuantity ?? 0) + 1;
           onUpdate(line.id, next);
@@ -206,10 +211,11 @@ function CounterCell({
 }
 
 export default function StockTakeDetailPage() {
+  const t = useTranslations("InventoryMovements");
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [stockTake, setStockTake] = useState<StockTakeDetail | null>(null);
-  const [readError, setReadError] = useState("");
+  const [readError, setReadError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [blindMode, setBlindMode] = useState(false);
@@ -221,7 +227,7 @@ export default function StockTakeDetailPage() {
   const [sortBy, setSortBy] = useState<SortKey>("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const { confirm, dialog: confirmDialog } = useConfirm();
-  useDocumentTitle("Inventory · Stock Take Details");
+  useDocumentTitle(t("stockDetailTitle"));
 
   const orgId =
     typeof window !== "undefined"
@@ -229,21 +235,20 @@ export default function StockTakeDetailPage() {
       : null;
 
   useEffect(() => {
-    if (!orgId) return;
-
-    fetch(`/api/v1/stock-takes/${id}`, {
-      headers: { "x-organization-id": orgId },
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.stockTake) setStockTake(inventoryUiStockTake(data.stockTake));
-      })
-      .catch(() => setReadError("Unable to verify saved stock take data. Reload to retry."))
-      .finally(() => setLoading(false));
+    let active = true;
+    setLoading(true);
+    setReadError(false);
+    if (!orgId) { setReadError(true); setLoading(false); return; }
+    fetch(`/api/v1/stock-takes/${id}`, { headers: { "x-organization-id": orgId } })
+      .then(movementStockJson)
+      .then((row) => { if (active) setStockTake(row); })
+      .catch(() => { if (active) setReadError(true); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
   }, [id, orgId]);
 
   async function handleStartCount() {
-    if (!orgId) return;
+    if (!orgId) { toast.error(t("organizationRequired")); return false; }
     setActionLoading(true);
     try {
       const res = await fetch(`/api/v1/stock-takes/${id}`, {
@@ -254,26 +259,24 @@ export default function StockTakeDetailPage() {
         },
         body: JSON.stringify({ status: "in_progress" }),
       });
-      if (!res.ok) throw new Error("Failed to start count");
-      const data = await res.json();
-      setStockTake(inventoryUiStockTake(data.stockTake));
-      toast.success("Stock take started");
-    } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to start count"
-      );
+      if (!res.ok) throw new Error(t("startFailed"));
+      setStockTake(await movementStockJson(res));
+      toast.success(t("started"));
+    } catch {
+      toast.error(t("startFailed"));
     } finally {
       setActionLoading(false);
     }
   }
 
   async function handleApplyAdjustments() {
-    if (!orgId) return;
+    if (!orgId) { toast.error(t("organizationRequired")); return false; }
     const confirmed = await confirm({
-      title: "Finalize & post adjustment?",
+      title: t("finalizeTitle"),
       description:
-        "This corrects on-hand inventory to your counted quantities and posts the value of any difference to the ledger. The stock take will be marked completed and this cannot be undone.",
-      confirmLabel: "Finalize & post",
+        t("finalizeHelp"),
+      confirmLabel: t("finalize"),
+      cancelLabel: t("cancel"),
       destructive: false,
     });
     if (!confirmed) return;
@@ -284,44 +287,32 @@ export default function StockTakeDetailPage() {
         method: "POST",
         headers: { "x-organization-id": orgId },
       });
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        throw new Error(data?.error ?? "Failed to post adjustment");
-      }
-      const data = await res.json();
-
-      // Refetch the full detail so lines, badges and totals reflect the post.
-      const refetch = await fetch(`/api/v1/stock-takes/${id}`, {
-        headers: { "x-organization-id": orgId },
-      });
-      if (refetch.ok) {
-        const fresh = await refetch.json();
-        if (fresh.stockTake) setStockTake(inventoryUiStockTake(fresh.stockTake));
-      } else if (data.stockTake) {
-        setStockTake(inventoryUiStockTake(data.stockTake));
-      }
-
-      const count = typeof data.adjustedCount === "number" ? data.adjustedCount : 0;
-      toast.success(
-        count > 0
-          ? `Adjustment posted · ${count} item${count === 1 ? "" : "s"} corrected`
-          : "Stock take finalized · no differences to post"
-      );
-    } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to post adjustment"
-      );
+      const data = await movementAppliedJson(res);
+      // The posting response is already a complete, validated detail. A failed
+      // follow-up read must not turn a successful post into a failed action.
+      let fresh = data.stockTake;
+      try {
+        fresh = await movementStockJson(await fetch(`/api/v1/stock-takes/${id}`, {
+          headers: { "x-organization-id": orgId },
+        }));
+      } catch { /* Retain the verified posting result. */ }
+      setStockTake(fresh);
+      toast.success(data.adjustedCount > 0
+        ? t("adjustmentPosted", { count: data.adjustedCount }) : t("finalized"));
+    } catch {
+      toast.error(t("postFailed"));
     } finally {
       setActionLoading(false);
     }
   }
 
   async function handleCancel() {
-    if (!orgId) return;
+    if (!orgId) { toast.error(t("organizationRequired")); return false; }
     const confirmed = await confirm({
-      title: "Cancel this stock take?",
-      description: "This will mark the stock take as cancelled.",
-      confirmLabel: "Cancel Stock Take",
+      title: t("cancelStockTitle"),
+      description: t("cancelStockHelp"),
+      confirmLabel: t("cancelStock"),
+      cancelLabel: t("cancel"),
       destructive: true,
     });
     if (!confirmed) return;
@@ -336,25 +327,23 @@ export default function StockTakeDetailPage() {
         },
         body: JSON.stringify({ status: "cancelled" }),
       });
-      if (!res.ok) throw new Error("Failed to cancel");
-      const data = await res.json();
-      setStockTake(inventoryUiStockTake(data.stockTake));
-      toast.success("Stock take cancelled");
-    } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to cancel stock take"
-      );
+      if (!res.ok) throw new Error("Stock take cancellation failed");
+      setStockTake(await movementStockJson(res));
+      toast.success(t("stockCancelled"));
+    } catch {
+      toast.error(t("cancelStockFailed"));
     } finally {
       setActionLoading(false);
     }
   }
 
   async function handleDelete() {
-    if (!orgId) return;
+    if (!orgId) { toast.error(t("organizationRequired")); return false; }
     const confirmed = await confirm({
-      title: "Delete this stock take?",
-      description: "This action cannot be undone.",
-      confirmLabel: "Delete",
+      title: t("deleteStockTitle"),
+      description: t("cannotUndo"),
+      confirmLabel: t("delete"),
+      cancelLabel: t("cancel"),
       destructive: true,
     });
     if (!confirmed) return;
@@ -365,20 +354,18 @@ export default function StockTakeDetailPage() {
         method: "DELETE",
         headers: { "x-organization-id": orgId },
       });
-      if (!res.ok) throw new Error("Failed to delete");
-      toast.success("Stock take deleted");
+      if ((await movementJson(res)).success !== true) throw new Error("Invalid delete response");
+      toast.success(t("stockDeleted"));
       router.push("/inventory/stock-takes");
-    } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to delete stock take"
-      );
+    } catch {
+      toast.error(t("deleteStockFailed"));
     } finally {
       setActionLoading(false);
     }
   }
 
   async function handleUpdateLine(lineId: string, countedQuantity: number) {
-    if (!orgId) return;
+    if (!orgId) { toast.error(t("organizationRequired")); return false; }
 
     setSavingLines((prev) => new Set(prev).add(lineId));
 
@@ -411,9 +398,9 @@ export default function StockTakeDetailPage() {
           body: JSON.stringify({ countedQuantity }),
         }
       );
-      if (!res.ok) throw new Error("Failed to update line");
-      const data = await res.json();
-      inventoryUiStockTakeLine(data.line);
+      const data = await movementJson(res);
+      const saved = movementStockLine(data.line);
+      if (saved.id !== lineId) throw new Error("Mismatched stock line");
 
       setStockTake((prev) => {
         if (!prev) return prev;
@@ -423,25 +410,21 @@ export default function StockTakeDetailPage() {
             line.id === lineId
               ? {
                   ...line,
-                  countedQuantity: data.line.countedQuantity,
-                  discrepancy: data.line.discrepancy,
+                  countedQuantity: saved.countedQuantity as number | null,
+                  discrepancy: saved.discrepancy as number | null,
                 }
               : line
           ),
         };
       });
-    } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to update count"
-      );
-      // Revert on error - refetch
-      fetch(`/api/v1/stock-takes/${id}`, {
-        headers: { "x-organization-id": orgId },
-      })
-        .then((r) => r.json())
-        .then((data) => {
-          if (data.stockTake) setStockTake(inventoryUiStockTake(data.stockTake));
-        });
+      return true;
+    } catch {
+      toast.error(t("updateCountFailed"));
+      const original = stockTake?.lines.find((line) => line.id === lineId);
+      if (original) setStockTake((prev) => prev ? {
+        ...prev, lines: prev.lines.map((line) => line.id === lineId ? original : line),
+      } : prev);
+      return false;
     } finally {
       setSavingLines((prev) => {
         const next = new Set(prev);
@@ -527,19 +510,17 @@ export default function StockTakeDetailPage() {
   }, [lines, debouncedSearch, lineFilter, sortBy, sortOrder]);
 
   if (loading) return <BrandLoader />;
-  if (readError) return <p role="alert">{readError}</p>;
+  if (readError) return <p role="alert">{t("stockReadFailed")}</p>;
 
   if (!stockTake) {
     return (
       <div className="space-y-4 pt-12 text-center">
-        <p className="text-sm text-muted-foreground">Stock take not found</p>
+        <p className="text-sm text-muted-foreground">{t("stockNotFound")}</p>
         <Button
           variant="outline"
           size="sm"
           onClick={() => router.push("/inventory/stock-takes")}
-        >
-          Back to Stock Takes
-        </Button>
+        >{t("backStock")}</Button>
       </div>
     );
   }
@@ -553,21 +534,23 @@ export default function StockTakeDetailPage() {
     if (uncounted.length === 0) return;
 
     const confirmed = await confirm({
-      title: `Confirm ${uncounted.length} remaining items?`,
+      title: t("confirmRemainingTitle", { count: uncounted.length }),
       description:
-        "This will set the counted quantity to the expected quantity for all uncounted items.",
-      confirmLabel: "Confirm All",
+        t("confirmAllHelp"),
+      confirmLabel: t("confirmAll"),
+      cancelLabel: t("cancel"),
     });
     if (!confirmed) return;
 
     setConfirmingAll(true);
     try {
-      await Promise.all(
+      const results = await Promise.all(
         uncounted.map((line) =>
           handleUpdateLine(line.id, line.expectedQuantity)
         )
       );
-      toast.success(`${uncounted.length} items confirmed`);
+      if (results.every(Boolean)) toast.success(t("confirmedItems", { count: uncounted.length }));
+      else toast.error(t("bulkFailed"));
     } finally {
       setConfirmingAll(false);
     }
@@ -588,9 +571,7 @@ export default function StockTakeDetailPage() {
         onClick={() => router.push("/inventory/stock-takes")}
         className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors mb-6"
       >
-        <ArrowLeft className="size-3.5" />
-        Back to stock takes
-      </button>
+        <ArrowLeft className="size-3.5" />{t("backStockLink")}</button>
 
       <ContentReveal className="space-y-6">
         {/* Header */}
@@ -606,11 +587,10 @@ export default function StockTakeDetailPage() {
                   variant="outline"
                   className={cn("text-[10px] px-1.5 py-0", statusCfg.className)}
                 >
-                  {statusCfg.label}
+                  {t(statusCfg.label)}
                 </Badge>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Created{" "}
+              <p className="text-xs text-muted-foreground">{t("created")}{" "}
                 {new Date(stockTake.createdAt).toLocaleDateString("en-US", {
                   month: "short",
                   day: "numeric",
@@ -624,7 +604,7 @@ export default function StockTakeDetailPage() {
                 )}
                 {stockTake.completedAt && (
                   <>
-                    {" · Completed "}
+                    {" · "}{t("completed")}{" "}
                     {new Date(stockTake.completedAt).toLocaleDateString("en-US", {
                       month: "short",
                       day: "numeric",
@@ -650,9 +630,7 @@ export default function StockTakeDetailPage() {
                     <Loader2 className="mr-1.5 size-3.5 animate-spin" />
                   ) : (
                     <Play className="mr-1.5 size-3.5" />
-                  )}
-                  Start Count
-                </Button>
+                  )}{t("startCount")}</Button>
                 <Button
                   size="sm"
                   variant="outline"
@@ -660,9 +638,7 @@ export default function StockTakeDetailPage() {
                   disabled={actionLoading}
                   className="border-red-300 text-red-600 hover:bg-red-100 hover:text-red-700 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/40"
                 >
-                  <Trash2 className="mr-1.5 size-3.5" />
-                  Delete
-                </Button>
+                  <Trash2 className="mr-1.5 size-3.5" />{t("delete")}</Button>
               </>
             )}
             {stockTake.status === "in_progress" && (
@@ -672,9 +648,7 @@ export default function StockTakeDetailPage() {
                   variant={blindMode ? "default" : "outline"}
                   onClick={() => setBlindMode(!blindMode)}
                 >
-                  <EyeOff className="mr-1.5 size-3.5" />
-                  Blind Count
-                </Button>
+                  <EyeOff className="mr-1.5 size-3.5" />{t("blindCount")}</Button>
                 <Button
                   size="sm"
                   onClick={handleApplyAdjustments}
@@ -685,9 +659,7 @@ export default function StockTakeDetailPage() {
                     <Loader2 className="mr-1.5 size-3.5 animate-spin" />
                   ) : (
                     <CheckCircle className="mr-1.5 size-3.5" />
-                  )}
-                  Finalize &amp; post adjustment
-                </Button>
+                  )}{t("finalizeAdjustment")}</Button>
                 <Button
                   size="sm"
                   variant="outline"
@@ -695,9 +667,7 @@ export default function StockTakeDetailPage() {
                   disabled={actionLoading}
                   className="border-red-300 text-red-600 hover:bg-red-100 hover:text-red-700 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/40"
                 >
-                  <XCircle className="mr-1.5 size-3.5" />
-                  Cancel
-                </Button>
+                  <XCircle className="mr-1.5 size-3.5" />{t("cancel")}</Button>
               </>
             )}
           </div>
@@ -707,8 +677,8 @@ export default function StockTakeDetailPage() {
         {stockTake.status !== "draft" && (
           <div className="rounded-xl border bg-card p-4 space-y-2">
             <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground font-medium">Counting progress</span>
-              <span className="font-mono font-medium">{countedLines}/{totalLines} items</span>
+              <span className="text-muted-foreground font-medium">{t("countingProgress")}</span>
+              <span className="font-mono font-medium">{t("countProgress", { count: countedLines, total: totalLines })}</span>
             </div>
             <div className="h-2 rounded-full bg-muted overflow-hidden">
               <motion.div
@@ -719,9 +689,9 @@ export default function StockTakeDetailPage() {
               />
             </div>
             <div className="flex gap-4 text-xs text-muted-foreground pt-1">
-              <span>Matches: <span className="font-medium text-emerald-600">{matchCount}</span></span>
-              <span>Discrepancies: <span className="font-medium text-red-600">{discrepancyCount}</span></span>
-              <span>Uncounted: <span className="font-medium">{uncountedCount}</span></span>
+              <span>{t("matches")}<span className="font-medium text-emerald-600">{matchCount}</span></span>
+              <span>{t("discrepanciesLabel")}<span className="font-medium text-red-600">{discrepancyCount}</span></span>
+              <span>{t("uncountedLabel")}<span className="font-medium">{uncountedCount}</span></span>
             </div>
           </div>
         )}
@@ -731,19 +701,19 @@ export default function StockTakeDetailPage() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="rounded-xl border bg-card p-3 text-center">
               <p className="text-xl font-bold font-mono">{totalLines}</p>
-              <p className="text-[11px] text-muted-foreground">Total Items</p>
+              <p className="text-[11px] text-muted-foreground">{t("totalItems")}</p>
             </div>
             <div className="rounded-xl border bg-card p-3 text-center">
               <p className="text-xl font-bold font-mono text-emerald-600">{matchCount}</p>
-              <p className="text-[11px] text-muted-foreground">Accurate</p>
+              <p className="text-[11px] text-muted-foreground">{t("accurate")}</p>
             </div>
             <div className="rounded-xl border bg-card p-3 text-center">
               <p className="text-xl font-bold font-mono text-red-600">{discrepancyCount}</p>
-              <p className="text-[11px] text-muted-foreground">Discrepancies</p>
+              <p className="text-[11px] text-muted-foreground">{t("discrepancies")}</p>
             </div>
             <div className="rounded-xl border bg-card p-3 text-center">
               <p className="text-xl font-bold font-mono">{accuracyPct}%</p>
-              <p className="text-[11px] text-muted-foreground">Accuracy</p>
+              <p className="text-[11px] text-muted-foreground">{t("accuracy")}</p>
             </div>
           </div>
         )}
@@ -751,9 +721,7 @@ export default function StockTakeDetailPage() {
         {/* Notes */}
         {stockTake.notes && (
           <div className="rounded-xl border bg-card p-4">
-            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground mb-1">
-              Notes
-            </p>
+            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground mb-1">{t("notes")}</p>
             <p className="text-sm text-foreground">{stockTake.notes}</p>
           </div>
         )}
@@ -764,9 +732,7 @@ export default function StockTakeDetailPage() {
             <div className="mx-auto flex size-10 items-center justify-center rounded-xl bg-muted mb-3">
               <ClipboardList className="size-5 text-muted-foreground" />
             </div>
-            <p className="text-sm font-medium text-muted-foreground">
-              No items in this stock take
-            </p>
+            <p className="text-sm font-medium text-muted-foreground">{t("noStockItems")}</p>
           </div>
         ) : (
           <div className="flex flex-col gap-3">
@@ -776,21 +742,13 @@ export default function StockTakeDetailPage() {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <Tabs value={lineFilter} onValueChange={(v) => setLineFilter(v as LineFilter)}>
                   <TabsList>
-                    <TabsTrigger value="all">
-                      All
-                      <span className="ml-1 text-[10px] font-mono opacity-60">{totalLines}</span>
+                    <TabsTrigger value="all">{t("all")}<span className="ml-1 text-[10px] font-mono opacity-60">{totalLines}</span>
                     </TabsTrigger>
-                    <TabsTrigger value="uncounted">
-                      Uncounted
-                      <span className="ml-1 text-[10px] font-mono opacity-60">{uncountedCount}</span>
+                    <TabsTrigger value="uncounted">{t("uncounted")}<span className="ml-1 text-[10px] font-mono opacity-60">{uncountedCount}</span>
                     </TabsTrigger>
-                    <TabsTrigger value="matched">
-                      Matched
-                      <span className="ml-1 text-[10px] font-mono opacity-60">{matchCount}</span>
+                    <TabsTrigger value="matched">{t("matched")}<span className="ml-1 text-[10px] font-mono opacity-60">{matchCount}</span>
                     </TabsTrigger>
-                    <TabsTrigger value="discrepancies">
-                      Discrepancies
-                      <span className="ml-1 text-[10px] font-mono opacity-60">{discrepancyCount}</span>
+                    <TabsTrigger value="discrepancies">{t("discrepancies")}<span className="ml-1 text-[10px] font-mono opacity-60">{discrepancyCount}</span>
                     </TabsTrigger>
                   </TabsList>
                 </Tabs>
@@ -815,7 +773,7 @@ export default function StockTakeDetailPage() {
                         ) : (
                           <ChevronsUp className="size-3" />
                         )}
-                        Confirm All Remaining ({uncountedCount})
+                        {t("confirmRemaining", { count: uncountedCount })}
                       </Button>
                     </motion.div>
                   )}
@@ -827,13 +785,14 @@ export default function StockTakeDetailPage() {
                 <div className="relative flex-1 sm:max-w-xs">
                   <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
                   <Input
-                    placeholder="Search by name or code..."
+                    placeholder={t("itemSearch")}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-9 pr-8 h-8 text-sm"
                   />
                   {searchQuery && (
                     <button
+                      aria-label={t("clearSearch")}
                       onClick={() => setSearchQuery("")}
                       className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                     >
@@ -849,7 +808,7 @@ export default function StockTakeDetailPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {SORT_OPTIONS.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      <SelectItem key={opt.value} value={opt.value}>{t(opt.label)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -857,6 +816,7 @@ export default function StockTakeDetailPage() {
                 <Button
                   variant="outline"
                   size="icon"
+                  aria-label={t("toggleSort")}
                   className="size-8 shrink-0"
                   onClick={() => setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"))}
                 >
@@ -867,7 +827,7 @@ export default function StockTakeDetailPage() {
 
             {searchQuery !== debouncedSearch ? (
               <div className="flex items-center justify-center py-20">
-                <div className="brand-loader" aria-label="Loading">
+                <div className="brand-loader" aria-label={t("loading")}>
                   <div className="brand-loader-circle brand-loader-circle-1" />
                   <div className="brand-loader-circle brand-loader-circle-2" />
                 </div>
@@ -885,21 +845,11 @@ export default function StockTakeDetailPage() {
             <div className="rounded-xl border bg-card overflow-hidden">
               {/* Table header */}
               <div className="grid grid-cols-[1fr_70px_130px_70px_50px] sm:grid-cols-[1fr_90px_150px_90px_70px] gap-4 px-5 py-2.5 border-b bg-muted/50">
-                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                  Item
-                </p>
-                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground text-right">
-                  Expected
-                </p>
-                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground text-right">
-                  Counted
-                </p>
-                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground text-right">
-                  Diff
-                </p>
-                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground text-right">
-                  Status
-                </p>
+                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("item")}</p>
+                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground text-right">{t("expected")}</p>
+                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground text-right">{t("counted")}</p>
+                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground text-right">{t("diff")}</p>
+                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground text-right">{t("status")}</p>
               </div>
 
               {/* Table rows */}
@@ -912,9 +862,7 @@ export default function StockTakeDetailPage() {
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       className="px-4 py-8 text-center text-sm text-muted-foreground"
-                    >
-                      No items match your search or filter
-                    </motion.div>
+                    >{t("noItemMatches")}</motion.div>
                   ) : (
                     filteredLines.map((line) => {
                       const disc =
@@ -999,9 +947,7 @@ export default function StockTakeDetailPage() {
                                   <Badge
                                     variant="outline"
                                     className="text-[10px] px-1.5 py-0 border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
-                                  >
-                                    Adj
-                                  </Badge>
+                                  >{t("adjusted")}</Badge>
                                 </motion.div>
                               )}
                             </AnimatePresence>
@@ -1017,7 +963,7 @@ export default function StockTakeDetailPage() {
             {/* Showing X of Y - only when filtering */}
             {(debouncedSearch || lineFilter !== "all") && (
               <p className="text-xs text-muted-foreground text-center pt-3">
-                Showing {filteredLines.length} of {totalLines} items
+                {t("showingItems", { count: filteredLines.length, total: totalLines })}
               </p>
             )}
 

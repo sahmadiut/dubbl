@@ -1,7 +1,9 @@
 "use client";
 
-import { inventoryUiItem } from "@/lib/money/inventory-ui";
-import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
+
+import { movementTransfersJson, movementItemsJson, movementTransferJson } from "@/i18n/inventory-movement-presentation";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, MotionConfig } from "motion/react";
 import {
   ArrowLeftRight,
@@ -85,11 +87,11 @@ const STATUS_STYLES: Record<string, string> = {
   cancelled: "border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300",
 };
 
-const STATUS_LABELS: Record<string, string> = {
-  draft: "Draft",
-  in_transit: "In Transit",
-  completed: "Completed",
-  cancelled: "Cancelled",
+const STATUS_LABELS: Record<string, keyof typeof import("@/messages/en-US.json").InventoryMovements> = {
+  draft: "draft",
+  in_transit: "inTransit",
+  completed: "completed",
+  cancelled: "cancelled",
 };
 
 const STATUS_ORDER: Record<string, number> = {
@@ -99,15 +101,19 @@ const STATUS_ORDER: Record<string, number> = {
   cancelled: 3,
 };
 
-const SORT_OPTIONS: { value: SortKey; label: string }[] = [
-  { value: "createdAt", label: "Newest" },
-  { value: "fromWarehouse", label: "From" },
-  { value: "toWarehouse", label: "To" },
-  { value: "items", label: "Items" },
-  { value: "status", label: "Status" },
+const SORT_OPTIONS: { value: SortKey; label: keyof typeof import("@/messages/en-US.json").InventoryMovements }[] = [
+  { value: "createdAt", label: "newest" },
+  { value: "fromWarehouse", label: "from" },
+  { value: "toWarehouse", label: "to" },
+  { value: "items", label: "items" },
+  { value: "status", label: "status" },
 ];
 
 export default function TransfersPage() {
+  const t = useTranslations("InventoryMovements");
+  const requestId = useRef(0);
+  const mounted = useRef(true);
+  const [readFailed, setReadFailed] = useState(false);
   const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [loading, setLoading] = useState(true);
   const [refetching, setRefetching] = useState(false);
@@ -126,39 +132,45 @@ export default function TransfersPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [sortBy, setSortBy] = useState<SortKey>("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  useDocumentTitle("Inventory · Transfers");
+  useDocumentTitle(t("transferTitle"));
 
   const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
 
-  const fetchTransfers = useCallback(() => {
-    if (!orgId) return;
-    const isRefetch = !loading;
-    if (isRefetch) setRefetching(true);
-
-    fetch("/api/v1/inventory/transfers", {
-      headers: { "x-organization-id": orgId },
-    })
-      .then((r) => r.json())
-      .then((data) => setTransfers(data.data || []))
-      .finally(() => {
-        setLoading(false);
-        setRefetching(false);
-        setFetchKey((k) => k + 1);
-      });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const fetchTransfers = useCallback(async () => {
+    const generation = ++requestId.current;
+    setReadFailed(false);
+    setRefetching(true);
+    try {
+      if (!orgId) throw new Error("Organization required");
+      const rows = await movementTransfersJson(await fetch("/api/v1/inventory/transfers", {
+        headers: { "x-organization-id": orgId },
+      }));
+      if (mounted.current && generation === requestId.current) setTransfers(rows);
+    } catch {
+      if (mounted.current && generation === requestId.current) setReadFailed(true);
+    } finally {
+      if (mounted.current && generation === requestId.current) {
+        setLoading(false); setRefetching(false); setFetchKey((k) => k + 1);
+      }
+    }
   }, [orgId]);
 
   useEffect(() => {
-    fetchTransfers();
+    const requests = requestId;
+    mounted.current = true;
+    void fetchTransfers();
+    return () => { mounted.current = false; ++requests.current; };
   }, [fetchTransfers]);
 
   useEffect(() => {
+    let active = true;
     if (!orgId) return;
     fetch("/api/v1/inventory?limit=200", { headers: { "x-organization-id": orgId } })
-      .then((r) => r.json())
-      .then((data) => setItems((data.data || []).map(inventoryUiItem)))
-      .catch(() => { setItems([]); toast.error("Unable to verify inventory items for transfer"); });
-  }, [orgId]);
+      .then(movementItemsJson)
+      .then((rows) => { if (active) setItems(rows); })
+      .catch(() => { if (active) { setItems([]); toast.error(t("transferItemsFailed")); } });
+    return () => { active = false; };
+  }, [orgId, t]);
 
   useEffect(() => {
     function handler() { fetchTransfers(); }
@@ -212,10 +224,12 @@ export default function TransfersPage() {
   };
 
   async function handleComplete(transfer: Transfer) {
+    if (!orgId) { toast.error(t("organizationRequired")); return; }
     const confirmed = await confirm({
-      title: "Complete transfer?",
-      description: "This will update warehouse stock levels and cannot be undone.",
-      confirmLabel: "Complete",
+      title: t("completeTransferTitle"),
+      description: t("completeTransferHelp"),
+      confirmLabel: t("complete"),
+      cancelLabel: t("cancel"),
     });
     if (!confirmed || !orgId) return;
     setCompleting(true);
@@ -224,46 +238,46 @@ export default function TransfersPage() {
         method: "POST",
         headers: { "x-organization-id": orgId },
       });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed");
-      }
-      toast.success("Transfer completed");
+      await movementTransferJson(res);
+      toast.success(t("transferCompleted"));
       setDetailOpen(false);
       setActiveTransfer(null);
       fetchTransfers();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to complete transfer");
+    } catch {
+      toast.error(t("completeFailed"));
     } finally {
       setCompleting(false);
     }
   }
 
   async function handleCancel(transfer: Transfer) {
+    if (!orgId) { toast.error(t("organizationRequired")); return; }
     const confirmed = await confirm({
-      title: "Cancel transfer?",
-      description: "This will mark the transfer as cancelled.",
-      confirmLabel: "Cancel Transfer",
+      title: t("cancelTransferTitle"),
+      description: t("cancelTransferHelp"),
+      confirmLabel: t("cancelTransfer"),
+      cancelLabel: t("cancel"),
       destructive: true,
     });
     if (!confirmed || !orgId) return;
     try {
-      await fetch(`/api/v1/inventory/transfers/${transfer.id}`, {
+      const res = await fetch(`/api/v1/inventory/transfers/${transfer.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify({ status: "cancelled" }),
       });
-      toast.success("Transfer cancelled");
+      await movementTransferJson(res);
+      toast.success(t("transferCancelled"));
       setDetailOpen(false);
       setActiveTransfer(null);
       fetchTransfers();
     } catch {
-      toast.error("Failed to cancel transfer");
+      toast.error(t("cancelTransferFailed"));
     }
   }
 
   function getItemName(inventoryItemId: string) {
-    return items.find((i) => i.id === inventoryItemId)?.name || "Unknown item";
+    return items.find((i) => i.id === inventoryItemId)?.name || t("unknownItem");
   }
 
   function getItemCode(inventoryItemId: string) {
@@ -279,6 +293,7 @@ export default function TransfersPage() {
   }
 
   if (loading) return <BrandLoader />;
+  if (readFailed) return <p role="alert">{t("transferReadFailed")}</p>;
 
   if (transfers.length === 0) {
     return (
@@ -287,16 +302,10 @@ export default function TransfersPage() {
           {/* Header */}
           <div className="text-center max-w-lg mx-auto">
             <div className="flex items-center justify-center gap-2 mb-3">
-              <span className="text-xs font-medium text-muted-foreground bg-muted/60 px-2.5 py-1 rounded-full uppercase tracking-wide">
-                Stock Transfers
-              </span>
+              <span className="text-xs font-medium text-muted-foreground bg-muted/60 px-2.5 py-1 rounded-full uppercase tracking-wide">{t("stockTransfers")}</span>
             </div>
-            <h2 className="text-lg font-semibold tracking-tight">
-              Move inventory between locations
-            </h2>
-            <p className="mt-1.5 text-sm text-muted-foreground">
-              Create transfers to track stock as it moves from one warehouse to another.
-            </p>
+            <h2 className="text-lg font-semibold tracking-tight">{t("moveLocations")}</h2>
+            <p className="mt-1.5 text-sm text-muted-foreground">{t("transferEmptyHelp")}</p>
           </div>
 
           {/* Visual: Two warehouses with flow between them */}
@@ -308,15 +317,15 @@ export default function TransfersPage() {
                   <Warehouse className="size-4 text-amber-600 dark:text-amber-400" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium">Main Warehouse</p>
+                  <p className="text-sm font-medium">{t("mainWarehouse")}</p>
                   <p className="text-[11px] text-muted-foreground">WH-001</p>
                 </div>
               </div>
               <div className="space-y-1.5">
                 {[
-                  { name: "Widget A", qty: 120, send: 30 },
-                  { name: "Sensor B", qty: 85, send: 15 },
-                  { name: "Cable C", qty: 200, send: 50 },
+                  { name: t("exampleWidget"), qty: 120, send: 30 },
+                  { name: t("exampleSensor"), qty: 85, send: 15 },
+                  { name: t("exampleCable"), qty: 200, send: 50 },
                 ].map((item) => (
                   <div key={item.name} className="flex items-center justify-between rounded-md bg-muted/40 px-2.5 py-1.5">
                     <span className="text-xs">{item.name}</span>
@@ -333,7 +342,7 @@ export default function TransfersPage() {
                 <ArrowRight className="size-3.5 text-blue-600 dark:text-blue-400" />
               </div>
               <div className="w-8 h-px bg-border" />
-              <span className="text-[10px] text-muted-foreground font-medium">95 units</span>
+              <span className="text-[10px] text-muted-foreground font-medium">{t("unitCount", { count: 95 })}</span>
             </div>
 
             {/* Destination warehouse */}
@@ -343,15 +352,15 @@ export default function TransfersPage() {
                   <Warehouse className="size-4 text-emerald-600 dark:text-emerald-400" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium">East DC</p>
+                  <p className="text-sm font-medium">{t("eastWarehouse")}</p>
                   <p className="text-[11px] text-muted-foreground">WH-002</p>
                 </div>
               </div>
               <div className="space-y-1.5">
                 {[
-                  { name: "Widget A", qty: 30 },
-                  { name: "Sensor B", qty: 15 },
-                  { name: "Cable C", qty: 50 },
+                  { name: t("exampleWidget"), qty: 30 },
+                  { name: t("exampleSensor"), qty: 15 },
+                  { name: t("exampleCable"), qty: 50 },
                 ].map((item) => (
                   <div key={item.name} className="flex items-center justify-between rounded-md bg-muted/40 px-2.5 py-1.5">
                     <span className="text-xs">{item.name}</span>
@@ -368,18 +377,16 @@ export default function TransfersPage() {
               onClick={() => openDrawer("transfer")}
               className="bg-emerald-600 hover:bg-emerald-700"
             >
-              <Plus className="mr-2 size-4" />
-              New Transfer
-            </Button>
+              <Plus className="mr-2 size-4" />{t("newTransfer")}</Button>
           </div>
 
           {/* Status legend - compact horizontal */}
           <div className="flex items-center justify-center gap-4 flex-wrap">
             {[
-              { label: "Draft", color: "bg-slate-400" },
-              { label: "In Transit", color: "bg-blue-400" },
-              { label: "Completed", color: "bg-emerald-400" },
-              { label: "Cancelled", color: "bg-red-400" },
+              { label: t("draft"), color: "bg-slate-400" },
+              { label: t("inTransit"), color: "bg-blue-400" },
+              { label: t("completed"), color: "bg-emerald-400" },
+              { label: t("cancelled"), color: "bg-red-400" },
             ].map(({ label, color }) => (
               <div key={label} className="flex items-center gap-1.5">
                 <div className={`size-2 rounded-full ${color}`} />
@@ -399,11 +406,11 @@ export default function TransfersPage() {
       {/* Stats */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {[
-          { label: "Total", value: stats.total, color: "" },
-          { label: "Draft", value: stats.draft, color: "" },
-          { label: "In Transit", value: stats.inTransit, color: "text-blue-600 dark:text-blue-400" },
-          { label: "Completed", value: stats.completed, color: "text-emerald-600 dark:text-emerald-400" },
-          { label: "Total Units", value: stats.totalItems, color: "", hidden: "hidden lg:block" },
+          { label: t("total"), value: stats.total, color: "" },
+          { label: t("draft"), value: stats.draft, color: "" },
+          { label: t("inTransit"), value: stats.inTransit, color: "text-blue-600 dark:text-blue-400" },
+          { label: t("completed"), value: stats.completed, color: "text-emerald-600 dark:text-emerald-400" },
+          { label: t("totalUnits"), value: stats.totalItems, color: "", hidden: "hidden lg:block" },
         ].map((stat, i) => (
           <motion.div
             key={stat.label}
@@ -423,11 +430,11 @@ export default function TransfersPage() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
             <TabsList>
-              <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="draft">Draft</TabsTrigger>
-              <TabsTrigger value="in_transit">In Transit</TabsTrigger>
-              <TabsTrigger value="completed">Completed</TabsTrigger>
-              <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
+              <TabsTrigger value="all">{t("all")}</TabsTrigger>
+              <TabsTrigger value="draft">{t("draft")}</TabsTrigger>
+              <TabsTrigger value="in_transit">{t("inTransit")}</TabsTrigger>
+              <TabsTrigger value="completed">{t("completed")}</TabsTrigger>
+              <TabsTrigger value="cancelled">{t("cancelled")}</TabsTrigger>
             </TabsList>
           </Tabs>
 
@@ -436,9 +443,7 @@ export default function TransfersPage() {
             className="h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700"
             onClick={() => openDrawer("transfer")}
           >
-            <Plus className="size-3" />
-            New Transfer
-          </Button>
+            <Plus className="size-3" />{t("newTransfer")}</Button>
         </div>
 
         {/* Search + Sort */}
@@ -446,14 +451,14 @@ export default function TransfersPage() {
           <div className="relative flex-1 sm:max-w-xs">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search by warehouse name or code..."
+              placeholder={t("warehouseSearch")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9 pr-8 h-8 text-sm"
             />
             {search && (
               <button
-                onClick={() => setSearch("")}
+                aria-label={t("clearSearch")} onClick={() => setSearch("")}
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
                 <X className="size-3.5" />
@@ -468,12 +473,12 @@ export default function TransfersPage() {
             </SelectTrigger>
             <SelectContent>
               {SORT_OPTIONS.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                <SelectItem key={opt.value} value={opt.value}>{t(opt.label)}</SelectItem>
               ))}
             </SelectContent>
           </Select>
 
-          <Button variant="outline" size="icon" className="size-8 shrink-0" onClick={toggleSortOrder}>
+          <Button variant="outline" size="icon" className="size-8 shrink-0" aria-label={t("toggleSort")} onClick={toggleSortOrder}>
             <ArrowUpDown className={cn("size-3.5 transition-transform", sortOrder === "asc" && "rotate-180")} />
           </Button>
         </div>
@@ -482,7 +487,7 @@ export default function TransfersPage() {
       {/* List */}
       {refetching || pendingSearch ? (
         <div className="flex items-center justify-center py-20">
-          <div className="brand-loader" aria-label="Loading">
+          <div className="brand-loader" aria-label={t("loading")}>
             <div className="brand-loader-circle brand-loader-circle-1" />
             <div className="brand-loader-circle brand-loader-circle-2" />
           </div>
@@ -493,9 +498,9 @@ export default function TransfersPage() {
             <div className="mx-auto flex size-10 items-center justify-center rounded-xl bg-muted mb-3">
               <ArrowLeftRight className="size-5 text-muted-foreground" />
             </div>
-            <p className="text-sm font-medium">No transfers found</p>
+            <p className="text-sm font-medium">{t("noTransfers")}</p>
             <p className="text-xs text-muted-foreground mt-1">
-              {search ? "Try a different search term" : "No transfers match this filter"}
+              {search ? t("trySearch") : t("noTransferMatches")}
             </p>
           </div>
         </ContentReveal>
@@ -530,12 +535,12 @@ export default function TransfersPage() {
                           {transfer.toWarehouse.name}
                         </p>
                         <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 shrink-0", STATUS_STYLES[transfer.status])}>
-                          {STATUS_LABELS[transfer.status]}
+                          {t(STATUS_LABELS[transfer.status])}
                         </Badge>
                       </div>
                       <div className="flex items-center gap-2 mt-0.5">
                         <p className="text-xs text-muted-foreground">
-                          {transfer.lines.length} item{transfer.lines.length !== 1 ? "s" : ""} · {qty} unit{qty !== 1 ? "s" : ""}
+                          {t("itemCount", { count: transfer.lines.length })} · {t("unitCount", { count: qty })}
                         </p>
                         {transfer.notes && (
                           <p className="text-xs text-muted-foreground truncate hidden sm:block">· {transfer.notes}</p>
@@ -547,8 +552,7 @@ export default function TransfersPage() {
                         {new Date(transfer.createdAt).toLocaleDateString()}
                       </p>
                       {transfer.completedAt && (
-                        <p className="text-[10px] text-emerald-600 dark:text-emerald-400">
-                          Completed {new Date(transfer.completedAt).toLocaleDateString()}
+                        <p className="text-[10px] text-emerald-600 dark:text-emerald-400">{t("completed")}{new Date(transfer.completedAt).toLocaleDateString()}
                         </p>
                       )}
                     </div>
@@ -564,20 +568,20 @@ export default function TransfersPage() {
       <Sheet open={detailOpen} onOpenChange={(v) => { if (!v) { setDetailOpen(false); setActiveTransfer(null); } }}>
         <SheetContent>
           <SheetHeader>
-            <SheetTitle>Transfer Details</SheetTitle>
+            <SheetTitle>{t("transferDetails")}</SheetTitle>
           </SheetHeader>
           {activeTransfer && (
             <div className="space-y-5 px-4">
               {/* Warehouse flow */}
               <div className="flex items-center gap-3 rounded-lg border bg-muted/30 p-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">From</p>
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{t("from")}</p>
                   <p className="text-sm font-medium truncate">{activeTransfer.fromWarehouse.name}</p>
                   <p className="text-[11px] text-muted-foreground">{activeTransfer.fromWarehouse.code}</p>
                 </div>
                 <ArrowRight className="size-4 text-muted-foreground shrink-0" />
                 <div className="flex-1 min-w-0 text-right">
-                  <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">To</p>
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{t("to")}</p>
                   <p className="text-sm font-medium truncate">{activeTransfer.toWarehouse.name}</p>
                   <p className="text-[11px] text-muted-foreground">{activeTransfer.toWarehouse.code}</p>
                 </div>
@@ -586,14 +590,12 @@ export default function TransfersPage() {
               {/* Status + dates */}
               <div className="flex items-center gap-3 flex-wrap">
                 <Badge variant="outline" className={cn("text-xs", STATUS_STYLES[activeTransfer.status])}>
-                  {STATUS_LABELS[activeTransfer.status]}
+                  {t(STATUS_LABELS[activeTransfer.status])}
                 </Badge>
-                <span className="text-xs text-muted-foreground">
-                  Created {new Date(activeTransfer.createdAt).toLocaleDateString()}
+                <span className="text-xs text-muted-foreground">{t("created")}{new Date(activeTransfer.createdAt).toLocaleDateString()}
                 </span>
                 {activeTransfer.completedAt && (
-                  <span className="text-xs text-emerald-600 dark:text-emerald-400">
-                    Completed {new Date(activeTransfer.completedAt).toLocaleDateString()}
+                  <span className="text-xs text-emerald-600 dark:text-emerald-400">{t("completed")}{new Date(activeTransfer.completedAt).toLocaleDateString()}
                   </span>
                 )}
               </div>
@@ -601,7 +603,7 @@ export default function TransfersPage() {
               {/* Notes */}
               {activeTransfer.notes && (
                 <div>
-                  <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1">Notes</p>
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1">{t("notes")}</p>
                   <p className="text-sm text-muted-foreground">{activeTransfer.notes}</p>
                 </div>
               )}
@@ -609,18 +611,18 @@ export default function TransfersPage() {
               {/* Summary */}
               <div className="flex gap-4">
                 <div>
-                  <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Items</p>
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{t("items")}</p>
                   <p className="text-lg font-bold font-mono tabular-nums">{activeTransfer.lines.length}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Total Units</p>
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{t("totalUnits")}</p>
                   <p className="text-lg font-bold font-mono tabular-nums">{totalQty(activeTransfer.lines)}</p>
                 </div>
               </div>
 
               {/* Items list */}
               <div className="space-y-2">
-                <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Line Items</p>
+                <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{t("lineItems")}</p>
                 <div className="rounded-lg border divide-y">
                   {activeTransfer.lines.map((line) => (
                     <div key={line.id} className="flex items-center justify-between px-3 py-2.5">
@@ -631,7 +633,7 @@ export default function TransfersPage() {
                       <div className="text-right shrink-0 ml-3">
                         <span className="text-sm font-mono font-medium tabular-nums">{line.quantity}</span>
                         {line.receivedQuantity != null && line.receivedQuantity !== line.quantity && (
-                          <p className="text-[10px] text-amber-600">Received: {line.receivedQuantity}</p>
+                          <p className="text-[10px] text-amber-600">{t("received")}{line.receivedQuantity}</p>
                         )}
                       </div>
                     </div>
@@ -648,18 +650,14 @@ export default function TransfersPage() {
                     onClick={() => handleComplete(activeTransfer)}
                     disabled={completing}
                   >
-                    {completing ? <Loader2 className="size-3.5 animate-spin mr-1.5" /> : <Check className="size-3.5 mr-1.5" />}
-                    Complete
-                  </Button>
+                    {completing ? <Loader2 className="size-3.5 animate-spin mr-1.5" /> : <Check className="size-3.5 mr-1.5" />}{t("complete")}</Button>
                   <Button
                     size="sm"
                     variant="outline"
                     className="text-red-600"
                     onClick={() => handleCancel(activeTransfer)}
                   >
-                    <X className="size-3.5 mr-1.5" />
-                    Cancel
-                  </Button>
+                    <X className="size-3.5 mr-1.5" />{t("cancel")}</Button>
                 </div>
               )}
             </div>

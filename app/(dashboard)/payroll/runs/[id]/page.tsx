@@ -1,8 +1,10 @@
 "use client";
 
-import { payrollJson, payrollSum } from "@/lib/money/payroll-ui";
+import { payrollSum } from "@/lib/money/payroll-ui";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
+import { payrollRunDetailJson, type PayrollRunDetail, type PayrollBonus as Bonus } from "@/i18n/payroll-run-detail-presentation";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { toast } from "sonner";
@@ -38,48 +40,6 @@ import { useDebounce } from "@/lib/hooks/use-debounce";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { cn } from "@/lib/utils";
 
-interface PayrollRunDetail {
-  id: string;
-  payPeriodStart: string;
-  payPeriodEnd: string;
-  status: string;
-  approvalStatus: string | null;
-  runType: string;
-  baseCurrency: string | null;
-  totalGross: number;
-  totalDeductions: number;
-  totalNet: number;
-  journalEntryId: string | null;
-  processedAt: string | null;
-  items: PayrollItemRow[];
-}
-
-interface PayrollItemRow {
-  id: string;
-  employeeId: string;
-  rateExact: string;
-  preTaxDeductions: number | null;
-  postTaxDeductions: number | null;
-  grossAmount: number;
-  taxAmount: number;
-  deductions: number;
-  netAmount: number;
-  type: string | null;
-  description: string | null;
-  currency: string | null;
-  fxRate: number | null;
-  employee: { name: string; employeeNumber: string } | null;
-}
-
-interface Bonus {
-  id: string;
-  employeeId: string;
-  bonusType: string;
-  amount: number;
-  description: string | null;
-  employee?: { name: string; currency: string | null };
-}
-
 const statusColors: Record<string, string> = {
   draft: "",
   processing: "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-300",
@@ -88,23 +48,7 @@ const statusColors: Record<string, string> = {
   pending_approval: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300",
 };
 
-// Plain-language payroll status labels for non-accountants.
-const statusLabels: Record<string, string> = {
-  draft: "Not finished",
-  processing: "Finishing",
-  completed: "Finished & recorded",
-  void: "Cancelled",
-  pending_approval: "Waiting for sign-off",
-};
-
-const bonusTypes = [
-  { value: "performance", label: "Performance" },
-  { value: "signing", label: "Signing" },
-  { value: "holiday", label: "Holiday" },
-  { value: "referral", label: "Referral" },
-  { value: "retention", label: "Retention" },
-  { value: "other", label: "Other" },
-];
+const bonusTypes = ["performance", "signing", "holiday", "referral", "retention", "other"] as const;
 
 const anim = (delay: number) => ({
   initial: { opacity: 0, y: 12 } as const,
@@ -113,11 +57,12 @@ const anim = (delay: number) => ({
 });
 
 export default function PayrollRunDetailPage() {
+  const t = useTranslations("PayrollRunDetail");
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [run, setRun] = useState<PayrollRunDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [moneyError, setMoneyError] = useState<string | null>(null);
+  const [moneyError, setMoneyError] = useState<"readFailed" | "organizationRequired" | null>(null);
   const [processing, setProcessing] = useState(false);
   const [submittingApproval, setSubmittingApproval] = useState(false);
   const [approving, setApproving] = useState(false);
@@ -126,7 +71,7 @@ export default function PayrollRunDetailPage() {
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search);
-  useDocumentTitle("Payroll · Run Details");
+  useDocumentTitle(t("documentTitle"));
 
   const [bonuses, setBonuses] = useState<Bonus[]>([]);
   const [bonusDialogOpen, setBonusDialogOpen] = useState(false);
@@ -138,45 +83,50 @@ export default function PayrollRunDetailPage() {
   });
   const [creatingBonus, setCreatingBonus] = useState(false);
 
-  useEffect(() => {
-    const orgId = localStorage.getItem("activeOrgId");
-    if (!orgId) return;
-
-    fetch(`/api/v1/payroll/runs/${id}`, {
-      headers: { "x-organization-id": orgId },
-    })
-      .then((r) => payrollJson(r))
-      .then((data) => {
-        if (data.run) setRun(data.run);
-      })
-      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"))
-      .finally(() => setLoading(false));
-  }, [id]);
+  function activeOrganization() {
+    try {
+      const orgId = localStorage.getItem("activeOrgId");
+      if (orgId) return orgId;
+    } catch { /* Storage errors use the same finite organization feedback. */ }
+    toast.error(t("organizationRequired"));
+    return null;
+  }
 
   useEffect(() => {
-    const orgId = localStorage.getItem("activeOrgId");
-    if (!orgId) return;
-
-    fetch(`/api/v1/payroll/runs/${id}/bonuses`, {
-      headers: { "x-organization-id": orgId },
-    })
-      .then((r) => payrollJson(r))
-      .then((data) => {
-        if (data.bonuses) setBonuses(data.bonuses);
-      })
-      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"));
-  }, [id]);
+    let active = true;
+    setLoading(true); setMoneyError(null); setRun(null); setBonuses([]);
+    async function load() {
+      let orgId: string | null;
+      try { orgId = localStorage.getItem("activeOrgId"); }
+      catch { if (active) { setMoneyError("organizationRequired"); setLoading(false); } return; }
+      if (!orgId) { if (active) { setMoneyError("organizationRequired"); setLoading(false); } return; }
+      try {
+        const response = await fetch(`/api/v1/payroll/runs/${id}`, { headers: { "x-organization-id": orgId } });
+        if (!active) return;
+        if (response.status === 404) return;
+        const data = await payrollRunDetailJson(response, "detail");
+        if (!active) return;
+        const listed = await payrollRunDetailJson(await fetch(`/api/v1/payroll/runs/${id}/bonuses`, {
+          headers: { "x-organization-id": orgId },
+        }), "bonuses");
+        if (active) { setRun(data.run); setBonuses(listed.bonuses); }
+      } catch { if (active) setMoneyError("readFailed"); }
+      finally { if (active) setLoading(false); }
+    }
+    void load();
+    return () => { active = false; };
+  }, [id, t]);
 
   async function handleProcess() {
     const confirmed = await confirm({
-      title: "Finish this payroll and record it?",
+      title: t("finishTitle"),
       description:
-        "This locks in the pay amounts and records the wages and taxes in your books. It can't be undone.",
-      confirmLabel: "Finish and record",
+        t("finishDescription"),
+      confirmLabel: t("finishConfirm"),
       destructive: true,
     });
     if (!confirmed) return;
-    const orgId = localStorage.getItem("activeOrgId");
+    const orgId = activeOrganization();
     if (!orgId) return;
     setProcessing(true);
 
@@ -185,22 +135,18 @@ export default function PayrollRunDetailPage() {
         method: "POST",
         headers: { "x-organization-id": orgId },
       });
-      if (!res.ok) {
-        const data = await payrollJson(res);
-        throw new Error(data.error || "Failed");
-      }
-      await payrollJson(res);
-      toast.success("Payroll finished and recorded");
+      await payrollRunDetailJson(res, "detail");
+      toast.success(t("finished"));
       window.location.reload();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't finish the payroll");
+    } catch {
+      toast.error(t("processFailed"));
     } finally {
       setProcessing(false);
     }
   }
 
   async function handleSubmitForApproval() {
-    const orgId = localStorage.getItem("activeOrgId");
+    const orgId = activeOrganization();
     if (!orgId) return;
     setSubmittingApproval(true);
 
@@ -209,15 +155,11 @@ export default function PayrollRunDetailPage() {
         method: "POST",
         headers: { "x-organization-id": orgId },
       });
-      if (!res.ok) {
-        const data = await payrollJson(res);
-        throw new Error(data.error || "Failed");
-      }
-      await payrollJson(res);
-      toast.success("Sent for sign-off");
+      await payrollRunDetailJson(res, "detail");
+      toast.success(t("submitted"));
       window.location.reload();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't send for sign-off");
+    } catch {
+      toast.error(t("submitFailed"));
     } finally {
       setSubmittingApproval(false);
     }
@@ -225,12 +167,12 @@ export default function PayrollRunDetailPage() {
 
   async function handleApprove() {
     const confirmed = await confirm({
-      title: "Approve this payroll?",
-      description: "This marks the payroll as approved and ready to finish.",
-      confirmLabel: "Approve",
+      title: t("approveTitle"),
+      description: t("approveDescription"),
+      confirmLabel: t("approve"),
     });
     if (!confirmed) return;
-    const orgId = localStorage.getItem("activeOrgId");
+    const orgId = activeOrganization();
     if (!orgId) return;
     setApproving(true);
 
@@ -239,15 +181,11 @@ export default function PayrollRunDetailPage() {
         method: "POST",
         headers: { "x-organization-id": orgId },
       });
-      if (!res.ok) {
-        const data = await payrollJson(res);
-        throw new Error(data.error || "Failed");
-      }
-      await payrollJson(res);
-      toast.success("Payroll approved");
+      await payrollRunDetailJson(res, "detail");
+      toast.success(t("approved"));
       window.location.reload();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't approve the payroll");
+    } catch {
+      toast.error(t("approveFailed"));
     } finally {
       setApproving(false);
     }
@@ -255,13 +193,13 @@ export default function PayrollRunDetailPage() {
 
   async function handleReject() {
     const confirmed = await confirm({
-      title: "Reject this payroll run?",
-      description: "This will send the run back to draft status.",
-      confirmLabel: "Reject",
+      title: t("rejectTitle"),
+      description: t("rejectDescription"),
+      confirmLabel: t("reject"),
       destructive: true,
     });
     if (!confirmed) return;
-    const orgId = localStorage.getItem("activeOrgId");
+    const orgId = activeOrganization();
     if (!orgId) return;
     setRejecting(true);
 
@@ -270,22 +208,18 @@ export default function PayrollRunDetailPage() {
         method: "POST",
         headers: { "x-organization-id": orgId },
       });
-      if (!res.ok) {
-        const data = await payrollJson(res);
-        throw new Error(data.error || "Failed");
-      }
-      await payrollJson(res);
-      toast.success("Payroll run rejected");
+      await payrollRunDetailJson(res, "detail");
+      toast.success(t("rejected"));
       window.location.reload();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to reject");
+    } catch {
+      toast.error(t("rejectFailed"));
     } finally {
       setRejecting(false);
     }
   }
 
   async function handleGeneratePayslips() {
-    const orgId = localStorage.getItem("activeOrgId");
+    const orgId = activeOrganization();
     if (!orgId) return;
     setGeneratingPayslips(true);
 
@@ -294,25 +228,21 @@ export default function PayrollRunDetailPage() {
         method: "POST",
         headers: { "x-organization-id": orgId },
       });
-      if (!res.ok) {
-        const data = await payrollJson(res);
-        throw new Error(data.error || "Failed");
-      }
-      await payrollJson(res);
-      toast.success("Payslips generated");
+      await payrollRunDetailJson(res, "payslips");
+      toast.success(t("payslipsGenerated"));
       router.push(`/payroll/runs/${id}/payslips`);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to generate payslips");
+    } catch {
+      toast.error(t("payslipsFailed"));
     } finally {
       setGeneratingPayslips(false);
     }
   }
 
   async function handleCreateBonus() {
-    const orgId = localStorage.getItem("activeOrgId");
+    const orgId = activeOrganization();
     if (!orgId) return;
     if (!bonusForm.employeeId || !bonusForm.bonusType || !bonusForm.amount) {
-      toast.error("Please fill in all required fields");
+      toast.error(t("required"));
       return;
     }
     setCreatingBonus(true);
@@ -331,32 +261,27 @@ export default function PayrollRunDetailPage() {
           description: bonusForm.description || null,
         }),
       });
-      if (!res.ok) {
-        const data = await payrollJson(res);
-        throw new Error(data.error || "Failed");
-      }
-      const data = await payrollJson(res);
+      const data = await payrollRunDetailJson(res, "bonus");
       if (data.bonus) {
         const [runResponse, bonusResponse] = await Promise.all([
           fetch(`/api/v1/payroll/runs/${id}`, { headers: { "x-organization-id": orgId } }),
           fetch(`/api/v1/payroll/runs/${id}/bonuses`, { headers: { "x-organization-id": orgId } }),
         ]);
-        const [updated, listed] = await Promise.all([payrollJson(runResponse), payrollJson(bonusResponse)]);
-        if (!runResponse.ok || !bonusResponse.ok) throw new Error(updated.error || listed.error || "Could not refresh payroll");
+        const [updated, listed] = await Promise.all([payrollRunDetailJson(runResponse, "detail"), payrollRunDetailJson(bonusResponse, "bonuses")]);
         setRun(updated.run); setBonuses(listed.bonuses);
       }
-      toast.success("Bonus added");
+      toast.success(t("bonusAdded"));
       setBonusDialogOpen(false);
       setBonusForm({ employeeId: "", bonusType: "", amount: "", description: "" });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to add bonus");
+    } catch {
+      toast.error(t("bonusFailed"));
     } finally {
       setCreatingBonus(false);
     }
   }
 
   if (loading) return <BrandLoader />;
-  if (moneyError) return <p role="alert">{moneyError}</p>;
+  if (moneyError) return <p role="alert">{t(moneyError)}</p>;
 
   if (!run) {
     return (
@@ -366,9 +291,9 @@ export default function PayrollRunDetailPage() {
           className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors mb-6"
         >
           <ArrowLeft className="size-3.5" />
-          Back to runs
+          {t("back")}
         </button>
-        <p className="text-sm text-muted-foreground">Payroll run not found</p>
+        <p className="text-sm text-muted-foreground">{t("notFound")}</p>
       </ContentReveal>
     );
   }
@@ -389,7 +314,7 @@ export default function PayrollRunDetailPage() {
         className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors"
       >
         <ArrowLeft className="size-3.5" />
-        Back to runs
+        {t("back")}
       </button>
 
       {/* Header */}
@@ -411,14 +336,14 @@ export default function PayrollRunDetailPage() {
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-lg font-semibold">
-                {run.payPeriodStart} to {run.payPeriodEnd}
+                {t("period", { start: run.payPeriodStart, end: run.payPeriodEnd })}
               </h1>
               <Badge variant="outline" className={statusColors[run.status] || ""}>
-                {statusLabels[run.status] || run.status.replace(/_/g, " ")}
+                {t(`status_${run.status}`)}
               </Badge>
               {run.runType && run.runType !== "regular" && (
                 <Badge variant="outline" className="capitalize">
-                  {run.runType.replace(/_/g, " ")}
+                  {t(`runType_${run.runType}`)}
                 </Badge>
               )}
               {run.approvalStatus && (
@@ -426,12 +351,12 @@ export default function PayrollRunDetailPage() {
                   variant="outline"
                   className="border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300"
                 >
-                  {run.approvalStatus.replace(/_/g, " ")}
+                  {t(`approval_${run.approvalStatus}`)}
                 </Badge>
               )}
             </div>
             <p className="text-sm text-muted-foreground">
-              {run.processedAt ? `Finished and recorded ${run.processedAt}` : "Not finished yet"}
+              {run.processedAt ? t("processedAt", { date: run.processedAt }) : t("unfinished")}
             </p>
           </div>
         </div>
@@ -443,20 +368,20 @@ export default function PayrollRunDetailPage() {
                 size="sm"
                 onClick={handleSubmitForApproval}
                 disabled={submittingApproval}
-                title="Send this payroll to someone for sign-off before it's finished"
+                title={t("sendHelp")}
               >
                 <Send className="mr-1.5 size-3.5" />
-                {submittingApproval ? "Sending..." : "Send for sign-off"}
+                {submittingApproval ? t("sending") : t("send")}
               </Button>
               <Button
                 size="sm"
                 onClick={handleProcess}
                 disabled={processing}
                 className="bg-emerald-600 hover:bg-emerald-700"
-                title="Lock in the pay amounts and record the wages and taxes in your books"
+                title={t("finishHelp")}
               >
                 <Play className="mr-1.5 size-3.5" />
-                {processing ? "Finishing..." : "Finish & record payroll"}
+                {processing ? t("finishing") : t("finish")}
               </Button>
             </>
           )}
@@ -469,7 +394,7 @@ export default function PayrollRunDetailPage() {
                 className="bg-emerald-600 hover:bg-emerald-700"
               >
                 <CheckCircle2 className="mr-1.5 size-3.5" />
-                {approving ? "Approving..." : "Approve"}
+                {approving ? t("approving") : t("approve")}
               </Button>
               <Button
                 variant="destructive"
@@ -478,7 +403,7 @@ export default function PayrollRunDetailPage() {
                 disabled={rejecting}
               >
                 <XCircle className="mr-1.5 size-3.5" />
-                {rejecting ? "Rejecting..." : "Reject"}
+                {rejecting ? t("rejecting") : t("reject")}
               </Button>
             </>
           )}
@@ -488,15 +413,15 @@ export default function PayrollRunDetailPage() {
       {/* Stat cards */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <motion.div {...anim(0)} className="rounded-xl border bg-card p-4">
-          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Pay before deductions</p>
+          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("gross")}</p>
           <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate">{formatMoney(run.totalGross, run.baseCurrency ?? "USD")}</p>
         </motion.div>
         <motion.div {...anim(0.05)} className="rounded-xl border bg-card p-4">
-          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Taxes &amp; deductions</p>
+          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("deductions")}</p>
           <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate text-red-600 dark:text-red-400">{formatMoney(run.totalDeductions, run.baseCurrency ?? "USD")}</p>
         </motion.div>
         <motion.div {...anim(0.09)} className="rounded-xl border bg-card p-4">
-          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Take-home pay</p>
+          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("net")}</p>
           <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate text-emerald-600 dark:text-emerald-400">{formatMoney(run.totalNet, run.baseCurrency ?? "USD")}</p>
         </motion.div>
       </div>
@@ -513,9 +438,9 @@ export default function PayrollRunDetailPage() {
               <BookOpen className="size-5 text-muted-foreground" />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-medium">View accounting entry</p>
+              <p className="text-sm font-medium">{t("viewEntry")}</p>
               <p className="text-xs text-muted-foreground truncate">
-                Wages {formatMoney(run.totalGross, run.baseCurrency ?? "USD")} · Taxes &amp; deductions {formatMoney(run.totalDeductions, run.baseCurrency ?? "USD")} · Net paid {formatMoney(run.totalNet, run.baseCurrency ?? "USD")}
+                {t("entrySummary", { gross: formatMoney(run.totalGross, run.baseCurrency ?? "USD"), deductions: formatMoney(run.totalDeductions, run.baseCurrency ?? "USD"), net: formatMoney(run.totalNet, run.baseCurrency ?? "USD") })}
               </p>
             </div>
           </div>
@@ -527,8 +452,8 @@ export default function PayrollRunDetailPage() {
             <BookOpen className="size-5 text-muted-foreground" />
           </div>
           <div>
-            <p className="text-sm font-medium">No accounting entry linked</p>
-            <p className="text-xs text-muted-foreground">This run was finished but no journal entry is on record.</p>
+            <p className="text-sm font-medium">{t("noEntry")}</p>
+            <p className="text-xs text-muted-foreground">{t("noEntryHelp")}</p>
           </div>
         </div>
       ) : null}
@@ -536,11 +461,11 @@ export default function PayrollRunDetailPage() {
       {/* Employee items */}
       <div className="space-y-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <h3 className="text-sm font-semibold">Employees ({run.items?.length || 0})</h3>
+          <h3 className="text-sm font-semibold">{t("employees", { count: run.items.length })}</h3>
           <div className="relative sm:max-w-xs w-full">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search employees..."
+              placeholder={t("search")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9 pr-8 h-8 text-sm"
@@ -548,6 +473,7 @@ export default function PayrollRunDetailPage() {
             {search && (
               <button
                 onClick={() => setSearch("")}
+                aria-label={t("clearSearch")}
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
                 <X className="size-3.5" />
@@ -562,7 +488,7 @@ export default function PayrollRunDetailPage() {
               <FileText className="size-5 text-muted-foreground" />
             </div>
             <p className="text-sm font-medium">
-              {search ? "No employees match your search" : "No employees in this run"}
+              {search ? t("noMatch") : t("noEmployees")}
             </p>
           </div>
         ) : (
@@ -578,7 +504,7 @@ export default function PayrollRunDetailPage() {
                   <div className="flex items-center gap-1.5 mt-0.5">
                     {item.type && (
                       <Badge variant="outline" className="text-[9px] h-4 capitalize">
-                        {item.type.replace(/_/g, " ")}
+                        {t(`itemType_${item.type}`)}
                       </Badge>
                     )}
                     {item.description && (
@@ -596,19 +522,19 @@ export default function PayrollRunDetailPage() {
                     </Badge>
                   )}
                   <div className="hidden sm:block text-right">
-                    <p className="text-xs text-muted-foreground">Before deductions</p>
+                    <p className="text-xs text-muted-foreground">{t("beforeDeductions")}</p>
                     <p className="text-sm font-mono tabular-nums">{formatMoney(item.grossAmount, item.currency ?? "USD")}</p>
                   </div>
                   <div className="hidden sm:block text-right">
-                    <p className="text-xs text-muted-foreground">Tax</p>
+                    <p className="text-xs text-muted-foreground">{t("tax")}</p>
                     <p className="text-sm font-mono tabular-nums">{formatMoney(item.taxAmount, item.currency ?? "USD")}</p>
                   </div>
                   <div className="hidden sm:block text-right">
-                    <p className="text-xs text-muted-foreground">Other deductions</p>
+                    <p className="text-xs text-muted-foreground">{t("otherDeductions")}</p>
                     <p className="text-sm font-mono tabular-nums">{formatMoney(payrollSum([item.preTaxDeductions ?? 0, item.postTaxDeductions ?? 0]), item.currency ?? "USD")}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs text-muted-foreground">Take-home</p>
+                    <p className="text-xs text-muted-foreground">{t("takeHome")}</p>
                     <p className="text-sm font-mono tabular-nums font-medium">{formatMoney(item.netAmount, item.currency ?? "USD")}</p>
                   </div>
                 </div>
@@ -623,37 +549,37 @@ export default function PayrollRunDetailPage() {
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold flex items-center gap-1.5">
             <Gift className="size-4" />
-            Bonuses ({bonuses.length})
+            {t("bonuses", { count: bonuses.length })}
           </h3>
           <Dialog open={bonusDialogOpen} onOpenChange={setBonusDialogOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" size="sm" disabled={run.status !== "draft" || run.approvalStatus === "approved" || !["regular", "off_cycle", "bonus_only"].includes(run.runType)}>
                 <Plus className="mr-1.5 size-3.5" />
-                Add Bonus
+                {t("addBonus")}
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Add Bonus</DialogTitle>
+                <DialogTitle>{t("addBonus")}</DialogTitle>
                 <DialogDescription>
-                  Add a bonus for an employee in this payroll run.
+                  {t("addBonusHelp")}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-2">
                 <div className="space-y-2">
-                  <Label>Employee</Label>
+                  <Label>{t("employee")}</Label>
                   <Select
                     value={bonusForm.employeeId}
                     onValueChange={(v) => setBonusForm((f) => ({ ...f, employeeId: v }))}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select employee" />
+                      <SelectValue placeholder={t("selectEmployee")} />
                     </SelectTrigger>
                     <SelectContent>
                       {(run.items || []).filter((item, index, items) => items.findIndex(i => i.employeeId === item.employeeId) === index).map((item) =>
                         item.employee ? (
                           <SelectItem key={item.employeeId} value={item.employeeId}>
-                            {item.employee.name} ({item.employee.employeeNumber})
+                            {t("employeeOption", { name: item.employee.name, number: item.employee.employeeNumber })}
                           </SelectItem>
                         ) : null
                       )}
@@ -661,25 +587,25 @@ export default function PayrollRunDetailPage() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Bonus Type</Label>
+                  <Label>{t("bonusTypeLabel")}</Label>
                   <Select
                     value={bonusForm.bonusType}
                     onValueChange={(v) => setBonusForm((f) => ({ ...f, bonusType: v }))}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select type" />
+                      <SelectValue placeholder={t("selectType")} />
                     </SelectTrigger>
                     <SelectContent>
-                      {bonusTypes.map((t) => (
-                        <SelectItem key={t.value} value={t.value}>
-                          {t.label}
+                      {bonusTypes.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {t(`bonusType_${type}`)}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Amount</Label>
+                  <Label>{t("amount")}</Label>
                   <CurrencyInput
                     prefix={run.items.find(i => i.employeeId === bonusForm.employeeId)?.currency ?? "USD"}
                     value={bonusForm.amount}
@@ -687,9 +613,9 @@ export default function PayrollRunDetailPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Description</Label>
+                  <Label>{t("description")}</Label>
                   <Textarea
-                    placeholder="Optional description..."
+                    placeholder={t("descriptionPlaceholder")}
                     value={bonusForm.description}
                     onChange={(e) => setBonusForm((f) => ({ ...f, description: e.target.value }))}
                   />
@@ -701,7 +627,7 @@ export default function PayrollRunDetailPage() {
                   disabled={creatingBonus}
                   size="sm"
                 >
-                  {creatingBonus ? "Adding..." : "Add Bonus"}
+                  {creatingBonus ? t("adding") : t("addBonus")}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -713,8 +639,8 @@ export default function PayrollRunDetailPage() {
             <div className="mx-auto flex size-10 items-center justify-center rounded-xl bg-muted mb-3">
               <Gift className="size-5 text-muted-foreground" />
             </div>
-            <p className="text-sm font-medium">No bonuses added</p>
-            <p className="text-xs text-muted-foreground mt-1">Add bonuses for employees in this payroll run</p>
+            <p className="text-sm font-medium">{t("noBonuses")}</p>
+            <p className="text-xs text-muted-foreground mt-1">{t("noBonusesHelp")}</p>
           </div>
         ) : (
           <div className="rounded-xl border bg-card divide-y">
@@ -727,7 +653,7 @@ export default function PayrollRunDetailPage() {
                   <p className="text-sm font-medium truncate">{bonus.employee?.name || "-"}</p>
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <Badge variant="outline" className="text-[9px] h-4 capitalize">
-                      {bonus.bonusType.replace(/_/g, " ")}
+                      {t(`bonusType_${bonus.bonusType}`)}
                     </Badge>
                     {bonus.description && (
                       <span className="text-[10px] text-muted-foreground truncate max-w-[200px]">{bonus.description}</span>
@@ -752,7 +678,7 @@ export default function PayrollRunDetailPage() {
             disabled={generatingPayslips}
           >
             <ScrollText className="mr-1.5 size-3.5" />
-            {generatingPayslips ? "Generating..." : "Generate Payslips"}
+            {generatingPayslips ? t("generating") : t("generate")}
           </Button>
           <Button
             variant="outline"
@@ -760,7 +686,7 @@ export default function PayrollRunDetailPage() {
             onClick={() => router.push(`/payroll/runs/${id}/payslips`)}
           >
             <ScrollText className="mr-1.5 size-3.5" />
-            View Payslips
+            {t("viewPayslips")}
           </Button>
         </div>
       )}

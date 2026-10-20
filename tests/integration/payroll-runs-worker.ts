@@ -1,6 +1,7 @@
 import { payrollJson, payrollUiPayload } from "../../lib/money/payroll-ui";
 import { payrollOverviewJson } from "../../i18n/payroll-overview-presentation";
 import { payrollRunJson } from "../../i18n/payroll-run-presentation";
+import { payrollRunDetailJson } from "../../i18n/payroll-run-detail-presentation";
 import { GET as employeeChoices } from "../../app/api/v1/payroll/employees/route";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -83,6 +84,10 @@ async function run() {
   };
   const data = async (response: Response, status = 200) => { const body = await payrollJson(response); assert.equal(response.status, status, JSON.stringify(body)); return body; };
   const checkCreated = async <T,>(name: string, body: T): Promise<T> => {
+    if (["get_payroll_run", "process_payroll_run", "submit_payroll_run_for_approval", "approve_payroll_run", "reject_payroll_run"].includes(name))
+      assert.deepEqual(await payrollRunDetailJson(Response.json(body), "detail"), body);
+    if (name === "list_payroll_run_bonuses") assert.deepEqual(await payrollRunDetailJson(Response.json(body), "bonuses"), body);
+    if (name === "create_payroll_run_bonus") assert.deepEqual(await payrollRunDetailJson(Response.json(body), "bonus"), body);
     if (["create_payroll_run", "create_bonus_payroll_run", "create_termination_payroll_run", "create_correction_payroll_run"].includes(name))
       assert.deepEqual(await payrollRunJson(Response.json(body), "created"), body);
     return body;

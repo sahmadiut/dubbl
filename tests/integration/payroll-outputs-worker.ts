@@ -1,4 +1,5 @@
 import { payrollJson, payrollUiPayload } from "../../lib/money/payroll-ui";
+import { payrollRunDetailJson } from "../../i18n/payroll-run-detail-presentation";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
@@ -77,8 +78,12 @@ async function run() {
     return (route as unknown as Record<string, (r: Request, p: unknown) => Promise<Response>>)[verb](request, { params: Promise.resolve({ id: id ?? payRunId ?? employeeId }) });
   };
   const data = async (r: Response, status = 200) => { const body = await payrollJson(r); assert.equal(r.status, status, JSON.stringify(body)); return body; };
-  const read = async (name: string, args: Args = {}, key: string = keys.a) => data(await rest(name, args, key), name === "generate_tax_forms" ? 201 : 200);
-  const call = async (name: string, args: Args = {}, client = ma) => { mseen.add(name); const r = await client.call(name, args); assert.equal(r.isError, false, JSON.stringify(r.body)); return r.body; };
+  const checkedGeneration = async <T,>(name: string, body: T): Promise<T> => {
+    if (name === "generate_payslips") assert.deepEqual(await payrollRunDetailJson(Response.json(body), "payslips"), body);
+    return body;
+  };
+  const read = async (name: string, args: Args = {}, key: string = keys.a) => checkedGeneration(name, await data(await rest(name, args, key), name === "generate_tax_forms" ? 201 : 200));
+  const call = async (name: string, args: Args = {}, client = ma) => { mseen.add(name); const r = await client.call(name, args); assert.equal(r.isError, false, JSON.stringify(r.body)); return checkedGeneration(name, r.body); };
   const snapshot = () => Promise.all(["payslip", "tax_form", "tax_form_generation", "payroll_employee", "audit_log"].map(t => db.execute(sql.raw(`select coalesce(jsonb_agg(to_jsonb(t)::text order by t.id),'[]'::jsonb) as rows from ${t} t`)).then(r => r.rows)));
   const denied = async (name: string, args: Args, status: number, key: string = keys.a, raw?: string) => { const before = await snapshot(); await data(await rest(name, args, key, raw), status); assert.deepEqual(await snapshot(), before, name + " REST mutation"); };
   const mdenied = async (name: string, args: Args, status?: number, client = ma) => {

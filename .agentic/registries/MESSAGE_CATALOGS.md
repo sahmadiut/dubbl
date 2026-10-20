@@ -1,5 +1,11 @@
 # Message catalog foundation
 
+LOC-084 payroll run detail uses 99 paired `PayrollRunDetail` messages (7,436
+keys per locale). See [scope and exceptions](PAYROLL_RUN_DETAIL_CATALOGS.md)
+for checked detail/lifecycle/bonus/generation feedback and preserved exact
+cents, approval, calculation, posting and REST/MCP contracts.
+LOC-067/008/002 and native terminology/RTL qualification remain independent.
+
 LOC-083 payroll run list and regular/off-cycle creation use 71 paired
 `PayrollRuns` messages (7,337 keys per locale). See
 [scope and exceptions](PAYROLL_RUN_CATALOGS.md) for checked choice/read/create
@@ -254,6 +260,7 @@ Extraction ownership:
 | LOC-081 | LOC-067 child: employee detail; [scope and exceptions](PAYROLL_EMPLOYEE_DETAIL_CATALOGS.md) |
 | LOC-082 | LOC-067 child: contractor list/detail and ContractorDrawer; [scope and exceptions](PAYROLL_CONTRACTOR_CATALOGS.md) |
 | LOC-083 | LOC-067 child: run list and regular/off-cycle creation; [scope and exceptions](PAYROLL_RUN_CATALOGS.md) |
+| LOC-084 | LOC-067 child: run detail, lifecycle, bonus and generation controls; [scope and exceptions](PAYROLL_RUN_DETAIL_CATALOGS.md) |
 | LOC-002 | Independent combined key coverage, plural and safe rendering acceptance |
 
 Later L10N/RTL tasks retain native-reviewed financial wording, complete Persian

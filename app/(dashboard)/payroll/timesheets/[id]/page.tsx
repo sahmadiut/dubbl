@@ -1,8 +1,9 @@
 "use client";
 
-import { payrollJson } from "@/lib/money/payroll-ui";
+import { useTranslations } from "next-intl";
+import { payrollTimeJson, payrollTimeMatch, payrollTimeOrganization, type TimeSheetDetail } from "@/i18n/payroll-time-presentation";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { toast } from "sonner";
@@ -32,24 +33,8 @@ import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { useConfirm } from "@/lib/hooks/use-confirm";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 
-interface TimesheetDetail {
-  id: string;
-  periodStart: string;
-  periodEnd: string;
-  status: string;
-  totalHours: number;
-  rejectionReason: string | null;
-  employee: { name: string; employeeNumber: string } | null;
-  entries: TimesheetEntry[];
-}
+type TimesheetDetail = TimeSheetDetail;
 
-interface TimesheetEntry {
-  id: string;
-  date: string;
-  hours: number;
-  shiftType: string;
-  description: string | null;
-}
 
 const statusColors: Record<string, string> = {
   draft: "",
@@ -65,6 +50,7 @@ const anim = (delay: number) => ({
 });
 
 export default function TimesheetDetailPage() {
+  const t = useTranslations("PayrollTimeDetail");
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [ts, setTs] = useState<TimesheetDetail | null>(null);
@@ -84,136 +70,96 @@ export default function TimesheetDetailPage() {
   const [newShiftType, setNewShiftType] = useState("regular");
   const [newDesc, setNewDesc] = useState("");
 
-  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
-  useDocumentTitle("Payroll · Timesheet Details");
+  const orgId = payrollTimeOrganization();
+  useDocumentTitle(t("sheetDetailTitle"));
 
-  function fetchTimesheet() {
-    if (!orgId) return;
-    fetch(`/api/v1/payroll/timesheets/${id}`, {
-      headers: { "x-organization-id": orgId },
-    })
-      .then((r) => payrollJson(r))
-      .then((data) => { if (data.timesheet) setTs(data.timesheet); })
-      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"))
-      .finally(() => setLoading(false));
-  }
+  const fetchTimesheet = useCallback(async (current: () => boolean = () => true, initial = false) => {
+    if (!orgId) { if (current()) setLoading(false); return; }
+    try {
+      const response = await fetch(`/api/v1/payroll/timesheets/${id}`, { headers: { "x-organization-id": orgId } });
+      if (response.status === 404) { if (current()) { setTs(null); setMoneyError(null); } return; }
+      const data = await payrollTimeJson(response, "timesheetDetail");
+      payrollTimeMatch(data.timesheet, id);
+      if (current()) { setTs(data.timesheet); setMoneyError(null); }
+    } catch {
+      if (current()) { if (initial) setMoneyError("loadFailed"); else toast.error(t("loadFailed")); }
+    } finally { if (current()) setLoading(false); }
+  }, [id, orgId, t]);
 
-  useEffect(() => { fetchTimesheet(); }, [id, orgId]);
+  useEffect(() => { let active = true; void fetchTimesheet(() => active, true); return () => { active = false; }; }, [fetchTimesheet]);
 
   async function handleAddEntry() {
     if (!orgId || !newDate || !newHours) return;
-    const res = await fetch(`/api/v1/payroll/timesheets/${id}/entries`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-organization-id": orgId },
-      body: JSON.stringify({
-        date: newDate,
-        hours: parseFloat(newHours),
-        shiftType: newShiftType,
-        description: newDesc || undefined,
-      }),
-    });
-    if (res.ok) {
-      await payrollJson(res);
-      toast.success("Entry added");
-      setNewDate(""); setNewHours(""); setNewDesc("");
-      fetchTimesheet();
-    } else {
-      const data = await payrollJson(res);
-      toast.error(typeof data.error === "string" ? data.error : "Failed to add entry");
-    }
+    try {
+      await payrollTimeJson(await fetch(`/api/v1/payroll/timesheets/${id}/entries`, {
+        method: "POST", headers: { "Content-Type": "application/json", "x-organization-id": orgId },
+        body: JSON.stringify({ date: newDate, hours: parseFloat(newHours), shiftType: newShiftType, description: newDesc || undefined }),
+      }), "entryCreated");
+      toast.success(t("entryAdded")); setNewDate(""); setNewHours(""); setNewDesc(""); void fetchTimesheet();
+    } catch { toast.error(t("addFailed")); }
   }
 
   async function handleDeleteEntry(entryId: string) {
     if (!orgId) return;
-    const confirmed = await confirm({
-      title: "Delete timesheet entry?",
-      description: "This action cannot be undone.",
-      confirmLabel: "Delete",
-      destructive: true,
-    });
-    if (!confirmed) return;
-    const res = await fetch(`/api/v1/payroll/timesheets/${id}/entries?entryId=${entryId}`, {
-      method: "DELETE",
-      headers: { "x-organization-id": orgId },
-    });
-    if (!res.ok) {
-      const data = await payrollJson(res);
-      toast.error(typeof data.error === "string" ? data.error : "Failed to delete entry");
-    }
-    fetchTimesheet();
+    if (!await confirm({ title: t("deleteTitle"), description: t("deleteDescription"), confirmLabel: t("delete"), destructive: true })) return;
+    try {
+      await payrollTimeJson(await fetch(`/api/v1/payroll/timesheets/${id}/entries?entryId=${entryId}`, {
+        method: "DELETE", headers: { "x-organization-id": orgId },
+      }), "deleted");
+      void fetchTimesheet();
+    } catch { toast.error(t("deleteFailed")); }
   }
 
   async function handleSubmit() {
     if (!orgId) return;
-    const res = await fetch(`/api/v1/payroll/timesheets/${id}/submit`, {
-      method: "POST",
-      headers: { "x-organization-id": orgId },
-    });
-    if (res.ok) {
-      await payrollJson(res);
-      toast.success("Timesheet submitted");
-      fetchTimesheet();
-    } else {
-      const data = await payrollJson(res);
-      toast.error(typeof data.error === "string" ? data.error : "Failed to submit");
-    }
+    try {
+      const data = await payrollTimeJson(await fetch(`/api/v1/payroll/timesheets/${id}/submit`, {
+        method: "POST", headers: { "x-organization-id": orgId },
+      }), "submitted");
+      payrollTimeMatch(data.timesheet, id); toast.success(t("sheetSubmitted")); void fetchTimesheet();
+    } catch { toast.error(t("submitFailed")); }
   }
 
   async function handleApprove() {
     if (!orgId || approving) return;
     setApproving(true);
     try {
-      const res = await fetch(`/api/v1/payroll/timesheets/${id}/approve`, {
-        method: "POST",
-        headers: { "x-organization-id": orgId },
-      });
-      if (res.ok) {
-      await payrollJson(res);
-        toast.success("Timesheet approved");
-        fetchTimesheet();
-      } else {
-        const data = await payrollJson(res).catch(() => ({}));
-        toast.error(typeof data.error === "string" ? data.error : "Failed to approve");
-      }
-    } finally {
-      setApproving(false);
-    }
+      const data = await payrollTimeJson(await fetch(`/api/v1/payroll/timesheets/${id}/approve`, {
+        method: "POST", headers: { "x-organization-id": orgId },
+      }), "sheetApproved");
+      payrollTimeMatch(data.timesheet, id);
+      toast.success(t("sheetApproved"));
+      void fetchTimesheet();
+    } catch { toast.error(t("approveFailed")); }
+    finally { setApproving(false); }
   }
 
   async function handleReject() {
     if (!orgId || rejecting) return;
     setRejecting(true);
     try {
-      const res = await fetch(`/api/v1/payroll/timesheets/${id}/reject`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-organization-id": orgId },
+      const data = await payrollTimeJson(await fetch(`/api/v1/payroll/timesheets/${id}/reject`, {
+        method: "POST", headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify({ reason: rejectReason.trim() || undefined }),
-      });
-      if (res.ok) {
-      await payrollJson(res);
-        toast.success("Timesheet rejected");
-        setRejectOpen(false);
-        setRejectReason("");
-        fetchTimesheet();
-      } else {
-        const data = await payrollJson(res).catch(() => ({}));
-        toast.error(typeof data.error === "string" ? data.error : "Failed to reject");
-      }
-    } finally {
-      setRejecting(false);
-    }
+      }), "sheetRejected");
+      payrollTimeMatch(data.timesheet, id);
+      toast.success(t("sheetRejected"));
+      setRejectOpen(false); setRejectReason("");
+      void fetchTimesheet();
+    } catch { toast.error(t("rejectFailed")); }
+    finally { setRejecting(false); }
   }
 
   if (loading) return <BrandLoader />;
-  if (moneyError) return <p role="alert">{moneyError}</p>;
+  if (moneyError) return <p role="alert">{t("loadFailed")}</p>;
 
   if (!ts) {
     return (
       <ContentReveal>
         <button onClick={() => router.push("/payroll/timesheets")} className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors mb-6">
-          <ArrowLeft className="size-3.5" /> Back to timesheets
+          <ArrowLeft className="size-3.5" /> {t("backSheets")}
         </button>
-        <p className="text-sm text-muted-foreground">Timesheet not found</p>
+        <p className="text-sm text-muted-foreground">{t("sheetNotFound")}</p>
       </ContentReveal>
     );
   }
@@ -221,7 +167,7 @@ export default function TimesheetDetailPage() {
   return (
     <ContentReveal className="space-y-6">
       <button onClick={() => router.push("/payroll/timesheets")} className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors">
-        <ArrowLeft className="size-3.5" /> Back to timesheets
+        <ArrowLeft className="size-3.5" /> {t("backSheets")}
       </button>
 
       {/* Header */}
@@ -232,25 +178,25 @@ export default function TimesheetDetailPage() {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-lg font-semibold">{ts.employee?.name || "Unknown"}</h1>
-              <Badge variant="outline" className={statusColors[ts.status] || ""}>{ts.status}</Badge>
+              <h1 className="text-lg font-semibold">{ts.employee?.name || t("unknown")}</h1>
+              <Badge variant="outline" className={statusColors[ts.status] || ""}>{t(ts.status)}</Badge>
             </div>
-            <p className="text-sm text-muted-foreground">{ts.periodStart} to {ts.periodEnd} · {ts.totalHours}h total</p>
+            <p className="text-sm text-muted-foreground">{t("sheetSummary", { start: ts.periodStart, end: ts.periodEnd, hours: String(ts.totalHours) })}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           {ts.status === "draft" && (
             <Button size="sm" onClick={handleSubmit} className="bg-blue-600 hover:bg-blue-700">
-              <Send className="mr-1.5 size-3.5" /> Submit
+              <Send className="mr-1.5 size-3.5" /> {t("submit")}
             </Button>
           )}
           {ts.status === "submitted" && (
             <>
               <Button size="sm" onClick={handleApprove} disabled={approving} className="bg-emerald-600 hover:bg-emerald-700">
-                <CheckCircle className="mr-1.5 size-3.5" /> Approve
+                <CheckCircle className="mr-1.5 size-3.5" /> {t("approve")}
               </Button>
               <Button size="sm" variant="destructive" onClick={() => setRejectOpen(true)}>
-                <XCircle className="mr-1.5 size-3.5" /> Reject
+                <XCircle className="mr-1.5 size-3.5" /> {t("reject")}
               </Button>
             </>
           )}
@@ -259,51 +205,51 @@ export default function TimesheetDetailPage() {
 
       {ts.rejectionReason && (
         <div className="rounded-lg border border-red-200 bg-red-50 dark:border-red-900/50 dark:bg-red-950/20 px-4 py-3">
-          <p className="text-sm text-red-600 dark:text-red-400">Rejected: {ts.rejectionReason}</p>
+          <p className="text-sm text-red-600 dark:text-red-400">{t("rejectedReason", { reason: ts.rejectionReason })}</p>
         </div>
       )}
 
       {/* Entries */}
       <div className="space-y-3">
-        <h3 className="text-sm font-semibold">Time Entries ({ts.entries?.length || 0})</h3>
+        <h3 className="text-sm font-semibold">{t("entries", { count: String(ts.entries.length) })}</h3>
 
         {ts.status === "draft" && (
           <motion.div {...anim(0)} className="rounded-lg border p-4 space-y-3">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <div className="space-y-1">
-                <Label className="text-xs">Date</Label>
+                <Label className="text-xs">{t("date")}</Label>
                 <Input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} className="h-8 text-sm" />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">Hours</Label>
+                <Label className="text-xs">{t("hours")}</Label>
                 <Input type="number" step="0.25" value={newHours} onChange={(e) => setNewHours(e.target.value)} className="h-8 text-sm" />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">Type</Label>
+                <Label className="text-xs">{t("type")}</Label>
                 <Select value={newShiftType} onValueChange={setNewShiftType}>
                   <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="regular">Regular</SelectItem>
-                    <SelectItem value="overtime">Overtime</SelectItem>
-                    <SelectItem value="night">Night</SelectItem>
-                    <SelectItem value="weekend">Weekend</SelectItem>
-                    <SelectItem value="holiday">Holiday</SelectItem>
+                    <SelectItem value="regular">{t("regular")}</SelectItem>
+                    <SelectItem value="overtime">{t("overtime")}</SelectItem>
+                    <SelectItem value="night">{t("night")}</SelectItem>
+                    <SelectItem value="weekend">{t("weekend")}</SelectItem>
+                    <SelectItem value="holiday">{t("holiday")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">Description</Label>
-                <Input value={newDesc} onChange={(e) => setNewDesc(e.target.value)} className="h-8 text-sm" placeholder="Optional" />
+                <Label className="text-xs">{t("description")}</Label>
+                <Input value={newDesc} onChange={(e) => setNewDesc(e.target.value)} className="h-8 text-sm" placeholder={t("optional")} />
               </div>
             </div>
             <Button size="sm" onClick={handleAddEntry} disabled={!newDate || !newHours}>
-              <Plus className="mr-1.5 size-3" /> Add Entry
+              <Plus className="mr-1.5 size-3" /> {t("addEntry")}
             </Button>
           </motion.div>
         )}
 
         {(ts.entries || []).length === 0 ? (
-          <div className="py-8 text-center text-sm text-muted-foreground">No entries yet</div>
+          <div className="py-8 text-center text-sm text-muted-foreground">{t("noEntries")}</div>
         ) : (
           <div className="rounded-xl border bg-card divide-y">
             {(ts.entries || []).map((entry) => (
@@ -311,14 +257,14 @@ export default function TimesheetDetailPage() {
                 <div>
                   <p className="text-sm font-medium">{entry.date}</p>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <Badge variant="outline" className="text-[10px]">{entry.shiftType}</Badge>
+                    <Badge variant="outline" className="text-[10px]">{t(entry.shiftType)}</Badge>
                     {entry.description && <span className="text-xs text-muted-foreground">{entry.description}</span>}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-mono tabular-nums">{entry.hours}h</span>
+                  <span className="text-sm font-mono tabular-nums">{t("hoursValue", { hours: String(entry.hours) })}</span>
                   {ts.status === "draft" && (
-                    <Button size="icon" variant="ghost" className="size-7" onClick={() => handleDeleteEntry(entry.id)}>
+                    <Button size="icon" variant="ghost" className="size-7" aria-label={t("delete")} onClick={() => handleDeleteEntry(entry.id)}>
                       <Trash2 className="size-3.5 text-muted-foreground" />
                     </Button>
                   )}
@@ -332,27 +278,23 @@ export default function TimesheetDetailPage() {
       <Dialog open={rejectOpen} onOpenChange={(open) => { if (!rejecting) { setRejectOpen(open); if (!open) setRejectReason(""); } }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Reject timesheet</DialogTitle>
-            <DialogDescription>
-              Let the employee know what to fix. They&apos;ll need to update and resubmit.
-            </DialogDescription>
+            <DialogTitle>{t("rejectSheet")}</DialogTitle>
+            <DialogDescription>{t("rejectSheetDescription")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-1.5">
-            <Label className="text-xs">Reason</Label>
+            <Label className="text-xs">{t("reason")}</Label>
             <Textarea
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
-              placeholder="e.g. Hours on June 18 look too high — please double-check."
+              placeholder={t("rejectSheetExample")}
               rows={4}
               autoFocus
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRejectOpen(false)} disabled={rejecting}>
-              Cancel
-            </Button>
+            <Button variant="outline" onClick={() => setRejectOpen(false)} disabled={rejecting}>{t("cancel")}</Button>
             <Button variant="destructive" onClick={handleReject} disabled={rejecting}>
-              <XCircle className="mr-1.5 size-3.5" /> Reject timesheet
+              <XCircle className="mr-1.5 size-3.5" /> {t("rejectSheet")}
             </Button>
           </DialogFooter>
         </DialogContent>

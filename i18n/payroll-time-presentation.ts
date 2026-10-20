@@ -1,14 +1,21 @@
 import { payrollJson } from "@/lib/money/payroll-ui";
 
 export interface TimeSheetRow {
-  id: string; periodStart: string; periodEnd: string; status: string; totalHours: number;
+  id: string; periodStart: string; periodEnd: string; status: "draft" | "submitted" | "approved" | "rejected"; totalHours: number;
   employee: { name: string; employeeNumber: string } | null;
 }
 export interface LeaveRow {
-  id: string; startDate: string; endDate: string; hours: number; status: string; reason: string | null;
+  id: string; startDate: string; endDate: string; hours: number; status: "pending" | "approved" | "rejected" | "cancelled"; reason: string | null;
   employee: { name: string } | null; policy: { name: string; leaveType: string } | null;
 }
 interface Choice { id: string; name: string }
+export interface TimeEntry {
+  id: string; date: string; hours: number;
+  shiftType: "regular" | "overtime" | "night" | "weekend" | "holiday";
+  description: string | null;
+}
+export interface TimeSheetDetail extends TimeSheetRow { rejectionReason: string | null; entries: TimeEntry[] }
+export interface LeaveDetail extends LeaveRow { rejectionReason: string | null; approvedAt: string | null }
 interface Page<T> { data: T[]; pagination: { total: number; page: number; limit: number; totalPages: number } }
 interface Responses {
   timesheets: Page<TimeSheetRow>; leave: Page<LeaveRow>;
@@ -17,6 +24,13 @@ interface Responses {
   leaveCreated: { request: { id: string; status: string } };
   approved: { request: { id: string; status: string } };
   rejected: { request: { id: string; status: string } };
+  timesheetDetail: { timesheet: TimeSheetDetail };
+  leaveDetail: { request: LeaveDetail };
+  entryCreated: { entry: TimeEntry };
+  deleted: { success: true };
+  submitted: { timesheet: { id: string; status: string } };
+  sheetApproved: { timesheet: { id: string; status: string } };
+  sheetRejected: { timesheet: { id: string; status: string } };
 }
 const invalid = () => new Error("Invalid payroll time response");
 function object(v: unknown): Record<string, unknown> {
@@ -31,6 +45,11 @@ function date(v: unknown) {
 }
 function hours(v: unknown) {
   if (typeof v !== "number" || !Number.isFinite(v) || v < 0 || v > Number.MAX_SAFE_INTEGER || Object.is(v, -0) || Math.fround(v) !== v) throw invalid();
+}
+function nullableText(v: unknown) { if (v !== null) text(v); }
+function entry(v: unknown) {
+  const e = object(v); id(e.id); date(e.date); hours(e.hours); nullableText(e.description);
+  if (!["regular", "overtime", "night", "weekend", "holiday"].includes(e.shiftType as string)) throw invalid();
 }
 function row(value: unknown, leave: boolean) {
   const r = object(value); id(r.id);
@@ -62,11 +81,34 @@ export async function payrollTimeJson<K extends keyof Responses>(response: Respo
       for (const k of ["total", "page", "limit", "totalPages"]) if (!Number.isSafeInteger(p[k]) || (p[k] as number) < 0) throw invalid();
       if ((p.page as number) < 1 || (p.limit as number) < 1 || (p.limit as number) > 100 || p.totalPages !== Math.ceil((p.total as number) / (p.limit as number)) || body.data.length > (p.limit as number)) throw invalid();
     }
+  } else if (kind === "timesheetDetail" || kind === "leaveDetail") {
+    const leave = kind === "leaveDetail", r = object(body[leave ? "request" : "timesheet"]);
+    row(r, leave); nullableText(r.rejectionReason);
+    if (leave) {
+      if (r.approvedAt !== null && (typeof r.approvedAt !== "string" || !/^\d{4}-\d{2}-\d{2}T/.test(r.approvedAt) || !Number.isFinite(Date.parse(r.approvedAt)))) throw invalid();
+    } else {
+      if (!Array.isArray(r.entries)) throw invalid();
+      const seen = new Set();
+      for (const value of r.entries) {
+        entry(value); const e = object(value);
+        if (seen.has(e.id) || (e.date as string) < (r.periodStart as string) || (e.date as string) > (r.periodEnd as string)) throw invalid();
+        seen.add(e.id);
+      }
+    }
+  } else if (kind === "entryCreated") entry(body.entry);
+  else if (kind === "deleted") { if (body.success !== true) throw invalid(); }
+  else if (["submitted", "sheetApproved", "sheetRejected"].includes(kind)) {
+    const r = object(body.timesheet); id(r.id);
+    if (r.status !== (kind === "submitted" ? "submitted" : kind === "sheetApproved" ? "approved" : "rejected")) throw invalid();
   } else {
     const r = object(body[kind === "timesheetCreated" ? "timesheet" : "request"]); id(r.id);
     if (kind !== "timesheetCreated" && r.status !== (kind === "leaveCreated" ? "pending" : kind)) throw invalid();
   }
   return body as unknown as Responses[K];
+}
+
+export function payrollTimeMatch(value: { id: string }, expectedId: string) {
+  if (value.id !== expectedId) throw invalid();
 }
 
 export function payrollTimeOrganization() {

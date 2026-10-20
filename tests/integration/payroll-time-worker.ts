@@ -77,7 +77,10 @@ async function run() {
     const timeKinds: Record<string, Parameters<typeof payrollTimeJson>[1]> = { list_payroll_timesheets: "timesheets", list_payroll_leave_requests: "leave",
       list_payroll_leave_policies: "policies", create_payroll_timesheet: "timesheetCreated",
       create_payroll_leave_request: "leaveCreated", approve_payroll_leave_request: "approved",
-      reject_payroll_leave_request: "rejected" };
+      reject_payroll_leave_request: "rejected", get_payroll_timesheet: "timesheetDetail",
+      get_payroll_leave_request: "leaveDetail", create_payroll_timesheet_entry: "entryCreated",
+      delete_payroll_timesheet_entry: "deleted", submit_payroll_timesheet: "submitted",
+      approve_payroll_timesheet: "sheetApproved", reject_payroll_timesheet: "sheetRejected" };
     const timeKind = timeKinds[name];
     if (timeKind) await payrollTimeJson(Response.json(body), timeKind);
     const kind = name === "get_employee_leave_balances" ? "leave" : null;

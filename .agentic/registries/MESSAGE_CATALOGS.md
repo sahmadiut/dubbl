@@ -1,5 +1,12 @@
 # Message catalog foundation
 
+LOC-087 payroll leave and timesheet list/detail routes use 95 paired
+`PayrollTimeDetail` messages (7,689 keys per locale). See
+[scope and exceptions](PAYROLL_TIME_DETAIL_CATALOGS.md) for checked detail,
+creation, entry and lifecycle feedback, provisional Persian and preserved
+canonical dates, physical hours, exact money and REST/MCP contracts.
+LOC-067/008/002 and native terminology/RTL qualification remain independent.
+
 LOC-086 payroll time and leave uses 75 paired `PayrollTimeLeave` messages
 (7,594 keys per locale). See [scope and exceptions](PAYROLL_TIME_LEAVE_CATALOGS.md)
 for checked list/choice/create/approval feedback, provisional Persian and

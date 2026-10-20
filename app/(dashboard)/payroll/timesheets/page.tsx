@@ -1,12 +1,12 @@
 "use client";
 
-import { payrollJson } from "@/lib/money/payroll-ui";
+import { useTranslations } from "next-intl";
+import { payrollTimeJson, payrollTimeOrganization, type TimeSheetRow } from "@/i18n/payroll-time-presentation";
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { motion, MotionConfig } from "motion/react";
 import { toast } from "sonner";
-import { Clock, Plus, Search, X } from "lucide-react";
+import { Clock, Plus, Search } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,14 +26,7 @@ import { useDebounce } from "@/lib/hooks/use-debounce";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { cn } from "@/lib/utils";
 
-interface Timesheet {
-  id: string;
-  periodStart: string;
-  periodEnd: string;
-  status: string;
-  totalHours: number;
-  employee: { name: string; employeeNumber: string } | null;
-}
+type Timesheet = TimeSheetRow;
 
 type StatusFilter = "all" | "draft" | "submitted" | "approved" | "rejected";
 
@@ -45,6 +38,7 @@ const statusColors: Record<string, string> = {
 };
 
 export default function TimesheetsPage() {
+  const t = useTranslations("PayrollTimeDetail");
   const router = useRouter();
   const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,27 +50,30 @@ export default function TimesheetsPage() {
   const [creating, setCreating] = useState(false);
   const [newTs, setNewTs] = useState({ employeeId: "", periodStart: "", periodEnd: "" });
   const [employees, setEmployees] = useState<{ id: string; name: string }[]>([]);
-  useDocumentTitle("Payroll · Timesheets");
+  useDocumentTitle(t("sheetTitle"));
 
-  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
+  const orgId = payrollTimeOrganization();
 
-  const fetchData = useCallback(() => {
-    if (!orgId) return;
+  const fetchData = useCallback(async (current: () => boolean = () => true, initial = false) => {
+    if (!orgId) { if (current()) setLoading(false); return; }
     const headers = { "x-organization-id": orgId };
+    try {
+      const [rows, choices] = await Promise.all([
+        fetch("/api/v1/payroll/timesheets", { headers }).then(r => payrollTimeJson(r, "timesheets")),
+        fetch("/api/v1/payroll/employees", { headers }).then(r => payrollTimeJson(r, "employees")),
 
-    Promise.all([
-      fetch("/api/v1/payroll/timesheets", { headers }).then((r) => payrollJson(r)),
-      fetch("/api/v1/payroll/employees", { headers }).then((r) => payrollJson(r)),
-    ])
-      .then(([tsData, empData]) => {
-        if (tsData.data) setTimesheets(tsData.data);
-        if (empData.data) setEmployees(empData.data.map((e: { id: string; name: string }) => ({ id: e.id, name: e.name })));
-      })
-      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"))
-      .finally(() => setLoading(false));
-  }, [orgId]);
+      ]);
+      if (!current()) return;
+      setTimesheets(rows.data);
+      setEmployees(choices.data.map(e => ({ id: e.id, name: e.name })));
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+      setMoneyError(null);
+    } catch {
+      if (current()) { if (initial) setMoneyError("loadFailed"); else toast.error(t("loadFailed")); }
+    } finally { if (current()) setLoading(false); }
+  }, [orgId, t]);
+
+  useEffect(() => { let active = true; void fetchData(() => active, true); return () => { active = false; }; }, [fetchData]);
 
   const filtered = timesheets.filter((ts) => {
     if (statusFilter !== "all" && ts.status !== statusFilter) return false;
@@ -88,54 +85,46 @@ export default function TimesheetsPage() {
   });
 
   async function handleCreate() {
-    if (!orgId || !newTs.employeeId) return;
+    if (!orgId || creating || !newTs.employeeId) return;
     setCreating(true);
     try {
-      const res = await fetch("/api/v1/payroll/timesheets", {
+      const data = await payrollTimeJson(await fetch("/api/v1/payroll/timesheets", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify(newTs),
-      });
-      if (res.ok) {
-        const data = await payrollJson(res);
-        toast.success("Timesheet created");
-        setDialogOpen(false);
-        router.push(`/payroll/timesheets/${data.timesheet.id}`);
-      }
-    } catch {
-      toast.error("Failed to create timesheet");
-    } finally {
-      setCreating(false);
-    }
+      }), "timesheetCreated");
+      toast.success(t("sheetCreated")); setDialogOpen(false);
+      router.push(`/payroll/timesheets/${data.timesheet.id}`);
+    } catch { toast.error(t("createSheetFailed")); }
+    finally { setCreating(false); }
   }
 
   if (loading) return <BrandLoader />;
-  if (moneyError) return <p role="alert">{moneyError}</p>;
+  if (moneyError) return <p role="alert">{t("loadFailed")}</p>;
 
   return (
     <ContentReveal className="space-y-6">
-      <PageHeader title="Timesheets" description="Track and manage employee work hours." />
+      <PageHeader title={t("sheetsHeading")} description={t("sheetsDescription")} />
 
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
             <TabsList className="flex-wrap">
-              <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="draft">Draft</TabsTrigger>
-              <TabsTrigger value="submitted">Submitted</TabsTrigger>
-              <TabsTrigger value="approved">Approved</TabsTrigger>
-              <TabsTrigger value="rejected">Rejected</TabsTrigger>
+              <TabsTrigger value="all">{t("all")}</TabsTrigger>
+              <TabsTrigger value="draft">{t("draft")}</TabsTrigger>
+              <TabsTrigger value="submitted">{t("submitted")}</TabsTrigger>
+              <TabsTrigger value="approved">{t("approved")}</TabsTrigger>
+              <TabsTrigger value="rejected">{t("rejected")}</TabsTrigger>
             </TabsList>
           </Tabs>
           <Button size="sm" className="h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700" onClick={() => setDialogOpen(true)}>
-            <Plus className="size-3" />
-            New Timesheet
+            <Plus className="size-3" /> {t("newSheet")}
           </Button>
         </div>
 
         <div className="relative sm:max-w-xs">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-8 text-sm" />
+          <Input placeholder={t("search")} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-8 text-sm" />
         </div>
       </div>
 
@@ -144,8 +133,8 @@ export default function TimesheetsPage() {
           <div className="mx-auto flex size-10 items-center justify-center rounded-xl bg-muted mb-3">
             <Clock className="size-5 text-muted-foreground" />
           </div>
-          <p className="text-sm font-medium">No timesheets found</p>
-          <p className="text-xs text-muted-foreground mt-1">Create a timesheet to start tracking hours</p>
+          <p className="text-sm font-medium">{t("noSheets")}</p>
+          <p className="text-xs text-muted-foreground mt-1">{t("startTracking")}</p>
         </div>
       ) : (
         <div className="rounded-xl border bg-card divide-y">
@@ -160,14 +149,14 @@ export default function TimesheetsPage() {
                   <Clock className="size-4 text-muted-foreground" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-medium truncate">{ts.employee?.name || "Unknown"}</p>
-                  <p className="text-xs text-muted-foreground">{ts.periodStart} to {ts.periodEnd}</p>
+                  <p className="text-sm font-medium truncate">{ts.employee?.name || t("unknown")}</p>
+                  <p className="text-xs text-muted-foreground">{t("dateRange", { start: ts.periodStart, end: ts.periodEnd })}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 shrink-0">
-                <span className="text-sm font-mono tabular-nums">{ts.totalHours}h</span>
+                <span className="text-sm font-mono tabular-nums">{t("hoursValue", { hours: String(ts.totalHours) })}</span>
                 <Badge variant="outline" className={cn("text-[11px]", statusColors[ts.status] || "")}>
-                  {ts.status}
+                  {t(ts.status)}
                 </Badge>
               </div>
             </button>
@@ -177,16 +166,16 @@ export default function TimesheetsPage() {
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>New Timesheet</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("newSheet")}</DialogTitle></DialogHeader>
           <div className="grid gap-4">
             <div className="space-y-2">
-              <Label>Employee</Label>
+              <Label>{t("employee")}</Label>
               <select
                 className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
                 value={newTs.employeeId}
                 onChange={(e) => setNewTs({ ...newTs, employeeId: e.target.value })}
               >
-                <option value="">Select employee...</option>
+                <option value="">{t("selectEmployee")}</option>
                 {employees.map((e) => (
                   <option key={e.id} value={e.id}>{e.name}</option>
                 ))}
@@ -194,19 +183,19 @@ export default function TimesheetsPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Period Start</Label>
+                <Label>{t("periodStart")}</Label>
                 <Input type="date" value={newTs.periodStart} onChange={(e) => setNewTs({ ...newTs, periodStart: e.target.value })} />
               </div>
               <div className="space-y-2">
-                <Label>Period End</Label>
+                <Label>{t("periodEnd")}</Label>
                 <Input type="date" value={newTs.periodEnd} onChange={(e) => setNewTs({ ...newTs, periodEnd: e.target.value })} />
               </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>{t("cancel")}</Button>
             <Button onClick={handleCreate} disabled={creating} className="bg-emerald-600 hover:bg-emerald-700">
-              {creating ? "Creating..." : "Create"}
+              {creating ? t("creating") : t("create")}
             </Button>
           </DialogFooter>
         </DialogContent>

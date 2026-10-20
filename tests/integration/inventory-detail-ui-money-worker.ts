@@ -12,6 +12,7 @@ import { POST as adjust } from "../../app/api/v1/inventory/[id]/adjust/route";
 import { registerInventoryMasterTools } from "../../lib/mcp/tools/inventory-master";
 import { registerInventoryMovementTools } from "../../lib/mcp/tools/inventory-movements";
 import { inventoryDetailMoney, inventoryWriteDown } from "../../lib/money/inventory-detail-ui";
+import { inventoryItemRow } from "../../i18n/inventory-item-presentation";
 
 async function run() {
   const [owner] = await db.insert(users).values({ email: "inventory-ui@example.test" }).returning();
@@ -33,12 +34,16 @@ async function run() {
     });
     const params = (id: string) => ({ params: Promise.resolve({ id }) });
     const data = async (response: Response, status = 200) => {
-      const value = await response.json(); assert.equal(response.status, status, JSON.stringify(value)); return value;
+      const value = await response.json(); assert.equal(response.status, status, JSON.stringify(value));
+      if (status < 300 && value.inventoryItem) inventoryItemRow(value.inventoryItem);
+      return value;
     };
     const call = async (name: string, args: Record<string, unknown>) => {
       const result = await client.callTool({ name, arguments: args });
       const value = JSON.parse((result.content as { text: string }[])[0].text);
-      assert.ok(!result.isError, JSON.stringify(value)); return value;
+      assert.ok(!result.isError, JSON.stringify(value));
+      if (value.inventoryItem) inventoryItemRow(value.inventoryItem);
+      return value;
     };
     try {
       const payload = { code: "LOW", name: "Low digits", quantityOnHand: 3, purchasePriceMinor: "3000000001", salePriceMinor: "3000000002" };

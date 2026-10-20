@@ -98,6 +98,7 @@ import { CategoryPicker } from "@/components/dashboard/category-picker";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { payrollJson } from "@/lib/money/payroll-ui";
 import { payrollCentsInput, payrollBasisPointsInput } from "@/lib/money/payroll-input";
+import { inventoryItemJson } from "@/i18n/inventory-item-presentation";
 import { inventoryUiItem, inventoryTransferLines } from "@/lib/money/inventory-ui";
 import { catalogPriceMinor, catalogWholeInput } from "@/lib/money/catalog-input";
 import { budgetMoney as formatMoney, budgetDecimal, budgetDistribute, budgetPerPeriod, budgetInput, budgetLinesInput, budgetDraftInvalid, budgetRemoveDraftLine, accrualUiInput, accrualUiPeriods } from "@/lib/money/budget-ui";
@@ -1110,6 +1111,7 @@ function EntryDrawer({ open, onClose }: { open: boolean; onClose: () => void }) 
 // Inventory Drawer
 // ---------------------------------------------------------------------------
 function InventoryDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useTranslations("InventoryItems");
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [categoryId, setCategoryId] = useState("");
@@ -1118,10 +1120,10 @@ function InventoryDrawer({ open, onClose }: { open: boolean; onClose: () => void
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setSaving(true);
     const form = new FormData(e.currentTarget);
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
+    setSaving(true);
 
     try {
       const res = await fetch("/api/v1/inventory", {
@@ -1139,17 +1141,12 @@ function InventoryDrawer({ open, onClose }: { open: boolean; onClose: () => void
           reorderPoint: catalogWholeInput(form.get("reorderPoint") as string || "0"),
         }),
       });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to create item");
-      }
-      const data = await res.json();
-      const item = inventoryUiItem(data.inventoryItem);
-      toast.success("Inventory item created");
+      const item = inventoryUiItem(await inventoryItemJson(res));
+      toast.success(t("created"));
       onClose();
       router.push(`/inventory/${item.id}`);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create item");
+    } catch {
+      toast.error(t("createFailed"));
     } finally {
       setSaving(false);
     }
@@ -1162,33 +1159,33 @@ function InventoryDrawer({ open, onClose }: { open: boolean; onClose: () => void
           <div className="flex items-center gap-3">
             <DrawerIcon><Package className="size-5" /></DrawerIcon>
             <div>
-              <SheetTitle className="text-lg">New Inventory Item</SheetTitle>
-              <SheetDescription>Add a product or item to track stock.</SheetDescription>
+              <SheetTitle className="text-lg">{t("newInventoryItem")}</SheetTitle>
+              <SheetDescription>{t("createDescription")}</SheetDescription>
             </div>
           </div>
         </SheetHeader>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
             <div className="space-y-4">
-              <SectionLabel>Item Info</SectionLabel>
+              <SectionLabel>{t("itemInfo")}</SectionLabel>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="drawer-inv-code">Code *</Label>
+                  <Label htmlFor="drawer-inv-code">{t("codeRequired")}</Label>
                   <Input id="drawer-inv-code" name="code" required placeholder="ITEM-001" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="drawer-inv-name">Name *</Label>
-                  <Input id="drawer-inv-name" name="name" required placeholder="Item name" />
+                  <Label htmlFor="drawer-inv-name">{t("nameRequired")}</Label>
+                  <Input id="drawer-inv-name" name="name" required placeholder={t("itemName")} />
                 </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Category</Label>
+                  <Label>{t("category")}</Label>
                   <CategoryPicker value={categoryId} onChange={setCategoryId} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="drawer-inv-sku">SKU</Label>
-                  <Input id="drawer-inv-sku" name="sku" placeholder="Stock keeping unit" />
+                  <Label htmlFor="drawer-inv-sku">{t("sku")}</Label>
+                  <Input id="drawer-inv-sku" name="sku" placeholder={t("skuDescription")} />
                 </div>
               </div>
             </div>
@@ -1196,14 +1193,14 @@ function InventoryDrawer({ open, onClose }: { open: boolean; onClose: () => void
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Pricing</SectionLabel>
+              <SectionLabel>{t("pricing")}</SectionLabel>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="drawer-inv-purchase">Purchase Price</Label>
+                  <Label htmlFor="drawer-inv-purchase">{t("purchasePrice")}</Label>
                   <CurrencyInput id="drawer-inv-purchase" name="purchasePrice" prefix="$" value={invPurchasePrice} onChange={setInvPurchasePrice} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="drawer-inv-sale">Sale Price</Label>
+                  <Label htmlFor="drawer-inv-sale">{t("salePrice")}</Label>
                   <CurrencyInput id="drawer-inv-sale" name="salePrice" prefix="$" value={invSalePrice} onChange={setInvSalePrice} />
                 </div>
               </div>
@@ -1212,14 +1209,14 @@ function InventoryDrawer({ open, onClose }: { open: boolean; onClose: () => void
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Stock</SectionLabel>
+              <SectionLabel>{t("stock")}</SectionLabel>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="drawer-inv-qty">Initial Quantity</Label>
+                  <Label htmlFor="drawer-inv-qty">{t("initialQuantity")}</Label>
                   <Input id="drawer-inv-qty" name="quantityOnHand" type="number" min={0} defaultValue={0} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="drawer-inv-reorder">Reorder Point</Label>
+                  <Label htmlFor="drawer-inv-reorder">{t("reorderPoint")}</Label>
                   <Input id="drawer-inv-reorder" name="reorderPoint" type="number" min={0} defaultValue={0} />
                 </div>
               </div>
@@ -1228,11 +1225,11 @@ function InventoryDrawer({ open, onClose }: { open: boolean; onClose: () => void
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Description</SectionLabel>
-              <Textarea name="description" placeholder="Item description..." rows={3} />
+              <SectionLabel>{t("description")}</SectionLabel>
+              <Textarea name="description" placeholder={t("itemDescription")} rows={3} />
             </div>
           </div>
-          <DrawerFooter onClose={onClose} saving={saving} label="Create Item" />
+          <DrawerFooter onClose={onClose} saving={saving} label={t("createItem")} cancelLabel={t("cancel")} creatingLabel={t("creating")} />
         </form>
       </SheetContent>
     </Sheet>

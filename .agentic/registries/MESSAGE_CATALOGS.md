@@ -1,5 +1,11 @@
 # Message catalog foundation
 
+LOC-073 item list/workspace/details/history, InventoryDrawer and item picker use
+208 paired `InventoryItems` messages (6,581 keys per locale). See
+[inventory item scope and exceptions](INVENTORY_ITEM_CATALOGS.md) for canonical
+CSV/money/REST/MCP preservation, safe response validation and barcode escaping.
+LOC-066/008/002 and native terminology/RTL qualification remain independent.
+
 LOC-007 independently accepts the combined accounting, sales, purchasing,
 contacts and tax catalogs in [combined acceptance](ACCOUNTING_SALES_PURCHASING_CATALOG_ACCEPTANCE.md):
 all 87 route files and owned shared forms, 53 namespaces and 4,142 paired messages.

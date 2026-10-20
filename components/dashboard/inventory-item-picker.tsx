@@ -1,5 +1,8 @@
 "use client";
 
+import { inventoryItemsJson, inventoryItemJson } from "@/i18n/inventory-item-presentation";
+import { useTranslations } from "next-intl";
+
 import { inventoryUiItem } from "@/lib/money/inventory-ui";
 import { useState, useEffect, useRef } from "react";
 import { Check, ChevronsUpDown, Loader2, Package } from "lucide-react";
@@ -34,7 +37,8 @@ interface InventoryItemPickerProps {
   placeholder?: string;
 }
 
-export function InventoryItemPicker({ value, onChange, placeholder = "Select item..." }: InventoryItemPickerProps) {
+export function InventoryItemPicker({ value, onChange, placeholder }: InventoryItemPickerProps) {
+  const t = useTranslations("InventoryItems");
   const [open, setOpen] = useState(false);
   const [itemsOrg, setItemsOrg] = useState<string | null>(null);
   const [selectedOrg, setSelectedOrg] = useState<string | null>(null);
@@ -59,21 +63,20 @@ export function InventoryItemPicker({ value, onChange, placeholder = "Select ite
     fetch(`/api/v1/inventory?${params}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then(inventoryItemsJson)
       .then((data) => {
         if (!cancelled && id === fetchIdRef.current) {
-          if (!Array.isArray(data.data)) throw new Error("Items unavailable");
-          setItems(data.data.map(inventoryUiItem));
+          setItems(data.map(inventoryUiItem));
           setItemsOrg(orgId);
           setReadError("");
           setLoading(false);
         }
       })
       .catch(() => {
-        if (!cancelled && id === fetchIdRef.current) { setLoading(false); setItems([]); setReadError("Unable to verify inventory items."); }
+        if (!cancelled && id === fetchIdRef.current) { setLoading(false); setItems([]); setReadError(t("pickerReadFailed")); }
       });
     return () => { cancelled = true; };
-  }, [open, debouncedSearch, orgId]);
+  }, [open, debouncedSearch, orgId, t]);
 
   // Resolve the selected item label if we have a value but no match yet
   useEffect(() => {
@@ -84,18 +87,17 @@ export function InventoryItemPicker({ value, onChange, placeholder = "Select ite
     fetch(`/api/v1/inventory/${value}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
+      .then(inventoryItemJson)
       .then((data) => {
         if (!cancelled) {
-          if (!data.inventoryItem) throw new Error("Item unavailable");
-          setSelected(inventoryUiItem(data.inventoryItem));
+          setSelected(inventoryUiItem(data));
           setSelectedOrg(orgId);
           setReadError("");
         }
       })
-      .catch(() => { if (!cancelled) { setSelected(null); setReadError("Unable to verify selected item."); } });
+      .catch(() => { if (!cancelled) { setSelected(null); setReadError(t("selectedReadFailed")); } });
     return () => { cancelled = true; };
-  }, [value, items, itemsOrg, orgId, selected, selectedOrg]);
+  }, [value, items, itemsOrg, orgId, selected, selectedOrg, t]);
 
   // Derive selected from items list or keep the fetched resolution
   const availableItems = itemsOrg === orgId ? items : [];
@@ -103,7 +105,7 @@ export function InventoryItemPicker({ value, onChange, placeholder = "Select ite
 
   function handleOpenChange(nextOpen: boolean) {
     setOpen(nextOpen);
-    if (nextOpen) {
+    if (nextOpen && orgId) {
       setLoading(true);
     } else {
       setSearch("");
@@ -124,7 +126,7 @@ export function InventoryItemPicker({ value, onChange, placeholder = "Select ite
               {selectedItem.name} <span className="text-muted-foreground">({selectedItem.code})</span>
             </span>
           ) : (
-            <span className="text-muted-foreground">{placeholder}</span>
+            <span className="text-muted-foreground">{placeholder ?? t("selectItem")}</span>
           )}
           <ChevronsUpDown className="ml-auto size-4 shrink-0 opacity-50" />
         </Button>
@@ -132,7 +134,7 @@ export function InventoryItemPicker({ value, onChange, placeholder = "Select ite
       <PopoverContent className="p-0" align="start">
         <Command shouldFilter={false}>
           <CommandInput
-            placeholder="Search items..."
+            placeholder={t("searchItems")}
             value={search}
             onValueChange={(v) => { setSearch(v); setLoading(true); }}
           />
@@ -147,7 +149,7 @@ export function InventoryItemPicker({ value, onChange, placeholder = "Select ite
                 <div className="flex flex-col items-center gap-1.5 py-2">
                   <Package className="size-4 text-muted-foreground" />
                   <span className="text-muted-foreground">
-                    {search ? "No items match your search" : "No items found"}
+                    {search ? t("noMatches") : t("noItems")}
                   </span>
                 </div>
               </CommandEmpty>
@@ -167,7 +169,7 @@ export function InventoryItemPicker({ value, onChange, placeholder = "Select ite
                     <div className="flex flex-col min-w-0">
                       <span className="truncate text-sm">{item.name}</span>
                       <span className="text-xs text-muted-foreground truncate">
-                        {item.code}{item.sku ? ` · ${item.sku}` : ""} · Qty: {item.quantityOnHand}
+                        {item.code}{item.sku ? ` · ${item.sku}` : ""} · {t("itemQuantity", { count: item.quantityOnHand })}
                       </span>
                     </div>
                   </CommandItem>

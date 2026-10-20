@@ -17,6 +17,7 @@ import { GET as reorder } from "../../app/api/v1/inventory/reorder-suggestions/r
 import { registerAllTools } from "../../lib/mcp/tools";
 import { registerInventoryMasterTools } from "../../lib/mcp/tools/inventory-master";
 import { createInventoryItem, updateInventoryItem, deleteInventoryItem, writeInventoryCategory, deleteInventoryCategory, bulkInventoryItems, importInventoryCsv } from "../../lib/api/inventory-master";
+import { inventoryItemRow, inventoryListJson, inventoryBulkJson, inventoryImportJson } from "../../i18n/inventory-item-presentation";
 
 async function mcp(ctx: AuthContext, full = false) {
   const server = new McpServer({ name: "Master fixture", version: "1" });
@@ -52,7 +53,16 @@ async function run() {
   const req = (body: unknown = {}, key = keys.a, query = "") => new Request(`http://fixture.test/api/v1/inventory${query}`, { method: "POST",
     headers: { authorization: `Bearer ${key}`, "content-type": "application/json", "x-organization-id": b.id }, body: JSON.stringify(body) });
   const cp = (id: string) => ({ params: Promise.resolve({ id }) });
-  const data = async (r: Response, status = 200) => { const body = await r.json(); assert.equal(r.status, status, JSON.stringify(body)); return body; };
+  const data = async (r: Response, status = 200) => {
+    const body = await r.json(); assert.equal(r.status, status, JSON.stringify(body));
+    if (status < 300) {
+      if (body.inventoryItem) inventoryItemRow(body.inventoryItem);
+      if (body.summary) await inventoryListJson(Response.json(body));
+      if (body.affected !== undefined) await inventoryBulkJson(Response.json(body));
+      if (body.created !== undefined) await inventoryImportJson(Response.json(body));
+    }
+    return body;
+  };
   const snapshot = async () => Promise.all(["inventory_item", "inventory_category", "inventory_movement", "warehouse_stock", "inventory_cost_layer", "journal_entry", "journal_line", "chart_account", "audit_log"].map(t =>
     db.execute(sql.raw(`select coalesce(jsonb_agg(to_jsonb(t)::text order by t.id),'[]'::jsonb) as rows from ${t} t`)).then(r => r.rows)));
   const denied = async (fn: () => Promise<Response>, status: number) => { const before = await snapshot(); await data(await fn(), status); assert.deepEqual(await snapshot(), before); };

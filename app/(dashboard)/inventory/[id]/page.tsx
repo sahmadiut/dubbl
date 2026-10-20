@@ -1,5 +1,8 @@
 "use client";
 
+import { inventoryItemJson, inventoryDeleteJson, inventoryWarehouseJson, inventoryPrintEscape } from "@/i18n/inventory-item-presentation";
+import { useTranslations } from "next-intl";
+
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -41,6 +44,7 @@ interface WarehouseStockEntry {
 }
 
 export default function InventoryItemDetailsPage() {
+  const t = useTranslations("InventoryItems");
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { item, setItem } = useInventoryItem();
@@ -56,25 +60,28 @@ export default function InventoryItemDetailsPage() {
   const [revalueReason, setRevalueReason] = useState("");
   const [revalueBusy, setRevalueBusy] = useState(false);
   const { confirm, dialog: confirmDialog } = useConfirm();
-  useDocumentTitle("Inventory · Product Details");
+  useDocumentTitle(t("detailsTitle"));
 
   const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
 
   // Fetch per-warehouse stock
   useEffect(() => {
     if (!orgId) return;
+    let cancelled = false;
     fetch(`/api/v1/inventory/${id}/warehouse-stock`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => r.json())
-      .then((data) => setWarehouseStocks(data.data || []));
-  }, [id, orgId]);
+      .then(inventoryWarehouseJson)
+      .then((data) => { if (!cancelled) setWarehouseStocks(data); })
+      .catch(() => { if (!cancelled) toast.error(t("historyReadFailed")); });
+    return () => { cancelled = true; };
+  }, [id, orgId, t]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (!orgId) return;
     setSaving(true);
     const form = new FormData(e.currentTarget);
-    if (!orgId) return;
 
     try {
       const res = await fetch(`/api/v1/inventory/${id}`, {
@@ -95,14 +102,12 @@ export default function InventoryItemDetailsPage() {
         }),
       });
 
-      if (!res.ok) throw new Error("Failed to update");
-      const data = await res.json();
-      const updated = inventoryUiItem(data.inventoryItem);
+      const updated = inventoryUiItem(await inventoryItemJson(res));
       setItem(() => updated);
-      setEntityTitle(data.inventoryItem.name);
-      toast.success("Item updated");
+      setEntityTitle(updated.name);
+      toast.success(t("updated"));
     } catch {
-      toast.error("Failed to update item");
+      toast.error(t("updateFailed"));
     } finally {
       setSaving(false);
     }
@@ -110,20 +115,21 @@ export default function InventoryItemDetailsPage() {
 
   async function handleDelete() {
     const confirmed = await confirm({
-      title: "Delete this inventory item?",
-      description: "This action cannot be undone.",
-      confirmLabel: "Delete",
+      title: t("deleteItemTitle"),
+      description: t("irreversible"),
+      confirmLabel: t("delete"),
       destructive: true,
     });
     if (!confirmed) return;
     if (!orgId) return;
 
-    await fetch(`/api/v1/inventory/${id}`, {
-      method: "DELETE",
-      headers: { "x-organization-id": orgId },
-    });
-    toast.success("Item deleted");
-    router.push("/inventory");
+    try {
+      await inventoryDeleteJson(await fetch(`/api/v1/inventory/${id}`, {
+        method: "DELETE", headers: { "x-organization-id": orgId },
+      }));
+      toast.success(t("deleted"));
+      router.push("/inventory");
+    } catch { toast.error(t("deleteFailed")); }
   }
 
   const currentBookValue = inventoryDetailMoney(item).carrying;
@@ -138,20 +144,20 @@ export default function InventoryItemDetailsPage() {
   async function handleRevalue() {
     if (!orgId) return;
     let newTotalValueMinor: string | undefined;
-    try { newTotalValueMinor = catalogPriceMinor(revalueValue); } catch { toast.error("Enter an exact value with at most two decimals"); return; }
+    try { newTotalValueMinor = catalogPriceMinor(revalueValue); } catch { toast.error(t("exactValue")); return; }
     if (newTotalValueMinor === undefined || !revalueReason.trim()) {
-      toast.error("Enter the new value and a reason");
+      toast.error(t("revalueRequired"));
       return;
     }
     if (BigInt(newTotalValueMinor) === BigInt(currentBookValue)) {
-      toast.error("That's the same as the current value");
+      toast.error(t("sameValue"));
       return;
     }
 
     const confirmed = await confirm({
-      title: "Revalue this stock?",
-      description: `Its book value will change from ${formatMoney(currentBookValue)} to ${formatMoney(BigInt(newTotalValueMinor))}. The count stays the same.`,
-      confirmLabel: "Revalue",
+      title: t("revalueTitle"),
+      description: t("revalueConfirm", { from: formatMoney(currentBookValue), to: formatMoney(BigInt(newTotalValueMinor)) }),
+      confirmLabel: t("revalue"),
     });
     if (!confirmed) return;
 
@@ -166,19 +172,14 @@ export default function InventoryItemDetailsPage() {
           reason: revalueReason,
         }),
       });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Couldn't revalue the stock");
-      }
-      const data = await res.json();
-      const updated = inventoryUiItem(data.inventoryItem);
+      const updated = inventoryUiItem(await inventoryItemJson(res));
       setItem(() => updated);
       setRevalueOpen(false);
       setRevalueValue("");
       setRevalueReason("");
-      toast.success("Stock revalued");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't revalue the stock");
+      toast.success(t("revalued"));
+    } catch {
+      toast.error(t("revalueFailed"));
     } finally {
       setRevalueBusy(false);
     }
@@ -197,7 +198,7 @@ export default function InventoryItemDetailsPage() {
         margin: 10,
       });
     } catch {
-      toast.error("Could not generate barcode for this value");
+      toast.error(t("barcodeFailed"));
       return;
     }
 
@@ -205,10 +206,10 @@ export default function InventoryItemDetailsPage() {
     if (!printWindow) return;
     printWindow.document.write(`
       <html>
-        <head><title>${item.name} - Barcode</title></head>
+        <head><title>${inventoryPrintEscape(t("barcodeTitle", { name: item.name }))}</title></head>
         <body style="display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;flex-direction:column;gap:8px">
-          <h3 style="margin:0;font-family:sans-serif">${item.name}</h3>
-          <img src="${canvas.toDataURL()}" />
+          <h3 style="margin:0;font-family:sans-serif">${inventoryPrintEscape(item.name)}</h3>
+          <img src="${canvas.toDataURL()}" alt="${inventoryPrintEscape(t("barcode"))}" />
           <script>window.print();window.close();</script>
         </body>
       </html>
@@ -237,24 +238,24 @@ export default function InventoryItemDetailsPage() {
   return (
     <>
       <form onSubmit={handleSubmit} className="space-y-10">
-        <Section title="General" description="Item code, name, and identifiers.">
+        <Section title={t("general")} description={t("generalDescription")}>
           <div className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label className="text-xs" htmlFor="code">Code</Label>
+                <Label className="text-xs" htmlFor="code">{t("code")}</Label>
                 <Input id="code" name="code" required defaultValue={item.code} />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs" htmlFor="name">Name</Label>
+                <Label className="text-xs" htmlFor="name">{t("name")}</Label>
                 <Input id="name" name="name" required defaultValue={item.name} />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Category</Label>
+                <Label className="text-xs">{t("category")}</Label>
                 <CategoryPicker value={categoryId} onChange={setCategoryId} />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs" htmlFor="sku">SKU</Label>
-                <Input id="sku" name="sku" defaultValue={item.sku || ""} placeholder="Optional" />
+                <Label className="text-xs" htmlFor="sku">{t("sku")}</Label>
+                <Input id="sku" name="sku" defaultValue={item.sku || ""} placeholder={t("optional")} />
               </div>
             </div>
           </div>
@@ -262,10 +263,10 @@ export default function InventoryItemDetailsPage() {
 
         <div className="h-px bg-border" />
 
-        <Section title="Pricing" description="What this item costs you and what you sell it for.">
+        <Section title={t("pricing")} description={t("pricingDescription")}>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label className="text-xs" htmlFor="purchasePrice">What it costs you</Label>
+              <Label className="text-xs" htmlFor="purchasePrice">{t("purchaseCost")}</Label>
               <CurrencyInput
                 id="purchasePrice"
                 prefix="$"
@@ -274,7 +275,7 @@ export default function InventoryItemDetailsPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs" htmlFor="salePrice">What you sell it for</Label>
+              <Label className="text-xs" htmlFor="salePrice">{t("sellingFor")}</Label>
               <CurrencyInput
                 id="salePrice"
                 prefix="$"
@@ -287,10 +288,10 @@ export default function InventoryItemDetailsPage() {
 
         <div className="h-px bg-border" />
 
-        <Section title="Stock" description="Get an alert when you're running low.">
+        <Section title={t("stock")} description={t("stockDescription")}>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label className="text-xs" htmlFor="reorderPoint">Alert me when stock drops to</Label>
+              <Label className="text-xs" htmlFor="reorderPoint">{t("alertThreshold")}</Label>
               <Input
                 id="reorderPoint"
                 name="reorderPoint"
@@ -304,13 +305,13 @@ export default function InventoryItemDetailsPage() {
 
         <div className="h-px bg-border" />
 
-        <Section title="Description" description="Optional notes about this item.">
+        <Section title={t("description")} description={t("descriptionHelp")}>
           <Textarea
             id="description"
             name="description"
             defaultValue={item.description || ""}
             rows={3}
-            placeholder="Item description..."
+            placeholder={t("itemDescription")}
           />
         </Section>
 
@@ -324,13 +325,11 @@ export default function InventoryItemDetailsPage() {
             {saving ? (
               <>
                 <Loader2 className="mr-1.5 size-3.5 animate-spin" />
-                Saving...
-              </>
+                {t("saving")}</>
             ) : (
               <>
                 <Save className="mr-1.5 size-3.5" />
-                Save Changes
-              </>
+                {t("saveChanges")}</>
             )}
           </Button>
         </div>
@@ -341,7 +340,7 @@ export default function InventoryItemDetailsPage() {
         <>
           <div className="h-px bg-border mt-10" />
           <div className="mt-10">
-          <Section title="Stock by location" description="How many units you have at each location.">
+          <Section title={t("stockByLocation")} description={t("stockByLocationHelp")}>
             <div className="rounded-lg border divide-y">
               {warehouseStocks.map((ws) => (
                 <div key={ws.id} className="flex items-center justify-between px-4 py-3">
@@ -369,15 +368,14 @@ export default function InventoryItemDetailsPage() {
       {/* Barcode */}
       <div className="h-px bg-border mt-10" />
       <div className="mt-10">
-        <Section title="Barcode" description="Generated from SKU or item code.">
+        <Section title={t("barcode")} description={t("barcodeHelp")}>
           <div className="flex flex-col items-start gap-3">
             <div className="rounded-lg border bg-white p-3">
               <canvas ref={barcodeRef} />
             </div>
             <Button type="button" size="sm" variant="outline" onClick={printBarcode}>
               <Printer className="mr-1.5 size-3.5" />
-              Print Barcode
-            </Button>
+              {t("printBarcode")}</Button>
           </div>
         </Section>
       </div>
@@ -386,31 +384,30 @@ export default function InventoryItemDetailsPage() {
       <div className="h-px bg-border mt-10" />
       <div className="mt-10">
         <Section
-          title="Revalue stock"
-          description="Set what this stock is worth in your books (e.g. mark to market). The count stays the same — only its value changes."
+          title={t("revalueStock")}
+          description={t("revalueHelp")}
         >
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-md border px-4 py-3">
             <div>
-              <p className="text-xs text-muted-foreground">Current value in your books</p>
+              <p className="text-xs text-muted-foreground">{t("currentBookValue")}</p>
               <p className="text-lg font-bold font-mono tabular-nums truncate">
                 {formatMoney(currentBookValue)}
               </p>
             </div>
             <Button type="button" size="sm" variant="outline" onClick={openRevalue}>
               <Scale className="mr-1.5 size-3.5" />
-              Revalue stock
-            </Button>
+              {t("revalueStock")}</Button>
           </div>
         </Section>
       </div>
 
       <div className="h-px bg-border mt-10" />
       <div className="mt-10">
-        <Section title="Danger zone" description="Irreversible actions for this item.">
+        <Section title={t("dangerZone")} description={t("dangerHelp")}>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-md border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900/50 dark:bg-red-950/20">
           <div>
-            <p className="text-sm font-medium text-red-700 dark:text-red-400">Delete this item</p>
-            <p className="text-xs text-red-600/70 dark:text-red-400/70">Once deleted, this cannot be undone.</p>
+            <p className="text-sm font-medium text-red-700 dark:text-red-400">{t("deleteThisItem")}</p>
+            <p className="text-xs text-red-600/70 dark:text-red-400/70">{t("deleteHelp")}</p>
           </div>
           <Button
             type="button"
@@ -420,8 +417,7 @@ export default function InventoryItemDetailsPage() {
             className="border-red-300 text-red-600 hover:bg-red-100 hover:text-red-700 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/40"
           >
             <Trash2 className="mr-1.5 size-3.5" />
-            Delete Item
-          </Button>
+            {t("deleteItem")}</Button>
         </div>
       </Section>
       </div>
@@ -430,22 +426,19 @@ export default function InventoryItemDetailsPage() {
       <Sheet open={revalueOpen} onOpenChange={setRevalueOpen}>
         <SheetContent>
           <SheetHeader>
-            <SheetTitle>Revalue stock</SheetTitle>
+            <SheetTitle>{t("revalueStock")}</SheetTitle>
             <SheetDescription>
-              Set what this stock is worth in your books. Use this when its value
-              has changed (for example, market price moved). The count stays the
-              same — only its value changes.
-            </SheetDescription>
+              {t("revalueSheetHelp")}</SheetDescription>
           </SheetHeader>
           <div className="space-y-4 px-4">
             <div className="rounded-lg bg-muted p-3">
-              <p className="text-xs text-muted-foreground">Current value in your books</p>
+              <p className="text-xs text-muted-foreground">{t("currentBookValue")}</p>
               <p className="text-xl font-bold font-mono tabular-nums truncate">
                 {formatMoney(currentBookValue)}
               </p>
             </div>
             <div className="space-y-2">
-              <Label>New value</Label>
+              <Label>{t("newValue")}</Label>
               <CurrencyInput
                 prefix="$"
                 value={revalueValue}
@@ -453,19 +446,18 @@ export default function InventoryItemDetailsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Reason *</Label>
+              <Label>{t("reasonRequired")}</Label>
               <Input
                 value={revalueReason}
                 onChange={(e) => setRevalueReason(e.target.value)}
-                placeholder="e.g. Market price changed, revaluation"
+                placeholder={t("revalueExample")}
               />
             </div>
           </div>
           <SheetFooter>
-            <Button variant="outline" onClick={() => setRevalueOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setRevalueOpen(false)}>{t("cancel")}</Button>
             <Button onClick={handleRevalue} disabled={revalueBusy} className="bg-emerald-600 hover:bg-emerald-700">
-              Revalue stock
-            </Button>
+              {t("revalueStock")}</Button>
           </SheetFooter>
         </SheetContent>
       </Sheet>

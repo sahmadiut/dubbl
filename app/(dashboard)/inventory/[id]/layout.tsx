@@ -1,5 +1,8 @@
 "use client";
 
+import { inventoryItemJson, inventoryItemRow, inventoryWriteDownError } from "@/i18n/inventory-item-presentation";
+import { useTranslations } from "next-intl";
+
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter, usePathname } from "next/navigation";
 import { motion } from "motion/react";
@@ -63,10 +66,10 @@ export function useInventoryItem() {
 }
 
 const PAGE_TABS = [
-  { value: "details", label: "Details", icon: Settings2, href: (id: string) => `/inventory/${id}` },
-  { value: "history", label: "History", icon: Clock, href: (id: string) => `/inventory/${id}/history` },
-  { value: "suppliers", label: "Suppliers", icon: Truck, href: (id: string) => `/inventory/${id}/suppliers` },
-  { value: "variants", label: "Variants", icon: Layers, href: (id: string) => `/inventory/${id}/variants` },
+  { value: "details", label: "details", icon: Settings2, href: (id: string) => `/inventory/${id}` },
+  { value: "history", label: "history", icon: Clock, href: (id: string) => `/inventory/${id}/history` },
+  { value: "suppliers", label: "suppliers", icon: Truck, href: (id: string) => `/inventory/${id}/suppliers` },
+  { value: "variants", label: "variants", icon: Layers, href: (id: string) => `/inventory/${id}/variants` },
 ] as const;
 
 export default function InventoryItemLayout({ children }: { children: React.ReactNode }) {
@@ -76,6 +79,7 @@ export default function InventoryItemLayout({ children }: { children: React.Reac
 }
 
 function InventoryItemWorkspace({ children, id, orgId }: { children: React.ReactNode; id: string; orgId: string | null }) {
+  const t = useTranslations("InventoryItems");
   const router = useRouter();
   const pathname = usePathname();
   const [item, setItemRaw] = useState<InventoryItemDetail | null>(null);
@@ -104,20 +108,19 @@ function InventoryItemWorkspace({ children, id, orgId }: { children: React.React
       headers: { "x-organization-id": orgId }, signal: controller.signal,
     })
       .then(async (r) => {
-        const data = await r.json();
-        if (!r.ok || !data.inventoryItem) throw new Error(data.error || "Unable to load inventory item");
+        const data = { inventoryItem: await inventoryItemJson(r) };
         inventoryDetailMoney(data.inventoryItem);
         if (!controller.signal.aborted) {
           setItemRaw(data.inventoryItem);
           setEntityTitle(data.inventoryItem.name);
         }
       })
-      .catch((error) => {
-        if (!controller.signal.aborted) setReadError(error instanceof Error ? error.message : "Unable to read inventory money");
+      .catch(() => {
+        if (!controller.signal.aborted) setReadError(t("readFailed"));
       })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [id, orgId]);
+  }, [id, orgId, t]);
 
   useEffect(() => fetchItem(), [fetchItem]);
 
@@ -126,11 +129,11 @@ function InventoryItemWorkspace({ children, id, orgId }: { children: React.React
   };
 
   function adoptItem(value: InventoryItemDetail) {
-    try { inventoryDetailMoney(value); }
+    try { inventoryItemRow(value); }
     catch (error) {
       readController.current?.abort();
       setLoading(false);
-      setReadError("Saved inventory money could not be verified. Reload the item before continuing.");
+      setReadError(t("savedUnverified"));
       throw error;
     }
     readController.current?.abort();
@@ -142,9 +145,9 @@ function InventoryItemWorkspace({ children, id, orgId }: { children: React.React
     if (!orgId) return;
     let adj: number | undefined;
     try { adj = catalogWholeInput(adjustment, true); }
-    catch { toast.error("Enter a signed whole-unit adjustment"); return; }
+    catch { toast.error(t("signedAdjustment")); return; }
     if (!adj || !adjustReason.trim()) {
-      toast.error("Enter a valid adjustment and reason");
+      toast.error(t("adjustRequired"));
       return;
     }
 
@@ -155,27 +158,23 @@ function InventoryItemWorkspace({ children, id, orgId }: { children: React.React
         body: JSON.stringify({ adjustment: adj, reason: adjustReason }),
       });
 
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to adjust");
-      }
-
-      const data = await res.json();
-      adoptItem(data.inventoryItem);
+      adoptItem(await inventoryItemJson(res));
       setAdjustOpen(false);
       setAdjustment("");
       setAdjustReason("");
-      toast.success(`Count changed by ${adj > 0 ? "+" : ""}${adj}`);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't change the count");
+      toast.success(t("countChanged", { adjustment: `${adj > 0 ? "+" : ""}${adj}` }));
+    } catch {
+      toast.error(t("adjustFailed"));
     }
   }
 
   async function handleWriteDown() {
     if (!orgId || !item || writeDownBusy || localStorage.getItem("activeOrgId") !== orgId) return;
+    if (!writeDownReason.trim()) { toast.error(t("writeDownReasonRequired")); return; }
+    let preview: ReturnType<typeof inventoryWriteDown>;
+    try { preview = inventoryWriteDown(writeDownAmount, inventoryDetailMoney(item).carrying); }
+    catch (error) { toast.error(t(inventoryWriteDownError(error))); return; }
     try {
-      const preview = inventoryWriteDown(writeDownAmount, inventoryDetailMoney(item).carrying);
-      if (!writeDownReason.trim()) throw new Error("Enter why you are writing off this value");
       setWriteDownBusy(true);
       const res = await fetch(`/api/v1/inventory/${id}/adjust`, {
         method: "POST",
@@ -186,18 +185,13 @@ function InventoryItemWorkspace({ children, id, orgId }: { children: React.React
           reason: writeDownReason.trim(),
         }),
       });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Couldn't write down the value");
-      }
-      const data = await res.json();
-      adoptItem(data.inventoryItem);
+      adoptItem(await inventoryItemJson(res));
       setWriteDownOpen(false);
       setWriteDownAmount("");
       setWriteDownReason("");
-      toast.success("Value written down");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't write down the value");
+      toast.success(t("writtenDown"));
+    } catch {
+      toast.error(t("writeDownFailed"));
     } finally {
       setWriteDownBusy(false);
     }
@@ -211,12 +205,11 @@ function InventoryItemWorkspace({ children, id, orgId }: { children: React.React
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify({ isActive: !item.isActive }),
       });
-      if (!res.ok) throw new Error();
-      const data = await res.json();
-      adoptItem(data.inventoryItem);
-      toast.success(data.inventoryItem.isActive ? "Item is now shown" : "Item is now hidden");
+      const updated = await inventoryItemJson(res);
+      adoptItem(updated);
+      toast.success(updated.isActive ? t("shownSuccess") : t("hiddenSuccess"));
     } catch {
-      toast.error("Couldn't update the item");
+      toast.error(t("toggleFailed"));
     }
   }
 
@@ -226,17 +219,16 @@ function InventoryItemWorkspace({ children, id, orgId }: { children: React.React
   let moneyError = readError;
   if (item) {
     try { detail = inventoryDetailMoney(item); }
-    catch (error) { moneyError = error instanceof Error ? error.message : "Invalid saved inventory money"; }
+    catch { moneyError = t("readFailed"); }
   }
-  if (moneyError) return <div className="space-y-3 p-4"><p role="alert">Unable to show inventory money: {moneyError}</p><Button onClick={fetchItem}>Reload item</Button></div>;
+  if (moneyError) return <div className="space-y-3 p-4"><p role="alert">{moneyError}</p><Button onClick={fetchItem}>{t("reloadItem")}</Button></div>;
 
   if (!item || !detail) {
     return (
       <div className="space-y-4 pt-12 text-center">
-        <p className="text-sm text-muted-foreground">Item not found</p>
+        <p className="text-sm text-muted-foreground">{t("notFound")}</p>
         <Button variant="outline" size="sm" onClick={() => router.push("/inventory")}>
-          Back to Inventory
-        </Button>
+          {t("backToInventory")}</Button>
       </div>
     );
   }
@@ -246,7 +238,7 @@ function InventoryItemWorkspace({ children, id, orgId }: { children: React.React
   let writeDownError = "";
   if (writeDownAmount) {
     try { writeDownPreview = inventoryWriteDown(writeDownAmount, detail.carrying); }
-    catch (error) { writeDownError = error instanceof Error ? error.message : "Invalid write-off amount"; }
+    catch (error) { writeDownError = t(inventoryWriteDownError(error)); }
   }
   const stockPercent = item.reorderPoint > 0
     ? Math.min((item.quantityOnHand / (item.reorderPoint * 3)) * 100, 100)
@@ -270,8 +262,7 @@ function InventoryItemWorkspace({ children, id, orgId }: { children: React.React
           className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors mb-6"
         >
           <ArrowLeft className="size-3.5" />
-          Back to inventory
-        </button>
+          {t("backInventory")}</button>
 
         {/* Header */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-5">
@@ -293,16 +284,15 @@ function InventoryItemWorkspace({ children, id, orgId }: { children: React.React
               <div className="flex items-center gap-2">
                 <h1 className="text-lg font-semibold">{item.name}</h1>
                 {isLowStock && (
-                  <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300" title="You're running low — at or below your reorder level">
-                    Running low
-                  </Badge>
+                  <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300" title={t("lowStockHelp")}>
+                    {t("runningLow")}</Badge>
                 )}
                 <Badge variant="outline" className={
                   item.isActive
                     ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
                     : ""
                 }>
-                  {item.isActive ? "Shown" : "Hidden"}
+                  {item.isActive ? t("shown") : t("hidden")}
                 </Badge>
               </div>
               <p className="text-sm text-muted-foreground">
@@ -315,32 +305,30 @@ function InventoryItemWorkspace({ children, id, orgId }: { children: React.React
               size="sm"
               variant="outline"
               onClick={handleToggleActive}
-              title={item.isActive ? "Hide this item so it stops showing in lists and pickers" : "Show this item again in lists and pickers"}
+              title={item.isActive ? t("hideItemHelp") : t("showItemHelp")}
             >
               {item.isActive ? (
-                <><PowerOff className="mr-1.5 size-3.5" />Hide item</>
+                <><PowerOff className="mr-1.5 size-3.5" />{t("hideItem")}</>
               ) : (
-                <><Power className="mr-1.5 size-3.5" />Show item</>
+                <><Power className="mr-1.5 size-3.5" />{t("showItem")}</>
               )}
             </Button>
             <Button
               size="sm"
               variant="outline"
               onClick={() => setWriteDownOpen(true)}
-              title="The stock is worth less than you paid (damaged, expired, can't sell) — lower its value in your books without changing the count"
+              title={t("writeDownHelp")}
             >
               <TrendingDown className="mr-1.5 size-3.5" />
-              Write down value
-            </Button>
+              {t("writeDown")}</Button>
             <Button
               size="sm"
               variant="outline"
               onClick={() => setAdjustOpen(true)}
-              title="Change the number of units you have on hand (e.g. after a count, breakage, or finding extra)"
+              title={t("adjustHelp")}
             >
               <ArrowUpDown className="mr-1.5 size-3.5" />
-              Change the count
-            </Button>
+              {t("changeCount")}</Button>
           </div>
         </div>
 
@@ -352,7 +340,7 @@ function InventoryItemWorkspace({ children, id, orgId }: { children: React.React
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1], delay: 0.05 }}
           >
-            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Units on hand</p>
+            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("unitsOnHand")}</p>
             <p className={cn(
               "mt-1.5 text-2xl font-bold font-mono tabular-nums break-words",
               isLowStock && "text-amber-600 dark:text-amber-400"
@@ -372,7 +360,7 @@ function InventoryItemWorkspace({ children, id, orgId }: { children: React.React
                 />
               </div>
               <span className="text-[10px] text-muted-foreground tabular-nums">
-                Reorder at {item.reorderPoint}
+                {t("reorderAt", { count: item.reorderPoint })}
               </span>
             </div>
           </motion.div>
@@ -382,12 +370,12 @@ function InventoryItemWorkspace({ children, id, orgId }: { children: React.React
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
           >
-            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Value of stock</p>
+            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("valueOfStock")}</p>
             <p className="mt-1.5 text-2xl font-bold font-mono tabular-nums break-words">
               {formatMoney(detail.priceValue)}
             </p>
             <p className="mt-1 text-[11px] text-muted-foreground">
-              {item.quantityOnHand} x {formatMoney(detail.purchase)}
+              {t("stockCost", { count: item.quantityOnHand, amount: formatMoney(detail.purchase) })}
             </p>
           </motion.div>
           <motion.div
@@ -396,12 +384,12 @@ function InventoryItemWorkspace({ children, id, orgId }: { children: React.React
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1], delay: 0.15 }}
           >
-            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Selling price</p>
+            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("sellingPrice")}</p>
             <p className="mt-1.5 text-2xl font-bold font-mono tabular-nums break-words text-emerald-600 dark:text-emerald-400">
               {formatMoney(detail.sale)}
             </p>
             <p className="mt-1 text-[11px] text-muted-foreground">
-              Cost {formatMoney(detail.purchase)}
+              {t("costAmount", { amount: formatMoney(detail.purchase) })}
             </p>
           </motion.div>
           <motion.div
@@ -410,7 +398,7 @@ function InventoryItemWorkspace({ children, id, orgId }: { children: React.React
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
           >
-            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Profit margin</p>
+            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("profitMargin")}</p>
             <p className={cn(
               "mt-1.5 text-2xl font-bold font-mono tabular-nums break-words",
               detail.profit > 0n ? "text-emerald-600 dark:text-emerald-400" : detail.profit < 0n ? "text-red-600" : ""
@@ -418,29 +406,29 @@ function InventoryItemWorkspace({ children, id, orgId }: { children: React.React
               {detail.margin}
             </p>
             <p className="mt-1 text-[11px] text-muted-foreground">
-              {detail.purchase > 0n ? `${formatMoney(detail.profit)} per unit` : "No cost set"}
+              {detail.purchase > 0n ? t("profitPerUnit", { amount: formatMoney(detail.profit) }) : t("noCost")}
             </p>
           </motion.div>
         </div>
 
         {/* Page tabs */}
         <nav className="-mt-2 mb-8 flex items-center gap-1 overflow-x-auto border-b border-border">
-          {PAGE_TABS.map((t) => {
-            const Icon = t.icon;
-            const tabHref = t.href(id);
+          {PAGE_TABS.map((tab) => {
+            const Icon = tab.icon;
+            const tabHref = tab.href(id);
             return (
               <button
-                key={t.value}
+                key={tab.value}
                 onClick={() => router.push(tabHref)}
                 className={cn(
                   "flex shrink-0 items-center gap-1.5 border-b-2 px-2.5 pb-2.5 text-[13px] font-medium transition-colors",
-                  activeTab === t.value
+                  activeTab === tab.value
                     ? "border-foreground text-foreground"
                     : "border-transparent text-muted-foreground hover:text-foreground"
                 )}
               >
                 <Icon className="size-3.5" />
-                {t.label}
+                {t(tab.label)}
               </button>
             );
           })}
@@ -455,45 +443,42 @@ function InventoryItemWorkspace({ children, id, orgId }: { children: React.React
         <Sheet open={adjustOpen} onOpenChange={setAdjustOpen}>
           <SheetContent>
             <SheetHeader>
-              <SheetTitle>Change the count</SheetTitle>
+              <SheetTitle>{t("changeCount")}</SheetTitle>
               <SheetDescription>
-                Use this when your actual units on hand don&apos;t match what&apos;s
-                shown — for example after a count, breakage, or finding extra.
-              </SheetDescription>
+                {t("adjustSheetHelp")}</SheetDescription>
             </SheetHeader>
             <div className="space-y-4 px-4">
               <div className="rounded-lg bg-muted p-3">
-                <p className="text-xs text-muted-foreground">Units on hand now</p>
+                <p className="text-xs text-muted-foreground">{t("unitsNow")}</p>
                 <p className="text-xl font-bold font-mono tabular-nums break-words">{item.quantityOnHand}</p>
               </div>
               <div className="space-y-2">
-                <Label>Add or remove units</Label>
+                <Label>{t("addRemove")}</Label>
                 <Input
                   type="number"
                   value={adjustment}
                   onChange={(e) => setAdjustment(e.target.value)}
-                  placeholder="e.g. 10 to add, -5 to remove"
+                  placeholder={t("adjustExample")}
                 />
                 {adjustment && parseInt(adjustment) !== 0 && (
                   <p className="text-xs text-muted-foreground">
-                    New count: <span className="font-mono font-medium">{item.quantityOnHand + parseInt(adjustment)}</span>
+                    {t("newCount")} <span className="font-mono font-medium">{item.quantityOnHand + parseInt(adjustment)}</span>
                   </p>
                 )}
               </div>
               <div className="space-y-2">
-                <Label>Reason *</Label>
+                <Label>{t("reasonRequired")}</Label>
                 <Input
                   value={adjustReason}
                   onChange={(e) => setAdjustReason(e.target.value)}
-                  placeholder="e.g. Stock count, breakage, found extra"
+                  placeholder={t("reasonExample")}
                 />
               </div>
             </div>
             <SheetFooter>
-              <Button variant="outline" onClick={() => setAdjustOpen(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => setAdjustOpen(false)}>{t("cancel")}</Button>
               <Button onClick={handleAdjust} className="bg-emerald-600 hover:bg-emerald-700">
-                Save new count
-              </Button>
+                {t("saveCount")}</Button>
             </SheetFooter>
           </SheetContent>
         </Sheet>
@@ -506,49 +491,45 @@ function InventoryItemWorkspace({ children, id, orgId }: { children: React.React
         }}>
           <SheetContent>
             <SheetHeader>
-              <SheetTitle>Write down value</SheetTitle>
+              <SheetTitle>{t("writeDown")}</SheetTitle>
               <SheetDescription>
-                Use this when your stock is worth less than you paid (damaged,
-                expired, or hard to sell). The count stays the same — only its
-                value in your books goes down.
-              </SheetDescription>
+                {t("writeDownSheetHelp")}</SheetDescription>
             </SheetHeader>
             <div className="space-y-4 px-4">
               <div className="rounded-lg bg-muted p-3">
-                <p className="text-xs text-muted-foreground">Current value in your books</p>
+                <p className="text-xs text-muted-foreground">{t("currentBookValue")}</p>
                 <p className="text-xl font-bold font-mono tabular-nums break-words">
                   {formatMoney(detail.carrying)}
                 </p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="inventory-write-off">How much to write off (USD)</Label>
+                <Label htmlFor="inventory-write-off">{t("writeDownAmount")}</Label>
                 <Input
                   id="inventory-write-off" inputMode="decimal" value={writeDownAmount}
                   onChange={(event) => setWriteDownAmount(event.target.value)}
                   aria-invalid={!!writeDownError} aria-describedby="inventory-write-off-feedback"
                   disabled={writeDownBusy} placeholder="0.00"
                 />
-                <p className="text-xs text-muted-foreground">Catalog amounts use USD cents. Enter at most two decimal places.</p>
+                <p className="text-xs text-muted-foreground">{t("amountHelp")}</p>
                 <div id="inventory-write-off-feedback">
                   {writeDownError && <p role="alert" className="text-sm text-destructive">{writeDownError}</p>}
-                  {writeDownPreview && <p className="text-sm break-words">Write off {formatMoney(writeDownPreview.amount)}; new book value {formatMoney(writeDownPreview.remaining)}</p>}
+                  {writeDownPreview && <p className="text-sm break-words">{t("writeDownPreview", { amount: formatMoney(writeDownPreview.amount), remaining: formatMoney(writeDownPreview.remaining) })}</p>}
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="inventory-write-off-reason">Reason *</Label>
+                <Label htmlFor="inventory-write-off-reason">{t("reasonRequired")}</Label>
                 <Input
                   id="inventory-write-off-reason" disabled={writeDownBusy}
                   value={writeDownReason}
                   onChange={(e) => setWriteDownReason(e.target.value)}
-                  placeholder="e.g. Damaged, expired, can't sell at full price"
+                  placeholder={t("writeDownExample")}
                 />
               </div>
             </div>
             <SheetFooter>
-              <Button variant="outline" disabled={writeDownBusy} onClick={() => { setWriteDownOpen(false); setWriteDownAmount(""); setWriteDownReason(""); }}>Cancel</Button>
+              <Button variant="outline" disabled={writeDownBusy} onClick={() => { setWriteDownOpen(false); setWriteDownAmount(""); setWriteDownReason(""); }}>{t("cancel")}</Button>
               <Button onClick={handleWriteDown} disabled={writeDownBusy || !writeDownPreview || !writeDownReason.trim()} className="bg-emerald-600 hover:bg-emerald-700">
-                Write down value
-              </Button>
+                {t("writeDown")}</Button>
             </SheetFooter>
           </SheetContent>
         </Sheet>

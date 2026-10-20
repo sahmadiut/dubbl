@@ -31,6 +31,7 @@ import { createInventoryItem, bulkInventoryItems } from "../../lib/api/inventory
 import { adjustInventory, completeInventoryTransfer, applyStockTake, writeWarehouse, deleteWarehouse, createInventoryTransfer, updateInventoryTransfer, createStockTake, updateStockTake, deleteStockTake, countStockTakeLine, createSerials, createLot, bulkAdjustInventory } from "../../lib/api/inventory-movements";
 import { recordInventoryReceipt } from "../../lib/api/inventory-valuation";
 import { billStockMovement } from "../../lib/api/bill-stock";
+import { inventoryWarehouseJson, inventoryMovementsJson, inventoryChartJson } from "../../i18n/inventory-item-presentation";
 
 async function mcp(ctx: AuthContext, full = false) {
   const server = new McpServer({ name: "Movement fixture", version: "1" });
@@ -95,6 +96,7 @@ async function run() {
     await good("bulk_adjust_inventory_stock", { adjustments: [{ itemId: item.id, quantity: -1 }] });
     assert.equal((await data(await whStock(req(), cp(w1.id)))).data[0].quantity, 6);
     assert.equal((await data(await itemStock(req(), cp(item.id)))).data.length, 2);
+    assert.equal((await inventoryWarehouseJson(await itemStock(req(), cp(item.id)))).length, 2);
     assert.equal((await good("get_warehouse_stock", { warehouseId: w1.id })).stock[0].quantity, 6);
     assert.equal((await good("get_inventory_warehouse_stock", { inventoryItemId: item.id })).data.length, 2);
     const transfer = (await data(await trCreate(req({ fromWarehouseId: w1.id, toWarehouseId: w2.id, lines: [{ inventoryItemId: item.id, quantity: 2 }] })), 201)).transfer;
@@ -135,8 +137,13 @@ async function run() {
     assert.equal((await data(await lotList(req(), cp(item.id)))).pagination.total, 2);
     assert.equal((await good("list_inventory_lots", { inventoryItemId: item.id })).data.length, 2); assert.deepEqual(await saved(item.id), physicalBefore);
     const rows = (await data(await moves(req(), cp(item.id)))).data; assert.ok(rows.some((r: { valueMinor: string }) => r.valueMinor === "-29")); assert.ok(rows.every((r: { value: number; valueMinor: string }) => String(r.value) === r.valueMinor));
+    assert.deepEqual(await inventoryMovementsJson(await moves(req(), cp(item.id))), rows);
     await good("list_inventory_movements", { inventoryItemId: item.id });
-    for (const period of ["30d", "90d", "12m"]) { await data(await chart(req({}, keys.viewer, `?period=${period}`))); await good("get_inventory_movement_chart", { period }); }
+    for (const period of ["30d", "90d", "12m"]) {
+      const chartData = await data(await chart(req({}, keys.viewer, `?period=${period}`)));
+      assert.deepEqual(await inventoryChartJson(await chart(req({}, keys.viewer, `?period=${period}`))), chartData.data);
+      await good("get_inventory_movement_chart", { period });
+    }
     // Actual authorization and tenant isolation on both transports.
     const [foreignWh] = await db.insert(warehouse).values({ organizationId: b.id, name: "Foreign", code: "FOREIGN" }).returning();
     const foreignItem = await createInventoryItem({ ...ctx, organizationId: b.id }, { code: "FOREIGN", name: "Foreign" });

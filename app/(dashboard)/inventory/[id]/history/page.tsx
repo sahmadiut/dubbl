@@ -1,14 +1,15 @@
 "use client";
 
+import { inventoryMovementsJson, inventoryMovementKey, type PresentedInventoryMovement } from "@/i18n/inventory-item-presentation";
+import { useTranslations } from "next-intl";
+
 import { inventoryUiMovement } from "@/lib/money/inventory-ui";
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { Clock, ArrowUpDown } from "lucide-react";
+import { Clock } from "lucide-react";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { EmptyState } from "@/components/dashboard/empty-state";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useInventoryItem } from "../layout";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { cn } from "@/lib/utils";
 
@@ -23,25 +24,31 @@ const movementTypeColors: Record<string, string> = {
 };
 
 export default function InventoryItemHistoryPage() {
+  const t = useTranslations("InventoryItems");
   const { id } = useParams<{ id: string }>();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [movements, setMovements] = useState<any[]>([]);
+  const [movements, setMovements] = useState<PresentedInventoryMovement[]>([]);
   const [readError, setReadError] = useState("");
   const [loading, setLoading] = useState(true);
-  useDocumentTitle("Inventory · Stock History");
+  useDocumentTitle(t("historyTitle"));
 
   useEffect(() => {
     const orgId = localStorage.getItem("activeOrgId");
-    if (!orgId) return;
-
-    fetch(`/api/v1/inventory/${id}/movements?limit=50`, {
-      headers: { "x-organization-id": orgId },
-    })
-      .then((r) => r.json())
-      .then((data) => { if (data.data) setMovements(data.data.map(inventoryUiMovement)); })
-      .catch(() => setReadError("Unable to verify saved inventory data. Reload to retry."))
-      .finally(() => setLoading(false));
-  }, [id]);
+    let cancelled = false;
+    async function readMovements() {
+      if (!orgId) { setLoading(false); return; }
+      setLoading(true);
+      setReadError("");
+      try {
+        const data = await inventoryMovementsJson(await fetch(`/api/v1/inventory/${id}/movements?limit=50`, {
+          headers: { "x-organization-id": orgId },
+        }));
+        if (!cancelled) setMovements(data.map(inventoryUiMovement));
+      } catch { if (!cancelled) setReadError(t("historyReadFailed")); }
+      finally { if (!cancelled) setLoading(false); }
+    }
+    void readMovements();
+    return () => { cancelled = true; };
+  }, [id, t]);
 
   if (loading) return <BrandLoader />;
   if (readError) return <p role="alert">{readError}</p>;
@@ -50,8 +57,8 @@ export default function InventoryItemHistoryPage() {
     return (
       <EmptyState
         icon={Clock}
-        title="No stock movements yet"
-        description="Movements will appear here when stock is adjusted, purchased, or sold."
+        title={t("emptyHistory")}
+        description={t("emptyHistoryHelp")}
         compact
       />
     );
@@ -59,16 +66,16 @@ export default function InventoryItemHistoryPage() {
 
   return (
     <div className="rounded-xl border bg-card divide-y">
-      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-      {movements.map((m: any, i: number) => {
-        const qty = m.quantity ?? m.quantityChange ?? m.adjustment ?? 0;
+      {movements.map((m, i) => {
+        const qty = m.quantity;
         const isPositive = qty > 0;
-        const typeKey = (m.type || m.movementType || "adjustment").replace(/-/g, "_");
+        const typeKey = m.type.replace(/-/g, "_");
+        const typeLabel = inventoryMovementKey(typeKey);
         return (
           <div key={m.id || i} className="flex items-start gap-4 p-4">
             <div className="flex flex-col items-center gap-1 pt-0.5">
-              <Badge variant="outline" className={cn("text-[10px] capitalize", movementTypeColors[typeKey] || movementTypeColors.initial)}>
-                {typeKey.replace(/_/g, " ")}
+              <Badge variant="outline" className={cn("text-[10px] capitalize", Object.hasOwn(movementTypeColors, typeKey) ? movementTypeColors[typeKey] : movementTypeColors.initial)}>
+                {typeLabel ? t(typeLabel) : m.type}
               </Badge>
             </div>
             <div className="flex-1 min-w-0">
@@ -89,7 +96,7 @@ export default function InventoryItemHistoryPage() {
                 <p className="text-xs text-muted-foreground mt-0.5">{m.reason}</p>
               )}
               {m.createdBy && (
-                <p className="text-[11px] text-muted-foreground/70 mt-0.5">by {m.createdBy}</p>
+                <p className="text-[11px] text-muted-foreground/70 mt-0.5">{t("by", { name: m.createdBy })}</p>
               )}
             </div>
             <div className="text-right shrink-0">

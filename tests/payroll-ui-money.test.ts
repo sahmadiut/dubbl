@@ -75,6 +75,9 @@ test("all payroll JSON consumers adopt the shared adapter and no monetary float 
         } else if (path.replaceAll("\\", "/") === "app/(dashboard)/payroll/employees/[id]/page.tsx") {
           assert.match(source, /payrollEmployeeDetailJson/);
           assert.match(readFileSync("i18n/payroll-employee-detail-presentation.ts", "utf8"), /await payrollJson\(response\)/);
+        } else if (path.replaceAll("\\", "/").includes("/payroll/contractors/")) {
+          assert.match(source, /payrollContractorJson/);
+          assert.match(readFileSync("i18n/payroll-contractor-presentation.ts", "utf8"), /await payrollJson\(response\)/);
         } else assert.match(source, /payrollJson/, path);
       }
     }
@@ -83,5 +86,5 @@ test("all payroll JSON consumers adopt the shared adapter and no monetary float 
   const drawer = readFileSync("components/dashboard/create-drawer.tsx", "utf8");
   assert.match(drawer, /payrollEmployeeCreatedJson\(res\);\s+toast.success\(t\("added"\)\)/);
   assert.match(readFileSync("i18n/payroll-employee-presentation.ts", "utf8"), /await payrollJson\(response\)/);
-  assert.match(drawer, /payrollJson\(res\);\s+toast.success\("Contractor added"/);
+  assert.match(drawer, /payrollContractorJson\(res, "created"\);\s+toast.success\(t\("added"\)\)/);
 });

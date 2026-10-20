@@ -1,11 +1,11 @@
 "use client";
 
-import { payrollJson } from "@/lib/money/payroll-ui";
+import { useTranslations } from "next-intl";
+import { payrollContractorJson, type ContractorDetail } from "@/i18n/payroll-contractor-presentation";
 
 import { payrollCentsInput, payrollCentsDecimal } from "@/lib/money/payroll-input";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { motion } from "motion/react";
 import { toast } from "sonner";
 import { ArrowLeft, Briefcase, Plus, Play, Trash2 } from "lucide-react";
 import { Section } from "@/components/dashboard/section";
@@ -14,13 +14,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { payrollMoneyDisplay as formatMoney } from "@/lib/money/payroll-display";
@@ -29,47 +22,19 @@ import { useConfirm } from "@/lib/hooks/use-confirm";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { cn } from "@/lib/utils";
 
-interface ContractorDetail {
-  id: string;
-  name: string;
-  email: string | null;
-  company: string | null;
-  taxId: string | null;
-  hourlyRate: number | null;
-  currency: string;
-  bankAccountNumber: string | null;
-  isActive: boolean;
-  payments: Payment[];
-}
-
-interface Payment {
-  id: string;
-  amount: number;
-  currency: string | null;
-  description: string | null;
-  invoiceNumber: string | null;
-  status: string;
-  paidAt: string | null;
-}
-
 const statusColors: Record<string, string> = {
   pending: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300",
   paid: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300",
   void: "border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300",
 };
 
-const anim = (delay: number) => ({
-  initial: { opacity: 0, y: 12 } as const,
-  animate: { opacity: 1, y: 0 } as const,
-  transition: { duration: 0.3, delay } as const,
-});
-
 export default function ContractorDetailPage() {
+  const t = useTranslations("PayrollContractors");
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [contractor, setContractor] = useState<ContractorDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [moneyError, setMoneyError] = useState<string | null>(null);
+  const [moneyError, setMoneyError] = useState<"readFailed" | "organizationRequired" | null>(null);
   const [saving, setSaving] = useState(false);
   const { confirm, dialog: confirmDialog } = useConfirm();
 
@@ -85,33 +50,49 @@ export default function ContractorDetailPage() {
   const [paymentDesc, setPaymentDesc] = useState("");
   const [paymentInvoice, setPaymentInvoice] = useState("");
   const [paymentCurrency, setPaymentCurrency] = useState("");
+  const requestScope = useRef({ active: true });
 
-  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
-  useDocumentTitle("Payroll · Contractor Details");
+  let orgId: string | null = null;
+  let storageFailed = false;
+  try { if (typeof window !== "undefined") orgId = localStorage.getItem("activeOrgId"); } catch { storageFailed = true; }
+  useDocumentTitle(t("detailTitle"));
 
-  function fetchContractor() {
-    if (!orgId) return;
-    fetch(`/api/v1/payroll/contractors/${id}`, {
-      headers: { "x-organization-id": orgId },
-    })
-      .then((r) => payrollJson(r))
-      .then((data) => {
-        if (data.contractor) {
-          const c = data.contractor;
-          setContractor(c);
-          setName(c.name);
-          setEmail(c.email || "");
-          setCompany(c.company || "");
-          setHourlyRate(c.hourlyRate !== null ? payrollCentsDecimal(c.hourlyRate) : "");
-          setBankAccount(c.bankAccountNumber || "");
-          setPaymentCurrency(c.currency || "USD");
-        }
-      })
-      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"))
-      .finally(() => setLoading(false));
+  async function fetchContractor(ignore?: () => boolean, initial = false) {
+    const scope = requestScope.current;
+    const ignored = ignore ?? (() => !scope.active);
+    if (!orgId) {
+      if (!ignored()) { setMoneyError(storageFailed ? "readFailed" : "organizationRequired"); setLoading(false); }
+      return;
+    }
+    try {
+      const response = await fetch(`/api/v1/payroll/contractors/${id}`, { headers: { "x-organization-id": orgId } });
+      if (initial && response.status === 404) { if (!ignored()) setContractor(null); return; }
+      const { contractor: c } = await payrollContractorJson(response, "detail");
+      if (ignored()) return;
+      setMoneyError(null);
+      setContractor(c);
+      if (initial) {
+        setName(c.name); setEmail(c.email || ""); setCompany(c.company || "");
+        setHourlyRate(c.hourlyRate !== null ? payrollCentsDecimal(c.hourlyRate) : "");
+        setBankAccount(c.bankAccountNumber || ""); setPaymentCurrency(c.currency || "USD");
+      }
+    } catch {
+      if (!ignored()) {
+        if (initial) setMoneyError("readFailed");
+        else toast.error(t("readFailed"));
+      }
+    } finally { if (!ignored()) setLoading(false); }
   }
 
-  useEffect(() => { fetchContractor(); }, [id, orgId]);
+  useEffect(() => {
+    let cancelled = false;
+    const scope = { active: true };
+    requestScope.current = scope;
+    void fetchContractor(() => cancelled, true);
+    return () => { cancelled = true; scope.active = false; };
+    // The request is keyed by contractor and organization; messages are read when it starts.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, orgId, storageFailed]);
 
   async function handleSave() {
     if (!orgId) return;
@@ -128,10 +109,10 @@ export default function ContractorDetailPage() {
           bankAccountNumber: bankAccount || null,
         }),
       });
-      if (res.ok) { await payrollJson(res); toast.success("Contractor updated"); }
-      else { const data = await payrollJson(res); toast.error(data.error || "Failed to update"); }
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to update");
+      await payrollContractorJson(res, "saved");
+      toast.success(t("updated"));
+    } catch {
+      toast.error(t("updateFailed"));
     } finally {
       setSaving(false);
     }
@@ -150,66 +131,52 @@ export default function ContractorDetailPage() {
           invoiceNumber: paymentInvoice || undefined,
         }),
       });
-      if (res.ok) {
-      await payrollJson(res);
-        toast.success("Payment added");
-        setPaymentAmount(""); setPaymentDesc(""); setPaymentInvoice("");
-        fetchContractor();
-      } else { const data = await payrollJson(res); toast.error(data.error || "Failed to add payment"); }
-    } catch (error) { toast.error(error instanceof Error ? error.message : "Failed to add payment"); }
+      await payrollContractorJson(res, "payment");
+      toast.success(t("paymentAdded"));
+      setPaymentAmount(""); setPaymentDesc(""); setPaymentInvoice("");
+      void fetchContractor();
+    } catch { toast.error(t("paymentFailed")); }
   }
 
   async function handleProcessPayment(paymentId: string) {
     if (!orgId) return;
     const confirmed = await confirm({
-      title: "Process this payment?",
-      description: "This will create a journal entry and mark the payment as paid.",
-      confirmLabel: "Process",
+      title: t("processTitle"),
+      description: t("processHelp"),
+      confirmLabel: t("process"),
     });
     if (!confirmed) return;
 
-    const res = await fetch(`/api/v1/payroll/contractors/${id}/payments/${paymentId}/process`, {
-      method: "POST",
-      headers: { "x-organization-id": orgId },
-    });
-    if (res.ok) {
-      await payrollJson(res);
-      toast.success("Payment processed");
-      fetchContractor();
-    } else {
-      const data = await payrollJson(res); toast.error(data.error || "Failed to process payment");
-    }
+    try {
+      const res = await fetch(`/api/v1/payroll/contractors/${id}/payments/${paymentId}/process`, {
+        method: "POST", headers: { "x-organization-id": orgId },
+      });
+      await payrollContractorJson(res, "payment");
+      toast.success(t("processed"));
+      void fetchContractor();
+    } catch { toast.error(t("processFailed")); }
   }
 
   async function handleDelete() {
     if (!orgId) return;
-    const confirmed = await confirm({
-      title: "Delete this contractor?",
-      description: "This action cannot be undone.",
-      confirmLabel: "Delete",
-      destructive: true,
-    });
+    const confirmed = await confirm({ title: t("deleteTitle"), description: t("deleteHelp"), confirmLabel: t("delete"), destructive: true });
     if (!confirmed) return;
-    const res = await fetch(`/api/v1/payroll/contractors/${id}`, {
-      method: "DELETE",
-      headers: { "x-organization-id": orgId },
-    });
-    if (res.ok) {
-      await payrollJson(res);
-      toast.success("Contractor deleted");
-      router.push("/payroll/contractors");
-    }
+    try {
+      const res = await fetch(`/api/v1/payroll/contractors/${id}`, { method: "DELETE", headers: { "x-organization-id": orgId } });
+      await payrollContractorJson(res, "deleted");
+      toast.success(t("deleted")); router.push("/payroll/contractors");
+    } catch { toast.error(t("deleteFailed")); }
   }
 
   if (loading) return <BrandLoader />;
-  if (moneyError) return <p role="alert">{moneyError}</p>;
+  if (moneyError) return <p role="alert">{t(moneyError)}</p>;
   if (!contractor) {
     return (
       <ContentReveal>
         <button onClick={() => router.push("/payroll/contractors")} className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors mb-6">
-          <ArrowLeft className="size-3.5" /> Back to contractors
+          <ArrowLeft className="size-3.5" /> {t("back")}
         </button>
-        <p className="text-sm text-muted-foreground">Contractor not found</p>
+        <p className="text-sm text-muted-foreground">{t("notFound")}</p>
       </ContentReveal>
     );
   }
@@ -217,7 +184,7 @@ export default function ContractorDetailPage() {
   return (
     <ContentReveal className="space-y-6">
       <button onClick={() => router.push("/payroll/contractors")} className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors">
-        <ArrowLeft className="size-3.5" /> Back to contractors
+        <ArrowLeft className="size-3.5" /> {t("back")}
       </button>
 
       <div className="flex items-center gap-3">
@@ -236,69 +203,69 @@ export default function ContractorDetailPage() {
       </div>
 
       <div className="max-w-4xl space-y-6">
-        <Section title="Details" description="Contractor information.">
+        <Section title={t("details")} description={t("detailsHelp")}>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label className="text-xs">Name</Label>
+              <Label className="text-xs">{t("name")}</Label>
               <Input value={name} onChange={(e) => setName(e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Email</Label>
+              <Label className="text-xs">{t("email")}</Label>
               <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Company</Label>
+              <Label className="text-xs">{t("company")}</Label>
               <Input value={company} onChange={(e) => setCompany(e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Hourly Rate</Label>
+              <Label className="text-xs">{t("hourlyRate")}</Label>
               <CurrencyInput prefix={contractor.currency ?? "USD"} value={hourlyRate} onChange={setHourlyRate} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Bank Account</Label>
+              <Label className="text-xs">{t("bankAccount")}</Label>
               <Input value={bankAccount} onChange={(e) => setBankAccount(e.target.value)} />
             </div>
           </div>
           <div className="mt-4 flex justify-end gap-2">
             <Button size="sm" variant="destructive" onClick={handleDelete}>
-              <Trash2 className="mr-1.5 size-3.5" /> Delete
+              <Trash2 className="mr-1.5 size-3.5" /> {t("delete")}
             </Button>
             <Button size="sm" onClick={handleSave} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700">
-              {saving ? "Saving..." : "Save"}
+              {saving ? t("saving") : t("save")}
             </Button>
           </div>
         </Section>
 
         <div className="h-px bg-border" />
 
-        <Section title="Payments" description="Payment history and new payments.">
+        <Section title={t("payments")} description={t("paymentsHelp")}>
           <div className="space-y-4">
             <div className="rounded-lg border p-4 space-y-3">
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
                 <div className="space-y-1">
-                  <Label className="text-xs">Amount</Label>
+                  <Label className="text-xs">{t("amount")}</Label>
                   <CurrencyInput prefix={paymentCurrency || contractor.currency || "USD"} size="sm" value={paymentAmount} onChange={setPaymentAmount} />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">Currency</Label>
+                  <Label className="text-xs">{t("currency")}</Label>
                   <CurrencySelect value={paymentCurrency} onValueChange={setPaymentCurrency} className="h-8 text-sm" />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">Description</Label>
+                  <Label className="text-xs">{t("description")}</Label>
                   <Input value={paymentDesc} onChange={(e) => setPaymentDesc(e.target.value)} className="h-8 text-sm" />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">Invoice #</Label>
+                  <Label className="text-xs">{t("invoice")}</Label>
                   <Input value={paymentInvoice} onChange={(e) => setPaymentInvoice(e.target.value)} className="h-8 text-sm" />
                 </div>
               </div>
               <Button size="sm" onClick={handleAddPayment} disabled={!paymentAmount}>
-                <Plus className="mr-1.5 size-3" /> Add Payment
+                <Plus className="mr-1.5 size-3" /> {t("addPayment")}
               </Button>
             </div>
 
             {(contractor.payments || []).length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4 text-center">No payments yet</p>
+              <p className="text-sm text-muted-foreground py-4 text-center">{t("noPayments")}</p>
             ) : (
               <div className="rounded-xl border bg-card divide-y">
                 {(contractor.payments || []).map((p) => (
@@ -309,11 +276,11 @@ export default function ContractorDetailPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge variant="outline" className={cn("text-[10px]", statusColors[p.status] || "")}>
-                        {p.status}
+                        {t(p.status)}
                       </Badge>
                       {p.status === "pending" && (
                         <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleProcessPayment(p.id)}>
-                          <Play className="mr-1 size-3" /> Process
+                          <Play className="mr-1 size-3" /> {t("process")}
                         </Button>
                       )}
                     </div>

@@ -1,4 +1,5 @@
 import { payrollJson, payrollUiPayload } from "../../lib/money/payroll-ui";
+import { payrollContractorJson } from "../../i18n/payroll-contractor-presentation";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { and, eq, sql } from "drizzle-orm";
@@ -74,8 +75,13 @@ async function run() {
     return handler(request, { params: Promise.resolve({ id: contractorId, paymentId }) });
   };
   const data = async (response: Response, status = 200) => { const body = await payrollJson(response); assert.equal(response.status, status, JSON.stringify(body)); return body; };
-  const read = async (name: string, args: Args = {}) => data(await rest(name, args), name.startsWith("create_") ? 201 : 200);
-  const call = async (name: string, args: Args = {}, client = ma) => { mseen.add(name); const result = await client.call(name, args); assert.equal(result.isError, false, JSON.stringify(result.body)); return result.body; };
+  const checked = async <T>(name: string, body: T): Promise<T> => {
+    if (["create_contractor_payment", "process_contractor_payment"].includes(name))
+      assert.deepEqual(await payrollContractorJson(Response.json(body), "payment"), body);
+    return body;
+  };
+  const read = async (name: string, args: Args = {}) => checked(name, await data(await rest(name, args), name.startsWith("create_") ? 201 : 200));
+  const call = async (name: string, args: Args = {}, client = ma) => { mseen.add(name); const result = await client.call(name, args); assert.equal(result.isError, false, JSON.stringify(result.body)); return checked(name, result.body); };
   const tables = ["contractor", "contractor_payment", "payroll_tax_payment", "chart_account", "journal_entry", "journal_line", "number_sequence", "audit_log"];
   const snapshot = () => Promise.all(tables.map(t => db.execute(sql.raw(`select coalesce(jsonb_agg(to_jsonb(t)::text order by t.id),'[]'::jsonb) as rows from ${t} t`)).then(r => r.rows)));
   const denied = async (name: string, args: Args, status: number, key: string = keys.a, raw?: string) => {
@@ -109,6 +115,7 @@ async function run() {
     const listed = await read("list_contractor_payments", { contractorId: eur.id }); assert.deepEqual((await call("list_contractor_payments", { contractorId: eur.id })).data, listed.data);
     assert.deepEqual((await call("get_contractor_payment", ids(eur.id, p.id))).payment, (await read("get_contractor_payment", ids(eur.id, p.id))).payment);
     const cp = (await data(await contractorDetail(new Request("http://fixture.test", { headers: { authorization: `Bearer ${keys.a}` } }), { params: Promise.resolve({ id: eur.id }) }))).contractor;
+    assert.deepEqual(await payrollContractorJson(Response.json({ contractor: cp }), "detail"), { contractor: cp });
     assert.deepEqual(cp.payments[0], p);
     const processed = await Promise.all([read("process_contractor_payment", { ...ids(eur.id, p.id), paymentDate: period.paymentDate }), call("process_contractor_payment", { ...ids(eur.id, p.id), paymentDate: period.paymentDate })]);
     assert.equal(processed[0].payment.journalEntryId, processed[1].payment.journalEntryId); assert.equal(processed[0].payment.baseAmountMinor, "1500");

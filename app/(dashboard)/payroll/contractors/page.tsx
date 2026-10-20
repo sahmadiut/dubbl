@@ -1,6 +1,7 @@
 "use client";
 
-import { payrollJson } from "@/lib/money/payroll-ui";
+import { useTranslations } from "next-intl";
+import { payrollContractorJson, type Contractor } from "@/i18n/payroll-contractor-presentation";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -24,17 +25,6 @@ import { payrollMoneyDisplay as formatMoney } from "@/lib/money/payroll-display"
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { cn } from "@/lib/utils";
-
-interface Contractor {
-  id: string;
-  name: string;
-  email: string | null;
-  company: string | null;
-  hourlyRate: number | null;
-  currency: string;
-  isActive: boolean;
-  createdAt?: string;
-}
 
 type StatusFilter = "all" | "active" | "inactive";
 
@@ -62,12 +52,13 @@ function sortContractors(list: Contractor[], sortBy: string, sortOrder: "asc" | 
 }
 
 export default function ContractorsPage() {
+  const t = useTranslations("PayrollContractors");
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
 
   const [contractors, setContractors] = useState<Contractor[]>([]);
   const [initialLoad, setInitialLoad] = useState(true);
-  const [moneyError, setMoneyError] = useState<string | null>(null);
+  const [moneyError, setMoneyError] = useState<"readFailed" | "organizationRequired" | null>(null);
   const [refetching, setRefetching] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
@@ -82,9 +73,12 @@ export default function ContractorsPage() {
 
   const [searchKey, setSearchKey] = useState(0);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const currentRequest = useRef<{ active: boolean } | null>(null);
 
-  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
-  useDocumentTitle("Payroll · Contractors");
+  let orgId: string | null = null;
+  let storageFailed = false;
+  try { if (typeof window !== "undefined") orgId = localStorage.getItem("activeOrgId"); } catch { storageFailed = true; }
+  useDocumentTitle(t("listTitle"));
 
   const [sortBy, sortOrder] = useMemo(() => {
     const [key, order] = sortValue.split(":");
@@ -103,22 +97,30 @@ export default function ContractorsPage() {
 
   // Fetch first page when filter changes
   useEffect(() => {
-    if (!orgId) return;
+    if (!orgId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setMoneyError(storageFailed ? "readFailed" : "organizationRequired");
+      setInitialLoad(false);
+      return;
+    }
+    const request = { active: true };
+    currentRequest.current = request;
     let cancelled = false;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setRefetching(true);
+    setLoadingMore(false);
     setPage(1);
+    setMoneyError(null);
 
     fetch(`/api/v1/payroll/contractors?${buildParams(1)}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => payrollJson(r))
+      .then((r) => payrollContractorJson(r, "list"))
       .then((data) => {
         if (cancelled) return;
-        setContractors(data.data || []);
-        setTotalCount(data.pagination?.total || 0);
+        setContractors(data.data);
+        setTotalCount(data.pagination.total);
       })
-      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"))
+      .catch(() => { if (!cancelled) setMoneyError("readFailed"); })
       .finally(() => {
         if (!cancelled) {
           setInitialLoad(false);
@@ -127,27 +129,30 @@ export default function ContractorsPage() {
         }
       });
 
-    return () => { cancelled = true; };
-  }, [orgId, buildParams]);
+    return () => { cancelled = true; request.active = false; };
+  }, [orgId, storageFailed, buildParams]);
 
   // Load more
   const loadMore = useCallback(() => {
     if (!orgId || loadingMore) return;
+    const request = currentRequest.current;
+    if (!request?.active) return;
     const nextPage = page + 1;
     setLoadingMore(true);
 
     fetch(`/api/v1/payroll/contractors?${buildParams(nextPage)}`, {
       headers: { "x-organization-id": orgId },
     })
-      .then((r) => payrollJson(r))
+      .then((r) => payrollContractorJson(r, "list"))
       .then((data) => {
+        if (!request.active) return;
         if (data.data) {
           setContractors((prev) => [...prev, ...data.data]);
           setPage(nextPage);
         }
       })
-      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"))
-      .finally(() => setLoadingMore(false));
+      .catch(() => { if (request.active) setMoneyError("readFailed"); })
+      .finally(() => { if (request.active) setLoadingMore(false); });
   }, [orgId, page, buildParams, loadingMore]);
 
   // Infinite scroll
@@ -186,7 +191,7 @@ export default function ContractorsPage() {
   }, [debouncedSearch]);
 
   if (initialLoad) return <BrandLoader />;
-  if (moneyError) return <p role="alert">{moneyError}</p>;
+  if (moneyError) return <p role="alert">{t(moneyError)}</p>;
 
   const activeCount = contractors.filter((c) => c.isActive).length;
   const inactiveCount = contractors.filter((c) => !c.isActive).length;
@@ -233,13 +238,13 @@ export default function ContractorsPage() {
               {...anim(0.4)}
               className="text-lg font-semibold"
             >
-              No contractors yet
+              {t("emptyTitle")}
             </motion.h3>
             <motion.p
               {...anim(0.45)}
               className="mt-2 max-w-md text-sm text-muted-foreground leading-relaxed"
             >
-              Add contractors to manage payments and track costs for external workers.
+              {t("emptyHelp")}
             </motion.p>
 
             <motion.div {...anim(0.55)} className="mt-8">
@@ -249,7 +254,7 @@ export default function ContractorsPage() {
                 className="bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20"
               >
                 <Plus className="mr-2 size-4" />
-                Add Your First Contractor
+                {t("addFirst")}
               </Button>
             </motion.div>
           </div>
@@ -281,7 +286,7 @@ export default function ContractorsPage() {
         <motion.div {...anim(0)} className="rounded-xl border bg-card p-4">
           <div className="flex items-center gap-2 text-muted-foreground">
             <Users className="size-4" />
-            <span className="text-[11px] font-medium uppercase tracking-wide">Active Contractors</span>
+            <span className="text-[11px] font-medium uppercase tracking-wide">{t("activeContractors")}</span>
           </div>
           <p className="mt-2 text-2xl font-bold font-mono tabular-nums truncate text-emerald-600 dark:text-emerald-400">
             {activeCount}
@@ -291,7 +296,7 @@ export default function ContractorsPage() {
         <motion.div {...anim(0.05)} className="rounded-xl border bg-card p-4">
           <div className="flex items-center gap-2 text-muted-foreground">
             <Users className="size-4" />
-            <span className="text-[11px] font-medium uppercase tracking-wide">Inactive</span>
+            <span className="text-[11px] font-medium uppercase tracking-wide">{t("inactive")}</span>
           </div>
           <p className="mt-2 text-2xl font-bold font-mono tabular-nums truncate">
             {inactiveCount}
@@ -301,7 +306,7 @@ export default function ContractorsPage() {
         <motion.div {...anim(0.1)} className="rounded-xl border bg-card p-4">
           <div className="flex items-center gap-2 text-muted-foreground">
             <Briefcase className="size-4" />
-            <span className="text-[11px] font-medium uppercase tracking-wide">Total Contractors</span>
+            <span className="text-[11px] font-medium uppercase tracking-wide">{t("totalContractors")}</span>
           </div>
           <p className="mt-2 text-2xl font-bold font-mono tabular-nums truncate">
             {totalCount}
@@ -314,9 +319,9 @@ export default function ContractorsPage() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
             <TabsList>
-              <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="active">Active</TabsTrigger>
-              <TabsTrigger value="inactive">Inactive</TabsTrigger>
+              <TabsTrigger value="all">{t("all")}</TabsTrigger>
+              <TabsTrigger value="active">{t("active")}</TabsTrigger>
+              <TabsTrigger value="inactive">{t("inactive")}</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
@@ -324,9 +329,9 @@ export default function ContractorsPage() {
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <div className="relative flex-1 sm:max-w-xs">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Search contractors..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 pr-8 h-8 text-sm" />
+            <Input placeholder={t("search")} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 pr-8 h-8 text-sm" />
             {search && (
-              <button onClick={() => setSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+              <button aria-label={t("clearSearch")} onClick={() => setSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                 <X className="size-3.5" />
               </button>
             )}
@@ -334,15 +339,15 @@ export default function ContractorsPage() {
 
           <Select value={sortValue} onValueChange={setSortValue}>
             <SelectTrigger className="h-8 w-full sm:w-[160px] text-xs">
-              <SelectValue placeholder="Sort by..." />
+              <SelectValue placeholder={t("sortBy")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="created:desc">Newest first</SelectItem>
-              <SelectItem value="created:asc">Oldest first</SelectItem>
-              <SelectItem value="name:asc">Name (A-Z)</SelectItem>
-              <SelectItem value="name:desc">Name (Z-A)</SelectItem>
-              <SelectItem value="rate:desc">Highest rate</SelectItem>
-              <SelectItem value="rate:asc">Lowest rate</SelectItem>
+              <SelectItem value="created:desc">{t("newest")}</SelectItem>
+              <SelectItem value="created:asc">{t("oldest")}</SelectItem>
+              <SelectItem value="name:asc">{t("nameAsc")}</SelectItem>
+              <SelectItem value="name:desc">{t("nameDesc")}</SelectItem>
+              <SelectItem value="rate:desc">{t("highestRate")}</SelectItem>
+              <SelectItem value="rate:asc">{t("lowestRate")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -357,8 +362,8 @@ export default function ContractorsPage() {
             <div className="mx-auto flex size-10 items-center justify-center rounded-xl bg-muted mb-3">
               <Briefcase className="size-5 text-muted-foreground" />
             </div>
-            <p className="text-sm font-medium">No contractors found</p>
-            <p className="text-xs text-muted-foreground mt-1">{search ? "Try a different search" : "No contractors match this filter"}</p>
+            <p className="text-sm font-medium">{t("notFoundList")}</p>
+            <p className="text-xs text-muted-foreground mt-1">{search ? t("trySearch") : t("noFilterMatches")}</p>
           </div>
         </ContentReveal>
       ) : (
@@ -387,16 +392,16 @@ export default function ContractorsPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
-                      {c.hourlyRate && (
+                      {c.hourlyRate !== null && (
                         <span className="flex items-center gap-1.5 text-sm font-mono tabular-nums">
-                          {formatMoney(c.hourlyRate, c.currency || "USD")}/hr
+                          {t("hourly", { amount: formatMoney(c.hourlyRate, c.currency || "USD") })}
                           {c.currency && c.currency !== "USD" && (
                             <code className="rounded bg-muted px-1 py-0.5 text-[10px] font-medium text-muted-foreground">{c.currency}</code>
                           )}
                         </span>
                       )}
                       <Badge variant="outline" className={cn("text-[11px]", c.isActive ? "text-emerald-600" : "text-muted-foreground")}>
-                        {c.isActive ? "Active" : "Inactive"}
+                        {c.isActive ? t("active") : t("inactive")}
                       </Badge>
                     </div>
                   </button>
@@ -412,7 +417,7 @@ export default function ContractorsPage() {
         <>
           <div className="flex items-center justify-between pt-1">
             <p className="text-xs text-muted-foreground">
-              Showing {contractors.length} of {totalCount} contractor{totalCount !== 1 ? "s" : ""}
+              {t("showing", { loaded: contractors.length, total: totalCount })}
             </p>
           </div>
           {hasMore && (

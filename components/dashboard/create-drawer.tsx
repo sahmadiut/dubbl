@@ -1,5 +1,6 @@
 "use client";
 
+import { payrollContractorJson } from "@/i18n/payroll-contractor-presentation";
 import { payrollEmployeeCreatedJson } from "@/i18n/payroll-employee-presentation";
 import { warehouseJson } from "@/i18n/warehouse-presentation";
 import { expenseInputError, type ExpenseErrorKey } from "@/i18n/expense-presentation";
@@ -100,7 +101,6 @@ import { InventoryItemPicker } from "@/components/dashboard/inventory-item-picke
 import { WarehousePicker } from "@/components/dashboard/warehouse-picker";
 import { CategoryPicker } from "@/components/dashboard/category-picker";
 import { CurrencyInput } from "@/components/ui/currency-input";
-import { payrollJson } from "@/lib/money/payroll-ui";
 import { payrollCentsInput, payrollBasisPointsInput } from "@/lib/money/payroll-input";
 import { inventoryItemJson } from "@/i18n/inventory-item-presentation";
 import { inventoryUiItem, inventoryTransferLines } from "@/lib/money/inventory-ui";
@@ -3761,6 +3761,7 @@ function BankTransferDrawer({ open, onClose }: { open: boolean; onClose: () => v
 }
 
 function ContractorDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useTranslations("PayrollContractors");
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [cName, setCName] = useState("");
@@ -3777,12 +3778,11 @@ function ContractorDrawer({ open, onClose }: { open: boolean; onClose: () => voi
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!cName) { toast.error("Name is required"); return; }
+    if (!cName) { toast.error(t("required")); return; }
     setSaving(true);
-    const orgId = localStorage.getItem("activeOrgId");
-    if (!orgId) return;
-
     try {
+      const orgId = localStorage.getItem("activeOrgId");
+      if (!orgId) { toast.error(t("organizationRequired")); return; }
       const res = await fetch("/api/v1/payroll/contractors", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
@@ -3794,16 +3794,12 @@ function ContractorDrawer({ open, onClose }: { open: boolean; onClose: () => voi
           currency: cCurrency,
         }),
       });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to add contractor");
-      }
-      const data = await payrollJson(res);
-      toast.success("Contractor added");
+      const data = await payrollContractorJson(res, "created");
+      toast.success(t("added"));
       onClose();
       router.push(`/payroll/contractors/${data.contractor.id}`);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to add contractor");
+    } catch {
+      toast.error(t("createFailed"));
     } finally {
       setSaving(false);
     }
@@ -3816,40 +3812,40 @@ function ContractorDrawer({ open, onClose }: { open: boolean; onClose: () => voi
           <div className="flex items-center gap-3">
             <DrawerIcon><Briefcase className="size-5" /></DrawerIcon>
             <div>
-              <SheetTitle className="text-lg">New Contractor</SheetTitle>
-              <SheetDescription>Add a contractor for payments.</SheetDescription>
+              <SheetTitle className="text-lg">{t("newContractor")}</SheetTitle>
+              <SheetDescription>{t("drawerHelp")}</SheetDescription>
             </div>
           </div>
         </SheetHeader>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
             <div className="space-y-4">
-              <SectionLabel>Contractor Info</SectionLabel>
+              <SectionLabel>{t("info")}</SectionLabel>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Name *</Label>
-                  <Input value={cName} onChange={(e) => setCName(e.target.value)} placeholder="Jane Smith" />
+                  <Label>{t("nameRequired")}</Label>
+                  <Input value={cName} onChange={(e) => setCName(e.target.value)} placeholder={t("nameExample")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Email</Label>
+                  <Label>{t("email")}</Label>
                   <Input type="email" value={cEmail} onChange={(e) => setCEmail(e.target.value)} placeholder="jane@example.com" />
                 </div>
                 <div className="space-y-2">
-                  <Label>Company</Label>
-                  <Input value={cCompany} onChange={(e) => setCCompany(e.target.value)} placeholder="Acme LLC" />
+                  <Label>{t("company")}</Label>
+                  <Input value={cCompany} onChange={(e) => setCCompany(e.target.value)} placeholder={t("companyExample")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Default Rate</Label>
+                  <Label>{t("defaultRate")}</Label>
                   <CurrencyInput prefix={cCurrency} value={cRate} onChange={setCRate} placeholder="150.00" />
                 </div>
                 <div className="space-y-2">
-                  <Label>Currency</Label>
+                  <Label>{t("currency")}</Label>
                   <CurrencySelect value={cCurrency} onValueChange={setCCurrency} />
                 </div>
               </div>
             </div>
           </div>
-          <DrawerFooter onClose={onClose} saving={saving} label="Add Contractor" />
+          <DrawerFooter onClose={onClose} saving={saving} label={t("addContractor")} creatingLabel={t("adding")} />
         </form>
       </SheetContent>
     </Sheet>

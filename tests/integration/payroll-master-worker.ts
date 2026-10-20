@@ -3,6 +3,7 @@ import { payrollCentsInput, payrollCentsDecimal } from "../../lib/money/payroll-
 import { payrollJson, payrollUiPayload } from "../../lib/money/payroll-ui";
 import { payrollOverviewJson } from "../../i18n/payroll-overview-presentation";
 import { payrollEmployeeCreatedJson } from "../../i18n/payroll-employee-presentation";
+import { payrollContractorJson } from "../../i18n/payroll-contractor-presentation";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
@@ -88,6 +89,8 @@ async function run() {
     assert.equal((await ma.call("create_payroll_employee", { ...base, salary: 0, salaryMinor: "0" })).isError, false);
     const c = (await data(await createContractor(req({ name: "Legacy contractor", hourlyRate: 1250 })), 201)).contractor;
     const cm = (await ma.call("create_contractor", { name: "Exact contractor", hourlyRateMinor: "9007199254740991", currency: "JPY" })).body.contractor;
+    assert.deepEqual(await payrollContractorJson(Response.json({ contractor: c }), "created"), { contractor: c });
+    assert.deepEqual(await payrollContractorJson(Response.json({ contractor: cm }), "created"), { contractor: cm });
     assert.equal(cm.hourlyRate, Number.MAX_SAFE_INTEGER); assert.equal(cm.currency, "JPY");
     assert.equal((await data(await createContractor(req({ name: "Dual contractor", hourlyRate: 29, hourlyRateMinor: "29", email: null, company: null })), 201)).contractor.hourlyRateMinor, "29");
     const ep = (await data(await patchEmployee(req({ salaryMinor: "3000000000", taxRate: 2029, hourlyRateMinor: null }), p(e.id)))).employee;
@@ -97,6 +100,7 @@ async function run() {
     assert.equal(retained.salaryMinor, "3000000000"); assert.equal(retained.hourlyRateMinor, null); assert.equal(retained.taxRate, 2029);
     assert.equal((await ma.call("update_contractor", { contractorId: c.id, hourlyRate: 0, hourlyRateMinor: "0", isActive: false })).body.contractor.hourlyRate, 0);
     const cp = (await data(await patchContractor(req({ name: "Renamed" }), p(c.id)))).contractor;
+    assert.deepEqual(await payrollContractorJson(Response.json({ contractor: cp }), "saved"), { contractor: cp });
     assert.equal(cp.hourlyRateMinor, "0"); assert.equal(cp.isActive, false);
     const er = (await data(await employee(req(), p(e.id)))).employee;
     assert.equal(er.member.user.email, owner.email); assert.equal(JSON.stringify(er).includes("SECRET-HASH"), false); assert.equal("passwordHash" in er.member.user, false);
@@ -113,10 +117,16 @@ async function run() {
     assert.equal((await mb.call("list_payroll_employees", {})).body.total, 0);
     assert.equal((await data(await contractors(req({}, keys.b)))).pagination.total, 0);
     assert.equal((await mb.call("list_contractors", {})).body.total, 0);
+    const contractorList = await payrollContractorJson(await contractors(req()), "list");
+    const mContractorList = (await ma.call("list_contractors", {})).body;
+    assert.deepEqual((await payrollContractorJson(Response.json({ data: mContractorList.contractors,
+      pagination: { total: mContractorList.total, page: mContractorList.page, limit: mContractorList.limit,
+        totalPages: Math.ceil(mContractorList.total / mContractorList.limit) } }), "list")).data, contractorList.data);
     assert.deepEqual((await ma.call("list_contractors", { active: false })).body.contractors, (await data(await contractors(req({}, keys.a, "?isActive=false")))).data);
     assert.equal((await data(await employees(req({}, keys.a, "?page=2&limit=1")))).data.length, 1);
     const [history] = await db.insert(contractorPayment).values({ contractorId: c.id, amount: 3000000000, currency: "KWD", status: "paid" }).returning();
     const cd = (await data(await contractorDetail(req(), p(c.id)))).contractor;
+    assert.deepEqual(await payrollContractorJson(Response.json({ contractor: cd }), "detail"), { contractor: cd });
     assert.equal(cd.payments[0].amountMinor, "3000000000"); assert.equal(cd.payments[0].currency, "KWD");
     assert.deepEqual((await ma.call("get_contractor", { contractorId: c.id })).body.contractor, cd);
     await denied(() => patchContractor(req({ currency: "EUR" }), p(c.id)), 409); await mdenied("update_contractor", { contractorId: c.id, currency: "EUR" }, ma, 409);
@@ -165,7 +175,7 @@ async function run() {
     const managedEmployee = (await data(await createEmployee(req({ ...base, salary: 0 }, keys.manager)), 201)).employee;
     const managedContractor = (await managed.call("create_contractor", { name: "Managed" })).body.contractor;
     assert.equal((await managed.call("delete_payroll_employee", { employeeId: managedEmployee.id })).body.success, true);
-    await data(await removeContractor(req({}, keys.manager), p(managedContractor.id)));
+    await payrollContractorJson(await removeContractor(req({}, keys.manager), p(managedContractor.id)), "deleted");
     for (const [route, id] of [[employee, "invalid"], [contractorDetail, "invalid"]] as const) await denied(() => route(req(), p(id)), 400);
     // Unsafe or malformed history cannot be masked by unrelated master edits.
     await db.execute(sql`update payroll_employee set salary=9007199254740992 where id=${e.id}`);

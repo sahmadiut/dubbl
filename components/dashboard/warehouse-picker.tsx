@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { warehouseJson, type WarehouseView } from "@/i18n/warehouse-presentation";
 import { useState, useRef } from "react";
 import { Check, ChevronsUpDown, Loader2, Warehouse } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -19,13 +21,7 @@ import {
 } from "@/components/ui/command";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 
-interface WarehouseOption {
-  id: string;
-  name: string;
-  code: string;
-  address: string | null;
-  isDefault: boolean | null;
-}
+type WarehouseOption = WarehouseView;
 
 interface WarehousePickerProps {
   value: string;
@@ -33,7 +29,9 @@ interface WarehousePickerProps {
   placeholder?: string;
 }
 
-export function WarehousePicker({ value, onChange, placeholder = "Select warehouse..." }: WarehousePickerProps) {
+export function WarehousePicker({ value, onChange, placeholder }: WarehousePickerProps) {
+  const t = useTranslations("Warehouses");
+  const [readFailed, setReadFailed] = useState(false);
   const [open, setOpen] = useState(false);
   const [warehouses, setWarehouses] = useState<WarehouseOption[]>([]);
   const [search, setSearch] = useState("");
@@ -47,17 +45,20 @@ export function WarehousePicker({ value, onChange, placeholder = "Select warehou
 
   function handleOpenChange(nextOpen: boolean) {
     setOpen(nextOpen);
-    if (nextOpen && orgId) {
+    if (!nextOpen) { ++fetchIdRef.current; return; }
+    if (!orgId) { setReadFailed(true); return; }
+    if (nextOpen) {
+      setReadFailed(false);
       const id = ++fetchIdRef.current;
       setFetchCount((c) => c + 1);
       fetch("/api/v1/warehouses", {
         headers: { "x-organization-id": orgId },
       })
-        .then((r) => r.json())
+        .then((r) => warehouseJson(r, "list"))
         .then((data) => {
-          if (id === fetchIdRef.current && data.data) setWarehouses(data.data);
+          if (id === fetchIdRef.current) setWarehouses(data.data);
         })
-        .catch(() => {})
+        .catch(() => { if (id === fetchIdRef.current) setReadFailed(true); })
         .finally(() => setFetchCount((c) => c - 1));
     }
   }
@@ -86,7 +87,7 @@ export function WarehousePicker({ value, onChange, placeholder = "Select warehou
               {selected.name} <span className="text-muted-foreground">({selected.code})</span>
             </span>
           ) : (
-            <span className="text-muted-foreground">{placeholder}</span>
+            <span className="text-muted-foreground">{placeholder ?? t("selectWarehouse")}</span>
           )}
           <ChevronsUpDown className="ml-auto size-4 shrink-0 opacity-50" />
         </Button>
@@ -94,12 +95,14 @@ export function WarehousePicker({ value, onChange, placeholder = "Select warehou
       <PopoverContent className="p-0" align="start">
         <Command shouldFilter={false}>
           <CommandInput
-            placeholder="Search warehouses..."
+            placeholder={t("searchWarehouses")}
             value={search}
             onValueChange={setSearch}
           />
           <CommandList>
-            {loading ? (
+            {readFailed ? (
+              <CommandEmpty role="alert">{t("readFailed")}</CommandEmpty>
+            ) : loading ? (
               <div className="flex items-center justify-center py-6">
                 <Loader2 className="size-4 animate-spin text-muted-foreground" />
               </div>
@@ -108,7 +111,7 @@ export function WarehousePicker({ value, onChange, placeholder = "Select warehou
                 <div className="flex flex-col items-center gap-1.5 py-2">
                   <Warehouse className="size-4 text-muted-foreground" />
                   <span className="text-muted-foreground">
-                    {search ? "No warehouses match your search" : "No warehouses found"}
+                    {t(search ? "noSearchMatches" : "noWarehouses")}
                   </span>
                 </div>
               </CommandEmpty>
@@ -129,7 +132,7 @@ export function WarehousePicker({ value, onChange, placeholder = "Select warehou
                       <div className="flex items-center gap-1.5">
                         <span className="truncate text-sm">{wh.name}</span>
                         {wh.isDefault && (
-                          <span className="text-[10px] text-muted-foreground">(default)</span>
+                          <span className="text-[10px] text-muted-foreground">{t("defaultMarker")}</span>
                         )}
                       </div>
                       <span className="text-xs text-muted-foreground truncate">{wh.code}</span>

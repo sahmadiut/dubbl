@@ -1,4 +1,6 @@
 "use client";
+
+import { warehouseJson } from "@/i18n/warehouse-presentation";
 import { expenseInputError, type ExpenseErrorKey } from "@/i18n/expense-presentation";
 
 import { fixedAssetJson, fixedAssetFailureMessage } from "@/i18n/fixed-asset-presentation";
@@ -3213,14 +3215,15 @@ function BankAccountDrawer({ open, onClose }: { open: boolean; onClose: () => vo
 // Warehouse Drawer
 // ---------------------------------------------------------------------------
 function WarehouseDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useTranslations("Warehouses");
   const [saving, setSaving] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setSaving(true);
     const form = new FormData(e.currentTarget);
     const orgId = localStorage.getItem("activeOrgId");
-    if (!orgId) return;
+    if (!orgId) { toast.error(t("organizationRequired")); return; }
+    setSaving(true);
 
     try {
       const res = await fetch("/api/v1/warehouses", {
@@ -3232,15 +3235,12 @@ function WarehouseDrawer({ open, onClose }: { open: boolean; onClose: () => void
           address: form.get("address") || null,
         }),
       });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to create warehouse");
-      }
-      toast.success("Warehouse created");
+      await warehouseJson(res, "warehouse");
+      toast.success(t("created"));
       onClose();
       window.dispatchEvent(new CustomEvent("refetch-warehouses"));
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create warehouse");
+    } catch {
+      toast.error(t("createFailed"));
     } finally {
       setSaving(false);
     }
@@ -3253,22 +3253,22 @@ function WarehouseDrawer({ open, onClose }: { open: boolean; onClose: () => void
           <div className="flex items-center gap-3">
             <DrawerIcon><Warehouse className="size-5" /></DrawerIcon>
             <div>
-              <SheetTitle className="text-lg">New Warehouse</SheetTitle>
-              <SheetDescription>Add a warehouse location for inventory tracking.</SheetDescription>
+              <SheetTitle className="text-lg">{t("newWarehouse")}</SheetTitle>
+              <SheetDescription>{t("createDescription")}</SheetDescription>
             </div>
           </div>
         </SheetHeader>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
             <div className="space-y-4">
-              <SectionLabel>Warehouse Info</SectionLabel>
+              <SectionLabel>{t("warehouseInfo")}</SectionLabel>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="drawer-wh-name">Name *</Label>
-                  <Input id="drawer-wh-name" name="name" required placeholder="Main Warehouse" />
+                  <Label htmlFor="drawer-wh-name">{t("nameRequired")}</Label>
+                  <Input id="drawer-wh-name" name="name" required placeholder={t("mainWarehouse")} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="drawer-wh-code">Code *</Label>
+                  <Label htmlFor="drawer-wh-code">{t("codeRequired")}</Label>
                   <Input id="drawer-wh-code" name="code" required placeholder="WH-001" />
                 </div>
               </div>
@@ -3277,14 +3277,14 @@ function WarehouseDrawer({ open, onClose }: { open: boolean; onClose: () => void
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Location</SectionLabel>
+              <SectionLabel>{t("location")}</SectionLabel>
               <div className="space-y-2">
-                <Label htmlFor="drawer-wh-address">Address</Label>
-                <Textarea id="drawer-wh-address" name="address" placeholder="Street address, city, country..." rows={3} />
+                <Label htmlFor="drawer-wh-address">{t("address")}</Label>
+                <Textarea id="drawer-wh-address" name="address" placeholder={t("optionalAddress")} rows={3} />
               </div>
             </div>
           </div>
-          <DrawerFooter onClose={onClose} saving={saving} label="Create Warehouse" />
+          <DrawerFooter onClose={onClose} saving={saving} cancelLabel={t("cancel")} creatingLabel={t("creating")} label={t("createWarehouse")} />
         </form>
       </SheetContent>
     </Sheet>

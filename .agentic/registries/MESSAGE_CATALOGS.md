@@ -1,5 +1,11 @@
 # Message catalog foundation
 
+LOC-075 warehouse management, WarehouseDrawer and WarehousePicker use 77 paired
+`Warehouses` messages (6,712 keys per locale). See
+[scope and exceptions](WAREHOUSE_CATALOGS.md) for location/default contracts,
+nullable history, safe feedback and picker selection. LOC-066/008/002 and native
+terminology/RTL qualification remain independent.
+
 LOC-074 variant/supplier item routes use 54 paired `InventoryCatalogs` messages
 (6,635 keys per locale). See [scope and exceptions](INVENTORY_VARIANT_SUPPLIER_CATALOGS.md)
 for exact price/count/lead-time preservation, nullable history and safe feedback.
@@ -196,7 +202,7 @@ Extraction ownership:
 | LOC-072 | LOC-066 child: inventory categories, picker, creation drawer and navigation; see [scope](INVENTORY_CATEGORY_CATALOGS.md) |
 | LOC-073 | LOC-066 child: inventory item list/detail/history, creation and item picker |
 | LOC-074 | LOC-066 child: inventory variants and suppliers; see [scope](INVENTORY_VARIANT_SUPPLIER_CATALOGS.md) |
-| LOC-075 | LOC-066 child: warehouse management, creation and picker |
+| LOC-075 | LOC-066 child: warehouse management, creation and picker; see [scope](WAREHOUSE_CATALOGS.md) |
 | LOC-076 | LOC-066 child: stock-takes, transfers and movement creation |
 | LOC-077 | LOC-066 child: BOM and assembly |
 | LOC-078 | LOC-066 child: valuation, alerts, loading and residual inventory strings |

@@ -32,6 +32,7 @@ import { adjustInventory, completeInventoryTransfer, applyStockTake, writeWareho
 import { recordInventoryReceipt } from "../../lib/api/inventory-valuation";
 import { billStockMovement } from "../../lib/api/bill-stock";
 import { inventoryWarehouseJson, inventoryMovementsJson, inventoryChartJson } from "../../i18n/inventory-item-presentation";
+import { warehouseJson } from "../../i18n/warehouse-presentation";
 
 async function mcp(ctx: AuthContext, full = false) {
   const server = new McpServer({ name: "Movement fixture", version: "1" });
@@ -70,18 +71,24 @@ async function run() {
   const mdenied = async (name: string, args: Record<string, unknown>, client = ma, status?: number) => { const before = await snapshot(), r = await client.call(name, args); assert.equal(r.isError, true, name); if (status) assert.equal(r.body.status, status); assert.deepEqual(await snapshot(), before); };
   const saved = async (id: string) => (await db.query.inventoryItem.findFirst({ where: eq(inventoryItem.id, id) }))!;
   try {
-    const w1 = (await data(await whCreate(req({ code: "ONE", name: "One", isDefault: true })), 201)).warehouse;
+    const w1Response = await whCreate(req({ code: "ONE", name: "One", isDefault: true }));
+    await warehouseJson(w1Response.clone(), "warehouse");
+    const w1 = (await data(w1Response, 201)).warehouse;
     const w2 = (await good("create_warehouse", { code: "TWO", name: "Two", isDefault: true })).warehouse;
-    assert.equal((await data(await whGet(req(), cp(w1.id)))).warehouse.isDefault, false);
-    assert.equal((await data(await whPatch(req({ address: "Fixture" }), cp(w1.id)))).warehouse.address, "Fixture");
-    assert.equal((await good("update_warehouse", { warehouseId: w2.id, address: "Two" })).warehouse.address, "Two");
-    assert.equal((await data(await whList(req()))).data.length, 2);
-    assert.equal((await good("list_warehouses")).warehouses.length, 2);
+    assert.equal((await warehouseJson(await whGet(req(), cp(w1.id)), "warehouse")).warehouse.isDefault, false);
+    assert.equal((await warehouseJson(await whPatch(req({ address: "Fixture" }), cp(w1.id)), "warehouse")).warehouse.address, "Fixture");
+    assert.equal((await warehouseJson(Response.json(await good("update_warehouse", { warehouseId: w2.id, address: "Two" })), "warehouse")).warehouse.address, "Two");
+    assert.equal((await warehouseJson(await whList(req()), "list")).data.length, 2);
+    const listed = (await good("list_warehouses")).warehouses;
+    assert.deepEqual((await warehouseJson(Response.json({ data: listed }), "list")).data, listed);
+    assert.equal(listed.length, 2);
+    const locationSql = await db.execute(sql`select code, name, address, is_default from warehouse where organization_id = ${a.id} order by code`);
+    assert.deepEqual(locationSql.rows, [{ code: "ONE", name: "One", address: "Fixture", is_default: false }, { code: "TWO", name: "Two", address: "Two", is_default: true }]);
     assert.equal((await good("get_warehouse", { warehouseId: w1.id })).warehouse.id, w1.id);
     const empty = (await good("create_warehouse", { code: "EMPTY", name: "Empty" })).warehouse;
-    await good("delete_warehouse", { warehouseId: empty.id });
+    await warehouseJson(Response.json(await good("delete_warehouse", { warehouseId: empty.id })), "delete");
     const empty2 = (await data(await whCreate(req({ code: "EMPTY2", name: "Empty2" }, keys.manager)), 201)).warehouse;
-    await data(await whDelete(req({}, keys.manager), cp(empty2.id)));
+    await warehouseJson(await whDelete(req({}, keys.manager), cp(empty2.id)), "delete");
     const item = await createInventoryItem(ctx, { code: "ITEM", name: "Item", purchasePriceMinor: "29", quantityOnHand: 10 });
     await db.insert(warehouseStock).values([{ organizationId: a.id, inventoryItemId: item.id, warehouseId: w1.id, quantity: 6 }, { organizationId: a.id, inventoryItemId: item.id, warehouseId: w2.id, quantity: 4 }]);
     const q = await data(await adjust(req({ adjustment: 1, reason: "Found" }), cp(item.id))); assert.equal(q.inventoryItem.totalValueMinor, "319"); assert.equal(q.movement.valueMinor, "29");

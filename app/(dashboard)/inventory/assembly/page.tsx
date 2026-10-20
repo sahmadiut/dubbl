@@ -1,8 +1,10 @@
 "use client";
 
-import { inventoryUiAssembly } from "@/lib/money/inventory-ui";
+import { useTranslations } from "next-intl";
+
+import { assemblyOrdersJson, assemblyUpdatedJson, type AssemblyOrderView } from "@/i18n/inventory-assembly-presentation";
 import { useState, useEffect } from "react";
-import { Cog, Play, CheckCircle2, XCircle, ClipboardList, ArrowRightLeft, BarChart3, ArrowRight } from "lucide-react";
+import { Play, CheckCircle2, ClipboardList, ArrowRightLeft, BarChart3, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,19 +12,6 @@ import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { useConfirm } from "@/lib/hooks/use-confirm";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
-
-interface AssemblyOrder {
-  id: string;
-  quantity: number;
-  status: string;
-  notes: string | null;
-  completedAt: string | null;
-  createdAt: string;
-  bom: {
-    name: string;
-    assemblyItem: { name: string; code: string } | null;
-  } | null;
-}
 
 const STATUS_BADGE: Record<string, string> = {
   draft: "border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300",
@@ -32,73 +21,70 @@ const STATUS_BADGE: Record<string, string> = {
 };
 
 export default function AssemblyOrdersPage() {
+  const t = useTranslations("InventoryAssembly");
   const { confirm, dialog: confirmDialog } = useConfirm();
-  const [orders, setOrders] = useState<AssemblyOrder[]>([]);
-  const [readError, setReadError] = useState("");
+  const [orders, setOrders] = useState<AssemblyOrderView[]>([]);
+  const [readError, setReadError] = useState(false);
   const [loading, setLoading] = useState(true);
-  useDocumentTitle("Inventory · Assembly");
+  useDocumentTitle(t("assemblyDocumentTitle"));
 
   function getHeaders() {
-    const orgId = localStorage.getItem("activeOrgId") || "";
+    const orgId = localStorage.getItem("activeOrgId");
+    if (!orgId) throw new Error("Organization required");
     return { "x-organization-id": orgId, "Content-Type": "application/json" };
   }
 
-  async function fetchOrders() {
-    try {
-      const res = await fetch("/api/v1/inventory/assembly-orders", { headers: getHeaders() });
-      const data = await res.json();
-      if (data.data) setOrders(data.data.map(inventoryUiAssembly));
-    } catch {
-      setReadError("Unable to verify saved assembly data. Reload to retry.");
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    let disposed = false;
+    async function load() {
+      try {
+        const rows = await assemblyOrdersJson(await fetch("/api/v1/inventory/assembly-orders", { headers: getHeaders() }));
+        if (!disposed) setOrders(rows);
+      } catch { if (!disposed) setReadError(true); }
+      finally { if (!disposed) setLoading(false); }
     }
-  }
+    void load();
+    return () => { disposed = true; };
+  }, []);
 
-  useEffect(() => { fetchOrders(); }, []);
-
-  async function handleComplete(order: AssemblyOrder) {
+  async function handleComplete(order: AssemblyOrderView) {
     await confirm({
-      title: `Complete assembly order?`,
-      description: `This will deduct components from inventory and add ${order.quantity} assembled items.`,
-      confirmLabel: "Complete",
+      title: t("completeTitle"),
+      description: t("completeDescription", { quantity: order.quantity }),
+      confirmLabel: t("complete"),
+      cancelLabel: t("cancel"),
       onConfirm: async () => {
-        const res = await fetch(`/api/v1/inventory/assembly-orders/${order.id}/complete`, {
-          method: "POST",
-          headers: getHeaders(),
-        });
-        const data = await res.json();
-        if (data.error) {
-          toast.error(typeof data.error === "string" ? data.error : "Something went wrong");
-        } else {
-          await fetchOrders();
-          toast.success("Assembly completed");
-        }
+        try {
+          const result = await assemblyUpdatedJson(await fetch(`/api/v1/inventory/assembly-orders/${order.id}/complete`, {
+            method: "POST", headers: getHeaders(),
+          }), order.id, "completed");
+          setOrders(prev => prev.map(row => row.id === order.id ? { ...row, ...result } : row));
+          toast.success(t("assemblyCompleted"));
+        } catch { toast.error(t("completeFailed")); }
       },
     });
   }
 
   async function handleStart(orderId: string) {
-    const res = await fetch(`/api/v1/inventory/assembly-orders/${orderId}`, {
-      method: "PATCH",
-      headers: getHeaders(),
-      body: JSON.stringify({ status: "in_progress" }),
-    });
-    await fetchOrders();
-    if (!res.ok) { const data = await res.json(); toast.error(data.error || "Unable to start assembly"); return; }
-    toast.success("Assembly started");
+    try {
+      const result = await assemblyUpdatedJson(await fetch(`/api/v1/inventory/assembly-orders/${orderId}`, {
+        method: "PATCH", headers: getHeaders(), body: JSON.stringify({ status: "in_progress" }),
+      }), orderId, "in_progress");
+      setOrders(prev => prev.map(row => row.id === orderId ? { ...row, ...result } : row));
+      toast.success(t("assemblyStarted"));
+    } catch { toast.error(t("startFailed")); }
   }
 
   if (loading) return <BrandLoader />;
-  if (readError) return <p role="alert">{readError}</p>;
+  if (readError) return <p role="alert">{t("assemblyReadFailed")}</p>;
 
   return (
     <ContentReveal>
       <div className="space-y-6">
         <div>
-          <h2 className="text-lg font-semibold">Assembly Orders</h2>
+          <h2 className="text-lg font-semibold">{t("assemblyOrders")}</h2>
           <p className="text-sm text-muted-foreground">
-            Track assembly work orders and inventory transformations.
+            {t("assemblyDescription")}
           </p>
         </div>
 
@@ -108,7 +94,7 @@ export default function AssemblyOrdersPage() {
             <div className="rounded-xl border bg-card overflow-hidden shadow-sm">
               <div className="bg-muted/30 px-5 py-3 border-b">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  Example assembly workflow
+                  {t("exampleWorkflow")}
                 </p>
               </div>
               <div className="p-5 space-y-3">
@@ -119,11 +105,11 @@ export default function AssemblyOrdersPage() {
                       <div className="flex size-6 items-center justify-center rounded-md bg-zinc-100 dark:bg-zinc-800">
                         <ClipboardList className="size-3 text-zinc-500" />
                       </div>
-                      <p className="text-sm font-medium">Standing Desk x10</p>
+                      <p className="text-sm font-medium">{t("deskOrder")}</p>
                     </div>
-                    <Badge variant="outline" className={STATUS_BADGE.draft + " text-[10px]"}>draft</Badge>
+                    <Badge variant="outline" className={STATUS_BADGE.draft + " text-[10px]"}>{t("draft")}</Badge>
                   </div>
-                  <p className="text-[11px] text-muted-foreground">BOM: Standing Desk Frame</p>
+                  <p className="text-[11px] text-muted-foreground">{t("exampleRecipe")}</p>
                 </div>
                 <div className="flex justify-center"><ArrowRight className="size-3.5 text-muted-foreground/30 rotate-90" /></div>
                 {/* In progress */}
@@ -133,11 +119,11 @@ export default function AssemblyOrdersPage() {
                       <div className="flex size-6 items-center justify-center rounded-md bg-blue-50 dark:bg-blue-950/40">
                         <Play className="size-3 text-blue-500" />
                       </div>
-                      <p className="text-sm font-medium">Assembling...</p>
+                      <p className="text-sm font-medium">{t("assembling")}</p>
                     </div>
-                    <Badge variant="outline" className={STATUS_BADGE.in_progress + " text-[10px]"}>in progress</Badge>
+                    <Badge variant="outline" className={STATUS_BADGE.in_progress + " text-[10px]"}>{t("inProgress")}</Badge>
                   </div>
-                  <p className="text-[11px] text-muted-foreground">Components reserved from inventory</p>
+                  <p className="text-[11px] text-muted-foreground">{t("reserved")}</p>
                 </div>
                 <div className="flex justify-center"><ArrowRight className="size-3.5 text-muted-foreground/30 rotate-90" /></div>
                 {/* Completed */}
@@ -147,11 +133,11 @@ export default function AssemblyOrdersPage() {
                       <div className="flex size-6 items-center justify-center rounded-md bg-emerald-50 dark:bg-emerald-950/40">
                         <CheckCircle2 className="size-3 text-emerald-500" />
                       </div>
-                      <p className="text-sm font-medium">Complete</p>
+                      <p className="text-sm font-medium">{t("complete")}</p>
                     </div>
-                    <Badge variant="outline" className={STATUS_BADGE.completed + " text-[10px]"}>completed</Badge>
+                    <Badge variant="outline" className={STATUS_BADGE.completed + " text-[10px]"}>{t("completed")}</Badge>
                   </div>
-                  <p className="text-[11px] text-muted-foreground">10 finished items added to stock</p>
+                  <p className="text-[11px] text-muted-foreground">{t("finishedStock")}</p>
                 </div>
               </div>
             </div>
@@ -159,30 +145,30 @@ export default function AssemblyOrdersPage() {
             {/* Right: benefits */}
             <div className="space-y-3">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                How assembly orders work
+                {t("howAssembly")}
               </p>
               {[
                 {
-                  title: "Create from BOMs",
-                  desc: "Select a bill of materials and specify quantity to create an assembly work order.",
+                  title: t("createFromBoms"),
+                  desc: t("createFromBomsDescription"),
                   icon: ClipboardList,
                   color: "border-l-blue-400",
                 },
                 {
-                  title: "Track progress",
-                  desc: "Move orders from draft to in-progress to completed as your team works through them.",
+                  title: t("trackProgress"),
+                  desc: t("trackProgressDescription"),
                   icon: Play,
                   color: "border-l-amber-400",
                 },
                 {
-                  title: "Auto inventory updates",
-                  desc: "Components are deducted and finished goods are added to stock when an order completes.",
+                  title: t("autoInventory"),
+                  desc: t("autoInventoryDescription"),
                   icon: ArrowRightLeft,
                   color: "border-l-emerald-400",
                 },
                 {
-                  title: "Full audit trail",
-                  desc: "Every status change and inventory movement is recorded for complete traceability.",
+                  title: t("auditTrail"),
+                  desc: t("auditTrailDescription"),
                   icon: BarChart3,
                   color: "border-l-violet-400",
                 },
@@ -204,26 +190,26 @@ export default function AssemblyOrdersPage() {
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <h3 className="text-sm font-medium">
-                      {order.bom?.assemblyItem?.name || "Unknown"} x{order.quantity}
+                      {t("orderName", { name: order.bom?.assemblyItem?.name || t("unknown"), quantity: order.quantity })}
                     </h3>
                     <Badge variant="outline" className={STATUS_BADGE[order.status]}>
-                      {order.status.replace("_", " ")}
+                      {t(order.status === "in_progress" ? "inProgress" : order.status)}
                     </Badge>
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    BOM: {order.bom?.name || "Unknown"}
-                    {order.completedAt && ` · Completed ${new Date(order.completedAt).toLocaleDateString()}`}
+                    {t("recipeName", { name: order.bom?.name || t("unknown") })}
+                    {order.completedAt && t("completedDate", { date: new Date(order.completedAt).toLocaleDateString() })}
                   </p>
                 </div>
                 <div className="flex items-center gap-1">
                   {order.status === "draft" && (
                     <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => handleStart(order.id)}>
-                      <Play className="size-3" /> Start
+                      <Play className="size-3" /> {t("start")}
                     </Button>
                   )}
                   {(order.status === "draft" || order.status === "in_progress") && (
                     <Button size="sm" className="h-7 text-xs gap-1" onClick={() => handleComplete(order)}>
-                      <CheckCircle2 className="size-3" /> Complete
+                      <CheckCircle2 className="size-3" /> {t("complete")}
                     </Button>
                   )}
                 </div>

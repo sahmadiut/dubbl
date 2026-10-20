@@ -89,8 +89,12 @@ test("nullable stock values and live-stock discrepancy retain saved units; input
 });
 
 test("remaining inventory pages keep validated adoption and exact money guards", () => {
-  const files = ["page", "valuation/page", "[id]/page", "[id]/history/page", "bom/page", "bom/[id]/page", "assembly/page"];
+  const files = ["page", "valuation/page", "[id]/page", "[id]/history/page"];
   for (const path of files) assert.match(readFileSync(`app/(dashboard)/inventory/${path}.tsx`, "utf8"), /inventoryUi/);
+  const assembly = readFileSync("i18n/inventory-assembly-presentation.ts", "utf8");
+  for (const validator of ["inventoryUiBom(row)", "inventoryUiAssembly(row)", "inventoryUiBomDetail({ bom: body.bom, costBreakdown: body.costBreakdown })"]) assert.ok(assembly.includes(validator));
+  for (const [path, reader] of [["bom/page", "assemblyBomsJson"], ["bom/[id]/page", "assemblyBomJson"], ["assembly/page", "assemblyOrdersJson"]])
+    assert.ok(readFileSync(`app/(dashboard)/inventory/${path}.tsx`, "utf8").includes(`${reader}(await fetch(`));
   const movement = readFileSync("i18n/inventory-movement-presentation.ts", "utf8");
   assert.match(movement, /inventoryUiStockTakeLine\(row\)/);
   assert.match(movement, /inventoryUiItem\(value\)/);

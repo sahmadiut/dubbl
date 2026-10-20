@@ -1,9 +1,11 @@
 "use client";
 
-import { inventoryUiBomDetail } from "@/lib/money/inventory-ui";
-import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
+
+import { assemblyBomJson, assemblyDeletedJson, type AssemblyBomDetail } from "@/i18n/inventory-assembly-presentation";
+import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { Package, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,77 +14,51 @@ import { ContentReveal } from "@/components/ui/content-reveal";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { expenseMoneyDisplay } from "@/lib/money/expense-display";
 
-interface BOMDetail {
-  bom: {
-    id: string;
-    name: string;
-    description: string | null;
-    assemblyItem: { id: string; name: string; code: string } | null;
-    currencyCode: string;
-    laborCostCents: number;
-    overheadCostCents: number;
-    isActive: boolean;
-    components: {
-      id: string;
-      quantity: string;
-      wastagePercent: string | null;
-      wastagePercentExact: string;
-      componentItem: { id: string; name: string; code: string; purchasePrice: number; purchasePriceMinor: string } | null;
-    }[];
-  };
-  costBreakdown: {
-    componentCost: number;
-    componentCostMinor: string;
-    laborCost: number;
-    laborCostMinor: string;
-    overheadCost: number;
-    overheadCostMinor: string;
-    totalCost: number;
-    totalCostMinor: string;
-  };
-}
-
 export default function BOMDetailPage() {
+  const t = useTranslations("InventoryAssembly");
   const { id } = useParams<{ id: string }>();
-  const [data, setData] = useState<BOMDetail | null>(null);
-  const [readError, setReadError] = useState("");
+  const [data, setData] = useState<AssemblyBomDetail | null>(null);
+  const [readError, setReadError] = useState(false);
   const [loading, setLoading] = useState(true);
-  useDocumentTitle("Inventory · BOM Details");
-
-  const adoptBom = useCallback((result: BOMDetail) => {
-    try { setData(inventoryUiBomDetail(result)); setReadError(""); }
-    catch { setData(null); setReadError("Unable to verify saved BOM money. Reload to retry."); }
-  }, []);
+  useDocumentTitle(t("detailDocumentTitle"));
 
   function getHeaders() {
-    const orgId = localStorage.getItem("activeOrgId") || "";
+    const orgId = localStorage.getItem("activeOrgId");
+    if (!orgId) throw new Error("Organization required");
     return { "x-organization-id": orgId };
   }
 
   useEffect(() => {
-    fetch(`/api/v1/inventory/bom/${id}`, { headers: getHeaders() })
-      .then((r) => r.json())
-      .then((result) => { if (result.bom) adoptBom(result); else toast.error(result.error || "Unable to load BOM"); })
-      .catch(() => setReadError("Unable to verify saved BOM money. Reload to retry."))
-      .finally(() => setLoading(false));
-  }, [id, adoptBom]);
+    let disposed = false;
+    async function load() {
+      setLoading(true); setData(null); setReadError(false);
+      try {
+        const result = await assemblyBomJson(await fetch(`/api/v1/inventory/bom/${id}`, { headers: getHeaders() }));
+        if (!disposed) setData(result);
+      } catch { if (!disposed) setReadError(true); }
+      finally { if (!disposed) setLoading(false); }
+    }
+    void load();
+    return () => { disposed = true; };
+  }, [id]);
 
   async function removeComponent(componentId: string) {
-    const removal = await fetch(`/api/v1/inventory/bom/${id}/components?componentId=${componentId}`, {
-      method: "DELETE",
-      headers: getHeaders(),
-    });
-    if (!removal.ok) { const result = await removal.json(); toast.error(result.error || "Unable to remove component"); return; }
-    toast.success("Component removed");
-    // Refetch
-    const res = await fetch(`/api/v1/inventory/bom/${id}`, { headers: getHeaders() });
-    const result = await res.json();
-    if (result.bom) adoptBom(result); else toast.error(result.error || "Unable to reload BOM");
+    try {
+      await assemblyDeletedJson(await fetch(`/api/v1/inventory/bom/${id}/components?componentId=${componentId}`, {
+        method: "DELETE", headers: getHeaders(),
+      }));
+    } catch { toast.error(t("removeFailed")); return; }
+    toast.success(t("removed"));
+    // Removal is already verified; a failed refresh reports read feedback.
+    try {
+      const result = await assemblyBomJson(await fetch(`/api/v1/inventory/bom/${id}`, { headers: getHeaders() }));
+      setData(result);
+    } catch { setData(null); setReadError(true); }
   }
 
   if (loading) return <BrandLoader />;
-  if (readError) return <p role="alert">{readError}</p>;
-  if (!data) return <div className="py-20 text-center text-sm text-muted-foreground">BOM not found</div>;
+  if (readError) return <p role="alert">{t("detailReadFailed")}</p>;
+  if (!data) return <div className="py-20 text-center text-sm text-muted-foreground">{t("notFound")}</div>;
 
   const { bom, costBreakdown } = data;
 
@@ -92,34 +68,34 @@ export default function BOMDetailPage() {
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-semibold">{bom.name}</h2>
-            {!bom.isActive && <Badge variant="outline">Inactive</Badge>}
+            {!bom.isActive && <Badge variant="outline">{t("inactive")}</Badge>}
           </div>
           {bom.description && (
             <p className="text-sm text-muted-foreground mt-1">{bom.description}</p>
           )}
           <p className="text-xs text-muted-foreground mt-1">
-            Produces: {bom.assemblyItem?.name || "Unknown"} ({bom.assemblyItem?.code})
+            {t("produces", { name: bom.assemblyItem?.name || t("unknown"), code: bom.assemblyItem?.code || "" })}
           </p>
         </div>
 
         {/* Cost Breakdown */}
         <div className="rounded-lg border bg-card p-4">
-          <h3 className="text-sm font-medium mb-3">Cost Breakdown</h3>
+          <h3 className="text-sm font-medium mb-3">{t("costBreakdown")}</h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div>
-              <p className="text-xs text-muted-foreground">Components</p>
+              <p className="text-xs text-muted-foreground">{t("components")}</p>
               <p className="text-sm font-mono font-medium tabular-nums">{expenseMoneyDisplay(BigInt(costBreakdown.componentCostMinor), bom.currencyCode)}</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Labor</p>
+              <p className="text-xs text-muted-foreground">{t("labor")}</p>
               <p className="text-sm font-mono font-medium tabular-nums">{expenseMoneyDisplay(BigInt(costBreakdown.laborCostMinor), bom.currencyCode)}</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Overhead</p>
+              <p className="text-xs text-muted-foreground">{t("overhead")}</p>
               <p className="text-sm font-mono font-medium tabular-nums">{expenseMoneyDisplay(BigInt(costBreakdown.overheadCostMinor), bom.currencyCode)}</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground font-medium">Total Cost</p>
+              <p className="text-xs text-muted-foreground font-medium">{t("totalCost")}</p>
               <p className="text-sm font-mono font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">{expenseMoneyDisplay(BigInt(costBreakdown.totalCostMinor), bom.currencyCode)}</p>
             </div>
           </div>
@@ -127,10 +103,10 @@ export default function BOMDetailPage() {
 
         {/* Components */}
         <div>
-          <h3 className="text-sm font-medium mb-3">Components ({bom.components.length})</h3>
+          <h3 className="text-sm font-medium mb-3">{t("componentCount", { count: bom.components.length })}</h3>
           {bom.components.length === 0 ? (
             <div className="text-center py-8 text-sm text-muted-foreground">
-              No components added yet
+              {t("noComponents")}
             </div>
           ) : (
             <div className="space-y-1">
@@ -138,15 +114,15 @@ export default function BOMDetailPage() {
                 <div key={comp.id} className="flex items-center justify-between rounded-lg border bg-card p-3">
                   <div className="min-w-0">
                     <p className="text-sm font-medium">
-                      {comp.componentItem?.name || "Unknown"} ({comp.componentItem?.code})
+                      {comp.componentItem?.name || t("unknown")} ({comp.componentItem?.code})
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Qty: {comp.quantity}
-                      {comp.wastagePercent && !/^0(?:\.0+)?$/.test(comp.wastagePercentExact) && ` · ${comp.wastagePercent}% wastage`}
-                      {comp.componentItem && ` · ${expenseMoneyDisplay(BigInt(comp.componentItem.purchasePriceMinor), bom.currencyCode)} each`}
+                      {t("quantity", { quantity: comp.quantity })}
+                      {comp.wastagePercent && !/^0(?:\.0+)?$/.test(comp.wastagePercentExact) && t("wastage", { percent: comp.wastagePercent })}
+                      {comp.componentItem && t("each", { cost: expenseMoneyDisplay(BigInt(comp.componentItem.purchasePriceMinor), bom.currencyCode) })}
                     </p>
                   </div>
-                  <Button variant="ghost" size="sm" className="size-7 p-0 text-destructive" onClick={() => removeComponent(comp.id)}>
+                  <Button variant="ghost" size="sm" className="size-7 p-0 text-destructive" aria-label={t("removeComponent")} onClick={() => removeComponent(comp.id)}>
                     <Trash2 className="size-3.5" />
                   </Button>
                 </div>

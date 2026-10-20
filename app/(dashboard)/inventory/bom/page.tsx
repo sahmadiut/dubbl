@@ -1,9 +1,11 @@
 "use client";
 
-import { inventoryUiBom } from "@/lib/money/inventory-ui";
+import { useTranslations } from "next-intl";
+
+import { assemblyBomsJson, assemblyDeletedJson, type AssemblyBom } from "@/i18n/inventory-assembly-presentation";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Package, Plus, Trash2, MoreHorizontal, ExternalLink, Layers, Calculator, ListChecks } from "lucide-react";
+import { Package, Trash2, MoreHorizontal, ExternalLink, Layers, Calculator, ListChecks } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,66 +21,62 @@ import { useConfirm } from "@/lib/hooks/use-confirm";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { expenseMoneyDisplay } from "@/lib/money/expense-display";
 
-interface BOM {
-  id: string;
-  name: string;
-  description: string | null;
-  assemblyItem: { id: string; name: string; code: string } | null;
-  components: { id: string; componentItem: { name: string; purchasePrice: number } | null; quantity: string }[];
-  currencyCode: string;
-  costBreakdown: { totalCostMinor: string };
-  laborCostCents: number;
-  overheadCostCents: number;
-  isActive: boolean;
-}
-
 export default function BOMListPage() {
+  const t = useTranslations("InventoryAssembly");
   const router = useRouter();
   const { confirm, dialog: confirmDialog } = useConfirm();
-  const [boms, setBoms] = useState<BOM[]>([]);
-  const [readError, setReadError] = useState("");
+  const [boms, setBoms] = useState<AssemblyBom[]>([]);
+  const [readError, setReadError] = useState(false);
   const [loading, setLoading] = useState(true);
-  useDocumentTitle("Inventory · Bills of Materials");
+  useDocumentTitle(t("bomDocumentTitle"));
 
   function getHeaders() {
-    const orgId = localStorage.getItem("activeOrgId") || "";
+    const orgId = localStorage.getItem("activeOrgId");
+    if (!orgId) throw new Error("Organization required");
     return { "x-organization-id": orgId };
   }
 
   useEffect(() => {
-    fetch("/api/v1/inventory/bom", { headers: getHeaders() })
-      .then((r) => r.json())
-      .then((data) => { if (data.data) setBoms(data.data.map(inventoryUiBom)); })
-      .catch(() => setReadError("Unable to verify saved inventory data. Reload to retry."))
-      .finally(() => setLoading(false));
+    let disposed = false;
+    async function load() {
+      try {
+        const rows = await assemblyBomsJson(await fetch("/api/v1/inventory/bom", { headers: getHeaders() }));
+        if (!disposed) setBoms(rows);
+      } catch { if (!disposed) setReadError(true); }
+      finally { if (!disposed) setLoading(false); }
+    }
+    void load();
+    return () => { disposed = true; };
   }, []);
 
-  async function handleDelete(bom: BOM) {
+  async function handleDelete(bom: AssemblyBom) {
     await confirm({
-      title: `Delete "${bom.name}"?`,
-      description: "This bill of materials will be permanently deleted.",
-      confirmLabel: "Delete",
+      title: t("deleteTitle", { name: bom.name }),
+      description: t("deleteDescription"),
+      confirmLabel: t("delete"),
+      cancelLabel: t("cancel"),
       destructive: true,
       onConfirm: async () => {
-        const res = await fetch(`/api/v1/inventory/bom/${bom.id}`, { method: "DELETE", headers: getHeaders() });
-        if (!res.ok) { const data = await res.json(); toast.error(data.error || "Unable to delete BOM"); return; }
-        toast.success("BOM deleted");
-        setBoms((prev) => prev.filter((b) => b.id !== bom.id));
+        try {
+          await assemblyDeletedJson(await fetch(`/api/v1/inventory/bom/${bom.id}`, { method: "DELETE", headers: getHeaders() }));
+          toast.success(t("deleted"));
+          setBoms((prev) => prev.filter((b) => b.id !== bom.id));
+        } catch { toast.error(t("deleteFailed")); }
       },
     });
   }
 
   if (loading) return <BrandLoader />;
-  if (readError) return <p role="alert">{readError}</p>;
+  if (readError) return <p role="alert">{t("bomReadFailed")}</p>;
 
   return (
     <ContentReveal>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold">Bill of Materials</h2>
+            <h2 className="text-lg font-semibold">{t("bomTitle")}</h2>
             <p className="text-sm text-muted-foreground">
-              Define how finished products are assembled from components.
+              {t("bomDescription")}
             </p>
           </div>
         </div>
@@ -89,7 +87,7 @@ export default function BOMListPage() {
             <div className="rounded-xl border bg-card overflow-hidden shadow-sm">
               <div className="bg-muted/30 px-5 py-3 border-b">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  Example bill of materials
+                  {t("exampleBom")}
                 </p>
               </div>
               <div className="p-5 space-y-4">
@@ -98,18 +96,18 @@ export default function BOMListPage() {
                     <Package className="size-5 text-orange-600 dark:text-orange-400" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium">Standing Desk Frame</p>
+                    <p className="text-sm font-medium">{t("deskFrame")}</p>
                     <p className="text-xs text-muted-foreground font-mono">SKU-DESK-001</p>
                   </div>
                 </div>
                 <div className="h-px bg-border" />
-                <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Components</p>
+                <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">{t("components")}</p>
                 <div className="space-y-1.5">
                   {[
-                    { name: "Steel tubing (2m)", qty: "4", cost: "$12.00" },
-                    { name: "Motor assembly", qty: "1", cost: "$45.00" },
-                    { name: "Controller board", qty: "1", cost: "$28.00" },
-                    { name: "Mounting brackets", qty: "8", cost: "$2.50" },
+                    { name: t("steel"), qty: "4", cost: "$12.00" },
+                    { name: t("motor"), qty: "1", cost: "$45.00" },
+                    { name: t("controller"), qty: "1", cost: "$28.00" },
+                    { name: t("brackets"), qty: "8", cost: "$2.50" },
                   ].map((c) => (
                     <div key={c.name} className="flex items-center gap-3 text-sm">
                       <span className="flex-1 truncate">{c.name}</span>
@@ -121,9 +119,9 @@ export default function BOMListPage() {
                 <div className="h-px bg-border" />
                 <div className="grid grid-cols-3 gap-3 text-center">
                   {[
-                    { label: "Materials", value: "$141.00" },
-                    { label: "Labor", value: "$35.00" },
-                    { label: "Total", value: "$176.00" },
+                    { label: t("materials"), value: "$141.00" },
+                    { label: t("labor"), value: "$35.00" },
+                    { label: t("total"), value: "$176.00" },
                   ].map(({ label, value }) => (
                     <div key={label} className="rounded-lg bg-muted/50 px-2 py-2">
                       <p className="text-sm font-bold font-mono tabular-nums">{value}</p>
@@ -137,30 +135,30 @@ export default function BOMListPage() {
             {/* Right: benefits */}
             <div className="space-y-3">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                What BOMs help with
+                {t("bomBenefits")}
               </p>
               {[
                 {
-                  title: "Component recipes",
-                  desc: "Define which parts and materials go into each finished product with exact quantities.",
+                  title: t("recipes"),
+                  desc: t("recipesDescription"),
                   icon: Layers,
                   color: "border-l-orange-400",
                 },
                 {
-                  title: "Automatic cost rollup",
-                  desc: "Calculate total product cost from components, labor, and overhead automatically.",
+                  title: t("costRollup"),
+                  desc: t("costRollupDescription"),
                   icon: Calculator,
                   color: "border-l-blue-400",
                 },
                 {
-                  title: "Assembly orders",
-                  desc: "Create work orders that deduct components and add finished items to inventory.",
+                  title: t("assemblyBenefit"),
+                  desc: t("assemblyBenefitDescription"),
                   icon: ListChecks,
                   color: "border-l-emerald-400",
                 },
                 {
-                  title: "Wastage tracking",
-                  desc: "Account for material waste with per-component wastage percentages built into each recipe.",
+                  title: t("wastageTracking"),
+                  desc: t("wastageTrackingDescription"),
                   icon: Package,
                   color: "border-l-violet-400",
                 },
@@ -189,25 +187,25 @@ export default function BOMListPage() {
                     <div className="flex items-center gap-2">
                       <h3 className="text-sm font-medium">{bom.name}</h3>
                       {!bom.isActive && (
-                        <Badge variant="outline" className="text-[10px]">Inactive</Badge>
+                        <Badge variant="outline" className="text-[10px]">{t("inactive")}</Badge>
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {bom.assemblyItem?.name || "Unknown item"} · {bom.components.length} components · Est. {expenseMoneyDisplay(BigInt(bom.costBreakdown.totalCostMinor), bom.currencyCode)}
+                      {t("bomSummary", { item: bom.assemblyItem?.name || t("unknownItem"), count: bom.components.length, cost: expenseMoneyDisplay(BigInt(bom.costBreakdown.totalCostMinor), bom.currencyCode) })}
                     </p>
                   </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="size-7 p-0" onClick={(e) => e.stopPropagation()}>
+                      <Button variant="ghost" size="sm" className="size-7 p-0" aria-label={t("actions")} onClick={(e) => e.stopPropagation()}>
                         <MoreHorizontal className="size-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/inventory/bom/${bom.id}`); }}>
-                        <ExternalLink className="size-4" /> Open
+                        <ExternalLink className="size-4" /> {t("open")}
                       </DropdownMenuItem>
                       <DropdownMenuItem variant="destructive" onClick={(e) => { e.stopPropagation(); handleDelete(bom); }}>
-                        <Trash2 className="size-4" /> Delete
+                        <Trash2 className="size-4" /> {t("delete")}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>

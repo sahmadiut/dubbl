@@ -20,6 +20,7 @@ import { registerInventoryAssemblyTools } from "../../lib/mcp/tools/inventory-as
 import { createLandedCost, allocateLandedCost } from "../../lib/api/landed-costs";
 import { recordInventoryReceipt } from "../../lib/api/inventory-valuation";
 import { adjustInventory } from "../../lib/api/inventory-movements";
+import { assemblyBomsJson, assemblyBomJson, assemblyOrdersJson, assemblyUpdatedJson, assemblyDeletedJson } from "../../i18n/inventory-assembly-presentation";
 
 async function mcp(ctx: AuthContext, full = false) {
   const server = new McpServer({ name: "Assembly fixture", version: "1" });
@@ -86,6 +87,13 @@ async function run() {
     assert.equal((await data(await getBom(req(), cp(bom.id)))).costBreakdown.totalCostMinor, "32");
     assert.equal((await good("get_bom", { bomId: bom.id })).bom.currencyCode, "USD");
     assert.equal((await data(await boms(req()))).data.length, 1); assert.equal((await good("list_boms")).data.length, 1);
+    assert.equal((await assemblyBomsJson(await boms(req())))[0].id, bom.id);
+    assert.equal((await assemblyBomsJson(Response.json(await good("list_boms"))))[0].id, bom.id);
+    for (const response of [await getBom(req(), cp(bom.id)), Response.json(await good("get_bom", { bomId: bom.id }))]) {
+      const display = await assemblyBomJson(response);
+      assert.equal(display.costBreakdown.totalCostMinor, "32");
+      assert.equal(display.bom.components[0].quantity, "1.0");
+    }
     assert.equal((await data(await components(req(), cp(bom.id)))).components.length, 1);
     assert.equal((await good("list_bom_components", { bomId: bom.id })).components[0].componentItem.purchasePriceMinor, "29");
     await data(await updateBom(req({ description: "Retained costs" }), cp(bom.id)));
@@ -93,18 +101,28 @@ async function run() {
     await data(await editComponent(req({ quantityExact: "1" }, keys.a, `?componentId=${comp.id}`), cp(bom.id)));
     await good("update_bom_component", { bomId: bom.id, componentId: comp.id, wastagePercentExact: "0" });
     const order = (await data(await createOrder(req({ bomId: bom.id, quantity: 3 })), 201)).order;
-    await data(await updateOrder(req({ status: "in_progress" }), cp(order.id)));
+    assert.equal((await assemblyUpdatedJson(await updateOrder(req({ status: "in_progress" }), cp(order.id)), order.id, "in_progress")).quantity, 3);
     assert.equal((await data(await getOrder(req(), cp(order.id)))).order.quantity, 3);
     assert.equal((await good("get_assembly_order", { assemblyOrderId: order.id })).order.bom.laborCostCentsMinor, "2");
     assert.equal((await data(await orders(req()))).data.length, 1); assert.equal((await good("list_assembly_orders")).data.length, 1);
+    for (const response of [await orders(req()), Response.json(await good("list_assembly_orders"))])
+      assert.equal((await assemblyOrdersJson(response))[0].bom.assemblyItem.code, finished.code);
     const built = await data(await complete(new Request("http://fixture.test", { method: "POST", headers: { authorization: `Bearer ${keys.a}` } }), cp(order.id)));
     assert.equal(built.totalCostMinor, "97"); assert.equal(built.unitCostMinor, "32"); assert.equal(built.componentCostMinor, "88"); assert.equal(built.conversionCostMinor, "9");
+    assert.equal((await assemblyUpdatedJson(Response.json(built), order.id, "completed")).quantity, 3);
     assert.equal((await saved(component.id)).totalValue, 0); assert.equal((await saved(finished.id)).totalValue, 97);
     const layer = (await db.query.inventoryCostLayer.findFirst({ where: eq(inventoryCostLayer.inventoryItemId, finished.id) }))!;
     assert.equal(layer.unitCost, 32); assert.equal(layer.remainingValue, 97);
     const legs = await db.query.journalLine.findMany({ where: (l, { eq }) => eq(l.journalEntryId, built.journalEntryId) });
     assert.equal(legs.reduce((s, l) => s + l.debitAmount, 0), 97); assert.equal(legs.reduce((s, l) => s + l.creditAmount, 0), 97);
     assert.equal(legs.find(l => l.creditAmount === 9)?.currencyCode, "USD");
+    // Independent SQL text checks retain physical units and exact carrying value.
+    for (const [id, quantity, value] of [[component.id, "0", "0"], [finished.id, "3", "97"]]) {
+      const saved = await db.execute(sql`select quantity_on_hand::text as quantity, total_value::text as value from inventory_item where id=${id}`);
+      assert.deepEqual(saved.rows, [{ quantity, value }]);
+    }
+    const totals = await db.execute(sql`select sum(debit_amount)::text as debit, sum(credit_amount)::text as credit from journal_line where journal_entry_id=${built.journalEntryId}`);
+    assert.deepEqual(totals.rows, [{ debit: "97", credit: "97" }]);
     await denied(() => complete(req(), cp(order.id)), 409); await mdenied("build_assembly", { assemblyOrderId: order.id }, ma, 409);
     await denied(() => updateOrder(req({ status: "draft" }), cp(order.id)), 409); await denied(() => deleteOrder(req(), cp(order.id)), 409);
     assert.equal((await adjustInventory(ctx, finished.id, { adjustment: -1, reason: "Partial sale" })).movement?.valueMinor, "-32");
@@ -177,7 +195,7 @@ async function run() {
     await good("delete_assembly_order", { assemblyOrderId: pending.id });
     await good("remove_bom_component", { bomId: duplicate.id, componentId: second.id });
     await denied(() => removeComponent(req({}, keys.a, `?componentId=${second.id}`), cp(duplicate.id)), 404);
-    await data(await removeComponent(req({}, keys.a, `?componentId=${comp.id}`), cp(bom.id)));
+    await assemblyDeletedJson(await removeComponent(req({}, keys.a, `?componentId=${comp.id}`), cp(bom.id)));
 
     // Duplicates cannot overdraw one item even when each separate line appears affordable.
     const scarce = await item(a.id, "average", 1, 5), scarceBom = await recipe((await item()).id, scarce.id);

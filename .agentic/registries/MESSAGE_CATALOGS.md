@@ -1,5 +1,11 @@
 # Message catalog foundation
 
+LOC-088 payroll self-service uses 42 paired `PayrollSelfService` messages
+(7,731 keys per locale). See [scope and exceptions](PAYROLL_SELF_SERVICE_CATALOGS.md)
+for checked profile/history/save feedback, provisional Persian and preserved
+employee identity, physical hours, exact cents and REST/MCP contracts.
+LOC-067/008/002 and native terminology/RTL qualification remain independent.
+
 LOC-087 payroll leave and timesheet list/detail routes use 95 paired
 `PayrollTimeDetail` messages (7,689 keys per locale). See
 [scope and exceptions](PAYROLL_TIME_DETAIL_CATALOGS.md) for checked detail,
@@ -281,6 +287,7 @@ Extraction ownership:
 | LOC-083 | LOC-067 child: run list and regular/off-cycle creation; [scope and exceptions](PAYROLL_RUN_CATALOGS.md) |
 | LOC-084 | LOC-067 child: run detail, lifecycle, bonus and generation controls; [scope and exceptions](PAYROLL_RUN_DETAIL_CATALOGS.md) |
 | LOC-085 | LOC-067 child: run payslips and tax form list/detail; [scope and output ownership](PAYROLL_OUTPUT_CATALOGS.md) |
+| LOC-088 | LOC-067 child: payroll self-service profile and history; [scope and exceptions](PAYROLL_SELF_SERVICE_CATALOGS.md) |
 | LOC-002 | Independent combined key coverage, plural and safe rendering acceptance |
 
 Later L10N/RTL tasks retain native-reviewed financial wording, complete Persian

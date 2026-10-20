@@ -1,11 +1,16 @@
 "use client";
 
-import { payrollJson } from "@/lib/money/payroll-ui";
+import { useTranslations } from "next-intl";
+import {
+  payrollSelfServiceJson, payrollSelfServiceOrganization,
+  type SelfProfile as Profile, type SelfPayslip as Payslip,
+  type SelfLeaveBalance as LeaveBalance, type SelfTimesheet as Timesheet,
+} from "@/i18n/payroll-self-service-presentation";
 
 import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { toast } from "sonner";
-import { User, FileText, CalendarDays, Clock, Send, Save } from "lucide-react";
+import { User, Save } from "lucide-react";
 import { Section } from "@/components/dashboard/section";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,42 +20,6 @@ import { ContentReveal } from "@/components/ui/content-reveal";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { payrollMoneyDisplay as formatMoney } from "@/lib/money/payroll-display";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
-import { cn } from "@/lib/utils";
-
-interface Profile {
-  id: string;
-  name: string;
-  email: string | null;
-  employeeNumber: string;
-  position: string | null;
-  salary: number;
-  bankAccountNumber: string | null;
-  ptoBalanceHours: number;
-}
-
-interface Payslip {
-  currency: string;
-  id: string;
-  grossAmount: number;
-  netAmount: number;
-  generatedAt: string;
-  payrollRun: { payPeriodStart: string; payPeriodEnd: string } | null;
-}
-
-interface LeaveBalance {
-  id: string;
-  balance: number;
-  usedHours: number;
-  policy: { name: string; leaveType: string } | null;
-}
-
-interface Timesheet {
-  id: string;
-  periodStart: string;
-  periodEnd: string;
-  status: string;
-  totalHours: number;
-}
 
 const anim = (delay: number) => ({
   initial: { opacity: 0, y: 12 } as const,
@@ -59,6 +28,7 @@ const anim = (delay: number) => ({
 });
 
 export default function SelfServicePage() {
+  const t = useTranslations("PayrollSelfService");
   const [profile, setProfile] = useState<Profile | null>(null);
   const [payslips, setPayslips] = useState<Payslip[]>([]);
   const [leaveBalances, setLeaveBalances] = useState<LeaveBalance[]>([]);
@@ -69,39 +39,39 @@ export default function SelfServicePage() {
 
   const [email, setEmail] = useState("");
   const [bankAccount, setBankAccount] = useState("");
-  useDocumentTitle("Payroll · Self Service");
+  useDocumentTitle(t("documentTitle"));
 
-  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
+  const orgId = payrollSelfServiceOrganization();
 
   useEffect(() => {
-    if (!orgId) return;
-    const headers = { "x-organization-id": orgId };
-
-    Promise.all([
-      fetch("/api/v1/payroll/self-service/profile", { headers }).then((r) => payrollJson(r)),
-      fetch("/api/v1/payroll/self-service/payslips", { headers }).then((r) => payrollJson(r)),
-      fetch("/api/v1/payroll/self-service/leave-balance", { headers }).then((r) => payrollJson(r)),
-      fetch("/api/v1/payroll/self-service/timesheets", { headers }).then((r) => payrollJson(r)),
-    ])
-      .then(([profileData, payslipData, leaveData, tsData]) => {
-        if (profileData.error) toast.error(profileData.error);
-        if (payslipData.error) toast.error(payslipData.error);
-        if (profileData.employee) {
-          const emp = profileData.employee;
-          setProfile(emp);
-          setEmail(emp.email || "");
-          setBankAccount(emp.bankAccountNumber || "");
-        }
-        if (payslipData.data) setPayslips(payslipData.data);
-        if (leaveData.data) setLeaveBalances(leaveData.data);
-        if (tsData.data) setTimesheets(tsData.data);
-      })
-      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"))
-      .finally(() => setLoading(false));
+    let active = true;
+    async function load() {
+      try {
+        if (!orgId) { if (active) setMoneyError("organizationRequired"); return; }
+        const headers = { "x-organization-id": orgId };
+        const response = await fetch("/api/v1/payroll/self-service/profile", { headers });
+        if (!active) return;
+        if (response.status === 404) { setProfile(null); setMoneyError(null); return; }
+        const { employee } = await payrollSelfServiceJson(response, "profile");
+        if (!active) return;
+        const [slips, leave, sheets] = await Promise.all([
+          fetch("/api/v1/payroll/self-service/payslips", { headers }).then(r => payrollSelfServiceJson(r, "payslips", employee.id)),
+          fetch("/api/v1/payroll/self-service/leave-balance", { headers }).then(r => payrollSelfServiceJson(r, "leave", employee.id)),
+          fetch("/api/v1/payroll/self-service/timesheets", { headers }).then(r => payrollSelfServiceJson(r, "timesheets", employee.id)),
+        ]);
+        if (!active) return;
+        setProfile(employee); setEmail(employee.email || ""); setBankAccount(employee.bankAccountNumber || "");
+        setPayslips(slips.data); setLeaveBalances(leave.data); setTimesheets(sheets.data); setMoneyError(null);
+      } catch { if (active) setMoneyError("loadFailed"); }
+      finally { if (active) setLoading(false); }
+    }
+    void load();
+    return () => { active = false; };
   }, [orgId]);
 
   async function handleSaveProfile() {
-    if (!orgId) return;
+    if (!orgId) { toast.error(t("organizationRequired")); return; }
+    if (!profile) return;
     setSaving(true);
     try {
       const res = await fetch("/api/v1/payroll/self-service/profile", {
@@ -112,14 +82,17 @@ export default function SelfServicePage() {
           bankAccountNumber: bankAccount || undefined,
         }),
       });
-      if (res.ok) { await payrollJson(res); toast.success("Profile updated"); }
+      await payrollSelfServiceJson(res, "profile", profile.id);
+      toast.success(t("profileUpdated"));
+    } catch {
+      toast.error(t("saveFailed"));
     } finally {
       setSaving(false);
     }
   }
 
   if (loading) return <BrandLoader />;
-  if (moneyError) return <p role="alert">{moneyError}</p>;
+  if (moneyError) return <p role="alert">{t(moneyError === "organizationRequired" ? "organizationRequired" : "loadFailed")}</p>;
 
   if (!profile) {
     return (
@@ -128,8 +101,8 @@ export default function SelfServicePage() {
           <div className="mx-auto flex size-10 items-center justify-center rounded-xl bg-muted mb-3">
             <User className="size-5 text-muted-foreground" />
           </div>
-          <p className="text-sm font-medium">No employee profile found</p>
-          <p className="text-xs text-muted-foreground mt-1">Your account is not linked to a payroll employee record</p>
+          <p className="text-sm font-medium">{t("noProfile")}</p>
+          <p className="text-xs text-muted-foreground mt-1">{t("noProfileDescription")}</p>
         </div>
       </ContentReveal>
     );
@@ -140,39 +113,39 @@ export default function SelfServicePage() {
       {/* Quick stats */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <motion.div {...anim(0)} className="rounded-xl border bg-card p-4">
-          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Employee #</p>
+          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("employeeNumber")}</p>
           <p className="mt-1 text-lg font-bold font-mono">{profile.employeeNumber}</p>
         </motion.div>
         <motion.div {...anim(0.05)} className="rounded-xl border bg-card p-4">
-          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Position</p>
+          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("position")}</p>
           <p className="mt-1 text-lg font-bold truncate">{profile.position || "-"}</p>
         </motion.div>
         <motion.div {...anim(0.1)} className="rounded-xl border bg-card p-4">
-          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">PTO Balance</p>
-          <p className="mt-1 text-lg font-bold font-mono tabular-nums">{profile.ptoBalanceHours}h</p>
+          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("ptoBalance")}</p>
+          <p className="mt-1 text-lg font-bold font-mono tabular-nums">{t("hours", { hours: String(profile.ptoBalanceHours) })}</p>
         </motion.div>
         <motion.div {...anim(0.15)} className="rounded-xl border bg-card p-4">
-          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Payslips</p>
+          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("payslips")}</p>
           <p className="mt-1 text-lg font-bold font-mono tabular-nums">{payslips.length}</p>
         </motion.div>
       </div>
 
       <div className="max-w-4xl space-y-6">
         {/* Profile edit */}
-        <Section title="My Profile" description="Update your contact and banking info.">
+        <Section title={t("profileTitle")} description={t("profileDescription")}>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label className="text-xs">Email</Label>
+              <Label className="text-xs">{t("email")}</Label>
               <Input value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Bank Account</Label>
+              <Label className="text-xs">{t("bankAccount")}</Label>
               <Input value={bankAccount} onChange={(e) => setBankAccount(e.target.value)} />
             </div>
           </div>
           <div className="mt-3 flex justify-end">
             <Button size="sm" onClick={handleSaveProfile} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700">
-              <Save className="mr-1.5 size-3.5" /> {saving ? "Saving..." : "Save"}
+              <Save className="mr-1.5 size-3.5" /> {saving ? t("saving") : t("save")}
             </Button>
           </div>
         </Section>
@@ -180,20 +153,20 @@ export default function SelfServicePage() {
         <div className="h-px bg-border" />
 
         {/* Payslips */}
-        <Section title="My Payslips" description="View your recent pay statements.">
+        <Section title={t("payslipsTitle")} description={t("payslipsDescription")}>
           {payslips.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4 text-center">No payslips available</p>
+            <p className="text-sm text-muted-foreground py-4 text-center">{t("noPayslips")}</p>
           ) : (
             <div className="rounded-lg border divide-y">
               {payslips.slice(0, 10).map((ps) => (
                 <div key={ps.id} className="flex items-center justify-between px-4 py-2.5">
                   <div>
-                    <p className="text-sm">{ps.payrollRun?.payPeriodStart} to {ps.payrollRun?.payPeriodEnd}</p>
+                    <p className="text-sm">{t("period", { start: ps.payrollRun?.payPeriodStart ?? "", end: ps.payrollRun?.payPeriodEnd ?? "" })}</p>
                     <p className="text-xs text-muted-foreground">{new Date(ps.generatedAt).toLocaleDateString()}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-mono tabular-nums">{formatMoney(ps.grossAmount, ps.currency)}</p>
-                    <p className="text-xs text-muted-foreground font-mono">Net: {formatMoney(ps.netAmount, ps.currency)}</p>
+                    <p className="text-xs text-muted-foreground font-mono">{t("netAmount", { amount: formatMoney(ps.netAmount, ps.currency) })}</p>
                   </div>
                 </div>
               ))}
@@ -204,20 +177,20 @@ export default function SelfServicePage() {
         <div className="h-px bg-border" />
 
         {/* Leave Balances */}
-        <Section title="Leave Balances" description="Your current PTO and leave balances.">
+        <Section title={t("leaveTitle")} description={t("leaveDescription")}>
           {leaveBalances.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4 text-center">No leave balances found</p>
+            <p className="text-sm text-muted-foreground py-4 text-center">{t("noLeave")}</p>
           ) : (
             <div className="rounded-lg border divide-y">
               {leaveBalances.map((lb) => (
                 <div key={lb.id} className="flex items-center justify-between px-4 py-2.5">
                   <div>
                     <p className="text-sm font-medium">{lb.policy?.name || "-"}</p>
-                    <p className="text-xs text-muted-foreground">{lb.policy?.leaveType}</p>
+                    <p className="text-xs text-muted-foreground">{lb.policy ? t(`leaveType_${lb.policy.leaveType}`) : null}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-mono tabular-nums">{lb.balance}h available</p>
-                    <p className="text-xs text-muted-foreground">{lb.usedHours}h used</p>
+                    <p className="text-sm font-mono tabular-nums">{t("hoursAvailable", { hours: String(lb.balance) })}</p>
+                    <p className="text-xs text-muted-foreground">{t("hoursUsed", { hours: String(lb.usedHours) })}</p>
                   </div>
                 </div>
               ))}
@@ -228,18 +201,18 @@ export default function SelfServicePage() {
         <div className="h-px bg-border" />
 
         {/* Timesheets */}
-        <Section title="My Timesheets" description="Your recent timesheets.">
+        <Section title={t("timesheetsTitle")} description={t("timesheetsDescription")}>
           {timesheets.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4 text-center">No timesheets</p>
+            <p className="text-sm text-muted-foreground py-4 text-center">{t("noTimesheets")}</p>
           ) : (
             <div className="rounded-lg border divide-y">
               {timesheets.slice(0, 5).map((ts) => (
                 <div key={ts.id} className="flex items-center justify-between px-4 py-2.5">
                   <div>
-                    <p className="text-sm">{ts.periodStart} to {ts.periodEnd}</p>
-                    <p className="text-xs text-muted-foreground">{ts.totalHours}h</p>
+                    <p className="text-sm">{t("period", { start: ts.periodStart, end: ts.periodEnd })}</p>
+                    <p className="text-xs text-muted-foreground">{t("hours", { hours: String(ts.totalHours) })}</p>
                   </div>
-                  <Badge variant="outline" className="text-[10px]">{ts.status}</Badge>
+                  <Badge variant="outline" className="text-[10px]">{t(`status_${ts.status}`)}</Badge>
                 </div>
               ))}
             </div>

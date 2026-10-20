@@ -1,5 +1,6 @@
 import { payrollEmployeeDetailJson } from "../../i18n/payroll-employee-detail-presentation";
 import { payrollTimeJson } from "../../i18n/payroll-time-presentation";
+import { payrollSelfServiceJson } from "../../i18n/payroll-self-service-presentation";
 import { payrollJson, payrollUiPayload } from "../../lib/money/payroll-ui";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -83,6 +84,8 @@ async function run() {
       approve_payroll_timesheet: "sheetApproved", reject_payroll_timesheet: "sheetRejected" };
     const timeKind = timeKinds[name];
     if (timeKind) await payrollTimeJson(Response.json(body), timeKind);
+    if (name === "list_self_payroll_timesheets") assert.deepEqual(await payrollSelfServiceJson(Response.json(body), "timesheets"), body);
+    if (name === "get_self_payroll_leave_balances") assert.deepEqual(await payrollSelfServiceJson(Response.json(body), "leave"), body);
     const kind = name === "get_employee_leave_balances" ? "leave" : null;
     if (kind) {
       if (mcp) {

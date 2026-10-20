@@ -1,5 +1,6 @@
 import { payrollJson, payrollUiPayload } from "../../lib/money/payroll-ui";
 import { payrollOutputJson } from "../../i18n/payroll-output-presentation";
+import { payrollSelfServiceJson } from "../../i18n/payroll-self-service-presentation";
 import { payrollRunDetailJson } from "../../i18n/payroll-run-detail-presentation";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -83,6 +84,8 @@ async function run() {
     const kinds = { list_payslips: "payslips", get_payslip: "payslip", list_tax_forms: "generations", get_tax_form: "form", generate_tax_forms: "generated" } as const;
     if (name in kinds) assert.deepEqual(await payrollOutputJson(Response.json(body), kinds[name as keyof typeof kinds]), body);
     if (name === "generate_payslips") assert.deepEqual(await payrollRunDetailJson(Response.json(body), "payslips"), body);
+    if (["get_payroll_self_profile", "update_payroll_self_profile"].includes(name)) assert.deepEqual(await payrollSelfServiceJson(Response.json(body), "profile"), body);
+    if (name === "list_payroll_self_payslips") assert.deepEqual(await payrollSelfServiceJson(Response.json(body), "payslips"), body);
     return body;
   };
   const read = async (name: string, args: Args = {}, key: string = keys.a) => checkedGeneration(name, await data(await rest(name, args, key), name === "generate_tax_forms" ? 201 : 200));

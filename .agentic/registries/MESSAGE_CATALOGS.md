@@ -1,5 +1,11 @@
 # Message catalog foundation
 
+LOC-081 employee detail uses 92 paired `PayrollEmployeeDetail` messages (7,192
+keys per locale). See [scope and exceptions](PAYROLL_EMPLOYEE_DETAIL_CATALOGS.md)
+for profile, compensation, deductions, tax, leave and deletion presentation,
+checked response envelopes and preserved exact money/statutory machine values.
+LOC-067/008/002 and native terminology/RTL qualification remain independent.
+
 LOC-080 employee list and EmployeeDrawer use 46 paired `PayrollEmployees`
 messages (7,100 keys per locale). See [scope and exceptions](PAYROLL_EMPLOYEE_CATALOGS.md)
 for safe read/create feedback and preserved cents, basis points, dates and
@@ -233,6 +239,7 @@ Extraction ownership:
 | LOC-009 | Public surfaces, landing/help, email/PDF and user-visible background content; remaining source audit |
 | LOC-079 | LOC-067 child: payroll overview/navigation; [scope and exceptions](PAYROLL_OVERVIEW_CATALOGS.md) |
 | LOC-080 | LOC-067 child: employee list and EmployeeDrawer; [scope and exceptions](PAYROLL_EMPLOYEE_CATALOGS.md) |
+| LOC-081 | LOC-067 child: employee detail; [scope and exceptions](PAYROLL_EMPLOYEE_DETAIL_CATALOGS.md) |
 | LOC-002 | Independent combined key coverage, plural and safe rendering acceptance |
 
 Later L10N/RTL tasks retain native-reviewed financial wording, complete Persian

@@ -1,3 +1,4 @@
+import { payrollEmployeeDetailJson } from "../../i18n/payroll-employee-detail-presentation";
 import { payrollCentsInput, payrollCentsDecimal } from "../../lib/money/payroll-input";
 import { payrollJson, payrollUiPayload } from "../../lib/money/payroll-ui";
 import { payrollOverviewJson } from "../../i18n/payroll-overview-presentation";
@@ -90,6 +91,7 @@ async function run() {
     assert.equal(cm.hourlyRate, Number.MAX_SAFE_INTEGER); assert.equal(cm.currency, "JPY");
     assert.equal((await data(await createContractor(req({ name: "Dual contractor", hourlyRate: 29, hourlyRateMinor: "29", email: null, company: null })), 201)).contractor.hourlyRateMinor, "29");
     const ep = (await data(await patchEmployee(req({ salaryMinor: "3000000000", taxRate: 2029, hourlyRateMinor: null }), p(e.id)))).employee;
+    assert.deepEqual(await payrollEmployeeDetailJson(Response.json({ employee: ep }), "employee"), { employee: ep });
     assert.equal(ep.salary, 3000000000); assert.equal(ep.taxRate, 2029); assert.equal(ep.hourlyRate, null);
     const retained = (await ma.call("update_payroll_employee", { employeeId: e.id, name: "Renamed" })).body.employee;
     assert.equal(retained.salaryMinor, "3000000000"); assert.equal(retained.hourlyRateMinor, null); assert.equal(retained.taxRate, 2029);
@@ -99,6 +101,8 @@ async function run() {
     const er = (await data(await employee(req(), p(e.id)))).employee;
     assert.equal(er.member.user.email, owner.email); assert.equal(JSON.stringify(er).includes("SECRET-HASH"), false); assert.equal("passwordHash" in er.member.user, false);
     assert.deepEqual((await ma.call("get_payroll_employee", { employeeId: e.id })).body.employee, er);
+    assert.deepEqual(await payrollEmployeeDetailJson(Response.json({ employee: er }), "employee"), { employee: er });
+    assert.deepEqual(await payrollEmployeeDetailJson(Response.json({ employee: retained }), "employee"), { employee: retained });
     const listResponse = await employees(req());
     const list = await payrollOverviewJson(listResponse.clone(), "employees");
     const mlist = (await ma.call("list_payroll_employees", {})).body;

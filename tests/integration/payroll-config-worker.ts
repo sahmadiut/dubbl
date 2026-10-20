@@ -1,3 +1,4 @@
+import { payrollEmployeeDetailJson } from "../../i18n/payroll-employee-detail-presentation";
 import { payrollJson, payrollUiPayload } from "../../lib/money/payroll-ui";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -70,8 +71,13 @@ async function run() {
     return route[def.verb](malformed ? new Request("http://fixture.test", { method: "POST", headers: { authorization: `Bearer ${key}` }, body: "{" }) : req(body, key), { params: Promise.resolve(params) });
   };
   const data = async (response: Response, status = 200) => { const body = await payrollJson(response); assert.equal(response.status, status, JSON.stringify(body)); return body; };
-  const read = async (name: string, args: Args = {}, key = keys.a) => data(await rest(name, args, key), definition(name).verb === "POST" ? 201 : 200);
-  const call = async (name: string, args: Args = {}, client = ma) => { const result = await client.call(name, args); assert.equal(result.isError, false, JSON.stringify(result.body)); return result.body; };
+  const checkDetail = async <T extends Record<string, unknown>>(name: string, body: T) => {
+    const kind = name === "list_payroll_employee_deductions" ? "deductions" : ["get_payroll_employee_tax_config", "update_payroll_employee_tax_config"].includes(name) ? "tax" : null;
+    if (kind) await payrollEmployeeDetailJson(Response.json(body), kind);
+    return body;
+  };
+  const read = async (name: string, args: Args = {}, key = keys.a) => checkDetail(name, await data(await rest(name, args, key), definition(name).verb === "POST" ? 201 : 200));
+  const call = async (name: string, args: Args = {}, client = ma) => { const result = await client.call(name, args); assert.equal(result.isError, false, JSON.stringify(result.body)); return checkDetail(name, result.body); };
   const snapshot = async () => Promise.all(["payroll_settings", "deduction_type", "employee_deduction", "employee_tax_config", "tax_bracket", "tax_allowance_config", "payroll_employee", "payroll_run", "journal_entry", "journal_line", "audit_log"].map(t =>
     db.execute(sql.raw(`select coalesce(jsonb_agg(to_jsonb(t)::text order by t.id),'[]'::jsonb) as rows from ${t} t`)).then(r => r.rows)));
   const denied = async (name: string, args: Args, status: number, key = keys.a) => { const before = await snapshot(); await data(await rest(name, args, key), status); assert.deepEqual(await snapshot(), before); };

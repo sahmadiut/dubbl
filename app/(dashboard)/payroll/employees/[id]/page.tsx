@@ -1,8 +1,10 @@
 "use client";
 
-import { payrollJson, payrollShare } from "@/lib/money/payroll-ui";
+import { payrollShare } from "@/lib/money/payroll-ui";
 
 import { payrollCentsInput, payrollCentsDecimal, payrollBasisPointsInput, payrollCentsPreview, payrollPeriodPreview } from "@/lib/money/payroll-input";
+import { useTranslations } from "next-intl";
+import { payrollEmployeeDetailJson, type EmployeeDetail, type EmployeeDeduction, type TaxConfig, type LeaveBalance, type CompensationBand } from "@/i18n/payroll-employee-detail-presentation";
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "motion/react";
@@ -29,62 +31,6 @@ import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { CurrencySelect } from "@/components/ui/currency-select";
 import { cn } from "@/lib/utils";
 
-interface EmployeeDetail {
-  id: string;
-  name: string;
-  email: string | null;
-  employeeNumber: string;
-  position: string | null;
-  salary: number;
-  payFrequency: string;
-  taxRate: number;
-  bankAccountNumber: string | null;
-  startDate: string;
-  endDate: string | null;
-  isActive: boolean;
-  compensationType: string;
-  hourlyRate: number | null;
-  memberId: string | null;
-  member: { user: { name: string | null; email: string } } | null;
-  department: string | null;
-  ptoBalanceHours: number | null;
-  currency: string | null;
-  compensationBandId: string | null;
-}
-
-interface EmployeeDeduction {
-  id: string;
-  deductionType: { name: string; category: string; defaultAmount: number | null; defaultPercent: number | null };
-  timing: string;
-  amount: number | null;
-  percent: number | null;
-  isActive: boolean;
-}
-
-interface TaxConfig {
-  id: string;
-  filingStatus: string;
-  federalAllowances: number;
-  stateAllowances: number;
-  additionalWithholding: number | null;
-}
-
-interface LeaveBalance {
-  id: string;
-  balance: number;
-  usedHours: number;
-  policy: { name: string; leaveType: string } | null;
-}
-
-interface CompensationBand {
-  id: string;
-  name: string;
-  minSalary: number;
-  midSalary: number;
-  maxSalary: number;
-  currency: string;
-}
-
 const anim = (delay: number) => ({
   initial: { opacity: 0, y: 12 } as const,
   animate: { opacity: 1, y: 0 } as const,
@@ -94,11 +40,12 @@ const anim = (delay: number) => ({
 const getPerPeriodPay = payrollPeriodPreview;
 
 export default function EmployeeDetailPage() {
+  const t = useTranslations("PayrollEmployeeDetail");
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [emp, setEmp] = useState<EmployeeDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [moneyError, setMoneyError] = useState<string | null>(null);
+  const [moneyError, setMoneyError] = useState<"readFailed" | "organizationRequired" | null>(null);
   const [saving, setSaving] = useState(false);
   const { confirm, dialog: confirmDialog } = useConfirm();
 
@@ -130,92 +77,72 @@ export default function EmployeeDetailPage() {
   const [compensationType, setCompensationType] = useState("salary");
   const [hourlyRate, setHourlyRate] = useState("");
   const [currency, setCurrency] = useState("USD");
-  useDocumentTitle("Payroll · Employee Details");
+  useDocumentTitle(t("documentTitle"));
 
-  const orgId =
-    typeof window !== "undefined"
-      ? localStorage.getItem("activeOrgId")
-      : null;
+  const [orgId, setOrgId] = useState<string | null>(null);
+  useEffect(() => {
+    try {
+      const org = localStorage.getItem("activeOrgId");
+      if (!org) { setMoneyError("organizationRequired"); setLoading(false); }
+      setOrgId(org);
+    } catch { setMoneyError("readFailed"); setLoading(false); }
+  }, []);
 
   useEffect(() => {
     if (!orgId) return;
-    fetch(`/api/v1/payroll/employees/${id}`, {
-      headers: { "x-organization-id": orgId },
-    })
-      .then((r) => payrollJson(r))
-      .then((data) => {
-        if (data.employee) {
-          const e = data.employee;
-          setEmp(e);
-          setName(e.name);
-          setEmail(e.email || "");
-          setEmployeeNumber(e.employeeNumber);
-          setPosition(e.position || "");
-          setSalary(payrollCentsDecimal(e.salary));
-          setPayFrequency(e.payFrequency);
-          setTaxRate(payrollCentsDecimal(e.taxRate));
-          setBankAccountNumber(e.bankAccountNumber || "");
-          setStartDate(e.startDate || "");
-          setEndDate(e.endDate || "");
-          setIsActive(e.isActive);
-          setCompensationType(e.compensationType || "salary");
-          setHourlyRate(e.hourlyRate !== null ? payrollCentsDecimal(e.hourlyRate) : "");
-          setCurrency(e.currency || "USD");
-        }
-      })
-      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"))
-      .finally(() => setLoading(false));
-  }, [id, orgId]);
-
-  // Fetch deductions, tax config, leave balances, compensation band
-  useEffect(() => {
-    if (!orgId) return;
+    let active = true;
+    setLoading(true);
+    setMoneyError(null);
+    setEmp(null);
+    setCompensationBand(null);
     const headers = { "x-organization-id": orgId };
-
-    fetch(`/api/v1/payroll/employees/${id}/deductions`, { headers })
-      .then((r) => payrollJson(r))
-      .then((data) => {
-        if (data.data) setDeductions(data.data);
-      })
-      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"));
-
-    fetch(`/api/v1/payroll/employees/${id}/tax-config`, { headers })
-      .then((r) => payrollJson(r))
-      .then((data) => {
-        if (data.taxConfig) {
-          const tc = data.taxConfig;
-          setTaxConfig(tc);
-          setTcFilingStatus(tc.filingStatus || "");
-          setTcFederalAllowances(String(tc.federalAllowances ?? 0));
-          setTcStateAllowances(String(tc.stateAllowances ?? 0));
-          setTcAddlFederal(payrollCentsDecimal(tc.additionalWithholding ?? 0));
-        }
-      })
-      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"));
-
-    fetch(`/api/v1/payroll/employees/${id}/leave-balances`, { headers })
-      .then((r) => payrollJson(r))
-      .then((data) => {
-        if (data.leaveBalances) setLeaveBalances(data.leaveBalances);
-      })
-      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"));
+    async function load() {
+      try {
+        const response = await fetch(`/api/v1/payroll/employees/${id}`, { headers });
+        if (response.status === 404) return;
+        const data = await payrollEmployeeDetailJson(response, "employee");
+        if (!active) return;
+        const [deductionData, taxData, leaveData, bandData] = await Promise.all([
+          fetch(`/api/v1/payroll/employees/${id}/deductions`, { headers }).then(r => payrollEmployeeDetailJson(r, "deductions")),
+          fetch(`/api/v1/payroll/employees/${id}/tax-config`, { headers }).then(r => payrollEmployeeDetailJson(r, "tax")),
+          fetch(`/api/v1/payroll/employees/${id}/leave-balances`, { headers }).then(r => payrollEmployeeDetailJson(r, "leave")),
+          data.employee.compensationBandId ? fetch(`/api/v1/payroll/compensation/bands/${data.employee.compensationBandId}`, { headers }).then(r => payrollEmployeeDetailJson(r, "band")) : null,
+        ]);
+        if (!active) return;
+        const e = data.employee;
+        setEmp(e);
+        setName(e.name);
+        setEmail(e.email || "");
+        setEmployeeNumber(e.employeeNumber);
+        setPosition(e.position || "");
+        setSalary(payrollCentsDecimal(e.salary));
+        setPayFrequency(e.payFrequency);
+        setTaxRate(payrollCentsDecimal(e.taxRate));
+        setBankAccountNumber(e.bankAccountNumber || "");
+        setStartDate(e.startDate);
+        setEndDate(e.endDate || "");
+        setIsActive(e.isActive);
+        setCompensationType(e.compensationType);
+        setHourlyRate(e.hourlyRate !== null ? payrollCentsDecimal(e.hourlyRate) : "");
+        setCurrency(e.currency || "USD");
+        setDeductions(deductionData.data);
+        setLeaveBalances(leaveData.data);
+        setCompensationBand(bandData?.band ?? null);
+        const tc = taxData.taxConfig;
+        setTaxConfig(tc);
+        setTcFilingStatus(tc.filingStatus);
+        setTcFederalAllowances(String(tc.federalAllowances));
+        setTcStateAllowances(String(tc.stateAllowances));
+        setTcAddlFederal(payrollCentsDecimal(tc.additionalWithholding ?? 0));
+      } catch { if (active) setMoneyError("readFailed"); }
+      finally { if (active) setLoading(false); }
+    }
+    void load();
+    return () => { active = false; };
   }, [id, orgId]);
-
-  // Fetch compensation band when employee loads
-  useEffect(() => {
-    if (!orgId || !emp?.compensationBandId) return;
-    fetch(`/api/v1/payroll/compensation/bands/${emp.compensationBandId}`, {
-      headers: { "x-organization-id": orgId },
-    })
-      .then((r) => payrollJson(r))
-      .then((data) => {
-        if (data.band) setCompensationBand(data.band);
-      })
-      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"));
-  }, [orgId, emp?.compensationBandId]);
 
   async function handleSaveTaxConfig() {
-    if (!orgId) return;
+    if (!orgId) { toast.error(t("organizationRequired")); return; }
     setTaxSaving(true);
     try {
       const res = await fetch(`/api/v1/payroll/employees/${id}/tax-config`, {
@@ -231,23 +158,18 @@ export default function EmployeeDetailPage() {
           additionalWithholdingMinor: payrollCentsInput(tcAddlFederal || "0"),
         }),
       });
-      if (res.ok) {
-        const data = await payrollJson(res);
-        if (data.taxConfig) setTaxConfig(data.taxConfig);
-        toast.success("Tax configuration updated");
-      } else {
-        const data = await payrollJson(res);
-        toast.error(typeof data.error === "string" ? data.error : "Failed to update tax config");
-      }
+      const data = await payrollEmployeeDetailJson(res, "tax");
+      setTaxConfig(data.taxConfig);
+      toast.success(t("taxUpdated"));
     } catch {
-      toast.error("Failed to update tax configuration");
+      toast.error(t("taxFailed"));
     } finally {
       setTaxSaving(false);
     }
   }
 
   async function handleSave() {
-    if (!orgId) return;
+    if (!orgId) { toast.error(t("organizationRequired")); return; }
     setSaving(true);
     try {
       const res = await fetch(`/api/v1/payroll/employees/${id}`, {
@@ -271,45 +193,38 @@ export default function EmployeeDetailPage() {
         }),
       });
 
-      if (res.ok) {
-        const data = await payrollJson(res);
-        setEmp(data.employee);
-        toast.success("Employee updated");
-      } else {
-        const data = await payrollJson(res);
-        toast.error(typeof data.error === "string" ? data.error : "Failed to update");
-      }
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to update employee");
+      const data = await payrollEmployeeDetailJson(res, "employee");
+      setEmp(data.employee);
+      toast.success(t("updated"));
+    } catch {
+      toast.error(t("saveFailed"));
     } finally {
       setSaving(false);
     }
   }
 
   async function handleDelete() {
-    if (!orgId) return;
+    if (!orgId) { toast.error(t("organizationRequired")); return; }
     const confirmed = await confirm({
-      title: "Delete this employee?",
-      description: "This action cannot be undone.",
-      confirmLabel: "Delete",
+      title: t("deleteTitle"),
+      description: t("deleteConfirm"),
+      confirmLabel: t("delete"),
       destructive: true,
     });
     if (!confirmed) return;
-    const res = await fetch(`/api/v1/payroll/employees/${id}`, {
-      method: "DELETE",
-      headers: { "x-organization-id": orgId },
-    });
-    if (res.ok) {
-      await payrollJson(res);
-      toast.success("Employee deleted");
+    try {
+      const res = await fetch(`/api/v1/payroll/employees/${id}`, {
+        method: "DELETE",
+        headers: { "x-organization-id": orgId },
+      });
+      await payrollEmployeeDetailJson(res, "deleted");
+      toast.success(t("deleted"));
       router.push("/payroll/employees");
-    } else {
-      toast.error("Failed to delete employee");
-    }
+    } catch { toast.error(t("deleteFailed")); }
   }
 
   if (loading) return <BrandLoader />;
-  if (moneyError) return <p role="alert">{moneyError}</p>;
+  if (moneyError) return <p role="alert">{t(moneyError)}</p>;
 
   if (!emp) {
     return (
@@ -319,13 +234,14 @@ export default function EmployeeDetailPage() {
           className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors mb-6"
         >
           <ArrowLeft className="size-3.5" />
-          Back to employees
+          {t("back")}
         </button>
-        <p className="text-sm text-muted-foreground">Employee not found</p>
+        <p className="text-sm text-muted-foreground">{t("notFound")}</p>
       </ContentReveal>
     );
   }
 
+  const leaveTypeKey = (value: string) => value === "vacation" ? "vacation" : value === "sick" ? "sick" : value === "personal" ? "personal" : value === "parental" ? "parental" : value === "bereavement" ? "bereavement" : value === "unpaid" ? "unpaid" : "other";
   const salaryInCents = payrollCentsPreview(salary);
   const taxRateNum = parseFloat(taxRate || "0");
 
@@ -337,7 +253,7 @@ export default function EmployeeDetailPage() {
         className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors"
       >
         <ArrowLeft className="size-3.5" />
-        Back to employees
+        {t("back")}
       </button>
 
       {/* Header */}
@@ -364,7 +280,7 @@ export default function EmployeeDetailPage() {
                   ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
                   : ""
               }>
-                {isActive ? "Active" : "Inactive"}
+                {isActive ? t("active") : t("inactive")}
               </Badge>
             </div>
             <p className="text-sm text-muted-foreground">
@@ -372,7 +288,7 @@ export default function EmployeeDetailPage() {
             </p>
             {emp.member && (
               <p className="text-xs text-muted-foreground">
-                Linked to {emp.member.user.name || emp.member.user.email}
+                {t("linked", { member: emp.member.user.name || emp.member.user.email })}
               </p>
             )}
           </div>
@@ -380,9 +296,9 @@ export default function EmployeeDetailPage() {
         <div className="flex items-center gap-2">
           <Button size="sm" variant="outline" onClick={() => setIsActive(!isActive)}>
             {isActive ? (
-              <><PowerOff className="mr-1.5 size-3.5" />Deactivate</>
+              <><PowerOff className="mr-1.5 size-3.5" />{t("deactivate")}</>
             ) : (
-              <><Power className="mr-1.5 size-3.5" />Activate</>
+              <><Power className="mr-1.5 size-3.5" />{t("activate")}</>
             )}
           </Button>
         </div>
@@ -392,7 +308,7 @@ export default function EmployeeDetailPage() {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <motion.div {...anim(0)} className="rounded-xl border bg-card p-4">
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-            {compensationType === "salary" ? "Annual Salary" : compensationType === "hourly" ? "Hourly Rate" : "Compensation"}
+            {compensationType === "salary" ? t("annualSalary") : compensationType === "hourly" ? t("hourlyRate") : t("compensation")}
           </p>
           <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate">
             {compensationType === "salary"
@@ -403,30 +319,30 @@ export default function EmployeeDetailPage() {
           </p>
         </motion.div>
         <motion.div {...anim(0.05)} className="rounded-xl border bg-card p-4">
-          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Per-Period Pay</p>
+          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("periodPay")}</p>
           <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate">{formatMoney(getPerPeriodPay(salaryInCents, payFrequency), currency)}</p>
         </motion.div>
         <motion.div {...anim(0.09)} className="rounded-xl border bg-card p-4">
-          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Tax Rate</p>
+          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("taxRate")}</p>
           <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate">{taxRateNum}%</p>
         </motion.div>
         <motion.div {...anim(0.12)} className="rounded-xl border bg-card p-4">
-          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Compensation Type</p>
-          <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate">{compensationType.charAt(0).toUpperCase() + compensationType.slice(1)}</p>
+          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("compensationType")}</p>
+          <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate">{t(compensationType === "salary" ? "salary" : compensationType === "hourly" ? "hourly" : compensationType === "milestone" ? "milestone" : "commission")}</p>
         </motion.div>
       </div>
 
       {/* Edit form */}
       <div className="max-w-4xl space-y-6">
         {/* Personal Info */}
-        <Section title="Personal Info" description="Basic employee information.">
+        <Section title={t("personalInfo")} description={t("personalHelp")}>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label className="text-xs">Full Name</Label>
+              <Label className="text-xs">{t("name")}</Label>
               <Input value={name} onChange={(e) => setName(e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Email</Label>
+              <Label className="text-xs">{t("email")}</Label>
               <Input
                 type="email"
                 value={email}
@@ -434,7 +350,7 @@ export default function EmployeeDetailPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Employee #</Label>
+              <Label className="text-xs">{t("employeeNumber")}</Label>
               <Input
                 value={employeeNumber}
                 onChange={(e) => setEmployeeNumber(e.target.value)}
@@ -442,7 +358,7 @@ export default function EmployeeDetailPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Position</Label>
+              <Label className="text-xs">{t("position")}</Label>
               <Input
                 value={position}
                 onChange={(e) => setPosition(e.target.value)}
@@ -454,22 +370,22 @@ export default function EmployeeDetailPage() {
         <div className="h-px bg-border" />
 
         {/* Compensation */}
-        <Section title="Compensation" description="Salary, pay frequency, and tax configuration.">
+        <Section title={t("compensation")} description={t("compensationHelp")}>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-1.5">
-              <Label className="text-xs">Compensation Type</Label>
+              <Label className="text-xs">{t("compensationType")}</Label>
               <Select value={compensationType} onValueChange={setCompensationType}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="salary">Salary</SelectItem>
-                  <SelectItem value="hourly">Hourly</SelectItem>
-                  <SelectItem value="milestone">Milestone</SelectItem>
-                  <SelectItem value="commission">Commission</SelectItem>
+                  <SelectItem value="salary">{t("salary")}</SelectItem>
+                  <SelectItem value="hourly">{t("hourly")}</SelectItem>
+                  <SelectItem value="milestone">{t("milestone")}</SelectItem>
+                  <SelectItem value="commission">{t("commission")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Annual Salary</Label>
+              <Label className="text-xs">{t("annualSalary")}</Label>
               <CurrencyInput
                 prefix={currency}
                 value={salary}
@@ -477,20 +393,20 @@ export default function EmployeeDetailPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Pay Frequency</Label>
+              <Label className="text-xs">{t("frequency")}</Label>
               <Select value={payFrequency} onValueChange={setPayFrequency}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="weekly">Weekly</SelectItem>
-                  <SelectItem value="biweekly">Biweekly</SelectItem>
-                  <SelectItem value="monthly">Monthly</SelectItem>
+                  <SelectItem value="weekly">{t("weekly")}</SelectItem>
+                  <SelectItem value="biweekly">{t("biweekly")}</SelectItem>
+                  <SelectItem value="monthly">{t("monthly")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Tax Rate (%)</Label>
+              <Label className="text-xs">{t("taxRateInput")}</Label>
               <Input
                 type="number"
                 step="0.01"
@@ -500,12 +416,12 @@ export default function EmployeeDetailPage() {
             </div>
             {compensationType === "hourly" && (
               <div className="space-y-1.5">
-                <Label className="text-xs">Hourly Rate</Label>
+                <Label className="text-xs">{t("hourlyRate")}</Label>
                 <CurrencyInput prefix={currency} value={hourlyRate} onChange={setHourlyRate} />
               </div>
             )}
             <div className="space-y-1.5">
-              <Label className="text-xs">Currency</Label>
+              <Label className="text-xs">{t("currency")}</Label>
               <CurrencySelect value={currency} onValueChange={setCurrency} />
             </div>
           </div>
@@ -514,17 +430,17 @@ export default function EmployeeDetailPage() {
         <div className="h-px bg-border" />
 
         {/* Details */}
-        <Section title="Details" description="Banking and employment dates.">
+        <Section title={t("details")} description={t("detailsHelp")}>
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-1.5">
-              <Label className="text-xs">Bank Account Number</Label>
+              <Label className="text-xs">{t("bankAccount")}</Label>
               <Input
                 value={bankAccountNumber}
                 onChange={(e) => setBankAccountNumber(e.target.value)}
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Start Date</Label>
+              <Label className="text-xs">{t("startDate")}</Label>
               <Input
                 type="date"
                 value={startDate}
@@ -533,7 +449,7 @@ export default function EmployeeDetailPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">End Date</Label>
+              <Label className="text-xs">{t("endDate")}</Label>
               <Input
                 type="date"
                 value={endDate}
@@ -547,9 +463,9 @@ export default function EmployeeDetailPage() {
         <div className="h-px bg-border" />
 
         {/* Deductions */}
-        <Section title="Deductions" description="Assigned deductions for this employee. Manage deduction types in settings.">
+        <Section title={t("deductions")} description={t("deductionsHelp")}>
           {deductions.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No deductions assigned.</p>
+            <p className="text-sm text-muted-foreground">{t("noDeductions")}</p>
           ) : (
             <div className="space-y-2">
               {deductions.map((d) => (
@@ -562,7 +478,7 @@ export default function EmployeeDetailPage() {
                       <p className="text-sm font-medium">{d.deductionType.name}</p>
                       <div className="flex items-center gap-2 mt-0.5">
                         <Badge variant="outline" className="text-[11px]">
-                          {d.deductionType.category}
+                          {t(d.deductionType.category === "pre_tax" ? "preTax" : "postTax")}
                         </Badge>
                         <Badge
                           variant="outline"
@@ -573,14 +489,14 @@ export default function EmployeeDetailPage() {
                               : "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300"
                           )}
                         >
-                          {d.deductionType.category === "pre_tax" ? "Pre-tax" : "Post-tax"}
+                          {d.deductionType.category === "pre_tax" ? t("preTax") : t("postTax")}
                         </Badge>
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-sm font-mono tabular-nums">
-                      {d.amount != null ? formatMoney(d.amount, emp.currency ?? "USD") : d.percent != null ? `${d.percent}%` : d.deductionType.defaultAmount != null ? formatMoney(d.deductionType.defaultAmount, emp.currency ?? "USD") : d.deductionType.defaultPercent != null ? `${d.deductionType.defaultPercent}%` : "No amount configured"}
+                      {d.amount != null ? formatMoney(d.amount, emp.currency ?? "USD") : d.percent != null ? `${d.percent}%` : d.deductionType.defaultAmount != null ? formatMoney(d.deductionType.defaultAmount, emp.currency ?? "USD") : d.deductionType.defaultPercent != null ? `${d.deductionType.defaultPercent}%` : t("noAmount")}
                     </span>
                     <Badge
                       variant="outline"
@@ -591,7 +507,7 @@ export default function EmployeeDetailPage() {
                           : ""
                       )}
                     >
-                      {d.isActive ? "Active" : "Inactive"}
+                      {d.isActive ? t("active") : t("inactive")}
                     </Badge>
                   </div>
                 </div>
@@ -603,26 +519,26 @@ export default function EmployeeDetailPage() {
         <div className="h-px bg-border" />
 
         {/* Tax Configuration */}
-        <Section title="Tax Configuration" description="Federal and state tax withholding settings.">
+        <Section title={t("taxConfig")} description={t("taxHelp")}>
           {!taxConfig ? (
-            <p className="text-sm text-muted-foreground">No tax configuration found.</p>
+            <p className="text-sm text-muted-foreground">{t("noTax")}</p>
           ) : (
             <div className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Filing Status</Label>
+                  <Label className="text-xs">{t("filingStatus")}</Label>
                   <Select value={tcFilingStatus} onValueChange={setTcFilingStatus}>
-                    <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={t("selectStatus")} /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="single">Single</SelectItem>
-                      <SelectItem value="married_joint">Married Filing Jointly</SelectItem>
-                      <SelectItem value="married_separate">Married Filing Separately</SelectItem>
-                      <SelectItem value="head_of_household">Head of Household</SelectItem>
+                      <SelectItem value="single">{t("single")}</SelectItem>
+                      <SelectItem value="married_joint">{t("marriedJoint")}</SelectItem>
+                      <SelectItem value="married_separate">{t("marriedSeparate")}</SelectItem>
+                      <SelectItem value="head_of_household">{t("headHousehold")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Federal Allowances</Label>
+                  <Label className="text-xs">{t("federalAllowances")}</Label>
                   <Input
                     type="number"
                     value={tcFederalAllowances}
@@ -630,7 +546,7 @@ export default function EmployeeDetailPage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">State Allowances</Label>
+                  <Label className="text-xs">{t("stateAllowances")}</Label>
                   <Input
                     type="number"
                     value={tcStateAllowances}
@@ -638,7 +554,7 @@ export default function EmployeeDetailPage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Additional Withholding per Pay Period</Label>
+                  <Label className="text-xs">{t("withholding")}</Label>
                   <CurrencyInput
                     prefix={currency}
                     value={tcAddlFederal}
@@ -654,7 +570,7 @@ export default function EmployeeDetailPage() {
                   className="bg-emerald-600 hover:bg-emerald-700"
                 >
                   <Save className="mr-1.5 size-3.5" />
-                  {taxSaving ? "Saving..." : "Save Tax Config"}
+                  {taxSaving ? t("saving") : t("saveTax")}
                 </Button>
               </div>
             </div>
@@ -664,9 +580,9 @@ export default function EmployeeDetailPage() {
         <div className="h-px bg-border" />
 
         {/* Leave Balances */}
-        <Section title="Leave Balances" description="Current leave balance and usage for assigned policies.">
+        <Section title={t("leaveBalances")} description={t("leaveHelp")}>
           {leaveBalances.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No leave balances found.</p>
+            <p className="text-sm text-muted-foreground">{t("noLeave")}</p>
           ) : (
             <div className="space-y-2">
               {leaveBalances.map((lb) => (
@@ -679,19 +595,19 @@ export default function EmployeeDetailPage() {
                       <p className="text-sm font-medium">{lb.policy?.name || "-"}</p>
                       {lb.policy?.leaveType && (
                         <Badge variant="outline" className="mt-0.5 text-[11px]">
-                          {lb.policy.leaveType}
+                          {t(leaveTypeKey(lb.policy.leaveType))}
                         </Badge>
                       )}
                     </div>
                   </div>
                   <div className="flex items-center gap-4 text-sm font-mono tabular-nums">
                     <div className="text-right">
-                      <p className="text-[11px] font-sans text-muted-foreground">Balance</p>
-                      <p>{lb.balance}h</p>
+                      <p className="text-[11px] font-sans text-muted-foreground">{t("balance")}</p>
+                      <p>{t("hours", { value: String(lb.balance) })}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-[11px] font-sans text-muted-foreground">Used</p>
-                      <p>{lb.usedHours}h</p>
+                      <p className="text-[11px] font-sans text-muted-foreground">{t("used")}</p>
+                      <p>{t("hours", { value: String(lb.usedHours) })}</p>
                     </div>
                   </div>
                 </div>
@@ -705,30 +621,30 @@ export default function EmployeeDetailPage() {
           <>
             <div className="h-px bg-border" />
 
-            <Section title="Compensation Band" description="Salary band positioning for this employee.">
+            <Section title={t("bandTitle")} description={t("bandHelp")}>
               <div className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   <div className="space-y-1">
-                    <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Band</p>
+                    <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("band")}</p>
                     <p className="text-sm font-medium">{compensationBand.name}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Min Salary</p>
+                    <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("minSalary")}</p>
                     <p className="text-sm font-mono tabular-nums">{formatMoney(compensationBand.minSalary, compensationBand.currency)}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Mid Salary</p>
+                    <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("midSalary")}</p>
                     <p className="text-sm font-mono tabular-nums">{formatMoney(compensationBand.midSalary, compensationBand.currency)}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Max Salary</p>
+                    <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("maxSalary")}</p>
                     <p className="text-sm font-mono tabular-nums">{formatMoney(compensationBand.maxSalary, compensationBand.currency)}</p>
                   </div>
                 </div>
                 {compensationBand.currency === (emp.currency ?? "USD") && compensationBand.currency === (emp.currency ?? "USD") && compensationBand.maxSalary > compensationBand.minSalary && (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                      <span>Range Penetration</span>
+                      <span>{t("range")}</span>
                       <span className="font-mono tabular-nums">
                         {payrollShare(salaryInCents - BigInt(compensationBand.minSalary), BigInt(compensationBand.maxSalary) - BigInt(compensationBand.minSalary))}
                         %
@@ -760,19 +676,19 @@ export default function EmployeeDetailPage() {
             className="bg-emerald-600 hover:bg-emerald-700"
           >
             <Save className="mr-1.5 size-3.5" />
-            {saving ? "Saving..." : "Save Changes"}
+            {saving ? t("saving") : t("save")}
           </Button>
         </div>
 
         <div className="h-px bg-border" />
 
         {/* Danger zone */}
-        <Section title="Danger zone" description="Irreversible actions for this employee.">
+        <Section title={t("danger")} description={t("dangerHelp")}>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-md border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900/50 dark:bg-red-950/20">
             <div>
-              <p className="text-sm font-medium text-red-600 dark:text-red-400">Delete employee</p>
+              <p className="text-sm font-medium text-red-600 dark:text-red-400">{t("deleteEmployee")}</p>
               <p className="text-[12px] text-muted-foreground">
-                Permanently delete this employee and all associated data.
+                {t("deleteHelp")}
               </p>
             </div>
             <Button
@@ -781,7 +697,7 @@ export default function EmployeeDetailPage() {
               onClick={handleDelete}
             >
               <Trash2 className="mr-1.5 size-3.5" />
-              Delete
+              {t("delete")}
             </Button>
           </div>
         </Section>

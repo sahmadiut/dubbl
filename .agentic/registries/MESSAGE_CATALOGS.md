@@ -1,5 +1,12 @@
 # Message catalog foundation
 
+LOC-066 independently accepts combined inventory coverage in
+[inventory catalog acceptance](INVENTORY_CATALOG_ACCEPTANCE.md): all 18 route
+files, five creation drawers and three shared pickers, with eight namespaces
+and 682 paired messages. Complete catalogs retain 7,010 compatible keys per
+locale. Earlier child entries below record their acceptance boundaries at the
+time; LOC-008/002, native terminology and full RTL qualification remain open.
+
 LOC-078 valuation and alerts use 46 paired `InventoryReports` messages (7,010
 keys per locale). See [scope and exceptions](INVENTORY_REPORT_CATALOGS.md) for
 exact valuation, canonical CSV, saved reorder/supplier display and finite read
@@ -204,7 +211,7 @@ Extraction ownership:
 | LOC-064 | LOC-028 child: VAT filing; see [scope](VAT_RETURN_CATALOGS.md) |
 | LOC-065 | LOC-028 child: remaining tax filing; see [scope](TAX_FILING_CATALOGS.md) |
 | LOC-008 | Inventory, payroll, projects, CRM, reports, dashboard and documents |
-| LOC-066 | LOC-008 child: inventory combined acceptance, split across LOC-072..078 |
+| LOC-066 | LOC-008 child: independent inventory combined acceptance; see [scope](INVENTORY_CATALOG_ACCEPTANCE.md) |
 | LOC-072 | LOC-066 child: inventory categories, picker, creation drawer and navigation; see [scope](INVENTORY_CATEGORY_CATALOGS.md) |
 | LOC-073 | LOC-066 child: inventory item list/detail/history, creation and item picker |
 | LOC-074 | LOC-066 child: inventory variants and suppliers; see [scope](INVENTORY_VARIANT_SUPPLIER_CATALOGS.md) |

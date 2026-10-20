@@ -1,5 +1,10 @@
 # Message catalog foundation
 
+LOC-074 variant/supplier item routes use 54 paired `InventoryCatalogs` messages
+(6,635 keys per locale). See [scope and exceptions](INVENTORY_VARIANT_SUPPLIER_CATALOGS.md)
+for exact price/count/lead-time preservation, nullable history and safe feedback.
+LOC-066/008/002 and native terminology/RTL qualification remain independent.
+
 LOC-073 item list/workspace/details/history, InventoryDrawer and item picker use
 208 paired `InventoryItems` messages (6,581 keys per locale). See
 [inventory item scope and exceptions](INVENTORY_ITEM_CATALOGS.md) for canonical
@@ -190,7 +195,7 @@ Extraction ownership:
 | LOC-066 | LOC-008 child: inventory combined acceptance, split across LOC-072..078 |
 | LOC-072 | LOC-066 child: inventory categories, picker, creation drawer and navigation; see [scope](INVENTORY_CATEGORY_CATALOGS.md) |
 | LOC-073 | LOC-066 child: inventory item list/detail/history, creation and item picker |
-| LOC-074 | LOC-066 child: inventory variants and suppliers |
+| LOC-074 | LOC-066 child: inventory variants and suppliers; see [scope](INVENTORY_VARIANT_SUPPLIER_CATALOGS.md) |
 | LOC-075 | LOC-066 child: warehouse management, creation and picker |
 | LOC-076 | LOC-066 child: stock-takes, transfers and movement creation |
 | LOC-077 | LOC-066 child: BOM and assembly |

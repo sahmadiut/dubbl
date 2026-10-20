@@ -14,6 +14,16 @@ import { PATCH as patchSupplier, DELETE as removeSupplier } from "../../app/api/
 import { registerInventoryCatalogTools } from "../../lib/mcp/tools/inventory-catalog";
 import { registerAllTools } from "../../lib/mcp/tools";
 import { createInventoryVariant, updateInventoryVariant, deleteInventoryVariant, createInventorySupplier, updateInventorySupplier, deleteInventorySupplier } from "../../lib/api/inventory-catalog";
+import { inventoryVariantRow, inventorySupplierRow } from "../../i18n/inventory-catalog-presentation";
+
+function validatePresentation(body: Record<string, unknown>) {
+  if (body.inventoryVariant) inventoryVariantRow(body.inventoryVariant);
+  if (body.inventoryItemSupplier) inventorySupplierRow(body.inventoryItemSupplier);
+  if (Array.isArray(body.data)) for (const row of body.data) {
+    if (row && typeof row === "object" && "contactId" in row) inventorySupplierRow(row);
+    else inventoryVariantRow(row);
+  }
+}
 
 async function mcp(ctx: AuthContext, full = false) {
   const server = new McpServer({ name: "Catalog fixture", version: "1" });
@@ -30,7 +40,9 @@ async function mcp(ctx: AuthContext, full = false) {
   for (const name of ["list_inventory_variants", "create_inventory_variant", "update_inventory_variant", "delete_inventory_variant", "list_inventory_suppliers", "create_inventory_supplier", "update_inventory_supplier", "delete_inventory_supplier"]) assert.ok(names.includes(name), name);
   return { async call(name: string, args: Record<string, unknown>) {
     const r = await client.callTool({ name, arguments: args }), text = (r.content as { text: string }[])[0].text;
-    return { isError: r.isError === true, body: text.startsWith("{") ? JSON.parse(text) : { error: text } };
+    const body = text.startsWith("{") ? JSON.parse(text) : { error: text };
+    if (!r.isError) validatePresentation(body);
+    return { isError: r.isError === true, body };
   }, async close() { await client.close(); await server.close(); } };
 }
 async function run() {
@@ -58,7 +70,11 @@ async function run() {
   const p = (id = own.id) => ({ params: Promise.resolve({ id }) });
   const vp = (variantId: string, id = own.id) => ({ params: Promise.resolve({ id, variantId }) });
   const sp = (supplierId: string, id = own.id) => ({ params: Promise.resolve({ id, supplierId }) });
-  const data = async (r: Response, status = 200) => { const body = await r.json(); assert.equal(r.status, status, JSON.stringify(body)); return body; };
+  const data = async (r: Response, status = 200) => {
+    const body = await r.json(); assert.equal(r.status, status, JSON.stringify(body));
+    if (status < 300) validatePresentation(body);
+    return body;
+  };
   const snapshot = async () => Promise.all(["inventory_item", "inventory_variant", "inventory_item_supplier", "inventory_movement", "warehouse_stock", "inventory_cost_layer", "journal_entry", "journal_line", "audit_log"].map(t =>
     db.execute(sql.raw(`select coalesce(jsonb_agg(to_jsonb(t)::text order by t.id),'[]'::jsonb) as rows from ${t} t`)).then(r => r.rows)));
   const denied = async (fn: () => Promise<Response>, status: number) => { const before = await snapshot(); await data(await fn(), status); assert.deepEqual(await snapshot(), before); };
@@ -71,6 +87,8 @@ async function run() {
     assert.equal(v.organizationId, a.id); assert.equal(v.purchasePriceMinor, "1250"); assert.equal(v.salePriceMinor, "2000"); assert.equal(v.quantityOnHand, -3);
     const exact = (await ma.call("create_inventory_variant", { inventoryItemId: own.id, name: "Exact", purchasePriceMinor: "3000000000", salePriceMinor: "9007199254740991" })).body.inventoryVariant;
     assert.equal(exact.purchasePrice, 3000000000); assert.equal(exact.salePrice, Number.MAX_SAFE_INTEGER); assert.deepEqual(exact.options, {});
+    const savedVariant = await db.execute(sql`select purchase_price::text as purchase, sale_price::text as sale, quantity_on_hand::text as quantity from inventory_variant where id=${exact.id}`);
+    assert.deepEqual(savedVariant.rows, [{ purchase: "3000000000", sale: "9007199254740991", quantity: "0" }]);
     const dual = await ma.call("create_inventory_variant", { inventoryItemId: own.id, name: "Dual", purchasePrice: 29, purchasePriceMinor: "29" }); assert.equal(dual.isError, false);
     const restExact = (await data(await createVariant(req({ name: "REST exact", salePriceMinor: "3000000000" }), p()), 201)).inventoryVariant;
     await data(await patchVariant(req({ purchasePrice: 5, purchasePriceMinor: "5", sku: null }), vp(v.id)));
@@ -82,6 +100,8 @@ async function run() {
     const link = (await data(await createSupplier(req({ contactId: supplier.id, purchasePrice: 1250, purchasePriceMinor: "1250", leadTimeDays: 5 }), p()), 201)).inventoryItemSupplier;
     const mlink = (await ma.call("create_inventory_supplier", { inventoryItemId: own.id, contactId: both.id, purchasePriceMinor: "9007199254740991" })).body.inventoryItemSupplier;
     assert.equal(mlink.purchasePriceMinor, "9007199254740991");
+    const savedSupplier = await db.execute(sql`select purchase_price::text as purchase, lead_time_days::text as days from inventory_item_supplier where id=${link.id}`);
+    assert.deepEqual(savedSupplier.rows, [{ purchase: "1250", days: "5" }]);
     const patched = (await data(await patchSupplier(req({ purchasePriceMinor: "3000000000", supplierCode: "SKU", isPreferred: true }), sp(link.id)))).inventoryItemSupplier;
     assert.equal(patched.purchasePrice, 3000000000); assert.equal(patched.leadTimeDays, 5);
     assert.equal((await ma.call("update_inventory_supplier", { inventoryItemId: own.id, supplierId: mlink.id, purchasePrice: 29, purchasePriceMinor: "29", leadTimeDays: 2147483647, isPreferred: true })).isError, false);

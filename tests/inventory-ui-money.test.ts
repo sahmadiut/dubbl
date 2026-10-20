@@ -89,8 +89,15 @@ test("nullable stock values and live-stock discrepancy retain saved units; input
 });
 
 test("remaining inventory pages keep validated adoption and exact money guards", () => {
-  const files = ["page", "valuation/page", "[id]/page", "[id]/variants/page", "[id]/suppliers/page", "[id]/history/page", "bom/page", "bom/[id]/page", "assembly/page", "stock-takes/[id]/page", "transfers/page"];
+  const files = ["page", "valuation/page", "[id]/page", "[id]/history/page", "bom/page", "bom/[id]/page", "assembly/page", "stock-takes/[id]/page", "transfers/page"];
   for (const path of files) assert.match(readFileSync(`app/(dashboard)/inventory/${path}.tsx`, "utf8"), /inventoryUi/);
+  // Catalog routes now validate full presentation rows before state adoption;
+  // that shared boundary retains the exact-money/count inventory validator.
+  assert.match(readFileSync("i18n/inventory-catalog-presentation.ts", "utf8"), /inventoryUiCatalog\(/);
+  for (const [path, reader, row] of [["variants", "inventoryVariantsJson", "inventoryVariantRow"], ["suppliers", "inventorySuppliersJson", "inventorySupplierRow"]]) {
+    const source = readFileSync(`app/(dashboard)/inventory/[id]/${path}/page.tsx`, "utf8");
+    assert.ok(source.includes(`${reader}(await fetch(`) && source.includes(`${row}(data.`));
+  }
   const valuation = readFileSync("app/(dashboard)/inventory/valuation/page.tsx", "utf8");
   assert.doesNotMatch(valuation, /\.toFixed\(|Number\(profitAmount\)|summary\.totalCost\s*\//);
   assert.match(valuation, /inventoryShare\(/);

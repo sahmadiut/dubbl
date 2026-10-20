@@ -1,6 +1,7 @@
 "use client";
 
-import { inventoryUiCatalog } from "@/lib/money/inventory-ui";
+import { inventoryVariantsJson, inventoryCatalogJson, inventoryCatalogInputError, inventoryVariantRow, type PresentedInventoryVariant } from "@/i18n/inventory-catalog-presentation";
+import { useTranslations } from "next-intl";
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
@@ -25,10 +26,11 @@ import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { cn } from "@/lib/utils";
 
 export default function InventoryItemVariantsPage() {
+  const t = useTranslations("InventoryCatalogs");
   const { id } = useParams<{ id: string }>();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [variants, setVariants] = useState<any[]>([]);
-  const [readError, setReadError] = useState("");
+  const [variants, setVariants] = useState<PresentedInventoryVariant[]>([]);
+  const [readError, setReadError] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const [addOpen, setAddOpen] = useState(false);
@@ -37,48 +39,53 @@ export default function InventoryItemVariantsPage() {
   const [purchasePrice, setPurchasePrice] = useState("");
   const [salePrice, setSalePrice] = useState("");
   const [quantity, setQuantity] = useState("");
-  useDocumentTitle("Inventory · Variants");
+  useDocumentTitle(t("variantsTitle"));
 
   useEffect(() => {
     const orgId = localStorage.getItem("activeOrgId");
-    if (!orgId) return;
-
-    fetch(`/api/v1/inventory/${id}/variants`, {
-      headers: { "x-organization-id": orgId },
-    })
-      .then((r) => r.json())
-      .then((data) => { if (data.data) setVariants(data.data.map(inventoryUiCatalog)); })
-      .catch(() => setReadError("Unable to verify saved inventory data. Reload to retry."))
-      .finally(() => setLoading(false));
+    let cancelled = false;
+    async function readVariants() {
+      setLoading(true);
+      setReadError(false);
+      try {
+        if (!orgId) throw new Error("Organization required");
+        const rows = await inventoryVariantsJson(await fetch(`/api/v1/inventory/${id}/variants`, {
+          headers: { "x-organization-id": orgId },
+        }));
+        if (!cancelled) setVariants(rows);
+      } catch { if (!cancelled) setReadError(true); }
+      finally { if (!cancelled) setLoading(false); }
+    }
+    void readVariants();
+    return () => { cancelled = true; };
   }, [id]);
 
   async function handleAdd() {
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId || !name.trim()) {
-      toast.error("Variant name is required");
+      toast.error(t(!orgId ? "organizationRequired" : "variantNameRequired"));
       return;
     }
 
+    let payload;
     try {
-      const res = await fetch(`/api/v1/inventory/${id}/variants`, {
+      payload = {
+        name: name.trim(),
+        sku: sku || undefined,
+        purchasePriceMinor: catalogPriceMinor(purchasePrice),
+        salePriceMinor: catalogPriceMinor(salePrice),
+        quantityOnHand: catalogWholeInput(quantity, true),
+      };
+    } catch (error) { toast.error(t(inventoryCatalogInputError(error))); return; }
+
+    setSaving(true);
+    try {
+      const data = await inventoryCatalogJson(await fetch(`/api/v1/inventory/${id}/variants`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
-        body: JSON.stringify({
-          name: name.trim(),
-          sku: sku || undefined,
-          purchasePriceMinor: catalogPriceMinor(purchasePrice),
-          salePriceMinor: catalogPriceMinor(salePrice),
-          quantityOnHand: catalogWholeInput(quantity, true),
-        }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to add variant");
-      }
-
-      const data = await res.json();
-      const variant = inventoryUiCatalog(data.inventoryVariant);
+        body: JSON.stringify(payload),
+      }));
+      const variant = inventoryVariantRow(data.inventoryVariant);
       setVariants((prev) => [...prev, variant]);
       setAddOpen(false);
       setName("");
@@ -86,41 +93,40 @@ export default function InventoryItemVariantsPage() {
       setPurchasePrice("");
       setSalePrice("");
       setQuantity("");
-      toast.success("Variant added");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to add variant");
-    }
+      toast.success(t("variantAdded"));
+    } catch {
+      toast.error(t("variantAddFailed"));
+    } finally { setSaving(false); }
   }
 
   if (loading) return <BrandLoader />;
-  if (readError) return <p role="alert">{readError}</p>;
+  if (readError) return <p role="alert">{t("readFailed")}</p>;
 
   return (
     <>
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold">Variants</h3>
+        <h3 className="text-sm font-semibold">{t("variants")}</h3>
         <Button size="sm" variant="outline" onClick={() => setAddOpen(true)}>
           <Plus className="mr-1.5 size-3.5" />
-          Add Variant
+          {t("addVariant")}
         </Button>
       </div>
 
       {variants.length === 0 ? (
         <EmptyState
           icon={Layers}
-          title="No variants"
-          description="Add variants for different sizes, colors, or configurations."
+          title={t("emptyVariants")}
+          description={t("emptyVariantsHelp")}
           compact
         >
           <Button size="sm" onClick={() => setAddOpen(true)} className="bg-emerald-600 hover:bg-emerald-700">
             <Plus className="mr-1.5 size-3.5" />
-            Add Variant
+            {t("addVariant")}
           </Button>
         </EmptyState>
       ) : (
         <div className="rounded-xl border bg-card divide-y">
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          {variants.map((v: any) => (
+          {variants.map((v) => (
             <div key={v.id} className="flex items-center gap-4 p-4">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
@@ -131,21 +137,21 @@ export default function InventoryItemVariantsPage() {
                       ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
                       : ""
                   )}>
-                    {v.isActive !== false ? "Active" : "Inactive"}
+                    {t(v.isActive !== false ? "active" : "inactive")}
                   </Badge>
                 </div>
                 <div className="flex items-center gap-3 mt-1 flex-wrap">
                   {v.sku && (
-                    <span className="text-xs text-muted-foreground">SKU: {v.sku}</span>
+                    <span className="text-xs text-muted-foreground">{t("skuValue", { value: v.sku })}</span>
                   )}
                   {v.purchasePrice != null && (
-                    <span className="text-xs text-muted-foreground">Cost: {exactPriceDisplay(v.purchasePrice, "USD")}</span>
+                    <span className="text-xs text-muted-foreground">{t("costValue", { value: exactPriceDisplay(v.purchasePrice, "USD") })}</span>
                   )}
                   {v.salePrice != null && (
-                    <span className="text-xs text-muted-foreground">Sale: {exactPriceDisplay(v.salePrice, "USD")}</span>
+                    <span className="text-xs text-muted-foreground">{t("saleValue", { value: exactPriceDisplay(v.salePrice, "USD") })}</span>
                   )}
                   {v.quantityOnHand != null && (
-                    <span className="text-xs text-muted-foreground">Qty: {v.quantityOnHand}</span>
+                    <span className="text-xs text-muted-foreground">{t("quantityValue", { value: String(v.quantityOnHand) })}</span>
                   )}
                   {v.options && Object.entries(v.options).map(([key, val]) => (
                     <Badge key={key} variant="secondary" className="text-[10px]">
@@ -162,28 +168,28 @@ export default function InventoryItemVariantsPage() {
       <Sheet open={addOpen} onOpenChange={setAddOpen}>
         <SheetContent>
           <SheetHeader>
-            <SheetTitle>Add Variant</SheetTitle>
+            <SheetTitle>{t("addVariant")}</SheetTitle>
           </SheetHeader>
           <div className="space-y-4 px-4">
             <div className="space-y-1.5">
-              <Label className="text-xs">Name *</Label>
+              <Label className="text-xs">{t("nameRequired")}</Label>
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Large / Red"
+                placeholder={t("variantExample")}
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">SKU</Label>
+              <Label className="text-xs">{t("sku")}</Label>
               <Input
                 value={sku}
                 onChange={(e) => setSku(e.target.value)}
-                placeholder="Optional variant SKU"
+                placeholder={t("optionalSku")}
               />
             </div>
             <div className="grid gap-4 grid-cols-2">
               <div className="space-y-1.5">
-                <Label className="text-xs">Purchase Price</Label>
+                <Label className="text-xs">{t("purchasePrice")}</Label>
                 <CurrencyInput
                   prefix="$"
                   value={purchasePrice}
@@ -191,7 +197,7 @@ export default function InventoryItemVariantsPage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Sale Price</Label>
+                <Label className="text-xs">{t("salePrice")}</Label>
                 <CurrencyInput
                   prefix="$"
                   value={salePrice}
@@ -200,7 +206,7 @@ export default function InventoryItemVariantsPage() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Quantity on Hand</Label>
+              <Label className="text-xs">{t("quantityOnHand")}</Label>
               <Input
                 type="number"
                 min={0}
@@ -211,9 +217,9 @@ export default function InventoryItemVariantsPage() {
             </div>
           </div>
           <SheetFooter>
-            <Button variant="outline" onClick={() => setAddOpen(false)}>Cancel</Button>
-            <Button onClick={handleAdd} className="bg-emerald-600 hover:bg-emerald-700">
-              Add Variant
+            <Button variant="outline" onClick={() => setAddOpen(false)}>{t("cancel")}</Button>
+            <Button onClick={handleAdd} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700">
+              {t("addVariant")}
             </Button>
           </SheetFooter>
         </SheetContent>

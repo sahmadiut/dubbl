@@ -1,5 +1,6 @@
 "use client";
 
+import { payrollEmployeeCreatedJson } from "@/i18n/payroll-employee-presentation";
 import { warehouseJson } from "@/i18n/warehouse-presentation";
 import { expenseInputError, type ExpenseErrorKey } from "@/i18n/expense-presentation";
 
@@ -2487,6 +2488,7 @@ function BudgetDrawer({ open, onClose }: { open: boolean; onClose: () => void })
 // Employee Drawer
 // ---------------------------------------------------------------------------
 function EmployeeDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useTranslations("PayrollEmployees");
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [empName, setEmpName] = useState("");
@@ -2511,12 +2513,11 @@ function EmployeeDrawer({ open, onClose }: { open: boolean; onClose: () => void 
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!empName || !employeeNumber || !salary) { toast.error("Please fill in required fields"); return; }
+    if (!empName || !employeeNumber || !salary) { toast.error(t("requiredFields")); return; }
     setSaving(true);
-    const orgId = localStorage.getItem("activeOrgId");
-    if (!orgId) return;
-
     try {
+      const orgId = localStorage.getItem("activeOrgId");
+      if (!orgId) { toast.error(t("organizationRequired")); return; }
       const res = await fetch("/api/v1/payroll/employees", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
@@ -2533,16 +2534,12 @@ function EmployeeDrawer({ open, onClose }: { open: boolean; onClose: () => void 
           currency: empCurrency,
         }),
       });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to add employee");
-      }
-      const data = await payrollJson(res);
-      toast.success("Employee added");
+      const data = await payrollEmployeeCreatedJson(res);
+      toast.success(t("added"));
       onClose();
       router.push(`/payroll/employees/${data.employee.id}`);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to add employee");
+    } catch {
+      toast.error(t("createFailed"));
     } finally {
       setSaving(false);
     }
@@ -2555,33 +2552,33 @@ function EmployeeDrawer({ open, onClose }: { open: boolean; onClose: () => void 
           <div className="flex items-center gap-3">
             <DrawerIcon><Users className="size-5" /></DrawerIcon>
             <div>
-              <SheetTitle className="text-lg">New Employee</SheetTitle>
-              <SheetDescription>Add an employee to the payroll.</SheetDescription>
+              <SheetTitle className="text-lg">{t("newEmployee")}</SheetTitle>
+              <SheetDescription>{t("drawerDescription")}</SheetDescription>
             </div>
           </div>
         </SheetHeader>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
             <div className="space-y-4">
-              <SectionLabel>Personal Info</SectionLabel>
+              <SectionLabel>{t("personalInfo")}</SectionLabel>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Full Name *</Label>
-                  <Input value={empName} onChange={(e) => setEmpName(e.target.value)} placeholder="John Doe" />
+                  <Label>{t("nameRequired")}</Label>
+                  <Input value={empName} onChange={(e) => setEmpName(e.target.value)} placeholder={t("nameExample")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Employee Number *</Label>
+                  <Label>{t("numberRequired")}</Label>
                   <Input value={employeeNumber} onChange={(e) => setEmployeeNumber(e.target.value)} placeholder="EMP-001" />
                 </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Email</Label>
+                  <Label>{t("email")}</Label>
                   <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="john@example.com" />
                 </div>
                 <div className="space-y-2">
-                  <Label>Position</Label>
-                  <Input value={position} onChange={(e) => setPosition(e.target.value)} placeholder="Software Engineer" />
+                  <Label>{t("position")}</Label>
+                  <Input value={position} onChange={(e) => setPosition(e.target.value)} placeholder={t("positionExample")} />
                 </div>
               </div>
             </div>
@@ -2589,29 +2586,29 @@ function EmployeeDrawer({ open, onClose }: { open: boolean; onClose: () => void 
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Compensation</SectionLabel>
+              <SectionLabel>{t("compensation")}</SectionLabel>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Annual Salary *</Label>
+                  <Label>{t("salaryRequired")}</Label>
                   <CurrencyInput prefix={empCurrency} value={salary} onChange={setSalary} placeholder="75000.00" />
                 </div>
                 <div className="space-y-2">
-                  <Label>Pay Frequency</Label>
+                  <Label>{t("payFrequency")}</Label>
                   <Select value={payFrequency} onValueChange={setPayFrequency}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="weekly">Weekly</SelectItem>
-                      <SelectItem value="biweekly">Biweekly</SelectItem>
-                      <SelectItem value="monthly">Monthly</SelectItem>
+                      <SelectItem value="weekly">{t("weekly")}</SelectItem>
+                      <SelectItem value="biweekly">{t("biweekly")}</SelectItem>
+                      <SelectItem value="monthly">{t("monthly")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Tax Rate (%)</Label>
+                  <Label>{t("taxRate")}</Label>
                   <Input type="number" step="0.01" value={taxRate} onChange={(e) => setTaxRate(e.target.value)} placeholder="20.00" />
                 </div>
                 <div className="space-y-2">
-                  <Label>Currency</Label>
+                  <Label>{t("currency")}</Label>
                   <CurrencySelect value={empCurrency} onValueChange={setEmpCurrency} />
                 </div>
               </div>
@@ -2620,20 +2617,20 @@ function EmployeeDrawer({ open, onClose }: { open: boolean; onClose: () => void 
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Details</SectionLabel>
+              <SectionLabel>{t("details")}</SectionLabel>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Bank Account Number</Label>
-                  <Input value={bankAccountNumber} onChange={(e) => setBankAccountNumber(e.target.value)} placeholder="Account number" />
+                  <Label>{t("bankAccount")}</Label>
+                  <Input value={bankAccountNumber} onChange={(e) => setBankAccountNumber(e.target.value)} placeholder={t("accountPlaceholder")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Start Date *</Label>
-                  <DatePicker value={empStartDate} onChange={setEmpStartDate} placeholder="Start date" />
+                  <Label>{t("startDateRequired")}</Label>
+                  <DatePicker value={empStartDate} onChange={setEmpStartDate} placeholder={t("startDatePlaceholder")} />
                 </div>
               </div>
             </div>
           </div>
-          <DrawerFooter onClose={onClose} saving={saving} label="Add Employee" />
+          <DrawerFooter onClose={onClose} saving={saving} label={t("addEmployee")} creatingLabel={t("adding")} />
         </form>
       </SheetContent>
     </Sheet>

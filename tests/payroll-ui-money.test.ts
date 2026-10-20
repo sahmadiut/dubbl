@@ -67,10 +67,18 @@ test("all payroll JSON consumers adopt the shared adapter and no monetary float 
       if (!entry.name.endsWith(".tsx")) continue;
       const source = readFileSync(path, "utf8");
       assert.doesNotMatch(source, /from "@\/lib\/money(?:\/bank-display)?"|parseMajor\(|Math\.round\(parseFloat|\.json\(\)/, path);
-      if (source.includes("fetch(")) assert.match(source, /payrollJson/, path);
+      if (source.includes("fetch(")) {
+        if (path.replaceAll("\\", "/") === "app/(dashboard)/payroll/employees/page.tsx") {
+          assert.match(source, /import \{ payrollOverviewJson,.*from "@\/i18n\/payroll-overview-presentation"/);
+          assert.match(source, /await payrollOverviewJson\(await fetch\(/);
+          assert.match(readFileSync("i18n/payroll-overview-presentation.ts", "utf8"), /await payrollJson\(response\)/);
+        } else assert.match(source, /payrollJson/, path);
+      }
     }
   }
   inspect("app/(dashboard)/payroll");
   const drawer = readFileSync("components/dashboard/create-drawer.tsx", "utf8");
-  for (const name of ["Employee", "Contractor"]) assert.match(drawer, new RegExp(`payrollJson\\(res\\);\\s+toast.success\\("${name} added"`));
+  assert.match(drawer, /payrollEmployeeCreatedJson\(res\);\s+toast.success\(t\("added"\)\)/);
+  assert.match(readFileSync("i18n/payroll-employee-presentation.ts", "utf8"), /await payrollJson\(response\)/);
+  assert.match(drawer, /payrollJson\(res\);\s+toast.success\("Contractor added"/);
 });

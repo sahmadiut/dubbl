@@ -1,8 +1,9 @@
 "use client";
 
-import { payrollJson } from "@/lib/money/payroll-ui";
+import { payrollOverviewJson, type PayrollOverviewEmployee } from "@/i18n/payroll-overview-presentation";
+import { useTranslations } from "next-intl";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, MotionConfig } from "motion/react";
 import {
@@ -35,25 +36,14 @@ import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { payrollMoneyDisplay as formatMoney } from "@/lib/money/payroll-display";
 import { cn } from "@/lib/utils";
 
-interface Employee {
-  id: string;
-  name: string;
-  employeeNumber: string;
-  position: string | null;
-  salary: number;
-  payFrequency: string;
-  currency: string | null;
-  isActive: boolean;
-}
-
 type StatusFilter = "all" | "active" | "inactive";
 type SortKey = "name" | "number" | "salary" | "startDate";
 
-const SORT_OPTIONS: { value: SortKey; label: string }[] = [
-  { value: "name", label: "Name" },
-  { value: "number", label: "Employee #" },
-  { value: "salary", label: "Salary" },
-  { value: "startDate", label: "Start Date" },
+const SORT_OPTIONS: { value: SortKey; label: "sortName" | "sortNumber" | "sortSalary" | "sortStartDate" }[] = [
+  { value: "name", label: "sortName" },
+  { value: "number", label: "sortNumber" },
+  { value: "salary", label: "sortSalary" },
+  { value: "startDate", label: "sortStartDate" },
 ];
 
 function getInitials(name: string) {
@@ -67,11 +57,12 @@ function getInitials(name: string) {
 }
 
 export default function EmployeesPage() {
+  const t = useTranslations("PayrollEmployees");
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [employees, setEmployees] = useState<PayrollOverviewEmployee[]>([]);
   const [loading, setLoading] = useState(true);
-  const [moneyError, setMoneyError] = useState<string | null>(null);
+  const [moneyError, setMoneyError] = useState<"readFailed" | "organizationRequired" | null>(null);
   const [refetching, setRefetching] = useState(false);
   const [fetchKey, setFetchKey] = useState(0);
 
@@ -82,36 +73,37 @@ export default function EmployeesPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [sortBy, setSortBy] = useState<SortKey>("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  useDocumentTitle("Payroll · Employees");
-
-  const fetchEmployees = useCallback(() => {
-    const orgId = localStorage.getItem("activeOrgId");
-    if (!orgId) return;
-    const isRefetch = !loading;
-    if (isRefetch) setRefetching(true);
-
-    fetch("/api/v1/payroll/employees", {
-      headers: { "x-organization-id": orgId },
-    })
-      .then((r) => payrollJson(r))
-      .then((data) => {
-        setEmployees(data.data || []);
-      })
-      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"))
-      .finally(() => {
-        setLoading(false);
-        setRefetching(false);
-        setFetchKey((k) => k + 1);
-      });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useDocumentTitle(t("documentTitle"));
 
   useEffect(() => {
-    fetchEmployees();
-    const handler = () => fetchEmployees();
+    let active = true;
+    let request = 0;
+    async function fetchEmployees() {
+      const current = ++request;
+      setRefetching(true);
+      setMoneyError(null);
+      try {
+        const orgId = localStorage.getItem("activeOrgId");
+        if (!orgId) { setMoneyError("organizationRequired"); return; }
+        const data = await payrollOverviewJson(await fetch("/api/v1/payroll/employees", {
+          headers: { "x-organization-id": orgId },
+        }), "employees");
+        if (active && current === request) setEmployees(data.data);
+      } catch {
+        if (active && current === request) setMoneyError("readFailed");
+      } finally {
+        if (active && current === request) {
+          setLoading(false);
+          setRefetching(false);
+          setFetchKey((k) => k + 1);
+        }
+      }
+    }
+    void fetchEmployees();
+    const handler = () => { void fetchEmployees(); };
     window.addEventListener("refetch-employees", handler);
-    return () => window.removeEventListener("refetch-employees", handler);
-  }, [fetchEmployees]);
+    return () => { active = false; window.removeEventListener("refetch-employees", handler); };
+  }, []);
 
   // Re-animate on filter/sort/search changes
   useEffect(() => {
@@ -153,7 +145,7 @@ export default function EmployeesPage() {
   }
 
   if (loading) return <BrandLoader />;
-  if (moneyError) return <p role="alert">{moneyError}</p>;
+  if (moneyError) return <p role="alert">{t(moneyError)}</p>;
 
   if (employees.length === 0) {
     return (
@@ -202,7 +194,7 @@ export default function EmployeesPage() {
               transition={{ duration: 0.4, delay: 0.35 }}
               className="text-lg font-semibold"
             >
-              Build your team
+              {t("buildTeam")}
             </motion.h3>
             <motion.p
               initial={{ opacity: 0, y: 8 }}
@@ -210,7 +202,7 @@ export default function EmployeesPage() {
               transition={{ duration: 0.4, delay: 0.4 }}
               className="mt-2 max-w-sm text-sm text-muted-foreground text-center leading-relaxed"
             >
-              Add employees with their compensation details, pay frequency, and tax information to start managing payroll.
+              {t("emptyHelp")}
             </motion.p>
 
             <motion.div
@@ -225,7 +217,7 @@ export default function EmployeesPage() {
                 className="bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20"
               >
                 <Plus className="mr-2 size-4" />
-                Add Employee
+                {t("addEmployee")}
               </Button>
             </motion.div>
           </div>
@@ -263,9 +255,9 @@ export default function EmployeesPage() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
             <TabsList>
-              <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="active">Active</TabsTrigger>
-              <TabsTrigger value="inactive">Inactive</TabsTrigger>
+              <TabsTrigger value="all">{t("all")}</TabsTrigger>
+              <TabsTrigger value="active">{t("active")}</TabsTrigger>
+              <TabsTrigger value="inactive">{t("inactive")}</TabsTrigger>
             </TabsList>
           </Tabs>
 
@@ -275,7 +267,7 @@ export default function EmployeesPage() {
             onClick={() => openDrawer("employee")}
           >
             <Plus className="size-3" />
-            Add Employee
+            {t("addEmployee")}
           </Button>
         </div>
 
@@ -284,13 +276,14 @@ export default function EmployeesPage() {
           <div className="relative flex-1 sm:max-w-xs">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search by name, number, or position..."
+              placeholder={t("search")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9 pr-8 h-8 text-sm"
             />
             {search && (
               <button
+                aria-label={t("clearSearch")}
                 onClick={() => setSearch("")}
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
@@ -306,12 +299,12 @@ export default function EmployeesPage() {
             </SelectTrigger>
             <SelectContent>
               {SORT_OPTIONS.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                <SelectItem key={opt.value} value={opt.value}>{t(opt.label)}</SelectItem>
               ))}
             </SelectContent>
           </Select>
 
-          <Button variant="outline" size="icon" className="size-8 shrink-0" onClick={toggleSortOrder}>
+          <Button variant="outline" size="icon" className="size-8 shrink-0" aria-label={t("toggleSort")} onClick={toggleSortOrder}>
             <ArrowUpDown className={cn("size-3.5 transition-transform", sortOrder === "asc" && "rotate-180")} />
           </Button>
         </div>
@@ -320,7 +313,7 @@ export default function EmployeesPage() {
       {/* Employee list */}
       {refetching || pendingSearch ? (
         <div className="flex items-center justify-center py-20">
-          <div className="brand-loader" aria-label="Loading">
+          <div className="brand-loader" aria-label={t("loading")}>
             <div className="brand-loader-circle brand-loader-circle-1" />
             <div className="brand-loader-circle brand-loader-circle-2" />
           </div>
@@ -331,9 +324,9 @@ export default function EmployeesPage() {
             <div className="mx-auto flex size-10 items-center justify-center rounded-xl bg-muted mb-3">
               <Users className="size-5 text-muted-foreground" />
             </div>
-            <p className="text-sm font-medium">No employees found</p>
+            <p className="text-sm font-medium">{t("noEmployees")}</p>
             <p className="text-xs text-muted-foreground mt-1">
-              {search ? "Try a different search term" : "No employees match this filter"}
+              {t(search ? "trySearch" : "noFilterMatches")}
             </p>
           </div>
         </ContentReveal>
@@ -368,7 +361,7 @@ export default function EmployeesPage() {
                   <div className="flex items-center gap-3 shrink-0">
                     <div className="hidden sm:block text-right">
                       <p className="text-xs text-muted-foreground font-mono">{emp.employeeNumber}</p>
-                      <p className="text-xs text-muted-foreground capitalize">{emp.payFrequency}</p>
+                      <p className="text-xs text-muted-foreground capitalize">{t(emp.payFrequency as "weekly" | "biweekly" | "monthly")}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-mono tabular-nums">{formatMoney(emp.salary, emp.currency ?? "USD")}</p>
@@ -382,7 +375,7 @@ export default function EmployeesPage() {
                           : "border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300"
                       )}
                     >
-                      {emp.isActive ? "Active" : "Inactive"}
+                      {t(emp.isActive ? "active" : "inactive")}
                     </Badge>
                   </div>
                 </button>

@@ -1,5 +1,11 @@
 # Message catalog foundation
 
+LOC-080 employee list and EmployeeDrawer use 46 paired `PayrollEmployees`
+messages (7,100 keys per locale). See [scope and exceptions](PAYROLL_EMPLOYEE_CATALOGS.md)
+for safe read/create feedback and preserved cents, basis points, dates and
+employee identifiers. LOC-067/008/002 and native terminology/RTL qualification
+remain independent.
+
 LOC-066 independently accepts combined inventory coverage in
 [inventory catalog acceptance](INVENTORY_CATALOG_ACCEPTANCE.md): all 18 route
 files, five creation drawers and three shared pickers, with eight namespaces
@@ -226,6 +232,7 @@ Extraction ownership:
 | LOC-071 | LOC-008 child: dashboard, documents and residual operations shared components |
 | LOC-009 | Public surfaces, landing/help, email/PDF and user-visible background content; remaining source audit |
 | LOC-079 | LOC-067 child: payroll overview/navigation; [scope and exceptions](PAYROLL_OVERVIEW_CATALOGS.md) |
+| LOC-080 | LOC-067 child: employee list and EmployeeDrawer; [scope and exceptions](PAYROLL_EMPLOYEE_CATALOGS.md) |
 | LOC-002 | Independent combined key coverage, plural and safe rendering acceptance |
 
 Later L10N/RTL tasks retain native-reviewed financial wording, complete Persian

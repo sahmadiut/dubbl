@@ -1,6 +1,7 @@
 import { payrollCentsInput, payrollCentsDecimal } from "../../lib/money/payroll-input";
 import { payrollJson, payrollUiPayload } from "../../lib/money/payroll-ui";
 import { payrollOverviewJson } from "../../i18n/payroll-overview-presentation";
+import { payrollEmployeeCreatedJson } from "../../i18n/payroll-employee-presentation";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
@@ -66,7 +67,9 @@ async function run() {
   const base = { name: "Legacy", employeeNumber: "E1", startDate: "2024-02-29" };
   try {
     for (const currency of ["USD", "JPY", "KWD"]) {
-      const created = (await data(await createEmployee(req({ ...base, currency, salaryMinor: payrollCentsInput("90071992547409.91") })), 201)).employee;
+      const response = await createEmployee(req({ ...base, currency, salaryMinor: payrollCentsInput("90071992547409.91") }));
+      const created = (await data(response.clone(), 201)).employee;
+      assert.deepEqual(await payrollEmployeeCreatedJson(response), { employee: created });
       const saved = await db.execute(sql`select salary::text as salary from payroll_employee where id = ${created.id}`);
       assert.equal(saved.rows[0].salary, "9007199254740991");
       assert.equal(payrollCentsDecimal(created.salary), "90071992547409.91");
@@ -78,6 +81,7 @@ async function run() {
     const e = (await data(await createEmployee(req({ ...base, salary: 1250, hourlyRate: 0, memberId: ownMember.id })), 201)).employee;
     assert.equal(e.organizationId, a.id); assert.equal(e.salaryMinor, "1250"); assert.equal(e.hourlyRateMinor, "0"); assert.equal(e.taxRate, 2000);
     const em = (await ma.call("create_payroll_employee", { ...base, name: "Exact", salaryMinor: "9007199254740991", hourlyRateMinor: "3000000000", currency: "KWD" })).body.employee;
+    assert.deepEqual(await payrollEmployeeCreatedJson(Response.json({ employee: em })), { employee: em });
     assert.equal(em.salary, Number.MAX_SAFE_INTEGER); assert.equal(em.hourlyRate, 3000000000); assert.equal(em.currency, "KWD");
     await data(await createEmployee(req({ ...base, name: "Dual", salary: 29, salaryMinor: "29" })), 201);
     assert.equal((await ma.call("create_payroll_employee", { ...base, salary: 0, salaryMinor: "0" })).isError, false);

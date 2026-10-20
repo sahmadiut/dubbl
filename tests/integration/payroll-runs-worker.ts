@@ -1,5 +1,7 @@
 import { payrollJson, payrollUiPayload } from "../../lib/money/payroll-ui";
 import { payrollOverviewJson } from "../../i18n/payroll-overview-presentation";
+import { payrollRunJson } from "../../i18n/payroll-run-presentation";
+import { GET as employeeChoices } from "../../app/api/v1/payroll/employees/route";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { and, eq, sql } from "drizzle-orm";
@@ -80,9 +82,14 @@ async function run() {
     return route[d.verb](req, { params: Promise.resolve(params) });
   };
   const data = async (response: Response, status = 200) => { const body = await payrollJson(response); assert.equal(response.status, status, JSON.stringify(body)); return body; };
-  const read = async (name: string, args: Args = {}, key = keys.a) => data(await rest(name, args, key), definition(name).verb === "POST" && name.startsWith("create_") ? 201 : 200);
+  const checkCreated = async <T,>(name: string, body: T): Promise<T> => {
+    if (["create_payroll_run", "create_bonus_payroll_run", "create_termination_payroll_run", "create_correction_payroll_run"].includes(name))
+      assert.deepEqual(await payrollRunJson(Response.json(body), "created"), body);
+    return body;
+  };
+  const read = async (name: string, args: Args = {}, key = keys.a) => checkCreated(name, await data(await rest(name, args, key), definition(name).verb === "POST" && name.startsWith("create_") ? 201 : 200));
   const margs = (args: Args) => { const { id, ...body } = args; return id === undefined ? body : { payRunId: id, ...body }; };
-  const call = async (name: string, args: Args = {}, client = ma) => { mcpSeen.add(name); const r = await client.call(name, margs(args)); assert.equal(r.isError, false, JSON.stringify(r.body)); return r.body; };
+  const call = async (name: string, args: Args = {}, client = ma) => { mcpSeen.add(name); const r = await client.call(name, margs(args)); assert.equal(r.isError, false, JSON.stringify(r.body)); return checkCreated(name, r.body); };
   const tables = ["organization", "payroll_employee", "payroll_run", "payroll_item", "payroll_bonus", "payroll_item_tax_breakdown", "payroll_item_employer_tax", "payroll_item_deduction", "employee_deduction", "approval_record", "chart_account", "journal_entry", "journal_line", "number_sequence", "audit_log"];
   const snapshot = () => Promise.all(tables.map(t => db.execute(sql.raw(`select coalesce(jsonb_agg(to_jsonb(t)::text order by t.id),'[]'::jsonb) as rows from ${t} t`)).then(r => r.rows)));
   const denied = async (name: string, args: Args, status: number, key = keys.a, raw?: string) => { const before = await snapshot(); await data(await rest(name, args, key, raw), status); assert.deepEqual(await snapshot(), before, name + " REST rollback"); };
@@ -122,6 +129,12 @@ async function run() {
     const list = await read("list_payroll_runs"), mlist = await call("list_payroll_runs"); assert.deepEqual(list.data, mlist.runs); assert.deepEqual(list.pagination, mlist.pagination);
     assert.deepEqual((await payrollOverviewJson(Response.json(list), "runs")).data, list.data);
     assert.deepEqual((await payrollOverviewJson(Response.json({ data: mlist.runs }), "runs")).data, list.data);
+    assert.deepEqual(await payrollRunJson(Response.json(list), "list"), list);
+    assert.deepEqual((await payrollRunJson(Response.json({ data: mlist.runs, pagination: mlist.pagination }), "list")).data, list.data);
+    const choices = await payrollRunJson(await employeeChoices(new Request("http://fixture.test/api/v1/payroll/employees?active=true&limit=100&page=1", {
+      headers: { authorization: `Bearer ${keys.a}`, "x-organization-id": a.id },
+    })), "employees");
+    assert.ok(choices.data.some(e => e.id === usd.id));
     assert.equal(mlist.total, list.pagination.total); assert.equal((await call("list_payroll_runs", { limit: 200 })).limit, 200);
     assert.equal((await read("update_payroll_run", { id: r.id, notes: "Legacy note" })).run.notes, "Legacy note");
     assert.equal((await call("update_payroll_run", { id: rm.id, notes: null })).run.notes, null);
@@ -173,6 +186,10 @@ async function run() {
     await bothDenied("create_payroll_run_bonus", { id: r.id, employeeId: usd.id, bonusType: "other", amountMinor: "29" }, 409);
     const postedHistory = await db.select().from(payrollItem).where(eq(payrollItem.payrollRunId, r.id));
     const correction = (await read("create_correction_payroll_run", { parentRunId: r.id, adjustments: [{ employeeId: eur.id, grossAdjustmentMinor: "-1000" }] })).run;
+    const completedChoices = await read("list_payroll_runs", { status: "completed", limit: 100 });
+    assert.deepEqual(await payrollRunJson(Response.json(completedChoices), "parents"), completedChoices);
+    const completedMcp = await call("list_payroll_runs", { status: "completed", limit: 100 });
+    assert.deepEqual((await payrollRunJson(Response.json({ data: completedMcp.runs, pagination: completedMcp.pagination }), "parents")).data, completedChoices.data);
     assert.equal(correction.status, "completed"); assert.equal(correction.totalGrossMinor, "-1500"); assert.equal(correction.totalDeductionsMinor, "-75"); assert.equal(correction.totalNetMinor, "-1425"); await balanced(correction.id);
     const c2 = (await call("create_correction_payroll_run", { parentRunId: r.id, adjustments: [{ employeeId: usd.id, grossAdjustment: 1000 }] })).run;
     assert.equal(c2.items[0].preTaxDeductionsMinor, "3"); assert.equal(c2.items[0].postTaxDeductionsMinor, "25"); await balanced(c2.id);

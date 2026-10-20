@@ -1,8 +1,9 @@
 "use client";
 
-import { payrollJson } from "@/lib/money/payroll-ui";
+import { payrollRunJson, type PayrollRun } from "@/i18n/payroll-run-presentation";
+import { useTranslations } from "next-intl";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, MotionConfig } from "motion/react";
 import {
@@ -51,28 +52,9 @@ import { payrollMoneyDisplay as formatMoney } from "@/lib/money/payroll-display"
 import { OffCycleDialog, type OffCycleType } from "./off-cycle-dialog";
 import { cn } from "@/lib/utils";
 
-interface PayrollRun {
-  id: string;
-  payPeriodStart: string;
-  payPeriodEnd: string;
-  status: string;
-  baseCurrency: string | null;
-  totalGross: number;
-  totalDeductions: number;
-  totalNet: number;
-  processedAt: string | null;
-  runType: string | null;
-}
-
 type StatusFilter = "all" | "draft" | "completed" | "void" | "pending_approval";
 type RunTypeFilter = "all" | "regular" | "termination" | "bonus_only" | "correction" | "off_cycle";
 type SortKey = "date" | "gross" | "net";
-
-const SORT_OPTIONS: { value: SortKey; label: string }[] = [
-  { value: "date", label: "Date" },
-  { value: "gross", label: "Before deductions" },
-  { value: "net", label: "Take-home" },
-];
 
 const statusColors: Record<string, string> = {
   draft: "",
@@ -80,23 +62,6 @@ const statusColors: Record<string, string> = {
   completed: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300",
   void: "border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300",
   pending_approval: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300",
-};
-
-// Plain-language payroll status labels for non-accountants.
-const statusLabels: Record<string, string> = {
-  draft: "Not finished",
-  processing: "Finishing",
-  completed: "Finished & recorded",
-  void: "Cancelled",
-  pending_approval: "Waiting for sign-off",
-};
-
-const runTypeLabels: Record<string, string> = {
-  regular: "Regular",
-  termination: "Termination",
-  bonus_only: "Bonus",
-  correction: "Correction",
-  off_cycle: "Off-cycle",
 };
 
 const runTypeColors: Record<string, string> = {
@@ -107,10 +72,35 @@ const runTypeColors: Record<string, string> = {
 };
 
 export default function PayrollRunsPage() {
+  const t = useTranslations("PayrollRuns");
+  const shared = useTranslations("SharedUI");
+  const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+    { value: "date", label: t("date") },
+    { value: "gross", label: t("gross") },
+    { value: "net", label: t("net") },
+  ];
+
+  // Plain-language payroll status labels for non-accountants.
+  const statusLabels: Record<string, string> = {
+    draft: t("draft"),
+    processing: t("processing"),
+    completed: t("completed"),
+    void: t("void"),
+    pending_approval: t("pendingApproval"),
+  };
+
+  const runTypeLabels: Record<string, string> = {
+    regular: t("regular"),
+    termination: t("termination"),
+    bonus_only: t("bonus"),
+    correction: t("correction"),
+    off_cycle: t("offCycle"),
+  };
+
   const router = useRouter();
   const [runs, setRuns] = useState<PayrollRun[]>([]);
   const [loading, setLoading] = useState(true);
-  const [moneyError, setMoneyError] = useState<string | null>(null);
+  const [moneyError, setMoneyError] = useState<"readFailed" | "organizationRequired" | null>(null);
   const [refetching, setRefetching] = useState(false);
   const [fetchKey, setFetchKey] = useState(0);
 
@@ -122,7 +112,7 @@ export default function PayrollRunsPage() {
   const [runTypeFilter, setRunTypeFilter] = useState<RunTypeFilter>("all");
   const [sortBy, setSortBy] = useState<SortKey>("date");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  useDocumentTitle("Payroll · Runs");
+  useDocumentTitle(t("documentTitle"));
 
   // New run dialog
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -139,31 +129,24 @@ export default function PayrollRunsPage() {
     return d.toISOString().split("T")[0];
   });
 
-  const fetchRuns = useCallback(() => {
-    const orgId = localStorage.getItem("activeOrgId");
-    if (!orgId) return;
-    const isRefetch = !loading;
-    if (isRefetch) setRefetching(true);
-
-    fetch("/api/v1/payroll/runs", {
-      headers: { "x-organization-id": orgId },
-    })
-      .then((r) => payrollJson(r))
-      .then((data) => {
-        setRuns(data.data || []);
-      })
-      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"))
-      .finally(() => {
-        setLoading(false);
-        setRefetching(false);
-        setFetchKey((k) => k + 1);
-      });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   useEffect(() => {
-    fetchRuns();
-  }, [fetchRuns]);
+    const abort = new AbortController();
+    async function load() {
+      try {
+        const orgId = localStorage.getItem("activeOrgId");
+        if (!orgId) { setMoneyError("organizationRequired"); return; }
+        const data = await payrollRunJson(await fetch("/api/v1/payroll/runs", {
+          headers: { "x-organization-id": orgId }, signal: abort.signal,
+        }), "list");
+        if (!abort.signal.aborted) { setRuns(data.data); setMoneyError(null); }
+      } catch { if (!abort.signal.aborted) setMoneyError("readFailed"); }
+      finally {
+        if (!abort.signal.aborted) { setLoading(false); setRefetching(false); setFetchKey(k => k + 1); }
+      }
+    }
+    void load();
+    return () => abort.abort();
+  }, []);
 
   // Re-animate on filter/sort/search changes
   useEffect(() => {
@@ -206,11 +189,10 @@ export default function PayrollRunsPage() {
   }
 
   async function handleCreateRun() {
-    const orgId = localStorage.getItem("activeOrgId");
-    if (!orgId) return;
     setCreating(true);
-
     try {
+      const orgId = localStorage.getItem("activeOrgId");
+      if (!orgId) { toast.error(t("organizationRequired")); return; }
       const res = await fetch("/api/v1/payroll/runs", {
         method: "POST",
         headers: {
@@ -220,19 +202,12 @@ export default function PayrollRunsPage() {
         body: JSON.stringify({ payPeriodStart, payPeriodEnd }),
       });
 
-      if (!res.ok) {
-        const data = await payrollJson(res);
-        throw new Error(data.error || "Failed to create payroll run");
-      }
-
-      const data = await payrollJson(res);
-      toast.success("Payroll run created");
+      const data = await payrollRunJson(res, "created");
+      toast.success(t("created"));
       setDialogOpen(false);
       router.push(`/payroll/runs/${data.run.id}`);
-    } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to create payroll run"
-      );
+    } catch {
+      toast.error(t("createFailed"));
     } finally {
       setCreating(false);
     }
@@ -240,7 +215,7 @@ export default function PayrollRunsPage() {
 
 
   if (loading) return <BrandLoader />;
-  if (moneyError) return <p role="alert">{moneyError}</p>;
+  if (moneyError) return <p role="alert">{t(moneyError)}</p>;
 
   if (runs.length === 0) {
     return (
@@ -254,9 +229,9 @@ export default function PayrollRunsPage() {
               <div className="absolute top-1/2 left-4 right-4 h-px bg-muted-foreground/15 -translate-y-1/2" />
               <div className="flex items-center justify-between relative">
                 {[
-                  { icon: FileText, label: "Set up", delay: 0.15, active: true },
-                  { icon: Search, label: "Review", delay: 0.25, active: false },
-                  { icon: ArrowUpDown, label: "Finish & record", delay: 0.35, active: false },
+                  { icon: FileText, label: t("setup"), delay: 0.15, active: true },
+                  { icon: Search, label: t("review"), delay: 0.25, active: false },
+                  { icon: ArrowUpDown, label: t("finish"), delay: 0.35, active: false },
                 ].map((step) => (
                   <motion.div
                     key={step.label}
@@ -295,7 +270,7 @@ export default function PayrollRunsPage() {
               transition={{ duration: 0.4, delay: 0.4 }}
               className="text-lg font-semibold"
             >
-              Run your first payroll
+              {t("firstRun")}
             </motion.h3>
             <motion.p
               initial={{ opacity: 0, y: 8 }}
@@ -303,7 +278,7 @@ export default function PayrollRunsPage() {
               transition={{ duration: 0.4, delay: 0.45 }}
               className="mt-2 max-w-sm text-sm text-muted-foreground text-center leading-relaxed"
             >
-              Set up a pay run for a date range, check each employee&apos;s pay, then finish it to lock in the amounts and record the wages.
+              {t("firstHelp")}
             </motion.p>
 
             <motion.div
@@ -318,7 +293,7 @@ export default function PayrollRunsPage() {
                 className="bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20"
               >
                 <Plus className="mr-2 size-4" />
-                New Payroll Run
+                {t("newRun")}
               </Button>
             </motion.div>
           </div>
@@ -376,11 +351,11 @@ export default function PayrollRunsPage() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
             <TabsList className="flex-wrap">
-              <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="draft">Not finished</TabsTrigger>
-              <TabsTrigger value="completed">Finished</TabsTrigger>
-              <TabsTrigger value="pending_approval">Waiting for sign-off</TabsTrigger>
-              <TabsTrigger value="void">Cancelled</TabsTrigger>
+              <TabsTrigger value="all">{t("all")}</TabsTrigger>
+              <TabsTrigger value="draft">{t("draft")}</TabsTrigger>
+              <TabsTrigger value="completed">{t("finished")}</TabsTrigger>
+              <TabsTrigger value="pending_approval">{t("pendingApproval")}</TabsTrigger>
+              <TabsTrigger value="void">{t("void")}</TabsTrigger>
             </TabsList>
           </Tabs>
 
@@ -391,25 +366,25 @@ export default function PayrollRunsPage() {
               onClick={() => setDialogOpen(true)}
             >
               <Plus className="size-3" />
-              New Payroll Run
+              {t("newRun")}
             </Button>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5" title="A one-off payment outside your normal payday">
-                  One-off payment
+                <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5" title={t("oneOffHelp")}>
+                  {t("oneOff")}
                   <ChevronDown className="size-3" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setOffCycleType("termination")} title="A final pay for someone leaving">
-                  Final pay (someone leaving)
+                <DropdownMenuItem onClick={() => setOffCycleType("termination")} title={t("terminationHelp")}>
+                  {t("finalPayAction")}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setOffCycleType("bonus-only")} title="A one-off bonus payment">
-                  Bonus only
+                <DropdownMenuItem onClick={() => setOffCycleType("bonus-only")} title={t("bonusHelp")}>
+                  {t("bonusOnly")}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setOffCycleType("correction")} title="Fix a mistake in a past payroll">
-                  Fix a past payroll
+                <DropdownMenuItem onClick={() => setOffCycleType("correction")} title={t("correctionHelp")}>
+                  {t("fixPast")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -418,12 +393,12 @@ export default function PayrollRunsPage() {
 
         <Tabs value={runTypeFilter} onValueChange={(v) => setRunTypeFilter(v as RunTypeFilter)}>
           <TabsList className="flex-wrap">
-            <TabsTrigger value="all">All Types</TabsTrigger>
-            <TabsTrigger value="regular">Regular</TabsTrigger>
-            <TabsTrigger value="termination">Termination</TabsTrigger>
-            <TabsTrigger value="bonus_only">Bonus</TabsTrigger>
-            <TabsTrigger value="correction">Correction</TabsTrigger>
-            <TabsTrigger value="off_cycle">Off-cycle</TabsTrigger>
+            <TabsTrigger value="all">{t("allTypes")}</TabsTrigger>
+            <TabsTrigger value="regular">{t("regular")}</TabsTrigger>
+            <TabsTrigger value="termination">{t("termination")}</TabsTrigger>
+            <TabsTrigger value="bonus_only">{t("bonus")}</TabsTrigger>
+            <TabsTrigger value="correction">{t("correction")}</TabsTrigger>
+            <TabsTrigger value="off_cycle">{t("offCycle")}</TabsTrigger>
           </TabsList>
         </Tabs>
 
@@ -432,13 +407,14 @@ export default function PayrollRunsPage() {
           <div className="relative flex-1 sm:max-w-xs">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search by date or status..."
+              placeholder={t("search")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9 pr-8 h-8 text-sm"
             />
             {search && (
               <button
+                aria-label={t("clearSearch")}
                 onClick={() => setSearch("")}
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
@@ -448,7 +424,7 @@ export default function PayrollRunsPage() {
           </div>
 
           <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortKey)}>
-            <SelectTrigger className="h-8 w-full sm:w-[140px] text-xs">
+            <SelectTrigger aria-label={t("sortBy")} className="h-8 w-full sm:w-[140px] text-xs">
               <ArrowUpDown className="size-3 mr-1.5 text-muted-foreground" />
               <SelectValue />
             </SelectTrigger>
@@ -459,7 +435,7 @@ export default function PayrollRunsPage() {
             </SelectContent>
           </Select>
 
-          <Button variant="outline" size="icon" className="size-8 shrink-0" onClick={toggleSortOrder}>
+          <Button variant="outline" size="icon" className="size-8 shrink-0" onClick={toggleSortOrder} aria-label={t("sortOrder")}>
             <ArrowUpDown className={cn("size-3.5 transition-transform", sortOrder === "asc" && "rotate-180")} />
           </Button>
         </div>
@@ -468,7 +444,7 @@ export default function PayrollRunsPage() {
       {/* Runs list */}
       {refetching || pendingSearch ? (
         <div className="flex items-center justify-center py-20">
-          <div className="brand-loader" aria-label="Loading">
+              <div className="brand-loader" aria-label={shared("loading2")}>
             <div className="brand-loader-circle brand-loader-circle-1" />
             <div className="brand-loader-circle brand-loader-circle-2" />
           </div>
@@ -479,9 +455,9 @@ export default function PayrollRunsPage() {
             <div className="mx-auto flex size-10 items-center justify-center rounded-xl bg-muted mb-3">
               <FileText className="size-5 text-muted-foreground" />
             </div>
-            <p className="text-sm font-medium">No runs found</p>
+            <p className="text-sm font-medium">{t("noRuns")}</p>
             <p className="text-xs text-muted-foreground mt-1">
-              {search ? "Try a different search term" : "No runs match this filter"}
+              {search ? t("trySearch") : t("noMatch")}
             </p>
           </div>
         </ContentReveal>
@@ -507,15 +483,15 @@ export default function PayrollRunsPage() {
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate">
-                        {run.payPeriodStart} to {run.payPeriodEnd}
+                        {t("period", { start: run.payPeriodStart, end: run.payPeriodEnd })}
                       </p>
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <Badge variant="outline" className={cn("text-[11px]", statusColors[run.status] || "")}>
-                          {statusLabels[run.status] || run.status}
+                          {statusLabels[run.status]}
                         </Badge>
                         {run.runType && run.runType !== "regular" && (
                           <Badge variant="outline" className={cn("text-[11px]", runTypeColors[run.runType] || "")}>
-                            {runTypeLabels[run.runType] || run.runType}
+                            {runTypeLabels[run.runType]}
                           </Badge>
                         )}
                       </div>
@@ -524,15 +500,15 @@ export default function PayrollRunsPage() {
 
                   <div className="flex items-center gap-4 shrink-0">
                     <div className="hidden sm:block text-right">
-                      <p className="text-xs text-muted-foreground">Before deductions</p>
+                      <p className="text-xs text-muted-foreground">{t("gross")}</p>
                       <p className="text-sm font-mono tabular-nums">{formatMoney(run.totalGross, run.baseCurrency ?? "USD")}</p>
                     </div>
                     <div className="hidden sm:block text-right">
-                      <p className="text-xs text-muted-foreground">Taxes &amp; deductions</p>
+                      <p className="text-xs text-muted-foreground">{t("deductions")}</p>
                       <p className="text-sm font-mono tabular-nums text-red-600 dark:text-red-400">{formatMoney(run.totalDeductions, run.baseCurrency ?? "USD")}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs text-muted-foreground">Take-home</p>
+                      <p className="text-xs text-muted-foreground">{t("net")}</p>
                       <p className="text-sm font-mono tabular-nums font-medium">{formatMoney(run.totalNet, run.baseCurrency ?? "USD")}</p>
                     </div>
                   </div>
@@ -576,15 +552,16 @@ function NewRunDialog({
   onSubmit: () => void;
   loading: boolean;
 }) {
+  const t = useTranslations("PayrollRuns");
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>New Payroll Run</DialogTitle>
+          <DialogTitle>{t("newRun")}</DialogTitle>
         </DialogHeader>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label>Pay Period Start</Label>
+            <Label>{t("periodStart")}</Label>
             <Input
               type="date"
               value={payPeriodStart}
@@ -592,7 +569,7 @@ function NewRunDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label>Pay Period End</Label>
+            <Label>{t("periodEnd")}</Label>
             <Input
               type="date"
               value={payPeriodEnd}
@@ -602,14 +579,14 @@ function NewRunDialog({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t("cancel")}
           </Button>
           <Button
             onClick={onSubmit}
             disabled={!payPeriodStart || !payPeriodEnd || loading}
             className="bg-emerald-600 hover:bg-emerald-700"
           >
-            {loading ? "Creating..." : "Create Run"}
+            {loading ? t("creating") : t("create")}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,13 +1,11 @@
 import type { useTranslations } from "next-intl";
 import type { Presentation } from "./locale";
+import { formatInstant } from "./dates";
 
 type Translate = ReturnType<typeof useTranslations<"Notifications">>;
 
 function dateLabel(presentation: Presentation, date: Date, month: "short" | "long") {
-  return new Intl.DateTimeFormat(presentation.locale, {
-    timeZone: presentation.timeZone, calendar: presentation.calendar,
-    numberingSystem: presentation.numerals, month, day: "numeric",
-  }).format(date);
+  return formatInstant(date, presentation, { month, day: "numeric" });
 }
 
 export function notificationRelativeTime(t: Translate, presentation: Presentation, value: string, now = new Date()) {

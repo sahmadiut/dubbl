@@ -11,9 +11,13 @@ import {
   getDefaultClassNames,
   type DayButton,
 } from "react-day-picker"
+import { enUS, faIR } from "react-day-picker/locale"
+import { DayPicker as PersianDayPicker, enUS as persianEnUS, faIR as persianFaIR } from "react-day-picker/persian"
 
 import { cn } from "@/lib/utils"
 import { Button, buttonVariants } from "@/components/ui/button"
+import { usePresentation } from "@/i18n/provider"
+import { dateToDateOnly } from "@/i18n/dates"
 
 function Calendar({
   className,
@@ -23,14 +27,25 @@ function Calendar({
   buttonVariant = "ghost",
   formatters,
   components,
+  locale: suppliedLocale,
   ...props
 }: React.ComponentProps<typeof DayPicker> & {
   buttonVariant?: React.ComponentProps<typeof Button>["variant"]
 }) {
   const defaultClassNames = getDefaultClassNames()
+  const presentation = usePresentation()
+  const Picker = presentation.calendar === "persian" ? PersianDayPicker : DayPicker
+  const defaultLocale = presentation.calendar === "persian"
+    ? presentation.locale === "fa-IR" ? persianFaIR : persianEnUS
+    : presentation.locale === "fa-IR" ? faIR : enUS
+  const locale = { ...defaultLocale, ...suppliedLocale }
 
   return (
-    <DayPicker
+    <Picker
+      locale={locale}
+      dir={presentation.locale === "fa-IR" ? "rtl" : "ltr"}
+      numerals={presentation.numerals}
+      timeZone="UTC"
       showOutsideDays={showOutsideDays}
       className={cn(
         "bg-background group/calendar p-3 [--cell-size:--spacing(8)] [[data-slot=card-content]_&]:bg-transparent [[data-slot=popover-content]_&]:bg-transparent",
@@ -39,11 +54,7 @@ function Calendar({
         className
       )}
       captionLayout={captionLayout}
-      formatters={{
-        formatMonthDropdown: (date) =>
-          date.toLocaleString("default", { month: "short" }),
-        ...formatters,
-      }}
+      formatters={formatters}
       classNames={{
         root: cn("w-fit", defaultClassNames.root),
         months: cn(
@@ -197,7 +208,7 @@ function CalendarDayButton({
       ref={ref}
       variant="ghost"
       size="icon"
-      data-day={day.date.toLocaleDateString()}
+      data-day={dateToDateOnly(day.date)}
       data-selected-single={
         modifiers.selected &&
         !modifiers.range_start &&

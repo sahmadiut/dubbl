@@ -3,8 +3,9 @@
 import { useTranslations } from "next-intl";
 
 import * as React from "react"
-import { format } from "date-fns"
 import { CalendarIcon } from "lucide-react"
+import { usePresentation } from "@/i18n/provider"
+import { dateOnlyToDate, dateToDateOnly, formatDateOnly } from "@/i18n/dates"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -29,14 +30,15 @@ export function DatePicker({
   className,
 }: DatePickerProps) {
   const t = useTranslations("SharedUI");
+  const presentation = usePresentation();
   const placeholder = suppliedPlaceholder ?? t("pickADate");
   const [open, setOpen] = React.useState(false)
 
-  const date = value ? new Date(value + "T00:00:00") : undefined
+  const date = value ? dateOnlyToDate(value) : undefined
 
   function handleSelect(day: Date | undefined) {
     if (day) {
-      const iso = format(day, "yyyy-MM-dd")
+      const iso = dateToDateOnly(day)
       onChange?.(iso)
     }
     setOpen(false)
@@ -47,14 +49,15 @@ export function DatePicker({
       <PopoverTrigger asChild>
         <Button
           variant="outline"
+          dir={presentation.locale === "fa-IR" ? "rtl" : "ltr"}
           className={cn(
-            "w-full justify-start text-left font-normal h-9 bg-transparent",
+            "w-full justify-start text-start font-normal h-9 bg-transparent",
             !date && "text-muted-foreground",
             className,
           )}
         >
           <CalendarIcon className="size-3.5 text-muted-foreground" />
-          {date ? format(date, "MMM d, yyyy") : <span>{placeholder}</span>}
+          {date ? formatDateOnly(value!, presentation) : <span>{placeholder}</span>}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
@@ -63,6 +66,7 @@ export function DatePicker({
           selected={date}
           onSelect={handleSelect}
           defaultMonth={date}
+          timeZone="UTC"
         />
       </PopoverContent>
     </Popover>

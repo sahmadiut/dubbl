@@ -6,8 +6,10 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { db } from "../../lib/db";
-import { users, organization, member, apiKey } from "../../lib/db/schema";
+import { users, organization, member, apiKey, chartAccount } from "../../lib/db/schema";
 import type { AuthContext } from "../../lib/api/auth-context";
+import { dateOnlyToDate, dateToDateOnly, formatDateOnly, formatInstant } from "../../i18n/dates";
+import { resolvePresentation } from "../../i18n/locale";
 
 // Stub request/session access only. All authorization, registered tools,
 // service logic, organization settings, persistence and audit use real code/DB.
@@ -28,6 +30,7 @@ async function run() {
   const { registerAllTools } = await import("../../lib/mcp/tools");
   const { getPresentation } = await import("../../i18n/server");
   const { loadPresentationPreferences } = await import("../../lib/api/locale-preferences");
+  const { POST: createEntry } = await import("../../app/api/v1/entries/route");
   const [a, b] = await db.insert(organization).values([
     { name: "Locale A", slug: "locale-a", defaultCurrency: "USD", defaultLanguage: "en-US" },
     { name: "Locale B", slug: "locale-b", defaultCurrency: "KWD", defaultLanguage: "fa-IR" },
@@ -136,6 +139,49 @@ async function run() {
     const audit = (await db.execute(sql`select changes from audit_log where entity_type='locale_preferences' and entity_id=${owner.id} order by created_at limit 1`)).rows[0];
     assert.ok(JSON.stringify(audit.changes).includes("America/New_York"));
     assert.deepEqual((await db.execute(sql`select default_currency,mileage_rate::text from organization where id=${a.id}`)).rows[0], { default_currency: "USD", mileage_rate: "67" });
+
+    // LOC-004: dates produced by the shared picker remain Gregorian through
+    // real business REST/MCP writes, independent of all presentation settings.
+    const [account] = await db.insert(chartAccount).values({ organizationId: a.id, name: "Calendar cash", code: "100", type: "asset" }).returning();
+    const lines = [{ accountId: account.id, debitAmountMinor: "1250" }, { accountId: account.id, creditAmountMinor: "1250" }];
+    const entryRequest = (body: unknown) => new Request("http://fixture.test/api/v1/entries", {
+      method: "POST", headers: { authorization: "Bearer dk_locale_owner", "content-type": "application/json" }, body: JSON.stringify(body),
+    });
+    const dateSnapshot = async () => (await db.execute(sql`select id,date::text,created_at::text from journal_entry where organization_id=${a.id} order by id`)).rows;
+    for (const language of ["en-US", "fa-IR"] as const) for (const calendar of ["gregory", "persian"]) {
+      const preferences = { language, calendar, timeZone: "America/Los_Angeles", numerals: "latn" };
+      const before = await dateSnapshot();
+      await rest(preferences);
+      assert.equal((await call("update_locale_preferences", { timeZone: "Asia/Tehran" })).isError, false);
+      assert.deepEqual(await dateSnapshot(), before);
+      const presentation = resolvePresentation({ user: preferences });
+      for (const value of ["2021-03-20", "2021-03-21", "2024-02-29", "2024-03-20", "2025-03-20", "2025-03-21"]) {
+        const date = dateToDateOnly(dateOnlyToDate(value)!);
+        const payload = { date, description: "Calendar canonical date", lines };
+        const response = await createEntry(entryRequest(payload));
+        assert.equal(response.status, 201);
+        const restEntry = (await response.json()).entry;
+        const mcp = await call("create_entry", payload);
+        assert.equal(mcp.isError, false);
+        assert.equal(restEntry.date, value);
+        assert.equal(mcp.body.entry.date, value);
+        const rows = (await db.execute(sql`select date::text,created_at::text from journal_entry where id in (${restEntry.id},${mcp.body.entry.id})`)).rows;
+        assert.equal(rows.length, 2);
+        for (const row of rows) assert.equal(row.date, value);
+        const instant = new Date(restEntry.createdAt), canonicalInstant = instant.toISOString();
+        formatInstant(instant, presentation);
+        assert.equal(instant.toISOString(), canonicalInstant);
+        const storedLines = (await db.execute(sql`select debit_amount::text,credit_amount::text from journal_line where journal_entry_id=${restEntry.id}`)).rows;
+        assert.equal(storedLines.reduce((sum, line) => sum + BigInt(String(line.debit_amount)), 0n), 1250n);
+        assert.equal(storedLines.reduce((sum, line) => sum + BigInt(String(line.credit_amount)), 0n), 1250n);
+      }
+      for (const date of [formatDateOnly("2024-03-20", presentation), "۱۴۰۳/۰۱/۰۱", "1403/01/01", "2024-03-20T00:00:00Z"]) {
+        const before = await dateSnapshot();
+        assert.equal((await createEntry(entryRequest({ date, lines }))).status, 400);
+        assert.equal((await call("create_entry", { date, lines })).isError, true);
+        assert.deepEqual(await dateSnapshot(), before);
+      }
+    }
     // Revoked membership is checked even by an already registered MCP session.
     await db.delete(member).where(andScope(owner.id, a.id));
     assert.equal((await call("get_locale_preferences")).body.status, 403);

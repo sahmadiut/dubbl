@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { projectInvoiceJson } from "../../i18n/project-presentation";
+import { milestoneBillingJson, milestoneInvoiceJson } from "../../i18n/project-milestones-presentation";
 import { createHash, randomUUID } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import path from "node:path";
@@ -37,6 +38,8 @@ async function connect(ctx: AuthContext) {
     const r = await client.callTool({ name, arguments: args }), text = (r.content as { text: string }[])[0].text;
     const body = text.startsWith("{") ? JSON.parse(text) : { error: text };
     if (!r.isError && name === "generate_project_invoice") assert.deepEqual(await projectInvoiceJson(Response.json(body)), body);
+    if (!r.isError && name === "generate_project_progress_invoice") assert.deepEqual(await milestoneInvoiceJson(Response.json(body)), body);
+    if (!r.isError && name === "get_project_billing_preview" && body.billingType !== "non_billable") assert.deepEqual(await milestoneBillingJson(Response.json(body), body.billingType, body.currency), body);
     return { isError: r.isError === true, body };
   }, async close() { await client.close(); await server.close(); } };
 }
@@ -63,6 +66,8 @@ async function run() {
       ...(method === "POST" ? { body: JSON.stringify(body) } : {}) }), { params: Promise.resolve({ id: projectId }) });
     const result = await r.json();
     if (r.ok && op === "invoice") assert.deepEqual(await projectInvoiceJson(Response.json(result)), result);
+    if (r.ok && op === "progress") assert.deepEqual(await milestoneInvoiceJson(Response.json(result)), result);
+    if (r.ok && op === "preview" && result.billingType !== "non_billable") assert.deepEqual(await milestoneBillingJson(Response.json(result), result.billingType, result.currency), result);
     return { isError: !r.ok, status: r.status, body: result };
   }
   async function snapshot() {

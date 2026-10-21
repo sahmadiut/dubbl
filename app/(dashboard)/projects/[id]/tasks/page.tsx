@@ -1,6 +1,6 @@
 "use client";
 
-import { projectCrmJson } from "@/lib/money/project-crm-ui";
+import { useProjectTaskPresentation, projectTaskMutationJson } from "@/i18n/project-task-presentation";
 
 import { projectWholeMinutes } from "@/lib/money/project-display";
 
@@ -49,17 +49,13 @@ import { cn } from "@/lib/utils";
 import { CircleDashed } from "lucide-react";
 import {
   useProject,
-  priorityConfig,
-  taskStatusConfig,
-  formatDateShort,
-  formatDate,
-  formatHours,
   type TaskData,
 } from "../project-context";
 
 type ViewMode = "list" | "board";
 
 export default function TasksPage() {
+  const { t, priorityConfig, taskStatusConfig } = useProjectTaskPresentation();
   const { project: proj, orgId, projectId, refresh } = useProject();
   const [addOpen, setAddOpen] = useState(false);
   const [viewTask, setViewTask] = useState<TaskData | null>(null);
@@ -96,7 +92,7 @@ export default function TasksPage() {
   const [checkItemSaving, setCheckItemSaving] = useState(false);
   const [deletingCheckId, setDeletingCheckId] = useState<string | null>(null);
   const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
-  useDocumentTitle("Projects · Tasks");
+  useDocumentTitle(t("documentTitle"));
 
   if (!proj) return null;
 
@@ -143,14 +139,14 @@ export default function TasksPage() {
           labels: selectedLabels,
         }),
       });
-      if (!res.ok) throw new Error("Failed to create task");
-      toast.success("Task created");
+      await projectTaskMutationJson(res, "task");
+      toast.success(t("created"));
       setAddOpen(false);
       setTitle(""); setDesc(""); setPriority("medium"); setTaskStatus("todo");
       setAssigneeId("none"); setTeamId("none"); setDueDate(""); setStartDate("");
       setEstimatedMinutes(""); setSelectedLabels([]);
       refresh();
-    } catch { toast.error("Failed to create task"); }
+    } catch { toast.error(t("createFailed")); }
     finally { setSaving(false); }
   }
 
@@ -162,9 +158,9 @@ export default function TasksPage() {
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify(updates),
       });
-      if (!res.ok) throw new Error("Failed");
+      await projectTaskMutationJson(res, "task", taskId);
       refresh();
-    } catch { toast.error("Failed to update task"); }
+    } catch { toast.error(t("updateFailed")); }
   }
 
   async function toggleStatus(taskId: string, current: string) {
@@ -184,10 +180,10 @@ export default function TasksPage() {
         method: "DELETE",
         headers: { "x-organization-id": orgId },
       });
-      if (!res.ok) { const data = await projectCrmJson(res); throw new Error(data.error || "Failed to delete task"); }
+      await projectTaskMutationJson(res, "success");
       setViewTask(null);
       refresh();
-    } catch (error) { toast.error(error instanceof Error ? error.message : "Failed to delete task"); }
+    } catch { toast.error(t("deleteFailed")); }
     finally { setDeletingId(null); }
   }
 
@@ -195,53 +191,58 @@ export default function TasksPage() {
     if (!orgId || !newCheckItem.trim() || checkItemSaving) return;
     setCheckItemSaving(true);
     try {
-      await fetch(`/api/v1/projects/${projectId}/tasks/${taskId}/checklist`, {
+      const res = await fetch(`/api/v1/projects/${projectId}/tasks/${taskId}/checklist`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify({ title: newCheckItem.trim() }),
       });
+      await projectTaskMutationJson(res, "item");
       setNewCheckItem("");
       refresh();
-    } catch { toast.error("Failed to add item"); }
+    } catch { toast.error(t("addItemFailed")); }
     finally { setCheckItemSaving(false); }
   }
 
   async function toggleChecklistItem(taskId: string, itemId: string, isCompleted: boolean) {
     if (!orgId) return;
     try {
-      await fetch(`/api/v1/projects/${projectId}/tasks/${taskId}/checklist`, {
+      const res = await fetch(`/api/v1/projects/${projectId}/tasks/${taskId}/checklist`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify({ items: [{ id: itemId, isCompleted }] }),
       });
+      await projectTaskMutationJson(res, "success");
       refresh();
-    } catch { toast.error("Failed"); }
+    } catch { toast.error(t("updateItemFailed")); }
   }
 
   async function deleteChecklistItem(taskId: string, itemId: string) {
     if (!orgId || deletingCheckId) return;
     setDeletingCheckId(itemId);
     try {
-      await fetch(`/api/v1/projects/${projectId}/tasks/${taskId}/checklist?itemId=${itemId}`, {
+      const res = await fetch(`/api/v1/projects/${projectId}/tasks/${taskId}/checklist?itemId=${itemId}`, {
         method: "DELETE",
         headers: { "x-organization-id": orgId },
       });
+      await projectTaskMutationJson(res, "success");
       refresh();
-    } finally { setDeletingCheckId(null); }
+    } catch { toast.error(t("deleteItemFailed")); }
+    finally { setDeletingCheckId(null); }
   }
 
   async function addComment(taskId: string) {
     if (!orgId || !newComment.trim()) return;
     setCommentSaving(true);
     try {
-      await fetch(`/api/v1/projects/${projectId}/tasks/${taskId}/comments`, {
+      const res = await fetch(`/api/v1/projects/${projectId}/tasks/${taskId}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify({ content: newComment.trim() }),
       });
+      await projectTaskMutationJson(res, "comment");
       setNewComment("");
       refresh();
-    } catch { toast.error("Failed to post comment"); }
+    } catch { toast.error(t("commentFailed")); }
     finally { setCommentSaving(false); }
   }
 
@@ -249,12 +250,14 @@ export default function TasksPage() {
     if (!orgId || deletingCommentId) return;
     setDeletingCommentId(commentId);
     try {
-      await fetch(`/api/v1/projects/${projectId}/tasks/${taskId}/comments?commentId=${commentId}`, {
+      const res = await fetch(`/api/v1/projects/${projectId}/tasks/${taskId}/comments?commentId=${commentId}`, {
         method: "DELETE",
         headers: { "x-organization-id": orgId },
       });
+      await projectTaskMutationJson(res, "success");
       refresh();
-    } finally { setDeletingCommentId(null); }
+    } catch { toast.error(t("deleteCommentFailed")); }
+    finally { setDeletingCommentId(null); }
   }
 
   return (
@@ -277,7 +280,7 @@ export default function TasksPage() {
         <div className="rounded-lg border bg-card p-3">
           <div className="flex items-center gap-1.5 mb-1">
             <AlertCircle className="size-2.5 text-red-500" />
-            <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Overdue</span>
+            <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{t("overdue")}</span>
           </div>
           <p className={cn("text-lg font-bold font-mono tabular-nums", overdueTasks.length > 0 && "text-red-600")}>{overdueTasks.length}</p>
         </div>
@@ -287,11 +290,11 @@ export default function TasksPage() {
         <div className="flex items-center gap-2 overflow-x-auto">
           <Tabs value={statusFilter} onValueChange={setStatusFilter}>
             <TabsList className="h-8">
-              <TabsTrigger value="all" className="text-xs">All ({tasks.length})</TabsTrigger>
-              <TabsTrigger value="todo" className="text-xs">To Do</TabsTrigger>
-              <TabsTrigger value="in_progress" className="text-xs">In Progress</TabsTrigger>
-              <TabsTrigger value="in_review" className="text-xs">Review</TabsTrigger>
-              <TabsTrigger value="done" className="text-xs">Done</TabsTrigger>
+              <TabsTrigger value="all" className="text-xs">{t("allTasks", { count: tasks.length })}</TabsTrigger>
+              <TabsTrigger value="todo" className="text-xs">{taskStatusConfig.todo.label}</TabsTrigger>
+              <TabsTrigger value="in_progress" className="text-xs">{taskStatusConfig.in_progress.label}</TabsTrigger>
+              <TabsTrigger value="in_review" className="text-xs">{taskStatusConfig.in_review.label}</TabsTrigger>
+              <TabsTrigger value="done" className="text-xs">{taskStatusConfig.done.label}</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
@@ -299,19 +302,21 @@ export default function TasksPage() {
           <div className="flex items-center rounded-md border bg-card">
             <button
               className={cn("p-1.5 rounded-l-md transition-colors", viewMode === "list" ? "bg-muted" : "hover:bg-muted/50")}
+              aria-label={t("listView")}
               onClick={() => setViewMode("list")}
             >
               <LayoutList className="size-3.5" />
             </button>
             <button
               className={cn("p-1.5 rounded-r-md transition-colors", viewMode === "board" ? "bg-muted" : "hover:bg-muted/50")}
+              aria-label={t("boardView")}
               onClick={() => setViewMode("board")}
             >
               <Columns3 className="size-3.5" />
             </button>
           </div>
           <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 h-8" onClick={() => setAddOpen(true)}>
-            <Plus className="size-3.5" />Task
+            <Plus className="size-3.5" />{t("task")}
           </Button>
         </div>
       </div>
@@ -325,50 +330,50 @@ export default function TasksPage() {
                 <Plus className="size-5" />
               </div>
               <div>
-                <SheetTitle className="text-lg">New Task</SheetTitle>
-                <SheetDescription>Add a new task to this project.</SheetDescription>
+                <SheetTitle className="text-lg">{t("newTask")}</SheetTitle>
+                <SheetDescription>{t("newTaskDescription")}</SheetDescription>
               </div>
             </div>
           </SheetHeader>
           <div className="flex-1 overflow-y-auto space-y-6 px-6 py-5">
             <div className="space-y-4">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Details</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("details")}</p>
               <div className="space-y-2">
-                <Label>Title *</Label>
-                <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="Task title" />
+                <Label>{t("titleRequired")}</Label>
+                <Input value={title} onChange={e => setTitle(e.target.value)} placeholder={t("taskTitle")} />
               </div>
               <div className="space-y-2">
-                <Label>Description</Label>
-                <Textarea value={desc} onChange={e => setDesc(e.target.value)} placeholder="Details, notes, acceptance criteria..." rows={4} />
+                <Label>{t("description")}</Label>
+                <Textarea value={desc} onChange={e => setDesc(e.target.value)} placeholder={t("descriptionPlaceholder")} rows={4} />
               </div>
             </div>
 
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Classification</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("classification")}</p>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Priority</Label>
+                  <Label>{t("priority")}</Label>
                   <Select value={priority} onValueChange={setPriority}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                      <SelectItem value="urgent">Urgent</SelectItem>
+                      <SelectItem value="low">{priorityConfig.low.label}</SelectItem>
+                      <SelectItem value="medium">{priorityConfig.medium.label}</SelectItem>
+                      <SelectItem value="high">{priorityConfig.high.label}</SelectItem>
+                      <SelectItem value="urgent">{priorityConfig.urgent.label}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Status</Label>
+                  <Label>{t("status")}</Label>
                   <Select value={taskStatus} onValueChange={setTaskStatus}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="backlog">Backlog</SelectItem>
-                      <SelectItem value="todo">To Do</SelectItem>
-                      <SelectItem value="in_progress">In Progress</SelectItem>
-                      <SelectItem value="in_review">In Review</SelectItem>
+                      <SelectItem value="backlog">{taskStatusConfig.backlog.label}</SelectItem>
+                      <SelectItem value="todo">{taskStatusConfig.todo.label}</SelectItem>
+                      <SelectItem value="in_progress">{taskStatusConfig.in_progress.label}</SelectItem>
+                      <SelectItem value="in_review">{taskStatusConfig.in_review.label}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -378,14 +383,14 @@ export default function TasksPage() {
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Assignment</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("assignment")}</p>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Assignee</Label>
+                  <Label>{t("assignee")}</Label>
                   <Select value={assigneeId} onValueChange={setAssigneeId}>
-                    <SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={t("unassigned")} /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">Unassigned</SelectItem>
+                      <SelectItem value="none">{t("unassigned")}</SelectItem>
                       {members.map(m => (
                         <SelectItem key={m.member.id} value={m.member.id}>
                           {m.member.user.name || m.member.user.email}
@@ -395,11 +400,11 @@ export default function TasksPage() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Team</Label>
+                  <Label>{t("team")}</Label>
                   <Select value={teamId} onValueChange={setTeamId}>
-                    <SelectTrigger><SelectValue placeholder="No team" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={t("noTeam")} /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">No team</SelectItem>
+                      <SelectItem value="none">{t("noTeam")}</SelectItem>
                       {teams.map(t => (
                         <SelectItem key={t.id} value={t.id}>
                           <span className="flex items-center gap-1.5">
@@ -417,20 +422,20 @@ export default function TasksPage() {
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Schedule</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("schedule")}</p>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Start Date</Label>
-                  <DatePicker value={startDate} onChange={setStartDate} placeholder="Select start date" />
+                  <Label>{t("startDate")}</Label>
+                  <DatePicker value={startDate} onChange={setStartDate} placeholder={t("selectStartDate")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Due Date</Label>
-                  <DatePicker value={dueDate} onChange={setDueDate} placeholder="Select due date" />
+                  <Label>{t("dueDate")}</Label>
+                  <DatePicker value={dueDate} onChange={setDueDate} placeholder={t("selectDueDate")} />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Estimated Time (minutes)</Label>
-                <Input type="number" min={1} value={estimatedMinutes} onChange={e => setEstimatedMinutes(e.target.value)} placeholder="e.g. 120" />
+                <Label>{t("estimatedTime")}</Label>
+                <Input type="number" min={1} value={estimatedMinutes} onChange={e => setEstimatedMinutes(e.target.value)} placeholder={t("estimatePlaceholder")} />
               </div>
             </div>
 
@@ -438,7 +443,7 @@ export default function TasksPage() {
               <>
                 <div className="h-px bg-border" />
                 <div className="space-y-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Labels</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("labels")}</p>
                   <div className="flex flex-wrap gap-1.5">
                     {labels.map(l => (
                       <button
@@ -464,9 +469,9 @@ export default function TasksPage() {
             )}
           </div>
           <div className="sticky bottom-0 z-10 flex items-center justify-end gap-3 border-t bg-background/80 px-6 py-4 backdrop-blur-sm">
-            <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>Cancel</Button>
+            <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>{t("cancel")}</Button>
             <Button onClick={handleAdd} disabled={saving || !title.trim()} className="bg-emerald-600 hover:bg-emerald-700">
-              {saving ? "Creating..." : "Create Task"}
+              {saving ? t("creating") : t("createTask")}
             </Button>
           </div>
         </SheetContent>
@@ -547,11 +552,12 @@ function TaskListView({ tasks, proj, labels, onToggle, onDelete, onView, togglin
   togglingId: string | null;
   deletingId: string | null;
 }) {
+  const { t, priorityConfig, taskStatusConfig, formatHours, formatDateShort } = useProjectTaskPresentation();
   if (tasks.length === 0) {
     return (
       <div className="rounded-lg border border-dashed p-8 text-center min-h-[30vh] flex flex-col items-center justify-center">
         <CheckCircle2 className="mx-auto size-8 text-muted-foreground/30" />
-        <p className="mt-2 text-sm text-muted-foreground">No tasks found</p>
+        <p className="mt-2 text-sm text-muted-foreground">{t("noTasks")}</p>
       </div>
     );
   }
@@ -574,7 +580,7 @@ function TaskListView({ tasks, proj, labels, onToggle, onDelete, onView, togglin
             className="flex items-center gap-3 px-4 py-2.5 hover:bg-muted/20 transition-colors group cursor-pointer"
             onClick={() => onView(task)}
           >
-            <button onClick={(e) => { e.stopPropagation(); onToggle(task.id, task.status); }} disabled={togglingId === task.id} className="shrink-0">
+            <button aria-label={task.status === "done" ? t("reopenTask") : t("markDone")} onClick={(e) => { e.stopPropagation(); onToggle(task.id, task.status); }} disabled={togglingId === task.id} className="shrink-0">
               {togglingId === task.id ? (
                 <Loader2 className="size-4 text-muted-foreground/40 animate-spin" />
               ) : task.status === "done" ? (
@@ -627,7 +633,7 @@ function TaskListView({ tasks, proj, labels, onToggle, onDelete, onView, togglin
             )}
 
             <Badge variant="outline" className={cn("text-[9px] h-4 shrink-0", priorityConfig[task.priority]?.color)}>
-              {task.priority}
+              {priorityConfig[task.priority]?.label}
             </Badge>
             <Badge variant="outline" className={cn("text-[9px] h-4 shrink-0", tsc?.bg, tsc?.text)}>
               {tsc?.label}
@@ -639,6 +645,7 @@ function TaskListView({ tasks, proj, labels, onToggle, onDelete, onView, togglin
               </span>
             )}
             <button
+              aria-label={t("deleteTask")}
               onClick={(e) => { e.stopPropagation(); onDelete(task.id); }}
               disabled={deletingId === task.id}
               className={cn("opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-red-600", deletingId === task.id && "opacity-100 pointer-events-none")}
@@ -660,6 +667,7 @@ function TaskBoardView({ tasks, proj, labels, onUpdate, onView }: {
   onUpdate: (id: string, updates: Record<string, unknown>) => void;
   onView: (task: TaskData) => void;
 }) {
+  const { priorityConfig, taskStatusConfig, formatDateShort } = useProjectTaskPresentation();
   const columns = ["backlog", "todo", "in_progress", "in_review", "done"] as const;
 
   return (
@@ -705,7 +713,7 @@ function TaskBoardView({ tasks, proj, labels, onUpdate, onView }: {
                     </div>
                     <div className="flex items-center gap-1.5 mt-1.5">
                       <Badge variant="outline" className={cn("text-[8px] h-3.5 px-1", priorityConfig[task.priority]?.color)}>
-                        {task.priority}
+                        {priorityConfig[task.priority]?.label}
                       </Badge>
                       {task.dueDate && (
                         <span className={cn("text-[9px] tabular-nums", overdue ? "text-red-600" : "text-muted-foreground")}>
@@ -765,6 +773,7 @@ function TaskDetailDrawer({
   deletingCheckId: string | null;
   deletingCommentId: string | null;
 }) {
+  const { t, priorityConfig, taskStatusConfig, formatHours, formatDate, formatCreated } = useProjectTaskPresentation();
   const overdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== "done" && task.status !== "cancelled";
   const creator = task.createdBy;
   const checklist = task.checklist || [];
@@ -776,7 +785,7 @@ function TaskDetailDrawer({
     <>
       <SheetHeader className="px-6 pt-6 pb-4 border-b space-y-3">
         <div className="flex items-start gap-3">
-          <button onClick={() => onToggleStatus(task.id, task.status)} disabled={togglingId === task.id} className="mt-0.5 shrink-0">
+          <button aria-label={task.status === "done" ? t("reopenTask") : t("markDone")} onClick={() => onToggleStatus(task.id, task.status)} disabled={togglingId === task.id} className="mt-0.5 shrink-0">
             {togglingId === task.id ? (
               <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
                 <Loader2 className="size-5 animate-spin" />
@@ -796,9 +805,9 @@ function TaskDetailDrawer({
               {task.title}
             </SheetTitle>
             <SheetDescription className="mt-0.5">
-              {creator ? `Created by ${creator.name || creator.email}` : "Task details"}
+              {creator ? t("createdBy", { name: creator.name || creator.email }) : t("taskDetails")}
               {" · "}
-              {new Date(task.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+              {formatCreated(task.createdAt)}
             </SheetDescription>
             {taskLabels.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-2">
@@ -817,10 +826,10 @@ function TaskDetailDrawer({
       <div className="flex-1 overflow-y-auto space-y-6 px-6 py-5">
         {/* Classification */}
         <div className="space-y-4">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Classification</p>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("classification")}</p>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Status</Label>
+              <Label>{t("status")}</Label>
               <Select value={editStatus} onValueChange={(v) => { setEditStatus(v); onUpdate(task.id, { status: v }); }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -833,7 +842,7 @@ function TaskDetailDrawer({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Priority</Label>
+              <Label>{t("priority")}</Label>
               <Select value={editPriority} onValueChange={(v) => { setEditPriority(v); onUpdate(task.id, { priority: v }); }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -851,7 +860,7 @@ function TaskDetailDrawer({
           <>
             <div className="h-px bg-border" />
             <div className="space-y-3">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Description</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("description")}</p>
               <p className="text-[13px] text-muted-foreground leading-relaxed whitespace-pre-wrap rounded-lg bg-muted/30 p-4">{task.description}</p>
             </div>
           </>
@@ -861,24 +870,24 @@ function TaskDetailDrawer({
 
         {/* Assignment */}
         <div className="space-y-4">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Assignment</p>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("assignment")}</p>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="flex items-center gap-1.5"><User2 className="size-3" /> Assignee</Label>
+              <Label className="flex items-center gap-1.5"><User2 className="size-3" /> {t("assignee")}</Label>
               <Select value={editAssigneeId} onValueChange={(v) => { setEditAssigneeId(v); onUpdate(task.id, { assigneeId: v === "none" ? null : v }); }}>
-                <SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t("unassigned")} /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Unassigned</SelectItem>
+                  <SelectItem value="none">{t("unassigned")}</SelectItem>
                   {members.map(m => <SelectItem key={m.member.id} value={m.member.id}>{m.member.user.name || m.member.user.email}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label className="flex items-center gap-1.5"><Users className="size-3" /> Team</Label>
+              <Label className="flex items-center gap-1.5"><Users className="size-3" /> {t("team")}</Label>
               <Select value={editTeamId} onValueChange={(v) => { setEditTeamId(v); onUpdate(task.id, { teamId: v === "none" ? null : v }); }}>
-                <SelectTrigger><SelectValue placeholder="No team" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t("noTeam")} /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">No team</SelectItem>
+                  <SelectItem value="none">{t("noTeam")}</SelectItem>
                   {teams.map(t => <SelectItem key={t.id} value={t.id}><span className="flex items-center gap-1.5"><span className="size-2 rounded-full" style={{ backgroundColor: t.color }} />{t.name}</span></SelectItem>)}
                 </SelectContent>
               </Select>
@@ -890,31 +899,31 @@ function TaskDetailDrawer({
 
         {/* Schedule */}
         <div className="space-y-4">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Schedule</p>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("schedule")}</p>
           <div className="rounded-lg border divide-y">
             <div className="flex items-center justify-between px-4 py-3">
-              <span className="text-[13px] text-muted-foreground flex items-center gap-2"><CalendarDays className="size-3.5" /> Due Date</span>
+              <span className="text-[13px] text-muted-foreground flex items-center gap-2"><CalendarDays className="size-3.5" /> {t("dueDate")}</span>
               {task.dueDate ? (
                 <span className={cn("text-[13px] font-mono tabular-nums font-medium", overdue ? "text-red-600" : "")}>
                   {formatDate(task.dueDate)}
                   {overdue && <AlertCircle className="size-3.5 inline ml-1.5 text-red-500" />}
                 </span>
-              ) : <span className="text-[13px] text-muted-foreground/40">Not set</span>}
+              ) : <span className="text-[13px] text-muted-foreground/40">{t("notSet")}</span>}
             </div>
             {task.startDate && (
               <div className="flex items-center justify-between px-4 py-3">
-                <span className="text-[13px] text-muted-foreground flex items-center gap-2"><CalendarDays className="size-3.5" /> Start Date</span>
+                <span className="text-[13px] text-muted-foreground flex items-center gap-2"><CalendarDays className="size-3.5" /> {t("startDate")}</span>
                 <span className="text-[13px] font-mono tabular-nums">{formatDate(task.startDate)}</span>
               </div>
             )}
             <div className="flex items-center justify-between px-4 py-3">
-              <span className="text-[13px] text-muted-foreground flex items-center gap-2"><Clock className="size-3.5" /> Estimate</span>
-              <span className="text-[13px] font-mono tabular-nums">{task.estimatedMinutes ? formatHours(task.estimatedMinutes) : <span className="text-muted-foreground/40">Not set</span>}</span>
+              <span className="text-[13px] text-muted-foreground flex items-center gap-2"><Clock className="size-3.5" /> {t("estimate")}</span>
+              <span className="text-[13px] font-mono tabular-nums">{task.estimatedMinutes ? formatHours(task.estimatedMinutes) : <span className="text-muted-foreground/40">{t("notSet")}</span>}</span>
             </div>
             {task.completedAt && (
               <div className="flex items-center justify-between px-4 py-3">
-                <span className="text-[13px] text-muted-foreground flex items-center gap-2"><CheckCircle2 className="size-3.5" /> Completed</span>
-                <span className="text-[13px] font-mono tabular-nums">{new Date(task.completedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+                <span className="text-[13px] text-muted-foreground flex items-center gap-2"><CheckCircle2 className="size-3.5" /> {t("completed")}</span>
+                <span className="text-[13px] font-mono tabular-nums">{formatCreated(task.completedAt)}</span>
               </div>
             )}
           </div>
@@ -926,7 +935,7 @@ function TaskDetailDrawer({
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-              <ListChecks className="size-3.5" /> Checklist
+              <ListChecks className="size-3.5" /> {t("checklist")}
               {checklist.length > 0 && <span className="text-muted-foreground/60 font-mono">({checkDone}/{checklist.length})</span>}
             </p>
           </div>
@@ -944,6 +953,7 @@ function TaskDetailDrawer({
                 />
                 <span className={cn("text-[13px] flex-1", item.isCompleted && "line-through text-muted-foreground")}>{item.title}</span>
                 <button
+                  aria-label={t("deleteItem")}
                   onClick={() => onDeleteCheckItem(task.id, item.id)}
                   disabled={deletingCheckId === item.id}
                   className={cn("opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-600 transition-opacity", deletingCheckId === item.id && "opacity-100 pointer-events-none")}
@@ -957,11 +967,11 @@ function TaskDetailDrawer({
             <Input
               value={newCheckItem}
               onChange={e => setNewCheckItem(e.target.value)}
-              placeholder="Add checklist item..."
+              placeholder={t("checklistPlaceholder")}
               className="text-sm"
               onKeyDown={e => { if (e.key === "Enter") onAddCheckItem(task.id); }}
             />
-            <Button size="sm" variant="outline" className="shrink-0" onClick={() => onAddCheckItem(task.id)} disabled={!newCheckItem.trim() || checkItemSaving}>
+            <Button aria-label={t("addItem")} size="sm" variant="outline" className="shrink-0" onClick={() => onAddCheckItem(task.id)} disabled={!newCheckItem.trim() || checkItemSaving}>
               {checkItemSaving ? <Loader2 className="size-3.5 animate-spin" /> : <Plus className="size-3.5" />}
             </Button>
           </div>
@@ -972,13 +982,13 @@ function TaskDetailDrawer({
         {/* Comments */}
         <div className="space-y-3">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-            <MessageSquare className="size-3.5" /> Comments ({comments.length})
+            <MessageSquare className="size-3.5" /> {t("comments", { count: comments.length })}
           </p>
           <div className="space-y-2">
             <Textarea
               value={newComment}
               onChange={e => setNewComment(e.target.value)}
-              placeholder="Write a comment..."
+              placeholder={t("commentPlaceholder")}
               className="text-sm min-h-[80px]"
               rows={3}
             />
@@ -988,7 +998,7 @@ function TaskDetailDrawer({
               onClick={() => onAddComment(task.id)}
               disabled={commentSaving || !newComment.trim()}
             >
-              <Send className="size-3.5" />{commentSaving ? "Posting..." : "Post Comment"}
+              <Send className="size-3.5" />{commentSaving ? t("posting") : t("postComment")}
             </Button>
           </div>
           {comments.length > 0 && (
@@ -998,8 +1008,9 @@ function TaskDetailDrawer({
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="text-[12px] font-medium">{c.author.name || c.author.email}</span>
                     <div className="flex items-center gap-2">
-                      <span className="text-[11px] text-muted-foreground">{new Date(c.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
+                      <span className="text-[11px] text-muted-foreground">{formatCreated(c.createdAt, true)}</span>
                       <button
+                        aria-label={t("deleteComment")}
                         onClick={() => onDeleteComment(task.id, c.id)}
                         disabled={deletingCommentId === c.id}
                         className={cn("opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-600 transition-opacity", deletingCommentId === c.id && "opacity-100 pointer-events-none")}
@@ -1019,12 +1030,12 @@ function TaskDetailDrawer({
       {/* Footer */}
       <div className="sticky bottom-0 z-10 flex items-center justify-between gap-3 border-t bg-background/80 px-6 py-4 backdrop-blur-sm">
         <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => onDelete(task.id)} disabled={deletingId === task.id}>
-          {deletingId === task.id ? <Loader2 className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}{deletingId === task.id ? "Deleting..." : "Delete"}
+          {deletingId === task.id ? <Loader2 className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}{deletingId === task.id ? t("deleting") : t("delete")}
         </Button>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={onClose}>Close</Button>
+          <Button variant="outline" onClick={onClose}>{t("close")}</Button>
           <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => { onToggleStatus(task.id, task.status); onClose(); }} disabled={togglingId === task.id}>
-            {togglingId === task.id ? "Saving..." : task.status === "done" ? "Reopen Task" : "Mark Done"}
+            {togglingId === task.id ? t("saving") : task.status === "done" ? t("reopenTask") : t("markDone")}
           </Button>
         </div>
       </div>

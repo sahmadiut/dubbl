@@ -13,12 +13,24 @@ import type { AuthContext } from "../../lib/api/auth-context";
 import { projectOperations } from "../../lib/api/project-master-operations";
 import { registerAllTools } from "../../lib/mcp/tools";
 import { projectListJson, projectMutationJson, projectDetailJson } from "../../i18n/project-presentation";
+import { projectTaskMutationJson } from "../../i18n/project-task-presentation";
+import { projectTimerJson, projectTimeEntryJson, projectTimeDeleteJson } from "../../i18n/project-time-presentation";
+import { milestoneAssignmentsJson, projectMilestoneJson } from "../../i18n/project-milestones-presentation";
 
-async function checkPresentation(name: string, body: unknown) {
+async function checkPresentation(name: string, body: unknown, args: Record<string, unknown>) {
   if (name === "get_project") assert.deepEqual(await projectDetailJson(Response.json(body), (body as { project: { id: string } }).project.id), body);
   if (name === "list_projects") assert.deepEqual(await projectListJson(Response.json(body)), body);
   if (["create_project", "update_project"].includes(name)) assert.deepEqual(await projectMutationJson(Response.json(body)), body);
   if (name === "delete_project") assert.deepEqual(await projectMutationJson(Response.json(body), "delete"), body);
+  const taskEnvelopes = { create_project_task: "task", update_project_task: "task", delete_project_task: "success", create_project_task_checklist_item: "item", update_project_task_checklist: "success", delete_project_task_checklist_item: "success", create_project_task_comment: "comment", delete_project_task_comment: "success" } as const;
+  if (Object.hasOwn(taskEnvelopes, name)) assert.deepEqual(await projectTaskMutationJson(Response.json(body), taskEnvelopes[name as keyof typeof taskEnvelopes]), body);
+  if (["start_project_timer", "update_project_timer"].includes(name)) assert.deepEqual(await projectTimerJson(Response.json(body), String(args.projectId)), body);
+  if (["create_project_time_entry", "update_project_time_entry"].includes(name)) assert.deepEqual(await projectTimeEntryJson(Response.json(body), String(args.projectId), args.entryId as string | undefined), body);
+  if (["discard_project_timer", "delete_project_time_entry"].includes(name)) await projectTimeDeleteJson(Response.json(body));
+  if (name === "list_project_milestone_assignments") assert.deepEqual(await milestoneAssignmentsJson(Response.json(body)), body);
+  if (["create_project_milestone", "update_project_milestone"].includes(name)) assert.deepEqual(await projectMilestoneJson(Response.json(body), "milestone", args.milestoneId as string | undefined), body);
+  if (["create_project_milestone_assignment", "mark_project_milestone_assignment_paid"].includes(name)) assert.deepEqual(await projectMilestoneJson(Response.json(body), "assignment", args.assignmentId as string | undefined), body);
+  if (name === "delete_project_milestone") assert.deepEqual(await projectMilestoneJson(Response.json(body), "delete"), body);
 }
 
 async function connect(ctx: AuthContext) {
@@ -34,7 +46,7 @@ async function connect(ctx: AuthContext) {
   return { async call(name: string, args: Record<string, unknown>) {
     const result = await client.callTool({ name, arguments: args }), text = (result.content as { text: string }[])[0].text;
     const body = text.startsWith("{") ? JSON.parse(text) : { error: text };
-    if (!result.isError) await checkPresentation(name, body);
+    if (!result.isError) await checkPresentation(name, body, args);
     return { isError: result.isError === true, body };
   }, async close() { await client.close(); await server.close(); } };
 }
@@ -67,7 +79,7 @@ async function run() {
       ...(["POST", "PATCH"].includes(op.method) ? { body: JSON.stringify(body) } : {}) });
     const response: Response = await mod[op.method](request, { params: Promise.resolve(params) });
     const result = await response.json();
-    if (response.ok) await checkPresentation(name, result);
+    if (response.ok) await checkPresentation(name, result, args);
     return { status: response.status, body: result, isError: !response.ok };
   }
   const allTables = ["project", "project_member", "project_task", "time_entry", "running_timer", "project_milestone", "milestone_assignment", "task_checklist", "task_comment", "project_label", "project_note", "project_team", "project_team_member", "project_team_assignment", "audit_log"];

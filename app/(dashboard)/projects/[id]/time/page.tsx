@@ -1,6 +1,9 @@
 "use client";
 
-import { projectCrmJson } from "@/lib/money/project-crm-ui";
+import { projectTimerJson, projectTimeEntryJson, projectTimeDeleteJson } from "@/i18n/project-time-presentation";
+import { useTranslations } from "next-intl";
+import { useProjectPresentation } from "@/i18n/project-overview-presentation";
+import { formatDateOnly, formatInstant } from "@/i18n/dates";
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { toast } from "sonner";
@@ -52,10 +55,12 @@ import {
   Tooltip,
   CartesianGrid,
 } from "recharts";
-import { useProject, formatHours, formatDateShort, type TimeEntryData, type RunningTimerData } from "../project-context";
+import { useProject, type TimeEntryData, type RunningTimerData } from "../project-context";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 
 export default function TimePage() {
+  const t = useTranslations("ProjectTime");
+  const { formatHours, formatDateShort, presentation } = useProjectPresentation();
   const { project: proj, orgId, projectId, refresh } = useProject();
   const formatMoney = (amount: number | bigint | string) => projectMoneyDisplay(amount, proj?.currency ?? "USD");
 
@@ -88,7 +93,7 @@ export default function TimePage() {
   const lastSavedTaskRef = useRef("none");
   const lastSavedBillableRef = useRef(true);
   const stoppingRef = useRef(false);
-  useDocumentTitle("Projects · Time Entries");
+  useDocumentTitle(t("documentTitle"));
 
   // Initialize timer from server data
   useEffect(() => {
@@ -144,11 +149,12 @@ export default function TimePage() {
     if (!hasChanges) return;
 
     try {
-      await fetch(`/api/v1/projects/${projectId}/timer`, {
+      const res = await fetch(`/api/v1/projects/${projectId}/timer`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify(updates),
       });
+      await projectTimerJson(res, projectId);
       lastSavedDescRef.current = timerDesc;
       lastSavedTaskRef.current = timerTaskId;
       lastSavedBillableRef.current = timerBillable;
@@ -171,7 +177,7 @@ export default function TimePage() {
         body: JSON.stringify({ isBillable: true }),
       });
       if (!res.ok) throw new Error("Failed");
-      const data = await projectCrmJson(res);
+      const data = await projectTimerJson(res, projectId);
       setTimerData(data.timer);
       setTimerSeconds(0);
       setTimerDesc("");
@@ -180,12 +186,11 @@ export default function TimePage() {
       lastSavedDescRef.current = "";
       lastSavedTaskRef.current = "none";
       lastSavedBillableRef.current = true;
-    } catch { toast.error("Failed to start timer"); }
+    } catch { toast.error(t("startFailed")); }
   }
 
   async function pauseTimer() {
     if (!orgId || !timerData) return;
-    if (timerRef.current) clearInterval(timerRef.current);
     try {
       const res = await fetch(`/api/v1/projects/${projectId}/timer`, {
         method: "PATCH",
@@ -196,9 +201,9 @@ export default function TimePage() {
         }),
       });
       if (!res.ok) throw new Error("Failed");
-      const data = await projectCrmJson(res);
+      const data = await projectTimerJson(res, projectId);
       setTimerData(data.timer);
-    } catch { toast.error("Failed to pause timer"); }
+    } catch { toast.error(t("pauseFailed")); }
   }
 
   async function resumeTimer() {
@@ -213,20 +218,20 @@ export default function TimePage() {
         }),
       });
       if (!res.ok) throw new Error("Failed");
-      const data = await projectCrmJson(res);
+      const data = await projectTimerJson(res, projectId);
       setTimerData(data.timer);
-    } catch { toast.error("Failed to resume timer"); }
+    } catch { toast.error(t("resumeFailed")); }
   }
 
   async function resetTimer() {
     if (!orgId) return;
-    if (timerRef.current) clearInterval(timerRef.current);
     try {
-      await fetch(`/api/v1/projects/${projectId}/timer`, {
+      const res = await fetch(`/api/v1/projects/${projectId}/timer`, {
         method: "DELETE",
         headers: { "x-organization-id": orgId },
       });
-    } catch { /* silent */ }
+      await projectTimeDeleteJson(res);
+    } catch { toast.error(t("resetFailed")); return; }
     setTimerData(null);
     setTimerSeconds(0);
     setTimerDesc("");
@@ -237,8 +242,6 @@ export default function TimePage() {
   async function stopTimer() {
     if (!orgId || !timerData || stoppingRef.current) return;
     stoppingRef.current = true;
-    if (timerRef.current) clearInterval(timerRef.current);
-    setTimerData(null);
     const minutes = Math.max(1, Math.round(timerSeconds / 60));
     try {
       // Save the time entry
@@ -253,22 +256,24 @@ export default function TimePage() {
           taskId: timerTaskId === "none" ? null : timerTaskId,
         }),
       });
-      if (!res.ok) throw new Error("Failed");
+      await projectTimeEntryJson(res, projectId);
 
       // Delete the running timer
-      await fetch(`/api/v1/projects/${projectId}/timer`, {
+      const discarded = await fetch(`/api/v1/projects/${projectId}/timer`, {
         method: "DELETE",
         headers: { "x-organization-id": orgId },
       });
+      await projectTimeDeleteJson(discarded);
 
-      toast.success(`Logged ${formatHours(minutes)}`);
+      toast.success(t("logged", { duration: formatHours(minutes) }));
+      setTimerData(null);
       setTimerSeconds(0);
       setTimerDesc("");
       setTimerTaskId("none");
       setTimerBillable(true);
       refresh();
     } catch {
-      toast.error("Failed to save time entry");
+      toast.error(t("saveFailed"));
     } finally {
       stoppingRef.current = false;
     }
@@ -278,7 +283,8 @@ export default function TimePage() {
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
     const s = seconds % 60;
-    return { h: String(h).padStart(2, "0"), m: String(m).padStart(2, "0"), s: String(s).padStart(2, "0") };
+    const digits = new Intl.NumberFormat(presentation.locale, { numberingSystem: presentation.numerals, minimumIntegerDigits: 2, useGrouping: false });
+    return { h: digits.format(h), m: digits.format(m), s: digits.format(s) };
   }
 
   // Open drawer for adding
@@ -370,7 +376,7 @@ export default function TimePage() {
     const mins = dayEntries.reduce((sum, e) => sum + e.minutes, 0);
     const billableMins = dayEntries.filter(e => e.isBillable).reduce((sum, e) => sum + e.minutes, 0);
     return {
-      day: d.label,
+      day: formatDateOnly(d.date, presentation, { weekday: "short" }),
       date: d.date,
       hours: Math.round((mins / 60) * 100) / 100,
       billable: Math.round((billableMins / 60) * 100) / 100,
@@ -380,19 +386,19 @@ export default function TimePage() {
   const weekTotalMinutes = weekData.reduce((sum, d) => sum + d.hours * 60, 0);
 
   const columns: Column<TimeEntryData>[] = [
-    { key: "date", header: "Date", className: "w-24", render: r => <span className="text-[13px] tabular-nums">{formatDateShort(r.date)}</span> },
-    { key: "user", header: "User", className: "w-28", render: r => <span className="text-xs text-muted-foreground">{r.user?.name || "-"}</span> },
-    { key: "description", header: "Description", render: r => (
+    { key: "date", header: t("date"), className: "w-24", render: r => <span className="text-[13px] tabular-nums">{formatDateShort(r.date)}</span> },
+    { key: "user", header: t("user"), className: "w-28", render: r => <span className="text-xs text-muted-foreground">{r.user?.name || "-"}</span> },
+    { key: "description", header: t("description"), render: r => (
       <div>
         <span className="text-[13px]">{r.description || "-"}</span>
         {r.task && <Badge variant="outline" className="text-[9px] h-4 ml-1.5 align-middle">{r.task.title}</Badge>}
       </div>
     )},
-    { key: "duration", header: "Duration", className: "w-20 text-right", render: r => <span className="text-[13px] font-mono tabular-nums font-medium">{formatHours(r.minutes)}</span> },
-    { key: "amount", header: "Amount", className: "w-24 text-right", render: r => <span className="text-[13px] font-mono tabular-nums">{formatMoney(projectTimeCents(r.minutes, r.hourlyRate))}</span> },
+    { key: "duration", header: t("duration"), className: "w-20 text-right", render: r => <span className="text-[13px] font-mono tabular-nums font-medium">{formatHours(r.minutes)}</span> },
+    { key: "amount", header: t("amount"), className: "w-24 text-right", render: r => <span className="text-[13px] font-mono tabular-nums">{formatMoney(projectTimeCents(r.minutes, r.hourlyRate))}</span> },
     { key: "status", header: "", className: "w-20", render: r => {
-      if (r.invoiceId) return <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700 text-[9px] h-4">Invoiced</Badge>;
-      return <Badge variant="outline" className={cn("text-[9px] h-4", r.isBillable ? "border-blue-200 bg-blue-50 text-blue-700" : "border-gray-200 bg-gray-50 text-gray-600")}>{r.isBillable ? "Billable" : "Non-bill."}</Badge>;
+      if (r.invoiceId) return <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700 text-[9px] h-4">{t("invoiced")}</Badge>;
+      return <Badge variant="outline" className={cn("text-[9px] h-4", r.isBillable ? "border-blue-200 bg-blue-50 text-blue-700" : "border-gray-200 bg-gray-50 text-gray-600")}>{r.isBillable ? t("billable") : t("nonBillableShort")}</Badge>;
     }},
   ];
 
@@ -400,8 +406,8 @@ export default function TimePage() {
     if (!orgId) return;
     let mins: number;
     try { mins = entryHours ? projectHoursInput(entryHours) : projectWholeMinutes(entryMinutes); }
-    catch (error) { toast.error(error instanceof Error ? error.message : "Enter a valid duration"); return; }
-    if (!mins || mins <= 0) { toast.error("Enter a valid duration"); return; }
+    catch { toast.error(t("invalidDuration")); return; }
+    if (!mins || mins <= 0) { toast.error(t("invalidDuration")); return; }
     setSaving(true);
     try {
       const res = await fetch(`/api/v1/projects/${projectId}/time-entries`, {
@@ -415,11 +421,11 @@ export default function TimePage() {
           taskId: entryTaskId === "none" ? null : entryTaskId,
         }),
       });
-      if (!res.ok) throw new Error("Failed");
-      toast.success("Time entry added");
+      await projectTimeEntryJson(res, projectId);
+      toast.success(t("entryAdded"));
       closeDrawer();
       refresh();
-    } catch { toast.error("Failed to add time entry"); }
+    } catch { toast.error(t("addFailed")); }
     finally { setSaving(false); }
   }
 
@@ -427,8 +433,8 @@ export default function TimePage() {
     if (!orgId || !editingEntry) return;
     let mins: number;
     try { mins = entryHours ? projectHoursInput(entryHours) : projectWholeMinutes(entryMinutes); }
-    catch (error) { toast.error(error instanceof Error ? error.message : "Enter a valid duration"); return; }
-    if (!mins || mins <= 0) { toast.error("Enter a valid duration"); return; }
+    catch { toast.error(t("invalidDuration")); return; }
+    if (!mins || mins <= 0) { toast.error(t("invalidDuration")); return; }
     setSaving(true);
     try {
       const res = await fetch(`/api/v1/projects/${projectId}/time-entries/${editingEntry.id}`, {
@@ -442,11 +448,11 @@ export default function TimePage() {
           taskId: entryTaskId === "none" ? null : entryTaskId,
         }),
       });
-      if (!res.ok) throw new Error("Failed");
-      toast.success("Time entry updated");
+      await projectTimeEntryJson(res, projectId, editingEntry.id);
+      toast.success(t("entryUpdated"));
       closeDrawer();
       refresh();
-    } catch { toast.error("Failed to update time entry"); }
+    } catch { toast.error(t("updateFailed")); }
     finally { setSaving(false); }
   }
 
@@ -458,11 +464,11 @@ export default function TimePage() {
         method: "DELETE",
         headers: { "x-organization-id": orgId },
       });
-      if (!res.ok) throw new Error("Failed");
-      toast.success("Time entry deleted");
+      await projectTimeDeleteJson(res);
+      toast.success(t("entryDeleted"));
       closeDrawer();
       refresh();
-    } catch { toast.error("Failed to delete time entry"); }
+    } catch { toast.error(t("deleteFailed")); }
     finally { setDeleting(false); }
   }
 
@@ -489,12 +495,12 @@ export default function TimePage() {
                 !timerIsRunning && "bg-muted-foreground/20",
               )} />
               <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                {timerIsRunning ? (timerIsPaused ? "Paused" : "Recording") : "Timer"}
+                {timerIsRunning ? (timerIsPaused ? t("paused") : t("recording")) : t("timer")}
               </span>
             </div>
             {timerData && (
               <span className="text-[10px] text-muted-foreground tabular-nums">
-                Started {new Date(timerData.startedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                {t("started", { time: formatInstant(new Date(timerData.startedAt), presentation, { hour: "2-digit", minute: "2-digit" }) })}
               </span>
             )}
           </div>
@@ -543,16 +549,16 @@ export default function TimePage() {
               <Input
                 value={timerDesc}
                 onChange={e => setTimerDesc(e.target.value)}
-                placeholder="What are you working on?"
+                placeholder={t("workingPlaceholder")}
                 className="h-8 text-xs bg-background/50"
               />
               {tasks.length > 0 && (
                 <Select value={timerTaskId} onValueChange={setTimerTaskId}>
                   <SelectTrigger className="h-8 text-xs">
-                    <SelectValue placeholder="Link to task..." />
+                    <SelectValue placeholder={t("linkTaskPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">No task</SelectItem>
+                    <SelectItem value="none">{t("noTask")}</SelectItem>
                     {tasks.map(t => (
                       <SelectItem key={t.id} value={t.id}>{t.title}</SelectItem>
                     ))}
@@ -569,7 +575,7 @@ export default function TimePage() {
                 )}
               >
                 <DollarSign className="size-3" />
-                {timerBillable ? "Billable" : "Non-billable"}
+                {timerBillable ? t("billable") : t("nonBillable")}
               </button>
             </div>
           )}
@@ -583,7 +589,7 @@ export default function TimePage() {
                 onClick={startTimer}
               >
                 <Play className="size-3.5 fill-current" />
-                Start Timer
+                {t("startTimer")}
               </Button>
             ) : (
               <>
@@ -595,7 +601,7 @@ export default function TimePage() {
                     onClick={resumeTimer}
                   >
                     <Play className="size-3.5 fill-current" />
-                    Resume
+                    {t("resume")}
                   </Button>
                 ) : (
                   <Button
@@ -605,7 +611,7 @@ export default function TimePage() {
                     onClick={pauseTimer}
                   >
                     <Pause className="size-3.5" />
-                    Pause
+                    {t("pause")}
                   </Button>
                 )}
                 <Button
@@ -614,13 +620,14 @@ export default function TimePage() {
                   onClick={stopTimer}
                 >
                   <Square className="size-3 fill-current" />
-                  Save
+                  {t("save")}
                 </Button>
                 <Button
                   size="icon"
                   variant="ghost"
                   className="size-9 text-muted-foreground hover:text-red-600"
                   onClick={resetTimer}
+                  aria-label={t("resetTimer")}
                 >
                   <RotateCcw className="size-3.5" />
                 </Button>
@@ -634,9 +641,9 @@ export default function TimePage() {
           <div className="flex items-center justify-between mb-3 sm:mb-4 flex-wrap gap-1">
             <div className="flex items-center gap-2">
               <CalendarDays className="size-3.5 text-muted-foreground/60" />
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">This Week</span>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("thisWeek")}</span>
             </div>
-            <span className="text-xs text-muted-foreground font-mono tabular-nums">{formatHours(Math.round(weekTotalMinutes))} total</span>
+            <span className="text-xs text-muted-foreground font-mono tabular-nums">{t("weekTotal", { duration: formatHours(Math.round(weekTotalMinutes)) })}</span>
           </div>
 
           <div className="flex-1 min-h-[140px]">
@@ -653,7 +660,7 @@ export default function TimePage() {
                   tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
                   axisLine={false}
                   tickLine={false}
-                  tickFormatter={v => `${v}h`}
+                  tickFormatter={v => t("chartHours", { hours: Number(v) })}
                 />
                 <Tooltip
                   contentStyle={{
@@ -664,8 +671,8 @@ export default function TimePage() {
                     boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.05)",
                   }}
                   formatter={(value: number | undefined, name: string | undefined) => [
-                    `${value ?? 0}h`,
-                    name === "billable" ? "Billable" : "Total",
+                    t("chartHours", { hours: value ?? 0 }),
+                    name === "billable" ? t("billable") : t("total"),
                   ]}
                   cursor={{ fill: "hsl(var(--muted))", opacity: 0.3 }}
                 />
@@ -680,29 +687,29 @@ export default function TimePage() {
       {/* Stats Row */}
       <div className="grid gap-2 sm:gap-3 grid-cols-2 sm:grid-cols-4">
         <StatCard
-          label="Today"
+          label={t("today")}
           value={formatHours(todayMinutes)}
-          sub={`${todayEntries} ${todayEntries === 1 ? "entry" : "entries"}`}
+          sub={t("entryCount", { count: todayEntries })}
           icon={<Zap className="size-3.5" />}
           accent={todayMinutes > 0 ? "emerald" : undefined}
         />
         <StatCard
-          label="Total Time"
+          label={t("totalTime")}
           value={formatHours(totalMinutes)}
-          sub={`${entries.length} entries`}
+          sub={t("entryCount", { count: entries.length })}
           icon={<Clock className="size-3.5" />}
         />
         <StatCard
-          label="Earned"
+          label={t("earned")}
           value={formatMoney(totalAmount)}
-          sub={`${billablePct}% billable`}
+          sub={t("billablePercent", { percent: billablePct / 100 })}
           icon={<DollarSign className="size-3.5" />}
           accent="emerald"
         />
         <StatCard
-          label="Unbilled"
+          label={t("unbilled")}
           value={unbilledAmount > 0 ? formatMoney(unbilledAmount) : formatHours(unbilledMinutes)}
-          sub={unbilledMinutes > 0 ? formatHours(unbilledMinutes) : "all invoiced"}
+          sub={unbilledMinutes > 0 ? formatHours(unbilledMinutes) : t("allInvoiced")}
           icon={<CircleDot className="size-3.5" />}
           accent={unbilledMinutes > 0 ? "amber" : undefined}
         />
@@ -712,15 +719,15 @@ export default function TimePage() {
       <div className="space-y-2">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-            All Entries
+            {t("allEntries")}
             {hasActiveFilters && (
               <span className="ml-1.5 text-muted-foreground/60">
-                ({filteredEntries.length} of {entries.length})
+                {t("filteredCount", { count: filteredEntries.length, total: entries.length })}
               </span>
             )}
           </p>
           <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 h-8" onClick={openAdd}>
-            <Plus className="size-3.5" />Log Time
+            <Plus className="size-3.5" />{t("logTime")}
           </Button>
         </div>
 
@@ -731,10 +738,10 @@ export default function TimePage() {
           {uniqueMembers.length > 0 && (
             <Select value={filterMember} onValueChange={setFilterMember}>
               <SelectTrigger className={cn("h-7 text-xs w-auto min-w-[120px]", filterMember !== "all" && "border-blue-300 bg-blue-50/50")}>
-                <SelectValue placeholder="Member" />
+                <SelectValue placeholder={t("member")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All members</SelectItem>
+                <SelectItem value="all">{t("allMembers")}</SelectItem>
                 {uniqueMembers.map(name => (
                   <SelectItem key={name} value={name!}>{name}</SelectItem>
                 ))}
@@ -744,24 +751,24 @@ export default function TimePage() {
 
           <Select value={filterBillable} onValueChange={setFilterBillable}>
             <SelectTrigger className={cn("h-7 text-xs w-auto min-w-[120px]", filterBillable !== "all" && "border-blue-300 bg-blue-50/50")}>
-              <SelectValue placeholder="Status" />
+              <SelectValue placeholder={t("status")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All statuses</SelectItem>
-              <SelectItem value="billable">Billable</SelectItem>
-              <SelectItem value="non-billable">Non-billable</SelectItem>
-              <SelectItem value="invoiced">Invoiced</SelectItem>
+              <SelectItem value="all">{t("allStatuses")}</SelectItem>
+              <SelectItem value="billable">{t("billable")}</SelectItem>
+              <SelectItem value="non-billable">{t("nonBillable")}</SelectItem>
+              <SelectItem value="invoiced">{t("invoiced")}</SelectItem>
             </SelectContent>
           </Select>
 
           {uniqueTasks.length > 0 && (
             <Select value={filterTask} onValueChange={setFilterTask}>
               <SelectTrigger className={cn("h-7 text-xs w-auto min-w-[120px]", filterTask !== "all" && "border-blue-300 bg-blue-50/50")}>
-                <SelectValue placeholder="Task" />
+                <SelectValue placeholder={t("task")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All tasks</SelectItem>
-                <SelectItem value="none">No task</SelectItem>
+                <SelectItem value="all">{t("allTasks")}</SelectItem>
+                <SelectItem value="none">{t("noTask")}</SelectItem>
                 {uniqueTasks.map(t => (
                   <SelectItem key={t.id} value={t.id}>{t.title}</SelectItem>
                 ))}
@@ -771,7 +778,7 @@ export default function TimePage() {
 
           {hasActiveFilters && (
             <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground px-2" onClick={clearFilters}>
-              <X className="size-3 mr-1" />Clear
+              <X className="size-3 mr-1" />{t("clear")}
             </Button>
           )}
         </div>
@@ -791,35 +798,35 @@ export default function TimePage() {
                 {drawerMode === "edit" ? <Pencil className="size-5" /> : <Clock className="size-5" />}
               </div>
               <div>
-                <SheetTitle className="text-lg">{drawerMode === "edit" ? "Edit Time Entry" : "Log Time Entry"}</SheetTitle>
-                <SheetDescription>{drawerMode === "edit" ? "Update this time entry." : "Record time spent on this project."}</SheetDescription>
+                <SheetTitle className="text-lg">{drawerMode === "edit" ? t("editTitle") : t("addTitle")}</SheetTitle>
+                <SheetDescription>{drawerMode === "edit" ? t("editDescription") : t("addDescription")}</SheetDescription>
               </div>
             </div>
           </SheetHeader>
           <div className="flex-1 overflow-y-auto space-y-6 px-6 py-5">
             <div className="space-y-4">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">When</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("when")}</p>
               <div className="space-y-2">
-                <Label>Date</Label>
-                <DatePicker value={entryDate} onChange={setEntryDate} placeholder="Select date" />
+                <Label>{t("date")}</Label>
+                <DatePicker value={entryDate} onChange={setEntryDate} placeholder={t("selectDate")} />
               </div>
             </div>
 
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Details</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("details")}</p>
               <div className="space-y-2">
-                <Label>Description</Label>
-                <Textarea value={entryDesc} onChange={e => setEntryDesc(e.target.value)} placeholder="What did you work on?" rows={3} />
+                <Label>{t("description")}</Label>
+                <Textarea value={entryDesc} onChange={e => setEntryDesc(e.target.value)} placeholder={t("descriptionPlaceholder")} rows={3} />
               </div>
               {tasks.length > 0 && (
                 <div className="space-y-2">
-                  <Label>Related Task</Label>
+                  <Label>{t("relatedTask")}</Label>
                   <Select value={entryTaskId} onValueChange={setEntryTaskId}>
-                    <SelectTrigger><SelectValue placeholder="No task" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={t("noTask")} /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">No task</SelectItem>
+                      <SelectItem value="none">{t("noTask")}</SelectItem>
                       {tasks.map(t => (
                         <SelectItem key={t.id} value={t.id}>{t.title}</SelectItem>
                       ))}
@@ -832,24 +839,24 @@ export default function TimePage() {
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Duration</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("duration")}</p>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Hours</Label>
-                  <Input type="number" step="0.25" min={0} value={entryHours} onChange={e => { setEntryHours(e.target.value); setEntryMinutes(""); }} placeholder="e.g. 1.5" />
+                  <Label>{t("hours")}</Label>
+                  <Input type="number" step="0.25" min={0} value={entryHours} onChange={e => { setEntryHours(e.target.value); setEntryMinutes(""); }} placeholder={t("hoursExample")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Or Minutes</Label>
-                  <Input type="number" min={1} value={entryMinutes} onChange={e => { setEntryMinutes(e.target.value); setEntryHours(""); }} placeholder="e.g. 90" />
+                  <Label>{t("orMinutes")}</Label>
+                  <Input type="number" min={1} value={entryMinutes} onChange={e => { setEntryMinutes(e.target.value); setEntryHours(""); }} placeholder={t("minutesExample")} />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Billable</Label>
+                <Label>{t("billable")}</Label>
                 <Select value={entryBillable} onValueChange={setEntryBillable}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="true">Yes - Billable</SelectItem>
-                    <SelectItem value="false">No - Non-billable</SelectItem>
+                    <SelectItem value="true">{t("yesBillable")}</SelectItem>
+                    <SelectItem value="false">{t("noNonBillable")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -866,17 +873,17 @@ export default function TimePage() {
                 disabled={deleting}
               >
                 <Trash2 className="size-3.5 mr-1.5" />
-                {deleting ? "Deleting..." : "Delete"}
+                {deleting ? t("deleting") : t("delete")}
               </Button>
             )}
             <div className={cn("flex items-center gap-3", drawerMode !== "edit" && "ml-auto")}>
-              <Button type="button" variant="outline" onClick={closeDrawer}>Cancel</Button>
+              <Button type="button" variant="outline" onClick={closeDrawer}>{t("cancel")}</Button>
               <Button
                 onClick={drawerMode === "edit" ? handleUpdate : handleAdd}
                 disabled={saving}
                 className={drawerMode === "edit" ? "bg-blue-600 hover:bg-blue-700" : "bg-emerald-600 hover:bg-emerald-700"}
               >
-                {saving ? "Saving..." : drawerMode === "edit" ? "Update Entry" : "Add Entry"}
+                {saving ? t("saving") : drawerMode === "edit" ? t("updateEntry") : t("addEntry")}
               </Button>
             </div>
           </div>
@@ -887,7 +894,7 @@ export default function TimePage() {
         columns={columns}
         data={filteredEntries}
         onRowClick={openEdit}
-        emptyMessage={hasActiveFilters ? "No entries match your filters." : "No time entries yet. Start the timer or log time manually."}
+        emptyMessage={hasActiveFilters ? t("filteredEmpty") : t("empty")}
       />
     </div>
   );
@@ -932,15 +939,13 @@ function getWeekDays() {
   const monday = new Date(today);
   monday.setDate(today.getDate() - ((dayOfWeek + 6) % 7));
 
-  const days: { date: string; label: string }[] = [];
-  const dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const days: { date: string }[] = [];
 
   for (let i = 0; i < 7; i++) {
     const d = new Date(monday);
     d.setDate(monday.getDate() + i);
     days.push({
       date: d.toISOString().split("T")[0],
-      label: dayLabels[i],
     });
   }
   return days;

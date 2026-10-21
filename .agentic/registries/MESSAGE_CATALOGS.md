@@ -1,5 +1,12 @@
 # Message catalog foundation
 
+LOC-095/096/097 project tasks, time/timers and milestones/progress invoices
+use 215 paired messages across `ProjectTasks`, `ProjectTime` and
+`ProjectMilestones` (8,457 compatible keys per locale). See
+[batch scope and exceptions](PROJECT_TASK_TIME_MILESTONE_CATALOGS.md).
+Each child retains separate evidence; LOC-068/008/002, LOC-098 and native/RTL
+qualification remain independent. Persian wording remains provisional.
+
 LOC-094 project overview/navigation use 89 paired `ProjectOverview` messages
 (8,242 compatible keys per locale). See [scope and exceptions](PROJECT_OVERVIEW_CATALOGS.md)
 for shared header/charts/calendar, checked reads/invoicing and preserved exact

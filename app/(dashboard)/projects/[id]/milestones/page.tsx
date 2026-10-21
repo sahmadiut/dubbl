@@ -1,6 +1,9 @@
 "use client";
 
-import { projectCrmJson } from "@/lib/money/project-crm-ui";
+import { projectMilestoneJson, milestoneAssignmentsJson, milestoneBillingJson, milestoneInvoiceJson, type MilestoneAssignment, type MilestoneBilling } from "@/i18n/project-milestones-presentation";
+import { useTranslations } from "next-intl";
+import { usePresentation } from "@/i18n/provider";
+import { formatDateOnly } from "@/i18n/dates";
 
 import { projectBillingFixedCents, projectBillingPercent } from "@/lib/money/project-billing-display";
 import { projectCentsInput } from "@/lib/money/project-display";
@@ -32,10 +35,13 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { projectMoneyDisplay } from "@/lib/money/project-display";
-import { useProject, formatDateShort, pct } from "../project-context";
+import { useProject, pct } from "../project-context";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 
 export default function MilestonesPage() {
+  const t = useTranslations("ProjectMilestones");
+  const presentation = usePresentation();
+  const formatDateShort = (value: string) => formatDateOnly(value, presentation, { month: "short", day: "numeric" });
   const { project: proj, orgId, projectId, refresh } = useProject();
   const formatMoney = (amount: number | bigint | string) => projectMoneyDisplay(amount, proj?.currency ?? "USD");
   const [addOpen, setAddOpen] = useState(false);
@@ -47,8 +53,7 @@ export default function MilestonesPage() {
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [assignMilestoneId, setAssignMilestoneId] = useState<string | null>(null);
-  interface Assignment { id: string; amount: number; description: string | null; paid: boolean; member?: { user?: { name: string | null; email: string | null } } }
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [assignments, setAssignments] = useState<MilestoneAssignment[]>([]);
   const [loadingAssignments, setLoadingAssignments] = useState(false);
   const [assignMemberId, setAssignMemberId] = useState("none");
   const [assignAmount, setAssignAmount] = useState("");
@@ -63,35 +68,27 @@ export default function MilestonesPage() {
   const [selectedTimeEntryIds, setSelectedTimeEntryIds] = useState<string[]>([]);
   const [fixedPercent, setFixedPercent] = useState("");
   const [invoiceNotes, setInvoiceNotes] = useState("");
-  // Data from GET endpoint
-  interface UninvoicedMilestone { id: string; title: string; amount: number; invoicedAmountCents: number; remaining: number }
-  interface UninvoicedTimeEntry { id: string; date: string; description: string | null; minutes: number; hourlyRate: number; amount: number }
-  interface UninvoicedData {
-    billingType: string;
-    milestones?: UninvoicedMilestone[];
-    timeEntries?: UninvoicedTimeEntry[];
-    fixedPrice?: number;
-    totalInvoiced?: number;
-    remaining?: number;
-    invoicedPercent?: number;
-  }
-  const [uninvoicedData, setUninvoicedData] = useState<UninvoicedData | null>(null);
-  useDocumentTitle("Projects · Milestones");
+  const [uninvoicedData, setUninvoicedData] = useState<MilestoneBilling | null>(null);
+  useDocumentTitle(t("documentTitle"));
 
   useEffect(() => {
     if (!assignMilestoneId || !orgId) return;
+    let active = true;
     setLoadingAssignments(true);
     fetch(`/api/v1/projects/${projectId}/milestones/${assignMilestoneId}/assignments`, {
       headers: { "x-organization-id": orgId },
     })
-      .then(projectCrmJson)
-      .then(data => { if (data.assignments) setAssignments(data.assignments); })
-      .finally(() => setLoadingAssignments(false));
-  }, [assignMilestoneId, orgId, projectId]);
+      .then(milestoneAssignmentsJson)
+      .then(data => { if (active) setAssignments(data.assignments); })
+      .catch(() => { if (active) { setAssignments([]); toast.error(t("assignmentsLoadFailed")); } })
+      .finally(() => { if (active) setLoadingAssignments(false); });
+    return () => { active = false; };
+  }, [assignMilestoneId, orgId, projectId, t]);
 
-  // Fetch uninvoiced data when invoice sheet opens
+  // Fetch uninvoiced data when invoice sheet opens.
   useEffect(() => {
-    if (!invoiceOpen || !orgId) return;
+    if (!invoiceOpen || !orgId || !proj) return;
+    let active = true;
     setInvoiceLoading(true);
     setUninvoicedData(null);
     setSelectedMilestoneIds([]);
@@ -101,11 +98,12 @@ export default function MilestonesPage() {
     fetch(`/api/v1/projects/${projectId}/progress-invoice`, {
       headers: { "x-organization-id": orgId },
     })
-      .then(async r => { const data = await projectCrmJson(r); if (!r.ok) throw new Error(data.error || "Failed to load billing preview"); return data; })
-      .then(data => setUninvoicedData(data))
-      .catch(error => toast.error(error instanceof Error ? error.message : "Failed to load billing preview"))
-      .finally(() => setInvoiceLoading(false));
-  }, [invoiceOpen, orgId, projectId]);
+      .then(r => milestoneBillingJson(r, proj.billingType, proj.currency))
+      .then(data => { if (active) setUninvoicedData(data); })
+      .catch(() => { if (active) toast.error(t("billingPreviewFailed")); })
+      .finally(() => { if (active) setInvoiceLoading(false); });
+    return () => { active = false; };
+  }, [invoiceOpen, orgId, projectId, proj, t]);
 
   // Calculate invoice preview total (must be before early returns)
   const invoicePreviewTotal = useMemo(() => {
@@ -144,12 +142,12 @@ export default function MilestonesPage() {
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify({ title: title.trim(), description: desc || null, dueDate: dueDate || null, amountMinor: projectCentsInput(amount || "0") }),
       });
-      if (!res.ok) throw new Error("Failed");
-      toast.success("Milestone created");
+      await projectMilestoneJson(res);
+      toast.success(t("milestoneCreated"));
       setAddOpen(false);
       setTitle(""); setDesc(""); setDueDate(""); setAmount("");
       refresh();
-    } catch { toast.error("Failed to create milestone"); }
+    } catch { toast.error(t("milestoneCreateFailed")); }
     finally { setSaving(false); }
   }
 
@@ -158,13 +156,15 @@ export default function MilestonesPage() {
     setTogglingId(ms.id);
     try {
       const newStatus = ms.status === "completed" ? "upcoming" : "completed";
-      await fetch(`/api/v1/projects/${projectId}/milestones/${ms.id}`, {
+      const res = await fetch(`/api/v1/projects/${projectId}/milestones/${ms.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify({ status: newStatus }),
       });
+      await projectMilestoneJson(res, "milestone", ms.id);
       refresh();
-    } finally { setTogglingId(null); }
+    } catch { toast.error(t("milestoneUpdateFailed")); }
+    finally { setTogglingId(null); }
   }
 
   async function deleteMilestone(msId: string) {
@@ -172,9 +172,9 @@ export default function MilestonesPage() {
     setDeletingId(msId);
     try {
       const res = await fetch(`/api/v1/projects/${projectId}/milestones/${msId}`, { method: "DELETE", headers: { "x-organization-id": orgId } });
-      if (!res.ok) { const data = await projectCrmJson(res); throw new Error(data.error || "Failed to delete milestone"); }
+      await projectMilestoneJson(res, "delete");
       refresh();
-    } catch (error) { toast.error(error instanceof Error ? error.message : "Failed to delete milestone"); }
+    } catch { toast.error(t("milestoneDeleteFailed")); }
     finally { setDeletingId(null); }
   }
 
@@ -193,16 +193,16 @@ export default function MilestonesPage() {
           description: assignDesc || null,
         }),
       });
-      if (!res.ok) { const data = await projectCrmJson(res); throw new Error(data.error || "Failed"); }
-      toast.success("Assignment added");
+      await projectMilestoneJson(res, "assignment");
+      toast.success(t("assignmentAdded"));
       setAssignMemberId("none"); setAssignAmount(""); setAssignDesc("");
       // Refresh assignments
       const r = await fetch(`/api/v1/projects/${projectId}/milestones/${assignMilestoneId}/assignments`, {
         headers: { "x-organization-id": orgId },
       });
-      const data = await projectCrmJson(r);
-      if (data.assignments) setAssignments(data.assignments);
-    } catch (err) { toast.error(err instanceof Error ? err.message : "Failed"); }
+      const data = await milestoneAssignmentsJson(r);
+      setAssignments(data.assignments);
+    } catch { toast.error(t("assignmentAddFailed")); }
     finally { setAssignSaving(false); }
   }
 
@@ -213,14 +213,14 @@ export default function MilestonesPage() {
         method: "PATCH",
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
       });
-      if (!res.ok) { const data = await projectCrmJson(res); throw new Error(data.error || "Failed to mark assignment as paid"); }
-      toast.success("Marked as paid");
+      await projectMilestoneJson(res, "assignment", assignmentId);
+      toast.success(t("markedPaid"));
       const r = await fetch(`/api/v1/projects/${projectId}/milestones/${assignMilestoneId}/assignments`, {
         headers: { "x-organization-id": orgId },
       });
-      const data = await projectCrmJson(r);
-      if (data.assignments) setAssignments(data.assignments);
-    } catch { toast.error("Failed to update"); }
+      const data = await milestoneAssignmentsJson(r);
+      setAssignments(data.assignments);
+    } catch { toast.error(t("assignmentUpdateFailed")); }
   }
 
   async function handleCreateInvoice() {
@@ -242,17 +242,12 @@ export default function MilestonesPage() {
         body: JSON.stringify(body),
       });
 
-      if (!res.ok) {
-        const data = await projectCrmJson(res);
-        throw new Error(data.error || "Failed to create invoice");
-      }
-
-      const data = await projectCrmJson(res);
-      toast.success(`Invoice ${data.invoice.invoiceNumber} created`);
+      const data = await milestoneInvoiceJson(res);
+      toast.success(t("invoiceCreated", { number: data.invoice.invoiceNumber }));
       setInvoiceOpen(false);
       refresh();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create invoice");
+    } catch {
+      toast.error(t("invoiceCreateFailed"));
     } finally {
       setInvoiceSaving(false);
     }
@@ -277,7 +272,7 @@ export default function MilestonesPage() {
       {/* Stats */}
       <div className={cn("grid gap-2 sm:gap-3 grid-cols-1", isBillable ? "sm:grid-cols-4" : "sm:grid-cols-3")}>
         <div className="rounded-lg border bg-card p-3">
-          <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Progress</p>
+          <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{t("progress")}</p>
           <p className="text-lg font-bold font-mono tabular-nums mt-0.5">{completed}/{total}</p>
           {total > 0 && (
             <div className="h-1.5 rounded-full bg-muted overflow-hidden mt-2">
@@ -286,16 +281,16 @@ export default function MilestonesPage() {
           )}
         </div>
         <div className="rounded-lg border bg-card p-3">
-          <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Total Value</p>
+          <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{t("totalValue")}</p>
           <p className="text-lg font-bold font-mono tabular-nums mt-0.5">{formatMoney(totalAmount)}</p>
         </div>
         <div className="rounded-lg border bg-card p-3">
-          <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Completed Value</p>
+          <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{t("completedValue")}</p>
           <p className="text-lg font-bold font-mono tabular-nums text-emerald-600 mt-0.5">{formatMoney(completedAmount)}</p>
         </div>
         {isBillable && (
           <div className="rounded-lg border bg-card p-3">
-            <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Invoiced</p>
+            <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{t("invoiced")}</p>
             <p className="text-lg font-bold font-mono tabular-nums text-blue-600 mt-0.5">{formatMoney(totalInvoiced)}</p>
             {totalAmount > 0 && (
               <div className="h-1.5 rounded-full bg-muted overflow-hidden mt-2">
@@ -309,11 +304,11 @@ export default function MilestonesPage() {
       <div className="flex justify-end gap-2">
         {isBillable && (
           <Button size="sm" variant="outline" className="h-8" onClick={() => setInvoiceOpen(true)}>
-            <FileText className="size-3.5" />Create Invoice
+            <FileText className="size-3.5" />{t("createInvoice")}
           </Button>
         )}
         <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 h-8" onClick={() => setAddOpen(true)}>
-          <Plus className="size-3.5" />Milestone
+          <Plus className="size-3.5" />{t("milestone")}
         </Button>
       </div>
 
@@ -326,44 +321,44 @@ export default function MilestonesPage() {
                 <Target className="size-5" />
               </div>
               <div>
-                <SheetTitle className="text-lg">New Milestone</SheetTitle>
-                <SheetDescription>Add a project milestone or deliverable.</SheetDescription>
+                <SheetTitle className="text-lg">{t("newMilestone")}</SheetTitle>
+                <SheetDescription>{t("milestoneDescription")}</SheetDescription>
               </div>
             </div>
           </SheetHeader>
           <div className="flex-1 overflow-y-auto space-y-6 px-6 py-5">
             <div className="space-y-4">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Details</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("details")}</p>
               <div className="space-y-2">
-                <Label>Title *</Label>
-                <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="Milestone title" />
+                <Label>{t("titleRequired")}</Label>
+                <Input value={title} onChange={e => setTitle(e.target.value)} placeholder={t("titlePlaceholder")} />
               </div>
               <div className="space-y-2">
-                <Label>Description</Label>
-                <Textarea value={desc} onChange={e => setDesc(e.target.value)} placeholder="What does this milestone represent?" rows={3} />
+                <Label>{t("description")}</Label>
+                <Textarea value={desc} onChange={e => setDesc(e.target.value)} placeholder={t("descriptionPlaceholder")} rows={3} />
               </div>
             </div>
 
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Schedule & Value</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("scheduleValue")}</p>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Due Date</Label>
-                  <DatePicker value={dueDate} onChange={setDueDate} placeholder="Select due date" />
+                  <Label>{t("dueDate")}</Label>
+                  <DatePicker value={dueDate} onChange={setDueDate} placeholder={t("dueDatePlaceholder")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Amount</Label>
+                  <Label>{t("amount")}</Label>
                   <CurrencyInput prefix={proj?.currency === "USD" ? "$" : proj?.currency} value={amount} onChange={setAmount} />
                 </div>
               </div>
             </div>
           </div>
           <div className="sticky bottom-0 z-10 flex items-center justify-end gap-3 border-t bg-background/80 px-6 py-4 backdrop-blur-sm">
-            <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>Cancel</Button>
+            <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>{t("cancel")}</Button>
             <Button onClick={handleAdd} disabled={saving || !title.trim()} className="bg-emerald-600 hover:bg-emerald-700">
-              {saving ? "Creating..." : "Create Milestone"}
+              {saving ? t("creating") : t("createMilestone")}
             </Button>
           </div>
         </SheetContent>
@@ -372,7 +367,7 @@ export default function MilestonesPage() {
       {milestones.length === 0 ? (
         <div className="rounded-lg border border-dashed p-8 text-center min-h-[30vh] flex flex-col items-center justify-center">
           <Flag className="mx-auto size-8 text-muted-foreground/30" />
-          <p className="mt-2 text-sm text-muted-foreground">No milestones yet</p>
+          <p className="mt-2 text-sm text-muted-foreground">{t("noMilestones")}</p>
         </div>
       ) : (
         <div className="rounded-lg border overflow-hidden divide-y">
@@ -380,7 +375,7 @@ export default function MilestonesPage() {
             const overdue = ms.dueDate && new Date(ms.dueDate) < new Date() && ms.status !== "completed";
             return (
               <div key={ms.id} className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 hover:bg-muted/20 transition-colors group">
-                <button onClick={() => toggleComplete(ms)} disabled={togglingId === ms.id} className="shrink-0">
+                <button aria-label={t(ms.status === "completed" ? "markUpcoming" : "markComplete")} onClick={() => toggleComplete(ms)} disabled={togglingId === ms.id} className="shrink-0">
                   {togglingId === ms.id ? (
                     <Loader2 className="size-5 text-muted-foreground/40 animate-spin" />
                   ) : ms.status === "completed" ? (
@@ -400,17 +395,17 @@ export default function MilestonesPage() {
                   <div className="flex items-center gap-1.5 shrink-0">
                     <span className="text-[11px] font-mono text-muted-foreground">{formatMoney(ms.amount)}</span>
                     {ms.invoicedAmountCents > 0 && ms.invoicedAmountCents >= ms.amount && (
-                      <Badge variant="outline" className="text-[9px] h-4 bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800">Invoiced</Badge>
+                      <Badge variant="outline" className="text-[9px] h-4 bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800">{t("invoiced")}</Badge>
                     )}
                     {ms.invoicedAmountCents > 0 && ms.invoicedAmountCents < ms.amount && (
-                      <Badge variant="outline" className="text-[9px] h-4 bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800">Partial</Badge>
+                      <Badge variant="outline" className="text-[9px] h-4 bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800">{t("partial")}</Badge>
                     )}
                   </div>
                 )}
-                <button onClick={() => { setAssignMilestoneId(ms.id); setAssignments([]); }} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-emerald-600 transition-opacity" title="Manage Assignments">
+                <button onClick={() => { setAssignMilestoneId(ms.id); setAssignments([]); }} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-emerald-600 transition-opacity" title={t("manageAssignments")}>
                   <Users className="size-3" />
                 </button>
-                <button onClick={() => deleteMilestone(ms.id)} disabled={deletingId === ms.id} className={cn("opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-600 transition-opacity", deletingId === ms.id && "opacity-100 pointer-events-none")}>
+                <button aria-label={t("deleteMilestone")} onClick={() => deleteMilestone(ms.id)} disabled={deletingId === ms.id} className={cn("opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-600 transition-opacity", deletingId === ms.id && "opacity-100 pointer-events-none")}>
                   {deletingId === ms.id ? <Loader2 className="size-3 animate-spin" /> : <Trash2 className="size-3" />}
                 </button>
               </div>
@@ -428,35 +423,35 @@ export default function MilestonesPage() {
                 <Users className="size-5" />
               </div>
               <div>
-                <SheetTitle className="text-lg">Manage Assignments</SheetTitle>
-                <SheetDescription>Assign members to this milestone and track payments.</SheetDescription>
+                <SheetTitle className="text-lg">{t("manageAssignments")}</SheetTitle>
+                <SheetDescription>{t("assignmentsDescription")}</SheetDescription>
               </div>
             </div>
           </SheetHeader>
           <div className="flex-1 overflow-y-auto space-y-6 px-6 py-5">
             {/* Existing Assignments */}
             <div className="space-y-4">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Current Assignments</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("currentAssignments")}</p>
               {loadingAssignments ? (
                 <div className="flex items-center justify-center py-6">
                   <Loader2 className="size-5 animate-spin text-muted-foreground" />
                 </div>
               ) : assignments.length === 0 ? (
-                <p className="text-[12px] text-muted-foreground py-3">No assignments yet.</p>
+                <p className="text-[12px] text-muted-foreground py-3">{t("noAssignments")}</p>
               ) : (
                 <div className="rounded-lg border divide-y">
                   {assignments.map((a) => (
                     <div key={a.id} className="px-4 py-3 flex items-center gap-3">
                       <div className="flex-1 min-w-0">
-                        <p className="text-[13px] font-medium truncate">{a.member?.user?.name || a.member?.user?.email || "Member"}</p>
+                        <p className="text-[13px] font-medium truncate">{a.member?.user?.name || a.member?.user?.email || t("member")}</p>
                         {a.description && <p className="text-[11px] text-muted-foreground truncate">{a.description}</p>}
                       </div>
                       <span className="text-[11px] font-mono text-muted-foreground shrink-0">{formatMoney(a.amount)}</span>
-                      {a.paid ? (
-                        <Badge variant="outline" className="text-[9px] h-4 bg-emerald-50 text-emerald-700 border-emerald-200">Paid</Badge>
+                      {a.isPaid ? (
+                        <Badge variant="outline" className="text-[9px] h-4 bg-emerald-50 text-emerald-700 border-emerald-200">{t("paid")}</Badge>
                       ) : (
                         <Button size="sm" variant="outline" className="h-6 text-[10px] px-2" onClick={() => markAssignmentPaid(a.id)}>
-                          <DollarSign className="size-3 mr-1" />Mark Paid
+                          <DollarSign className="size-3 mr-1" />{t("markPaid")}
                         </Button>
                       )}
                     </div>
@@ -469,13 +464,13 @@ export default function MilestonesPage() {
 
             {/* Add Assignment Form */}
             <div className="space-y-4">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Add Assignment</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("addAssignment")}</p>
               <div className="space-y-2">
-                <Label>Member</Label>
+                <Label>{t("member")}</Label>
                 <Select value={assignMemberId} onValueChange={setAssignMemberId}>
-                  <SelectTrigger><SelectValue placeholder="Select member..." /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t("memberPlaceholder")} /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none" disabled>Select member...</SelectItem>
+                    <SelectItem value="none" disabled>{t("memberPlaceholder")}</SelectItem>
                     {members.map(m => (
                       <SelectItem key={m.member.id} value={m.member.id}>{m.member.user.name || m.member.user.email}</SelectItem>
                     ))}
@@ -484,20 +479,20 @@ export default function MilestonesPage() {
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Amount</Label>
+                  <Label>{t("amount")}</Label>
                   <CurrencyInput prefix={proj?.currency === "USD" ? "$" : proj?.currency} value={assignAmount} onChange={setAssignAmount} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Description</Label>
-                  <Input value={assignDesc} onChange={e => setAssignDesc(e.target.value)} placeholder="Optional note" />
+                  <Label>{t("description")}</Label>
+                  <Input value={assignDesc} onChange={e => setAssignDesc(e.target.value)} placeholder={t("notePlaceholder")} />
                 </div>
               </div>
             </div>
           </div>
           <div className="sticky bottom-0 z-10 flex items-center justify-end gap-3 border-t bg-background/80 px-6 py-4 backdrop-blur-sm">
-            <Button type="button" variant="outline" onClick={() => setAssignMilestoneId(null)}>Close</Button>
+            <Button type="button" variant="outline" onClick={() => setAssignMilestoneId(null)}>{t("close")}</Button>
             <Button onClick={handleAddAssignment} disabled={assignSaving || assignMemberId === "none"} className="bg-emerald-600 hover:bg-emerald-700">
-              {assignSaving ? "Adding..." : "Add Assignment"}
+              {assignSaving ? t("adding") : t("addAssignment")}
             </Button>
           </div>
         </SheetContent>
@@ -512,8 +507,8 @@ export default function MilestonesPage() {
                 <FileText className="size-5" />
               </div>
               <div>
-                <SheetTitle className="text-lg">Progress Invoice</SheetTitle>
-                <SheetDescription>Create an invoice for work completed on this project.</SheetDescription>
+                <SheetTitle className="text-lg">{t("progressInvoice")}</SheetTitle>
+                <SheetDescription>{t("invoiceDescription")}</SheetDescription>
               </div>
             </div>
           </SheetHeader>
@@ -527,7 +522,7 @@ export default function MilestonesPage() {
                 {/* Milestone billing */}
                 {uninvoicedData.billingType === "milestone" && (
                   <div className="space-y-4">
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Select milestones to invoice</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("selectMilestones")}</p>
                     {(uninvoicedData.milestones ?? []).length > 0 ? (
                       <div className="rounded-lg border divide-y">
                         {(uninvoicedData.milestones ?? []).map((m) => {
@@ -548,21 +543,21 @@ export default function MilestonesPage() {
                               <div className="flex-1 min-w-0">
                                 <p className="text-[13px] font-medium truncate">{m.title}</p>
                                 <p className="text-[11px] text-muted-foreground">
-                                  Total: {formatMoney(m.amount)} · Invoiced: {formatMoney(m.invoicedAmountCents)}
+                                  {t("milestoneBilling", { total: formatMoney(m.amount), invoiced: formatMoney(m.invoicedAmountCents) })}
                                 </p>
                               </div>
                               <div className="text-right shrink-0">
                                 <p className={cn("text-[13px] font-mono tabular-nums font-medium", hasRemaining ? "text-foreground" : "text-muted-foreground")}>
                                   {formatMoney(m.remaining)}
                                 </p>
-                                <p className="text-[10px] text-muted-foreground">remaining</p>
+                                <p className="text-[10px] text-muted-foreground">{t("remainingLower")}</p>
                               </div>
                             </label>
                           );
                         })}
                       </div>
                     ) : (
-                      <p className="text-[12px] text-muted-foreground py-3">All milestones have been fully invoiced.</p>
+                      <p className="text-[12px] text-muted-foreground py-3">{t("allInvoiced")}</p>
                     )}
                   </div>
                 )}
@@ -571,7 +566,7 @@ export default function MilestonesPage() {
                 {uninvoicedData.billingType === "hourly" && (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Uninvoiced time entries</p>
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("uninvoicedTime")}</p>
                       {(uninvoicedData.timeEntries ?? []).length > 0 && (
                         <button
                           className="text-[11px] text-blue-600 hover:underline font-medium"
@@ -582,7 +577,7 @@ export default function MilestonesPage() {
                             );
                           }}
                         >
-                          {selectedTimeEntryIds.length === (uninvoicedData.timeEntries ?? []).length ? "Deselect all" : "Select all"}
+                          {selectedTimeEntryIds.length === (uninvoicedData.timeEntries ?? []).length ? t("deselectAll") : t("selectAll")}
                         </button>
                       )}
                     </div>
@@ -595,9 +590,9 @@ export default function MilestonesPage() {
                               onCheckedChange={() => toggleTimeEntrySelection(e.id)}
                             />
                             <div className="flex-1 min-w-0">
-                              <p className="text-[13px] truncate">{e.description || "Time entry"}</p>
+                              <p className="text-[13px] truncate">{e.description || t("timeEntry")}</p>
                               <p className="text-[11px] text-muted-foreground">
-                                {e.date} · {Math.round((e.minutes / 60) * 100) / 100}h @ {formatMoney(e.hourlyRate)}/hr
+                                {t("timeBilling", { date: formatDateShort(e.date), hours: Math.round((e.minutes / 60) * 100) / 100, rate: formatMoney(e.hourlyRate) })}
                               </p>
                             </div>
                             <span className="text-[13px] font-mono tabular-nums font-medium shrink-0">
@@ -607,7 +602,7 @@ export default function MilestonesPage() {
                         ))}
                       </div>
                     ) : (
-                      <p className="text-[12px] text-muted-foreground py-3">No uninvoiced time entries.</p>
+                      <p className="text-[12px] text-muted-foreground py-3">{t("noUninvoicedTime")}</p>
                     )}
                   </div>
                 )}
@@ -615,19 +610,19 @@ export default function MilestonesPage() {
                 {/* Fixed billing */}
                 {uninvoicedData.billingType === "fixed" && (
                   <div className="space-y-4">
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Fixed price progress</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("fixedProgress")}</p>
                     <div className="rounded-lg border p-4 space-y-3">
                       <div className="space-y-1.5">
                         <div className="flex items-center justify-between text-[13px]">
-                          <span className="text-muted-foreground">Fixed price</span>
+                          <span className="text-muted-foreground">{t("fixedPrice")}</span>
                           <span className="font-mono tabular-nums font-medium">{formatMoney(uninvoicedData.fixedPrice ?? 0)}</span>
                         </div>
                         <div className="flex items-center justify-between text-[13px]">
-                          <span className="text-muted-foreground">Already invoiced</span>
+                          <span className="text-muted-foreground">{t("alreadyInvoiced")}</span>
                           <span className="font-mono tabular-nums">{formatMoney(uninvoicedData.totalInvoiced ?? 0)} ({uninvoicedData.invoicedPercent ?? 0}%)</span>
                         </div>
                         <div className="flex items-center justify-between text-[13px]">
-                          <span className="text-muted-foreground">Remaining</span>
+                          <span className="text-muted-foreground">{t("remaining")}</span>
                           <span className="font-mono tabular-nums font-medium text-emerald-600">{formatMoney(uninvoicedData.remaining ?? 0)}</span>
                         </div>
                       </div>
@@ -639,7 +634,7 @@ export default function MilestonesPage() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label>Percentage to invoice</Label>
+                      <Label>{t("percentageToInvoice")}</Label>
                       <div className="flex items-center gap-2">
                         <Input
                           type="number"
@@ -647,14 +642,14 @@ export default function MilestonesPage() {
                           max={100 - (uninvoicedData.invoicedPercent || 0)}
                           value={fixedPercent}
                           onChange={e => setFixedPercent(e.target.value)}
-                          placeholder={`0 - ${100 - (uninvoicedData.invoicedPercent || 0)}`}
+                          placeholder={t("percentageRange", { maximum: 100 - (uninvoicedData.invoicedPercent || 0) })}
                           className="font-mono"
                         />
                         <span className="text-[13px] text-muted-foreground shrink-0">%</span>
                       </div>
                       {fixedPercent && (
                         <p className="text-[11px] text-muted-foreground">
-                          Amount: {formatMoney(invoicePreviewTotal)}
+                          {t("invoiceAmount", { amount: formatMoney(invoicePreviewTotal) })}
                         </p>
                       )}
                     </div>
@@ -664,17 +659,17 @@ export default function MilestonesPage() {
                 {/* Notes */}
                 <div className="h-px bg-border" />
                 <div className="space-y-2">
-                  <Label>Invoice notes (optional)</Label>
+                  <Label>{t("invoiceNotes")}</Label>
                   <Textarea
                     value={invoiceNotes}
                     onChange={e => setInvoiceNotes(e.target.value)}
-                    placeholder="Notes to include on the invoice..."
+                    placeholder={t("invoiceNotesPlaceholder")}
                     rows={2}
                   />
                 </div>
               </>
             ) : (
-              <p className="text-[12px] text-muted-foreground py-3">Failed to load billing data.</p>
+              <p className="text-[12px] text-muted-foreground py-3">{t("billingDataFailed")}</p>
             )}
           </div>
 
@@ -683,19 +678,19 @@ export default function MilestonesPage() {
             {invoicePreviewTotal > 0 && (
               <div className="px-6 py-3 border-b bg-muted/30">
                 <div className="flex items-center justify-between">
-                  <span className="text-[12px] font-medium text-muted-foreground">Invoice total</span>
+                  <span className="text-[12px] font-medium text-muted-foreground">{t("invoiceTotal")}</span>
                   <span className="text-lg font-bold font-mono tabular-nums">{formatMoney(invoicePreviewTotal)}</span>
                 </div>
               </div>
             )}
             <div className="flex items-center justify-end gap-3 px-6 py-4">
-              <Button type="button" variant="outline" onClick={() => setInvoiceOpen(false)}>Cancel</Button>
+              <Button type="button" variant="outline" onClick={() => setInvoiceOpen(false)}>{t("cancel")}</Button>
               <Button
                 onClick={handleCreateInvoice}
                 disabled={invoiceSaving || invoicePreviewTotal <= 0}
                 className="bg-blue-600 hover:bg-blue-700"
               >
-                {invoiceSaving ? "Creating..." : "Create Invoice"}
+                {invoiceSaving ? t("creating") : t("createInvoice")}
               </Button>
             </div>
           </div>

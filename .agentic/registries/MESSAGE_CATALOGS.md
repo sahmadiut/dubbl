@@ -365,6 +365,7 @@ Extraction ownership:
 | LOC-089 | LOC-067 child: compensation bands/reviews and review detail; [scope and exceptions](PAYROLL_COMPENSATION_CATALOGS.md) |
 | LOC-090 | LOC-067 child: analytics, forecasting and report list/detail; [scope and exceptions](PAYROLL_ANALYTICS_CATALOGS.md) |
 | LOC-091 | LOC-067 child: tax liabilities and payment recording; [scope and exceptions](PAYROLL_TAX_LIABILITY_CATALOGS.md) |
+| LOC-101 | LOC-069 child: CRM deal activity feed/composer; [scope and exceptions](CRM_ACTIVITY_CATALOGS.md) |
 | LOC-002 | Independent combined key coverage, plural and safe rendering acceptance |
 
 Later L10N/RTL tasks retain native-reviewed financial wording, complete Persian

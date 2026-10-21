@@ -114,3 +114,28 @@ export async function crmActivityCreatedJson(response: Response, expectedDealId:
   if (row.dealId !== expectedDealId || !text(row.userId)) throw new Error("Invalid CRM activity identity");
   return body;
 }
+
+export type CrmActivity = CrmDealDetail["activities"][number];
+/** REST and MCP share this feed envelope; validate the whole page before adoption. */
+export async function crmActivitiesJson(response: Response, expectedPage: number, expectedLimit = 30) {
+  const body = await read(response);
+  if (!Array.isArray(body.activities)) throw new Error("Invalid CRM activity feed");
+  const ids = new Set<string>();
+  for (const value of body.activities) {
+    activity(value); const id = record(value).id as string;
+    if (ids.has(id)) throw new Error("Duplicate CRM activity");
+    ids.add(id);
+  }
+  const pagination = record(body.pagination);
+  for (const key of ["page", "limit", "total", "totalPages"]) count(pagination[key]);
+  if (pagination.page !== expectedPage || pagination.limit !== expectedLimit ||
+    pagination.totalPages !== Math.ceil((pagination.total as number) / expectedLimit) ||
+    body.activities.length !== Math.min(expectedLimit, Math.max(0, (pagination.total as number) - (expectedPage - 1) * expectedLimit))) throw new Error("Invalid CRM activity pagination");
+  count(body.totalAll);
+  const counts = record(body.typeCounts);
+  if (Object.keys(counts).length !== Object.keys(crmActivityKeys).length) throw new Error("Invalid CRM activity counts");
+  let sum = 0;
+  for (const key of Object.keys(crmActivityKeys)) { count(counts[key]); sum += counts[key] as number; }
+  if (sum !== body.totalAll || (pagination.total as number) > sum) throw new Error("Inconsistent CRM activity totals");
+  return body as typeof body & { activities: CrmActivity[]; pagination: { page: number; limit: number; total: number; totalPages: number }; typeCounts: Record<keyof typeof crmActivityKeys, number>; totalAll: number };
+}

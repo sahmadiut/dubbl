@@ -181,7 +181,7 @@ test("CRM shared activity callback validates its unjoined create reply and retai
       return mode === "json" ? new Response("private") : Response.json(mode === "envelope" ? {} : { activity: { ...activity, user: undefined, userId: "user-a", dealId: mode === "foreign" ? "foreign" : deal.id } }, { status: mode === "http" ? 403 : 201 });
     }, async () => {
       const h = render(layout, { ...loaded, activityType: "call", activityContent: caller }, locale), t = translator(locale);
-      await invoke(h, "addActivity");
+      assert.equal(await (h.context.addActivity as () => Promise<boolean>)(), mode === "ok");
       assert.equal(has(h, "success", t("activityAdded")), mode === "ok");
       assert.equal(has(h, "activityContent", ""), mode === "ok");
       assert.equal(has(h, "error", t("activityFailed")), mode !== "ok");

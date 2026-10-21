@@ -38,20 +38,6 @@ export function getHeaders() {
   return { "x-organization-id": orgId, "Content-Type": "application/json" };
 }
 
-export function timeAgo(dateStr: string) {
-  const now = new Date();
-  const date = new Date(dateStr);
-  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-  if (seconds < 60) return "just now";
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 30) return `${days}d ago`;
-  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-}
-
 // ---------------------------------------------------------------------------
 // Tabs
 // ---------------------------------------------------------------------------
@@ -76,7 +62,7 @@ export interface DealContextValue {
   changeStage: (stageId: string) => Promise<void>;
   markWon: () => Promise<void>;
   markLost: () => Promise<void>;
-  addActivity: () => Promise<void>;
+  addActivity: () => Promise<boolean>;
   activityType: string;
   setActivityType: (v: string) => void;
   activityContent: string;
@@ -187,7 +173,7 @@ export default function DealDetailLayout({ children }: { children: React.ReactNo
   }
 
   async function addActivity() {
-    if (!activityContent.trim()) return;
+    if (!activityContent.trim() || submitting) return false;
     setSubmitting(true);
     try {
       await crmActivityCreatedJson(await fetch(`/api/v1/crm/deals/${id}/activities`, {
@@ -197,8 +183,10 @@ export default function DealDetailLayout({ children }: { children: React.ReactNo
       }), id);
       setActivityContent("");
       toast.success(t("activityAdded"));
+      return true;
     } catch {
       toast.error(t("activityFailed"));
+      return false;
     } finally {
       setSubmitting(false);
     }

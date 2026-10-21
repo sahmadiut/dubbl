@@ -17,7 +17,7 @@ import { POST as lost } from "../../app/api/v1/crm/deals/[id]/lost/route";
 import { GET as activities, POST as activity } from "../../app/api/v1/crm/deals/[id]/activities/route";
 import { GET as analytics } from "../../app/api/v1/crm/analytics/route";
 import { registerAllTools } from "../../lib/mcp/tools";
-import { crmPipelinesJson, crmPipelineCreatedJson, crmDealCreatedJson, crmDealsJson, crmDealDetailJson, crmDealMutationJson, crmDealDeletedJson, crmActivityCreatedJson } from "../../i18n/crm-presentation";
+import { crmPipelinesJson, crmPipelineCreatedJson, crmDealCreatedJson, crmDealsJson, crmDealDetailJson, crmDealMutationJson, crmDealDeletedJson, crmActivityCreatedJson, crmActivitiesJson } from "../../i18n/crm-presentation";
 
 async function checkedDealReply(body: { deal?: { id: string; activities?: unknown }; activity?: { dealId: string } }) {
   if (body.deal) {
@@ -120,6 +120,9 @@ async function run() {
     assert.equal(act.scheduledAt, "2024-01-01T06:30:00.000Z");
     await ma.call("add_deal_activity", { dealId: d.id, type: "note", content: "Memo" });
     const acts = await data(await activities(req({}, keys.a, "?type=call&search=Phone&limit=1"), p(d.id)));
+    await crmActivitiesJson(Response.json(acts), 1, 1);
+    const macts = (await ma.call("list_deal_activities", { dealId: d.id, type: "call", search: "Phone", limit: 1 })).body;
+    await crmActivitiesJson(Response.json(macts), 1, 1);
     assert.equal(acts.activities.length, 1); assert.equal(acts.totalAll, 2); assert.equal(acts.typeCounts.note, 1); assert.equal(Object.hasOwn(acts.activities[0].user, "passwordHash"), false);
     assert.deepEqual(acts, (await ma.call("list_deal_activities", { dealId: d.id, type: "call", search: "Phone", limit: 1 })).body);
     // All CRM readers authenticate; pipeline writers require manage:contacts, existing deal/activity policy remains authenticated-only.

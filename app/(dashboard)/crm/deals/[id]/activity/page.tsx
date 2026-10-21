@@ -1,6 +1,8 @@
 "use client";
 
-import { projectCrmJson } from "@/lib/money/project-crm-ui";
+import { crmActivitiesJson, type CrmActivity } from "@/i18n/crm-presentation";
+import { useCrmActivityPresentation } from "@/i18n/crm-activity-presentation";
+import { toast } from "sonner";
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
@@ -32,7 +34,7 @@ import { SearchInput } from "@/components/ui/search-input";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { payrollMoneyDisplay as formatMoney } from "@/lib/money/payroll-display";
 import { cn } from "@/lib/utils";
-import { useDealContext, getHeaders, timeAgo } from "../layout";
+import { useDealContext, getHeaders } from "../layout";
 
 const ACTIVITY_ICONS: Record<string, typeof MessageSquare> = {
   note: MessageSquare,
@@ -60,22 +62,17 @@ const ACTIVITY_BAR_COLORS: Record<string, string> = {
 
 type ActivitySortKey = "date" | "type";
 
-const ACTIVITY_SORT_OPTIONS: { value: ActivitySortKey; label: string }[] = [
-  { value: "date", label: "Date" },
-  { value: "type", label: "Type" },
+const ACTIVITY_SORT_OPTIONS: { value: ActivitySortKey; label: "date" | "type" }[] = [
+  { value: "date", label: "date" },
+  { value: "type", label: "type" },
 ];
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
-interface ActivityItem {
-  id: string;
-  type: string;
-  content: string | null;
-  createdAt: string;
-  user: { name: string | null } | null;
-}
+type ActivityItem = CrmActivity;
 
 export default function DealActivityPage() {
+  const { t, activityLabel, pluralLabel, placeholder, timeAgo, dateLabel, clock, dayKey } = useCrmActivityPresentation();
   const { id: dealId } = useParams<{ id: string }>();
   const {
     deal,
@@ -123,123 +120,96 @@ export default function DealActivityPage() {
     return params;
   }
 
-  // Fetch page 1 on filter/search/sort change
+  const requestVersion = useRef(0);
+  const moreInFlight = useRef(false);
+
+  function adopt(data: Awaited<ReturnType<typeof crmActivitiesJson>>, append: boolean) {
+    setActivities((prev) => append ? [...prev, ...data.activities.filter(row => !prev.some(saved => saved.id === row.id))] : data.activities);
+    setPage(data.pagination.page);
+    setTotal(data.pagination.total);
+    setHasMore(data.pagination.page < data.pagination.totalPages);
+    setTypeCounts(data.typeCounts);
+    setTotalAll(data.totalAll);
+  }
+
+  const refreshActivities = useCallback(async () => {
+    const version = ++requestVersion.current;
+    moreInFlight.current = false;
+    setLoadingMore(false);
+    setRefetching(true);
+    setHasMore(false);
+    try {
+      const data = await crmActivitiesJson(await fetch(`/api/v1/crm/deals/${dealId}/activities?${buildParams(1)}`, { headers: getHeaders() }), 1);
+      if (version === requestVersion.current) adopt(data, false);
+    } catch {
+      if (version === requestVersion.current) toast.error(t("loadFailed"));
+    } finally {
+      if (version === requestVersion.current) {
+        setLoading(false);
+        setRefetching(false);
+        setFetchKey(k => k + 1);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dealId, debouncedSearch, typeFilter, sortBy, sortOrder, t]);
+
   useEffect(() => {
-    let cancelled = false;
-    const isRefetch = !loading;
-
-    setPage(1);
-    setHasMore(true);
-    if (isRefetch) setRefetching(true);
-
-    const params = buildParams(1);
-
-    fetch(`/api/v1/crm/deals/${dealId}/activities?${params}`, {
-      headers: getHeaders(),
-    })
-      .then(projectCrmJson)
-      .then((data) => {
-        if (cancelled) return;
-        if (data.activities) setActivities(data.activities);
-        if (data.pagination) {
-          setTotal(data.pagination.total);
-          setHasMore(data.pagination.page < data.pagination.totalPages);
-        }
-        if (data.typeCounts) setTypeCounts(data.typeCounts);
-        if (data.totalAll != null) setTotalAll(data.totalAll);
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setLoading(false);
-          setRefetching(false);
-          setFetchKey((k) => k + 1);
-        }
-      });
-
-    return () => { cancelled = true; };
+    void refreshActivities();
+    // The counter invalidates asynchronous requests; it is not a DOM ref.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dealId, debouncedSearch, typeFilter, sortBy, sortOrder]);
+    return () => { requestVersion.current++; };
+  }, [refreshActivities]);
 
-  // Load more
-  const loadMore = useCallback(() => {
-    if (loadingMore || !hasMore) return;
-    const nextPage = page + 1;
+  const loadMore = useCallback(async () => {
+    if (loadingMore || refetching || pendingSearch || !hasMore || moreInFlight.current) return;
+    const version = requestVersion.current;
+    moreInFlight.current = true;
     setLoadingMore(true);
-
-    const params = buildParams(nextPage);
-
-    fetch(`/api/v1/crm/deals/${dealId}/activities?${params}`, {
-      headers: getHeaders(),
-    })
-      .then(projectCrmJson)
-      .then((data) => {
-        if (data.activities) setActivities((prev) => [...prev, ...data.activities]);
-        if (data.pagination) {
-          setPage(data.pagination.page);
-          setTotal(data.pagination.total);
-          setHasMore(data.pagination.page < data.pagination.totalPages);
-        }
-      })
-      .finally(() => setLoadingMore(false));
+    const nextPage = page + 1;
+    try {
+      const data = await crmActivitiesJson(await fetch(`/api/v1/crm/deals/${dealId}/activities?${buildParams(nextPage)}`, { headers: getHeaders() }), nextPage);
+      if (version === requestVersion.current) adopt(data, true);
+    } catch {
+      if (version === requestVersion.current) toast.error(t("loadFailed"));
+    } finally {
+      if (version === requestVersion.current) { moreInFlight.current = false; setLoadingMore(false); }
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loadingMore, hasMore, page, dealId, debouncedSearch, typeFilter, sortBy, sortOrder]);
+  }, [loadingMore, refetching, pendingSearch, hasMore, page, dealId, debouncedSearch, typeFilter, sortBy, sortOrder, t]);
 
-  // IntersectionObserver for infinite scroll
   useEffect(() => {
     const el = sentinelRef.current;
     if (!el) return;
     const observer = new IntersectionObserver(
-      (entries) => { if (entries[0].isIntersecting) loadMore(); },
+      (entries) => { if (entries[0].isIntersecting) void loadMore(); },
       { rootMargin: "200px" }
     );
     observer.observe(el);
     return () => observer.disconnect();
   }, [loadMore]);
 
-  // Refresh activities after adding one
   async function handleAddActivity() {
-    await addActivity();
-    // Refetch page 1
-    setRefetching(true);
-    const params = buildParams(1);
-    try {
-      const r = await fetch(`/api/v1/crm/deals/${dealId}/activities?${params}`, {
-        headers: getHeaders(),
-      });
-      const data = await projectCrmJson(r);
-      if (data.activities) setActivities(data.activities);
-      if (data.pagination) {
-        setPage(1);
-        setTotal(data.pagination.total);
-        setHasMore(data.pagination.page < data.pagination.totalPages);
-      }
-      if (data.typeCounts) setTypeCounts(data.typeCounts);
-      if (data.totalAll != null) setTotalAll(data.totalAll);
-    } finally {
-      setRefetching(false);
-      setFetchKey((k) => k + 1);
-    }
+    const version = requestVersion.current;
+    if (await addActivity() && version === requestVersion.current) await refreshActivities();
   }
 
   // Group activities by date
   function groupByDate(items: ActivityItem[]) {
     const grouped: { label: string; date: string; items: ActivityItem[] }[] = [];
     const now = new Date();
-    const today = now.toISOString().slice(0, 10);
-    const yesterday = new Date(now.getTime() - 86400000).toISOString().slice(0, 10);
+    const today = dayKey(now);
+    const previousDay = new Date(`${today}T00:00:00.000Z`);
+    previousDay.setUTCDate(previousDay.getUTCDate() - 1);
+    const yesterday = previousDay.toISOString().slice(0, 10);
 
     for (const activity of items) {
-      const date = activity.createdAt.slice(0, 10);
+      const date = dayKey(new Date(activity.createdAt));
       const label =
         date === today
-          ? "Today"
+          ? t("today")
           : date === yesterday
-            ? "Yesterday"
-            : new Date(activity.createdAt).toLocaleDateString(undefined, {
-                weekday: "long",
-                month: "short",
-                day: "numeric",
-              });
+            ? t("yesterday")
+            : dateLabel(activity.createdAt, true);
 
       const existing = grouped.find((g) => g.date === date);
       if (existing) existing.items.push(activity);
@@ -254,7 +224,7 @@ export default function DealActivityPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="brand-loader" aria-label="Loading">
+        <div className="brand-loader" aria-label={t("loading")}>
           <div className="brand-loader-circle brand-loader-circle-1" />
           <div className="brand-loader-circle brand-loader-circle-2" />
         </div>
@@ -271,9 +241,9 @@ export default function DealActivityPage() {
           <div className="flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/30 px-4 py-3">
             <Trophy className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-medium text-emerald-700 dark:text-emerald-300">Deal won</p>
+              <p className="text-[13px] font-medium text-emerald-700 dark:text-emerald-300">{t("dealWon")}</p>
               <p className="text-[11px] text-emerald-600/70 dark:text-emerald-400/60">
-                Closed on {new Date(deal.wonAt!).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}
+                {t("closedOn", { date: dateLabel(deal.wonAt!) })}
                 {deal.valueCents > 0 && <> · {formatMoney(deal.valueCents, deal.currency)}</>}
               </p>
             </div>
@@ -283,11 +253,11 @@ export default function DealActivityPage() {
           <div className="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/30 px-4 py-3">
             <XCircle className="size-4 text-red-600 dark:text-red-400 shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-medium text-red-700 dark:text-red-300">Deal lost</p>
+              <p className="text-[13px] font-medium text-red-700 dark:text-red-300">{t("dealLost")}</p>
               <p className="text-[11px] text-red-600/70 dark:text-red-400/60">
                 {deal.lostReason
                   ? deal.lostReason
-                  : `Closed on ${new Date(deal.lostAt!).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}`}
+                  : t("closedOn", { date: dateLabel(deal.lostAt!) })}
               </p>
             </div>
           </div>
@@ -295,7 +265,7 @@ export default function DealActivityPage() {
 
         {/* Composer card */}
         <div className="rounded-xl border bg-card p-5 space-y-3">
-          <h3 className="text-sm font-semibold mb-1">Log Activity</h3>
+          <h3 className="text-sm font-semibold mb-1">{t("logActivity")}</h3>
           <div className="flex flex-wrap gap-1.5">
             {Object.entries(ACTIVITY_ICONS).map(([type, Icon]) => (
               <button
@@ -309,24 +279,24 @@ export default function DealActivityPage() {
                 )}
               >
                 <Icon className="size-3" />
-                <span className="capitalize">{type}</span>
+                <span className="capitalize">{activityLabel(type)}</span>
               </button>
             ))}
           </div>
           <Textarea
-            placeholder={`Add a ${activityType}...`}
+            placeholder={placeholder(activityType)}
             value={activityContent}
             onChange={(e) => setActivityContent(e.target.value)}
             className="min-h-[80px] text-sm resize-none"
             onKeyDown={(e) => {
-              if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && activityContent.trim()) {
+              if (!submitting && e.key === "Enter" && (e.metaKey || e.ctrlKey) && activityContent.trim()) {
                 handleAddActivity();
               }
             }}
           />
           <div className="flex items-center justify-between">
             <p className="text-[10px] text-muted-foreground">
-              {typeof navigator !== "undefined" && navigator.platform?.includes("Mac") ? "Cmd" : "Ctrl"}+Enter to submit
+              {t("shortcut", { key: typeof navigator !== "undefined" && navigator.platform?.includes("Mac") ? "Cmd" : "Ctrl" })}
             </p>
             <Button
               size="sm"
@@ -335,7 +305,7 @@ export default function DealActivityPage() {
               disabled={!activityContent.trim() || submitting}
             >
               <Send className="size-3" />
-              {submitting ? "Adding..." : "Add Activity"}
+              {submitting ? t("adding") : t("addActivity")}
             </Button>
           </div>
         </div>
@@ -345,18 +315,18 @@ export default function DealActivityPage() {
           <SearchInput
             value={search}
             onChange={setSearch}
-            placeholder="Search activities..."
+            placeholder={t("search")}
             loading={pendingSearch}
           />
           <Select value={typeFilter} onValueChange={setTypeFilter}>
             <SelectTrigger className="h-8 w-full sm:w-[130px] text-xs">
-              <SelectValue placeholder="All types" />
+              <SelectValue placeholder={t("allTypes")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All types</SelectItem>
+              <SelectItem value="all">{t("allTypes")}</SelectItem>
               {Object.entries(ACTIVITY_ICONS).map(([type]) => (
                 <SelectItem key={type} value={type} className="capitalize">
-                  {type.charAt(0).toUpperCase() + type.slice(1)}
+                  {activityLabel(type)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -368,7 +338,7 @@ export default function DealActivityPage() {
             </SelectTrigger>
             <SelectContent>
               {ACTIVITY_SORT_OPTIONS.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                <SelectItem key={opt.value} value={opt.value}>{t(opt.label)}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -376,6 +346,7 @@ export default function DealActivityPage() {
             variant="outline"
             size="icon"
             className="size-8 shrink-0"
+            aria-label={sortOrder === "asc" ? t("sortDescending") : t("sortAscending")}
             onClick={() => setSortOrder((p) => (p === "asc" ? "desc" : "asc"))}
           >
             <ArrowUpDown className={cn("size-3.5 transition-transform", sortOrder === "asc" && "rotate-180")} />
@@ -387,7 +358,7 @@ export default function DealActivityPage() {
               className="h-8 text-xs text-muted-foreground"
               onClick={() => { setSearch(""); setTypeFilter("all"); }}
             >
-              Clear filters
+              {t("clearFilters")}
             </Button>
           )}
         </div>
@@ -395,11 +366,11 @@ export default function DealActivityPage() {
         {/* Stats row */}
         {total > 0 && (
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground px-1">
-            <span className="font-medium text-foreground tabular-nums">{total}</span> activities
+            <span className="font-medium text-foreground tabular-nums">{t("activityCount", { count: total })}</span>
             {hasFilters && (
               <>
                 <span>·</span>
-                <span className="tabular-nums">{activities.length} shown</span>
+                <span className="tabular-nums">{t("shown", { count: activities.length })}</span>
               </>
             )}
           </div>
@@ -408,7 +379,7 @@ export default function DealActivityPage() {
         {/* Activity list */}
         {refetching || pendingSearch ? (
           <div className="flex items-center justify-center py-20">
-            <div className="brand-loader" aria-label="Loading">
+            <div className="brand-loader" aria-label={t("loading")}>
               <div className="brand-loader-circle brand-loader-circle-1" />
               <div className="brand-loader-circle brand-loader-circle-2" />
             </div>
@@ -421,21 +392,21 @@ export default function DealActivityPage() {
               </div>
               {hasFilters ? (
                 <>
-                  <p className="text-sm font-medium">No matching activities</p>
-                  <p className="text-xs text-muted-foreground mt-1">Try adjusting your search or filters</p>
+                  <p className="text-sm font-medium">{t("noMatching")}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t("adjustFilters")}</p>
                   <Button
                     variant="ghost"
                     size="sm"
                     className="h-7 text-xs mt-2"
                     onClick={() => { setSearch(""); setTypeFilter("all"); }}
                   >
-                    Clear filters
+                    {t("clearFilters")}
                   </Button>
                 </>
               ) : (
                 <>
-                  <p className="text-sm font-medium">No activity yet</p>
-                  <p className="text-xs text-muted-foreground mt-1">Log your first activity above</p>
+                  <p className="text-sm font-medium">{t("noActivity")}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t("logFirst")}</p>
                 </>
               )}
             </div>
@@ -499,9 +470,11 @@ export default function DealActivityPage() {
                             <div className="flex-1 min-w-0 flex items-start justify-between gap-3 rounded-lg border bg-card px-3.5 py-2.5 shadow-xs transition-shadow group-hover:shadow-sm">
                               <div className="min-w-0">
                                 <p className="text-[13px] leading-snug">
-                                  <span className="font-medium">{activity.user?.name || "System"}</span>{" "}
-                                  <span className="text-muted-foreground">logged a</span>{" "}
-                                  <span className="font-medium capitalize">{activity.type}</span>
+                                  {t.rich("logged", {
+                                    name: activity.user?.name || t("system"), type: activityLabel(activity.type),
+                                    strong: chunks => <span className="font-medium">{chunks}</span>,
+                                    em: chunks => <span className="font-medium capitalize">{chunks}</span>,
+                                  })}
                                 </p>
                                 {activity.content && (
                                   <p className="text-[13px] text-muted-foreground mt-1.5 whitespace-pre-wrap leading-relaxed">
@@ -513,7 +486,7 @@ export default function DealActivityPage() {
                               {/* Timestamp */}
                               <div className="text-right shrink-0">
                                 <p className="text-[11px] text-muted-foreground tabular-nums">
-                                  {new Date(activity.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                  {clock(activity.createdAt)}
                                 </p>
                                 <p className="text-[10px] text-muted-foreground/40 hidden sm:block">
                                   {timeAgo(activity.createdAt)}
@@ -545,7 +518,7 @@ export default function DealActivityPage() {
       <div className="space-y-4">
         {/* Filter by type */}
         <div className="rounded-xl border bg-card p-4 space-y-3">
-          <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Filter by Type</h3>
+          <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("filterByType")}</h3>
           <div className="space-y-1.5">
             {Object.entries(ACTIVITY_ICONS).map(([type, Icon]) => {
               const isActive = typeFilter === type;
@@ -565,7 +538,7 @@ export default function DealActivityPage() {
                   </div>
                   <div className="flex-1 text-left">
                     <div className="flex items-center justify-between">
-                      <span className={cn("text-xs capitalize", isActive && "font-medium")}>{type}s</span>
+                      <span className={cn("text-xs capitalize", isActive && "font-medium")}>{pluralLabel(type)}</span>
                       <span className="text-[10px] font-mono tabular-nums text-muted-foreground">
                         {count}
                       </span>
@@ -586,7 +559,7 @@ export default function DealActivityPage() {
           </div>
           <div className="h-px bg-border" />
           <div className="flex items-center justify-between px-2">
-            <span className="text-xs text-muted-foreground">Total activities</span>
+            <span className="text-xs text-muted-foreground">{t("totalActivities")}</span>
             <span className="text-xs font-mono tabular-nums font-bold">{totalAll}</span>
           </div>
         </div>
@@ -594,24 +567,24 @@ export default function DealActivityPage() {
         {/* Quick stats */}
         {activities.length > 0 && (
           <div className="rounded-xl border bg-card p-4 space-y-3">
-            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Quick Stats</h3>
+            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("quickStats")}</h3>
             <div className="space-y-2.5">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">First logged</span>
+                <span className="text-xs text-muted-foreground">{t("firstLogged")}</span>
                 <span className="text-xs tabular-nums">
-                  {new Date(activities[activities.length - 1].createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                  {dateLabel(activities.reduce((first, row) => Date.parse(row.createdAt) < Date.parse(first.createdAt) ? row : first).createdAt)}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">Most recent</span>
+                <span className="text-xs text-muted-foreground">{t("mostRecent")}</span>
                 <span className="text-xs tabular-nums">
-                  {timeAgo(activities[0].createdAt)}
+                  {timeAgo(activities.reduce((last, row) => Date.parse(row.createdAt) > Date.parse(last.createdAt) ? row : last).createdAt)}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">Most common</span>
+                <span className="text-xs text-muted-foreground">{t("mostCommon")}</span>
                 <span className="text-xs capitalize">
-                  {Object.entries(typeCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || "-"}
+                  {activityLabel(Object.entries(typeCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || "")}
                 </span>
               </div>
             </div>

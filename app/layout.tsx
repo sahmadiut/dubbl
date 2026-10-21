@@ -152,7 +152,7 @@ export default async function RootLayout({
             >
               <SessionProvider>{children}</SessionProvider>
             </RootProvider>
-            <Toaster richColors position="bottom-right" />
+            <Toaster richColors position="bottom-right" style={{ fontFamily: "inherit" }} />
           </ThemeProvider>
         </PresentationProvider>
       </body>

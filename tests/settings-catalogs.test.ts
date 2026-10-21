@@ -46,6 +46,7 @@ test("actual general settings form translates sections, labels and samples witho
     const html = renderWithPresentation(createElement(SettingsPage), locale);
     for (const key of ["organization", "legal", "address", "contact", "financials", "lockPastDates", "dangerZone", "saveChanges", "taxIDVAT", "registrationNumber", "businessStructure", "peppolParticipantId"] as const) assert.ok(html.includes(messages.SettingsGeneral[key]), key);
     assert.ok(html.includes(messages.LocalePreferences.title));
+    assert.ok(html.includes(messages.SettingsErrors.irrUnavailable));
     assert.ok(html.includes('value="en-US"'));
     assert.ok(html.includes('value="fa-IR"'));
     assert.ok(html.includes('type="date"'));
@@ -160,6 +161,7 @@ test("settings errors localize currency-history restrictions and reject unknown 
     ["Base currency can't be changed with payroll-run history", "currencyPayroll"],
     ["Base currency can't be changed with asset, category or loan history", "currencyAssets"],
     ["Base currency can't be changed with accrual schedule history", "currencyAccruals"],
+    ["IRR functional currency is disabled pending financial qualification", "irrUnavailable"],
   ] as const;
   for (const locale of locales) {
     const messages = locale === "en-US" ? en : fa;

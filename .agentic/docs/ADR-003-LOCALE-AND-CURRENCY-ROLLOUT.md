@@ -12,13 +12,33 @@ Historical posted amounts must retain the currency/regime interpretation under w
 
 ## Executable functional-currency gate
 
-`lib/currency/rollout.ts` owns `IRR_FINANCIAL_GATE_PASSED = false`. This is code-owned readiness, deliberately not an environment boolean or task-tracker lookup. `IRR_PRODUCTION_ENABLED` is a server-only operator request, default false; only the exact strings `true` and `false` are valid when present. Empty, padded, numeric or differently cased flags are configuration errors. `true` is rejected while the code gate is false. No NEXT_PUBLIC variable, request field, user setting, plan override or NODE_ENV can attest readiness. The gate applies in development/test too, so a mislabelled runtime cannot bypass it.
+Owner-authorized local testing exception, 2026-10-21: the owner requested
+temporary IRR access because the site is not operational, then explicitly
+selected the local development site. `IRR_TESTING_ENABLED=true` permits local
+selection only with `NODE_ENV=development` or `test`. It defaults off, rejects
+production/unspecified runtimes, retains all permission/history checks and does
+not change the financial readiness constant. The ignored local `.env.local`
+opts in; remove the flag or set it false after testing. Keep
+`IRR_PRODUCTION_ENABLED=false`. This supersedes the former no-preview restriction
+only for that explicit local testing scope; production qualification remains
+the sequence below. See [testing evidence](../evidence/IRR-local-testing-2026-10-21.md).
+
+`lib/currency/rollout.ts` owns `IRR_FINANCIAL_GATE_PASSED = false`. This is code-owned readiness, deliberately not an environment boolean or task-tracker lookup. `IRR_PRODUCTION_ENABLED` is a server-only operator request, default false; only the exact strings `true` and `false` are valid when present. Empty, padded, numeric or differently cased flags are configuration errors. `true` is rejected while the code gate is false. No NEXT_PUBLIC variable, request field, user setting, plan override or NODE_ENV can attest readiness. Without the explicit local testing opt-in above, development/test retains the same disabled policy.
 
 The DB initialization module validates configuration before creating the pool, covering REST, MCP and DB-backed jobs. The shared functional-currency schema normalizes/validates codes and enforces the gate before REST organization updates and MCP `set_organization_currency` writes. REST returns 403 for the rollout error; MCP wrapTool returns an error with status 403. The new tool uses scoped direct DB access, existing manage:billing authorization, journal-activity immutability and audit. Organization creation still accepts name/slug only and gets its existing USD DB default. Site-admin organization PATCH changes subscription fields only. There is no other application writer of organization.defaultCurrency in the inspected source (seed uses USD).
 
 This gate restricts selecting an organization's functional currency. It does not remove ISO reference metadata, mutate existing IRR records, block reads/exports, or certify/block every foreign-currency document or direct SQL writer. Preexisting IRR organizations and foreign-IRR transactions are not made financially safe by this task; qualification and their actual money boundaries remain MON-001..010/QA-001. The production release process must inventory these before any production IRR use. The currency catalog can still show IRR; the server rejection is authoritative. Frontend hiding cannot replace this policy.
 
 ## Future enablement and rollback
+
+The 2026-10-21 [IRR readiness sequence](../registries/IRR_READINESS.md) assigns
+technical qualification to IRR-001..003 after localization (RTL-002 and
+L10N-012), per the owner's subsequent ordering instruction. The sequence assigns
+the exact default-off candidate to
+IRR-004 and authorized operator activation to IRR-005. A prepared candidate may
+be reviewed before runtime opt-in; actual production use still follows REL-002
+approval. This is scheduling, not evidence that readiness has passed or a new
+local-preview exception to the policy below.
 
 Keep the code gate false through implementation. MON-010 must supply verified money/FX/currency migration evidence and required actual accounting review; relevant financial/API, security and restore gates plus REL-002 authorization remain mandatory before production use. A reviewed change may then update the code readiness value with evidence for the exact candidate. Tracker completion itself never changes code or environment. Only after that change may an operator set IRR_PRODUCTION_ENABLED=true in an authorized rollout. No endpoint or MCP tool changes these controls.
 

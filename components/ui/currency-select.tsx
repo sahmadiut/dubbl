@@ -43,6 +43,9 @@ interface CurrencySelectProps {
   onValueChange: (value: string) => void;
   className?: string;
   disabled?: boolean;
+  /** Unavailable for this selection only; reference currencies remain visible. */
+  disabledCodes?: readonly string[];
+  "aria-describedby"?: string;
   /** Compact mode shows just the code, no name */
   compact?: boolean;
 }
@@ -52,6 +55,8 @@ export function CurrencySelect({
   onValueChange,
   className,
   disabled,
+  disabledCodes = [],
+  "aria-describedby": describedBy,
   compact,
 }: CurrencySelectProps) {
   const t = useTranslations("SharedUI");
@@ -72,6 +77,7 @@ export function CurrencySelect({
           variant="outline"
           role="combobox"
           aria-expanded={open}
+          aria-describedby={describedBy}
           disabled={disabled}
           className={cn(
             "justify-between font-normal",
@@ -110,7 +116,9 @@ export function CurrencySelect({
                 <CommandItem
                   key={c.code}
                   value={`${c.code} ${c.name}`}
+                  disabled={disabledCodes.includes(c.code)}
                   onSelect={() => {
+                    if (disabledCodes.includes(c.code)) return;
                     onValueChange(c.code);
                     setOpen(false);
                   }}

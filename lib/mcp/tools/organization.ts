@@ -7,7 +7,7 @@ import { organizationUpdateFields, mileageRateSchema } from "@/lib/api/organizat
 
 export function registerOrganizationTools(server: McpServer, ctx: AuthContext) {
   server.registerTool("get_organization", { description:
-    "Get the current live organization's details and settings. Returns {organization}; mileageRate is minor units per mile and billApprovalThreshold is currency minor units (USD cents), with matching *Minor strings or null. Percentages remain numeric basis points; no rescaling.",
+    "Get the current live organization's details and settings. Returns {organization, currencyRollout: {irrEnabled}}; irrEnabled reports the server's IRR functional-currency selection policy. mileageRate is minor units per mile and billApprovalThreshold is currency minor units (USD cents), with matching *Minor strings or null. Percentages remain numeric basis points; no rescaling.",
     inputSchema: z.object({}).strict() }, () => wrapTool(ctx, () => getOrganization(ctx)));
   server.registerTool("set_organization_currency", { description:
     "Set the current organization's ISO functional currency. Requires manage:billing, rejected after journal, payroll, asset, category, loan or accrual schedule history (including unposted, cancelled and soft-deleted records); IRR remains gated. Returns {organization} with safe numeric money and exact *Minor aliases. Does not convert or rescale stored amounts.",

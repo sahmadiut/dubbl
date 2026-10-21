@@ -897,6 +897,7 @@
     "deleteTag": "Delete Tag"
   },
   "SettingsErrors": {
+    "irrUnavailable": "IRR cannot currently be selected as the base currency. Financial qualification is still pending.",
     "organizationMissing": "Organization not found",
     "tagMissing": "Tag not found",
     "forbidden": "Insufficient permissions",

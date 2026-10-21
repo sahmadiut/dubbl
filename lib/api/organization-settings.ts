@@ -7,6 +7,7 @@ import { diffChanges } from "./audit";
 import { organizationDto, organizationUpdateSchema, parseMileageRate, mileageRateDto, validateOrganizationBusinessType } from "./organization-wire";
 import { seedDefaultAccounts } from "@/lib/db/default-accounts";
 import { ensureTaxRatesSeeded } from "./tax-profiles";
+import { readCurrencyRollout } from "@/lib/currency/rollout";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 const scope = (ctx: AuthContext) => and(eq(organization.id, ctx.organizationId), isNull(organization.deletedAt));
@@ -23,7 +24,10 @@ async function audit(tx: Tx, ctx: AuthContext, before: typeof organization.$infe
     userAgent: request?.headers.get("user-agent") || null });
 }
 export async function getOrganization(ctx: AuthContext) {
-  return db.transaction(async tx => ({ organization: organizationDto(await load(tx, ctx)) }));
+  return db.transaction(async tx => ({
+    organization: organizationDto(await load(tx, ctx)),
+    currencyRollout: readCurrencyRollout(process.env),
+  }));
 }
 export async function getOrganizationMileageRate(ctx: AuthContext) {
   return db.transaction(async tx => mileageRateDto(await load(tx, ctx)));

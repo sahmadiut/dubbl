@@ -8,6 +8,22 @@ Current implementation truth is the actual repository plus task evidence. `pytho
 
 ## One-task execution loop
 
+Subsequent owner scope, 2026-10-21: local IRR testing is explicitly authorized.
+`IRR_TESTING_ENABLED=true` requires `NODE_ENV=development` or `test`; the local
+ignored `.env.local` enables it temporarily. Financial readiness remains false,
+production opt-in remains false, and history/permission guards remain enforced.
+See [local testing evidence](evidence/IRR-local-testing-2026-10-21.md).
+
+Current owner request, 2026-10-21: perform the remaining IRR technical checks or
+schedule executable tasks. Follow [IRR_READINESS](registries/IRR_READINESS.md):
+The owner subsequently requested IRR tasks after localization. IRR-001..003
+are phase-8 work; IRR-001 waits for RTL-002 and L10N-012. IRR-004 prepares the qualified default-off
+candidate for the existing QA/release process; IRR-005 owns actual activation
+after exact candidate/target approval. Technical reviews may be performed and
+honestly attributed to Codex. No production activation or existing human/global
+gate waiver is inferred from task preparation. See
+[owner instruction and baseline](evidence/IRR-qualification-scope-2026-10-21.md).
+
 Current owner scope, DEC-008: from the task after LOC-017 onward, leave Stripe
 unchanged. Preserve existing functionality and files; do not remove, disable,
 modify, extend, localize, refactor, repair or perform dedicated Stripe work unless

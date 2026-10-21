@@ -5,7 +5,7 @@ This is a policy map; current state is computed from task dependencies. No relea
 | Gate | Required evidence / tasks |
 |---|---|
 | Baseline / scope / provenance | AUD-001..005, actual owner-approved matrix |
-| Production IRR readiness | MON-001..010, application-enforced flag, verified financial migration |
+| Production IRR readiness | MON-001..010 plus IRR-001..003 qualification, IRR-004 reviewed default-off candidate and IRR-005 authorized activation; application-enforced flag and verified financial migration |
 | Locale / RTL / all surfaces | LOC, RTL and L10N tasks, native financial review |
 | Valuable feature parity | PAR tasks and explicit branch deferral if applicable |
 | Productivity / optional-provider scope | DATA tasks, documented optional deferrals |
@@ -23,3 +23,11 @@ This is a policy map; current state is computed from task dependencies. No relea
 A generic continue prompt authorizes bounded project work, not unspecified production deployment. Prepare a concrete candidate/runbook before requesting a required production approval. The tracker itself never deploys or enables IRR. Human-review labels record actual required reviews and cannot be satisfied by a model role-playing a person.
 
 CI-002 implements the functional-currency selection gate in `lib/currency/rollout.ts`: code readiness is false and a premature `IRR_PRODUCTION_ENABLED=true` fails server configuration validation. [ADR-003](ADR-003-LOCALE-AND-CURRENCY-ROLLOUT.md) records scope and later reviewed enablement. This does not qualify existing/foreign-IRR postings or change financial gate status.
+
+The [IRR readiness sequence](../registries/IRR_READINESS.md) now names the missing
+candidate/activation operations. IRR-001..003 provide technical evidence to the
+existing QA gates. IRR-004 follows QA-001/002/005 and prepares a reviewed candidate
+with operator opt-in still off. REL-001 includes that candidate; REL-002 approves
+its exact revision and target scope. IRR-005 then performs only the authorized
+activation, and REL-003 observes its reconciliation/canary outcome. Task creation
+does not enable IRR or waive the remaining global QA/release review requirements.

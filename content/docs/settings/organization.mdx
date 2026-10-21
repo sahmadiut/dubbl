@@ -30,6 +30,9 @@ This includes the PEPPOL participant identifier and scheme from the settings
 page. Unknown fields are rejected. Changing the functional currency requires
 `manage:billing` and is rejected once journal activity exists. IRR selection
 remains disabled pending financial qualification.
+The base-currency picker displays IRR as unavailable and explains the restriction.
+Scoped organization GET and MCP `get_organization` also return
+`currencyRollout.irrEnabled`, reflecting the server's current selection policy.
 
 Use `GET` or `PUT /api/v1/organization/mileage-rate`, or the
 `get_organization_mileage_rate` and `update_organization_mileage_rate` MCP tools,

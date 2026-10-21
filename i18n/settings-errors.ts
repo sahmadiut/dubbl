@@ -37,6 +37,7 @@ const keys: Partial<Record<string, ErrorKey>> = {
   "Base currency can't be changed with payroll-run history": "currencyPayroll",
   "Base currency can't be changed with asset, category or loan history": "currencyAssets",
   "Base currency can't be changed with accrual schedule history": "currencyAccruals",
+  "IRR functional currency is disabled pending financial qualification": "irrUnavailable",
 };
 
 // Only errors created after the allowlist/status mapping may carry display copy.

@@ -2,6 +2,24 @@
 
 Generated initial scope index; current status always comes from task metadata via `agent.py status`.
 
+## Explicit IRR qualification and activation
+
+Added on 2026-10-21 at the owner's request. Follow the
+[readiness map](../registries/IRR_READINESS.md); these tasks do not automatically
+complete broader QA/release gates or change the runtime IRR flag. The owner
+subsequently scheduled the IRR sequence after localization: IRR-001 waits for
+RTL-002 and L10N-012, and IRR-001..003 now belong to phase 8.
+
+| ID | Phase | Task | Role | Optional |
+|---|---:|---|---|---|
+| [IRR-001](../tasks/IRR-001.md) | 08 | Establish the current IRR financial qualification baseline | qa | no |
+| [IRR-002](../tasks/IRR-002.md) | 08 | Rehearse IRR backup restore and financial rollback | database | no |
+| [IRR-003](../tasks/IRR-003.md) | 08 | Qualify IRR selection controls and Persian money entry | backend | no |
+| [IRR-004](../tasks/IRR-004.md) | 09 | Prepare the qualified opt-in IRR release candidate | lead | no |
+| [IRR-005](../tasks/IRR-005.md) | 09 | Activate approved IRR and verify the target organization | devops | no |
+
+## Existing project scope
+
 | ID | Phase | Task | Role | Optional |
 |---|---:|---|---|---|
 | [AUD-001](../tasks/AUD-001.md) | 00 | Inspect and freeze the actual fork baseline | lead | no |

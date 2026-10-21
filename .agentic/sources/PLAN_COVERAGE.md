@@ -26,6 +26,30 @@ MON-006 retains final API compatibility integration acceptance. Its implementati
 
 ## Deliberate refinements
 
+### Owner-directed IRR qualification and activation (2026-10-21)
+
+The owner requested Codex perform the remaining IRR checks or create executable
+tasks for them. [Instruction and observed baseline](../evidence/IRR-qualification-scope-2026-10-21.md).
+This refines the existing testing, migration, risk and release requirements; it
+does not reopen completed financial implementation tasks or declare readiness.
+
+- [IRR-001](../tasks/IRR-001.md): Current financial/migration qualification baseline.
+- [IRR-002](../tasks/IRR-002.md): Exact IRR backup/restore and rollback rehearsal.
+- [IRR-003](../tasks/IRR-003.md): Real selection, authorization/history controls and critical Persian money entry.
+- [IRR-004](../tasks/IRR-004.md): Reviewed default-off opt-in IRR release candidate.
+- [IRR-005](../tasks/IRR-005.md): Actual approved target activation and canary reconciliation.
+
+The owner subsequently requested IRR work after localization. IRR-001..003
+are phase-8 technical qualification, with IRR-001 waiting for RTL-002 and
+L10N-012 (catalog/input/RTL work and final native translation acceptance).
+The remaining IRR sequence follows its existing dependencies and release gates.
+REL-001 depends on IRR-004 so REL-002 can approve the exact prepared candidate;
+IRR-005 follows that approval and REL-003 waits for its observed outcome. AI-001
+also waits for all five tasks, preserving the owner's deferred-AI ordering.
+See [readiness map](../registries/IRR_READINESS.md) for scope and handoffs.
+
+### Earlier refinements
+
 The plan's broad milestones are decomposed into 60 initial tasks with dependencies, role ownership, criteria and evidence. Split oversized tasks through the controller guide and preserve parent acceptance gates. Optional scope remains visible. Source inspection and evidence determine implementation truth; neither the plan nor tracker counts prove working features.
 
 Auxiliary money consumers, public/signing/PDF boundaries, credit allocations/refunds, reports, imports/exports/views, providers, backup/restore and delayed compatibility cleanup remain covered. Statutory obligations and future monetary rules require explicit scope and official evidence. Owner decisions in docs/DECISIONS.md continue to govern execution.

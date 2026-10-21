@@ -80,6 +80,7 @@ export default function SettingsPage() {
 
   const t = useTranslations("LocalePreferences");
   const [, setOrg] = useState<OrgSettings | null>(null);
+  const [irrEnabled, setIrrEnabled] = useState(false);
   const [form, setForm] = useState({
     name: "",
     country: "" as string,
@@ -133,6 +134,7 @@ export default function SettingsPage() {
     })
       .then(async (r) => (await requireSettingsResponse(r, errors, st("failedToLoad"))).json())
       .then((data) => {
+        setIrrEnabled(data.currencyRollout?.irrEnabled === true);
         if (data.organization) {
           const o = data.organization;
           setOrg(o);
@@ -501,10 +503,17 @@ export default function SettingsPage() {
             <Label className="text-xs">{st("defaultCurrency")}</Label>
             <CurrencySelect
               value={form.defaultCurrency}
+              disabledCodes={irrEnabled ? [] : ["IRR"]}
+              aria-describedby={irrEnabled ? undefined : "functional-currency-policy"}
               onValueChange={(v) =>
                 setForm({ ...form, defaultCurrency: v })
               }
             />
+            {!irrEnabled && (
+              <p id="functional-currency-policy" className="text-xs text-muted-foreground">
+                {errors("irrUnavailable")}
+              </p>
+            )}
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">{st("fiscalYearStart")}</Label>

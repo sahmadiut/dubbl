@@ -1,5 +1,16 @@
 # Verification matrix
 
+## IRR qualification and activation sequence
+
+[IRR_READINESS](../registries/IRR_READINESS.md) assigns explicit ownership to
+current financial/SQL qualification (IRR-001), recovery and rollback (IRR-002),
+selection/authorization/Persian-entry tests (IRR-003), the reviewed default-off
+candidate (IRR-004), and actual approved activation/canary (IRR-005).
+The earlier baseline results are recorded in
+[scope evidence](../evidence/IRR-qualification-scope-2026-10-21.md). Newly scheduled
+tasks remain todo; those prior results do not constitute completed candidate
+qualification, successful IRR selection, production approval or activation.
+
 ## MON-009 IRR metadata and currency-regime expansion
 
 - `tests/currency-regimes.test.ts`: explicit zero-decimal IRR matches the frozen

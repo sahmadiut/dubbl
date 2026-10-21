@@ -86,6 +86,7 @@ async function run() {
       assert.equal((await saved(org.id)).mileageRate, 1250);
     }
     assert.deepEqual((await ma.call("get_organization")).body, await data(await GET(req())));
+    assert.deepEqual((await ma.call("get_organization")).body.currencyRollout, { irrEnabled: false });
     assert.deepEqual((await ma.call("get_organization_mileage_rate")).body, await data(await mileageGet(req())));
     assert.equal((await data(await GET(req(undefined, keys[0], "GET", "")))).organization.id, a.id);
     for (const value of [0, 67, 3000000000, Number.MAX_SAFE_INTEGER]) {
@@ -159,11 +160,41 @@ async function run() {
     const changed = await ma.call("set_organization_currency", { currencyCode: "eur" });
     assert.equal(changed.isError, false); assert.equal(changed.body.organization.defaultCurrency, "EUR");
     assert.equal(changed.body.organization.mileageRateMinor, "43"); assert.equal(changed.body.organization.billApprovalThresholdMinor, "1250");
+    const previousTesting = process.env.IRR_TESTING_ENABLED;
+    try {
+      process.env.IRR_TESTING_ENABLED = "true";
+      assert.deepEqual((await data(await GET(req()))).currencyRollout, { irrEnabled: true });
+      assert.deepEqual((await ma.call("get_organization")).body.currencyRollout, { irrEnabled: true });
+      assert.equal((await data(await PATCH(req({ defaultCurrency: "IRR" })))).organization.defaultCurrency, "IRR");
+      assert.equal((await ma.call("set_organization_currency", { currencyCode: "EUR" })).isError, false);
+      const testIRR = await ma.call("set_organization_currency", { currencyCode: "IRR" });
+      assert.equal(testIRR.isError, false); assert.equal(testIRR.body.organization.defaultCurrency, "IRR");
+      const stored = await db.execute(sql`select default_currency, mileage_rate::text, bill_approval_threshold::text from organization where id=${a.id}`);
+      assert.deepEqual(stored.rows[0], { default_currency: "IRR", mileage_rate: "43", bill_approval_threshold: "1250" });
+      await unchanged(async () => {
+        await data(await PATCH(req({ defaultCurrency: "IRR" }, keys[4])), 403);
+        assert.equal((await ro.call("set_organization_currency", { currencyCode: "IRR" })).body.status, 403);
+      });
+      assert.equal((await ma.call("set_organization_currency", { currencyCode: "EUR" })).isError, false);
+    } finally {
+      if (previousTesting === undefined) delete process.env.IRR_TESTING_ENABLED;
+      else process.env.IRR_TESTING_ENABLED = previousTesting;
+    }
     await db.insert(journalEntry).values({ organizationId: a.id, entryNumber: 1, date: "2026-10-04", description: "Activity fixture", createdBy: owner.id });
     await unchanged(async () => {
       await data(await PATCH(req({ defaultCurrency: "USD" })), 409);
       assert.equal((await ma.call("set_organization_currency", { currencyCode: "USD" })).body.status, 409);
     });
+    try {
+      process.env.IRR_TESTING_ENABLED = "true";
+      await unchanged(async () => {
+        await data(await PATCH(req({ defaultCurrency: "IRR" })), 409);
+        assert.equal((await ma.call("set_organization_currency", { currencyCode: "IRR" })).body.status, 409);
+      });
+    } finally {
+      if (previousTesting === undefined) delete process.env.IRR_TESTING_ENABLED;
+      else process.env.IRR_TESTING_ENABLED = previousTesting;
+    }
     assert.equal((await ma.call("set_organization_currency", { currencyCode: "EUR" })).isError, false);
     assert.equal((await ma.call("update_organization", { defaultCurrency: "IRR" })).body.status, 403);
     await db.update(organization).set({ mileageRate: null, billApprovalThreshold: null }).where(eq(organization.id, b.id));

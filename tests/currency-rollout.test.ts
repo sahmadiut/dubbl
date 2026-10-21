@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { assertFunctionalCurrencyEnabled, CurrencyRolloutError, readCurrencyRollout } from "../lib/currency/rollout";
+import { assertFunctionalCurrencyEnabled, CurrencyRolloutError, IRR_FINANCIAL_GATE_PASSED, readCurrencyRollout } from "../lib/currency/rollout";
 import { functionalCurrencySchema } from "../lib/currency/functional-currency";
 
 test("functional IRR is disabled by default in every runtime", () => {
@@ -29,6 +29,40 @@ test("ambiguous flag values fail closed, even for non-IRR selection", () => {
   for (const value of ["", "1", "0", "TRUE", "False", "yes", " true "]) {
     assert.throws(() => readCurrencyRollout({ IRR_PRODUCTION_ENABLED: value }), /exactly true or false/);
     assert.throws(() => assertFunctionalCurrencyEnabled("USD", { IRR_PRODUCTION_ENABLED: value }), CurrencyRolloutError);
+    assert.throws(() => readCurrencyRollout({ IRR_TESTING_ENABLED: value }), /exactly true or false/);
+  }
+});
+
+test("explicit temporary testing opt-in allows IRR without claiming production readiness", () => {
+  assert.equal(IRR_FINANCIAL_GATE_PASSED, false);
+  for (const NODE_ENV of ["development", "test"]) {
+    const env = { NODE_ENV, IRR_PRODUCTION_ENABLED: "false", IRR_TESTING_ENABLED: "true" };
+    assert.deepEqual(readCurrencyRollout(env), { irrEnabled: true });
+    assert.doesNotThrow(() => assertFunctionalCurrencyEnabled("IRR", env));
+    assert.deepEqual(readCurrencyRollout({ ...env, IRR_TESTING_ENABLED: "false" }), { irrEnabled: false });
+    assert.throws(() => readCurrencyRollout({ ...env, IRR_PRODUCTION_ENABLED: "true" }), /before financial qualification/);
+  }
+  for (const NODE_ENV of [undefined, "production", "preview", "Development"]) {
+    assert.throws(() => readCurrencyRollout({ NODE_ENV, IRR_TESTING_ENABLED: "true" }), /development or test runtime/);
+  }
+  assert.deepEqual(readCurrencyRollout({ NEXT_PUBLIC_IRR_TESTING_ENABLED: "true" }), { irrEnabled: false });
+});
+
+test("temporary testing opt-in reaches the actual shared REST/MCP currency schema", () => {
+  const env: Record<string, string | undefined> = process.env;
+  const previous = process.env.IRR_TESTING_ENABLED;
+  const previousRuntime = env.NODE_ENV;
+  try {
+    env.NODE_ENV = "test";
+    process.env.IRR_TESTING_ENABLED = "true";
+    assert.equal(functionalCurrencySchema.parse(" irr "), "IRR");
+    process.env.IRR_TESTING_ENABLED = "false";
+    assert.throws(() => functionalCurrencySchema.parse("IRR"), CurrencyRolloutError);
+  } finally {
+    if (previous === undefined) delete process.env.IRR_TESTING_ENABLED;
+    else process.env.IRR_TESTING_ENABLED = previous;
+    if (previousRuntime === undefined) delete env.NODE_ENV;
+    else env.NODE_ENV = previousRuntime;
   }
 });
 

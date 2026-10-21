@@ -1,4 +1,4 @@
-/** Server rollout policy. Never derive financial readiness from user input or env. */
+/** Financial readiness stays code-owned; an explicit test override is separate. */
 export const IRR_FINANCIAL_GATE_PASSED: boolean = false;
 
 export class CurrencyRolloutError extends Error {
@@ -14,10 +14,18 @@ export function readCurrencyRollout(env: Record<string, string | undefined>) {
     throw new CurrencyRolloutError("IRR_PRODUCTION_ENABLED must be exactly true or false");
   }
   const requested = value === "true";
+  const testing = env.IRR_TESTING_ENABLED;
+  if (testing !== undefined && testing !== "true" && testing !== "false") {
+    throw new CurrencyRolloutError("IRR_TESTING_ENABLED must be exactly true or false");
+  }
+  if (testing === "true" && env.NODE_ENV !== "development" && env.NODE_ENV !== "test") {
+    throw new CurrencyRolloutError("IRR testing override requires a development or test runtime");
+  }
   if (requested && !IRR_FINANCIAL_GATE_PASSED) {
     throw new CurrencyRolloutError("IRR cannot be enabled before financial qualification passes");
   }
-  return { irrEnabled: requested && IRR_FINANCIAL_GATE_PASSED };
+  // Owner-authorized temporary local testing, separate from financial readiness.
+  return { irrEnabled: testing === "true" || requested && IRR_FINANCIAL_GATE_PASSED };
 }
 
 export function assertFunctionalCurrencyEnabled(

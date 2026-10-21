@@ -1,5 +1,12 @@
 # Message catalog foundation
 
+LOC-098 project members, team assignments and notes use 94 paired messages in
+`ProjectMembers` and `ProjectNotes` (8,551 compatible keys per locale). See
+[scope and exceptions](PROJECT_COLLABORATION_CATALOGS.md) for checked feedback,
+role/count/time presentation and preserved cents/REST/MCP contracts. Persian
+wording remains provisional; LOC-068/008/002 and native/RTL acceptance remain
+independent.
+
 LOC-095/096/097 project tasks, time/timers and milestones/progress invoices
 use 215 paired messages across `ProjectTasks`, `ProjectTime` and
 `ProjectMilestones` (8,457 compatible keys per locale). See

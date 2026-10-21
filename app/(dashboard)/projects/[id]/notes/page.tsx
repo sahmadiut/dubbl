@@ -1,6 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
+import { usePresentation } from "@/i18n/provider";
+import { formatInstant } from "@/i18n/dates";
+import { projectCollaborationMutationJson } from "@/i18n/project-collaboration-presentation";
 import { toast } from "sonner";
 import {
   Trash2,
@@ -30,6 +34,7 @@ import { useProject, type NoteData } from "../project-context";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 
 export default function NotesPage() {
+  const t = useTranslations("ProjectNotes");
   const { project: proj, orgId, projectId, refresh } = useProject();
   const [content, setContent] = useState("");
   const [saving, setSaving] = useState(false);
@@ -46,7 +51,7 @@ export default function NotesPage() {
   const [filterAuthor, setFilterAuthor] = useState("all");
   const [filterPinned, setFilterPinned] = useState("all");
   const [sortBy, setSortBy] = useState<"newest" | "oldest">("newest");
-  useDocumentTitle("Projects · Notes");
+  useDocumentTitle(t("documentTitle"));
 
   if (!proj) return null;
 
@@ -88,7 +93,7 @@ export default function NotesPage() {
   }
 
   async function handleAdd() {
-    if (!orgId || !content.trim()) return;
+    if (!orgId || !content.trim() || saving) return;
     setSaving(true);
     try {
       const res = await fetch(`/api/v1/projects/${projectId}/notes`, {
@@ -96,11 +101,11 @@ export default function NotesPage() {
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify({ content: content.trim() }),
       });
-      if (!res.ok) throw new Error("Failed");
-      toast.success("Note added");
+      await projectCollaborationMutationJson(res, "note");
+      toast.success(t("added"));
       setContent("");
       refresh();
-    } catch { toast.error("Failed to add note"); }
+    } catch { toast.error(t("addFailed")); }
     finally { setSaving(false); }
   }
 
@@ -108,18 +113,19 @@ export default function NotesPage() {
     if (!orgId || deletingId) return;
     setDeletingId(noteId);
     try {
-      await fetch(`/api/v1/projects/${projectId}/notes?noteId=${noteId}`, {
+      const res = await fetch(`/api/v1/projects/${projectId}/notes?noteId=${noteId}`, {
         method: "DELETE",
         headers: { "x-organization-id": orgId },
       });
-      toast.success("Note deleted");
+      await projectCollaborationMutationJson(res, "success");
+      toast.success(t("deleted"));
       refresh();
-    } catch { toast.error("Failed to delete note"); }
+    } catch { toast.error(t("deleteFailed")); }
     finally { setDeletingId(null); }
   }
 
   async function togglePin(note: NoteData) {
-    if (!orgId) return;
+    if (!orgId || togglingPinId) return;
     setTogglingPinId(note.id);
     try {
       const res = await fetch(`/api/v1/projects/${projectId}/notes?noteId=${note.id}`, {
@@ -127,10 +133,10 @@ export default function NotesPage() {
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify({ isPinned: !note.isPinned }),
       });
-      if (!res.ok) throw new Error("Failed");
-      toast.success(note.isPinned ? "Note unpinned" : "Note pinned");
+      await projectCollaborationMutationJson(res, "note", { field: "id", id: note.id });
+      toast.success(note.isPinned ? t("unpinned") : t("pinned"));
       refresh();
-    } catch { toast.error("Failed to update note"); }
+    } catch { toast.error(t("updateFailed")); }
     finally { setTogglingPinId(null); }
   }
 
@@ -145,7 +151,7 @@ export default function NotesPage() {
   }
 
   async function saveEdit() {
-    if (!orgId || !editingId || !editContent.trim()) return;
+    if (!orgId || !editingId || !editContent.trim() || editSaving) return;
     setEditSaving(true);
     try {
       const res = await fetch(`/api/v1/projects/${projectId}/notes?noteId=${editingId}`, {
@@ -153,12 +159,12 @@ export default function NotesPage() {
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify({ content: editContent.trim() }),
       });
-      if (!res.ok) throw new Error("Failed");
-      toast.success("Note updated");
+      await projectCollaborationMutationJson(res, "note", { field: "id", id: editingId });
+      toast.success(t("updated"));
       setEditingId(null);
       setEditContent("");
       refresh();
-    } catch { toast.error("Failed to update note"); }
+    } catch { toast.error(t("updateFailed")); }
     finally { setEditSaving(false); }
   }
 
@@ -171,7 +177,7 @@ export default function NotesPage() {
         <Textarea
           value={content}
           onChange={e => setContent(e.target.value)}
-          placeholder="Write a note..."
+          placeholder={t("writeNote")}
           rows={3}
           className="resize-none border-0 p-0 focus-visible:ring-0 shadow-none text-[13px] bg-transparent dark:bg-transparent"
           onKeyDown={e => {
@@ -180,10 +186,10 @@ export default function NotesPage() {
         />
         <div className="flex items-center justify-between mt-2">
           <span className="text-[10px] text-muted-foreground">
-            Ctrl+Enter to submit
+            {t("submitShortcut")}
           </span>
           <Button size="sm" onClick={handleAdd} disabled={saving || !content.trim()} className="bg-emerald-600 hover:bg-emerald-700 h-7 text-xs">
-            {saving ? "Adding..." : "Add Note"}
+            {saving ? t("adding") : t("addNote")}
           </Button>
         </div>
       </div>
@@ -194,16 +200,16 @@ export default function NotesPage() {
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-3">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Notes
+                {t("notes")}
                 {hasActiveFilters && (
                   <span className="ml-1.5 text-muted-foreground/60">
-                    ({sortedNotes.length} of {notes.length})
+                    {t("filteredCount", { count: sortedNotes.length, total: notes.length })}
                   </span>
                 )}
               </p>
               {pinnedCount > 0 && (
                 <span className="flex items-center gap-1 text-[10px] text-amber-600">
-                  <Pin className="size-2.5" />{pinnedCount} pinned
+                  <Pin className="size-2.5" />{t("pinnedCount", { count: pinnedCount })}
                 </span>
               )}
             </div>
@@ -213,8 +219,8 @@ export default function NotesPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="newest">Newest first</SelectItem>
-                  <SelectItem value="oldest">Oldest first</SelectItem>
+                  <SelectItem value="newest">{t("newest")}</SelectItem>
+                  <SelectItem value="oldest">{t("oldest")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -227,7 +233,7 @@ export default function NotesPage() {
               <Input
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Search notes..."
+                placeholder={t("searchNotes")}
                 className="h-7 text-xs pl-8"
               />
             </div>
@@ -235,10 +241,10 @@ export default function NotesPage() {
             {uniqueAuthors.length > 1 && (
               <Select value={filterAuthor} onValueChange={setFilterAuthor}>
                 <SelectTrigger className={cn("h-7 text-xs w-auto min-w-[120px]", filterAuthor !== "all" && "border-blue-300 bg-blue-50/50")}>
-                  <SelectValue placeholder="Author" />
+                  <SelectValue placeholder={t("author")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All authors</SelectItem>
+                  <SelectItem value="all">{t("allAuthors")}</SelectItem>
                   {uniqueAuthors.map(a => (
                     <SelectItem key={a.email} value={a.email}>{a.name || a.email}</SelectItem>
                   ))}
@@ -248,18 +254,18 @@ export default function NotesPage() {
 
             <Select value={filterPinned} onValueChange={setFilterPinned}>
               <SelectTrigger className={cn("h-7 text-xs w-auto min-w-[110px]", filterPinned !== "all" && "border-blue-300 bg-blue-50/50")}>
-                <SelectValue placeholder="Pin status" />
+                <SelectValue placeholder={t("pinStatus")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All notes</SelectItem>
-                <SelectItem value="pinned">Pinned only</SelectItem>
-                <SelectItem value="unpinned">Unpinned only</SelectItem>
+                <SelectItem value="all">{t("allNotes")}</SelectItem>
+                <SelectItem value="pinned">{t("pinnedOnly")}</SelectItem>
+                <SelectItem value="unpinned">{t("unpinnedOnly")}</SelectItem>
               </SelectContent>
             </Select>
 
             {hasActiveFilters && (
               <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground px-2" onClick={clearFilters}>
-                <X className="size-3 mr-1" />Clear
+                <X className="size-3 mr-1" />{t("clear")}
               </Button>
             )}
           </div>
@@ -270,14 +276,14 @@ export default function NotesPage() {
       {notes.length === 0 ? (
         <div className="rounded-lg border border-dashed p-8 text-center min-h-[30vh] flex flex-col items-center justify-center">
           <StickyNote className="mx-auto size-8 text-muted-foreground/30" />
-          <p className="mt-2 text-sm text-muted-foreground">No notes yet</p>
-          <p className="text-xs text-muted-foreground/60 mt-1">Write your first note above to get started.</p>
+          <p className="mt-2 text-sm text-muted-foreground">{t("noNotes")}</p>
+          <p className="text-xs text-muted-foreground/60 mt-1">{t("noNotesHint")}</p>
         </div>
       ) : sortedNotes.length === 0 ? (
         <div className="rounded-lg border border-dashed p-8 text-center">
           <Search className="mx-auto size-6 text-muted-foreground/30" />
-          <p className="mt-2 text-sm text-muted-foreground">No notes match your filters</p>
-          <Button variant="ghost" size="sm" className="mt-2 text-xs" onClick={clearFilters}>Clear filters</Button>
+          <p className="mt-2 text-sm text-muted-foreground">{t("noMatches")}</p>
+          <Button variant="ghost" size="sm" className="mt-2 text-xs" onClick={clearFilters}>{t("clearFilters")}</Button>
         </div>
       ) : (
         <div className="space-y-2">
@@ -334,6 +340,8 @@ function NoteCard({
   togglingPin: boolean;
   searchQuery: string;
 }) {
+  const t = useTranslations("ProjectNotes");
+  const presentation = usePresentation();
   return (
     <div className={cn(
       "rounded-lg border bg-card p-4 group transition-colors",
@@ -349,9 +357,9 @@ function NoteCard({
           </div>
           <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
             <Calendar className="size-2.5" />
-            {new Date(note.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+            {formatInstant(new Date(note.createdAt), presentation, { month: "short", day: "numeric", year: "numeric" })}
             <span className="text-muted-foreground/50 ml-0.5">
-              {new Date(note.createdAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+              {formatInstant(new Date(note.createdAt), presentation, { hour: "numeric", minute: "2-digit" })}
             </span>
           </div>
         </div>
@@ -367,7 +375,8 @@ function NoteCard({
                 ? "text-amber-500 hover:text-amber-600 hover:bg-amber-50"
                 : "text-muted-foreground hover:text-amber-500 hover:bg-amber-50",
             )}
-            title={note.isPinned ? "Unpin" : "Pin"}
+            title={note.isPinned ? t("unpin") : t("pin")}
+            aria-label={note.isPinned ? t("unpin") : t("pin")}
           >
             {togglingPin ? <Loader2 className="size-3 animate-spin" /> : note.isPinned ? <PinOff className="size-3" /> : <Pin className="size-3" />}
           </button>
@@ -375,7 +384,7 @@ function NoteCard({
             <button
               onClick={onStartEdit}
               className="p-1.5 rounded-md text-muted-foreground hover:text-blue-600 hover:bg-blue-50 transition-colors"
-              title="Edit"
+              title={t("edit")} aria-label={t("edit")}
             >
               <Pencil className="size-3" />
             </button>
@@ -384,7 +393,7 @@ function NoteCard({
             onClick={onDelete}
             disabled={deleting}
             className="p-1.5 rounded-md text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors"
-            title="Delete"
+            title={t("delete")} aria-label={t("delete")}
           >
             {deleting ? <Loader2 className="size-3 animate-spin" /> : <Trash2 className="size-3" />}
           </button>
@@ -407,11 +416,11 @@ function NoteCard({
           />
           <div className="flex items-center justify-between">
             <span className="text-[10px] text-muted-foreground">
-              Ctrl+Enter to save, Esc to cancel
+              {t("editShortcut")}
             </span>
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={onCancelEdit}>
-                Cancel
+                {t("cancel")}
               </Button>
               <Button
                 size="sm"
@@ -420,7 +429,7 @@ function NoteCard({
                 disabled={editSaving || !editContent.trim()}
               >
                 {editSaving ? <Loader2 className="size-3 animate-spin mr-1" /> : <Check className="size-3 mr-1" />}
-                Save
+                {t("save")}
               </Button>
             </div>
           </div>

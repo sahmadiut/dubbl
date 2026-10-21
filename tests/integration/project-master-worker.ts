@@ -16,8 +16,14 @@ import { projectListJson, projectMutationJson, projectDetailJson } from "../../i
 import { projectTaskMutationJson } from "../../i18n/project-task-presentation";
 import { projectTimerJson, projectTimeEntryJson, projectTimeDeleteJson } from "../../i18n/project-time-presentation";
 import { milestoneAssignmentsJson, projectMilestoneJson } from "../../i18n/project-milestones-presentation";
+import { projectTeamAssignmentsJson, projectCollaborationMutationJson } from "../../i18n/project-collaboration-presentation";
 
 async function checkPresentation(name: string, body: unknown, args: Record<string, unknown>) {
+  if (name === "list_project_team_assignments") assert.deepEqual(await projectTeamAssignmentsJson(Response.json(body)), body);
+  if (["add_project_member", "update_project_member"].includes(name)) assert.deepEqual(await projectCollaborationMutationJson(Response.json(body), "projectMember", { field: "memberId", id: String(args.memberId) }), body);
+  if (name === "assign_project_team") assert.deepEqual(await projectCollaborationMutationJson(Response.json(body), "assignment", { field: "teamId", id: String(args.teamId) }), body);
+  if (["create_project_note", "update_project_note"].includes(name)) assert.deepEqual(await projectCollaborationMutationJson(Response.json(body), "note", args.noteId ? { field: "id", id: String(args.noteId) } : undefined), body);
+  if (["remove_project_member", "unassign_project_team", "delete_project_note"].includes(name)) assert.deepEqual(await projectCollaborationMutationJson(Response.json(body), "success"), body);
   if (name === "get_project") assert.deepEqual(await projectDetailJson(Response.json(body), (body as { project: { id: string } }).project.id), body);
   if (name === "list_projects") assert.deepEqual(await projectListJson(Response.json(body)), body);
   if (["create_project", "update_project"].includes(name)) assert.deepEqual(await projectMutationJson(Response.json(body)), body);

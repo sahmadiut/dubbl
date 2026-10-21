@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ErrorState } from "@/components/dashboard/error-state";
 import { financialStatementJson, balanceSheetUi, statementUiMoney, type BalanceSheetUi } from "@/lib/money/financial-statement-ui";
@@ -22,17 +23,12 @@ import { BackToReports, ReportHelp } from "../_components";
 type SectionData = BalanceSheetUi["assets"];
 type SectionAccount = SectionData["accounts"][number];
 
-const SECTION_LABELS: Record<string, string> = {
-  Assets: "What you own",
-  Liabilities: "What you owe",
-  Equity: "What's left over (yours)",
-};
-
 export default function BalanceSheetPage() {
+  const t = useTranslations("BalanceCashReports");
   const today = new Date().toISOString().slice(0, 10);
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(false);
   const [asAt, setAsAt] = useState(today);
   const [compareDate, setCompareDate] = useState<string>("");
   const [showCompare, setShowCompare] = useState(false);
@@ -44,7 +40,7 @@ export default function BalanceSheetPage() {
     let cancelled = false;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
-    setError(null);
+    setError(false);
     const params = new URLSearchParams({ asAt });
     if (showCompare && compareDate) params.set("compareDate", compareDate);
 
@@ -56,7 +52,7 @@ export default function BalanceSheetPage() {
         if (cancelled) return;
         if (d.assets) setData(d);
       })
-      .catch((error: Error) => { if (!cancelled) setError(error.message); })
+      .catch(() => { if (!cancelled) setError(true); })
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
@@ -67,14 +63,14 @@ export default function BalanceSheetPage() {
   }, [asAt, showCompare, compareDate]);
 
   if (initialLoad) return <BrandLoader />;
-  if (error) return <ErrorState message={error} onRetry={() => window.location.reload()} />;
+  if (error) return <ErrorState message={t("loadFailed")} onRetry={() => window.location.reload()} />;
 
   const dates = data?.dates ?? (data ? [data.asAt] : []);
-  const sections: { label: string; data: SectionData }[] = data
+  const sections: { label: "assets" | "liabilities" | "equity"; data: SectionData }[] = data
     ? [
-        { label: "Assets", data: data.assets },
-        { label: "Liabilities", data: data.liabilities },
-        { label: "Equity", data: data.equity },
+        { label: "assets", data: data.assets },
+        { label: "liabilities", data: data.liabilities },
+        { label: "equity", data: data.equity },
       ]
     : [];
 
@@ -90,26 +86,24 @@ export default function BalanceSheetPage() {
       <BackToReports />
 
       <PageHeader
-        title="What you own and owe"
-        description="A snapshot of everything the business owns and owes on a chosen date."
+        title={t("balanceTitle")}
+        description={t("balanceDescription")}
       >
         <a
           href={`/api/v1/reports/balance-sheet?${(() => { const p = new URLSearchParams({ asAt, format: "pdf" }); if (showCompare && compareDate) p.set("compareDate", compareDate); return p; })()}`}
           className="inline-flex h-8 items-center rounded-md border px-3 text-sm font-medium hover:bg-muted"
         >
-          Download PDF
+          {t("downloadPdf")}
         </a>
       </PageHeader>
 
       <ReportHelp>
-        Like a photo of your finances on one day: what the business owns, what it
-        owes, and what would be left for the owners if you settled up. The two
-        sides always balance. Also called a balance sheet.
+        {t("balanceHelp")}
       </ReportHelp>
 
       <div className="flex flex-col gap-3 rounded-lg border bg-muted/20 p-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
         <div className="flex items-center gap-2">
-          <span className="text-[13px] text-muted-foreground">As of:</span>
+          <span className="text-[13px] text-muted-foreground">{t("asOfLabel")}</span>
           <DatePicker value={asAt} onChange={setAsAt} className="w-40 h-8 text-sm" />
         </div>
         <div className="flex items-center gap-2">
@@ -119,13 +113,13 @@ export default function BalanceSheetPage() {
             onClick={() => setShowCompare((v) => !v)}
             className={showCompare ? "bg-emerald-600 hover:bg-emerald-700" : ""}
           >
-            {showCompare ? "Comparing to an earlier date" : "Compare to an earlier date"}
+            {showCompare ? t("comparingEarlier") : t("compareEarlier")}
           </Button>
           {showCompare && (
             <DatePicker
               value={compareDate}
               onChange={setCompareDate}
-              placeholder="Earlier date"
+              placeholder={t("earlierDate")}
               className="w-40 h-8 text-sm"
             />
           )}
@@ -140,16 +134,16 @@ export default function BalanceSheetPage() {
             {sections.map((section) => (
               <div key={section.label} className="space-y-2">
                 <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                  {SECTION_LABELS[section.label] || section.label}
+                  {t(`balance_${section.label}`)}
                 </h3>
                 <div className="rounded-lg border overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-muted/50">
-                        <TableHead className="w-24">Code</TableHead>
-                        <TableHead>Account</TableHead>
+                        <TableHead className="w-24">{t("code")}</TableHead>
+                        <TableHead>{t("account")}</TableHead>
                         {dates.map((d) => (
-                          <TableHead key={d} className="w-36 text-right">As of {d}</TableHead>
+                          <TableHead key={d} className="w-36 text-right">{t("asOfDate", { date: d })}</TableHead>
                         ))}
                       </TableRow>
                     </TableHeader>
@@ -173,7 +167,7 @@ export default function BalanceSheetPage() {
                         </TableRow>
                       ))}
                       <TableRow className="bg-muted/30 font-bold">
-                        <TableCell colSpan={2}>Total {(SECTION_LABELS[section.label] || section.label).toLowerCase()}</TableCell>
+                        <TableCell colSpan={2}>{t(`balanceTotal_${section.label}`)}</TableCell>
                         {totalsFor(section.data).map((t, i) => (
                           <TableCell key={i} className="text-right font-mono tabular-nums">
                             {statementUiMoney(t, data!.currencyCode)}

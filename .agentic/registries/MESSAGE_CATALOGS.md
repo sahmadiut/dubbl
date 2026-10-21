@@ -1,5 +1,12 @@
 # Message catalog foundation
 
+LOC-105 balance sheet, comparative balance sheet and cash flow use 49 paired
+`BalanceCashReports` messages (8,942 compatible keys per locale).
+See [scope and exceptions](BALANCE_CASH_REPORT_CATALOGS.md).
+Exact-money readers, report queries, CSV contracts and PDF routes are preserved.
+LOC-070/008/002 and native terminology/RTL acceptance remain independent;
+Persian wording is provisional.
+
 LOC-104 income and executive report pages use 38 paired `IncomeReports`
 messages (8,893 compatible leaves per locale). See
 [scope, contracts and exceptions](INCOME_REPORT_CATALOGS.md). Exact-money readers,
@@ -379,7 +386,8 @@ Extraction ownership:
 | LOC-070 | LOC-008 child: reporting and shared controls |
 | LOC-103 | LOC-070 child: report directory/loading, back link and basis toggle; [scope and split](REPORT_DIRECTORY_CATALOGS.md) |
 | LOC-104 | LOC-070 child: profit/loss, income statement and executive summary; [scope and exceptions](INCOME_REPORT_CATALOGS.md) |
-| LOC-105..114 | LOC-070 remaining report workflow slices; see [complete ownership](REPORT_DIRECTORY_CATALOGS.md) |
+| LOC-105 | LOC-070 child: balance sheet, comparative balance sheet and cash flow; [scope and exceptions](BALANCE_CASH_REPORT_CATALOGS.md) |
+| LOC-106..114 | LOC-070 remaining report workflow slices; see [complete ownership](REPORT_DIRECTORY_CATALOGS.md) |
 | LOC-071 | LOC-008 child: dashboard, documents and residual operations shared components |
 | LOC-009 | Public surfaces, landing/help, email/PDF and user-visible background content; remaining source audit |
 | LOC-079 | LOC-067 child: payroll overview/navigation; [scope and exceptions](PAYROLL_OVERVIEW_CATALOGS.md) |

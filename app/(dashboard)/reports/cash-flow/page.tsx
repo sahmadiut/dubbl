@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { ArrowDownUp, TrendingUp, TrendingDown, DollarSign } from "lucide-react";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
@@ -14,27 +15,27 @@ import { BackToReports, ReportHelp } from "../_components";
 
 type CashFlowRow = CashFlowUi["operating"][number] & { currencyCode: string };
 
-const columns: Column<CashFlowRow>[] = [
-  { key: "code", header: "Code", className: "w-24", render: (r) => <span className="font-mono text-sm">{r.accountCode}</span> },
-  { key: "name", header: "Account", render: (r) => <span className="text-sm font-medium">{r.accountName}</span> },
-  { key: "amount", header: "Amount", className: "w-32 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{reportUiMoney(r.amount, r.currencyCode)}</span> },
-];
-
 export default function CashFlowPage() {
+  const t = useTranslations("BalanceCashReports");
+  const columns: Column<CashFlowRow>[] = [
+    { key: "code", header: t("code"), className: "w-24", render: (r) => <span className="font-mono text-sm">{r.accountCode}</span> },
+    { key: "name", header: t("account"), render: (r) => <span className="text-sm font-medium">{r.accountName}</span> },
+    { key: "amount", header: t("amount"), className: "w-32 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{reportUiMoney(r.amount, r.currencyCode)}</span> },
+  ];
   const now = new Date();
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(true);
   const [startDate, setStartDate] = useState(`${now.getFullYear()}-01-01`);
   const [endDate, setEndDate] = useState(now.toISOString().slice(0, 10));
   const [data, setData] = useState<CashFlowUi | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
     let cancelled = false;
     setLoading(true);
-    setError(null);
+    setError(false);
     const params = new URLSearchParams({ startDate, endDate });
     fetch(`/api/v1/reports/cash-flow?${params}`, {
       headers: { "x-organization-id": orgId },
@@ -44,7 +45,7 @@ export default function CashFlowPage() {
         if (cancelled) return;
         setData(data);
       })
-      .catch((error: Error) => { if (!cancelled) setError(error.message); })
+      .catch(() => { if (!cancelled) setError(true); })
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
@@ -63,45 +64,45 @@ export default function CashFlowPage() {
 
   const sections = [
     {
-      title: "From day-to-day trading",
-      help: "Cash from running the business — sales you collected, minus costs you paid.",
+      key: "operating",
+      title: t("cash_operating"),
+      help: t("cashHelp_operating"),
       data: operating,
       total: totalOperating,
       icon: ArrowDownUp,
     },
     {
-      title: "From buying & selling things",
-      help: "Cash spent on or received from equipment, property, and other longer-term items.",
+      key: "investing",
+      title: t("cash_investing"),
+      help: t("cashHelp_investing"),
       data: investing,
       total: totalInvesting,
       icon: TrendingDown,
     },
     {
-      title: "From funding",
-      help: "Cash from loans and owners putting money in, minus repayments and money taken out.",
+      key: "financing",
+      title: t("cash_financing"),
+      help: t("cashHelp_financing"),
       data: financing,
       total: totalFinancing,
       icon: TrendingUp,
     },
-  ];
+  ] as const;
 
   if (initialLoad) return <BrandLoader />;
-  if (error) return <ErrorState message={error} onRetry={() => window.location.reload()} />;
+  if (error) return <ErrorState message={t("loadFailed")} onRetry={() => window.location.reload()} />;
 
   return (
     <ContentReveal className="space-y-6">
       <BackToReports />
 
       <PageHeader
-        title="Where your cash went"
-        description="How actual cash moved in and out over the period."
+        title={t("cashTitle")}
+        description={t("cashDescription")}
       />
 
       <ReportHelp>
-        Profit isn&apos;t the same as cash in the bank. This report follows the actual
-        money: how much came in and went out, split into day-to-day trading,
-        buying or selling things, and funding. The bottom line is how much your
-        cash changed over the period.
+        {t("cashHelp")}
       </ReportHelp>
 
       <DateRangeFilter
@@ -118,7 +119,7 @@ export default function CashFlowPage() {
             <div className="grid gap-4 grid-cols-2 sm:grid-cols-4">
               {sections.map((s) => (
                 <StatCard
-                  key={s.title}
+                  key={s.key}
                   title={s.title}
                   value={formatMoney(s.total)}
                   icon={s.icon}
@@ -126,7 +127,7 @@ export default function CashFlowPage() {
                 />
               ))}
               <StatCard
-                title="Change in cash"
+                title={t("changeInCash")}
                 value={formatMoney(netCashFlow)}
                 icon={DollarSign}
                 changeType={netCashFlow >= 0n ? "positive" : "negative"}
@@ -134,21 +135,21 @@ export default function CashFlowPage() {
             </div>
 
             {sections.map((s) => (
-              <div key={s.title} className="space-y-2">
+              <div key={s.key} className="space-y-2">
                 <div>
                   <h2 className="text-lg font-semibold">{s.title}</h2>
                   <p className="text-[13px] text-muted-foreground">{s.help}</p>
                 </div>
-                <DataTable columns={columns} data={s.data} loading={false} emptyMessage={`No cash movement ${s.title.toLowerCase()}.`} />
+                <DataTable columns={columns} data={s.data} loading={false} emptyMessage={t(`cashEmpty_${s.key}`)} />
                 <div className="flex justify-between px-3 py-2 sm:px-4 bg-muted/50 rounded-lg text-sm font-semibold">
-                  <span>Total {s.title.toLowerCase()}</span>
+                  <span>{t(`cashTotal_${s.key}`)}</span>
                   <span className="font-mono tabular-nums">{formatMoney(s.total)}</span>
                 </div>
               </div>
             ))}
 
             <div className="flex justify-between px-3 py-2 sm:px-4 sm:py-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg font-semibold text-sm sm:text-base">
-              <span>Total change in cash this period</span>
+              <span>{t("totalCashChange")}</span>
               <span className="font-mono tabular-nums">{formatMoney(netCashFlow)}</span>
             </div>
           </div>

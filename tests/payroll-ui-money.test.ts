@@ -91,6 +91,9 @@ test("all payroll JSON consumers adopt the shared adapter and no monetary float 
         } else if (path.replaceAll("\\", "/") === "app/(dashboard)/payroll/time-leave/page.tsx" || /\/payroll\/(leave|timesheets)\//.test(path.replaceAll("\\", "/"))) {
           assert.match(source, /payrollTimeJson/);
           assert.match(readFileSync("i18n/payroll-time-presentation.ts", "utf8"), /await payrollJson\(response\)/);
+        } else if (/\/payroll\/(analytics|forecasting|reports)\//.test(path.replaceAll("\\", "/"))) {
+          assert.match(source, /payrollAnalyticsJson/);
+          assert.match(readFileSync("i18n/payroll-analytics-presentation.ts", "utf8"), /await payrollJson\(response\)/);
         } else if (path.replaceAll("\\", "/").includes("/payroll/compensation/")) {
           assert.match(source, /payrollCompensationJson/);
           assert.match(readFileSync("i18n/payroll-compensation-presentation.ts", "utf8"), /await payrollJson\(response\)/);

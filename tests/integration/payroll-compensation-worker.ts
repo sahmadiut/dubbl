@@ -1,6 +1,7 @@
 import { payrollEmployeeDetailJson } from "../../i18n/payroll-employee-detail-presentation";
 import { payrollCompensationJson } from "../../i18n/payroll-compensation-presentation";
 import { payrollJson, payrollUiPayload } from "../../lib/money/payroll-ui";
+import { payrollAnalyticsJson } from "../../i18n/payroll-analytics-presentation";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
@@ -74,6 +75,7 @@ async function run() {
   };
   const data = async (r: Response, status = 200) => { const body = await payrollJson(r); assert.equal(r.status, status, JSON.stringify(body)); return body; };
   const checkDetail = async <T extends Record<string, unknown>>(name: string, body: T) => {
+    if (name === "project_payroll_costs" || name === "forecast_payroll_what_if") assert.deepEqual(await payrollAnalyticsJson(Response.json(body), name === "project_payroll_costs" ? "projection" : "scenario"), body);
     const kind = name === "get_compensation_band" ? "band" : null;
     if (kind) await payrollEmployeeDetailJson(Response.json(body), kind);
     const presentation = name === "list_compensation_bands" ? "bands"

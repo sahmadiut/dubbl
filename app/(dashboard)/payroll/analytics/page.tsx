@@ -1,6 +1,7 @@
 "use client";
 
-import { payrollJson } from "@/lib/money/payroll-ui";
+import { useTranslations } from "next-intl";
+import { payrollAnalyticsJson, analyticsOrganization } from "@/i18n/payroll-analytics-presentation";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -12,11 +13,9 @@ import {
   DollarSign,
   TrendingUp,
   Download,
-  LineChart,
   Users,
   Calculator,
 } from "lucide-react";
-import { Section } from "@/components/dashboard/section";
 import { useTopbarAction } from "@/components/dashboard/topbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -68,17 +67,18 @@ const anim = (delay: number) => ({
 });
 
 const REPORT_TYPES = [
-  { type: "summary", label: "Summary", description: "Overview of payroll totals and averages", icon: BarChart3 },
-  { type: "tax-liability", label: "Tax Liability", description: "Tax breakdown by employee", icon: FileText },
-  { type: "labor-cost", label: "Labor Cost", description: "Cost breakdown by department", icon: DollarSign },
-  { type: "yoy", label: "Year over Year", description: "Monthly payroll trends", icon: TrendingUp },
-];
+  { type: "summary", label: "summary", description: "summaryDescription", icon: BarChart3 },
+  { type: "tax-liability", label: "taxTitle", description: "taxDescription", icon: FileText },
+  { type: "labor-cost", label: "laborTitle", description: "laborDescription", icon: DollarSign },
+  { type: "yoy", label: "yoyTitle", description: "yoyDescription", icon: TrendingUp },
+] as const;
 
 const GHOST_ROWS = Array.from({ length: 6 }, (_, i) => i);
 
 /* ---------- component ---------- */
 
 export default function AnalyticsPage() {
+  const t = useTranslations("PayrollAnalytics");
   const router = useRouter();
 
   const [summary, setSummary] = useState<Summary | null>(null);
@@ -94,35 +94,34 @@ export default function AnalyticsPage() {
   const [newHires, setNewHires] = useState("0");
   const [avgHireSalary, setAvgHireSalary] = useState("60000");
   const [terminations, setTerminations] = useState("0");
-  useDocumentTitle("Payroll · Analytics");
+  useDocumentTitle(t("analyticsDocumentTitle"));
 
-  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
+  const orgId = analyticsOrganization();
 
   useEffect(() => {
-    if (!orgId) {
-      setLoading(false);
-      return;
-    }
-
-    const headers = { "x-organization-id": orgId };
-
-    Promise.all([
-      fetch("/api/v1/payroll/reports/summary", { headers }).then((r) => payrollJson(r)),
-      fetch("/api/v1/payroll/forecasting/projection?months=12", { headers }).then((r) => payrollJson(r)),
-    ])
-      .then(([summaryRes, projRes]) => {
-        if (summaryRes.error) toast.error(summaryRes.error);
-        if (summaryRes.summary) setSummary(summaryRes.summary);
-        if (projRes.data) setProjection(projRes.data);
-      })
-      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"))
-      .finally(() => setLoading(false));
-  }, [orgId]);
+    let active = true;
+    // Start the asynchronous read together with its loading/error lifecycle.
+    void Promise.resolve().then(async () => {
+      if (!active) return;
+      if (!orgId) throw new Error("Missing organization");
+      setLoading(true);
+      const headers = { "x-organization-id": orgId };
+      await Promise.all([
+        fetch("/api/v1/payroll/reports/summary", { headers }).then(r => payrollAnalyticsJson(r, "summary")),
+        fetch("/api/v1/payroll/forecasting/projection?months=12", { headers }).then(r => payrollAnalyticsJson(r, "projection")),
+      ]).then(([summaryRes, projRes]) => {
+        if (!active) return;
+        setSummary(summaryRes.summary); setProjection(projRes.data); setMoneyError(null);
+      });
+    }).catch(() => { if (active) setMoneyError(t(orgId ? "loadFailed" : "organizationRequired")); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [orgId, t]);
 
   const handleExport = useCallback(() => {
     if (!orgId) return;
-    void downloadPayrollCsv(orgId).catch(error => toast.error(error.message));
-  }, [orgId]);
+    void downloadPayrollCsv(orgId).catch(() => toast.error(t("exportFailed")));
+  }, [orgId, t]);
 
   async function handleWhatIf() {
     if (!orgId) return;
@@ -139,14 +138,10 @@ export default function AnalyticsPage() {
           months: 12,
         }),
       });
-      if (res.ok) {
-        const data = await payrollJson(res);
-        setWhatIf(data);
-      } else {
-        toast.error("Scenario calculation failed");
-      }
+      const data = await payrollAnalyticsJson(res, "scenario");
+      setWhatIf(data);
     } catch {
-      toast.error("Scenario calculation failed");
+      setWhatIf(null); toast.error(t("scenarioFailed"));
     } finally {
       setWhatIfLoading(false);
     }
@@ -156,10 +151,10 @@ export default function AnalyticsPage() {
     useMemo(
       () => (
         <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={handleExport}>
-          <Download className="size-3" /> Export CSV
+          <Download className="size-3" /> {t("exportCsv")}
         </Button>
       ),
-      [handleExport]
+      [handleExport, t]
     )
   );
 
@@ -207,13 +202,13 @@ export default function AnalyticsPage() {
               </div>
 
               <motion.h3 {...anim(0.4)} className="text-lg font-semibold">
-                No analytics data yet
+                {t("noAnalytics")}
               </motion.h3>
               <motion.p
                 {...anim(0.45)}
                 className="mt-2 max-w-md text-sm text-muted-foreground leading-relaxed"
               >
-                Run your first payroll to unlock reports, forecasts, and cost insights across your organization.
+                {t("noAnalyticsDescription")}
               </motion.p>
 
               <motion.div {...anim(0.55)} className="mt-8">
@@ -222,7 +217,7 @@ export default function AnalyticsPage() {
                   size="lg"
                   className="bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20"
                 >
-                  Go to Payroll Runs
+                  {t("goToRuns")}
                 </Button>
               </motion.div>
             </div>
@@ -271,25 +266,25 @@ export default function AnalyticsPage() {
       {hasData && (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <motion.div {...anim(0)} className="rounded-xl border bg-card p-4">
-            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Total Runs</p>
+            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("totalRuns")}</p>
             <p className="mt-1 text-2xl font-bold font-mono tabular-nums">{summary.totalRuns}</p>
           </motion.div>
           <motion.div {...anim(0.05)} className="rounded-xl border bg-card p-4">
-            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Total Gross</p>
+            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("totalGross")}</p>
             <p className="mt-1 text-2xl font-bold font-mono tabular-nums">{formatMoney(summary.totalGross, summary.currency)}</p>
           </motion.div>
           <motion.div {...anim(0.1)} className="rounded-xl border bg-card p-4">
-            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Total Net</p>
+            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("totalNet")}</p>
             <p className="mt-1 text-2xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
               {formatMoney(summary.totalNet, summary.currency)}
             </p>
           </motion.div>
           <motion.div {...anim(0.15)} className="rounded-xl border bg-card p-4">
             <div className="flex items-center gap-1.5">
-              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Active Employees</p>
+              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("activeEmployees")}</p>
               <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
                 <Users className="mr-0.5 size-2.5" />
-                Live
+                {t("live")}
               </Badge>
             </div>
             <p className="mt-1 text-2xl font-bold font-mono tabular-nums">{summary.activeEmployees}</p>
@@ -300,7 +295,7 @@ export default function AnalyticsPage() {
       {/* Section 1: Reports */}
       {hasData && (
         <div className="space-y-3">
-          <h2 className="text-sm font-semibold">Reports</h2>
+          <h2 className="text-sm font-semibold">{t("reports")}</h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {REPORT_TYPES.map((report, i) => (
               <motion.button
@@ -313,8 +308,8 @@ export default function AnalyticsPage() {
                   <report.icon className="size-5 text-muted-foreground" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium">{report.label}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{report.description}</p>
+                  <p className="text-sm font-medium">{t(report.label)}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{t(report.description)}</p>
                 </div>
               </motion.button>
             ))}
@@ -325,15 +320,15 @@ export default function AnalyticsPage() {
       {/* Section 2: 12-Month Forecast */}
       {hasData && (
         <div className="space-y-3">
-          <h2 className="text-sm font-semibold">Forecast</h2>
+          <h2 className="text-sm font-semibold">{t("forecast")}</h2>
 
           {projection.length > 0 ? (
             <div className="rounded-xl border bg-card divide-y">
               <div className="px-4 py-2.5 flex items-center justify-between bg-muted/50 rounded-t-xl">
-                <span className="text-xs font-medium text-muted-foreground">Month</span>
+                <span className="text-xs font-medium text-muted-foreground">{t("month")}</span>
                 <div className="flex gap-6">
-                  <span className="text-xs font-medium text-muted-foreground w-24 text-right">Gross</span>
-                  <span className="text-xs font-medium text-muted-foreground w-24 text-right">Net</span>
+                  <span className="text-xs font-medium text-muted-foreground w-24 text-right">{t("gross")}</span>
+                  <span className="text-xs font-medium text-muted-foreground w-24 text-right">{t("net")}</span>
                 </div>
               </div>
               {projection.map((p) => (
@@ -348,7 +343,7 @@ export default function AnalyticsPage() {
             </div>
           ) : (
             <div className="rounded-xl border border-dashed bg-card/50 p-6 text-center">
-              <p className="text-xs text-muted-foreground">No forecast data available yet.</p>
+              <p className="text-xs text-muted-foreground">{t("noForecast")}</p>
             </div>
           )}
         </div>
@@ -357,11 +352,11 @@ export default function AnalyticsPage() {
       {/* Section 3: What-If Analysis */}
       {hasData && (
         <div className="space-y-3">
-          <h2 className="text-sm font-semibold">What-If Analysis</h2>
+          <h2 className="text-sm font-semibold">{t("whatIf")}</h2>
           <div className="rounded-xl border bg-card p-4 space-y-4">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <div className="space-y-1">
-                <Label className="text-xs">Salary Adjustment (%)</Label>
+                <Label className="text-xs">{t("salaryAdjustment")}</Label>
                 <Input
                   type="number"
                   step="0.1"
@@ -371,7 +366,7 @@ export default function AnalyticsPage() {
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">New Hires</Label>
+                <Label className="text-xs">{t("newHires")}</Label>
                 <Input
                   type="number"
                   value={newHires}
@@ -380,7 +375,7 @@ export default function AnalyticsPage() {
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">Avg New Hire Salary</Label>
+                <Label className="text-xs">{t("avgHireSalary")}</Label>
                 <CurrencyInput
                   prefix={summary?.currency ?? "USD"}
                   size="sm"
@@ -389,7 +384,7 @@ export default function AnalyticsPage() {
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">Terminations</Label>
+                <Label className="text-xs">{t("terminations")}</Label>
                 <Input
                   type="number"
                   value={terminations}
@@ -400,26 +395,26 @@ export default function AnalyticsPage() {
             </div>
             <Button size="sm" onClick={handleWhatIf} disabled={whatIfLoading}>
               <Calculator className="mr-1.5 size-3" />
-              {whatIfLoading ? "Calculating..." : "Run Scenario"}
+              {whatIfLoading ? t("calculating") : t("runScenario")}
             </Button>
           </div>
 
           {whatIf && (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <motion.div {...anim(0)} className="rounded-xl border bg-card p-4">
-                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Current Monthly</p>
+                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("currentMonthly")}</p>
                 <p className="mt-1 text-xl font-bold font-mono tabular-nums">{formatMoney(whatIf.current.monthlyGross, whatIf.currency)}</p>
-                <p className="text-xs text-muted-foreground">{whatIf.current.headcount} employees</p>
+                <p className="text-xs text-muted-foreground">{t("employeesCount", { count: whatIf.current.headcount })}</p>
               </motion.div>
               <motion.div {...anim(0.05)} className="rounded-xl border bg-card p-4">
-                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Projected Monthly</p>
+                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("projectedMonthly")}</p>
                 <p className="mt-1 text-xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
                   {formatMoney(whatIf.projected.monthlyGross, whatIf.currency)}
                 </p>
-                <p className="text-xs text-muted-foreground">{whatIf.projected.headcount} employees</p>
+                <p className="text-xs text-muted-foreground">{t("employeesCount", { count: whatIf.projected.headcount })}</p>
               </motion.div>
               <motion.div {...anim(0.1)} className="rounded-xl border bg-card p-4">
-                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Difference</p>
+                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("difference")}</p>
                 <p
                   className={cn(
                     "mt-1 text-xl font-bold font-mono tabular-nums",
@@ -431,7 +426,7 @@ export default function AnalyticsPage() {
                   {whatIf.difference.monthlyGross >= 0 ? "+" : ""}
                   {formatMoney(whatIf.difference.monthlyGross, whatIf.currency)}
                 </p>
-                <p className="text-xs text-muted-foreground">per month</p>
+                <p className="text-xs text-muted-foreground">{t("perMonth")}</p>
               </motion.div>
             </div>
           )}

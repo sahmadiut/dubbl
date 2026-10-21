@@ -1,6 +1,7 @@
 "use client";
 
-import { payrollJson } from "@/lib/money/payroll-ui";
+import { useTranslations } from "next-intl";
+import { payrollAnalyticsJson, analyticsOrganization } from "@/i18n/payroll-analytics-presentation";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -9,14 +10,11 @@ import { motion } from "motion/react";
 import { BarChart3, FileText, DollarSign, TrendingUp, Download } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { payrollMoneyDisplay as formatMoney } from "@/lib/money/payroll-display";
 import { downloadPayrollCsv } from "@/lib/payroll/output-client";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
-import { cn } from "@/lib/utils";
 
 interface Summary {
   currency: string;
@@ -35,35 +33,41 @@ const anim = (delay: number) => ({
 });
 
 const REPORT_TYPES = [
-  { type: "summary", label: "Payroll Summary", description: "Overview of payroll totals and averages", icon: BarChart3 },
-  { type: "tax-liability", label: "Tax Liability", description: "Tax breakdown by employee", icon: FileText },
-  { type: "labor-cost", label: "Labor Cost", description: "Cost breakdown by department", icon: DollarSign },
-  { type: "yoy", label: "Year over Year", description: "Monthly payroll trends", icon: TrendingUp },
-];
+  { type: "summary", label: "summaryTitle", description: "summaryDescription", icon: BarChart3 },
+  { type: "tax-liability", label: "taxTitle", description: "taxDescription", icon: FileText },
+  { type: "labor-cost", label: "laborTitle", description: "laborDescription", icon: DollarSign },
+  { type: "yoy", label: "yoyTitle", description: "yoyDescription", icon: TrendingUp },
+] as const;
 
 export default function ReportsPage() {
+  const t = useTranslations("PayrollAnalytics");
   const router = useRouter();
   const [summary, setSummary] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(true);
   const [moneyError, setMoneyError] = useState<string | null>(null);
 
-  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
-  useDocumentTitle("Payroll · Reports");
+  const orgId = analyticsOrganization();
+  useDocumentTitle(t("reportsDocumentTitle"));
 
   useEffect(() => {
-    if (!orgId) return;
-    fetch("/api/v1/payroll/reports/summary", {
-      headers: { "x-organization-id": orgId },
-    })
-      .then((r) => payrollJson(r))
-      .then((data) => { if (data.error) toast.error(data.error); if (data.summary) setSummary(data.summary); })
-      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"))
-      .finally(() => setLoading(false));
-  }, [orgId]);
+    let active = true;
+    // Start the asynchronous read together with its loading/error lifecycle.
+    void Promise.resolve().then(async () => {
+      if (!active) return;
+      if (!orgId) throw new Error("Missing organization");
+      setLoading(true);
+      const headers = { "x-organization-id": orgId };
+      await fetch("/api/v1/payroll/reports/summary", { headers })
+        .then(r => payrollAnalyticsJson(r, "summary"))
+        .then(data => { if (active) { setSummary(data.summary); setMoneyError(null); } });
+    }).catch(() => { if (active) setMoneyError(t(orgId ? "loadFailed" : "organizationRequired")); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [orgId, t]);
 
   function handleExport() {
     if (!orgId) return;
-    void downloadPayrollCsv(orgId).catch(error => toast.error(error.message));
+    void downloadPayrollCsv(orgId).catch(() => toast.error(t("exportFailed")));
   }
 
   if (loading) return <BrandLoader />;
@@ -71,9 +75,9 @@ export default function ReportsPage() {
 
   return (
     <ContentReveal className="space-y-6">
-      <PageHeader title="Payroll Reports" description="Analytics and insights for your payroll data.">
+      <PageHeader title={t("reportsTitle")} description={t("reportsDescription")}>
         <Button size="sm" variant="outline" className="h-8 text-xs" onClick={handleExport}>
-          <Download className="mr-1.5 size-3" /> Export CSV
+          <Download className="mr-1.5 size-3" /> {t("exportCsv")}
         </Button>
       </PageHeader>
 
@@ -81,19 +85,19 @@ export default function ReportsPage() {
       {summary && (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <motion.div {...anim(0)} className="rounded-xl border bg-card p-4">
-            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Total Runs</p>
+            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("totalRuns")}</p>
             <p className="mt-1 text-2xl font-bold font-mono tabular-nums">{summary.totalRuns}</p>
           </motion.div>
           <motion.div {...anim(0.05)} className="rounded-xl border bg-card p-4">
-            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Total Gross</p>
+            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("totalGross")}</p>
             <p className="mt-1 text-2xl font-bold font-mono tabular-nums">{formatMoney(summary.totalGross, summary.currency)}</p>
           </motion.div>
           <motion.div {...anim(0.1)} className="rounded-xl border bg-card p-4">
-            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Total Net</p>
+            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("totalNet")}</p>
             <p className="mt-1 text-2xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{formatMoney(summary.totalNet, summary.currency)}</p>
           </motion.div>
           <motion.div {...anim(0.15)} className="rounded-xl border bg-card p-4">
-            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Avg Cost/Run</p>
+            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("avgCostPerRun")}</p>
             <p className="mt-1 text-2xl font-bold font-mono tabular-nums">{formatMoney(summary.avgCostPerRun, summary.currency)}</p>
           </motion.div>
         </div>
@@ -112,8 +116,8 @@ export default function ReportsPage() {
               <report.icon className="size-5 text-muted-foreground" />
             </div>
             <div>
-              <p className="text-sm font-medium">{report.label}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{report.description}</p>
+              <p className="text-sm font-medium">{t(report.label)}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{t(report.description)}</p>
             </div>
           </motion.button>
         ))}

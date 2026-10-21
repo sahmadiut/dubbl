@@ -295,6 +295,7 @@ Extraction ownership:
 | LOC-085 | LOC-067 child: run payslips and tax form list/detail; [scope and output ownership](PAYROLL_OUTPUT_CATALOGS.md) |
 | LOC-088 | LOC-067 child: payroll self-service profile and history; [scope and exceptions](PAYROLL_SELF_SERVICE_CATALOGS.md) |
 | LOC-089 | LOC-067 child: compensation bands/reviews and review detail; [scope and exceptions](PAYROLL_COMPENSATION_CATALOGS.md) |
+| LOC-090 | LOC-067 child: analytics, forecasting and report list/detail; [scope and exceptions](PAYROLL_ANALYTICS_CATALOGS.md) |
 | LOC-002 | Independent combined key coverage, plural and safe rendering acceptance |
 
 Later L10N/RTL tasks retain native-reviewed financial wording, complete Persian

@@ -1,5 +1,6 @@
 "use client";
 
+import { crmPipelinesJson, crmDealCreatedJson } from "@/i18n/crm-presentation";
 import { projectMutationJson } from "@/i18n/project-presentation";
 import { payrollContractorJson } from "@/i18n/payroll-contractor-presentation";
 import { payrollEmployeeCreatedJson } from "@/i18n/payroll-employee-presentation";
@@ -107,7 +108,6 @@ import { inventoryItemJson } from "@/i18n/inventory-item-presentation";
 import { inventoryUiItem, inventoryTransferLines } from "@/lib/money/inventory-ui";
 import { catalogPriceMinor, catalogWholeInput } from "@/lib/money/catalog-input";
 import { budgetMoney as formatMoney, budgetDecimal, budgetDistribute, budgetPerPeriod, budgetInput, budgetLinesInput, budgetDraftInvalid, budgetRemoveDraftLine, accrualUiInput, accrualUiPeriods } from "@/lib/money/budget-ui";
-import { projectCrmJson } from "@/lib/money/project-crm-ui";
 
 type DrawerType = "contact" | "project" | "invoice" | "bill" | "entry" | "inventory" | "quote" | "salesReceipt" | "purchaseOrder" | "expense" | "fixedAsset" | "budget" | "employee" | "creditNote" | "recurring" | "account" | "bankAccount" | "warehouse" | "stockTake" | "category" | "transfer" | "bankTransfer" | "contractor" | "deal" | "debitNote" | "customerCredit" | "loan" | "openingBalance" | "accrualSchedule" | "revenueSchedule" | "recurringJournal";
 
@@ -3860,6 +3860,8 @@ interface DealPipeline {
 }
 
 function DealDrawer({ open, onClose, initialData }: { open: boolean; onClose: () => void; initialData?: DrawerInitialData }) {
+  const t = useTranslations("CrmPipeline");
+  const [pipelineError, setPipelineError] = useState(false);
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [pipelines, setPipelines] = useState<DealPipeline[]>([]);
@@ -3882,22 +3884,20 @@ function DealDrawer({ open, onClose, initialData }: { open: boolean; onClose: ()
   // Fetch pipelines when drawer opens
   useEffect(() => {
     if (!open) return;
-    const orgId = localStorage.getItem("activeOrgId");
-    if (!orgId) return;
-    fetch("/api/v1/crm/pipelines", {
-      headers: { "x-organization-id": orgId },
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        const pipes = data.pipelines || [];
-        setPipelines(pipes);
-        const def = pipes.find((p: DealPipeline) => p.isDefault) || pipes[0];
-        if (def) {
-          setPipelineId(def.id);
-          if (def.stages?.length) setStageId(def.stages[0].id);
-        }
-      })
-      .catch(() => {});
+    let cancelled = false;
+    setPipelines([]); setPipelineId(""); setStageId(""); setPipelineError(false);
+    (async () => {
+      try {
+        const orgId = localStorage.getItem("activeOrgId");
+        if (!orgId) throw new Error("Missing organization");
+        const data = await crmPipelinesJson(await fetch("/api/v1/crm/pipelines", { headers: { "x-organization-id": orgId } }));
+        if (cancelled) return;
+        setPipelines(data.pipelines);
+        const def = data.pipelines.find(p => p.isDefault) || data.pipelines[0];
+        if (def) { setPipelineId(def.id); setStageId(def.stages[0].id); }
+      } catch { if (!cancelled) setPipelineError(true); }
+    })();
+    return () => { cancelled = true; };
   }, [open]);
 
   const activePipeline = pipelines.find((p) => p.id === pipelineId);
@@ -3913,7 +3913,7 @@ function DealDrawer({ open, onClose, initialData }: { open: boolean; onClose: ()
   }
 
   function handleClose() {
-    if (dirty && !window.confirm("You have unsaved changes. Discard?")) return;
+    if (dirty && !window.confirm(t("discard"))) return;
     reset();
     onClose();
   }
@@ -3928,10 +3928,9 @@ function DealDrawer({ open, onClose, initialData }: { open: boolean; onClose: ()
     const title = (form.get("title") as string)?.trim();
     if (!title || !pipelineId || saving) return;
     setSaving(true);
-    const orgId = localStorage.getItem("activeOrgId");
-    if (!orgId) return;
-
     try {
+      const orgId = localStorage.getItem("activeOrgId");
+      if (!orgId) { toast.error(t("organizationRequired")); return; }
       const res = await fetch("/api/v1/crm/deals", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
@@ -3948,18 +3947,14 @@ function DealDrawer({ open, onClose, initialData }: { open: boolean; onClose: ()
           notes: (form.get("notes") as string) || null,
         }),
       });
-      if (!res.ok) {
-        const data = await projectCrmJson(res);
-        throw new Error(data.error || "Failed to create deal");
-      }
-      const data = await projectCrmJson(res);
-      toast.success("Deal created");
+      const data = await crmDealCreatedJson(res);
+      toast.success(t("dealCreated"));
       reset();
       onClose();
       window.dispatchEvent(new CustomEvent("deals-changed"));
       router.push(`/crm/deals/${data.deal.id}`);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create deal");
+    } catch {
+      toast.error(t("createFailed"));
     } finally {
       setSaving(false);
     }
@@ -3972,28 +3967,29 @@ function DealDrawer({ open, onClose, initialData }: { open: boolean; onClose: ()
           <div className="flex items-center gap-3">
             <DrawerIcon><Target className="size-5" /></DrawerIcon>
             <div>
-              <SheetTitle className="text-lg">New Deal</SheetTitle>
-              <SheetDescription>Add a deal to your sales pipeline.</SheetDescription>
+              <SheetTitle className="text-lg">{t("newDeal")}</SheetTitle>
+              <SheetDescription>{t("drawerDescription")}</SheetDescription>
             </div>
           </div>
         </SheetHeader>
+        {pipelineError && <p role="alert" className="px-4 text-sm text-destructive">{t("pipelinesFailed")}</p>}
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
             <div className="space-y-4">
-              <SectionLabel>Deal Info</SectionLabel>
+              <SectionLabel>{t("dealInfo")}</SectionLabel>
               <div className="space-y-2">
-                <Label htmlFor="drawer-deal-title">Title *</Label>
+                <Label htmlFor="drawer-deal-title">{t("titleRequired")}</Label>
                 <Input
                   id="drawer-deal-title"
                   name="title"
                   required
-                  placeholder="e.g. Acme Corp - Enterprise Plan"
+                  placeholder={t("titlePlaceholder")}
                   onChange={markDirty}
                 />
               </div>
               {pipelines.length > 1 && (
                 <div className="space-y-2">
-                  <Label>Pipeline</Label>
+                  <Label>{t("pipeline")}</Label>
                   <Select value={pipelineId} onValueChange={(v) => { setPipelineId(v); markDirty(); const p = pipelines.find((pp) => pp.id === v); if (p?.stages?.length) setStageId(p.stages[0].id); }}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -4005,7 +4001,7 @@ function DealDrawer({ open, onClose, initialData }: { open: boolean; onClose: ()
                 </div>
               )}
               <div className="space-y-2">
-                <Label>Stage</Label>
+                <Label>{t("stage")}</Label>
                 <Select value={stageId} onValueChange={(v) => { setStageId(v); markDirty(); }}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -4025,24 +4021,24 @@ function DealDrawer({ open, onClose, initialData }: { open: boolean; onClose: ()
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Contact</SectionLabel>
+              <SectionLabel>{t("contact")}</SectionLabel>
               <div className="space-y-2">
-                <Label>Associated Contact</Label>
-                <ContactPicker value={contactId} onChange={(v) => { setContactId(v); markDirty(); }} placeholder="Select a contact..." />
+                <Label>{t("associatedContact")}</Label>
+                <ContactPicker value={contactId} onChange={(v) => { setContactId(v); markDirty(); }} placeholder={t("selectContact")} />
               </div>
             </div>
 
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Value &amp; Probability</SectionLabel>
+              <SectionLabel>{t("valueProbability")}</SectionLabel>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Deal Value</Label>
+                  <Label>{t("dealValue")}</Label>
                   <CurrencyInput value={value} onChange={(v) => { setValue(v); markDirty(); }} placeholder="0.00" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="drawer-deal-prob">Win Probability %</Label>
+                  <Label htmlFor="drawer-deal-prob">{t("winProbability")}</Label>
                   <Input id="drawer-deal-prob" type="number" min={0} max={100} placeholder="50" value={probability} onChange={(e) => { setProbability(e.target.value); markDirty(); }} />
                 </div>
               </div>
@@ -4051,33 +4047,33 @@ function DealDrawer({ open, onClose, initialData }: { open: boolean; onClose: ()
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Details</SectionLabel>
+              <SectionLabel>{t("details")}</SectionLabel>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Expected Close</Label>
-                  <DatePicker value={expectedClose} onChange={(v) => { setExpectedClose(v); markDirty(); }} />
+                  <Label>{t("expectedClose")}</Label>
+                  <DatePicker placeholder={t("selectClose")} value={expectedClose} onChange={(v) => { setExpectedClose(v); markDirty(); }} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Source</Label>
+                  <Label>{t("source")}</Label>
                   <Select value={source} onValueChange={(v) => { setSource(v); markDirty(); }}>
-                    <SelectTrigger><SelectValue placeholder="Select source" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={t("selectSource")} /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="website">Website</SelectItem>
-                      <SelectItem value="referral">Referral</SelectItem>
-                      <SelectItem value="cold_outreach">Cold Outreach</SelectItem>
-                      <SelectItem value="event">Event</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
+                      <SelectItem value="website">{t("website")}</SelectItem>
+                      <SelectItem value="referral">{t("referral")}</SelectItem>
+                      <SelectItem value="cold_outreach">{t("coldOutreach")}</SelectItem>
+                      <SelectItem value="event">{t("event")}</SelectItem>
+                      <SelectItem value="other">{t("other")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="drawer-deal-notes">Notes</Label>
-                <Textarea id="drawer-deal-notes" name="notes" placeholder="Additional context about this deal..." rows={3} onChange={markDirty} />
+                <Label htmlFor="drawer-deal-notes">{t("notes")}</Label>
+                <Textarea id="drawer-deal-notes" name="notes" placeholder={t("notesPlaceholder")} rows={3} onChange={markDirty} />
               </div>
             </div>
           </div>
-          <DrawerFooter onClose={handleClose} saving={saving} label="Create Deal" />
+          <DrawerFooter onClose={handleClose} saving={saving} label={t("createDeal")} />
         </form>
       </SheetContent>
     </Sheet>

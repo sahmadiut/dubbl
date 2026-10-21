@@ -17,6 +17,7 @@ import { POST as lost } from "../../app/api/v1/crm/deals/[id]/lost/route";
 import { GET as activities, POST as activity } from "../../app/api/v1/crm/deals/[id]/activities/route";
 import { GET as analytics } from "../../app/api/v1/crm/analytics/route";
 import { registerAllTools } from "../../lib/mcp/tools";
+import { crmPipelinesJson, crmPipelineCreatedJson, crmDealCreatedJson, crmDealsJson } from "../../i18n/crm-presentation";
 
 async function connect(ctx: AuthContext) {
   const server = new McpServer({ name: "CRM fixture", version: "1" }); registerAllTools(server, ctx);
@@ -63,16 +64,21 @@ async function run() {
   try {
     const pl = (await data(await createPipeline(req({ name: "Main", stages, isDefault: true })), 201)).pipeline;
     const pl2 = (await managed.call("create_pipeline", { name: "Other", stages, isDefault: true })).body.pipeline;
+    await crmPipelineCreatedJson(Response.json({ pipeline: pl }));
+    await crmPipelineCreatedJson(Response.json({ pipeline: pl2 }));
     assert.equal((await data(await getPipeline(req(), p(pl.id)))).pipeline.isDefault, false);
     await data(await patchPipeline(req({ isDefault: true }), p(pl.id)));
     await ma.call("update_pipeline", { pipelineId: pl2.id, name: "Renamed" });
     assert.deepEqual((await data(await pipelines(req()))).pipelines, (await ma.call("list_pipelines")).body.pipelines);
+    await crmPipelinesJson(await pipelines(req()));
+    await crmPipelinesJson(Response.json((await ma.call("list_pipelines")).body));
     const foreignPipeline = (await mb.call("create_pipeline", { name: "Foreign", stages })).body.pipeline;
     const d = (await data(await createDeal(req({ pipelineId: pl.id, stageId: "lead", title: "Legacy", valueCents: 1250, contactId: c.id, assignedTo: owner.id, probability: 33, expectedCloseDate: "2024-02-29" })), 201)).deal;
     assert.equal(d.valueCentsMinor, "1250"); assert.equal(d.organizationId, a.id);
     const exact = (await ro.call("create_deal", { pipelineId: pl.id, stageId: "lead", title: "Exact", valueCentsMinor: "2", probability: null })).body.deal;
     assert.equal(exact.valueCents, 2); assert.equal(exact.probability, null);
     const maxima = (await ma.call("create_deal", { pipelineId: pl2.id, stageId: "lead", title: "Max", valueCentsMinor: "9007199254740991", currency: "JPY" })).body.deal;
+    for (const deal of [d, exact, maxima]) await crmDealCreatedJson(Response.json({ deal }));
     assert.equal(maxima.valueCents, Number.MAX_SAFE_INTEGER);
     const detail = (await data(await getDeal(req(), p(d.id)))).deal;
     assert.equal(detail.contact.creditLimitMinor, "123"); assert.equal(detail.assignedUser.id, owner.id); assert.equal(Object.hasOwn(detail.assignedUser, "passwordHash"), false);
@@ -82,6 +88,8 @@ async function run() {
     assert.equal(ls.data.length, 1); assert.equal(ls.summary.totalDeals, 2); assert.equal(ls.summary.activeValueMinor, "1252"); assert.equal(ls.summary.currency, "USD");
     const mls = (await ma.call("list_deals", { pipelineId: pl.id, search: "Legacy", limit: 1 })).body;
     assert.deepEqual(mls.deals, ls.data); assert.deepEqual(mls.summary, ls.summary);
+    await crmDealsJson(Response.json(ls));
+    await crmDealsJson(Response.json({ data: mls.deals, summary: mls.summary, pagination: { total: mls.total } }));
     await denied(() => analytics(req()), 422); await mdenied("get_crm_analytics", {}, ma, 422);
     await denied(() => deals(req()), 422); await mdenied("list_deals", {}, ma, 422);
     assert.equal((await data(await analytics(req({}, keys.a, "?currency=JPY")))).totalPipelineValueMinor, "9007199254740991");

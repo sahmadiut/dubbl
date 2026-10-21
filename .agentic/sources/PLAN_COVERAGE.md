@@ -362,3 +362,12 @@ Verified 11 route TSX files totaling 5,262 lines plus a 242-line creation drawer
 - [LOC-096](../tasks/LOC-096.md): Extract project time and billing catalogs.
 - [LOC-097](../tasks/LOC-097.md): Extract project milestone catalogs.
 - [LOC-098](../tasks/LOC-098.md): Extract project team and notes catalogs.
+
+## LOC-069 CRM catalog children
+
+Seven route TSX files plus DealDrawer; parent retains independent combined acceptance.
+
+- [LOC-099](../tasks/LOC-099.md): Extract CRM pipeline list and creation catalogs.
+- [LOC-100](../tasks/LOC-100.md): Extract CRM deal overview navigation and settings catalogs.
+- [LOC-101](../tasks/LOC-101.md): Extract CRM deal activity catalogs.
+- [LOC-102](../tasks/LOC-102.md): Extract CRM analytics catalogs.

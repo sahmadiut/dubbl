@@ -1,5 +1,11 @@
 # Message catalog foundation
 
+LOC-099 CRM pipeline list and creation use 89 paired `CrmPipeline` messages
+(8,640 compatible keys per locale). See [scope and exceptions](CRM_PIPELINE_CATALOGS.md)
+for checked feedback, preserved fixed cents/dates and REST/MCP contracts.
+Persian wording remains provisional; LOC-100..102 and combined LOC-069/008/002,
+native terminology/RTL and release qualification retain independent acceptance.
+
 LOC-068 independently accepts combined project presentation after LOC-093..098:
 11 route components, ProjectDrawer and 498 paired messages across seven
 namespaces (8,551 compatible keys per locale). See

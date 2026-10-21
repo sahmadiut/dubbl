@@ -9015,5 +9015,25 @@
     "placeholder_call": "افزودن تماس...",
     "placeholder_meeting": "افزودن جلسه...",
     "placeholder_task": "افزودن کار..."
+  },
+  "CrmAnalytics": {
+    "documentTitle": "ارتباط با مشتری · تحلیل‌ها",
+    "title": "تحلیل مسیر فروش",
+    "description": "مروری بر عملکرد مسیر فروش شما.",
+    "currency": "ارز",
+    "allCurrencies": "همه ارزها",
+    "pipelineValue": "ارزش مسیر فروش",
+    "wonRevenue": "درآمد معاملات موفق",
+    "conversionRate": "نرخ تبدیل",
+    "averageDealSize": "میانگین ارزش معامله",
+    "dealSummary": "خلاصه معاملات",
+    "totalDeals": "کل معاملات",
+    "open": "باز",
+    "won": "موفق",
+    "lost": "ناموفق",
+    "stageDistribution": "توزیع مراحل",
+    "dealCount": "{count, plural, one {# معامله} other {# معامله}}",
+    "percent": "{value}٪",
+    "loadFailed": "بارگیری تحلیل‌ها ممکن نشد. اگر معاملات شما از چند ارز استفاده می‌کنند، یک ارز را انتخاب کنید و دوباره تلاش کنید."
   }
 }

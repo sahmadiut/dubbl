@@ -1,5 +1,11 @@
 # Message catalog foundation
 
+LOC-102 CRM analytics use 18 paired `CrmAnalytics` messages (8,775 compatible
+leaves per locale), with built-in stage labels from `CrmPipeline`. See
+[scope and exceptions](CRM_ANALYTICS_CATALOGS.md) for checked statistics,
+exact cents, finite feedback and preserved REST/MCP contracts. Persian wording
+remains provisional; LOC-069/008/002 and native/RTL acceptance remain independent.
+
 LOC-100 CRM deal overview/navigation/settings use 75 paired `CrmDetail`
 messages (8,715 compatible leaves per locale). See
 [scope and exceptions](CRM_DETAIL_CATALOGS.md) for checked reads/mutations,
@@ -366,6 +372,7 @@ Extraction ownership:
 | LOC-090 | LOC-067 child: analytics, forecasting and report list/detail; [scope and exceptions](PAYROLL_ANALYTICS_CATALOGS.md) |
 | LOC-091 | LOC-067 child: tax liabilities and payment recording; [scope and exceptions](PAYROLL_TAX_LIABILITY_CATALOGS.md) |
 | LOC-101 | LOC-069 child: CRM deal activity feed/composer; [scope and exceptions](CRM_ACTIVITY_CATALOGS.md) |
+| LOC-102 | LOC-069 child: CRM analytics statistics/stages; [scope and exceptions](CRM_ANALYTICS_CATALOGS.md) |
 | LOC-002 | Independent combined key coverage, plural and safe rendering acceptance |
 
 Later L10N/RTL tasks retain native-reviewed financial wording, complete Persian

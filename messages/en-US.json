@@ -9015,5 +9015,25 @@
     "placeholder_call": "Add a call...",
     "placeholder_meeting": "Add a meeting...",
     "placeholder_task": "Add a task..."
+  },
+  "CrmAnalytics": {
+    "documentTitle": "CRM · Analytics",
+    "title": "Pipeline Analytics",
+    "description": "Overview of your sales pipeline performance.",
+    "currency": "Currency",
+    "allCurrencies": "All currencies",
+    "pipelineValue": "Pipeline Value",
+    "wonRevenue": "Won Revenue",
+    "conversionRate": "Conversion Rate",
+    "averageDealSize": "Avg Deal Size",
+    "dealSummary": "Deal Summary",
+    "totalDeals": "Total Deals",
+    "open": "Open",
+    "won": "Won",
+    "lost": "Lost",
+    "stageDistribution": "Stage Distribution",
+    "dealCount": "{count, plural, one {# deal} other {# deals}}",
+    "percent": "{value}%",
+    "loadFailed": "Unable to load analytics. If your deals use multiple currencies, select a currency and try again."
   }
 }

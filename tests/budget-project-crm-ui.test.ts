@@ -94,7 +94,10 @@ test("scoped UI static guards prevent legacy budget math and require saved-money
       assert.match(source, /milestoneBillingJson|projectMilestoneJson/);
       const reader = await readFile("i18n/project-milestones-presentation.ts", "utf8");
       assert.match(reader, /projectCrmJson\(response\)/);
-    } else if (file.startsWith("app/(dashboard)/crm/") && !file.endsWith("/analytics/page.tsx")) {
+    } else if (file.endsWith("/crm/analytics/page.tsx")) {
+      assert.match(source, /crmAnalyticsJson\(response, currency\)/);
+      assert.match(await readFile("i18n/crm-analytics-presentation.ts", "utf8"), /projectCrmJson\(response\)/);
+    } else if (file.startsWith("app/(dashboard)/crm/")) {
       assert.match(source, /crmDealsJson|crmPipelinesJson|crmDealDetailJson/);
       assert.match(await readFile("i18n/crm-presentation.ts", "utf8"), /projectCrmJson\(response\)/);
     } else assert.match(source, /projectCrmJson/);

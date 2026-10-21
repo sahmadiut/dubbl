@@ -17,6 +17,7 @@ import { POST as lost } from "../../app/api/v1/crm/deals/[id]/lost/route";
 import { GET as activities, POST as activity } from "../../app/api/v1/crm/deals/[id]/activities/route";
 import { GET as analytics } from "../../app/api/v1/crm/analytics/route";
 import { registerAllTools } from "../../lib/mcp/tools";
+import { crmAnalyticsJson } from "../../i18n/crm-analytics-presentation";
 import { crmPipelinesJson, crmPipelineCreatedJson, crmDealCreatedJson, crmDealsJson, crmDealDetailJson, crmDealMutationJson, crmDealDeletedJson, crmActivityCreatedJson, crmActivitiesJson } from "../../i18n/crm-presentation";
 
 async function checkedDealReply(body: { deal?: { id: string; activities?: unknown }; activity?: { dealId: string } }) {
@@ -102,7 +103,10 @@ async function run() {
     await crmDealsJson(Response.json({ data: mls.deals, summary: mls.summary, pagination: { total: mls.total } }));
     await denied(() => analytics(req()), 422); await mdenied("get_crm_analytics", {}, ma, 422);
     await denied(() => deals(req()), 422); await mdenied("list_deals", {}, ma, 422);
-    assert.equal((await data(await analytics(req({}, keys.a, "?currency=JPY")))).totalPipelineValueMinor, "9007199254740991");
+    const jpyAnalytics = await data(await analytics(req({}, keys.a, "?currency=JPY")));
+    assert.equal(jpyAnalytics.totalPipelineValueMinor, "9007199254740991");
+    await crmAnalyticsJson(Response.json(jpyAnalytics), "JPY");
+    await crmAnalyticsJson(Response.json((await ma.call("get_crm_analytics", { currency: "JPY" })).body), "JPY");
     await data(await patchDeal(req({ valueCentsMinor: "3", valueCents: 3 }), p(exact.id)));
     await ma.call("update_deal", { dealId: d.id, valueCentsMinor: "1" });
     assert.equal((await data(await move(req({ stageId: "qualified" }), p(d.id)))).deal.stageId, "qualified");
@@ -112,10 +116,24 @@ async function run() {
     await ma.call("mark_deal_won", { dealId: exact.id });
     const totals = await data(await analytics(req({}, keys.a, "?currency=USD")));
     assert.equal(totals.wonValueMinor, "4"); assert.equal(totals.avgDealValueMinor, "2"); assert.equal(totals.conversionRate, 100);
-    assert.deepEqual(totals, (await ma.call("get_crm_analytics", { currency: "USD" })).body);
+    const mcpTotals = (await ma.call("get_crm_analytics", { currency: "USD" })).body;
+    assert.deepEqual(totals, mcpTotals);
+    await crmAnalyticsJson(Response.json(totals), "USD");
+    await crmAnalyticsJson(Response.json(mcpTotals), "USD");
     const l = (await data(await lost(req({ reason: "No budget" }), p(exact.id)))).deal; assert.equal(l.wonAt, null); assert.equal(l.probability, 0);
     const lretry = await snapshot(); assert.equal((await ma.call("mark_deal_lost", { dealId: exact.id, reason: "retry" })).body.deal.lostAt, l.lostAt); assert.equal(await snapshot(), lretry);
-    assert.equal((await data(await analytics(req({}, keys.a, "?currency=USD")))).conversionRate, 50);
+    const closedTotals = await data(await analytics(req({}, keys.a, "?currency=USD")));
+    assert.equal(closedTotals.conversionRate, 50);
+    await crmAnalyticsJson(Response.json(closedTotals), "USD");
+    const savedTotals = await db.execute(sql`select count(*)::text as total,
+      count(*) filter (where won_at is not null)::text as won,
+      count(*) filter (where lost_at is not null)::text as lost,
+      coalesce(sum(value_cents) filter (where won_at is not null), 0)::text as won_value
+      from deal where organization_id = ${a.id} and currency = 'USD' and deleted_at is null`);
+    assert.deepEqual(savedTotals.rows[0], { total: String(closedTotals.totalDeals), won: String(closedTotals.wonDeals), lost: String(closedTotals.lostDeals), won_value: closedTotals.wonValueMinor });
+    const emptyAnalytics = await data(await analytics(req({}, keys.b, "?currency=USD")));
+    assert.equal(emptyAnalytics.totalDeals, 0);
+    await crmAnalyticsJson(Response.json(emptyAnalytics), "USD");
     const act = (await data(await activity(req({ type: "call", content: "Phone", scheduledAt: "2024-01-01T10:00:00+03:30" }), p(d.id)), 201)).activity;
     assert.equal(act.scheduledAt, "2024-01-01T06:30:00.000Z");
     await ma.call("add_deal_activity", { dealId: d.id, type: "note", content: "Memo" });

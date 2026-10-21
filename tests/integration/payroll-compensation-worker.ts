@@ -1,5 +1,6 @@
 import { payrollEmployeeDetailJson } from "../../i18n/payroll-employee-detail-presentation";
 import { payrollCompensationJson } from "../../i18n/payroll-compensation-presentation";
+import { payrollSettingsJson } from "../../i18n/payroll-settings-presentation";
 import { payrollJson, payrollUiPayload } from "../../lib/money/payroll-ui";
 import { payrollAnalyticsJson } from "../../i18n/payroll-analytics-presentation";
 import assert from "node:assert/strict";
@@ -75,6 +76,11 @@ async function run() {
   };
   const data = async (r: Response, status = 200) => { const body = await payrollJson(r); assert.equal(r.status, status, JSON.stringify(body)); return body; };
   const checkDetail = async <T extends Record<string, unknown>>(name: string, body: T) => {
+    const settingsKinds: Record<string, Parameters<typeof payrollSettingsJson>[1]> = {
+      list_compensation_bands: "bands", create_compensation_band: "band",
+      delete_compensation_band: "deleted",
+    };
+    if (settingsKinds[name]) await payrollSettingsJson(Response.json(body), settingsKinds[name]);
     if (name === "project_payroll_costs" || name === "forecast_payroll_what_if") assert.deepEqual(await payrollAnalyticsJson(Response.json(body), name === "project_payroll_costs" ? "projection" : "scenario"), body);
     const kind = name === "get_compensation_band" ? "band" : null;
     if (kind) await payrollEmployeeDetailJson(Response.json(body), kind);

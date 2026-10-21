@@ -1,14 +1,18 @@
 "use client";
 
 import { payrollMoneyDisplay } from "@/lib/money/payroll-display";
-import { payrollJson } from "@/lib/money/payroll-ui";
+import { useTranslations } from "next-intl";
+import { payrollSettingsJson, settingsOrganization, settingsLabelKey,
+  type PayrollSettingsData, type DeductionType, type TaxBracket, type ShiftDef,
+  type LeavePolicy, type ApprovalChain, type CompensationBand,
+} from "@/i18n/payroll-settings-presentation";
 
 import { payrollCentsInput, payrollCentsDecimal, payrollBasisPointsInput } from "@/lib/money/payroll-input";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion } from "motion/react";
 import { toast } from "sonner";
 import Link from "next/link";
-import { Save, Plus, Trash2, Settings, Shield, Clock, CalendarDays, DollarSign, Layers, ExternalLink } from "lucide-react";
+import { Save, Plus, Trash2, Shield, Clock, CalendarDays, DollarSign, Layers, ExternalLink } from "lucide-react";
 import { Section } from "@/components/dashboard/section";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,75 +40,6 @@ import { CurrencySelect } from "@/components/ui/currency-select";
 import { cn } from "@/lib/utils";
 import { useConfirm } from "@/lib/hooks/use-confirm";
 
-interface PayrollSettingsData {
-  defaultTaxRate: number;
-  overtimeThresholdHours: number;
-  overtimeMultiplier: number;
-  defaultCurrency: string;
-  salaryExpenseAccountCode: string;
-  taxPayableAccountCode: string;
-  bankAccountCode: string;
-  autoApprovalEnabled: boolean;
-}
-
-interface DeductionType {
-  id: string;
-  name: string;
-  description: string | null;
-  category: string;
-  defaultAmount: number | null;
-  defaultPercent: number | null;
-  isActive: boolean;
-}
-
-interface TaxBracket {
-  id: string;
-  name: string;
-  jurisdictionLevel: string;
-  jurisdiction: string | null;
-  minIncome: number;
-  maxIncome: number | null;
-  rate: number;
-}
-
-interface ShiftDef {
-  id: string;
-  name: string;
-  shiftType: string;
-  startTime: string;
-  endTime: string;
-  premiumPercent: number | null;
-  isActive: boolean;
-}
-
-interface LeavePolicy {
-  id: string;
-  name: string;
-  leaveType: string;
-  accrualMethod: string;
-  accrualRate: number;
-  maxBalance: number | null;
-  isActive: boolean;
-}
-
-interface ApprovalChain {
-  id: string;
-  name: string;
-  description: string | null;
-  isActive: boolean;
-  steps: { id: string; stepOrder: number; approverId: string }[];
-}
-
-interface CompensationBand {
-  id: string;
-  name: string;
-  level: string;
-  minSalary: number;
-  midSalary: number;
-  maxSalary: number;
-  currency: string;
-}
-
 const anim = (delay: number) => ({
   initial: { opacity: 0, y: 12 } as const,
   animate: { opacity: 1, y: 0 } as const,
@@ -112,10 +47,12 @@ const anim = (delay: number) => ({
 });
 
 export default function PayrollSettingsPage() {
+  const t = useTranslations("PayrollSettings");
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [loading, setLoading] = useState(true);
   const [moneyError, setMoneyError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const readGeneration = useRef(0);
 
   // Settings
   const [settings, setSettings] = useState<PayrollSettingsData>({
@@ -159,22 +96,25 @@ export default function PayrollSettingsPage() {
   const [bandDrawer, setBandDrawer] = useState(false);
   const [newBand, setNewBand] = useState({ name: "", level: "", minSalary: "", midSalary: "", maxSalary: "" });
 
-  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
+  const orgId = settingsOrganization();
 
   const fetchAll = useCallback(() => {
-    if (!orgId) return;
+    const generation = ++readGeneration.current;
+    if (!orgId) { setMoneyError(t("loadFailed")); setLoading(false); return; }
     const headers = { "x-organization-id": orgId };
 
     Promise.all([
-      fetch("/api/v1/payroll/settings", { headers }).then((r) => payrollJson(r)),
-      fetch("/api/v1/payroll/deductions/types", { headers }).then((r) => payrollJson(r)),
-      fetch("/api/v1/payroll/tax/brackets", { headers }).then((r) => payrollJson(r)),
-      fetch("/api/v1/payroll/shifts", { headers }).then((r) => payrollJson(r)),
-      fetch("/api/v1/payroll/leave/policies", { headers }).then((r) => payrollJson(r)),
-      fetch("/api/v1/payroll/approval-chains", { headers }).then((r) => payrollJson(r)),
-      fetch("/api/v1/payroll/compensation/bands", { headers }).then((r) => payrollJson(r)),
+      fetch("/api/v1/payroll/settings", { headers }).then((r) => payrollSettingsJson(r, "settings")),
+      fetch("/api/v1/payroll/deductions/types", { headers }).then((r) => payrollSettingsJson(r, "deductions")),
+      fetch("/api/v1/payroll/tax/brackets", { headers }).then((r) => payrollSettingsJson(r, "brackets")),
+      fetch("/api/v1/payroll/shifts", { headers }).then((r) => payrollSettingsJson(r, "shifts")),
+      fetch("/api/v1/payroll/leave/policies", { headers }).then((r) => payrollSettingsJson(r, "policies")),
+      fetch("/api/v1/payroll/approval-chains", { headers }).then((r) => payrollSettingsJson(r, "chains")),
+      fetch("/api/v1/payroll/compensation/bands", { headers }).then((r) => payrollSettingsJson(r, "bands")),
     ])
       .then(([settingsData, deductionsData, bracketsData, shiftsData, leaveData, chainsData, bandsData]) => {
+        if (generation !== readGeneration.current) return;
+        setMoneyError(null);
         if (settingsData.settings) { setSettings(settingsData.settings); setDefaultTaxPercent(payrollCentsDecimal(settingsData.settings.defaultTaxRate)); }
         if (deductionsData.data) setDeductionTypes(deductionsData.data);
         if (bracketsData.data) setTaxBrackets(bracketsData.data);
@@ -183,11 +123,15 @@ export default function PayrollSettingsPage() {
         if (chainsData.data) setApprovalChains(chainsData.data);
         if (bandsData.data) setCompensationBands(bandsData.data);
       })
-      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"))
-      .finally(() => setLoading(false));
-  }, [orgId]);
+      .catch(() => { if (generation === readGeneration.current) setMoneyError(t("loadFailed")); })
+      .finally(() => { if (generation === readGeneration.current) setLoading(false); });
+  }, [orgId, t]);
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+  useEffect(() => {
+    const reads = readGeneration;
+    fetchAll();
+    return () => { reads.current++; };
+  }, [fetchAll]);
 
   async function handleSaveSettings() {
     if (!orgId) return;
@@ -203,10 +147,10 @@ export default function PayrollSettingsPage() {
           bankAccountCode: settings.bankAccountCode || null, autoApprovalEnabled: settings.autoApprovalEnabled,
         }),
       });
-      if (res.ok) { await payrollJson(res); toast.success("Settings saved"); }
-      else toast.error((await payrollJson(res)).error || "Failed to save settings");
+      if (res.ok) { await payrollSettingsJson(res, "settings"); toast.success(t("saved")); }
+      else toast.error(t("saveFailed"));
     } catch {
-      toast.error("Failed to save settings");
+      toast.error(t("saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -226,32 +170,35 @@ export default function PayrollSettingsPage() {
         }),
       });
       if (res.ok) {
-      await payrollJson(res);
-        toast.success("Deduction type added");
+        await payrollSettingsJson(res, "deduction");
+        toast.success(t("deductionAdded"));
         setDeductionDrawer(false);
         setNewDeduction({ name: "", category: "post_tax", defaultAmount: "", defaultPercent: "" });
         fetchAll();
       }
-      else toast.error((await payrollJson(res)).error || "Failed to add deduction type");
+      else toast.error(t("deductionFailed"));
     } catch {
-      toast.error("Failed to add deduction type");
+      toast.error(t("deductionFailed"));
     }
   }
 
   async function handleDeleteDeduction(id: string) {
     if (!orgId) return;
     const confirmed = await confirm({
-      title: "Delete deduction type?",
-      description: "This will remove the deduction type. Existing employee deductions using it won't be affected.",
-      confirmLabel: "Delete",
+      title: t("deleteDeductionTitle"),
+      description: t("deleteDeductionDescription"),
+      confirmLabel: t("delete"),
       destructive: true,
     });
     if (!confirmed) return;
-    await fetch(`/api/v1/payroll/deductions/types/${id}`, {
-      method: "DELETE",
-      headers: { "x-organization-id": orgId },
-    });
-    fetchAll();
+    try {
+      const res = await fetch(`/api/v1/payroll/deductions/types/${id}`, {
+        method: "DELETE",
+        headers: { "x-organization-id": orgId },
+      });
+      await payrollSettingsJson(res, "deleted");
+      fetchAll();
+    } catch { toast.error(t("deleteDeductionFailed")); }
   }
 
   async function handleAddBracket() {
@@ -269,15 +216,15 @@ export default function PayrollSettingsPage() {
         }),
       });
       if (res.ok) {
-      await payrollJson(res);
-        toast.success("Tax bracket added");
+        await payrollSettingsJson(res, "bracket");
+        toast.success(t("bracketAdded"));
         setBracketDrawer(false);
         setNewBracket({ name: "", jurisdictionLevel: "federal", minIncome: "", maxIncome: "", rate: "" });
         fetchAll();
       }
-      else toast.error((await payrollJson(res)).error || "Failed to add tax bracket");
+      else toast.error(t("bracketFailed"));
     } catch {
-      toast.error("Failed to add tax bracket");
+      toast.error(t("bracketFailed"));
     }
   }
 
@@ -296,17 +243,16 @@ export default function PayrollSettingsPage() {
         }),
       });
       if (res.ok) {
-      await payrollJson(res);
-        toast.success("Shift added");
+        await payrollSettingsJson(res, "shift");
+        toast.success(t("shiftAdded"));
         setShiftDrawer(false);
         setNewShift({ name: "", shiftType: "regular", startTime: "09:00", endTime: "17:00", premiumPercent: "0" });
         fetchAll();
       } else {
-        const data = await payrollJson(res);
-        toast.error(typeof data.error === "string" ? data.error : "Failed to add shift");
+        toast.error(t("shiftFailed"));
       }
     } catch {
-      toast.error("Failed to add shift");
+      toast.error(t("shiftFailed"));
     }
   }
 
@@ -325,17 +271,16 @@ export default function PayrollSettingsPage() {
         }),
       });
       if (res.ok) {
-      await payrollJson(res);
-        toast.success("Leave policy added");
+        await payrollSettingsJson(res, "policy");
+        toast.success(t("policyAdded"));
         setLeaveDrawer(false);
         setNewLeave({ name: "", leaveType: "vacation", accrualMethod: "per_pay_period", accrualRate: "0", maxBalance: "" });
         fetchAll();
       } else {
-        const data = await payrollJson(res);
-        toast.error(typeof data.error === "string" ? data.error : "Failed to add leave policy");
+        toast.error(t("policyFailed"));
       }
     } catch {
-      toast.error("Failed to add leave policy");
+      toast.error(t("policyFailed"));
     }
   }
 
@@ -354,31 +299,34 @@ export default function PayrollSettingsPage() {
         }),
       });
       if (res.ok) {
-      await payrollJson(res);
-        toast.success("Compensation band added");
+        await payrollSettingsJson(res, "band");
+        toast.success(t("bandAdded"));
         setBandDrawer(false);
         setNewBand({ name: "", level: "", minSalary: "", midSalary: "", maxSalary: "" });
         fetchAll();
-      }
+      } else toast.error(t("bandFailed"));
     } catch {
-      toast.error("Failed to add compensation band");
+      toast.error(t("bandFailed"));
     }
   }
 
   async function handleDeleteBand(id: string) {
     if (!orgId) return;
     const confirmed = await confirm({
-      title: "Delete compensation band?",
-      description: "This action cannot be undone.",
-      confirmLabel: "Delete",
+      title: t("deleteBandTitle"),
+      description: t("cannotUndo"),
+      confirmLabel: t("delete"),
       destructive: true,
     });
     if (!confirmed) return;
-    await fetch(`/api/v1/payroll/compensation/bands/${id}`, {
-      method: "DELETE",
-      headers: { "x-organization-id": orgId },
-    });
-    fetchAll();
+    try {
+      const res = await fetch(`/api/v1/payroll/compensation/bands/${id}`, {
+        method: "DELETE",
+        headers: { "x-organization-id": orgId },
+      });
+      await payrollSettingsJson(res, "deleted");
+      fetchAll();
+    } catch { toast.error(t("deleteBandFailed")); }
   }
 
   if (loading) return <BrandLoader />;
@@ -389,10 +337,10 @@ export default function PayrollSettingsPage() {
       <div className="space-y-8">
         {/* General Settings */}
         <motion.div {...anim(0)}>
-          <Section title="General" description="Default payroll configuration.">
+          <Section title={t("general")} description={t("generalDescription")}>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <div className="space-y-1.5">
-                <Label className="text-xs">Default Tax Rate (%)</Label>
+                <Label className="text-xs">{t("taxRate")}</Label>
                 <Input
                   type="number"
                   step="0.01"
@@ -401,7 +349,7 @@ export default function PayrollSettingsPage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">OT Threshold (hours/week)</Label>
+                <Label className="text-xs">{t("overtimeThreshold")}</Label>
                 <Input
                   type="number"
                   value={settings.overtimeThresholdHours}
@@ -409,7 +357,7 @@ export default function PayrollSettingsPage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">OT Multiplier</Label>
+                <Label className="text-xs">{t("overtimeMultiplier")}</Label>
                 <Input
                   type="number"
                   step="0.1"
@@ -418,28 +366,28 @@ export default function PayrollSettingsPage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Default Currency</Label>
+                <Label className="text-xs">{t("currency")}</Label>
                 <CurrencySelect
                   value={settings.defaultCurrency}
                   onValueChange={(v) => setSettings({ ...settings, defaultCurrency: v })}
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Salary Expense Account</Label>
+                <Label className="text-xs">{t("salaryAccount")}</Label>
                 <Input
                   value={settings.salaryExpenseAccountCode ?? ""}
                   onChange={(e) => setSettings({ ...settings, salaryExpenseAccountCode: e.target.value })}
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Tax Payable Account</Label>
+                <Label className="text-xs">{t("taxAccount")}</Label>
                 <Input
                   value={settings.taxPayableAccountCode ?? ""}
                   onChange={(e) => setSettings({ ...settings, taxPayableAccountCode: e.target.value })}
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Bank Account</Label>
+                <Label className="text-xs">{t("bankAccount")}</Label>
                 <Input
                   value={settings.bankAccountCode ?? ""}
                   onChange={(e) => setSettings({ ...settings, bankAccountCode: e.target.value })}
@@ -450,7 +398,7 @@ export default function PayrollSettingsPage() {
                   checked={settings.autoApprovalEnabled}
                   onCheckedChange={(v: boolean) => setSettings({ ...settings, autoApprovalEnabled: v })}
                 />
-                <Label className="text-xs">Auto-approve payroll runs</Label>
+                <Label className="text-xs">{t("autoApprove")}</Label>
               </div>
             </div>
             <div className="mt-4 flex justify-end">
@@ -461,7 +409,7 @@ export default function PayrollSettingsPage() {
                 className="bg-emerald-600 hover:bg-emerald-700"
               >
                 <Save className="mr-1.5 size-3.5" />
-                {saving ? "Saving..." : "Save Settings"}
+                {saving ? t("saving") : t("save")}
               </Button>
             </div>
           </Section>
@@ -471,16 +419,16 @@ export default function PayrollSettingsPage() {
 
         {/* Deduction Types */}
         <motion.div {...anim(0.05)}>
-          <Section title="Deduction Types" description="Manage recurring deduction categories.">
+          <Section title={t("deductions")} description={t("deductionsDescription")}>
             <div className="space-y-3">
               <div className="flex justify-end">
                 <Button size="sm" variant="outline" onClick={() => setDeductionDrawer(true)}>
                   <Plus className="mr-1.5 size-3" />
-                  Add Type
+                  {t("addType")}
                 </Button>
               </div>
               {deductionTypes.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-4 text-center">No deduction types configured</p>
+                <p className="text-sm text-muted-foreground py-4 text-center">{t("noDeductions")}</p>
               ) : (
                 <div className="rounded-lg border divide-y">
                   {deductionTypes.map((dt) => (
@@ -488,12 +436,12 @@ export default function PayrollSettingsPage() {
                       <div>
                         <p className="text-sm font-medium">{dt.name}</p>
                         <div className="flex items-center gap-2 mt-0.5">
-                          <Badge variant="outline" className="text-[10px]">{dt.category === "pre_tax" ? "Pre-tax" : "Post-tax"}</Badge>
+                          <Badge variant="outline" className="text-[10px]">{t(settingsLabelKey(dt.category))}</Badge>
                           {dt.defaultAmount != null && <span className="text-xs text-muted-foreground">${payrollCentsDecimal(dt.defaultAmount)}</span>}
                           {dt.defaultPercent != null && <span className="text-xs text-muted-foreground">{dt.defaultPercent}%</span>}
                         </div>
                       </div>
-                      <Button size="icon" variant="ghost" className="size-7" onClick={() => handleDeleteDeduction(dt.id)}>
+                      <Button size="icon" variant="ghost" className="size-7" aria-label={t("deleteDeductionTitle")} onClick={() => handleDeleteDeduction(dt.id)}>
                         <Trash2 className="size-3.5 text-muted-foreground" />
                       </Button>
                     </div>
@@ -508,16 +456,16 @@ export default function PayrollSettingsPage() {
 
         {/* Tax Brackets */}
         <motion.div {...anim(0.1)}>
-          <Section title="Tax Brackets" description="Configure progressive tax rates.">
+          <Section title={t("brackets")} description={t("bracketsDescription")}>
             <div className="space-y-3">
               <div className="flex justify-end">
                 <Button size="sm" variant="outline" onClick={() => setBracketDrawer(true)}>
                   <Plus className="mr-1.5 size-3" />
-                  Add Bracket
+                  {t("addBracket")}
                 </Button>
               </div>
               {taxBrackets.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-4 text-center">No tax brackets configured</p>
+                <p className="text-sm text-muted-foreground py-4 text-center">{t("noBrackets")}</p>
               ) : (
                 <div className="rounded-lg border divide-y">
                   {taxBrackets.map((b) => (
@@ -525,7 +473,7 @@ export default function PayrollSettingsPage() {
                       <div>
                         <p className="text-sm font-medium">{b.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          {b.jurisdictionLevel}{b.jurisdiction ? ` · ${b.jurisdiction}` : ""} · ${payrollCentsDecimal(b.minIncome)}{b.maxIncome != null ? ` - $${payrollCentsDecimal(b.maxIncome)}` : "+"} · {payrollCentsDecimal(b.rate)}%
+                          {t("bracketSummary", { level: t(settingsLabelKey(b.jurisdictionLevel)), jurisdiction: b.jurisdiction ? ` · ${b.jurisdiction}` : "", min: payrollCentsDecimal(b.minIncome), ceiling: b.maxIncome != null ? t("bracketCeiling", { amount: payrollCentsDecimal(b.maxIncome) }) : t("unbounded"), rate: payrollCentsDecimal(b.rate) })}
                         </p>
                       </div>
                     </div>
@@ -540,16 +488,16 @@ export default function PayrollSettingsPage() {
 
         {/* Shift Definitions */}
         <motion.div {...anim(0.15)}>
-          <Section title="Shifts" description="Define work shifts and premiums.">
+          <Section title={t("shifts")} description={t("shiftsDescription")}>
             <div className="space-y-3">
               <div className="flex justify-end">
                 <Button size="sm" variant="outline" onClick={() => setShiftDrawer(true)}>
                   <Plus className="mr-1.5 size-3" />
-                  Add Shift
+                  {t("addShift")}
                 </Button>
               </div>
               {shifts.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-4 text-center">No shifts configured</p>
+                <p className="text-sm text-muted-foreground py-4 text-center">{t("noShifts")}</p>
               ) : (
                 <div className="rounded-lg border divide-y">
                   {shifts.map((s) => (
@@ -557,11 +505,11 @@ export default function PayrollSettingsPage() {
                       <div>
                         <p className="text-sm font-medium">{s.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          {s.startTime} - {s.endTime} · {s.shiftType}{s.premiumPercent ? ` · +${s.premiumPercent}%` : ""}
+                          {t("shiftSummary", { start: s.startTime, end: s.endTime, type: t(settingsLabelKey(s.shiftType)) })}{s.premiumPercent ? t("shiftPremium", { percent: String(s.premiumPercent) }) : ""}
                         </p>
                       </div>
                       <Badge variant="outline" className={cn("text-[10px]", s.isActive ? "text-emerald-600" : "text-muted-foreground")}>
-                        {s.isActive ? "Active" : "Inactive"}
+                        {s.isActive ? t("active") : t("inactive")}
                       </Badge>
                     </div>
                   ))}
@@ -575,16 +523,16 @@ export default function PayrollSettingsPage() {
 
         {/* Leave Policies */}
         <motion.div {...anim(0.2)}>
-          <Section title="Leave Policies" description="Configure PTO and leave accrual rules.">
+          <Section title={t("policies")} description={t("policiesDescription")}>
             <div className="space-y-3">
               <div className="flex justify-end">
                 <Button size="sm" variant="outline" onClick={() => setLeaveDrawer(true)}>
                   <Plus className="mr-1.5 size-3" />
-                  Add Policy
+                  {t("addPolicy")}
                 </Button>
               </div>
               {leavePolicies.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-4 text-center">No leave policies configured</p>
+                <p className="text-sm text-muted-foreground py-4 text-center">{t("noPolicies")}</p>
               ) : (
                 <div className="rounded-lg border divide-y">
                   {leavePolicies.map((p) => (
@@ -592,7 +540,7 @@ export default function PayrollSettingsPage() {
                       <div>
                         <p className="text-sm font-medium">{p.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          {p.leaveType} · {p.accrualRate}h/{p.accrualMethod.replace(/_/g, " ")}{p.maxBalance ? ` · Max ${p.maxBalance}h` : ""}
+                          {t("leaveSummary", { type: t(settingsLabelKey(p.leaveType)), hours: String(p.accrualRate), method: t(settingsLabelKey(p.accrualMethod)) })}{p.maxBalance ? t("leaveCap", { hours: String(p.maxBalance) }) : ""}
                         </p>
                       </div>
                     </div>
@@ -607,19 +555,19 @@ export default function PayrollSettingsPage() {
 
         {/* Approval Chains */}
         <motion.div {...anim(0.25)}>
-          <Section title="Approval Chains" description="Configure payroll approval workflows.">
+          <Section title={t("chains")} description={t("chainsDescription")}>
             {approvalChains.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4 text-center">No approval chains configured</p>
+              <p className="text-sm text-muted-foreground py-4 text-center">{t("noChains")}</p>
             ) : (
               <div className="rounded-lg border divide-y">
                 {approvalChains.map((c) => (
                   <div key={c.id} className="flex items-center justify-between px-4 py-2.5">
                     <div>
                       <p className="text-sm font-medium">{c.name}</p>
-                      <p className="text-xs text-muted-foreground">{c.steps.length} step(s)</p>
+                      <p className="text-xs text-muted-foreground">{t("steps", { count: c.steps.length })}</p>
                     </div>
                     <Badge variant="outline" className={cn("text-[10px]", c.isActive ? "text-emerald-600" : "text-muted-foreground")}>
-                      {c.isActive ? "Active" : "Inactive"}
+                      {c.isActive ? t("active") : t("inactive")}
                     </Badge>
                   </div>
                 ))}
@@ -632,16 +580,16 @@ export default function PayrollSettingsPage() {
 
         {/* Compensation Bands */}
         <motion.div {...anim(0.3)}>
-          <Section title="Compensation Bands" description="Define salary ranges by level for benchmarking and offers.">
+          <Section title={t("bands")} description={t("bandsDescription")}>
             <div className="space-y-3">
               <div className="flex justify-end">
                 <Button size="sm" variant="outline" onClick={() => setBandDrawer(true)}>
                   <Plus className="mr-1.5 size-3" />
-                  Add Band
+                  {t("addBand")}
                 </Button>
               </div>
               {compensationBands.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-4 text-center">No compensation bands configured</p>
+                <p className="text-sm text-muted-foreground py-4 text-center">{t("noBands")}</p>
               ) : (
                 <div className="rounded-lg border divide-y">
                   {compensationBands.map((band) => (
@@ -649,10 +597,10 @@ export default function PayrollSettingsPage() {
                       <div>
                         <p className="text-sm font-medium">{band.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          Level {band.level} · {payrollMoneyDisplay(band.minSalary, band.currency)} - {payrollMoneyDisplay(band.midSalary, band.currency)} - {payrollMoneyDisplay(band.maxSalary, band.currency)}
+                          {t("bandSummary", { level: band.level ?? "—", min: payrollMoneyDisplay(band.minSalary, band.currency), mid: payrollMoneyDisplay(band.midSalary, band.currency), max: payrollMoneyDisplay(band.maxSalary, band.currency) })}
                         </p>
                       </div>
-                      <Button size="icon" variant="ghost" className="size-7" onClick={() => handleDeleteBand(band.id)}>
+                      <Button size="icon" variant="ghost" className="size-7" aria-label={t("deleteBandTitle")} onClick={() => handleDeleteBand(band.id)}>
                         <Trash2 className="size-3.5 text-muted-foreground" />
                       </Button>
                     </div>
@@ -667,12 +615,12 @@ export default function PayrollSettingsPage() {
 
         {/* Self-Service Link */}
         <motion.div {...anim(0.35)}>
-          <Section title="Self-Service Portal" description="Employees can view pay stubs, update tax forms, and manage their payroll preferences.">
+          <Section title={t("portal")} description={t("portalDescription")}>
             <div className="flex items-center gap-3">
               <Button asChild size="sm" variant="outline">
                 <Link href="/payroll/self-service">
                   <ExternalLink className="mr-1.5 size-3" />
-                  Open Self-Service Portal
+                  {t("openPortal")}
                 </Link>
               </Button>
             </div>
@@ -689,41 +637,41 @@ export default function PayrollSettingsPage() {
                 <DollarSign className="size-5" />
               </div>
               <div>
-                <SheetTitle>Add Deduction Type</SheetTitle>
-                <SheetDescription>Create a new recurring deduction category.</SheetDescription>
+                <SheetTitle>{t("deductionTitle")}</SheetTitle>
+                <SheetDescription>{t("deductionDescription")}</SheetDescription>
               </div>
             </div>
           </SheetHeader>
           <form onSubmit={(e) => { e.preventDefault(); handleAddDeduction(); }}>
             <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
               <div className="space-y-2">
-                <Label>Name</Label>
+                <Label>{t("name")}</Label>
                 <Input value={newDeduction.name} onChange={(e) => setNewDeduction({ ...newDeduction, name: e.target.value })} />
               </div>
               <div className="space-y-2">
-                <Label>Category</Label>
+                <Label>{t("category")}</Label>
                 <Select value={newDeduction.category} onValueChange={(v) => setNewDeduction({ ...newDeduction, category: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="pre_tax">Pre-tax</SelectItem>
-                    <SelectItem value="post_tax">Post-tax</SelectItem>
+                    <SelectItem value="pre_tax">{t("preTax")}</SelectItem>
+                    <SelectItem value="post_tax">{t("postTax")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Default Amount ($)</Label>
+                  <Label>{t("defaultAmount")}</Label>
                   <CurrencyInput prefix="$" value={newDeduction.defaultAmount} onChange={(v) => setNewDeduction({ ...newDeduction, defaultAmount: v })} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Default Percent (%)</Label>
+                  <Label>{t("defaultPercent")}</Label>
                   <Input type="number" step="0.01" value={newDeduction.defaultPercent} onChange={(e) => setNewDeduction({ ...newDeduction, defaultPercent: e.target.value })} />
                 </div>
               </div>
             </div>
             <div className="border-t px-4 py-3 sm:px-6 flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setDeductionDrawer(false)}>Cancel</Button>
-              <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">Create</Button>
+              <Button type="button" variant="outline" onClick={() => setDeductionDrawer(false)}>{t("cancel")}</Button>
+              <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">{t("create")}</Button>
             </div>
           </form>
         </SheetContent>
@@ -738,46 +686,46 @@ export default function PayrollSettingsPage() {
                 <Shield className="size-5" />
               </div>
               <div>
-                <SheetTitle>Add Tax Bracket</SheetTitle>
-                <SheetDescription>Define a new progressive tax rate bracket.</SheetDescription>
+                <SheetTitle>{t("bracketTitle")}</SheetTitle>
+                <SheetDescription>{t("bracketDescription")}</SheetDescription>
               </div>
             </div>
           </SheetHeader>
           <form onSubmit={(e) => { e.preventDefault(); handleAddBracket(); }}>
             <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
               <div className="space-y-2">
-                <Label>Name</Label>
+                <Label>{t("name")}</Label>
                 <Input value={newBracket.name} onChange={(e) => setNewBracket({ ...newBracket, name: e.target.value })} />
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Jurisdiction Level</Label>
+                  <Label>{t("jurisdiction")}</Label>
                   <Select value={newBracket.jurisdictionLevel} onValueChange={(v) => setNewBracket({ ...newBracket, jurisdictionLevel: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="federal">Federal</SelectItem>
-                      <SelectItem value="state">State</SelectItem>
-                      <SelectItem value="local">Local</SelectItem>
+                      <SelectItem value="federal">{t("federal")}</SelectItem>
+                      <SelectItem value="state">{t("state")}</SelectItem>
+                      <SelectItem value="local">{t("local")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Rate (%)</Label>
+                  <Label>{t("rate")}</Label>
                   <Input type="number" step="0.01" value={newBracket.rate} onChange={(e) => setNewBracket({ ...newBracket, rate: e.target.value })} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Min Income</Label>
+                  <Label>{t("minIncome")}</Label>
                   <CurrencyInput prefix="$" value={newBracket.minIncome} onChange={(v) => setNewBracket({ ...newBracket, minIncome: v })} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Max Income</Label>
-                  <CurrencyInput prefix="$" value={newBracket.maxIncome} onChange={(v) => setNewBracket({ ...newBracket, maxIncome: v })} placeholder="Unlimited" />
+                  <Label>{t("maxIncome")}</Label>
+                  <CurrencyInput prefix="$" value={newBracket.maxIncome} onChange={(v) => setNewBracket({ ...newBracket, maxIncome: v })} placeholder={t("unlimited")} />
                 </div>
               </div>
             </div>
             <div className="border-t px-4 py-3 sm:px-6 flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setBracketDrawer(false)}>Cancel</Button>
-              <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">Create</Button>
+              <Button type="button" variant="outline" onClick={() => setBracketDrawer(false)}>{t("cancel")}</Button>
+              <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">{t("create")}</Button>
             </div>
           </form>
         </SheetContent>
@@ -792,48 +740,48 @@ export default function PayrollSettingsPage() {
                 <Clock className="size-5" />
               </div>
               <div>
-                <SheetTitle>Add Shift</SheetTitle>
-                <SheetDescription>Define a new work shift with optional premium.</SheetDescription>
+                <SheetTitle>{t("addShift")}</SheetTitle>
+                <SheetDescription>{t("shiftDescription")}</SheetDescription>
               </div>
             </div>
           </SheetHeader>
           <form onSubmit={(e) => { e.preventDefault(); handleAddShift(); }}>
             <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
               <div className="space-y-2">
-                <Label>Name</Label>
+                <Label>{t("name")}</Label>
                 <Input value={newShift.name} onChange={(e) => setNewShift({ ...newShift, name: e.target.value })} />
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Type</Label>
+                  <Label>{t("type")}</Label>
                   <Select value={newShift.shiftType} onValueChange={(v) => setNewShift({ ...newShift, shiftType: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="regular">Regular</SelectItem>
-                      <SelectItem value="overtime">Overtime</SelectItem>
-                      <SelectItem value="night">Night</SelectItem>
-                      <SelectItem value="weekend">Weekend</SelectItem>
-                      <SelectItem value="holiday">Holiday</SelectItem>
+                      <SelectItem value="regular">{t("regular")}</SelectItem>
+                      <SelectItem value="overtime">{t("overtime")}</SelectItem>
+                      <SelectItem value="night">{t("night")}</SelectItem>
+                      <SelectItem value="weekend">{t("weekend")}</SelectItem>
+                      <SelectItem value="holiday">{t("holiday")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Premium (%)</Label>
+                  <Label>{t("premium")}</Label>
                   <Input type="number" step="0.25" min={0} value={newShift.premiumPercent} onChange={(e) => setNewShift({ ...newShift, premiumPercent: e.target.value })} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Start Time</Label>
+                  <Label>{t("startTime")}</Label>
                   <Input type="time" value={newShift.startTime} onChange={(e) => setNewShift({ ...newShift, startTime: e.target.value })} />
                 </div>
                 <div className="space-y-2">
-                  <Label>End Time</Label>
+                  <Label>{t("endTime")}</Label>
                   <Input type="time" value={newShift.endTime} onChange={(e) => setNewShift({ ...newShift, endTime: e.target.value })} />
                 </div>
               </div>
             </div>
             <div className="border-t px-4 py-3 sm:px-6 flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setShiftDrawer(false)}>Cancel</Button>
-              <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">Create</Button>
+              <Button type="button" variant="outline" onClick={() => setShiftDrawer(false)}>{t("cancel")}</Button>
+              <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">{t("create")}</Button>
             </div>
           </form>
         </SheetContent>
@@ -848,58 +796,58 @@ export default function PayrollSettingsPage() {
                 <CalendarDays className="size-5" />
               </div>
               <div>
-                <SheetTitle>Add Leave Policy</SheetTitle>
-                <SheetDescription>Set up how staff earn paid time off (PTO).</SheetDescription>
+                <SheetTitle>{t("leaveTitle")}</SheetTitle>
+                <SheetDescription>{t("leaveDescription")}</SheetDescription>
               </div>
             </div>
           </SheetHeader>
           <form onSubmit={(e) => { e.preventDefault(); handleAddLeavePolicy(); }}>
             <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
               <div className="space-y-2">
-                <Label>Name</Label>
+                <Label>{t("name")}</Label>
                 <Input value={newLeave.name} onChange={(e) => setNewLeave({ ...newLeave, name: e.target.value })} />
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Leave Type</Label>
+                  <Label>{t("leaveType")}</Label>
                   <Select value={newLeave.leaveType} onValueChange={(v) => setNewLeave({ ...newLeave, leaveType: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="vacation">Vacation</SelectItem>
-                      <SelectItem value="sick">Sick</SelectItem>
-                      <SelectItem value="personal">Personal</SelectItem>
-                      <SelectItem value="parental">Parental</SelectItem>
-                      <SelectItem value="bereavement">Bereavement</SelectItem>
-                      <SelectItem value="unpaid">Unpaid</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
+                      <SelectItem value="vacation">{t("vacation")}</SelectItem>
+                      <SelectItem value="sick">{t("sick")}</SelectItem>
+                      <SelectItem value="personal">{t("personal")}</SelectItem>
+                      <SelectItem value="parental">{t("parental")}</SelectItem>
+                      <SelectItem value="bereavement">{t("bereavement")}</SelectItem>
+                      <SelectItem value="unpaid">{t("unpaid")}</SelectItem>
+                      <SelectItem value="other">{t("other")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>How time off builds up</Label>
+                  <Label>{t("accrual")}</Label>
                   <Select value={newLeave.accrualMethod} onValueChange={(v) => setNewLeave({ ...newLeave, accrualMethod: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="per_pay_period">Per Pay Period</SelectItem>
-                      <SelectItem value="monthly">Monthly</SelectItem>
-                      <SelectItem value="annually">Annually</SelectItem>
-                      <SelectItem value="front_loaded">Front Loaded</SelectItem>
+                      <SelectItem value="per_pay_period">{t("perPayPeriod")}</SelectItem>
+                      <SelectItem value="monthly">{t("monthly")}</SelectItem>
+                      <SelectItem value="annually">{t("annually")}</SelectItem>
+                      <SelectItem value="front_loaded">{t("frontLoaded")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Hours earned</Label>
+                  <Label>{t("hoursEarned")}</Label>
                   <Input type="number" step="0.5" value={newLeave.accrualRate} onChange={(e) => setNewLeave({ ...newLeave, accrualRate: e.target.value })} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Max Balance (hours)</Label>
-                  <Input type="number" value={newLeave.maxBalance} onChange={(e) => setNewLeave({ ...newLeave, maxBalance: e.target.value })} placeholder="Unlimited" />
+                  <Label>{t("maxBalance")}</Label>
+                  <Input type="number" value={newLeave.maxBalance} onChange={(e) => setNewLeave({ ...newLeave, maxBalance: e.target.value })} placeholder={t("unlimited")} />
                 </div>
               </div>
             </div>
             <div className="border-t px-4 py-3 sm:px-6 flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setLeaveDrawer(false)}>Cancel</Button>
-              <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">Create</Button>
+              <Button type="button" variant="outline" onClick={() => setLeaveDrawer(false)}>{t("cancel")}</Button>
+              <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">{t("create")}</Button>
             </div>
           </form>
         </SheetContent>
@@ -914,8 +862,8 @@ export default function PayrollSettingsPage() {
                 <Layers className="size-5" />
               </div>
               <div>
-                <SheetTitle>Add Compensation Band</SheetTitle>
-                <SheetDescription>Define a salary range for a specific level.</SheetDescription>
+                <SheetTitle>{t("bandTitle")}</SheetTitle>
+                <SheetDescription>{t("bandDescription")}</SheetDescription>
               </div>
             </div>
           </SheetHeader>
@@ -923,32 +871,32 @@ export default function PayrollSettingsPage() {
             <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Name</Label>
+                  <Label>{t("name")}</Label>
                   <Input value={newBand.name} onChange={(e) => setNewBand({ ...newBand, name: e.target.value })} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Level</Label>
-                  <Input value={newBand.level} onChange={(e) => setNewBand({ ...newBand, level: e.target.value })} placeholder="e.g. L3, Senior" />
+                  <Label>{t("level")}</Label>
+                  <Input value={newBand.level} onChange={(e) => setNewBand({ ...newBand, level: e.target.value })} placeholder={t("levelPlaceholder")} />
                 </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-3">
                 <div className="space-y-2">
-                  <Label>Min Salary</Label>
+                  <Label>{t("minSalary")}</Label>
                   <CurrencyInput prefix="$" value={newBand.minSalary} onChange={(v) => setNewBand({ ...newBand, minSalary: v })} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Mid Salary</Label>
+                  <Label>{t("midSalary")}</Label>
                   <CurrencyInput prefix="$" value={newBand.midSalary} onChange={(v) => setNewBand({ ...newBand, midSalary: v })} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Max Salary</Label>
+                  <Label>{t("maxSalary")}</Label>
                   <CurrencyInput prefix="$" value={newBand.maxSalary} onChange={(v) => setNewBand({ ...newBand, maxSalary: v })} />
                 </div>
               </div>
             </div>
             <div className="border-t px-4 py-3 sm:px-6 flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setBandDrawer(false)}>Cancel</Button>
-              <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">Create</Button>
+              <Button type="button" variant="outline" onClick={() => setBandDrawer(false)}>{t("cancel")}</Button>
+              <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">{t("create")}</Button>
             </div>
           </form>
         </SheetContent>

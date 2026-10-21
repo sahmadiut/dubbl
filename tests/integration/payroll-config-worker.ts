@@ -1,4 +1,5 @@
 import { payrollEmployeeDetailJson } from "../../i18n/payroll-employee-detail-presentation";
+import { payrollSettingsJson } from "../../i18n/payroll-settings-presentation";
 import { payrollJson, payrollUiPayload } from "../../lib/money/payroll-ui";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -7,7 +8,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { db } from "../../lib/db";
-import { organization, users, member, apiKey, customRole, payrollEmployee, employeeDeduction, payrollSettings, taxBracket, taxAllowanceConfig, chartAccount, payrollRun } from "../../lib/db/schema";
+import { organization, users, member, apiKey, customRole, payrollEmployee, employeeDeduction, payrollSettings, taxBracket, taxAllowanceConfig, chartAccount, payrollRun, approvalChain, approvalChainStep } from "../../lib/db/schema";
 import { computeEmployeeWithholding } from "../../lib/api/payroll-withholding";
 import type { AuthContext } from "../../lib/api/auth-context";
 import { registerPayrollConfigTools } from "../../lib/mcp/tools/payroll-config";
@@ -22,6 +23,7 @@ import * as route6 from "../../app/api/v1/payroll/tax/brackets/route";
 import * as route7 from "../../app/api/v1/payroll/tax/brackets/[id]/route";
 import * as route8 from "../../app/api/v1/payroll/tax/allowances/route";
 import * as route9 from "../../app/api/v1/payroll/tax/allowances/[id]/route";
+import * as chainsRoute from "../../app/api/v1/payroll/approval-chains/route";
 const routes = [route0, route1, route2, route3, route4, route5, route6, route7, route8, route9];
 const definitions = [{"name":"get_payroll_settings","env":"settings","args":[],"verb":"GET","routeIndex":0,"body":false},{"name":"update_payroll_settings","env":"settings","args":[],"verb":"PUT","routeIndex":0,"body":true},{"name":"list_payroll_deduction_types","env":"data","args":[],"verb":"GET","routeIndex":1,"body":false},{"name":"get_payroll_deduction_type","env":"deductionType","args":["id"],"verb":"GET","routeIndex":2,"body":false},{"name":"create_payroll_deduction_type","env":"deductionType","args":[],"verb":"POST","routeIndex":1,"body":true},{"name":"update_payroll_deduction_type","env":"deductionType","args":["id"],"verb":"PATCH","routeIndex":2,"body":true},{"name":"delete_payroll_deduction_type","env":"","args":["id"],"verb":"DELETE","routeIndex":2,"body":false},{"name":"list_payroll_employee_deductions","env":"data","args":["employeeId"],"verb":"GET","routeIndex":3,"body":false},{"name":"create_payroll_employee_deduction","env":"deduction","args":["employeeId"],"verb":"POST","routeIndex":3,"body":true},{"name":"update_payroll_employee_deduction","env":"deduction","args":["employeeId","id"],"verb":"PATCH","routeIndex":4,"body":true},{"name":"delete_payroll_employee_deduction","env":"","args":["employeeId","id"],"verb":"DELETE","routeIndex":4,"body":false},{"name":"get_payroll_employee_tax_config","env":"taxConfig","args":["employeeId"],"verb":"GET","routeIndex":5,"body":false},{"name":"update_payroll_employee_tax_config","env":"taxConfig","args":["employeeId"],"verb":"PUT","routeIndex":5,"body":true},{"name":"list_payroll_tax_brackets","env":"data","args":[],"verb":"GET","routeIndex":6,"body":false},{"name":"get_payroll_tax_bracket","env":"bracket","args":["id"],"verb":"GET","routeIndex":7,"body":false},{"name":"create_payroll_tax_bracket","env":"bracket","args":[],"verb":"POST","routeIndex":6,"body":true},{"name":"update_payroll_tax_bracket","env":"bracket","args":["id"],"verb":"PATCH","routeIndex":7,"body":true},{"name":"delete_payroll_tax_bracket","env":"","args":["id"],"verb":"DELETE","routeIndex":7,"body":false},{"name":"list_payroll_tax_allowances","env":"data","args":[],"verb":"GET","routeIndex":8,"body":false},{"name":"get_payroll_tax_allowance","env":"allowance","args":["id"],"verb":"GET","routeIndex":9,"body":false},{"name":"create_payroll_tax_allowance","env":"allowance","args":[],"verb":"POST","routeIndex":8,"body":true},{"name":"update_payroll_tax_allowance","env":"allowance","args":["id"],"verb":"PATCH","routeIndex":9,"body":true},{"name":"delete_payroll_tax_allowance","env":"","args":["id"],"verb":"DELETE","routeIndex":9,"body":false}];
 
@@ -72,6 +74,13 @@ async function run() {
   };
   const data = async (response: Response, status = 200) => { const body = await payrollJson(response); assert.equal(response.status, status, JSON.stringify(body)); return body; };
   const checkDetail = async <T extends Record<string, unknown>>(name: string, body: T) => {
+    const settingsKinds: Record<string, Parameters<typeof payrollSettingsJson>[1]> = {
+      get_payroll_settings: "settings", update_payroll_settings: "settings",
+      list_payroll_deduction_types: "deductions", create_payroll_deduction_type: "deduction",
+      list_payroll_tax_brackets: "brackets", create_payroll_tax_bracket: "bracket",
+      delete_payroll_deduction_type: "deleted",
+    };
+    if (settingsKinds[name]) await payrollSettingsJson(Response.json(body), settingsKinds[name]);
     const kind = name === "list_payroll_employee_deductions" ? "deductions" : ["get_payroll_employee_tax_config", "update_payroll_employee_tax_config"].includes(name) ? "tax" : null;
     if (kind) await payrollEmployeeDetailJson(Response.json(body), kind);
     return body;
@@ -85,6 +94,15 @@ async function run() {
     const before = await snapshot(), result = await client.call(name, args); assert.equal(result.isError, true, name); if (status) assert.equal(result.body.status, status); assert.deepEqual(await snapshot(), before);
   };
   try {
+    // The existing settings screen also reads approval chains. Preserve its REST scope.
+    const [chain] = await db.insert(approvalChain).values([{ organizationId: a.id, name: "Approval A" }, { organizationId: b.id, name: "Approval B" }]).returning();
+    const approver = (await db.select().from(member).where(eq(member.userId, owner.id))).find(m => m.organizationId === a.id)!;
+    await db.insert(approvalChainStep).values({ chainId: chain.id, stepOrder: 1, approverId: approver.id });
+    const chains = await payrollSettingsJson(await chainsRoute.GET(req()), "chains");
+    assert.deepEqual(chains.data.map(c => [c.id, c.name, c.steps.length]), [[chain.id, "Approval A", 1]]);
+    const chainSql = await db.execute(sql`select count(*)::text as n from approval_chain_step where chain_id = ${chain.id}`);
+    assert.equal(chainSql.rows[0].n, "1");
+    await assert.rejects(payrollSettingsJson(await chainsRoute.GET(req({}, keys.viewer)), "chains"));
     // Concurrent legacy GET initialization retains the existing envelopes, creates exactly one row and audit.
     const init = await Promise.all([read("get_payroll_settings"), call("get_payroll_settings")]);
     assert.equal(init[0].settings.id, init[1].settings.id); assert.equal(init[0].settings.ssWageBaseCentsMinor, "16810000");

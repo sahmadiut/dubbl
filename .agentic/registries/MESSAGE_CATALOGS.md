@@ -1,5 +1,11 @@
 # Message catalog foundation
 
+LOC-092 payroll settings use 124 paired `PayrollSettings` messages (8,053
+compatible keys per locale). See [scope and exceptions](PAYROLL_SETTINGS_CATALOGS.md)
+for the eight sections/five drawers, checked feedback and preserved configuration,
+exact cents, hours and REST/MCP contracts. Persian wording is provisional;
+LOC-067/008/002 and native/RTL qualification remain independent.
+
 LOC-091 payroll tax liabilities use 52 paired `PayrollTaxLiabilities` messages
 (7,929 compatible keys per locale). See
 [scope and exceptions](PAYROLL_TAX_LIABILITY_CATALOGS.md) for checked liability,

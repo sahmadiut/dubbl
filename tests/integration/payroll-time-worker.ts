@@ -1,5 +1,6 @@
 import { payrollEmployeeDetailJson } from "../../i18n/payroll-employee-detail-presentation";
 import { payrollTimeJson } from "../../i18n/payroll-time-presentation";
+import { payrollSettingsJson } from "../../i18n/payroll-settings-presentation";
 import { payrollSelfServiceJson } from "../../i18n/payroll-self-service-presentation";
 import { payrollJson, payrollUiPayload } from "../../lib/money/payroll-ui";
 import assert from "node:assert/strict";
@@ -75,6 +76,11 @@ async function run() {
   };
   const data = async (response: Response, status = 200) => { const body = await payrollJson(response); assert.equal(response.status, status, JSON.stringify(body)); return body; };
   const checkDetail = async <T extends Record<string, unknown>>(name: string, body: T, mcp = false) => {
+    const settingsKinds: Record<string, Parameters<typeof payrollSettingsJson>[1]> = {
+      list_payroll_shifts: "shifts", create_payroll_shift: "shift",
+      list_payroll_leave_policies: "policies", create_payroll_leave_policy: "policy",
+    };
+    if (settingsKinds[name]) await payrollSettingsJson(Response.json(body), settingsKinds[name]);
     const timeKinds: Record<string, Parameters<typeof payrollTimeJson>[1]> = { list_payroll_timesheets: "timesheets", list_payroll_leave_requests: "leave",
       list_payroll_leave_policies: "policies", create_payroll_timesheet: "timesheetCreated",
       create_payroll_leave_request: "leaveCreated", approve_payroll_leave_request: "approved",

@@ -1,5 +1,11 @@
 # Message catalog foundation
 
+LOC-094 project overview/navigation use 89 paired `ProjectOverview` messages
+(8,242 compatible keys per locale). See [scope and exceptions](PROJECT_OVERVIEW_CATALOGS.md)
+for shared header/charts/calendar, checked reads/invoicing and preserved exact
+cents, dates and REST/MCP contracts. Persian wording remains provisional;
+LOC-068/008/002 and native/RTL qualification retain independent acceptance.
+
 LOC-067 independently accepts the combined payroll catalog slice after
 LOC-079..092: 27 route components, two creation drawers and 1,043 paired messages
 across 14 namespaces (8,053 compatible keys per locale). See
@@ -303,7 +309,7 @@ Extraction ownership:
 | LOC-067 | LOC-008 child: payroll routes, creation and shared controls |
 | LOC-068 | LOC-008 child: projects and shared controls |
 | LOC-093 | LOC-068 child: project list, creation and settings; [scope and exceptions](PROJECT_LIST_CATALOGS.md) |
-| LOC-094 | LOC-068 child: project overview and navigation |
+| LOC-094 | LOC-068 child: project overview and navigation; [scope and exceptions](PROJECT_OVERVIEW_CATALOGS.md) |
 | LOC-095 | LOC-068 child: project tasks |
 | LOC-096 | LOC-068 child: project time and billing |
 | LOC-097 | LOC-068 child: project milestones |

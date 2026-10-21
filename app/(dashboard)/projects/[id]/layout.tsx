@@ -1,6 +1,7 @@
 "use client";
 
-import { projectCrmJson } from "@/lib/money/project-crm-ui";
+import { projectInvoiceJson } from "@/i18n/project-presentation";
+import { useProjectPresentation } from "@/i18n/project-overview-presentation";
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -24,15 +25,13 @@ import { cn } from "@/lib/utils";
 import {
   ProjectProvider,
   useProject,
-  statusConfig,
-  priorityConfig,
-  formatHours,
   daysUntil,
 } from "./project-context";
 import { projectMoneyDisplay } from "@/lib/money/project-display";
 
 function ProjectLayoutInner({ children }: { children: React.ReactNode }) {
-  const { project: proj, loading, orgId, projectId } = useProject();
+  const { t, statusConfig, priorityConfig, formatHours } = useProjectPresentation();
+  const { project: proj, loading, loadError, orgId, projectId } = useProject();
   const formatMoney = (amount: number | bigint | string) => projectMoneyDisplay(amount, proj?.currency ?? "USD");
   const pathname = usePathname();
   const router = useRouter();
@@ -41,9 +40,9 @@ function ProjectLayoutInner({ children }: { children: React.ReactNode }) {
   if (!proj) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh]">
-        <p className="text-sm text-muted-foreground">Project not found</p>
+        <p role={loadError ? "alert" : undefined} className="text-sm text-muted-foreground">{t(loadError || "notFound")}</p>
         <Button variant="ghost" size="sm" asChild className="mt-2">
-          <Link href="/projects">Back to projects</Link>
+          <Link href="/projects">{t("backToProjects")}</Link>
         </Button>
       </div>
     );
@@ -55,29 +54,28 @@ function ProjectLayoutInner({ children }: { children: React.ReactNode }) {
   const doneTasks = proj.tasks.filter(t => t.status === "done").length;
   const totalTasks = proj.tasks.length;
   const tabs = [
-    { href: base, label: "Overview", icon: CircleDot, exact: true },
-    ...(proj.enableTasks ? [{ href: `${base}/tasks`, label: "Tasks", icon: CheckCircle2, count: proj.tasks.filter(t => t.status !== "done" && t.status !== "cancelled").length }] : []),
-    ...(proj.enableTimeTracking ? [{ href: `${base}/time`, label: "Time", icon: Clock }] : []),
-    ...(proj.enableMilestones ? [{ href: `${base}/milestones`, label: "Milestones", icon: Flag }] : []),
-    ...(proj.enableNotes ? [{ href: `${base}/notes`, label: "Notes", icon: StickyNote, count: proj.notes.length }] : []),
-    { href: `${base}/members`, label: "Team", icon: Users, count: proj.members.length },
-    { href: `${base}/settings`, label: "Settings", icon: Settings2 },
+    { href: base, label: t("overview"), icon: CircleDot, exact: true },
+    ...(proj.enableTasks ? [{ href: `${base}/tasks`, label: t("tasks"), icon: CheckCircle2, count: proj.tasks.filter(t => t.status !== "done" && t.status !== "cancelled").length }] : []),
+    ...(proj.enableTimeTracking ? [{ href: `${base}/time`, label: t("time"), icon: Clock }] : []),
+    ...(proj.enableMilestones ? [{ href: `${base}/milestones`, label: t("milestones"), icon: Flag }] : []),
+    ...(proj.enableNotes ? [{ href: `${base}/notes`, label: t("notes"), icon: StickyNote, count: proj.notes.length }] : []),
+    { href: `${base}/members`, label: t("team"), icon: Users, count: proj.members.length },
+    { href: `${base}/settings`, label: t("settings"), icon: Settings2 },
   ];
 
   async function handleGenerateInvoice() {
-    if (!orgId) return;
+    if (!orgId) { toast.error(t("organizationRequired")); return; }
     try {
       const res = await fetch(`/api/v1/projects/${projectId}/invoice`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-organization-id": orgId },
         body: JSON.stringify({}),
       });
-      if (!res.ok) throw new Error((await projectCrmJson(res)).error || "Failed");
-      const data = await projectCrmJson(res);
-      toast.success("Invoice generated");
+      const data = await projectInvoiceJson(res);
+      toast.success(t("invoiceGenerated"));
       router.push(`/sales/${data.invoice.id}`);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to generate invoice");
+    } catch {
+      toast.error(t("invoiceFailed"));
     }
   }
 
@@ -86,7 +84,7 @@ function ProjectLayoutInner({ children }: { children: React.ReactNode }) {
       {/* ── Header: full-width spread ── */}
       <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 mb-3">
         <Button variant="ghost" size="icon" asChild className="shrink-0 size-7 -ml-1">
-          <Link href="/projects"><ArrowLeft className="size-3.5" /></Link>
+          <Link href="/projects" aria-label={t("backToProjects")}><ArrowLeft className="size-3.5" /></Link>
         </Button>
         <div className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: proj.color }} />
         <h1 className="text-base font-semibold tracking-tight truncate">{proj.name}</h1>
@@ -121,7 +119,7 @@ function ProjectLayoutInner({ children }: { children: React.ReactNode }) {
           )}
           {daysLeft !== null && (
             <span className={cn("font-medium", daysLeft < 0 ? "text-red-600" : daysLeft <= 7 ? "text-amber-600" : "")}>
-              {daysLeft > 0 ? `${daysLeft}d left` : daysLeft === 0 ? "Today" : `${Math.abs(daysLeft)}d late`}
+              {daysLeft > 0 ? t("daysLeft", { days: daysLeft }) : daysLeft === 0 ? t("today") : t("daysLate", { days: Math.abs(daysLeft) })}
             </span>
           )}
         </div>
@@ -132,7 +130,7 @@ function ProjectLayoutInner({ children }: { children: React.ReactNode }) {
 
         {proj.enableBilling && proj.contactId && (
           <Button size="sm" variant="outline" className="h-7 text-xs shrink-0" onClick={handleGenerateInvoice}>
-            <Receipt className="mr-1 size-3" />Invoice
+            <Receipt className="mr-1 size-3" />{t("invoice")}
           </Button>
         )}
       </div>
@@ -151,6 +149,7 @@ function ProjectLayoutInner({ children }: { children: React.ReactNode }) {
             <Link
               key={tab.href}
               href={tab.href}
+              aria-current={isActive ? "page" : undefined}
               className={cn(
                 "flex items-center gap-1.5 border-b-2 px-2.5 pb-2.5 text-[13px] font-medium transition-colors whitespace-nowrap shrink-0",
                 isActive

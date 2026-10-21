@@ -12,9 +12,10 @@ import { organization, users, member, apiKey, customRole, contact, team, teamMem
 import type { AuthContext } from "../../lib/api/auth-context";
 import { projectOperations } from "../../lib/api/project-master-operations";
 import { registerAllTools } from "../../lib/mcp/tools";
-import { projectListJson, projectMutationJson } from "../../i18n/project-presentation";
+import { projectListJson, projectMutationJson, projectDetailJson } from "../../i18n/project-presentation";
 
 async function checkPresentation(name: string, body: unknown) {
+  if (name === "get_project") assert.deepEqual(await projectDetailJson(Response.json(body), (body as { project: { id: string } }).project.id), body);
   if (name === "list_projects") assert.deepEqual(await projectListJson(Response.json(body)), body);
   if (["create_project", "update_project"].includes(name)) assert.deepEqual(await projectMutationJson(Response.json(body)), body);
   if (name === "delete_project") assert.deepEqual(await projectMutationJson(Response.json(body), "delete"), body);

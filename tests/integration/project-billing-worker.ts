@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { projectInvoiceJson } from "../../i18n/project-presentation";
 import { createHash, randomUUID } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import path from "node:path";
@@ -34,7 +35,9 @@ async function connect(ctx: AuthContext) {
   }
   return { async call(name: string, args: Record<string, unknown>) {
     const r = await client.callTool({ name, arguments: args }), text = (r.content as { text: string }[])[0].text;
-    return { isError: r.isError === true, body: text.startsWith("{") ? JSON.parse(text) : { error: text } };
+    const body = text.startsWith("{") ? JSON.parse(text) : { error: text };
+    if (!r.isError && name === "generate_project_invoice") assert.deepEqual(await projectInvoiceJson(Response.json(body)), body);
+    return { isError: r.isError === true, body };
   }, async close() { await client.close(); await server.close(); } };
 }
 async function run() {
@@ -58,7 +61,9 @@ async function run() {
     const r: Response = await mod[method](new Request(`http://fixture.test/billing?${query}`, { method,
       headers: { authorization: `Bearer ${key}`, "content-type": "application/json", "x-organization-id": b.id },
       ...(method === "POST" ? { body: JSON.stringify(body) } : {}) }), { params: Promise.resolve({ id: projectId }) });
-    return { isError: !r.ok, status: r.status, body: await r.json() };
+    const result = await r.json();
+    if (r.ok && op === "invoice") assert.deepEqual(await projectInvoiceJson(Response.json(result)), result);
+    return { isError: !r.ok, status: r.status, body: result };
   }
   async function snapshot() {
     const names = ["project", "time_entry", "project_milestone", "project_billable_item", "invoice", "invoice_line", "number_sequence", "audit_log"];

@@ -1,6 +1,6 @@
 "use client";
 
-import { projectCrmJson } from "@/lib/money/project-crm-ui";
+import { projectDetailJson } from "@/i18n/project-presentation";
 
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
@@ -165,6 +165,7 @@ export interface ProjectDetail {
 interface ProjectContextValue {
   project: ProjectDetail | null;
   loading: boolean;
+  loadError: "" | "organizationRequired" | "loadFailed";
   orgId: string | null;
   projectId: string;
   refresh: () => void;
@@ -182,29 +183,33 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const { id } = useParams<{ id: string }>();
   const [project, setProject] = useState<ProjectDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [orgId] = useState(() =>
-    typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null
-  );
-
-  const refresh = useCallback(() => {
-    if (!orgId) return;
-    fetch(`/api/v1/projects/${id}`, {
-      headers: { "x-organization-id": orgId },
-    })
-      .then(projectCrmJson)
-      .then((data) => {
-        if (data.project) setProject(data.project);
-      })
-      .catch(() => setProject(null))
-      .finally(() => setLoading(false));
-  }, [id, orgId]);
+  const [loadError, setLoadError] = useState<"" | "organizationRequired" | "loadFailed">("");
+  const [orgId] = useState(() => {
+    try { return typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null; }
+    catch { return null; }
+  });
+  const [refreshVersion, setRefreshVersion] = useState(0);
+  const refresh = useCallback(() => setRefreshVersion(value => value + 1), []);
 
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    let active = true;
+    void Promise.resolve().then(() => {
+      if (!active) return;
+      setProject(null);
+      if (!orgId) { setLoadError("organizationRequired"); setLoading(false); return; }
+      setLoading(true);
+      setLoadError("");
+      return fetch(`/api/v1/projects/${id}`, { headers: { "x-organization-id": orgId } })
+        .then(response => projectDetailJson(response, id))
+        .then(data => { if (active) setProject(data.project); })
+        .catch(() => { if (active) { setProject(null); setLoadError("loadFailed"); } })
+        .finally(() => { if (active) setLoading(false); });
+    });
+    return () => { active = false; };
+  }, [id, orgId, refreshVersion]);
 
   return (
-    <ProjectContext.Provider value={{ project, loading, orgId, projectId: id, refresh }}>
+    <ProjectContext.Provider value={{ project: project?.id === id ? project : null, loading, loadError, orgId, projectId: id, refresh }}>
       {children}
     </ProjectContext.Provider>
   );

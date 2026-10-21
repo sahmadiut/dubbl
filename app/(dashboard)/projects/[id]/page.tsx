@@ -11,8 +11,6 @@ import {
   Pin,
   Target,
   DollarSign,
-  ChevronLeft,
-  ChevronRight,
   Users,
   Timer,
   Activity,
@@ -30,16 +28,15 @@ import {
   Tooltip,
   CartesianGrid,
 } from "recharts";
+import { Calendar as ProjectCalendar } from "@/components/ui/calendar";
+import { DayButton } from "react-day-picker";
+import { dateToDateOnly, dateOnlyToDate } from "@/i18n/dates";
+import { useProjectPresentation } from "@/i18n/project-overview-presentation";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { projectMoneyDisplay, projectTimeCents } from "@/lib/money/project-display";
 import {
   useProject,
-  priorityConfig,
-  taskStatusConfig,
-  formatHours,
-  formatDate,
-  formatDateShort,
   daysUntil,
   pct,
   type ProjectDetail,
@@ -48,9 +45,10 @@ import Link from "next/link";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 
 export default function ProjectOverviewPage() {
+  const { t, priorityConfig, taskStatusConfig, formatHours, formatDate, formatDateShort, billingLabel } = useProjectPresentation();
   const { project: proj } = useProject();
   const formatMoney = (amount: number | bigint | string) => projectMoneyDisplay(amount, proj?.currency ?? "USD");
-  useDocumentTitle("Projects · Overview");
+  useDocumentTitle(t("documentTitle"));
   if (!proj) return null;
 
   const daysLeft = daysUntil(proj.endDate);
@@ -77,29 +75,29 @@ export default function ProjectOverviewPage() {
   // Build stat cards - always show at least 4
   const stats: StatCardProps[] = [];
   if (proj.enableTimeTracking) {
-    stats.push({ icon: Timer, label: "Logged", value: formatHours(proj.totalHours), sub: proj.estimatedHours > 0 ? `${hoursProgressPct}% of estimate` : `${proj.timeEntries.length} entries`, progress: proj.estimatedHours > 0 ? hoursProgressPct : undefined, color: "#3b82f6" });
+    stats.push({ icon: Timer, label: t("logged"), value: formatHours(proj.totalHours), sub: proj.estimatedHours > 0 ? t("estimatePercent", { percent: hoursProgressPct }) : t("entries", { count: proj.timeEntries.length }), progress: proj.estimatedHours > 0 ? hoursProgressPct : undefined, color: "#3b82f6" });
   }
   if (proj.enableTasks) {
-    stats.push({ icon: Zap, label: "Tasks", value: totalTasks > 0 ? `${doneTasks}/${totalTasks}` : "0", sub: totalTasks > 0 ? `${progressPct}% complete` : "No tasks yet", progress: totalTasks > 0 ? progressPct : 0, color: "#10b981" });
+    stats.push({ icon: Zap, label: t("tasks"), value: totalTasks > 0 ? `${doneTasks}/${totalTasks}` : "0", sub: totalTasks > 0 ? t("completePercent", { percent: progressPct }) : t("noTasksYet"), progress: totalTasks > 0 ? progressPct : 0, color: "#10b981" });
   }
   if (proj.enableBilling) {
-    stats.push({ icon: DollarSign, label: "Revenue", value: formatMoney(totalAmount), sub: unbilledAmount > 0 ? `${formatMoney(unbilledAmount)} unbilled` : "all invoiced" });
+    stats.push({ icon: DollarSign, label: t("revenue"), value: formatMoney(totalAmount), sub: unbilledAmount > 0 ? t("amountUnbilled", { amount: formatMoney(unbilledAmount) }) : t("allInvoiced") });
     if (proj.budget > 0) {
-      stats.push({ icon: DollarSign, label: "Budget", value: formatMoney(proj.totalBilled), sub: `of ${formatMoney(proj.budget)}`, progress: budgetPct, color: budgetPct > 90 ? "#ef4444" : "#f59e0b" });
+      stats.push({ icon: DollarSign, label: t("budget"), value: formatMoney(proj.totalBilled), sub: t("ofAmount", { amount: formatMoney(proj.budget) }), progress: budgetPct, color: budgetPct > 90 ? "#ef4444" : "#f59e0b" });
     }
   }
-  stats.push({ icon: Users, label: "Team", value: String(proj.members.length), sub: `${proj.members.filter(m => m.role === "manager").length} managers` });
+  stats.push({ icon: Users, label: t("team"), value: String(proj.members.length), sub: t("managers", { count: proj.members.filter(m => m.role === "manager").length }) });
   if (proj.endDate) {
     stats.push({
-      icon: Calendar, label: "Deadline",
-      value: daysLeft !== null ? (daysLeft > 0 ? `${daysLeft}d` : daysLeft === 0 ? "Today" : `${Math.abs(daysLeft)}d`) : formatDateShort(proj.endDate),
-      sub: daysLeft !== null ? (daysLeft > 0 ? "remaining" : "overdue") : undefined,
+      icon: Calendar, label: t("deadline"),
+      value: daysLeft !== null ? (daysLeft === 0 ? t("today") : t("days", { days: Math.abs(daysLeft) })) : formatDateShort(proj.endDate),
+      sub: daysLeft !== null ? (daysLeft > 0 ? t("remaining") : t("overdue")) : undefined,
       alert: daysLeft !== null && daysLeft < 0,
     });
   }
   // Pad to at least 4
   while (stats.length < 4) {
-    stats.push({ icon: Activity, label: "Activity", value: String(proj.notes.length + proj.timeEntries.length), sub: "total actions" });
+    stats.push({ icon: Activity, label: t("activity"), value: String(proj.notes.length + proj.timeEntries.length), sub: t("totalActions") });
   }
 
   return (
@@ -129,19 +127,19 @@ export default function ProjectOverviewPage() {
           <div className="rounded-lg border bg-card p-4 space-y-2">
             <div className="flex items-center gap-1.5 mb-1">
               <Briefcase className="size-3.5 text-muted-foreground/60" />
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Details</span>
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{t("details")}</span>
             </div>
             {proj.description && (
               <p className="text-[13px] text-muted-foreground leading-relaxed whitespace-pre-wrap line-clamp-3 mb-2">{proj.description}</p>
             )}
             <div className="space-y-1.5">
-              <Row label="Billing" value={<span className="text-[13px] capitalize">{proj.billingType.replace("_", " ")}</span>} />
-              {proj.contact && <Row label="Client" value={<span className="text-[13px] font-medium">{proj.contact.name}</span>} />}
-              {proj.category && <Row label="Category" value={<span className="text-[13px]">{proj.category}</span>} />}
-              {proj.hourlyRate > 0 && <Row label="Rate" value={<span className="text-[13px] font-mono tabular-nums">{formatMoney(proj.hourlyRate)}/hr</span>} />}
-              {proj.fixedPrice > 0 && <Row label="Fixed" value={<span className="text-[13px] font-mono tabular-nums">{formatMoney(proj.fixedPrice)}</span>} />}
-              {proj.startDate && <Row label="Start" value={<span className="text-[13px]">{formatDate(proj.startDate)}</span>} />}
-              {proj.endDate && <Row label="End" value={<span className={cn("text-[13px]", daysLeft !== null && daysLeft < 0 ? "text-red-600 font-medium" : "")}>{formatDate(proj.endDate)}</span>} />}
+              <Row label={t("billing")} value={<span className="text-[13px] capitalize">{billingLabel(proj.billingType)}</span>} />
+              {proj.contact && <Row label={t("client")} value={<span className="text-[13px] font-medium">{proj.contact.name}</span>} />}
+              {proj.category && <Row label={t("category")} value={<span className="text-[13px]">{proj.category}</span>} />}
+              {proj.hourlyRate > 0 && <Row label={t("rate")} value={<span className="text-[13px] font-mono tabular-nums">{t("perHour", { amount: formatMoney(proj.hourlyRate) })}</span>} />}
+              {proj.fixedPrice > 0 && <Row label={t("fixed")} value={<span className="text-[13px] font-mono tabular-nums">{formatMoney(proj.fixedPrice)}</span>} />}
+              {proj.startDate && <Row label={t("start")} value={<span className="text-[13px]">{formatDate(proj.startDate)}</span>} />}
+              {proj.endDate && <Row label={t("end")} value={<span className={cn("text-[13px]", daysLeft !== null && daysLeft < 0 ? "text-red-600 font-medium" : "")}>{formatDate(proj.endDate)}</span>} />}
             </div>
             {proj.startDate && proj.endDate && <TimelineBar startDate={proj.startDate} endDate={proj.endDate} color={proj.color} />}
             {proj.tags.length > 0 && (
@@ -156,24 +154,24 @@ export default function ProjectOverviewPage() {
             <div className="rounded-lg border bg-card p-4 space-y-2">
               <div className="flex items-center gap-1.5 mb-1">
                 <DollarSign className="size-3.5 text-muted-foreground/60" />
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Financials</span>
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{t("financials")}</span>
               </div>
               <div className="space-y-1.5 text-[13px]">
-                <Row label="Total billed" value={<span className="font-mono tabular-nums font-medium">{formatMoney(proj.totalBilled)}</span>} />
-                <Row label="Revenue" value={<span className="font-mono tabular-nums">{formatMoney(totalAmount)}</span>} />
-                {unbilledAmount > 0 && <Row label="Unbilled" value={<span className="font-mono tabular-nums text-amber-600">{formatMoney(unbilledAmount)}</span>} />}
+                <Row label={t("totalBilled")} value={<span className="font-mono tabular-nums font-medium">{formatMoney(proj.totalBilled)}</span>} />
+                <Row label={t("revenue")} value={<span className="font-mono tabular-nums">{formatMoney(totalAmount)}</span>} />
+                {unbilledAmount > 0 && <Row label={t("unbilled")} value={<span className="font-mono tabular-nums text-amber-600">{formatMoney(unbilledAmount)}</span>} />}
                 {proj.budget > 0 && (
                   <>
                     <div className="h-px bg-border my-1" />
-                    <Row label="Budget" value={<span className="font-mono tabular-nums">{formatMoney(proj.budget)}</span>} />
-                    <Row label="Remaining" value={<span className={cn("font-mono tabular-nums font-semibold", (BigInt(proj.budget) - BigInt(proj.totalBilled)) < 0 ? "text-red-600" : "text-emerald-600")}>{formatMoney((BigInt(proj.budget) - BigInt(proj.totalBilled)))}</span>} />
+                    <Row label={t("budget")} value={<span className="font-mono tabular-nums">{formatMoney(proj.budget)}</span>} />
+                    <Row label={t("remaining")} value={<span className={cn("font-mono tabular-nums font-semibold", (BigInt(proj.budget) - BigInt(proj.totalBilled)) < 0 ? "text-red-600" : "text-emerald-600")}>{formatMoney((BigInt(proj.budget) - BigInt(proj.totalBilled)))}</span>} />
                   </>
                 )}
                 {proj.enableTimeTracking && (
                   <>
                     <div className="h-px bg-border my-1" />
-                    <Row label="Billable time" value={<span className="font-mono tabular-nums">{formatHours(billableMinutes)}</span>} />
-                    <Row label="Avg rate" value={<span className="font-mono tabular-nums">{billableMinutes > 0 ? formatMoney((totalAmount * 60n + BigInt(billableMinutes) / 2n) / BigInt(billableMinutes)) : "-"}/hr</span>} />
+                    <Row label={t("billableTime")} value={<span className="font-mono tabular-nums">{formatHours(billableMinutes)}</span>} />
+                    <Row label={t("avgRate")} value={<span className="font-mono tabular-nums">{t("perHour", { amount: billableMinutes > 0 ? formatMoney((totalAmount * 60n + BigInt(billableMinutes) / 2n) / BigInt(billableMinutes)) : "-" })}</span>} />
                   </>
                 )}
               </div>
@@ -182,13 +180,13 @@ export default function ProjectOverviewPage() {
             <div className="rounded-lg border bg-card p-4 space-y-2">
               <div className="flex items-center gap-1.5 mb-1">
                 <Activity className="size-3.5 text-muted-foreground/60" />
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Summary</span>
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{t("summary")}</span>
               </div>
               <div className="space-y-1.5 text-[13px]">
-                {proj.enableTimeTracking && <Row label="Total time" value={<span className="font-mono tabular-nums font-medium">{formatHours(proj.totalHours)}</span>} />}
-                {proj.enableTasks && <Row label="Open tasks" value={<span className="font-mono tabular-nums">{totalTasks - doneTasks}</span>} />}
-                {proj.enableMilestones && <Row label="Milestones" value={<span className="font-mono tabular-nums">{proj.milestones.filter(m => m.status === "completed").length}/{proj.milestones.length}</span>} />}
-                <Row label="Notes" value={<span className="font-mono tabular-nums">{proj.notes.length}</span>} />
+                {proj.enableTimeTracking && <Row label={t("totalTime")} value={<span className="font-mono tabular-nums font-medium">{formatHours(proj.totalHours)}</span>} />}
+                {proj.enableTasks && <Row label={t("openTasks")} value={<span className="font-mono tabular-nums">{totalTasks - doneTasks}</span>} />}
+                {proj.enableMilestones && <Row label={t("milestones")} value={<span className="font-mono tabular-nums">{proj.milestones.filter(m => m.status === "completed").length}/{proj.milestones.length}</span>} />}
+                <Row label={t("notes")} value={<span className="font-mono tabular-nums">{proj.notes.length}</span>} />
               </div>
             </div>
           )}
@@ -200,23 +198,23 @@ export default function ProjectOverviewPage() {
         <div className="rounded-lg border bg-card p-4">
           <div className="flex items-center gap-1.5 mb-3">
             <TrendingUp className="size-3.5 text-muted-foreground/60" />
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Progress</span>
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{t("progress")}</span>
           </div>
           <div className="grid gap-4 sm:gap-5 grid-cols-1 sm:grid-cols-3">
             {proj.enableTasks && totalTasks > 0 ? (
-              <ProgressBar label="Tasks" value={progressPct} color="#10b981" sub={`${doneTasks} of ${totalTasks} done`} />
+              <ProgressBar label={t("tasks")} value={progressPct} color="#10b981" sub={t("tasksDone", { done: doneTasks, total: totalTasks })} />
             ) : (
-              <ProgressBar label="Tasks" value={0} color="#10b981" sub="No tasks" />
+              <ProgressBar label={t("tasks")} value={0} color="#10b981" sub={t("noTasks")} />
             )}
             {proj.enableTimeTracking && proj.estimatedHours > 0 ? (
-              <ProgressBar label="Time" value={hoursProgressPct} color="#3b82f6" sub={`${formatHours(proj.totalHours)} of ${formatHours(proj.estimatedHours)}`} />
+              <ProgressBar label={t("time")} value={hoursProgressPct} color="#3b82f6" sub={t("ofTotal", { value: formatHours(proj.totalHours), total: formatHours(proj.estimatedHours) })} />
             ) : (
-              <ProgressBar label="Time" value={0} color="#3b82f6" sub={proj.enableTimeTracking ? formatHours(proj.totalHours) + " logged" : "Not tracked"} />
+              <ProgressBar label={t("time")} value={0} color="#3b82f6" sub={proj.enableTimeTracking ? t("timeLogged", { time: formatHours(proj.totalHours) }) : t("notTracked")} />
             )}
             {proj.enableBilling && proj.budget > 0 ? (
-              <ProgressBar label="Budget" value={budgetPct} color={budgetPct > 90 ? "#ef4444" : "#f59e0b"} sub={`${formatMoney(proj.totalBilled)} of ${formatMoney(proj.budget)}`} />
+              <ProgressBar label={t("budget")} value={budgetPct} color={budgetPct > 90 ? "#ef4444" : "#f59e0b"} sub={t("ofTotal", { value: formatMoney(proj.totalBilled), total: formatMoney(proj.budget) })} />
             ) : (
-              <ProgressBar label="Budget" value={0} color="#f59e0b" sub={proj.enableBilling ? formatMoney(proj.totalBilled) + " billed" : "Not tracked"} />
+              <ProgressBar label={t("budget")} value={0} color="#f59e0b" sub={proj.enableBilling ? t("amountBilled", { amount: formatMoney(proj.totalBilled) }) : t("notTracked")} />
             )}
           </div>
 
@@ -251,7 +249,7 @@ export default function ProjectOverviewPage() {
       <div className="grid gap-3 sm:gap-4 grid-cols-1 lg:grid-cols-2">
         {/* Left column: Tasks + Milestones */}
         <div className="space-y-4">
-          <ListCard icon={Zap} label="Active Tasks" href={`/projects/${proj.id}/tasks`} count={activeTasks.length}>
+          <ListCard icon={Zap} label={t("activeTasks")} href={`/projects/${proj.id}/tasks`} count={activeTasks.length}>
             {activeTasks.length > 0 ? activeTasks.map((task) => {
               const overdue = task.dueDate && new Date(task.dueDate) < new Date();
               const tsc = taskStatusConfig[task.status];
@@ -259,19 +257,19 @@ export default function ProjectOverviewPage() {
                 <div key={task.id} className="flex items-center gap-2.5 px-4 py-2 hover:bg-muted/20 transition-colors">
                   <span className={cn("size-1.5 rounded-full shrink-0", tsc?.bar)} />
                   <span className="text-[13px] truncate flex-1">{task.title}</span>
-                  <Badge variant="outline" className={cn("text-[9px] h-4 shrink-0", priorityConfig[task.priority]?.color)}>{task.priority}</Badge>
+                  <Badge variant="outline" className={cn("text-[9px] h-4 shrink-0", priorityConfig[task.priority]?.color)}>{priorityConfig[task.priority]?.label ?? t("unknown")}</Badge>
                   {task.dueDate && (
                     <span className={cn("text-[10px] shrink-0 tabular-nums", overdue ? "text-red-600 font-medium" : "text-muted-foreground")}>{formatDateShort(task.dueDate)}</span>
                   )}
                 </div>
               );
             }) : (
-              <div className="px-4 py-6 text-center text-[13px] text-muted-foreground">No active tasks</div>
+              <div className="px-4 py-6 text-center text-[13px] text-muted-foreground">{t("noActiveTasks")}</div>
             )}
           </ListCard>
 
           {proj.enableMilestones && (
-            <ListCard icon={Flag} label="Milestones" href={`/projects/${proj.id}/milestones`} count={proj.milestones.length}>
+            <ListCard icon={Flag} label={t("milestones")} href={`/projects/${proj.id}/milestones`} count={proj.milestones.length}>
               {upcomingMilestones.length > 0 ? upcomingMilestones.map((ms) => {
                 const overdue = ms.dueDate && new Date(ms.dueDate) < new Date();
                 return (
@@ -283,7 +281,7 @@ export default function ProjectOverviewPage() {
                   </div>
                 );
               }) : (
-                <div className="px-4 py-6 text-center text-[13px] text-muted-foreground">No upcoming milestones</div>
+                <div className="px-4 py-6 text-center text-[13px] text-muted-foreground">{t("noMilestones")}</div>
               )}
             </ListCard>
           )}
@@ -291,7 +289,7 @@ export default function ProjectOverviewPage() {
 
         {/* Right column: Time + Team + Notes */}
         <div className="space-y-4">
-          <ListCard icon={Clock} label="Recent Time" href={`/projects/${proj.id}/time`} count={proj.timeEntries.length}>
+          <ListCard icon={Clock} label={t("recentTime")} href={`/projects/${proj.id}/time`} count={proj.timeEntries.length}>
             {recentTime.length > 0 ? recentTime.map((e) => (
               <div key={e.id} className="flex items-center gap-2.5 px-4 py-2 text-[13px]">
                 <span className="text-[11px] text-muted-foreground tabular-nums shrink-0 w-14">{formatDateShort(e.date)}</span>
@@ -301,7 +299,7 @@ export default function ProjectOverviewPage() {
                 <span className="font-mono text-[11px] tabular-nums shrink-0 text-muted-foreground">{formatMoney(projectTimeCents(e.minutes, e.hourlyRate))}</span>
               </div>
             )) : (
-              <div className="px-4 py-6 text-center text-[13px] text-muted-foreground">No time entries yet</div>
+              <div className="px-4 py-6 text-center text-[13px] text-muted-foreground">{t("noTime")}</div>
             )}
           </ListCard>
 
@@ -310,10 +308,10 @@ export default function ProjectOverviewPage() {
             <div className="flex items-center justify-between px-4 py-2.5 border-b bg-muted/30">
               <div className="flex items-center gap-1.5">
                 <Users className="size-3.5 text-muted-foreground/60" />
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Team</span>
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{t("team")}</span>
                 <span className="text-[9px] font-mono tabular-nums text-muted-foreground/60">{proj.members.length}</span>
               </div>
-              <Link href={`/projects/${proj.id}/members`} className="text-[11px] text-emerald-600 hover:underline font-medium">Manage</Link>
+              <Link href={`/projects/${proj.id}/members`} className="text-[11px] text-emerald-600 hover:underline font-medium">{t("manage")}</Link>
             </div>
             <div className="divide-y">
               {proj.members.length > 0 ? proj.members.slice(0, 5).map((m) => (
@@ -322,10 +320,10 @@ export default function ProjectOverviewPage() {
                     {(m.member.user.name || m.member.user.email)[0].toUpperCase()}
                   </div>
                   <span className="text-[12px] truncate flex-1">{m.member.user.name || m.member.user.email}</span>
-                  <span className="text-[9px] text-muted-foreground capitalize bg-muted px-1.5 py-0.5 rounded">{m.role}</span>
+                  <span className="text-[9px] text-muted-foreground capitalize bg-muted px-1.5 py-0.5 rounded">{m.role === "manager" ? t("manager") : m.role === "contributor" ? t("contributor") : m.role === "viewer" ? t("viewer") : t("unknown")}</span>
                 </div>
               )) : (
-                <div className="px-4 py-6 text-center text-[13px] text-muted-foreground">No team members</div>
+                <div className="px-4 py-6 text-center text-[13px] text-muted-foreground">{t("noMembers")}</div>
               )}
             </div>
           </div>
@@ -335,7 +333,7 @@ export default function ProjectOverviewPage() {
             <div className="rounded-lg border bg-card p-4">
               <div className="flex items-center gap-1 mb-2">
                 <Pin className="size-3 text-amber-500" />
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Pinned Notes</span>
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{t("pinnedNotes")}</span>
               </div>
               <div className="space-y-2">
                 {pinnedNotes.slice(0, 3).map((n) => (
@@ -405,6 +403,7 @@ function ProgressBar({ label, value, color, sub }: { label: string; value: numbe
 }
 
 function TimelineBar({ startDate, endDate, color }: { startDate: string; endDate: string; color: string }) {
+  const { formatDateShort } = useProjectPresentation();
   const [now] = useState(() => Date.now());
   const start = new Date(startDate + "T00:00:00").getTime();
   const end = new Date(endDate + "T00:00:00").getTime();
@@ -427,6 +426,7 @@ function TimelineBar({ startDate, endDate, color }: { startDate: string; endDate
 }
 
 function ListCard({ icon: Icon, label, href, count, children }: { icon: typeof Zap; label: string; href: string; count?: number; children: React.ReactNode }) {
+  const { t } = useProjectPresentation();
   return (
     <div className="rounded-lg border bg-card overflow-hidden">
       <div className="flex items-center justify-between px-4 py-2.5 border-b bg-muted/30">
@@ -436,7 +436,7 @@ function ListCard({ icon: Icon, label, href, count, children }: { icon: typeof Z
           {count !== undefined && <span className="text-[9px] font-mono tabular-nums text-muted-foreground/60">{count}</span>}
         </div>
         <Link href={href} className="text-[11px] text-emerald-600 hover:underline font-medium flex items-center gap-0.5">
-          View all <ArrowUpRight className="size-3" />
+          {t("viewAll")} <ArrowUpRight className="size-3" />
         </Link>
       </div>
       <div className="divide-y">{children}</div>
@@ -446,15 +446,16 @@ function ListCard({ icon: Icon, label, href, count, children }: { icon: typeof Z
 
 // ── Time Area Chart (recharts, last 14 days) ────────────────
 function TimeAreaChart({ entries, color }: { entries: ProjectDetail["timeEntries"]; color: string }) {
+  const { t, formatDateShort } = useProjectPresentation();
   const data = useMemo(() => {
     const days: { name: string; date: string; hours: number }[] = [];
     const now = new Date();
     for (let i = 13; i >= 0; i--) {
       const d = new Date(now);
       d.setDate(d.getDate() - i);
-      const dateStr = d.toISOString().split("T")[0];
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
       days.push({
-        name: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        name: formatDateShort(dateStr),
         date: dateStr,
         hours: 0,
       });
@@ -464,7 +465,7 @@ function TimeAreaChart({ entries, color }: { entries: ProjectDetail["timeEntries
       if (day) day.hours += Math.round((e.minutes / 60) * 10) / 10;
     });
     return days;
-  }, [entries]);
+  }, [entries, formatDateShort]);
 
   const totalHrs = data.reduce((s, d) => s + d.hours, 0);
 
@@ -473,11 +474,11 @@ function TimeAreaChart({ entries, color }: { entries: ProjectDetail["timeEntries
       <div className="flex items-center justify-between mb-3 flex-wrap gap-1">
         <div className="flex items-center gap-1.5">
           <Clock className="size-3.5 text-muted-foreground/60" />
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Time (14 days)</span>
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{t("time14Days")}</span>
         </div>
         <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
-          <span>Total: <span className="font-mono tabular-nums font-medium text-foreground">{totalHrs.toFixed(1)}h</span></span>
-          <span>Avg: <span className="font-mono tabular-nums font-medium text-foreground">{(totalHrs / 14).toFixed(1)}h</span>/day</span>
+          <span>{t("totalLabel")} <span className="font-mono tabular-nums font-medium text-foreground">{t("decimalHours", { hours: totalHrs.toFixed(1) })}</span></span>
+          <span>{t("avgLabel")} <span className="font-mono tabular-nums font-medium text-foreground">{t("decimalHours", { hours: (totalHrs / 14).toFixed(1) })}</span>{t("perDay")}</span>
         </div>
       </div>
       <ResponsiveContainer width="100%" height={180}>
@@ -490,12 +491,12 @@ function TimeAreaChart({ entries, color }: { entries: ProjectDetail["timeEntries
           </defs>
           <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
           <XAxis dataKey="name" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
-          <YAxis tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} unit="h" />
+          <YAxis tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} unit={t("hourUnit")} />
           <Tooltip
             contentStyle={{ fontSize: 11, borderRadius: 8, border: "1px solid hsl(var(--border))", background: "hsl(var(--card))" }}
             labelStyle={{ fontSize: 10, color: "hsl(var(--muted-foreground))" }}
           />
-          <Area type="monotone" dataKey="hours" stroke={color} strokeWidth={2} fill="url(#timeGrad)" dot={false} activeDot={{ r: 3, strokeWidth: 0 }} />
+          <Area type="monotone" name={t("chartHours")} dataKey="hours" stroke={color} strokeWidth={2} fill="url(#timeGrad)" dot={false} activeDot={{ r: 3, strokeWidth: 0 }} />
         </AreaChart>
       </ResponsiveContainer>
     </div>
@@ -504,6 +505,7 @@ function TimeAreaChart({ entries, color }: { entries: ProjectDetail["timeEntries
 
 // ── Task Pie Chart (recharts) ────────────────────────────────
 function TaskPieChart({ tasksByStatus, totalTasks, doneTasks }: { tasksByStatus: Record<string, number>; totalTasks: number; doneTasks: number }) {
+  const { t, taskStatusConfig } = useProjectPresentation();
   const data = useMemo(() => {
     const statusOrder = ["done", "in_progress", "in_review", "todo", "backlog", "cancelled"] as const;
     const colors: Record<string, string> = {
@@ -513,20 +515,20 @@ function TaskPieChart({ tasksByStatus, totalTasks, doneTasks }: { tasksByStatus:
     return statusOrder
       .filter(s => (tasksByStatus[s] || 0) > 0)
       .map(s => ({
-        name: taskStatusConfig[s]?.label || s,
+        name: taskStatusConfig[s]?.label ?? t("unknown"),
         value: tasksByStatus[s] || 0,
         color: colors[s],
       }));
-  }, [tasksByStatus]);
+  }, [tasksByStatus, taskStatusConfig, t]);
 
   // If no tasks, show placeholder
-  const showData = data.length > 0 ? data : [{ name: "No tasks", value: 1, color: "#e5e7eb" }];
+  const showData = data.length > 0 ? data : [{ name: t("noTasks"), value: 1, color: "#e5e7eb" }];
 
   return (
     <div className="rounded-lg border bg-card p-4">
       <div className="flex items-center gap-1.5 mb-3">
         <Zap className="size-3.5 text-muted-foreground/60" />
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Task Distribution</span>
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{t("taskDistribution")}</span>
       </div>
       <div className="flex flex-col sm:flex-row items-center gap-4">
         <div className="shrink-0">
@@ -553,7 +555,7 @@ function TaskPieChart({ tasksByStatus, totalTasks, doneTasks }: { tasksByStatus:
           </ResponsiveContainer>
           <div className="text-center -mt-2">
             <span className="text-lg font-bold font-mono tabular-nums">{totalTasks > 0 ? pct(doneTasks, totalTasks) : 0}%</span>
-            <span className="text-[9px] text-muted-foreground ml-1">done</span>
+            <span className="text-[9px] text-muted-foreground ml-1">{t("done")}</span>
           </div>
         </div>
         <div className="flex-1 space-y-1.5">
@@ -564,7 +566,7 @@ function TaskPieChart({ tasksByStatus, totalTasks, doneTasks }: { tasksByStatus:
               <span className="text-[11px] font-mono tabular-nums font-medium">{seg.value}</span>
             </div>
           )) : (
-            <p className="text-[11px] text-muted-foreground">No tasks to display</p>
+            <p className="text-[11px] text-muted-foreground">{t("noTasksDisplay")}</p>
           )}
         </div>
       </div>
@@ -574,96 +576,53 @@ function TaskPieChart({ tasksByStatus, totalTasks, doneTasks }: { tasksByStatus:
 
 // ── Calendar ──────────────────────────────────────────
 function MiniCalendar({ proj }: { proj: ProjectDetail }) {
-  const [viewDate, setViewDate] = useState(() => new Date());
-
-  const year = viewDate.getFullYear();
-  const month = viewDate.getMonth();
-  const firstDay = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-
+  const { t } = useProjectPresentation();
+  const [month, setMonth] = useState(() => new Date());
   const events = useMemo(() => {
-    const nowDate = new Date();
-    nowDate.setHours(0, 0, 0, 0);
     const map: Record<string, { tasks: number; milestones: number; time: number; overdue: boolean }> = {};
-    proj.tasks.forEach(t => {
-      if (!t.dueDate) return;
-      if (!map[t.dueDate]) map[t.dueDate] = { tasks: 0, milestones: 0, time: 0, overdue: false };
-      map[t.dueDate].tasks++;
-      if (t.status !== "done" && t.status !== "cancelled" && new Date(t.dueDate) < nowDate) map[t.dueDate].overdue = true;
-    });
-    proj.milestones.forEach(m => {
-      if (!m.dueDate) return;
-      if (!map[m.dueDate]) map[m.dueDate] = { tasks: 0, milestones: 0, time: 0, overdue: false };
-      map[m.dueDate].milestones++;
-    });
-    proj.timeEntries.forEach(e => {
-      if (!map[e.date]) map[e.date] = { tasks: 0, milestones: 0, time: 0, overdue: false };
-      map[e.date].time++;
-    });
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    for (const task of proj.tasks) if (task.dueDate) {
+      const event = map[task.dueDate] ??= { tasks: 0, milestones: 0, time: 0, overdue: false };
+      event.tasks++;
+      if (!["done", "cancelled"].includes(task.status) && new Date(task.dueDate + "T00:00:00") < today) event.overdue = true;
+    }
+    for (const milestone of proj.milestones) if (milestone.dueDate) {
+      (map[milestone.dueDate] ??= { tasks: 0, milestones: 0, time: 0, overdue: false }).milestones++;
+    }
+    for (const entry of proj.timeEntries) {
+      (map[entry.date] ??= { tasks: 0, milestones: 0, time: 0, overdue: false }).time++;
+    }
     return map;
   }, [proj.tasks, proj.milestones, proj.timeEntries]);
-
-  const days: (number | null)[] = [];
-  for (let i = 0; i < firstDay; i++) days.push(null);
-  for (let d = 1; d <= daysInMonth; d++) days.push(d);
-
-  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-
   return (
     <div className="rounded-lg border bg-card p-4">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-1.5">
-          <Calendar className="size-3.5 text-muted-foreground/60" />
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{monthNames[month]} {year}</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <button onClick={() => setViewDate(new Date(year, month - 1, 1))} className="size-6 rounded hover:bg-muted flex items-center justify-center transition-colors"><ChevronLeft className="size-3" /></button>
-          <button onClick={() => setViewDate(new Date())} className="text-[10px] text-muted-foreground hover:text-foreground px-1.5">Today</button>
-          <button onClick={() => setViewDate(new Date(year, month + 1, 1))} className="size-6 rounded hover:bg-muted flex items-center justify-center transition-colors"><ChevronRight className="size-3" /></button>
-        </div>
+      <div className="flex items-center justify-between mb-2">
+        <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"><Calendar className="size-3.5" />{t("calendar")}</span>
+        <button onClick={() => setMonth(new Date())} className="text-[10px] text-muted-foreground hover:text-foreground px-1.5">{t("today")}</button>
       </div>
-      <div className="grid grid-cols-7 gap-0.5">
-        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d, i) => (
-          <div key={i} className="text-center text-[9px] font-medium text-muted-foreground/60 pb-2">{d}</div>
-        ))}
-        {days.map((day, i) => {
-          if (day === null) return <div key={`e-${i}`} />;
-          const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-          const isToday = dateStr === todayStr;
-          const ev = events[dateStr];
-          const isStart = proj.startDate === dateStr;
-          const isEnd = proj.endDate === dateStr;
-          return (
-            <div key={day} className={cn(
-              "relative flex flex-col items-center py-1 rounded-md transition-colors",
-              ev && !isToday && "bg-muted/30",
-            )}>
-              <span className={cn(
-                "size-8 flex items-center justify-center rounded-full text-[12px] tabular-nums transition-colors",
-                isToday && "bg-foreground text-background font-bold",
-                isStart && !isToday && "ring-2 ring-emerald-400 ring-offset-1",
-                isEnd && !isToday && "ring-2 ring-red-400 ring-offset-1",
-              )}>{day}</span>
-              {ev ? (
-                <div className="flex items-center gap-0.5 mt-0.5 h-2">
-                  {ev.tasks > 0 && <span className={cn("size-1.5 rounded-full", ev.overdue ? "bg-red-500" : "bg-blue-400")} />}
-                  {ev.milestones > 0 && <span className="size-1.5 rounded-full bg-amber-400" />}
-                  {ev.time > 0 && <span className="size-1.5 rounded-full bg-emerald-400" />}
-                </div>
-              ) : <div className="h-2 mt-0.5" />}
-            </div>
-          );
-        })}
-      </div>
+      <ProjectCalendar mode="single" month={month} onMonthChange={setMonth} className="w-full" showOutsideDays={false}
+        modifiers={{
+          projectStart: proj.startDate ? [dateOnlyToDate(proj.startDate)!] : [],
+          projectEnd: proj.endDate ? [dateOnlyToDate(proj.endDate)!] : [],
+        }}
+        modifiersClassNames={{ projectStart: "ring-2 ring-emerald-400 rounded-md", projectEnd: "ring-2 ring-red-400 rounded-md" }}
+        components={{ DayButton: props => {
+          const key = dateToDateOnly(props.day.date), event = events[key];
+          return <DayButton {...props} data-date={key} className={cn(props.className, "relative flex flex-col items-center")}
+            title={event ? t("calendarEvents", { tasks: event.tasks, milestones: event.milestones, entries: event.time }) : undefined}>
+            {props.children}
+            {event && <span className="absolute bottom-0 flex gap-0.5" aria-hidden="true">
+              {event.tasks > 0 && <span className={cn("size-1.5 rounded-full", event.overdue ? "bg-red-500" : "bg-blue-400")} />}
+              {event.milestones > 0 && <span className="size-1.5 rounded-full bg-amber-400" />}
+              {event.time > 0 && <span className="size-1.5 rounded-full bg-emerald-400" />}
+            </span>}
+          </DayButton>;
+        } }} />
       <div className="flex items-center gap-4 mt-3 pt-3 border-t flex-wrap">
-        <div className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-blue-400" /><span className="text-[10px] text-muted-foreground">Tasks</span></div>
-        <div className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-amber-400" /><span className="text-[10px] text-muted-foreground">Milestones</span></div>
-        <div className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-emerald-400" /><span className="text-[10px] text-muted-foreground">Time</span></div>
-        <div className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-red-500" /><span className="text-[10px] text-muted-foreground">Overdue</span></div>
+        <div className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-blue-400" /><span className="text-[10px] text-muted-foreground">{t("tasks")}</span></div>
+        <div className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-amber-400" /><span className="text-[10px] text-muted-foreground">{t("milestones")}</span></div>
+        <div className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-emerald-400" /><span className="text-[10px] text-muted-foreground">{t("time")}</span></div>
+        <div className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-red-500" /><span className="text-[10px] text-muted-foreground">{t("overdue")}</span></div>
       </div>
     </div>
   );

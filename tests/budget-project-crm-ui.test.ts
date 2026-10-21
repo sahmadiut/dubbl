@@ -86,6 +86,10 @@ test("scoped UI static guards prevent legacy budget math and require saved-money
       assert.match(source, /projectListJson\(await fetch/);
       const reader = await readFile("i18n/project-presentation.ts", "utf8");
       assert.match(reader, /projectCrmJson\(response\)/);
+    } else if (file.endsWith("/project-context.tsx") || file === "app/(dashboard)/projects/[id]/layout.tsx") {
+      assert.match(source, /projectDetailJson|projectInvoiceJson/);
+      const reader = await readFile("i18n/project-presentation.ts", "utf8");
+      assert.match(reader, /projectCrmJson\(response\)/);
     } else assert.match(source, /projectCrmJson/);
     assert.doesNotMatch(source, /from ["']@\/lib\/money["']/);
   }

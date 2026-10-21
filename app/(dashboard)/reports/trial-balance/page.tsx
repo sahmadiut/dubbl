@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { Fragment, useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
+import { accountTypeLabel } from "@/i18n/account-presentation";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ErrorState } from "@/components/dashboard/error-state";
 import { financialStatementJson, trialBalanceUi, trialBalanceTotals, statementUiMoney, type TrialBalanceUi } from "@/lib/money/financial-statement-ui";
@@ -24,10 +26,12 @@ type AccountBalance = TrialBalanceUi["accounts"][number];
 type SplitBalance = Pick<AccountBalance, "balance" | "debitBalance" | "creditBalance">;
 
 export default function TrialBalancePage() {
+  const t = useTranslations("LedgerReports");
+  const ta = useTranslations("Accounts");
   const today = new Date().toISOString().slice(0, 10);
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(false);
   const [asAt, setAsAt] = useState(today);
   const [compareDate, setCompareDate] = useState("");
   const [showCompare, setShowCompare] = useState(false);
@@ -38,7 +42,7 @@ export default function TrialBalancePage() {
     if (!orgId) return;
     let cancelled = false;
     setLoading(true);
-    setError(null);
+    setError(false);
     const params = new URLSearchParams({ asAt });
     if (showCompare && compareDate) params.set("compareDate", compareDate);
 
@@ -50,7 +54,7 @@ export default function TrialBalancePage() {
         if (cancelled) return;
         if (d.accounts) setData(d);
       })
-      .catch((error: Error) => { if (!cancelled) setError(error.message); })
+      .catch(() => { if (!cancelled) setError(true); })
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
@@ -61,7 +65,7 @@ export default function TrialBalancePage() {
   }, [asAt, showCompare, compareDate]);
 
   if (initialLoad) return <BrandLoader />;
-  if (error) return <ErrorState message={error} onRetry={() => window.location.reload()} />;
+  if (error) return <ErrorState message={t("loadFailed")} onRetry={() => window.location.reload()} />;
 
   const accounts = data?.accounts ?? [];
   const dates = data?.dates ?? (data ? [data.asAt] : []);
@@ -78,8 +82,8 @@ export default function TrialBalancePage() {
       <BackToReports />
 
       <PageHeader
-        title="Account balances check"
-        description="Every account's balance on a chosen date."
+        title={t("trialTitle")}
+        description={t("trialDescription")}
       >
         <ExportButton
           data={accounts.map(row => ({ ...row, currencyCode: data!.currencyCode, debitBalance: row.debitBalanceMinor, creditBalance: row.creditBalanceMinor }))}
@@ -89,14 +93,12 @@ export default function TrialBalancePage() {
       </PageHeader>
 
       <ReportHelp>
-        A full list of every account and its balance on a chosen date. The two
-        money columns should add up to the same total — that&apos;s the quick check
-        that the books are in order. Accountants call this a trial balance.
+        {t("trialHelp")}
       </ReportHelp>
 
       <div className="flex flex-col gap-3 rounded-lg border bg-muted/20 p-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
         <div className="flex items-center gap-2">
-          <span className="text-[13px] text-muted-foreground">As of:</span>
+          <span className="text-[13px] text-muted-foreground">{t("asOfLabel")}</span>
           <DatePicker value={asAt} onChange={setAsAt} className="w-40 h-8 text-sm" />
         </div>
         <div className="flex items-center gap-2">
@@ -106,13 +108,13 @@ export default function TrialBalancePage() {
             onClick={() => setShowCompare((v) => !v)}
             className={showCompare ? "bg-emerald-600 hover:bg-emerald-700" : ""}
           >
-            {showCompare ? "Comparing to an earlier date" : "Compare to an earlier date"}
+            {t(showCompare ? "comparingEarlier" : "compareEarlier")}
           </Button>
           {showCompare && (
             <DatePicker
               value={compareDate}
               onChange={setCompareDate}
-              placeholder="Earlier date"
+              placeholder={t("earlierDate")}
               className="w-40 h-8 text-sm"
             />
           )}
@@ -127,19 +129,19 @@ export default function TrialBalancePage() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
-                  <TableHead className="w-24">Code</TableHead>
-                  <TableHead>Account</TableHead>
-                  <TableHead className="w-24">Type</TableHead>
+                  <TableHead className="w-24">{t("code")}</TableHead>
+                  <TableHead>{t("account")}</TableHead>
+                  <TableHead className="w-24">{t("type")}</TableHead>
                   {dates.map((d) => (
-                    <TableHead key={d} colSpan={2} className="text-center">As of {d}</TableHead>
+                    <TableHead key={d} colSpan={2} className="text-center">{t("asOfDate", { date: d })}</TableHead>
                   ))}
                 </TableRow>
                 <TableRow className="bg-muted/30">
                   <TableHead colSpan={3} />
                   {dates.map((d) => (
                     <Fragment key={d}>
-                      <TableHead className="w-28 text-right text-xs">Money in side</TableHead>
-                      <TableHead className="w-28 text-right text-xs">Money out side</TableHead>
+                      <TableHead className="w-28 text-right text-xs">{t("moneyInSide")}</TableHead>
+                      <TableHead className="w-28 text-right text-xs">{t("moneyOutSide")}</TableHead>
                     </Fragment>
                   ))}
                 </TableRow>
@@ -156,7 +158,7 @@ export default function TrialBalancePage() {
                         {a.name}
                       </Link>
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground capitalize">{a.type}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground capitalize">{accountTypeLabel(ta, a.type)}</TableCell>
                     {splitsFor(a).map((s, i) => (
                       <Fragment key={i}>
                         <TableCell className="text-right font-mono tabular-nums">
@@ -170,7 +172,7 @@ export default function TrialBalancePage() {
                   </TableRow>
                 ))}
                 <TableRow className="bg-muted/30 font-bold">
-                  <TableCell colSpan={3}>Total</TableCell>
+                  <TableCell colSpan={3}>{t("total")}</TableCell>
                   {totals.map((t, i) => (
                     <Fragment key={i}>
                       <TableCell className="text-right font-mono tabular-nums">

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useTranslations } from "next-intl";
+import { accountTypeLabel } from "@/i18n/account-presentation";
 import { BookOpen, ChevronDown, ChevronRight } from "lucide-react";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
@@ -13,16 +15,6 @@ import { ledgerAgingJson, generalLedgerUi, ledgerPageUi, appendLedgerPage, repor
 import { ErrorState } from "@/components/dashboard/error-state";
 import { cn } from "@/lib/utils";
 import { BackToReports, ReportHelp } from "../_components";
-
-const entryColumns: Column<LedgerEntryUi>[] = [
-  { key: "date", header: "Date", className: "w-28", render: (r) => <span className="text-sm">{new Date(r.date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span> },
-  { key: "entry", header: "Entry #", className: "w-24", render: (r) => <span className="font-mono text-sm">{r.entryNumber}</span> },
-  { key: "desc", header: "Description", render: (r) => <span className="text-sm">{r.description}</span> },
-  { key: "ref", header: "Reference", className: "w-28", render: (r) => <span className="text-sm text-muted-foreground">{r.reference || "-"}</span> },
-  { key: "debit", header: "In (debit)", className: "w-28 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{r.debit ? reportUiMoney(r.debit, r.currencyCode) : ""}</span> },
-  { key: "credit", header: "Out (credit)", className: "w-28 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{r.credit ? reportUiMoney(r.credit, r.currencyCode) : ""}</span> },
-  { key: "balance", header: "Running balance", className: "w-28 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{reportUiMoney(r.runningBalance, r.currencyCode)}</span> },
-];
 
 /**
  * Read drill-down hints from the URL the user arrived with. Other reports link
@@ -47,6 +39,17 @@ function readDrilldown() {
 }
 
 export default function GeneralLedgerPage() {
+  const t = useTranslations("LedgerReports");
+  const ta = useTranslations("Accounts");
+  const entryColumns: Column<LedgerEntryUi>[] = [
+    { key: "date", header: t("date"), className: "w-28", render: (r) => <span className="text-sm">{new Date(r.date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span> },
+    { key: "entry", header: t("entryNumber"), className: "w-24", render: (r) => <span className="font-mono text-sm">{r.entryNumber}</span> },
+    { key: "desc", header: t("description"), render: (r) => <span className="text-sm">{r.description}</span> },
+    { key: "ref", header: t("reference"), className: "w-28", render: (r) => <span className="text-sm text-muted-foreground">{r.reference || "-"}</span> },
+    { key: "debit", header: t("debit"), className: "w-28 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{r.debit ? reportUiMoney(r.debit, r.currencyCode) : ""}</span> },
+    { key: "credit", header: t("credit"), className: "w-28 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{r.credit ? reportUiMoney(r.credit, r.currencyCode) : ""}</span> },
+    { key: "balance", header: t("runningBalance"), className: "w-28 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{reportUiMoney(r.runningBalance, r.currencyCode)}</span> },
+  ];
   const now = new Date();
   const [drilldown] = useState(readDrilldown);
   const [initialLoad, setInitialLoad] = useState(true);
@@ -55,7 +58,7 @@ export default function GeneralLedgerPage() {
   const [endDate, setEndDate] = useState(drilldown.endDate || now.toISOString().slice(0, 10));
   const [dimension] = useState<Record<string, string>>(() => drilldown.dimension || {});
   const [data, setData] = useState<GeneralLedgerUi | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(false);
   const requestVersion = useRef(0);
   const reportRef = useRef<GeneralLedgerUi | null>(null);
   const accounts = data?.accounts ?? [];
@@ -92,8 +95,8 @@ export default function GeneralLedgerPage() {
       const updated = appendLedgerPage(reportRef.current!, accountId, page);
       reportRef.current = updated;
       setData(updated);
-    } catch (error) {
-      if (version === requestVersion.current) setError(error instanceof Error ? error.message : "Unable to load ledger entries.");
+    } catch {
+      if (version === requestVersion.current) setError(true);
     } finally {
       if (version === requestVersion.current) setLoadingMore((prev) => {
         const next = new Set(prev);
@@ -109,7 +112,7 @@ export default function GeneralLedgerPage() {
     let cancelled = false;
     requestVersion.current += 1;
     setLoading(true);
-    setError(null);
+    setError(false);
     setLoadingMore(new Set());
     const params = new URLSearchParams({ startDate, endDate, ...dimension });
     fetch(`/api/v1/reports/general-ledger?${params}`, {
@@ -130,7 +133,7 @@ export default function GeneralLedgerPage() {
           }
         }
       })
-      .catch((error: Error) => { if (!cancelled) setError(error.message); })
+      .catch(() => { if (!cancelled) setError(true); })
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
@@ -141,15 +144,15 @@ export default function GeneralLedgerPage() {
   }, [startDate, endDate, dimension, drilldown.focusAccountId]);
 
   if (initialLoad) return <BrandLoader />;
-  if (error) return <ErrorState message={error} onRetry={() => window.location.reload()} />;
+  if (error) return <ErrorState message={t("loadFailed")} onRetry={() => window.location.reload()} />;
 
   return (
     <ContentReveal className="space-y-6">
       <BackToReports />
 
       <PageHeader
-        title="Every transaction, by account"
-        description="All bookkeeping entries grouped by account, with a running balance."
+        title={t("ledgerTitle")}
+        description={t("ledgerDescription")}
       >
         {accounts.length > 0 && (
           <ExportButton
@@ -161,9 +164,7 @@ export default function GeneralLedgerPage() {
       </PageHeader>
 
       <ReportHelp>
-        The full, line-by-line record of every transaction, grouped by account.
-        Open an account to see each entry and how the balance built up. This is
-        what other reports drill down into. Accountants call it the general ledger.
+        {t("ledgerHelp")}
       </ReportHelp>
 
       <DateRangeFilter
@@ -175,10 +176,10 @@ export default function GeneralLedgerPage() {
       {(dimension.costCenterId !== undefined || dimension.projectId !== undefined) && (
         <div className="flex items-center justify-between gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-[13px] dark:border-emerald-800 dark:bg-emerald-950/30">
           <span>
-            Showing only transactions tagged to one {dimension.projectId !== undefined ? "project" : "department"}.
+            {t(dimension.projectId !== undefined ? "projectFilter" : "departmentFilter")}
           </span>
           <a href="/reports/general-ledger" className="font-medium text-emerald-700 hover:underline dark:text-emerald-400">
-            Show all
+            {t("showAll")}
           </a>
         </div>
       )}
@@ -191,9 +192,9 @@ export default function GeneralLedgerPage() {
             <div className="flex size-12 items-center justify-center rounded-lg bg-muted">
               <BookOpen className="size-6 text-muted-foreground" />
             </div>
-            <h3 className="mt-4 text-sm font-semibold">No entries found</h3>
+            <h3 className="mt-4 text-sm font-semibold">{t("noEntriesTitle")}</h3>
             <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-              No posted journal entries in the selected date range.
+              {t("noEntriesDescription")}
             </p>
           </div>
         </ContentReveal>
@@ -202,14 +203,14 @@ export default function GeneralLedgerPage() {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <p className="text-sm text-muted-foreground">
-                {accounts.length} account{accounts.length !== 1 ? "s" : ""} · {accounts.reduce((s, a) => s + a.totalEntries, 0)} entries
+                {t("summary", { accounts: accounts.length, entries: accounts.reduce((s, a) => s + a.totalEntries, 0) })}
               </p>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => setExpandedAccounts(new Set(accounts.map((a) => a.accountId)))}>
-                  Expand all
+                  {t("expandAll")}
                 </Button>
                 <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => setExpandedAccounts(new Set())}>
-                  Collapse all
+                  {t("collapseAll")}
                 </Button>
               </div>
             </div>
@@ -230,12 +231,12 @@ export default function GeneralLedgerPage() {
                         <span className="font-mono text-xs sm:text-sm text-muted-foreground mr-2">{acct.accountCode}</span>
                         {acct.accountName}
                       </h2>
-                      <span className="text-xs text-muted-foreground capitalize hidden sm:inline">{acct.accountType}</span>
+                      <span className="text-xs text-muted-foreground capitalize hidden sm:inline">{accountTypeLabel(ta, acct.accountType)}</span>
                     </div>
                     <div className="flex items-center gap-3 sm:gap-6 font-mono tabular-nums text-xs sm:text-sm shrink-0">
-                      <span className="hidden sm:inline text-muted-foreground">In: {formatMoney(acct.totalDebit)}</span>
-                      <span className="hidden sm:inline text-muted-foreground">Out: {formatMoney(acct.totalCredit)}</span>
-                      <span className="font-semibold">Balance: {formatMoney(acct.balance)}</span>
+                      <span className="hidden sm:inline text-muted-foreground">{t("inAmount", { amount: formatMoney(acct.totalDebit) })}</span>
+                      <span className="hidden sm:inline text-muted-foreground">{t("outAmount", { amount: formatMoney(acct.totalCredit) })}</span>
+                      <span className="font-semibold">{t("balanceAmount", { amount: formatMoney(acct.balance) })}</span>
                       <span className={cn("text-xs px-1.5 py-0.5 rounded-full", acct.totalEntries > 0 ? "bg-muted text-muted-foreground" : "text-muted-foreground/50")}>
                         {acct.totalEntries}
                       </span>
@@ -243,11 +244,11 @@ export default function GeneralLedgerPage() {
                   </button>
                   {isExpanded && (
                     <div>
-                      <DataTable columns={entryColumns} data={acct.entries.map(entry => ({ ...entry, currencyCode: data!.currencyCode }))} emptyMessage="No entries." />
+                      <DataTable columns={entryColumns} data={acct.entries.map(entry => ({ ...entry, currencyCode: data!.currencyCode }))} emptyMessage={t("noEntries")} />
                       {hasMore && (
                         <div className="border-t px-4 py-2 text-center">
                           <Button variant="ghost" size="sm" className="text-xs h-7" disabled={isLoading} onClick={() => loadMoreEntries(acct.accountId)}>
-                            {isLoading ? "Loading..." : `Load more (${acct.entries.length} of ${acct.totalEntries})`}
+                            {isLoading ? t("loading") : t("loadMore", { loaded: acct.entries.length, total: acct.totalEntries })}
                           </Button>
                         </div>
                       )}

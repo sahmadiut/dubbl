@@ -1,5 +1,12 @@
 # Message catalog foundation
 
+LOC-106 trial balance and general ledger use 39 paired `LedgerReports` messages
+(8,981 compatible keys per locale), with known account types from `Accounts`.
+See [scope, preserved contracts and exceptions](LEDGER_REPORT_CATALOGS.md).
+Exact-money readers, report/drilldown queries, pagination and CSV contracts are
+preserved. LOC-070/008/002 and native terminology/RTL acceptance remain independent;
+Persian wording is provisional.
+
 LOC-105 balance sheet, comparative balance sheet and cash flow use 49 paired
 `BalanceCashReports` messages (8,942 compatible keys per locale).
 See [scope and exceptions](BALANCE_CASH_REPORT_CATALOGS.md).

@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { Layers } from "lucide-react";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
@@ -26,8 +28,9 @@ type SectionData = TrackingReportUi["sections"][number];
 type Dimension = "costCenterId" | "projectId";
 
 export default function TrackingReportPage() {
+  const t = useTranslations("AnalyticalReports");
   const now = new Date();
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(true);
   const [startDate, setStartDate] = useState(`${now.getFullYear()}-01-01`);
@@ -42,7 +45,7 @@ export default function TrackingReportPage() {
     let cancelled = false;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
-    setError(null);
+    setError(false);
     setData(null);
     const params = new URLSearchParams({ startDate, endDate, basis, dimension, mode: "pnl" });
     fetch(`/api/v1/reports/tracking-category?${params}`, {
@@ -53,7 +56,7 @@ export default function TrackingReportPage() {
         if (cancelled) return;
         setData(d);
       })
-      .catch((cause: Error) => { if (!cancelled) { setData(null); setError(cause.message); } })
+      .catch(() => { if (!cancelled) { setData(null); setError(true); } })
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
@@ -80,34 +83,29 @@ export default function TrackingReportPage() {
       <BackToReports />
 
       <PageHeader
-        title="Profit by team or project"
-        description="Money in vs money out, split into a column for each team or project."
+        title={t("trackingTitle")}
+        description={t("trackingDescription")}
       >
         <a
           href={`/api/v1/reports/tracking-category?${new URLSearchParams({ startDate, endDate, basis, dimension, mode: "pnl", format: "xlsx" })}`}
           className="inline-flex h-8 items-center rounded-md border px-3 text-sm font-medium hover:bg-muted"
         >
-          Export spreadsheet
+          {t("exportSpreadsheet")}
         </a>
       </PageHeader>
 
-      <ReportHelp>
-        See how each part of the business is doing. Money in and running costs are
-        split into a column for every {dimension === "projectId" ? "project" : "department"},
-        so you can tell which ones are pulling their weight. Click any amount to see
-        the transactions behind it.
-      </ReportHelp>
+      <ReportHelp>{t(dimension === "projectId" ? "trackingProjectHelp" : "trackingDepartmentHelp")}</ReportHelp>
 
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[13px] text-muted-foreground">Split by:</span>
+          <span className="text-[13px] text-muted-foreground">{t("splitBy")}</span>
           <Button
             variant={dimension === "costCenterId" ? "default" : "outline"}
             size="sm"
             onClick={() => setDimension("costCenterId")}
             className={dimension === "costCenterId" ? "bg-emerald-600 hover:bg-emerald-700" : ""}
           >
-            Department
+            {t("department")}
           </Button>
           <Button
             variant={dimension === "projectId" ? "default" : "outline"}
@@ -115,7 +113,7 @@ export default function TrackingReportPage() {
             onClick={() => setDimension("projectId")}
             className={dimension === "projectId" ? "bg-emerald-600 hover:bg-emerald-700" : ""}
           >
-            Project
+            {t("project")}
           </Button>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -128,7 +126,7 @@ export default function TrackingReportPage() {
         </div>
       </div>
 
-      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+      {error && <p role="alert" className="text-sm text-destructive">{t("loadFailed")}</p>}
 
       {loading ? (
         <BrandLoader className="h-48" />
@@ -138,9 +136,9 @@ export default function TrackingReportPage() {
             <div className="flex size-12 items-center justify-center rounded-lg bg-muted">
               <Layers className="size-6 text-muted-foreground" />
             </div>
-            <h3 className="mt-4 text-sm font-semibold">Nothing tagged yet</h3>
+            <h3 className="mt-4 text-sm font-semibold">{t("nothingTagged")}</h3>
             <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-              No transactions in this period are tagged to a {dimension === "projectId" ? "project" : "department"}. Tag transactions to see them split out here.
+              {t(dimension === "projectId" ? "noTaggedProject" : "noTaggedDepartment")}
             </p>
           </div>
         </ContentReveal>
@@ -150,11 +148,11 @@ export default function TrackingReportPage() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
-                  <TableHead>Account</TableHead>
+                  <TableHead>{t("account")}</TableHead>
                   {columns.map((c) => (
-                    <TableHead key={c.key} className="text-right">{c.label}</TableHead>
+                    <TableHead key={c.key} className="text-right">{c.dimensionValue === null ? t("unassigned") : c.label}</TableHead>
                   ))}
-                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead className="text-right">{t("total")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -169,7 +167,7 @@ export default function TrackingReportPage() {
                 ))}
                 {data.netIncome && (
                   <TableRow className="bg-emerald-50 dark:bg-emerald-950/30 font-bold">
-                    <TableCell>Profit (money in minus costs)</TableCell>
+                    <TableCell>{t("trackingProfit")}</TableCell>
                     {data.netIncome.byColumn.map((amt, i) => (
                       <TableCell key={i} className="text-right font-mono tabular-nums">
                         {reportResultMoney(amt, data!.currencyCode)}
@@ -200,11 +198,12 @@ function RenderSection({
   columns: ColumnDesc[];
   ledgerHref: (accountId: string, col: ColumnDesc) => string;
 }) {
+  const t = useTranslations("AnalyticalReports");
   return (
     <>
       <TableRow className="bg-muted/30">
         <TableCell colSpan={columns.length + 2} className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          {section.label}
+          {t(section.label === "Revenue" ? "revenue" : "expenses")}
         </TableCell>
       </TableRow>
       {section.accounts.map((a) => (
@@ -228,7 +227,7 @@ function RenderSection({
         </TableRow>
       ))}
       <TableRow className="font-semibold">
-        <TableCell>Total {section.label.toLowerCase()}</TableCell>
+        <TableCell>{t(section.label === "Revenue" ? "totalRevenue" : "totalExpenses")}</TableCell>
         {section.totals.map((t, i) => (
           <TableCell key={i} className="text-right font-mono tabular-nums">{reportResultMoney(t, currencyCode)}</TableCell>
         ))}

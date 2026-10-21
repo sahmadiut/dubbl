@@ -1,9 +1,10 @@
 "use client";
 
 import { expenseAnalyticsUi, analyticalReportJson } from "@/lib/money/analytical-report-ui";
-import Link from "next/link";
 import { useState, useEffect } from "react";
-import { ArrowLeft, PieChart, TrendingDown } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { BackToReports } from "../_components";
+import { PieChart, TrendingDown } from "lucide-react";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { PageHeader } from "@/components/dashboard/page-header";
@@ -40,11 +41,12 @@ const CATEGORY_COLORS = [
 ];
 
 export default function ExpenseAnalyticsPage() {
+  const t = useTranslations("AnalyticalReports");
   const now = new Date();
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(true);
   const [currencyCode, setCurrencyCode] = useState("USD");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(false);
   const [startDate, setStartDate] = useState(`${now.getFullYear()}-01-01`);
   const [endDate, setEndDate] = useState(now.toISOString().slice(0, 10));
   const [categories, setCategories] = useState<Category[]>([]);
@@ -65,14 +67,14 @@ export default function ExpenseAnalyticsPage() {
       .then((data) => {
         if (cancelled) return;
         setCurrencyCode(data.currencyCode);
-        setError(null);
+        setError(false);
         setCategories(data.categories || []);
         setMonthlyTrend(data.monthlyTrend || []);
         setTotalExpenses(data.totalExpenses);
         setMonthlyAverage(data.monthlyAverage);
       })
-      .catch((err: unknown) => {
-        if (!cancelled) { setCategories([]); setMonthlyTrend([]); setTotalExpenses(0n); setMonthlyAverage(0n); setError(err instanceof Error ? err.message : "Unable to load expense analytics."); }
+      .catch(() => {
+        if (!cancelled) { setCategories([]); setMonthlyTrend([]); setTotalExpenses(0n); setMonthlyAverage(0n); setError(true); }
       })
       .finally(() => {
         if (!cancelled) {
@@ -93,13 +95,11 @@ export default function ExpenseAnalyticsPage() {
 
   return (
     <ContentReveal className="space-y-6">
-      <Link href="/reports" className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors">
-        <ArrowLeft className="size-3.5" /> Back to reports
-      </Link>
+      <BackToReports />
 
       <PageHeader
-        title="Where the money is spent"
-        description="Your spending grouped by category, with trends over time."
+        title={t("expenseTitle")}
+        description={t("expenseDescription")}
       />
 
       <DateRangeFilter
@@ -111,18 +111,18 @@ export default function ExpenseAnalyticsPage() {
       {loading ? (
         <BrandLoader className="h-48" />
       ) : error ? (
-        <p role="alert" className="text-sm text-red-600">{error}</p>
+        <p role="alert" className="text-sm text-red-600">{t("loadFailed")}</p>
       ) : (
         <ContentReveal>
           <div className="grid gap-4 sm:grid-cols-2">
             <StatCard
-              title="Total spent"
+              title={t("totalSpent")}
               value={statementMoneyText(totalExpenses, currencyCode)}
               icon={TrendingDown}
               changeType="negative"
             />
             <StatCard
-              title="Average per month"
+              title={t("monthlyAverage")}
               value={statementMoneyText(monthlyAverage, currencyCode)}
               icon={PieChart}
               changeType="neutral"
@@ -132,7 +132,7 @@ export default function ExpenseAnalyticsPage() {
           {/* Monthly Trend */}
           {chartData.length > 1 && (
             <div className="mt-4">
-              <p className="text-sm font-medium mb-3">Monthly Spending Trend</p>
+              <p className="text-sm font-medium mb-3">{t("monthlySpending")}</p>
               <div className="rounded-lg border p-4">
                 <ResponsiveContainer width="100%" height={240}>
                   <AreaChart data={chartData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
@@ -149,7 +149,7 @@ export default function ExpenseAnalyticsPage() {
                       contentStyle={{ fontSize: 12, borderRadius: 8 }}
                       formatter={(_value, _name, item) => [statementMoneyText(item.payload.minorUnits, currencyCode)]}
                     />
-                    <Area type="monotone" dataKey="expenses" name="Expenses" stroke="#ef4444" fill="url(#expGrad)" strokeWidth={2} />
+                    <Area type="monotone" dataKey="expenses" name={t("expenses")} stroke="#ef4444" fill="url(#expGrad)" strokeWidth={2} />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -159,7 +159,7 @@ export default function ExpenseAnalyticsPage() {
           {/* Category Breakdown */}
           {categories.length > 0 ? (
             <div className="mt-4">
-              <p className="text-sm font-medium mb-3">By Category</p>
+              <p className="text-sm font-medium mb-3">{t("byCategory")}</p>
 
               {/* Stacked bar visualization */}
               <div className="h-3 rounded-full overflow-hidden flex mb-4">
@@ -181,7 +181,7 @@ export default function ExpenseAnalyticsPage() {
                       <div className="min-w-0">
                         <p className="text-sm font-medium truncate">{c.accountName}</p>
                         <p className="text-xs text-muted-foreground">
-                          {c.accountCode} · {c.transactions} transaction{c.transactions !== 1 ? "s" : ""}
+                          {t("categoryTransactions", { code: c.accountCode, count: c.transactions })}
                         </p>
                       </div>
                     </div>
@@ -195,7 +195,7 @@ export default function ExpenseAnalyticsPage() {
             </div>
           ) : (
             <div className="rounded-xl border border-dashed py-12 text-center mt-4">
-              <p className="text-sm text-muted-foreground">No expense data for this period.</p>
+              <p className="text-sm text-muted-foreground">{t("noExpenseData")}</p>
             </div>
           )}
         </ContentReveal>

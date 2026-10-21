@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderToStaticMarkup } from "./helpers/presentation";
 import { createElement } from "react";
 import { readFile } from "node:fs/promises";
 import { BudgetProgressBar } from "../components/dashboard/budget-progress-bar";

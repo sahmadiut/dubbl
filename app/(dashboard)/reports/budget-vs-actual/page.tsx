@@ -1,8 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useState, useEffect } from "react";
-import { ArrowLeft, DollarSign, Target } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { BackToReports } from "../_components";
+import { DollarSign, Target } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { DataTable, type Column } from "@/components/dashboard/data-table";
 import { StatCard } from "@/components/dashboard/stat-card";
@@ -31,25 +32,25 @@ interface Comparison {
   variancePct: number;
 }
 
-const columns: Column<Comparison>[] = [
-  { key: "code", header: "Code", className: "w-24", render: (r) => <span className="font-mono text-sm">{r.accountCode}</span> },
-  { key: "name", header: "Account", render: (r) => <span className="text-sm font-medium">{r.accountName}</span> },
-  { key: "budgeted", header: "Budgeted", className: "w-28 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{formatMoney(r.budgeted, r.currencyCode)}</span> },
-  { key: "actual", header: "Actual", className: "w-28 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{formatMoney(r.actual, r.currencyCode)}</span> },
-  { key: "variance", header: "Variance", className: "w-28 text-right", render: (r) => (
-    <span className={`font-mono text-sm tabular-nums ${r.variance >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-      {formatMoney(r.variance, r.currencyCode)}
-    </span>
-  )},
-  { key: "pct", header: "%", className: "w-20 text-right", render: (r) => (
-    <span className={`text-sm tabular-nums ${r.variance >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-      {r.variancePct}%
-    </span>
-  )},
-];
-
 export default function BudgetVsActualPage() {
-  const [loadError, setLoadError] = useState("");
+  const t = useTranslations("AnalyticalReports");
+  const columns: Column<Comparison>[] = [
+    { key: "code", header: t("code"), className: "w-24", render: (r) => <span className="font-mono text-sm">{r.accountCode}</span> },
+    { key: "name", header: t("account"), render: (r) => <span className="text-sm font-medium">{r.accountName}</span> },
+    { key: "budgeted", header: t("budgeted"), className: "w-28 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{formatMoney(r.budgeted, r.currencyCode)}</span> },
+    { key: "actual", header: t("actual"), className: "w-28 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{formatMoney(r.actual, r.currencyCode)}</span> },
+    { key: "variance", header: t("variance"), className: "w-28 text-right", render: (r) => (
+      <span className={`font-mono text-sm tabular-nums ${r.variance >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+        {formatMoney(r.variance, r.currencyCode)}
+      </span>
+    )},
+    { key: "pct", header: "%", className: "w-20 text-right", render: (r) => (
+      <span className={`text-sm tabular-nums ${r.variance >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+        {r.variancePct}%
+      </span>
+    )},
+  ];
+  const [loadError, setLoadError] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(true);
   const [budgets, setBudgets] = useState<Budget[]>([]);
@@ -78,7 +79,7 @@ export default function BudgetVsActualPage() {
           setSelectedBudgetId(list[0].id);
         }
       })
-      .catch((error) => { if (!cancelled) setLoadError(error instanceof Error ? error.message : "Unable to load budgets"); })
+      .catch(() => { if (!cancelled) setLoadError(true); })
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
@@ -95,7 +96,7 @@ export default function BudgetVsActualPage() {
     if (!orgId) return;
     let cancelled = false;
     setReportLoading(true);
-    setLoadError("");
+    setLoadError(false);
     fetch(`/api/v1/reports/budget-vs-actual?budgetId=${selectedBudgetId}`, {
       headers: { "x-organization-id": orgId },
     })
@@ -108,26 +109,24 @@ export default function BudgetVsActualPage() {
         setTotalActual(data.totalActual ?? 0n);
         setTotalVariance(data.totalVariance ?? 0n);
       })
-      .catch((error) => { if (!cancelled) { setLoadError(error instanceof Error ? error.message : "Unable to load budget amounts"); setComparisons([]); } })
+      .catch(() => { if (!cancelled) { setLoadError(true); setComparisons([]); } })
       .finally(() => { if (!cancelled) setReportLoading(false); });
     return () => { cancelled = true; };
   }, [selectedBudgetId]);
 
   if (initialLoad) return <BrandLoader />;
 
-  if (loadError) return <p role="alert" className="text-sm text-destructive">{loadError}</p>;
+  if (loadError) return <p role="alert" className="text-sm text-destructive">{t("loadFailed")}</p>;
 
   if (budgets.length === 0) {
     return (
       <ContentReveal className="space-y-6">
-        <Link href="/reports" className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors">
-          <ArrowLeft className="size-3.5" /> Back to reports
-        </Link>
-        <PageHeader title="Budget vs what actually happened" description="See where you came in over or under your plan." />
+        <BackToReports />
+        <PageHeader title={t("budgetTitle")} description={t("budgetDescription")} />
         <EmptyState
           icon={Target}
-          title="No budgets yet"
-          description="Set up a budget first to compare it against what actually happened."
+          title={t("noBudgets")}
+          description={t("noBudgetsDescription")}
         />
       </ContentReveal>
     );
@@ -135,17 +134,15 @@ export default function BudgetVsActualPage() {
 
   return (
     <ContentReveal className="space-y-6">
-      <Link href="/reports" className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors">
-        <ArrowLeft className="size-3.5" /> Back to reports
-      </Link>
+      <BackToReports />
 
       <PageHeader
-        title="Budget vs what actually happened"
-        description="See where you came in over or under your plan."
+        title={t("budgetTitle")}
+        description={t("budgetDescription")}
       />
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <label className="text-sm font-medium">Budget:</label>
+        <label className="text-sm font-medium">{t("budgetLabel")}</label>
         <Select value={selectedBudgetId} onValueChange={setSelectedBudgetId}>
           <SelectTrigger className="h-9 w-full sm:w-auto">
             <SelectValue />
@@ -159,10 +156,10 @@ export default function BudgetVsActualPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard title="Total Budgeted" value={formatMoney(totalBudgeted, currencyCode)} icon={Target} />
-        <StatCard title="Total Actual" value={formatMoney(totalActual, currencyCode)} icon={DollarSign} />
+        <StatCard title={t("totalBudgeted")} value={formatMoney(totalBudgeted, currencyCode)} icon={Target} />
+        <StatCard title={t("totalActual")} value={formatMoney(totalActual, currencyCode)} icon={DollarSign} />
         <StatCard
-          title="Variance"
+          title={t("variance")}
           value={formatMoney(totalVariance, currencyCode)}
           icon={DollarSign}
           changeType={totalVariance >= 0 ? "positive" : "negative"}
@@ -192,11 +189,11 @@ export default function BudgetVsActualPage() {
             columns={columns}
             data={comparisons}
             loading={loading || reportLoading}
-            emptyMessage="No budget lines to compare."
+            emptyMessage={t("noBudgetLines")}
           />
 
           <div className="flex justify-between px-3 py-2 sm:px-4 sm:py-3 bg-muted/50 rounded-lg text-sm font-semibold mt-6">
-            <span>Total Variance</span>
+            <span>{t("totalVariance")}</span>
             <span className={`font-mono tabular-nums ${totalVariance >= 0 ? "text-emerald-600" : "text-red-600"}`}>
               {formatMoney(totalVariance, currencyCode)}
             </span>

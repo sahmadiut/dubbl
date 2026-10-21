@@ -1,5 +1,10 @@
 # Message catalog foundation
 
+LOC-108 analytical/comparison reports use 100 paired AnalyticalReports messages,
+including the shared budget progress labels. See [scope and exceptions](ANALYTICAL_REPORT_CATALOGS.md).
+Exact-money readers, chart tooltip integers, query/selection values and spreadsheet
+links are preserved. LOC-070/008/002 and native/RTL qualification remain independent.
+
 LOC-106 trial balance and general ledger use 39 paired `LedgerReports` messages
 (8,981 compatible keys per locale), with known account types from `Accounts`.
 See [scope, preserved contracts and exceptions](LEDGER_REPORT_CATALOGS.md).
@@ -394,8 +399,10 @@ Extraction ownership:
 | LOC-103 | LOC-070 child: report directory/loading, back link and basis toggle; [scope and split](REPORT_DIRECTORY_CATALOGS.md) |
 | LOC-104 | LOC-070 child: profit/loss, income statement and executive summary; [scope and exceptions](INCOME_REPORT_CATALOGS.md) |
 | LOC-105 | LOC-070 child: balance sheet, comparative balance sheet and cash flow; [scope and exceptions](BALANCE_CASH_REPORT_CATALOGS.md) |
+| LOC-106 | LOC-070 child: trial balance and general ledger; [scope and exceptions](LEDGER_REPORT_CATALOGS.md) |
 | LOC-107 | LOC-070 child: aging, payment, vendor and duplicate reports; [scope and exceptions](AGING_VENDOR_REPORT_CATALOGS.md) |
-| LOC-106..114 | LOC-070 remaining report workflow slices; see [complete ownership](REPORT_DIRECTORY_CATALOGS.md) |
+| LOC-108 | LOC-070 child: analytical/comparison reports; [scope and exceptions](ANALYTICAL_REPORT_CATALOGS.md) |
+| LOC-109..114 | LOC-070 remaining report workflow slices; see [complete ownership](REPORT_DIRECTORY_CATALOGS.md) |
 | LOC-071 | LOC-008 child: dashboard, documents and residual operations shared components |
 | LOC-009 | Public surfaces, landing/help, email/PDF and user-visible background content; remaining source audit |
 | LOC-079 | LOC-067 child: payroll overview/navigation; [scope and exceptions](PAYROLL_OVERVIEW_CATALOGS.md) |

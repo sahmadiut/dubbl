@@ -114,7 +114,7 @@ test("owned report pages cannot reintroduce unvalidated monetary floats or appro
     if (page !== "pnl-comparison") assert.doesNotMatch(source, /\.toFixed\(/);
   }
   const source = readFileSync("app/(dashboard)/reports/pnl-comparison/page.tsx", "utf8");
-  assert.match(source, /item\.payload\[name === "Revenue" \? "revenueExact" : "expensesExact"\]/);
+  assert.match(source, /item\.payload\[item\.dataKey === "revenue" \? "revenueExact" : "expensesExact"\]/);
   assert.doesNotMatch(source, /total(?:Revenue|Expenses)\s*\/\s*100|Number\(value\)/);
   const comparative = readFileSync("app/(dashboard)/reports/comparative-balance-sheet/page.tsx", "utf8");
   assert.equal((comparative.match(/fetch\(/g) ?? []).length, 1);

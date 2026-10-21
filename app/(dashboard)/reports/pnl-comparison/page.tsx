@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useState, useEffect } from "react";
-import { ArrowLeft } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { BackToReports } from "../_components";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ErrorState } from "@/components/dashboard/error-state";
@@ -25,9 +25,10 @@ import {
 type PeriodData = PnlComparisonUi["periods"][number];
 
 export default function PnlComparisonPage() {
+  const t = useTranslations("AnalyticalReports");
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(false);
   const [compareType, setCompareType] = useState("monthly");
   const [periodsCount, setPeriodsCount] = useState(6);
   const [currencyCode, setCurrencyCode] = useState("USD");
@@ -40,7 +41,7 @@ export default function PnlComparisonPage() {
     let cancelled = false;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
-    setError(null);
+    setError(false);
     const params = new URLSearchParams({
       compare: compareType,
       periods: String(periodsCount),
@@ -54,7 +55,7 @@ export default function PnlComparisonPage() {
         setCurrencyCode(data.currencyCode);
         setPeriods(data.periods);
       })
-      .catch((error: Error) => { if (!cancelled) setError(error.message); })
+      .catch(() => { if (!cancelled) setError(true); })
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
@@ -67,17 +68,15 @@ export default function PnlComparisonPage() {
   const chartData = periods.map(period => statementChartPoint(period, currencyCode));
 
   if (initialLoad) return <BrandLoader />;
-  if (error) return <ErrorState message={error} onRetry={() => window.location.reload()} />;
+  if (error) return <ErrorState message={t("loadFailed")} onRetry={() => window.location.reload()} />;
 
   return (
     <ContentReveal className="space-y-6">
-      <Link href="/reports" className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors">
-        <ArrowLeft className="size-3.5" /> Back to reports
-      </Link>
+      <BackToReports />
 
       <PageHeader
-        title="Compare two periods side by side"
-        description="Money in and money out for one period next to another, with the change shown."
+        title={t("comparisonTitle")}
+        description={t("comparisonDescription")}
       />
 
       <div className="flex items-center gap-3">
@@ -86,9 +85,9 @@ export default function PnlComparisonPage() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="monthly">Monthly</SelectItem>
-            <SelectItem value="quarterly">Quarterly</SelectItem>
-            <SelectItem value="yearly">Yearly</SelectItem>
+            <SelectItem value="monthly">{t("monthly")}</SelectItem>
+            <SelectItem value="quarterly">{t("quarterly")}</SelectItem>
+            <SelectItem value="yearly">{t("yearly")}</SelectItem>
           </SelectContent>
         </Select>
         <Select value={String(periodsCount)} onValueChange={(v) => setPeriodsCount(Number(v))}>
@@ -97,7 +96,7 @@ export default function PnlComparisonPage() {
           </SelectTrigger>
           <SelectContent>
             {[3, 4, 6, 8, 12].map((n) => (
-              <SelectItem key={n} value={String(n)}>{n} periods</SelectItem>
+              <SelectItem key={n} value={String(n)}>{t("periodCount", { count: n })}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -108,7 +107,7 @@ export default function PnlComparisonPage() {
       ) : periods.length === 0 ? (
         <ContentReveal>
           <div className="rounded-xl border border-dashed py-12 text-center">
-            <p className="text-sm text-muted-foreground">No data available for the selected periods.</p>
+            <p className="text-sm text-muted-foreground">{t("noComparisonData")}</p>
           </div>
         </ContentReveal>
       ) : (
@@ -133,11 +132,11 @@ export default function PnlComparisonPage() {
                   <YAxis tick={{ fontSize: 11 }} className="text-muted-foreground" tickFormatter={(v) => `${currencyCode} ${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`} />
                   <Tooltip
                     contentStyle={{ fontSize: 12, borderRadius: 8 }}
-                    formatter={(_value, name, item) => [statementUiMoney(item.payload[name === "Revenue" ? "revenueExact" : "expensesExact"], currencyCode), name]}
+                    formatter={(_value, name, item) => [statementUiMoney(item.payload[item.dataKey === "revenue" ? "revenueExact" : "expensesExact"], currencyCode), name]}
                   />
                   <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Area type="monotone" dataKey="revenue" name="Revenue" stroke="#10b981" fill="url(#revenueGrad)" strokeWidth={2} />
-                  <Area type="monotone" dataKey="expenses" name="Expenses" stroke="#ef4444" fill="url(#expensesGrad)" strokeWidth={2} />
+                  <Area type="monotone" dataKey="revenue" name={t("revenue")} stroke="#10b981" fill="url(#revenueGrad)" strokeWidth={2} />
+                  <Area type="monotone" dataKey="expenses" name={t("expenses")} stroke="#ef4444" fill="url(#expensesGrad)" strokeWidth={2} />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -147,7 +146,7 @@ export default function PnlComparisonPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-muted/30">
-                    <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground sticky left-0 bg-muted/30">Metric</th>
+                    <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground sticky left-0 bg-muted/30">{t("metric")}</th>
                     {periods.map((p) => (
                       <th key={p.label} className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground min-w-[120px]">
                         {p.label}
@@ -158,7 +157,7 @@ export default function PnlComparisonPage() {
                 <tbody>
                   {/* Revenue */}
                   <tr className="border-b">
-                    <td className="px-4 py-2.5 font-medium sticky left-0 bg-background">Revenue</td>
+                    <td className="px-4 py-2.5 font-medium sticky left-0 bg-background">{t("revenue")}</td>
                     {periods.map((p) => (
                       <td key={p.label} className="px-4 py-2.5 text-right font-mono tabular-nums">
                         {formatMoney(p.totalRevenue)}
@@ -166,7 +165,7 @@ export default function PnlComparisonPage() {
                     ))}
                   </tr>
                   <tr className="border-b bg-muted/20">
-                    <td className="px-4 py-1.5 text-xs text-muted-foreground sticky left-0 bg-muted/20">Change</td>
+                    <td className="px-4 py-1.5 text-xs text-muted-foreground sticky left-0 bg-muted/20">{t("change")}</td>
                     {periods.map((p, i) => (
                       <td key={p.label} className="px-4 py-1.5 text-right">
                         {i === 0 ? (
@@ -179,7 +178,7 @@ export default function PnlComparisonPage() {
                   </tr>
                   {/* Expenses */}
                   <tr className="border-b">
-                    <td className="px-4 py-2.5 font-medium sticky left-0 bg-background">Expenses</td>
+                    <td className="px-4 py-2.5 font-medium sticky left-0 bg-background">{t("expenses")}</td>
                     {periods.map((p) => (
                       <td key={p.label} className="px-4 py-2.5 text-right font-mono tabular-nums">
                         {formatMoney(p.totalExpenses)}
@@ -187,7 +186,7 @@ export default function PnlComparisonPage() {
                     ))}
                   </tr>
                   <tr className="border-b bg-muted/20">
-                    <td className="px-4 py-1.5 text-xs text-muted-foreground sticky left-0 bg-muted/20">Change</td>
+                    <td className="px-4 py-1.5 text-xs text-muted-foreground sticky left-0 bg-muted/20">{t("change")}</td>
                     {periods.map((p, i) => (
                       <td key={p.label} className="px-4 py-1.5 text-right">
                         {i === 0 ? (
@@ -200,7 +199,7 @@ export default function PnlComparisonPage() {
                   </tr>
                   {/* Net Income */}
                   <tr className="border-t-2">
-                    <td className="px-4 py-2.5 font-semibold sticky left-0 bg-background">Net Income</td>
+                    <td className="px-4 py-2.5 font-semibold sticky left-0 bg-background">{t("netIncome")}</td>
                     {periods.map((p) => (
                       <td key={p.label} className={cn(
                         "px-4 py-2.5 text-right font-mono tabular-nums font-semibold",
@@ -211,7 +210,7 @@ export default function PnlComparisonPage() {
                     ))}
                   </tr>
                   <tr className="bg-muted/20">
-                    <td className="px-4 py-1.5 text-xs text-muted-foreground sticky left-0 bg-muted/20">Change</td>
+                    <td className="px-4 py-1.5 text-xs text-muted-foreground sticky left-0 bg-muted/20">{t("change")}</td>
                     {periods.map((p, i) => (
                       <td key={p.label} className="px-4 py-1.5 text-right">
                         {i === 0 ? (

@@ -1,9 +1,10 @@
 "use client";
 
 import { profitabilityUi, analyticalReportJson } from "@/lib/money/analytical-report-ui";
-import Link from "next/link";
 import { useState, useEffect } from "react";
-import { ArrowLeft, TrendingUp, TrendingDown, DollarSign } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { BackToReports } from "../_components";
+import { TrendingUp, TrendingDown, DollarSign } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { DateRangeFilter } from "@/components/dashboard/date-range-filter";
@@ -17,11 +18,12 @@ import { cn } from "@/lib/utils";
 type ProfitabilityEntry = ReturnType<typeof profitabilityUi>["entries"][number];
 
 export default function ProfitabilityPage() {
+  const t = useTranslations("AnalyticalReports");
   const now = new Date();
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(true);
   const [currencyCode, setCurrencyCode] = useState("USD");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(false);
   const [startDate, setStartDate] = useState(`${now.getFullYear()}-01-01`);
   const [endDate, setEndDate] = useState(now.toISOString().slice(0, 10));
   const [currencyFilter, setCurrencyFilter] = useState("");
@@ -45,15 +47,15 @@ export default function ProfitabilityPage() {
       .then((data) => {
         if (cancelled) return;
         setCurrencyCode(data.currencyCode);
-        setError(null);
+        setError(false);
         setEntries(data.entries || []);
         setTotalRevenue(data.totalRevenue);
         setTotalCosts(data.totalCosts);
         setTotalProfit(data.totalProfit);
         setOverallMargin(data.overallMargin || 0);
       })
-      .catch((err: unknown) => {
-        if (!cancelled) { setEntries([]); setTotalRevenue(0n); setTotalCosts(0n); setTotalProfit(0n); setError(err instanceof Error ? err.message : "Unable to load profitability."); }
+      .catch(() => {
+        if (!cancelled) { setEntries([]); setTotalRevenue(0n); setTotalCosts(0n); setTotalProfit(0n); setError(true); }
       })
       .finally(() => {
         if (!cancelled) {
@@ -68,13 +70,11 @@ export default function ProfitabilityPage() {
 
   return (
     <ContentReveal className="space-y-6">
-      <Link href="/reports" className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors">
-        <ArrowLeft className="size-3.5" /> Back to reports
-      </Link>
+      <BackToReports />
 
       <PageHeader
-        title="Profit by customer"
-        description="What each customer brought in, minus what serving them cost, for the period."
+        title={t("profitTitle")}
+        description={t("profitDescription")}
       />
 
       <DateRangeFilter
@@ -84,32 +84,32 @@ export default function ProfitabilityPage() {
       />
 
       <div className="flex items-center gap-3">
-        <span className="text-sm">Document currency</span>
+        <span className="text-sm">{t("documentCurrency")}</span>
         <CurrencySelect value={currencyFilter} onValueChange={setCurrencyFilter} compact />
-        {currencyFilter && <Button variant="ghost" size="sm" onClick={() => setCurrencyFilter("")}>Clear filter</Button>}
+        {currencyFilter && <Button variant="ghost" size="sm" onClick={() => setCurrencyFilter("")}>{t("clearFilter")}</Button>}
       </div>
 
       {!loading && !error && <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          title="Money in"
+          title={t("moneyIn")}
           value={statementMoneyText(totalRevenue, currencyCode)}
           icon={TrendingUp}
           changeType="positive"
         />
         <StatCard
-          title="Costs"
+          title={t("costs")}
           value={statementMoneyText(totalCosts, currencyCode)}
           icon={TrendingDown}
           changeType="negative"
         />
         <StatCard
-          title="Profit"
+          title={t("profit")}
           value={statementMoneyText(totalProfit, currencyCode)}
           icon={DollarSign}
           changeType={totalProfit >= 0 ? "positive" : "negative"}
         />
         <StatCard
-          title="Overall Margin"
+          title={t("overallMargin")}
           value={`${overallMargin}%`}
           icon={DollarSign}
           changeType={overallMargin > 0 ? "positive" : "negative"}
@@ -119,28 +119,28 @@ export default function ProfitabilityPage() {
       {loading ? (
         <BrandLoader className="h-48" />
       ) : error ? (
-        <p role="alert" className="text-sm text-red-600">{error}</p>
+        <p role="alert" className="text-sm text-red-600">{t("loadFailed")}</p>
       ) : entries.length === 0 ? (
         <ContentReveal>
           <div className="rounded-xl border border-dashed py-12 text-center">
-            <p className="text-sm text-muted-foreground">No profitability data. Create invoices and bills to see per-contact profitability.</p>
+            <p className="text-sm text-muted-foreground">{t("noProfitData")}</p>
           </div>
         </ContentReveal>
       ) : error ? (
-        <p role="alert" className="text-sm text-red-600">{error}</p>
+        <p role="alert" className="text-sm text-red-600">{t("loadFailed")}</p>
       ) : (
         <ContentReveal>
           <div className="rounded-lg border overflow-hidden">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/30">
-                  <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">Contact</th>
-                  <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">Revenue</th>
-                  <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">Costs</th>
-                  <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">Profit</th>
-                  <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">Margin</th>
-                  <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">Invoices</th>
-                  <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">Bills</th>
+                  <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("contact")}</th>
+                  <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("revenue")}</th>
+                  <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("costs")}</th>
+                  <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("profit")}</th>
+                  <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("margin")}</th>
+                  <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("invoices")}</th>
+                  <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("bills")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -168,7 +168,7 @@ export default function ProfitabilityPage() {
               </tbody>
               <tfoot>
                 <tr className="border-t bg-muted/30">
-                  <td className="px-4 py-2.5 font-semibold">Total</td>
+                  <td className="px-4 py-2.5 font-semibold">{t("total")}</td>
                   <td className="px-4 py-2.5 text-right font-mono tabular-nums font-semibold text-emerald-600">{statementMoneyText(totalRevenue, currencyCode)}</td>
                   <td className="px-4 py-2.5 text-right font-mono tabular-nums font-semibold text-red-600">{statementMoneyText(totalCosts, currencyCode)}</td>
                   <td className={cn(

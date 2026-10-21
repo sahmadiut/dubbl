@@ -1,9 +1,10 @@
 "use client";
 
 import { financialRatiosUi, analyticalReportJson } from "@/lib/money/analytical-report-ui";
-import Link from "next/link";
 import { useState, useEffect } from "react";
-import { ArrowLeft, Gauge } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { BackToReports } from "../_components";
+import { Gauge } from "lucide-react";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { PageHeader } from "@/components/dashboard/page-header";
@@ -15,64 +16,65 @@ type Ratios = ReturnType<typeof financialRatiosUi>["ratios"];
 
 type Balances = ReturnType<typeof financialRatiosUi>["balances"];
 
-const ratioInfo: Record<string, { label: string; description: string; format: (v: string) => string; goodWhen: (v: number) => boolean }> = {
+const ratioInfo = {
   currentRatio: {
-    label: "Current Ratio",
-    description: "Current assets / current liabilities. Measures short-term liquidity.",
-    format: (v) => `${v}x`,
-    goodWhen: (v) => v >= 1,
+    label: "currentRatioLabel",
+    description: "currentRatioDescription",
+    format: (v: string) => `${v}x`,
+    goodWhen: (v: number) => v >= 1,
   },
   quickRatio: {
-    label: "Quick Ratio",
-    description: "Liquid assets (excl. inventory) / current liabilities.",
-    format: (v) => `${v}x`,
-    goodWhen: (v) => v >= 1,
+    label: "quickRatioLabel",
+    description: "quickRatioDescription",
+    format: (v: string) => `${v}x`,
+    goodWhen: (v: number) => v >= 1,
   },
   debtToEquity: {
-    label: "Debt to Equity",
-    description: "Total liabilities / total equity. Lower is less leveraged.",
-    format: (v) => `${v}x`,
-    goodWhen: (v) => v <= 2,
+    label: "debtToEquityLabel",
+    description: "debtToEquityDescription",
+    format: (v: string) => `${v}x`,
+    goodWhen: (v: number) => v <= 2,
   },
   grossMargin: {
-    label: "Gross Margin",
-    description: "Revenue minus cost of goods sold as a percentage of revenue.",
-    format: (v) => `${v}%`,
-    goodWhen: (v) => v > 0,
+    label: "grossMarginLabel",
+    description: "grossMarginDescription",
+    format: (v: string) => `${v}%`,
+    goodWhen: (v: number) => v > 0,
   },
   netMargin: {
-    label: "Net Margin",
-    description: "Net income as a percentage of revenue.",
-    format: (v) => `${v}%`,
-    goodWhen: (v) => v > 0,
+    label: "netMarginLabel",
+    description: "netMarginDescription",
+    format: (v: string) => `${v}%`,
+    goodWhen: (v: number) => v > 0,
   },
   dso: {
-    label: "Days Sales Outstanding",
-    description: "Average days to collect receivables.",
-    format: (v) => `${v} days`,
-    goodWhen: (v) => v <= 45,
+    label: "dsoLabel",
+    description: "dsoDescription",
+    format: (v: string) => v,
+    goodWhen: (v: number) => v <= 45,
   },
   dpo: {
-    label: "Days Payable Outstanding",
-    description: "Average days to pay suppliers.",
-    format: (v) => `${v} days`,
-    goodWhen: (v) => v <= 60,
+    label: "dpoLabel",
+    description: "dpoDescription",
+    format: (v: string) => v,
+    goodWhen: (v: number) => v <= 60,
   },
   returnOnAssets: {
-    label: "Return on Assets",
-    description: "Net income / total assets.",
-    format: (v) => `${v}%`,
-    goodWhen: (v) => v > 0,
+    label: "returnOnAssetsLabel",
+    description: "returnOnAssetsDescription",
+    format: (v: string) => `${v}%`,
+    goodWhen: (v: number) => v > 0,
   },
   returnOnEquity: {
-    label: "Return on Equity",
-    description: "Net income / total equity.",
-    format: (v) => `${v}%`,
-    goodWhen: (v) => v > 0,
+    label: "returnOnEquityLabel",
+    description: "returnOnEquityDescription",
+    format: (v: string) => `${v}%`,
+    goodWhen: (v: number) => v > 0,
   },
-};
+} as const;
 
 export default function FinancialRatiosPage() {
+  const t = useTranslations("AnalyticalReports");
   const now = new Date();
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -82,7 +84,7 @@ export default function FinancialRatiosPage() {
   const [balances, setBalances] = useState<Balances | null>(null);
   const [ratiosExact, setRatiosExact] = useState<ReturnType<typeof financialRatiosUi>["ratiosExact"] | null>(null);
   const [currencyCode, setCurrencyCode] = useState("USD");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     const orgId = localStorage.getItem("activeOrgId");
@@ -100,10 +102,10 @@ export default function FinancialRatiosPage() {
         setRatios(data.ratios);
         setRatiosExact(data.ratiosExact);
         setCurrencyCode(data.currencyCode);
-        setError(null);
+        setError(false);
         setBalances(data.balances);
       })
-      .catch((err: unknown) => { if (!cancelled) { setRatios(null); setBalances(null); setRatiosExact(null); setError(err instanceof Error ? err.message : "Unable to load financial ratios."); } })
+      .catch(() => { if (!cancelled) { setRatios(null); setBalances(null); setRatiosExact(null); setError(true); } })
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
@@ -117,13 +119,11 @@ export default function FinancialRatiosPage() {
 
   return (
     <ContentReveal className="space-y-6">
-      <Link href="/reports" className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors">
-        <ArrowLeft className="size-3.5" /> Back to reports
-      </Link>
+      <BackToReports />
 
       <PageHeader
-        title="Business health signals"
-        description="Quick measures of how easily you can cover bills and how strong your margins are."
+        title={t("ratiosTitle")}
+        description={t("ratiosDescription")}
       />
 
       <DateRangeFilter
@@ -134,10 +134,10 @@ export default function FinancialRatiosPage() {
 
       {loading ? (
         <BrandLoader className="h-48" />
-      ) : error ? <p role="alert" className="text-sm text-destructive">{error}</p> : !ratios ? (
+      ) : error ? <p role="alert" className="text-sm text-destructive">{t("loadFailed")}</p> : !ratios ? (
         <ContentReveal>
           <div className="rounded-xl border border-dashed py-12 text-center">
-            <p className="text-sm text-muted-foreground">No financial data available.</p>
+            <p className="text-sm text-muted-foreground">{t("noFinancialData")}</p>
           </div>
         </ContentReveal>
       ) : (
@@ -151,16 +151,16 @@ export default function FinancialRatiosPage() {
               return (
                 <div key={key} className="rounded-lg border p-4 space-y-1">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{info.label}</p>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t(info.label)}</p>
                     <Gauge className="size-3.5 text-muted-foreground/50" />
                   </div>
                   <p className={cn(
                     "text-2xl font-bold font-mono tabular-nums truncate",
                     good ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
                   )}>
-                    {info.format(ratiosExact![key as keyof Ratios]!)}
+                    {key === "dso" || key === "dpo" ? t("ratioDays", { value: ratiosExact![key]! }) : info.format(ratiosExact![key as keyof Ratios]!)}
                   </p>
-                  <p className="text-[11px] text-muted-foreground leading-tight">{info.description}</p>
+                  <p className="text-[11px] text-muted-foreground leading-tight">{t(info.description)}</p>
                 </div>
               );
             })}
@@ -169,25 +169,25 @@ export default function FinancialRatiosPage() {
           {/* Underlying Balances */}
           {balances && (
             <div className="mt-4">
-              <p className="text-sm font-medium mb-3">Underlying Balances</p>
+              <p className="text-sm font-medium mb-3">{t("underlyingBalances")}</p>
               <div className="rounded-lg border overflow-hidden">
                 <table className="w-full text-sm">
                   <tbody>
                     {([
-                      ["Total Assets", balances.totalAssets],
-                      ["Current Assets", balances.currentAssets],
-                      ["Inventory", balances.inventory],
-                      ["Total Liabilities", balances.totalLiabilities],
-                      ["Current Liabilities", balances.currentLiabilities],
-                      ["Total Equity", balances.totalEquity],
-                      ["Revenue (Period)", balances.totalRevenue],
-                      ["Expenses (Period)", balances.totalExpenses],
-                      ["Net Income (Period)", balances.netIncome],
-                      ["Receivables Due", balances.receivablesDue],
-                      ["Payables Due", balances.payablesDue],
+                      ["totalAssets", balances.totalAssets],
+                      ["currentAssets", balances.currentAssets],
+                      ["inventory", balances.inventory],
+                      ["totalLiabilities", balances.totalLiabilities],
+                      ["currentLiabilities", balances.currentLiabilities],
+                      ["totalEquity", balances.totalEquity],
+                      ["periodRevenue", balances.totalRevenue],
+                      ["periodExpenses", balances.totalExpenses],
+                      ["periodNetIncome", balances.netIncome],
+                      ["receivablesDue", balances.receivablesDue],
+                      ["payablesDue", balances.payablesDue],
                     ] as const).map(([label, value]) => (
-                      <tr key={label as string} className="border-b last:border-b-0">
-                        <td className="px-4 py-2 text-muted-foreground">{label as string}</td>
+                      <tr key={label} className="border-b last:border-b-0">
+                        <td className="px-4 py-2 text-muted-foreground">{t(label)}</td>
                         <td className="px-4 py-2 text-right font-mono tabular-nums font-medium">
                           {formatMoney(value, currencyCode)}
                         </td>

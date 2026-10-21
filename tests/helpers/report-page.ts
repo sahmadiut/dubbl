@@ -14,6 +14,7 @@ import * as DataTable from "../../components/dashboard/data-table";
 import * as ExportButton from "../../components/dashboard/export-button";
 import * as DatePicker from "../../components/ui/date-picker";
 import * as CurrencySelect from "../../components/ui/currency-select";
+import * as BudgetProgressBar from "../../components/dashboard/budget-progress-bar";
 import { renderWithPresentation } from "./presentation";
 
 export type Capture = { kind: string; props: Record<string, unknown> };
@@ -59,6 +60,7 @@ export function renderReportPage(route: string, states: Record<string, unknown> 
     if (id.endsWith("/export-button")) return ExportButton;
     if (id.endsWith("/date-picker")) return DatePicker;
     if (id.endsWith("/currency-select")) return CurrencySelect;
+    if (id.endsWith("/budget-progress-bar")) return BudgetProgressBar;
     if (id.endsWith("/content-reveal")) return { ContentReveal: ({ children }: { children: ReactNode }) => createElement("div", null, children) };
     return require(id.startsWith("@/") ? resolve(id.slice(2)) : id);
   };

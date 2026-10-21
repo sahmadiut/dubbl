@@ -1,6 +1,7 @@
 "use client";
 
 import { budgetMoney, budgetPercent } from "@/lib/money/budget-ui";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
 interface BudgetProgressBarProps {
@@ -11,6 +12,7 @@ interface BudgetProgressBarProps {
 }
 
 export function BudgetProgressBar({ budgeted, actual, label, currencyCode = "USD" }: BudgetProgressBarProps) {
+  const t = useTranslations("AnalyticalReports");
   const pct = budgetPercent(actual, budgeted);
   const over = actual > budgeted;
 
@@ -32,8 +34,8 @@ export function BudgetProgressBar({ budgeted, actual, label, currencyCode = "USD
         />
       </div>
       <div className="flex justify-between text-xs text-muted-foreground tabular-nums font-mono">
-        <span>Actual: {budgetMoney(actual, currencyCode)}</span>
-        <span>Budget: {budgetMoney(budgeted, currencyCode)}</span>
+        <span>{t("progressActual", { amount: budgetMoney(actual, currencyCode) })}</span>
+        <span>{t("progressBudget", { amount: budgetMoney(budgeted, currencyCode) })}</span>
       </div>
     </div>
   );

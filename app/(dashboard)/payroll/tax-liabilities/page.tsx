@@ -1,6 +1,8 @@
 "use client";
 
-import { payrollJson } from "@/lib/money/payroll-ui";
+import { useTranslations } from "next-intl";
+import { payrollTaxPaymentJson, taxPaymentOrganization, type TaxPayment } from "@/i18n/payroll-tax-liability-presentation";
+import { payrollAnalyticsJson } from "@/i18n/payroll-analytics-presentation";
 
 import { payrollCentsInput } from "@/lib/money/payroll-input";
 
@@ -49,55 +51,11 @@ import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 // as Social Security / Medicare / unemployment (→ 2235), and pension & benefit
 // withholdings (→ 2245). We surface those same buckets here as the "agencies"
 // you owe, in plain language.
-interface AgencyBucket {
-  bucket: string; // value sent to the API as allocation.bucket
-  agency: string; // who you pay
-  what: string; // plain description of what it covers
-  taxKind: string; // default taxKind stamped on the remittance
-}
-
-const AGENCY_BUCKETS: AgencyBucket[] = [
-  {
-    bucket: "income_tax",
-    agency: "Tax authority — income tax",
-    what: "Income tax withheld from employee pay",
-    taxKind: "income_tax",
-  },
-  {
-    bucket: "fica",
-    agency: "Tax authority — payroll taxes",
-    what: "Social Security, Medicare & unemployment",
-    taxKind: "941",
-  },
-  {
-    bucket: "pension",
-    agency: "Pension & benefits provider",
-    what: "Retirement & benefit amounts withheld",
-    taxKind: "benefits",
-  },
-];
-
-interface TaxPayment {
-  id: string;
-  periodStart: string;
-  periodEnd: string;
-  jurisdictionLevel: string;
-  jurisdiction: string | null;
-  taxKind: string | null;
-  amount: number;
-  currency: string | null;
-  reference: string | null;
-  notes: string | null;
-  status: string;
-  paidAt: string | null;
-  createdAt: string;
-}
-
-const jurisdictionLabels: Record<string, string> = {
-  federal: "Federal",
-  state: "State",
-  local: "Local",
-};
+const AGENCY_BUCKETS = [
+  { bucket: "income_tax", agency: "incomeAgency", what: "incomeDescription", taxKind: "income_tax" },
+  { bucket: "fica", agency: "payrollAgency", what: "payrollDescription", taxKind: "941" },
+  { bucket: "pension", agency: "pensionAgency", what: "pensionDescription", taxKind: "benefits" },
+] as const;
 
 function todayISO() {
   return new Date().toISOString().split("T")[0];
@@ -110,10 +68,9 @@ function monthStartISO() {
 }
 
 export default function TaxLiabilitiesPage() {
-  useDocumentTitle("Payroll · Tax Liabilities");
-
-  const orgId =
-    typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
+  const t = useTranslations("PayrollTaxLiabilities");
+  useDocumentTitle(t("documentTitle"));
+  const orgId = taxPaymentOrganization();
 
   const [initialLoad, setInitialLoad] = useState(true);
   const [accruedTax, setAccruedTax] = useState(0);
@@ -140,35 +97,37 @@ export default function TaxLiabilitiesPage() {
 
   // ── Load accrued tax + recorded payments ──
   useEffect(() => {
-    if (!orgId) return;
     let cancelled = false;
-    const headers = { "x-organization-id": orgId };
-
-    Promise.all([
-      fetch(`/api/v1/payroll/reports/tax-liability`, { headers })
-        .then(async r => { const body = await payrollJson(r); if (!r.ok) throw new Error(body.error || "Unable to load tax liability"); return body; }),
-      fetch(`/api/v1/payroll/tax-payments`, { headers })
-        .then(async r => { const body = await payrollJson(r); if (!r.ok) throw new Error(body.error || "Unable to load tax payments"); return body; }),
-    ]).then(([liability, paymentsRes]) => {
-      if (cancelled) return;
+    async function load() {
+      setInitialLoad(true);
       setReportError(null);
-      setReportCurrency(liability.currency);
-      setAccruedTax(liability.totalTax);
-      setPayments(paymentsRes?.payments || []);
-      setInitialLoad(false);
-    }).catch(error => { if (!cancelled) { setReportError(error.message); setInitialLoad(false); } });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [orgId, refreshKey]);
+      try {
+        if (!orgId) throw new Error("Missing organization");
+        const headers = { "x-organization-id": orgId };
+        const [liability, paymentsRes] = await Promise.all([
+          fetch("/api/v1/payroll/reports/tax-liability", { headers }).then(r => payrollAnalyticsJson(r, "tax-liability")),
+          fetch("/api/v1/payroll/tax-payments", { headers }).then(r => payrollTaxPaymentJson(r, "list")),
+        ]);
+        if (cancelled) return;
+        setReportCurrency(liability.currency);
+        setAccruedTax(liability.totalTax);
+        setPayments(paymentsRes.payments);
+      } catch {
+        if (!cancelled) { setReportError(t("loadFailed")); setPayments([]); }
+      } finally {
+        if (!cancelled) setInitialLoad(false);
+      }
+    }
+    void Promise.resolve().then(() => { if (!cancelled) return load(); });
+    return () => { cancelled = true; };
+  }, [orgId, refreshKey, t]);
 
   const paidPayments = payments.filter(p => p.status === "paid");
   const compatibleCurrency = paidPayments.every(p => p.currency === reportCurrency);
   const totalPaid = paidPayments.reduce((s, p) => s + BigInt(p.amount), 0n);
   const difference = BigInt(accruedTax) - totalPaid;
   const outstanding = difference > 0n ? difference : 0n;
-  const totalsError = reportError || (!compatibleCurrency ? "Tax totals contain multiple currencies." : null);
+  const totalsError = reportError || (!compatibleCurrency ? t("multipleCurrencies") : null);
 
   const openRecordPayment = useCallback((bucket?: string) => {
     if (bucket) setFormBucket(bucket);
@@ -183,21 +142,22 @@ export default function TaxLiabilitiesPage() {
   }, []);
 
   const handleSubmit = useCallback(async () => {
-    if (!orgId) return;
+    if (!orgId) { toast.error(t("organizationRequired")); return; }
     let cents: string;
-    try { cents = payrollCentsInput(formAmount || "0"); } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Invalid amount"); return;
+    try { cents = payrollCentsInput(formAmount || "0"); } catch {
+      toast.error(t("invalidAmount")); return;
     }
     if (cents === "0") {
-      toast.error("Enter an amount greater than zero");
+      toast.error(t("positiveAmount"));
       return;
     }
     if (!formPeriodStart || !formPeriodEnd) {
-      toast.error("Choose the period this payment covers");
+      toast.error(t("choosePeriod"));
       return;
     }
 
     const selected = AGENCY_BUCKETS.find((b) => b.bucket === formBucket);
+    if (!selected) { toast.error(t("recordFailed")); return; }
 
     const inputKey = JSON.stringify([formPeriodStart, formPeriodEnd, formJurisdiction, formBucket, cents, formPaymentDate, formReference, formNotes]);
     if (remittanceInput.current !== inputKey) { remittanceKey.current = null; remittanceInput.current = inputKey; }
@@ -222,16 +182,13 @@ export default function TaxLiabilitiesPage() {
           notes: formNotes || undefined,
         }),
       });
-      const data = await payrollJson(res);
-      if (!res.ok) {
-        throw new Error(data?.error || "Could not record payment");
-      }
+      await payrollTaxPaymentJson(res, "created");
       remittanceKey.current = null;
-      toast.success("Payment recorded");
+      toast.success(t("recorded"));
       setSheetOpen(false);
       setRefreshKey((k) => k + 1);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not record payment");
+    } catch {
+      toast.error(t("recordFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -245,6 +202,7 @@ export default function TaxLiabilitiesPage() {
     formPaymentDate,
     formReference,
     formNotes,
+    t,
   ]);
 
   // Per-agency paid totals so each row shows how much has been remitted to it.
@@ -265,39 +223,39 @@ export default function TaxLiabilitiesPage() {
     () => [
       {
         key: "period",
-        header: "Period covered",
+        header: t("periodCovered"),
         render: (r) => (
           <span className="text-sm">
-            {r.periodStart} → {r.periodEnd}
+            {t("periodRange", { start: r.periodStart, end: r.periodEnd })}
           </span>
         ),
       },
       {
         key: "kind",
-        header: "Covers",
+        header: t("covers"),
         render: (r) => {
           const matched = AGENCY_BUCKETS.find((b) => b.taxKind === r.taxKind);
           return (
             <span className="text-sm">
-              {matched?.agency ?? r.taxKind ?? "Payroll tax"}
+              {matched ? t(matched.agency) : r.taxKind ?? t("payrollTax")}
             </span>
           );
         },
       },
       {
         key: "jurisdiction",
-        header: "Level",
+        header: t("level"),
         className: "w-24",
         render: (r) => (
           <Badge variant="outline">
-            {jurisdictionLabels[r.jurisdictionLevel] || r.jurisdictionLevel}
+            {t(r.jurisdictionLevel)}
             {r.jurisdiction ? ` · ${r.jurisdiction}` : ""}
           </Badge>
         ),
       },
       {
         key: "reference",
-        header: "Reference",
+        header: t("reference"),
         className: "w-40",
         render: (r) => (
           <span className="font-mono text-xs text-muted-foreground">
@@ -307,7 +265,7 @@ export default function TaxLiabilitiesPage() {
       },
       {
         key: "paid",
-        header: "Paid on",
+        header: t("paidOn"),
         className: "w-28",
         render: (r) => (
           <span className="text-sm">
@@ -317,7 +275,7 @@ export default function TaxLiabilitiesPage() {
       },
       {
         key: "amount",
-        header: "Amount",
+        header: t("amount"),
         className: "w-28 text-right",
         render: (r) => (
           <span className="font-mono text-sm tabular-nums">
@@ -326,7 +284,7 @@ export default function TaxLiabilitiesPage() {
         ),
       },
     ],
-    [],
+    [t],
   );
 
   if (initialLoad) return <BrandLoader />;
@@ -337,11 +295,10 @@ export default function TaxLiabilitiesPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-lg font-semibold tracking-tight">
-            Payroll tax liabilities
+            {t("title")}
           </h2>
           <p className="mt-1 max-w-xl text-sm text-muted-foreground">
-            What payroll taxes you owe from completed pay runs, who to pay, and a
-            record of payments you&apos;ve made.
+            {t("description")}
           </p>
         </div>
         <Button
@@ -349,25 +306,25 @@ export default function TaxLiabilitiesPage() {
           className="bg-emerald-600 shrink-0 hover:bg-emerald-700"
         >
           <Plus className="mr-2 size-4" />
-          Record payment
+          {t("record")}
         </Button>
       </div>
 
       {/* Stats */}
       <div className="grid gap-3 sm:grid-cols-3">
         <StatCard
-          title="Owed from pay runs"
-          value={totalsError ? "Unavailable" : formatMoney(accruedTax, reportCurrency)}
+          title={t("owed")}
+          value={totalsError ? t("unavailable") : formatMoney(accruedTax, reportCurrency)}
           icon={Receipt}
         />
         <StatCard
-          title="Paid so far"
-          value={totalsError ? "Unavailable" : formatMoney(totalPaid, reportCurrency)}
+          title={t("paid")}
+          value={totalsError ? t("unavailable") : formatMoney(totalPaid, reportCurrency)}
           icon={CheckCircle2}
         />
         <StatCard
-          title="Still outstanding"
-          value={totalsError ? "Unavailable" : formatMoney(outstanding, reportCurrency)}
+          title={t("outstanding")}
+          value={totalsError ? t("unavailable") : formatMoney(outstanding, reportCurrency)}
           icon={Wallet}
         />
       </div>
@@ -380,7 +337,7 @@ export default function TaxLiabilitiesPage() {
       <div className="space-y-3">
         <div className="flex items-center gap-2">
           <Landmark className="size-4 text-muted-foreground" />
-          <h3 className="text-sm font-semibold">Who you pay</h3>
+          <h3 className="text-sm font-semibold">{t("whoYouPay")}</h3>
         </div>
         <div className="grid gap-3 lg:grid-cols-3">
           {AGENCY_BUCKETS.map((b) => {
@@ -391,14 +348,14 @@ export default function TaxLiabilitiesPage() {
                 className="flex flex-col justify-between rounded-xl border bg-card p-4"
               >
                 <div>
-                  <p className="text-sm font-medium">{b.agency}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">{b.what}</p>
+                  <p className="text-sm font-medium">{t(b.agency)}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{t(b.what)}</p>
                 </div>
                 <div className="mt-4 flex items-center justify-between">
                   <div className="text-xs text-muted-foreground">
-                    Paid to date
+                    {t("paidToDate")}
                     <span className="ml-1.5 font-mono tabular-nums text-foreground">
-                      {totalsError ? "Unavailable" : formatMoney(paid, reportCurrency)}
+                      {totalsError ? t("unavailable") : formatMoney(paid, reportCurrency)}
                     </span>
                   </div>
                   <Button
@@ -406,7 +363,7 @@ export default function TaxLiabilitiesPage() {
                     variant="outline"
                     onClick={() => openRecordPayment(b.bucket)}
                   >
-                    Record payment
+                    {t("record")}
                   </Button>
                 </div>
               </div>
@@ -417,9 +374,7 @@ export default function TaxLiabilitiesPage() {
           <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
             <AlertCircle className="mt-0.5 size-3.5 shrink-0" />
             <span>
-              {formatMoney(outstanding, reportCurrency)} of withheld payroll tax has not been
-              remitted yet. Record a payment when you pay it so your books match
-              what&apos;s actually left to pay.
+              {t("outstandingNotice", { amount: formatMoney(outstanding, reportCurrency) })}
             </span>
           </div>
         )}
@@ -429,12 +384,12 @@ export default function TaxLiabilitiesPage() {
 
       {/* Payment history */}
       <div className="space-y-3">
-        <h3 className="text-sm font-semibold">Payments recorded</h3>
+        <h3 className="text-sm font-semibold">{t("paymentsRecorded")}</h3>
         <DataTable
           columns={paymentColumns}
           data={payments}
           loading={false}
-          emptyMessage="No payroll tax payments recorded yet."
+          emptyMessage={t("empty")}
         />
       </div>
 
@@ -442,16 +397,15 @@ export default function TaxLiabilitiesPage() {
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetContent className="flex w-full flex-col sm:max-w-md">
           <SheetHeader>
-            <SheetTitle>Record a payroll tax payment</SheetTitle>
+            <SheetTitle>{t("sheetTitle")}</SheetTitle>
             <SheetDescription>
-              Logs the payment and clears the matching liability against your bank
-              in the books.
+              {t("sheetDescription")}
             </SheetDescription>
           </SheetHeader>
 
           <div className="flex-1 space-y-4 overflow-y-auto px-4">
             <div className="space-y-1.5">
-              <Label>Who you&apos;re paying</Label>
+              <Label>{t("payee")}</Label>
               <Select value={formBucket} onValueChange={setFormBucket}>
                 <SelectTrigger className="w-full">
                   <SelectValue />
@@ -459,7 +413,7 @@ export default function TaxLiabilitiesPage() {
                 <SelectContent>
                   {AGENCY_BUCKETS.map((b) => (
                     <SelectItem key={b.bucket} value={b.bucket}>
-                      {b.agency}
+                      {t(b.agency)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -467,7 +421,7 @@ export default function TaxLiabilitiesPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label>Amount paid</Label>
+              <Label>{t("amountPaid")}</Label>
               <CurrencyInput
                 value={formAmount}
                 onChange={setFormAmount}
@@ -477,26 +431,26 @@ export default function TaxLiabilitiesPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>Period from</Label>
+                <Label>{t("periodFrom")}</Label>
                 <DatePicker
                   value={formPeriodStart}
                   onChange={setFormPeriodStart}
-                  placeholder="Start"
+                  placeholder={t("start")}
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>Period to</Label>
+                <Label>{t("periodTo")}</Label>
                 <DatePicker
                   value={formPeriodEnd}
                   onChange={setFormPeriodEnd}
-                  placeholder="End"
+                  placeholder={t("end")}
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>Level</Label>
+                <Label>{t("level")}</Label>
                 <Select
                   value={formJurisdiction}
                   onValueChange={(v) =>
@@ -507,37 +461,37 @@ export default function TaxLiabilitiesPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="federal">Federal</SelectItem>
-                    <SelectItem value="state">State</SelectItem>
-                    <SelectItem value="local">Local</SelectItem>
+                    <SelectItem value="federal">{t("federal")}</SelectItem>
+                    <SelectItem value="state">{t("state")}</SelectItem>
+                    <SelectItem value="local">{t("local")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label>Paid on</Label>
+                <Label>{t("paidOn")}</Label>
                 <DatePicker
                   value={formPaymentDate}
                   onChange={setFormPaymentDate}
-                  placeholder="Payment date"
+                  placeholder={t("paymentDate")}
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label>Reference</Label>
+              <Label>{t("reference")}</Label>
               <Input
                 value={formReference}
                 onChange={(e) => setFormReference(e.target.value)}
-                placeholder="Confirmation / EFTPS number"
+                placeholder={t("referencePlaceholder")}
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label>Notes</Label>
+              <Label>{t("notes")}</Label>
               <Textarea
                 value={formNotes}
                 onChange={(e) => setFormNotes(e.target.value)}
-                placeholder="Optional note about this payment"
+                placeholder={t("notesPlaceholder")}
                 rows={3}
               />
             </div>
@@ -549,14 +503,14 @@ export default function TaxLiabilitiesPage() {
               disabled={submitting}
               className="bg-emerald-600 hover:bg-emerald-700"
             >
-              {submitting ? "Recording..." : "Record payment"}
+              {submitting ? t("recording") : t("record")}
             </Button>
             <Button
               variant="outline"
               onClick={() => setSheetOpen(false)}
               disabled={submitting}
             >
-              Cancel
+              {t("cancel")}
             </Button>
           </SheetFooter>
         </SheetContent>

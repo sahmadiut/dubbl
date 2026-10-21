@@ -1,5 +1,12 @@
 # Message catalog foundation
 
+LOC-091 payroll tax liabilities use 52 paired `PayrollTaxLiabilities` messages
+(7,929 compatible keys per locale). See
+[scope and exceptions](PAYROLL_TAX_LIABILITY_CATALOGS.md) for checked liability,
+history and posting feedback, preserved exact cents/idempotency/statutory and
+REST/MCP contracts, and provisional Persian terminology. LOC-067/008/002 and
+native/RTL qualification remain independent.
+
 LOC-089 compensation list and review detail use 82 paired
 `PayrollCompensation` messages (7,813 keys per locale). See
 [scope and exceptions](PAYROLL_COMPENSATION_CATALOGS.md) for checked read/create
@@ -296,6 +303,7 @@ Extraction ownership:
 | LOC-088 | LOC-067 child: payroll self-service profile and history; [scope and exceptions](PAYROLL_SELF_SERVICE_CATALOGS.md) |
 | LOC-089 | LOC-067 child: compensation bands/reviews and review detail; [scope and exceptions](PAYROLL_COMPENSATION_CATALOGS.md) |
 | LOC-090 | LOC-067 child: analytics, forecasting and report list/detail; [scope and exceptions](PAYROLL_ANALYTICS_CATALOGS.md) |
+| LOC-091 | LOC-067 child: tax liabilities and payment recording; [scope and exceptions](PAYROLL_TAX_LIABILITY_CATALOGS.md) |
 | LOC-002 | Independent combined key coverage, plural and safe rendering acceptance |
 
 Later L10N/RTL tasks retain native-reviewed financial wording, complete Persian

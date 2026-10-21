@@ -1,5 +1,6 @@
 import { payrollJson, payrollUiPayload } from "../../lib/money/payroll-ui";
 import { payrollContractorJson } from "../../i18n/payroll-contractor-presentation";
+import { payrollTaxPaymentJson } from "../../i18n/payroll-tax-liability-presentation";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { and, eq, sql } from "drizzle-orm";
@@ -76,6 +77,8 @@ async function run() {
   };
   const data = async (response: Response, status = 200) => { const body = await payrollJson(response); assert.equal(response.status, status, JSON.stringify(body)); return body; };
   const checked = async <T>(name: string, body: T): Promise<T> => {
+    if (["list_payroll_tax_payments", "create_payroll_tax_payment"].includes(name))
+      assert.deepEqual(await payrollTaxPaymentJson(Response.json(body), name.startsWith("list_") ? "list" : "created"), body);
     if (["create_contractor_payment", "process_contractor_payment"].includes(name))
       assert.deepEqual(await payrollContractorJson(Response.json(body), "payment"), body);
     return body;

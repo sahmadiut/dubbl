@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { ArrowLeft, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,12 +13,13 @@ import {
 
 /** Back-to-reports link, shared by every report page. */
 export function BackToReports() {
+  const t = useTranslations("ReportNavigation");
   return (
     <Link
       href="/reports"
       className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors"
     >
-      <ArrowLeft className="size-3.5" /> Back to reports
+      <ArrowLeft className="size-3.5" /> {t("backToReports")}
     </Link>
   );
 }
@@ -47,6 +49,7 @@ export function BasisToggle({
   basis: "accrual" | "cash";
   onChange: (b: "accrual" | "cash") => void;
 }) {
+  const t = useTranslations("ReportNavigation");
   const options: {
     value: "accrual" | "cash";
     label: string;
@@ -54,19 +57,19 @@ export function BasisToggle({
   }[] = [
     {
       value: "accrual",
-      label: "When invoiced or billed",
-      help: "Counts a sale or cost on the date you raised the invoice or got the bill — even if it hasn't been paid yet. (Accrual basis.)",
+      label: t("accrualLabel"),
+      help: t("accrualHelp"),
     },
     {
       value: "cash",
-      label: "When money moves",
-      help: "Counts a sale or cost only when the money is actually paid in or out. (Cash basis.)",
+      label: t("cashLabel"),
+      help: t("cashHelp"),
     },
   ];
   return (
     <TooltipProvider delayDuration={150}>
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-[13px] text-muted-foreground">Count income and costs:</span>
+        <span className="text-[13px] text-muted-foreground">{t("basisPrompt")}</span>
         <div className="flex items-center gap-1.5">
           {options.map((o) => (
             <Tooltip key={o.value}>

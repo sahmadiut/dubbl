@@ -512,3 +512,21 @@ Seven route TSX files plus DealDrawer; parent retains independent combined accep
 - [LOC-100](../tasks/LOC-100.md): Extract CRM deal overview navigation and settings catalogs.
 - [LOC-101](../tasks/LOC-101.md): Extract CRM deal activity catalogs.
 - [LOC-102](../tasks/LOC-102.md): Extract CRM analytics catalogs.
+
+## LOC-070 reporting catalog children
+
+Verified 34 report TSX components; parent retains independent combined acceptance.
+LOC-103 owns directory/shared primitives; later slices depend on that foundation.
+
+- [LOC-103](../tasks/LOC-103.md): Extract report directory and shared navigation catalogs.
+- [LOC-104](../tasks/LOC-104.md): Extract income and executive report catalogs.
+- [LOC-105](../tasks/LOC-105.md): Extract balance sheet and cash flow catalogs.
+- [LOC-106](../tasks/LOC-106.md): Extract trial balance and general ledger catalogs.
+- [LOC-107](../tasks/LOC-107.md): Extract aging payments and vendor report catalogs.
+- [LOC-108](../tasks/LOC-108.md): Extract analytical and comparison report catalogs.
+- [LOC-109](../tasks/LOC-109.md): Extract forecast and financial calendar catalogs.
+- [LOC-110](../tasks/LOC-110.md): Extract tax report catalogs.
+- [LOC-111](../tasks/LOC-111.md): Extract banking report catalogs.
+- [LOC-112](../tasks/LOC-112.md): Extract saved and custom report catalogs.
+- [LOC-113](../tasks/LOC-113.md): Extract scheduled report catalogs.
+- [LOC-114](../tasks/LOC-114.md): Extract consolidation and report pack catalogs.

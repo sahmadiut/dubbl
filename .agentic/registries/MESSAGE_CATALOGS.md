@@ -1,5 +1,11 @@
 # Message catalog foundation
 
+LOC-103 report directory and shared navigation use 79 paired messages across
+`ReportDirectory` and `ReportNavigation` (8,854 compatible leaves per locale).
+See [scope, exceptions and reporting split](REPORT_DIRECTORY_CATALOGS.md).
+All 29 hrefs and cash/accrual machine values remain unchanged. LOC-070/008/002
+retain independent combined acceptance; native Persian/RTL wording is provisional.
+
 LOC-069 independently accepts combined CRM presentation after LOC-099..102:
 seven route components, DealDrawer and 224 paired messages in four namespaces
 (8,775 compatible leaves per locale). See
@@ -365,6 +371,8 @@ Extraction ownership:
 | LOC-069 | LOC-008 child: CRM and shared controls |
 | LOC-100 | LOC-069 child: CRM deal overview, navigation and settings; [scope and exceptions](CRM_DETAIL_CATALOGS.md) |
 | LOC-070 | LOC-008 child: reporting and shared controls |
+| LOC-103 | LOC-070 child: report directory/loading, back link and basis toggle; [scope and split](REPORT_DIRECTORY_CATALOGS.md) |
+| LOC-104..114 | LOC-070 remaining report workflow slices; see [complete ownership](REPORT_DIRECTORY_CATALOGS.md) |
 | LOC-071 | LOC-008 child: dashboard, documents and residual operations shared components |
 | LOC-009 | Public surfaces, landing/help, email/PDF and user-visible background content; remaining source audit |
 | LOC-079 | LOC-067 child: payroll overview/navigation; [scope and exceptions](PAYROLL_OVERVIEW_CATALOGS.md) |

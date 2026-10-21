@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import {
   BarChart3,
@@ -34,232 +35,233 @@ import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 
 const reportCategories = [
   {
-    title: "The big picture",
-    description: "Start-here summaries of how the business is doing.",
+    title: "category_big_picture_title",
+    description: "category_big_picture_description",
     reports: [
       {
-        title: "Quick health check",
-        description: "One page of key numbers this period next to last period, so you can see what changed at a glance.",
+        title: "report_executive_summary_title",
+        description: "report_executive_summary_description",
         href: "/reports/executive-summary",
         icon: Sparkles,
       },
       {
-        title: "Money in vs money out",
-        description: "What you earned minus what you spent over a period (also called profit & loss).",
+        title: "report_profit_and_loss_title",
+        description: "report_profit_and_loss_description",
         href: "/reports/profit-and-loss",
         icon: TrendingUp,
       },
       {
-        title: "What you own and owe",
-        description: "Everything the business owns and owes on a chosen date (also called a balance sheet).",
+        title: "report_balance_sheet_title",
+        description: "report_balance_sheet_description",
         href: "/reports/balance-sheet",
         icon: BarChart3,
       },
       {
-        title: "Where your cash went",
-        description: "How cash moved in and out over a period — from day-to-day trading, buying/selling things, and funding.",
+        title: "report_cash_flow_title",
+        description: "report_cash_flow_description",
         href: "/reports/cash-flow",
         icon: ArrowDownUp,
       },
       {
-        title: "Download a report bundle",
-        description: "Get the main reports for a period in one spreadsheet — handy for your accountant, bank, or tax time.",
+        title: "report_pack_title",
+        description: "report_pack_description",
         href: "/reports/pack",
         icon: Package2,
       },
     ],
   },
   {
-    title: "Profit & spending",
-    description: "Dig into earnings, costs, and how you compare over time.",
+    title: "category_profit_spending_title",
+    description: "category_profit_spending_description",
     reports: [
       {
-        title: "Profit by team or project",
-        description: "See money in vs money out split by department or project, side by side.",
+        title: "report_tracking_title",
+        description: "report_tracking_description",
         href: "/reports/tracking",
         icon: Layers,
       },
       {
-        title: "Compare two periods side by side",
-        description: "Put this period's earnings and costs next to another period to spot the change.",
+        title: "report_pnl_comparison_title",
+        description: "report_pnl_comparison_description",
         href: "/reports/pnl-comparison",
         icon: ArrowLeftRight,
       },
       {
-        title: "Budget vs what actually happened",
-        description: "See where you came in over or under your plan.",
+        title: "report_budget_vs_actual_title",
+        description: "report_budget_vs_actual_description",
         href: "/reports/budget-vs-actual",
         icon: Target,
       },
       {
-        title: "Where the money is spent",
-        description: "Your spending grouped by category, with trends and averages.",
+        title: "report_expense_analytics_title",
+        description: "report_expense_analytics_description",
         href: "/reports/expense-analytics",
         icon: TrendingDown,
       },
       {
-        title: "Profit by customer",
-        description: "What each customer brought in minus what serving them cost.",
+        title: "report_profitability_title",
+        description: "report_profitability_description",
         href: "/reports/profitability",
         icon: Users,
       },
       {
-        title: "Who you spend the most with",
-        description: "Your biggest suppliers ranked by total spend for the period.",
+        title: "report_vendor_spend_title",
+        description: "report_vendor_spend_description",
         href: "/reports/vendor-spend",
         icon: ShoppingBag,
       },
     ],
   },
   {
-    title: "Getting paid & paying",
-    description: "Track what's owed to you and what you owe.",
+    title: "category_getting_paid_title",
+    description: "category_getting_paid_description",
     reports: [
       {
-        title: "Who owes you (and how late)",
-        description: "Unpaid customer invoices grouped by how overdue they are.",
+        title: "report_aged_receivables_title",
+        description: "report_aged_receivables_description",
         href: "/reports/aged-receivables",
         icon: Clock,
       },
       {
-        title: "What you owe (and when it's due)",
-        description: "Unpaid supplier bills grouped by how soon they're due.",
+        title: "report_aged_payables_title",
+        description: "report_aged_payables_description",
         href: "/reports/aged-payables",
         icon: DollarSign,
       },
       {
-        title: "How fast you get paid",
-        description: "Average time customers take to pay you and you take to pay suppliers.",
+        title: "report_payment_performance_title",
+        description: "report_payment_performance_description",
         href: "/reports/payment-performance",
         icon: Timer,
       },
       {
-        title: "Possible double-ups",
-        description: "Find invoices or bills that may have been entered twice.",
+        title: "report_duplicate_detection_title",
+        description: "report_duplicate_detection_description",
         href: "/reports/duplicate-detection",
         icon: Copy,
       },
     ],
   },
   {
-    title: "Tax time",
-    description: "Reports for filing your sales tax and vendor forms.",
+    title: "category_tax_title",
+    description: "category_tax_description",
     reports: [
       {
-        title: "Sales tax / VAT / GST return",
-        description: "The figures for your tax return, box by box — open any box to see what's behind the number.",
+        title: "report_vat_return_title",
+        description: "report_vat_return_description",
         href: "/reports/vat-return",
         icon: FileCheck2,
       },
       {
-        title: "Tax collected vs tax paid",
-        description: "Tax you charged customers vs tax you paid suppliers, by tax rate.",
+        title: "report_tax_summary_title",
+        description: "report_tax_summary_description",
         href: "/reports/tax-summary",
         icon: Receipt,
       },
       {
-        title: "1099 vendor totals (US)",
-        description: "Total non-card payments to each 1099 contractor for the year, with who crosses the filing threshold.",
+        title: "report_1099_title",
+        description: "report_1099_description",
         href: "/reports/1099",
         icon: FileText,
       },
     ],
   },
   {
-    title: "Planning ahead",
-    description: "Look forward and keep an eye on key signals.",
+    title: "category_planning_title",
+    description: "category_planning_description",
     reports: [
       {
-        title: "Cash coming up",
-        description: "A forward look at expected money in and out from invoices, bills, and repeating items.",
+        title: "report_cash_flow_forecast_title",
+        description: "report_cash_flow_forecast_description",
         href: "/reports/cash-flow-forecast",
         icon: Compass,
       },
       {
-        title: "What's due soon",
-        description: "Upcoming invoice due dates, bill payments, and repeating events on a calendar.",
+        title: "report_financial_calendar_title",
+        description: "report_financial_calendar_description",
         href: "/reports/financial-calendar",
         icon: CalendarDays,
       },
       {
-        title: "Business health signals",
-        description: "Quick ratios like how easily you can cover bills and how strong your margins are.",
+        title: "report_financial_ratios_title",
+        description: "report_financial_ratios_description",
         href: "/reports/financial-ratios",
         icon: Gauge,
       },
     ],
   },
   {
-    title: "For your accountant",
-    description: "The detailed, line-by-line views accountants expect.",
+    title: "category_accountant_title",
+    description: "category_accountant_description",
     reports: [
       {
-        title: "Account balances check",
-        description: "Every account's balance on a chosen date, with optional earlier dates to compare (also called a trial balance).",
+        title: "report_trial_balance_title",
+        description: "report_trial_balance_description",
         href: "/reports/trial-balance",
         icon: Scale,
       },
       {
-        title: "Every transaction, by account",
-        description: "All bookkeeping entries grouped by account with a running balance (also called the general ledger).",
+        title: "report_general_ledger_title",
+        description: "report_general_ledger_description",
         href: "/reports/general-ledger",
         icon: BookOpen,
       },
       {
-        title: "What you own and owe — compared",
-        description: "Two dates of what you own and owe, side by side, to show what moved.",
+        title: "report_comparative_balance_sheet_title",
+        description: "report_comparative_balance_sheet_description",
         href: "/reports/comparative-balance-sheet",
         icon: GitCompareArrows,
       },
       {
-        title: "Combined view across companies",
-        description: "Roll up the numbers from several companies into one set of statements.",
+        title: "report_consolidation_title",
+        description: "report_consolidation_description",
         href: "/reports/consolidation",
         icon: Building2,
       },
     ],
   },
   {
-    title: "Save, schedule & reconcile",
-    description: "Keep reports handy, send them automatically, and check your bank is reconciled.",
+    title: "category_save_schedule_title",
+    description: "category_save_schedule_description",
     reports: [
       {
-        title: "Bank reconciliation status",
-        description: "Across all your accounts, what's matched to the bank and what's still outstanding.",
+        title: "report_bank_reconciliation_status_title",
+        description: "report_bank_reconciliation_status_description",
         href: "/reports/bank-reconciliation-status",
         icon: FileCheck2,
       },
       {
-        title: "Bank cash flow",
-        description: "Money in and out of your bank and cash accounts over a period.",
+        title: "report_bank_cash_flow_title",
+        description: "report_bank_cash_flow_description",
         href: "/reports/bank-cash-flow",
         icon: ArrowDownUp,
       },
       {
-        title: "Saved reports",
-        description: "Reports you've saved to run again later with the same settings.",
+        title: "report_saved_title",
+        description: "report_saved_description",
         href: "/reports/saved",
         icon: FileText,
       },
       {
-        title: "Scheduled report emails",
-        description: "Have reports emailed to you or your accountant automatically.",
+        title: "report_schedules_title",
+        description: "report_schedules_description",
         href: "/reports/schedules",
         icon: CalendarDays,
       },
     ],
   },
-];
+] as const;
 
 export default function ReportsPage() {
-  useDocumentTitle("Reports · Overview");
+  const t = useTranslations("ReportDirectory");
+  useDocumentTitle(t("documentTitle"));
   return (
     <ContentReveal>
       <div className="space-y-6 sm:space-y-10">
         {reportCategories.map((category, i) => (
           <div key={category.title}>
             {i > 0 && <div className="mb-6 sm:mb-10 h-px bg-border" />}
-            <Section title={category.title} description={category.description}>
+            <Section title={t(category.title)} description={t(category.description)}>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
                 {category.reports.map((report) => (
                   <Link
@@ -270,9 +272,9 @@ export default function ReportsPage() {
                     <div className="flex size-9 sm:size-10 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-950/40">
                       <report.icon className="size-4 sm:size-5 text-emerald-600 dark:text-emerald-400" />
                     </div>
-                    <h3 className="mt-3 sm:mt-4 text-sm font-semibold">{report.title}</h3>
+                    <h3 className="mt-3 sm:mt-4 text-sm font-semibold">{t(report.title)}</h3>
                     <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
-                      {report.description}
+                      {t(report.description)}
                     </p>
                   </Link>
                 ))}

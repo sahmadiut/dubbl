@@ -355,7 +355,7 @@ export default function MembersPage() {
             <Users className="size-3 text-muted-foreground" />
             {t("seatsUsed")}
           </p>
-          <p className="mt-1 text-lg font-semibold tabular-nums">
+          <p className="mt-1 text-lg font-mono font-semibold tabular-nums">
             {capacity ? capacity.current : members.length}
             {capacity?.max && (
               <span className="text-sm font-normal text-muted-foreground">

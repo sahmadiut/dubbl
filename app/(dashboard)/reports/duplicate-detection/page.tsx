@@ -1,24 +1,30 @@
 "use client";
 
 import { duplicateDetectionUi, analyticalReportJson } from "@/lib/money/analytical-report-ui";
-import Link from "next/link";
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Badge } from "@/components/ui/badge";
 import { analyticalMoney as formatMoney } from "@/lib/money/analytical-report-ui";
+import { invoiceStatusLabel } from "@/i18n/invoice-presentation";
+import { billStatusLabel } from "@/i18n/bill-presentation";
+import { BackToReports } from "../_components";
 
 type DuplicateGroup = ReturnType<typeof duplicateDetectionUi>["duplicateGroups"][number];
 
 export default function DuplicateDetectionPage() {
+  const t = useTranslations("AgingVendorReports");
   const router = useRouter();
+  const ti = useTranslations("SalesInvoices");
+  const tb = useTranslations("SupplierBills");
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(true);
   const [groups, setGroups] = useState<DuplicateGroup[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     const orgId = localStorage.getItem("activeOrgId");
@@ -33,9 +39,9 @@ export default function DuplicateDetectionPage() {
       .then((data) => {
         if (cancelled) return;
         setGroups(data.duplicateGroups);
-        setError(null);
+        setError(false);
       })
-      .catch((err: Error) => { if (!cancelled) { setGroups([]); setError(err.message); } })
+      .catch(() => { if (!cancelled) { setGroups([]); setError(true); } })
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
@@ -49,16 +55,14 @@ export default function DuplicateDetectionPage() {
 
   return (
     <ContentReveal className="space-y-6">
-      <Link href="/reports" className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors">
-        <ArrowLeft className="size-3.5" /> Back to reports
-      </Link>
+      <BackToReports />
 
       <PageHeader
-        title="Possible double-ups"
-        description="Invoices or bills that may have been entered twice (same contact, same amount, within 7 days)."
+        title={t("dupTitle")}
+        description={t("dupDescription")}
       />
 
-      {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : loading ? (
+      {error ? <p role="alert" className="text-sm text-destructive">{t("loadFailed")}</p> : loading ? (
         <BrandLoader className="h-48" />
       ) : groups.length === 0 ? (
         <ContentReveal>
@@ -68,8 +72,8 @@ export default function DuplicateDetectionPage() {
                 <AlertTriangle className="size-5 text-emerald-600" />
               </div>
             </div>
-            <p className="text-sm font-medium">No duplicates detected</p>
-            <p className="text-xs text-muted-foreground mt-1">All invoices and bills look clean.</p>
+            <p className="text-sm font-medium">{t("noDuplicates")}</p>
+            <p className="text-xs text-muted-foreground mt-1">{t("noDuplicatesHint")}</p>
           </div>
         </ContentReveal>
       ) : (
@@ -79,7 +83,7 @@ export default function DuplicateDetectionPage() {
               <div className="flex items-center gap-2">
                 <AlertTriangle className="size-4 text-amber-600" />
                 <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
-                  {groups.length} potential duplicate group{groups.length !== 1 ? "s" : ""} found
+                  {t("dupGroupCount", { count: groups.length })}
                 </p>
               </div>
             </div>
@@ -89,7 +93,7 @@ export default function DuplicateDetectionPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className={group.type === "invoice" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-blue-200 bg-blue-50 text-blue-700"}>
-                      {group.type}
+                      {t(group.type)}
                     </Badge>
                     <span className="text-sm font-medium">{group.contactName}</span>
                   </div>
@@ -106,7 +110,7 @@ export default function DuplicateDetectionPage() {
                         <span className="font-mono text-xs text-muted-foreground">{item.number}</span>
                         <span>{new Date(item.date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
                       </div>
-                      <Badge variant="outline" className="text-[10px]">{item.status}</Badge>
+                      <Badge variant="outline" className="text-[10px]">{group.type === "invoice" ? invoiceStatusLabel(ti, item.status) : billStatusLabel(item.status, tb)}</Badge>
                     </button>
                   ))}
                 </div>

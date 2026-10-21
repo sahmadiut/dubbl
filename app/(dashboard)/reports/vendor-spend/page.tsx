@@ -1,9 +1,9 @@
 "use client";
 
 import { vendorSpendUi, analyticalReportJson } from "@/lib/money/analytical-report-ui";
-import Link from "next/link";
 import { useState, useEffect } from "react";
-import { ArrowLeft, TrendingDown } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { TrendingDown } from "lucide-react";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { PageHeader } from "@/components/dashboard/page-header";
@@ -14,6 +14,7 @@ import { CurrencySelect } from "@/components/ui/currency-select";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ExportButton } from "@/components/dashboard/export-button";
+import { BackToReports } from "../_components";
 
 type Vendor = ReturnType<typeof vendorSpendUi>["vendors"][number];
 
@@ -24,6 +25,7 @@ const BAR_COLORS = [
 ];
 
 export default function VendorSpendPage() {
+  const t = useTranslations("AgingVendorReports");
   const now = new Date();
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -33,7 +35,7 @@ export default function VendorSpendPage() {
   const [totalSpend, setTotalSpend] = useState(0n);
   const [currencyCode, setCurrencyCode] = useState("USD");
   const [currencyFilter, setCurrencyFilter] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     const orgId = localStorage.getItem("activeOrgId");
@@ -50,10 +52,10 @@ export default function VendorSpendPage() {
         if (cancelled) return;
         setVendors(data.vendors);
         setCurrencyCode(data.currencyCode);
-        setError(null);
+        setError(false);
         setTotalSpend(data.totalSpend);
       })
-      .catch((err: unknown) => { if (!cancelled) { setVendors([]); setTotalSpend(0n); setError(err instanceof Error ? err.message : "Unable to load vendor spend."); } })
+      .catch(() => { if (!cancelled) { setVendors([]); setTotalSpend(0n); setError(true); } })
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
@@ -67,11 +69,9 @@ export default function VendorSpendPage() {
 
   return (
     <ContentReveal className="space-y-6">
-      <Link href="/reports" className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors">
-        <ArrowLeft className="size-3.5" /> Back to reports
-      </Link>
+      <BackToReports />
 
-      <PageHeader title="Who you spend the most with" description="Your biggest suppliers, ranked by total spend for the period.">
+      <PageHeader title={t("vendorTitle")} description={t("vendorDescription")}>
         <ExportButton
           data={loading || error ? [] : vendors.map(row => ({ ...row, currencyCode }))}
           columns={["contactName", "currencyCode", "totalSpend", "billCount", "avgBillAmount", "lastBillDate", "percentage"]}
@@ -82,23 +82,23 @@ export default function VendorSpendPage() {
       <DateRangeFilter startDate={startDate} endDate={endDate} onDateChange={(s, e) => { setStartDate(s); setEndDate(e); }} />
 
       <div className="flex items-center gap-3">
-        <span className="text-sm">Document currency</span>
+        <span className="text-sm">{t("documentCurrency")}</span>
         <CurrencySelect value={currencyFilter} onValueChange={setCurrencyFilter} compact />
-        {currencyFilter && <Button variant="ghost" size="sm" onClick={() => setCurrencyFilter("")}>Clear filter</Button>}
+        {currencyFilter && <Button variant="ghost" size="sm" onClick={() => setCurrencyFilter("")}>{t("clearFilter")}</Button>}
       </div>
 
       {loading ? (
         <BrandLoader className="h-48" />
-      ) : error ? <p role="alert" className="text-sm text-destructive">{error}</p> : (
+      ) : error ? <p role="alert" className="text-sm text-destructive">{t("loadFailed")}</p> : (
         <ContentReveal>
           <div className="grid gap-4 sm:grid-cols-2">
-            <StatCard title="Total spent with suppliers" value={formatMoney(totalSpend, currencyCode)} icon={TrendingDown} changeType="negative" />
-            <StatCard title="Suppliers" value={String(vendors.length)} icon={TrendingDown} changeType="neutral" change={`${vendors.length} active`} />
+            <StatCard title={t("totalSpentWithSuppliers")} value={formatMoney(totalSpend, currencyCode)} icon={TrendingDown} changeType="negative" />
+            <StatCard title={t("suppliers")} value={String(vendors.length)} icon={TrendingDown} changeType="neutral" change={t("activeCount", { count: vendors.length })} />
           </div>
 
           {vendors.length === 0 ? (
             <div className="rounded-xl border border-dashed py-12 text-center mt-4">
-              <p className="text-sm text-muted-foreground">No vendor spend data for this period.</p>
+              <p className="text-sm text-muted-foreground">{t("noVendorData")}</p>
             </div>
           ) : (
             <>
@@ -113,12 +113,12 @@ export default function VendorSpendPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b bg-muted/30">
-                      <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">Vendor</th>
-                      <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">Total Spend</th>
-                      <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">Bills</th>
-                      <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">Avg Bill</th>
-                      <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">Last Bill</th>
-                      <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">%</th>
+                      <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("vendor")}</th>
+                      <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("totalSpend")}</th>
+                      <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("bills")}</th>
+                      <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("avgBill")}</th>
+                      <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("lastBill")}</th>
+                      <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("percentage")}</th>
                     </tr>
                   </thead>
                   <tbody>

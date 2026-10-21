@@ -1,5 +1,12 @@
 # Message catalog foundation
 
+LOC-069 independently accepts combined CRM presentation after LOC-099..102:
+seven route components, DealDrawer and 224 paired messages in four namespaces
+(8,775 compatible leaves per locale). See
+[combined ownership, exceptions and behavior](CRM_CATALOG_ACCEPTANCE.md).
+LOC-008/002, native terminology, full RTL/calendar/numerals, browser, adjacent
+output and release acceptance remain independent; Persian wording is provisional.
+
 LOC-102 CRM analytics use 18 paired `CrmAnalytics` messages (8,775 compatible
 leaves per locale), with built-in stage labels from `CrmPipeline`. See
 [scope and exceptions](CRM_ANALYTICS_CATALOGS.md) for checked statistics,
@@ -373,6 +380,7 @@ Extraction ownership:
 | LOC-091 | LOC-067 child: tax liabilities and payment recording; [scope and exceptions](PAYROLL_TAX_LIABILITY_CATALOGS.md) |
 | LOC-101 | LOC-069 child: CRM deal activity feed/composer; [scope and exceptions](CRM_ACTIVITY_CATALOGS.md) |
 | LOC-102 | LOC-069 child: CRM analytics statistics/stages; [scope and exceptions](CRM_ANALYTICS_CATALOGS.md) |
+| LOC-069 | Independent combined CRM acceptance; [ownership and qualification](CRM_CATALOG_ACCEPTANCE.md) |
 | LOC-002 | Independent combined key coverage, plural and safe rendering acceptance |
 
 Later L10N/RTL tasks retain native-reviewed financial wording, complete Persian

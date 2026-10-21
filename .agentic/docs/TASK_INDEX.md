@@ -18,6 +18,14 @@ RTL-002 and L10N-012, and IRR-001..003 now belong to phase 8.
 | [IRR-004](../tasks/IRR-004.md) | 09 | Prepare the qualified opt-in IRR release candidate | lead | no |
 | [IRR-005](../tasks/IRR-005.md) | 09 | Activate approved IRR and verify the target organization | devops | no |
 
+## Persian currency-unit display
+
+Owner extension, 2026-10-21: [LOC-115](../tasks/LOC-115.md), phase 03, frontend,
+mandatory: localize currency-unit names throughout website pages. In fa-IR,
+IRR displays as "????"; canonical ISO codes and exact amounts stay unchanged.
+This follows LOC-003 and gates RTL-001 and L10N-012. Existing numeric,
+currency-workspace and glossary tasks do not own this cross-page adoption.
+
 ## Existing project scope
 
 | ID | Phase | Task | Role | Optional |

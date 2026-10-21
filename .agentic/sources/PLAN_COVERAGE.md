@@ -26,6 +26,15 @@ MON-006 retains final API compatibility integration acceptance. Its implementati
 
 ## Deliberate refinements
 
+### Owner-requested Persian currency-unit display (2026-10-21)
+
+[LOC-115](../tasks/LOC-115.md) adds the explicit cross-page presentation scope
+missing from the numeric-formatting/glossary tasks: when language is fa-IR,
+show Persian currency names, with IRR rendered as "ریال". The task follows
+LOC-003 and gates RTL-001 and L10N-012. Exact amounts, ISO machine values,
+stored history and REST/MCP contracts are preserved; English remains unchanged.
+This extends the existing Farsi locale and configuration requirements.
+
 ### Owner-directed IRR qualification and activation (2026-10-21)
 
 The owner requested Codex perform the remaining IRR checks or create executable

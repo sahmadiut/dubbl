@@ -2,6 +2,7 @@
 
 import { executiveSummaryUi, analyticalReportJson, analyticalAbs } from "@/lib/money/analytical-report-ui";
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
@@ -13,23 +14,24 @@ import { BackToReports, ReportHelp, BasisToggle } from "../_components";
 
 type Kpi = ReturnType<typeof executiveSummaryUi>["kpis"][number];
 
-/** Plain-language relabelling of the API's accounting terms. */
-const FRIENDLY_LABELS: Record<string, string> = {
-  revenue: "Money in (sales)",
-  grossProfit: "Profit after direct costs",
-  expenses: "Running costs",
-  netIncome: "Profit after everything",
-  cash: "Cash in the bank",
-  accountsReceivable: "Owed to you by customers",
-  accountsPayable: "You owe to suppliers",
-};
+/** Only known report keys are translated; unknown API labels remain data. */
+const KPI_LABEL_KEYS = {
+  revenue: "kpiRevenue",
+  grossProfit: "kpiGrossProfit",
+  expenses: "kpiExpenses",
+  netIncome: "kpiNetIncome",
+  cash: "kpiCash",
+  accountsReceivable: "kpiReceivable",
+  accountsPayable: "kpiPayable",
+} as const;
 
 export default function ExecutiveSummaryPage() {
+  const t = useTranslations("IncomeReports");
   const now = new Date();
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(true);
   const [currencyCode, setCurrencyCode] = useState("USD");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(false);
   const [startDate, setStartDate] = useState(`${now.getFullYear()}-01-01`);
   const [endDate, setEndDate] = useState(now.toISOString().slice(0, 10));
   const [basis, setBasis] = useState<"accrual" | "cash">("accrual");
@@ -50,12 +52,12 @@ export default function ExecutiveSummaryPage() {
       .then((data) => {
         if (cancelled) return;
         setCurrencyCode(data.currencyCode);
-        setError(null);
+        setError(false);
         setKpis(data.kpis || []);
         setPriorPeriod(data.priorPeriod || null);
       })
-      .catch((err: unknown) => {
-        if (!cancelled) { setKpis([]); setPriorPeriod(null); setError(err instanceof Error ? err.message : "Unable to load executive summary."); }
+      .catch(() => {
+        if (!cancelled) { setKpis([]); setPriorPeriod(null); setError(true); }
       })
       .finally(() => {
         if (!cancelled) {
@@ -73,21 +75,19 @@ export default function ExecutiveSummaryPage() {
       <BackToReports />
 
       <PageHeader
-        title="Quick health check"
-        description="The key numbers this period, next to last period."
+        title={t("executiveTitle")}
+        description={t("executiveDescription")}
       >
         <a
           href={`/api/v1/reports/executive-summary?${new URLSearchParams({ startDate, endDate, basis, format: "pdf" })}`}
           className="inline-flex h-8 items-center rounded-md border px-3 text-sm font-medium hover:bg-muted"
         >
-          Download PDF
+          {t("downloadPdf")}
         </a>
       </PageHeader>
 
       <ReportHelp>
-        A one-page snapshot of how the business is doing. Each number is shown
-        next to the same number from the period right before, so you can quickly
-        see what went up or down.
+        {t("executiveHelp")}
       </ReportHelp>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -102,12 +102,12 @@ export default function ExecutiveSummaryPage() {
       {loading ? (
         <BrandLoader className="h-48" />
       ) : error ? (
-        <p role="alert" className="text-sm text-red-600">{error}</p>
+        <p role="alert" className="text-sm text-red-600">{t("loadFailed")}</p>
       ) : (
         <ContentReveal>
           {priorPeriod && (
             <p className="mb-3 text-[13px] text-muted-foreground">
-              Comparing against the period right before: {priorPeriod.startDate} to {priorPeriod.endDate}.
+              {t("priorPeriod", { start: priorPeriod.startDate, end: priorPeriod.endDate })}
             </p>
           )}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -118,7 +118,7 @@ export default function ExecutiveSummaryPage() {
               return (
                 <div key={k.key} className="rounded-xl border bg-card/80 p-4 sm:p-5">
                   <p className="text-xs font-medium text-muted-foreground">
-                    {FRIENDLY_LABELS[k.key] || k.label}
+                    {Object.hasOwn(KPI_LABEL_KEYS, k.key) ? t(KPI_LABEL_KEYS[k.key as keyof typeof KPI_LABEL_KEYS]) : k.label}
                   </p>
                   <p className="mt-1.5 text-xl sm:text-2xl font-bold font-mono tabular-nums">
                     {statementMoneyText(k.current, currencyCode)}
@@ -127,9 +127,9 @@ export default function ExecutiveSummaryPage() {
                     <Icon className={cn("size-3.5", up && "text-emerald-600", down && "text-red-600", !up && !down && "text-muted-foreground")} />
                     <span className={cn("font-medium", up && "text-emerald-600", down && "text-red-600", !up && !down && "text-muted-foreground")}>
                       {k.delta >= 0 ? "+" : "-"}{statementMoneyText(analyticalAbs(k.delta), currencyCode)}
-                      {k.deltaPercent !== null && ` (${k.deltaPercent >= 0 ? "+" : ""}${k.deltaPercent}%)`}
+                      {k.deltaPercent !== null && t("deltaPercent", { sign: k.deltaPercent >= 0 ? "+" : "", value: String(k.deltaPercent) })}
                     </span>
-                    <span className="text-muted-foreground">vs last period</span>
+                    <span className="text-muted-foreground">{t("vsLastPeriod")}</span>
                   </div>
                 </div>
               );

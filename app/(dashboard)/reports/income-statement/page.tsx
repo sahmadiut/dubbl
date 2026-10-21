@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ErrorState } from "@/components/dashboard/error-state";
@@ -21,9 +22,10 @@ const CURRENT_YEAR = new Date().getFullYear();
 const YEAR_OPTIONS = [0, 1, 2, 3, 4].map((n) => CURRENT_YEAR - n);
 
 export default function IncomeStatementPage() {
+  const t = useTranslations("IncomeReports");
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(false);
   const [data, setData] = useState<IncomeStatementUi | null>(null);
   const [year, setYear] = useState(CURRENT_YEAR);
 
@@ -33,7 +35,7 @@ export default function IncomeStatementPage() {
     let cancelled = false;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
-    setError(null);
+    setError(false);
 
     // Always request a concrete year range so the figures are "for the year",
     // not a lifetime running total.
@@ -51,7 +53,7 @@ export default function IncomeStatementPage() {
         if (cancelled) return;
         if (d.revenue) setData(d);
       })
-      .catch((error: Error) => { if (!cancelled) setError(error.message); })
+      .catch(() => { if (!cancelled) setError(true); })
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
@@ -62,21 +64,21 @@ export default function IncomeStatementPage() {
   }, [year]);
 
   if (initialLoad) return <BrandLoader />;
-  if (error) return <ErrorState message={error} onRetry={() => window.location.reload()} />;
+  if (error) return <ErrorState message={t("loadFailed")} onRetry={() => window.location.reload()} />;
 
   return (
     <ContentReveal className="space-y-6">
       <BackToReports />
 
       <PageHeader
-        title="Money in vs money out (summary)"
-        description="What you earned, minus what you spent, for the year you pick."
+        title={t("incomeTitle")}
+        description={t("incomeDescription")}
       >
         <select
           value={year}
           onChange={(e) => setYear(Number(e.target.value))}
           className="h-9 rounded-md border bg-background px-3 text-sm"
-          aria-label="Year"
+          aria-label={t("year")}
         >
           {YEAR_OPTIONS.map((y) => (
             <option key={y} value={y}>{y}</option>
@@ -85,22 +87,21 @@ export default function IncomeStatementPage() {
       </PageHeader>
 
       <ReportHelp>
-        A short version of the money-in-vs-money-out report: total earnings, total
-        costs, and what&apos;s left as profit. Also called an income statement.
+        {t("incomeHelp")}
       </ReportHelp>
 
       {loading ? (
         <BrandLoader className="h-48" />
       ) : !data ? (
-        <p className="text-muted-foreground">No data available.</p>
+        <p className="text-muted-foreground">{t("noData")}</p>
       ) : (
         <ContentReveal>
           <div className="space-y-6">
             {[
-              { label: "Money in", section: data.revenue },
-              { label: "Money out", section: data.expenses },
+              { key: "revenue", label: t("moneyIn"), totalLabel: t("totalIncome"), section: data.revenue },
+              { key: "expenses", label: t("moneyOut"), totalLabel: t("totalCosts"), section: data.expenses },
             ].map((s) => (
-              <div key={s.label} className="space-y-2">
+              <div key={s.key} className="space-y-2">
                 <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                   {s.label}
                 </h3>
@@ -108,9 +109,9 @@ export default function IncomeStatementPage() {
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-muted/50">
-                        <TableHead className="w-24">Code</TableHead>
-                        <TableHead>Account</TableHead>
-                        <TableHead className="w-32 text-right">Amount</TableHead>
+                        <TableHead className="w-24">{t("code")}</TableHead>
+                        <TableHead>{t("account")}</TableHead>
+                        <TableHead className="w-32 text-right">{t("amount")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -124,7 +125,7 @@ export default function IncomeStatementPage() {
                         </TableRow>
                       ))}
                       <TableRow className="bg-muted/30 font-bold">
-                        <TableCell colSpan={2}>Total {s.label}</TableCell>
+                        <TableCell colSpan={2}>{s.totalLabel}</TableCell>
                         <TableCell className="text-right font-mono tabular-nums">
                           {statementUiMoney(s.section.total, data.currencyCode)}
                         </TableCell>
@@ -138,7 +139,7 @@ export default function IncomeStatementPage() {
             <div className="rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 p-4 sm:p-6">
               <div className="flex items-center justify-between gap-4">
                 <span className="text-sm font-semibold text-emerald-900 dark:text-emerald-100">
-                  Profit (money in minus money out)
+                  {t("profit")}
                 </span>
                 <span className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-emerald-700 dark:text-emerald-300">
                   {statementUiMoney(data.netIncome, data.currencyCode)}

@@ -67,6 +67,7 @@ text is asserted at its production props because portals are closed in SSR;
 these are not mounted-browser keyboard/layout checks.
 
 See [task evidence](../evidence/LOC-103-attempt-1.md) and
-[honest self-review](../evidence/LOC-103-review-1.md). LOC-104..114 and independent
+[honest self-review](../evidence/LOC-103-review-1.md). LOC-104 now has its own
+[income/executive catalog scope](INCOME_REPORT_CATALOGS.md). LOC-105..114 and independent
 LOC-070/008/002 remain open. Native Persian/RTL/calendar/numerals, browser, output,
 hosted CI, provider, deployment and production qualification remain separate.

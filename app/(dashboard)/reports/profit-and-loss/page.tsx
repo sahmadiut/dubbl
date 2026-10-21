@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { TrendingUp, TrendingDown, DollarSign } from "lucide-react";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ErrorState } from "@/components/dashboard/error-state";
@@ -17,18 +18,19 @@ import { BackToReports, ReportHelp, BasisToggle } from "../_components";
 type AccountRow = ProfitLossUi["revenue"][number];
 
 export default function ProfitAndLossPage() {
+  const t = useTranslations("IncomeReports");
   const now = new Date();
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(false);
   const [startDate, setStartDate] = useState(`${now.getFullYear()}-01-01`);
   const [endDate, setEndDate] = useState(now.toISOString().slice(0, 10));
   const [basis, setBasis] = useState<"accrual" | "cash">("accrual");
   const [currencyCode, setCurrencyCode] = useState("USD");
   const columns: Column<AccountRow>[] = [
-    { key: "code", header: "Code", className: "w-24", render: (r) => <span className="font-mono text-sm">{r.accountCode}</span> },
-    { key: "name", header: "Account", render: (r) => <span className="text-sm font-medium">{r.accountName}</span> },
-    { key: "balance", header: "Amount", className: "w-32 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{statementUiMoney(r.balance, currencyCode)}</span> },
+    { key: "code", header: t("code"), className: "w-24", render: (r) => <span className="font-mono text-sm">{r.accountCode}</span> },
+    { key: "name", header: t("account"), render: (r) => <span className="text-sm font-medium">{r.accountName}</span> },
+    { key: "balance", header: t("amount"), className: "w-32 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{statementUiMoney(r.balance, currencyCode)}</span> },
   ];
   const formatMoney = (value: bigint) => statementUiMoney(value, currencyCode);
   const [revenue, setRevenue] = useState<AccountRow[]>([]);
@@ -42,7 +44,7 @@ export default function ProfitAndLossPage() {
     if (!orgId) return;
     let cancelled = false;
     setLoading(true);
-    setError(null);
+    setError(false);
     const params = new URLSearchParams({ startDate, endDate, basis });
     fetch(`/api/v1/reports/profit-and-loss?${params}`, {
       headers: { "x-organization-id": orgId },
@@ -57,7 +59,7 @@ export default function ProfitAndLossPage() {
         setTotalExpenses(data.totalExpenses);
         setNetIncome(data.netIncome);
       })
-      .catch((error: Error) => { if (!cancelled) setError(error.message); })
+      .catch(() => { if (!cancelled) setError(true); })
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
@@ -68,21 +70,21 @@ export default function ProfitAndLossPage() {
   }, [startDate, endDate, basis]);
 
   if (initialLoad) return <BrandLoader />;
-  if (error) return <ErrorState message={error} onRetry={() => window.location.reload()} />;
+  if (error) return <ErrorState message={t("loadFailed")} onRetry={() => window.location.reload()} />;
 
   return (
     <ContentReveal className="space-y-6">
       <BackToReports />
 
       <PageHeader
-        title="Money in vs money out"
-        description="What you earned minus what you spent over the period."
+        title={t("profitLossTitle")}
+        description={t("profitLossDescription")}
       >
         <a
           href={`/api/v1/reports/profit-and-loss?${new URLSearchParams({ startDate, endDate, basis, format: "pdf" })}`}
           className="inline-flex h-8 items-center rounded-md border px-3 text-sm font-medium hover:bg-muted"
         >
-          Download PDF
+          {t("downloadPdf")}
         </a>
         <ExportButton
           data={[...revenue.map((r) => ({ ...r, section: "Money in", currencyCode, balanceMinor: r.balance.toString() })), ...expenses.map((e) => ({ ...e, section: "Money out", currencyCode, balanceMinor: e.balance.toString() }))]}
@@ -92,9 +94,7 @@ export default function ProfitAndLossPage() {
       </PageHeader>
 
       <ReportHelp>
-        This shows whether you made or lost money over a stretch of time:
-        everything that came in, minus everything that went out. Also called a
-        profit &amp; loss statement.
+        {t("profitLossHelp")}
       </ReportHelp>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -108,10 +108,10 @@ export default function ProfitAndLossPage() {
 
       <div className="flex flex-wrap gap-2">
         <Button asChild variant="outline" size="sm">
-          <a href="/reports/pnl-comparison">Compare two periods side by side</a>
+          <a href="/reports/pnl-comparison">{t("comparePeriods")}</a>
         </Button>
         <Button asChild variant="outline" size="sm">
-          <a href="/reports/tracking">Split by team or project</a>
+          <a href="/reports/tracking">{t("splitByTeam")}</a>
         </Button>
       </div>
 
@@ -121,10 +121,10 @@ export default function ProfitAndLossPage() {
         <ContentReveal>
           <div className="space-y-6">
             <div className="grid gap-4 sm:grid-cols-3">
-              <StatCard title="Money in" value={formatMoney(totalRevenue)} icon={TrendingUp} changeType="positive" />
-              <StatCard title="Money out" value={formatMoney(totalExpenses)} icon={TrendingDown} changeType="negative" />
+              <StatCard title={t("moneyIn")} value={formatMoney(totalRevenue)} icon={TrendingUp} changeType="positive" />
+              <StatCard title={t("moneyOut")} value={formatMoney(totalExpenses)} icon={TrendingDown} changeType="negative" />
               <StatCard
-                title="Profit (in minus out)"
+                title={t("profitShort")}
                 value={formatMoney(netIncome)}
                 icon={DollarSign}
                 changeType={netIncome >= 0 ? "positive" : "negative"}
@@ -132,25 +132,25 @@ export default function ProfitAndLossPage() {
             </div>
 
             <div className="space-y-2">
-              <h2 className="text-lg font-semibold">Money in</h2>
-              <DataTable columns={columns} data={revenue} loading={false} emptyMessage="No income in this period." />
+              <h2 className="text-lg font-semibold">{t("moneyIn")}</h2>
+              <DataTable columns={columns} data={revenue} loading={false} emptyMessage={t("emptyIncome")} />
               <div className="flex justify-between px-3 py-2 sm:px-4 bg-muted/50 rounded-lg text-sm font-semibold">
-                <span>Total money in</span>
+                <span>{t("totalMoneyIn")}</span>
                 <span className="font-mono tabular-nums">{formatMoney(totalRevenue)}</span>
               </div>
             </div>
 
             <div className="space-y-2">
-              <h2 className="text-lg font-semibold">Money out</h2>
-              <DataTable columns={columns} data={expenses} loading={false} emptyMessage="No costs in this period." />
+              <h2 className="text-lg font-semibold">{t("moneyOut")}</h2>
+              <DataTable columns={columns} data={expenses} loading={false} emptyMessage={t("emptyCosts")} />
               <div className="flex justify-between px-3 py-2 sm:px-4 bg-muted/50 rounded-lg text-sm font-semibold">
-                <span>Total money out</span>
+                <span>{t("totalMoneyOut")}</span>
                 <span className="font-mono tabular-nums">{formatMoney(totalExpenses)}</span>
               </div>
             </div>
 
             <div className="flex justify-between px-3 py-2 sm:px-4 sm:py-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg font-semibold text-sm sm:text-base">
-              <span>Profit (money in minus money out)</span>
+              <span>{t("profit")}</span>
               <span className="font-mono tabular-nums">{formatMoney(netIncome)}</span>
             </div>
           </div>

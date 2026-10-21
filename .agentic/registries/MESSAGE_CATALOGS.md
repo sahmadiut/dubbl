@@ -302,6 +302,12 @@ Extraction ownership:
 | LOC-078 | LOC-066 child: valuation, alerts, loading and residual inventory strings |
 | LOC-067 | LOC-008 child: payroll routes, creation and shared controls |
 | LOC-068 | LOC-008 child: projects and shared controls |
+| LOC-093 | LOC-068 child: project list, creation and settings; [scope and exceptions](PROJECT_LIST_CATALOGS.md) |
+| LOC-094 | LOC-068 child: project overview and navigation |
+| LOC-095 | LOC-068 child: project tasks |
+| LOC-096 | LOC-068 child: project time and billing |
+| LOC-097 | LOC-068 child: project milestones |
+| LOC-098 | LOC-068 child: project team and notes |
 | LOC-069 | LOC-008 child: CRM and shared controls |
 | LOC-070 | LOC-008 child: reporting and shared controls |
 | LOC-071 | LOC-008 child: dashboard, documents and residual operations shared components |

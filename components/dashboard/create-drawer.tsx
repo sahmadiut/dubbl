@@ -1,5 +1,6 @@
 "use client";
 
+import { projectMutationJson } from "@/i18n/project-presentation";
 import { payrollContractorJson } from "@/i18n/payroll-contractor-presentation";
 import { payrollEmployeeCreatedJson } from "@/i18n/payroll-employee-presentation";
 import { warehouseJson } from "@/i18n/warehouse-presentation";
@@ -349,6 +350,7 @@ function ContactDrawer({ open, onClose }: { open: boolean; onClose: () => void }
 // Project Drawer
 // ---------------------------------------------------------------------------
 function ProjectDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useTranslations("Projects");
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [contactId, setContactId] = useState("");
@@ -371,10 +373,9 @@ function ProjectDrawer({ open, onClose }: { open: boolean; onClose: () => void }
     e.preventDefault();
     setSaving(true);
     const form = new FormData(e.currentTarget);
-    const orgId = localStorage.getItem("activeOrgId");
-    if (!orgId) return;
-
     try {
+      const orgId = localStorage.getItem("activeOrgId");
+      if (!orgId) { toast.error(t("organizationRequired")); return; }
       const tagsRaw = (form.get("tags") as string || "").trim();
       const tags = tagsRaw ? tagsRaw.split(",").map((t: string) => t.trim()).filter(Boolean) : [];
 
@@ -404,17 +405,13 @@ function ProjectDrawer({ open, onClose }: { open: boolean; onClose: () => void }
           enableBilling: true,
         }),
       });
-      if (!res.ok) {
-        const data = await projectCrmJson(res);
-        throw new Error(data.error || "Failed to create project");
-      }
-      const data = await projectCrmJson(res);
-      toast.success("Project created");
+      const data = await projectMutationJson(res);
+      toast.success(t("created"));
       window.dispatchEvent(new Event("projects-changed"));
       onClose();
       router.push(`/projects/${data.project.id}`);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create project");
+    } catch {
+      toast.error(t("createFailed"));
     } finally {
       setSaving(false);
     }
@@ -427,105 +424,105 @@ function ProjectDrawer({ open, onClose }: { open: boolean; onClose: () => void }
           <div className="flex items-center gap-3">
             <DrawerIcon><FolderKanban className="size-5" /></DrawerIcon>
             <div>
-              <SheetTitle className="text-lg">New Project</SheetTitle>
-              <SheetDescription>Create a project to track tasks, time, and billing.</SheetDescription>
+              <SheetTitle className="text-lg">{t("newProject")}</SheetTitle>
+              <SheetDescription>{t("drawerDescription")}</SheetDescription>
             </div>
           </div>
         </SheetHeader>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
             <div className="space-y-4">
-              <SectionLabel>Project Info</SectionLabel>
+              <SectionLabel>{t("projectInfo")}</SectionLabel>
               <div className="space-y-2">
-                <Label htmlFor="drawer-project-name">Project Name *</Label>
-                <Input id="drawer-project-name" name="name" required placeholder="Project name" />
+                <Label htmlFor="drawer-project-name">{t("projectNameRequired")}</Label>
+                <Input id="drawer-project-name" name="name" required placeholder={t("projectName")} />
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Client</Label>
+                  <Label>{t("client")}</Label>
                   <ContactPicker value={contactId} onChange={setContactId} type="customer" />
                 </div>
                 <div className="space-y-2">
-                  <Label>Status</Label>
+                  <Label>{t("status")}</Label>
                   <Select name="status" defaultValue="active">
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="on_hold">On Hold</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="archived">Archived</SelectItem>
+                      <SelectItem value="active">{t("active")}</SelectItem>
+                      <SelectItem value="on_hold">{t("onHold")}</SelectItem>
+                      <SelectItem value="completed">{t("completed")}</SelectItem>
+                      <SelectItem value="archived">{t("archived")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Priority</Label>
+                  <Label>{t("priority")}</Label>
                   <Select name="priority" defaultValue="medium">
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                      <SelectItem value="urgent">Urgent</SelectItem>
+                      <SelectItem value="low">{t("low")}</SelectItem>
+                      <SelectItem value="medium">{t("medium")}</SelectItem>
+                      <SelectItem value="high">{t("high")}</SelectItem>
+                      <SelectItem value="urgent">{t("urgent")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Category</Label>
-                  <Input name="category" placeholder="e.g. Development" />
+                  <Label>{t("category")}</Label>
+                  <Input name="category" placeholder={t("categoryExample")} />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Color</Label>
+                <Label>{t("color")}</Label>
                 <div className="flex gap-2">
                   {PROJECT_COLORS.map(c => (
                     <label key={c} className="cursor-pointer">
-                      <input type="radio" name="color" value={c} defaultChecked={c === "#10b981"} className="sr-only peer" />
+                      <input type="radio" aria-label={t("colorChoice", { color: c })} name="color" value={c} defaultChecked={c === "#10b981"} className="sr-only peer" />
                       <div className="size-6 rounded-full ring-2 ring-transparent peer-checked:ring-offset-2 peer-checked:ring-gray-400 transition-all" style={{ backgroundColor: c }} />
                     </label>
                   ))}
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Tags</Label>
-                <Input name="tags" placeholder="Comma separated tags" />
+                <Label>{t("tags")}</Label>
+                <Input name="tags" placeholder={t("tagsPlaceholder")} />
               </div>
             </div>
 
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Financials</SectionLabel>
+              <SectionLabel>{t("financials")}</SectionLabel>
               <div className="space-y-2">
-                <Label>Billing Type</Label>
+                <Label>{t("billingType")}</Label>
                 <Select name="billingType" defaultValue="hourly">
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="hourly">Hourly</SelectItem>
-                    <SelectItem value="fixed">Fixed Price</SelectItem>
-                    <SelectItem value="milestone">Milestone</SelectItem>
-                    <SelectItem value="non_billable">Non-Billable</SelectItem>
+                    <SelectItem value="hourly">{t("hourly")}</SelectItem>
+                    <SelectItem value="fixed">{t("fixedPrice")}</SelectItem>
+                    <SelectItem value="milestone">{t("milestone")}</SelectItem>
+                    <SelectItem value="non_billable">{t("nonBillable")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="drawer-project-budget">Budget</Label>
+                  <Label htmlFor="drawer-project-budget">{t("budget")}</Label>
                   <CurrencyInput id="drawer-project-budget" name="budget" prefix="$" value={projectBudget} onChange={setProjectBudget} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="drawer-project-rate">Hourly Rate</Label>
+                  <Label htmlFor="drawer-project-rate">{t("hourlyRate")}</Label>
                   <CurrencyInput id="drawer-project-rate" name="hourlyRate" prefix="$" value={projectHourlyRate} onChange={setProjectHourlyRate} />
                 </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Fixed Price</Label>
+                  <Label>{t("fixedPrice")}</Label>
                   <CurrencyInput name="fixedPrice" prefix="$" value={projectFixedPrice} onChange={setProjectFixedPrice} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Estimated Hours</Label>
+                  <Label>{t("estimatedHours")}</Label>
                   <Input name="estimatedHours" type="number" step="0.5" min={0} placeholder="0" />
                 </div>
               </div>
@@ -534,15 +531,15 @@ function ProjectDrawer({ open, onClose }: { open: boolean; onClose: () => void }
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Timeline</SectionLabel>
+              <SectionLabel>{t("timeline")}</SectionLabel>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Start Date</Label>
-                  <DatePicker value={startDate} onChange={setStartDate} placeholder="Select start date" />
+                  <Label>{t("startDate")}</Label>
+                  <DatePicker value={startDate} onChange={setStartDate} placeholder={t("selectStart")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>End Date</Label>
-                  <DatePicker value={endDate} onChange={setEndDate} placeholder="Select end date" />
+                  <Label>{t("endDate")}</Label>
+                  <DatePicker value={endDate} onChange={setEndDate} placeholder={t("selectEnd")} />
                 </div>
               </div>
             </div>
@@ -550,11 +547,11 @@ function ProjectDrawer({ open, onClose }: { open: boolean; onClose: () => void }
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <SectionLabel>Description</SectionLabel>
-              <Textarea name="description" placeholder="Project description..." rows={3} />
+              <SectionLabel>{t("description")}</SectionLabel>
+              <Textarea name="description" placeholder={t("descriptionPlaceholder")} rows={3} />
             </div>
           </div>
-          <DrawerFooter onClose={onClose} saving={saving} label="Create Project" />
+          <DrawerFooter onClose={onClose} saving={saving} label={t("createProject")} />
         </form>
       </SheetContent>
     </Sheet>

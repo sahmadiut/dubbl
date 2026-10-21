@@ -1,6 +1,7 @@
 "use client";
 
-import { projectCrmJson } from "@/lib/money/project-crm-ui";
+import { useTranslations } from "next-intl";
+import { projectListJson, projectStatusKeys, projectPriorityKeys, type ProjectListRow as Project } from "@/i18n/project-presentation";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -20,36 +21,6 @@ import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { cn } from "@/lib/utils";
 
-interface ProjectMember {
-  id: string;
-  role: string;
-  member: {
-    id: string;
-    user: { name: string | null; email: string; image: string | null };
-  };
-}
-
-interface Project {
-  id: string;
-  name: string;
-  status: string;
-  priority: string;
-  billingType: string;
-  color: string;
-  currency: string;
-  budget: number;
-  hourlyRate: number;
-  totalHours: number;
-  totalBilled: number;
-  estimatedHours: number;
-  startDate: string | null;
-  endDate: string | null;
-  category: string | null;
-  tags: string[];
-  contact: { name: string } | null;
-  members: ProjectMember[];
-}
-
 const statusColors: Record<string, string> = {
   active: "border-emerald-200 bg-emerald-50 text-emerald-700",
   completed: "border-blue-200 bg-blue-50 text-blue-700",
@@ -65,16 +36,18 @@ const priorityColors: Record<string, string> = {
   urgent: "border-red-200 bg-red-50 text-red-700",
 };
 
-function formatHours(minutes: number): string {
+type ProjectTranslator = ReturnType<typeof useTranslations<"Projects">>;
+
+function formatHours(t: ProjectTranslator, minutes: number): string {
   const hrs = Math.floor(minutes / 60);
   const mins = minutes % 60;
-  return mins > 0 ? `${hrs}h ${mins}m` : `${hrs}h`;
+  return mins > 0 ? t("hoursMinutes", { hours: hrs, minutes: mins }) : t("hours", { hours: hrs });
 }
 
-const columns: Column<Project>[] = [
+function projectColumns(t: ProjectTranslator): Column<Project>[] { return [
   {
     key: "name",
-    header: "Project",
+    header: t("project"),
     render: (r) => (
       <div className="flex items-center gap-2.5">
         <div className="size-2.5 rounded-full shrink-0" style={{ backgroundColor: r.color }} />
@@ -87,33 +60,33 @@ const columns: Column<Project>[] = [
   },
   {
     key: "status",
-    header: "Status",
+    header: t("status"),
     className: "w-28",
     render: (r) => (
       <Badge variant="outline" className={cn("text-[10px]", statusColors[r.status])}>
-        {r.status.replace("_", " ")}
+        {t(projectStatusKeys[r.status as keyof typeof projectStatusKeys] ?? "unknownStatus")}
       </Badge>
     ),
   },
   {
     key: "priority",
-    header: "Priority",
+    header: t("priority"),
     className: "w-24",
     render: (r) => (
       <Badge variant="outline" className={cn("text-[10px]", priorityColors[r.priority])}>
-        {r.priority}
+        {t(projectPriorityKeys[r.priority as keyof typeof projectPriorityKeys] ?? "unknownPriority")}
       </Badge>
     ),
   },
   {
     key: "progress",
-    header: "Time",
+    header: t("time"),
     className: "w-32",
     render: (r) => {
       const pct = r.estimatedHours > 0 ? Math.round((r.totalHours / r.estimatedHours) * 100) : 0;
       return (
         <div className="space-y-1">
-          <span className="text-xs font-mono tabular-nums">{formatHours(r.totalHours)}</span>
+          <span className="text-xs font-mono tabular-nums">{formatHours(t, r.totalHours)}</span>
           {r.estimatedHours > 0 && (
             <div className="flex items-center gap-1.5">
               <div className="h-1 w-16 rounded-full bg-muted">
@@ -128,7 +101,7 @@ const columns: Column<Project>[] = [
   },
   {
     key: "budget",
-    header: "Budget",
+    header: t("budget"),
     className: "w-28 text-right",
     render: (r) => (
       <span className="font-mono text-xs tabular-nums">
@@ -138,7 +111,7 @@ const columns: Column<Project>[] = [
   },
   {
     key: "billed",
-    header: "Billed",
+    header: t("billed"),
     className: "w-28 text-right",
     render: (r) => (
       <span className="font-mono text-xs tabular-nums">{formatMoney(r.totalBilled, r.currency)}</span>
@@ -146,7 +119,7 @@ const columns: Column<Project>[] = [
   },
   {
     key: "team",
-    header: "Team",
+    header: t("team"),
     className: "w-24",
     render: (r) => {
       if (r.members.length === 0) return <span className="text-xs text-muted-foreground">-</span>;
@@ -166,34 +139,44 @@ const columns: Column<Project>[] = [
       );
     },
   },
-];
+]; }
 
 export default function ProjectsPage() {
+  const t = useTranslations("Projects");
+  const columns = projectColumns(t);
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
   const [loadError, setLoadError] = useState("");
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("all");
-  useDocumentTitle("Projects · All Projects");
+  useDocumentTitle(t("documentTitle"));
 
   useEffect(() => {
-    const orgId = localStorage.getItem("activeOrgId");
-    if (!orgId) return;
-
-    const params = new URLSearchParams();
-    if (statusFilter !== "all") params.set("status", statusFilter);
-
-    fetch(`/api/v1/projects?${params}`, {
-      headers: { "x-organization-id": orgId },
-    })
-      .then(projectCrmJson)
-      .then((data) => {
-        if (data.data) setProjects(data.data);
-      })
-      .then(() => { setLoadError(""); return devDelay(); })
-      .catch(error => { setProjects([]); setLoadError(error instanceof Error ? error.message : "Unable to load project amounts"); })
-      .finally(() => setLoading(false));
+    let cancelled = false;
+    setLoading(true);
+    async function load() {
+      try {
+        const orgId = localStorage.getItem("activeOrgId");
+        if (!orgId) {
+          if (!cancelled) { setProjects([]); setLoadError("organizationRequired"); }
+          return;
+        }
+        const params = new URLSearchParams();
+        if (statusFilter !== "all") params.set("status", statusFilter);
+        const data = await projectListJson(await fetch(`/api/v1/projects?${params}`, {
+          headers: { "x-organization-id": orgId },
+        }));
+        await devDelay();
+        if (!cancelled) { setProjects(data.data); setLoadError(""); }
+      } catch {
+        if (!cancelled) { setProjects([]); setLoadError("loadFailed"); }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    void load();
+    return () => { cancelled = true; };
   }, [statusFilter]);
 
   const activeProjects = projects.filter((p) => p.status === "active");
@@ -205,23 +188,23 @@ export default function ProjectsPage() {
   const totalMembers = new Set(projects.flatMap(p => p.members.map(m => m.member.id))).size;
 
   if (loading) return <BrandLoader />;
-  if (loadError) return <p role="alert" className="text-sm text-destructive">{loadError}</p>;
+  if (loadError) return <p role="alert" className="text-sm text-destructive">{t(loadError === "organizationRequired" ? "organizationRequired" : "loadFailed")}</p>;
 
   if (!loading && projects.length === 0 && statusFilter === "all") {
     return (
       <ContentReveal className="space-y-10">
-        <Section title="Projects" description="Create your first project to start tracking time, tasks, and billing.">
+        <Section title={t("projects")} description={t("firstProject")}>
           <EmptyState
             icon={FolderKanban}
-            title="No projects yet"
-            description="Create your first project to start tracking time, tasks, and billing."
+            title={t("noProjects")}
+            description={t("firstProject")}
           >
             <Button
               onClick={() => openDrawer("project")}
               className="bg-emerald-600 hover:bg-emerald-700"
             >
               <Plus className="mr-2 size-4" />
-              New Project
+              {t("newProject")}
             </Button>
           </EmptyState>
         </Section>
@@ -232,16 +215,16 @@ export default function ProjectsPage() {
   return (
     <ContentReveal>
     <div className="space-y-6 sm:space-y-8">
-      <Section title="Overview" description="A summary of your projects and resource allocation.">
+      <Section title={t("overview")} description={t("overviewDescription")}>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-2 sm:gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            <StatCard title="Active" value={activeProjects.length.toString()} icon={FolderKanban} />
-            <StatCard title="Total Budget" value={currencies.size > 1 ? "Multiple currencies" : formatMoney(totalBudget, totalCurrency)} icon={DollarSign} />
-            <StatCard title="Total Billed" value={currencies.size > 1 ? "Multiple currencies" : formatMoney(totalBilled, totalCurrency)} icon={Target}
-              change={currencies.size <= 1 && totalBudget > 0 ? `${Number((totalBilled * 200n + totalBudget) / (totalBudget * 2n))}% of budget` : undefined}
+            <StatCard title={t("active")} value={activeProjects.length.toString()} icon={FolderKanban} />
+            <StatCard title={t("totalBudget")} value={currencies.size > 1 ? t("multipleCurrencies") : formatMoney(totalBudget, totalCurrency)} icon={DollarSign} />
+            <StatCard title={t("totalBilled")} value={currencies.size > 1 ? t("multipleCurrencies") : formatMoney(totalBilled, totalCurrency)} icon={Target}
+              change={currencies.size <= 1 && totalBudget > 0 ? t("budgetPercent", { percent: Number((totalBilled * 200n + totalBudget) / (totalBudget * 2n)) }) : undefined}
             />
-            <StatCard title="Hours Logged" value={formatHours(totalHours)} icon={Clock} />
-            <StatCard title="Team Members" value={totalMembers.toString()} icon={Users} />
+            <StatCard title={t("hoursLogged")} value={formatHours(t, totalHours)} icon={Clock} />
+            <StatCard title={t("teamMembers")} value={totalMembers.toString()} icon={Users} />
           </div>
           <div className="flex justify-end">
             <Button
@@ -250,7 +233,7 @@ export default function ProjectsPage() {
               className="bg-emerald-600 hover:bg-emerald-700"
             >
               <Plus className="mr-2 size-4" />
-              New Project
+              {t("newProject")}
             </Button>
           </div>
         </div>
@@ -258,16 +241,16 @@ export default function ProjectsPage() {
 
       <div className="h-px bg-border" />
 
-      <Section title="Projects" description="View and manage all your projects.">
+      <Section title={t("projects")} description={t("manageDescription")}>
         <div className="space-y-4">
           <div className="overflow-x-auto -mx-1 px-1">
             <Tabs value={statusFilter} onValueChange={setStatusFilter}>
               <TabsList>
-                <TabsTrigger value="all">All</TabsTrigger>
-                <TabsTrigger value="active">Active</TabsTrigger>
-                <TabsTrigger value="completed">Completed</TabsTrigger>
-                <TabsTrigger value="on_hold">On Hold</TabsTrigger>
-                <TabsTrigger value="archived">Archived</TabsTrigger>
+                <TabsTrigger value="all">{t("all")}</TabsTrigger>
+                <TabsTrigger value="active">{t("active")}</TabsTrigger>
+                <TabsTrigger value="completed">{t("completed")}</TabsTrigger>
+                <TabsTrigger value="on_hold">{t("onHold")}</TabsTrigger>
+                <TabsTrigger value="archived">{t("archived")}</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
@@ -276,7 +259,7 @@ export default function ProjectsPage() {
               columns={columns}
               data={projects}
               loading={loading}
-              emptyMessage="No projects found."
+              emptyMessage={t("noResults")}
               onRowClick={(r) => router.push(`/projects/${r.id}`)}
             />
         </div>

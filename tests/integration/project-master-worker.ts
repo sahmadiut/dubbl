@@ -12,6 +12,13 @@ import { organization, users, member, apiKey, customRole, contact, team, teamMem
 import type { AuthContext } from "../../lib/api/auth-context";
 import { projectOperations } from "../../lib/api/project-master-operations";
 import { registerAllTools } from "../../lib/mcp/tools";
+import { projectListJson, projectMutationJson } from "../../i18n/project-presentation";
+
+async function checkPresentation(name: string, body: unknown) {
+  if (name === "list_projects") assert.deepEqual(await projectListJson(Response.json(body)), body);
+  if (["create_project", "update_project"].includes(name)) assert.deepEqual(await projectMutationJson(Response.json(body)), body);
+  if (name === "delete_project") assert.deepEqual(await projectMutationJson(Response.json(body), "delete"), body);
+}
 
 async function connect(ctx: AuthContext) {
   const server = new McpServer({ name: "Project fixture", version: "1" }); registerAllTools(server, ctx);
@@ -25,7 +32,9 @@ async function connect(ctx: AuthContext) {
   }
   return { async call(name: string, args: Record<string, unknown>) {
     const result = await client.callTool({ name, arguments: args }), text = (result.content as { text: string }[])[0].text;
-    return { isError: result.isError === true, body: text.startsWith("{") ? JSON.parse(text) : { error: text } };
+    const body = text.startsWith("{") ? JSON.parse(text) : { error: text };
+    if (!result.isError) await checkPresentation(name, body);
+    return { isError: result.isError === true, body };
   }, async close() { await client.close(); await server.close(); } };
 }
 async function run() {
@@ -56,7 +65,9 @@ async function run() {
       headers: { authorization: `Bearer ${key}`, "content-type": "application/json", "x-organization-id": b.id },
       ...(["POST", "PATCH"].includes(op.method) ? { body: JSON.stringify(body) } : {}) });
     const response: Response = await mod[op.method](request, { params: Promise.resolve(params) });
-    return { status: response.status, body: await response.json(), isError: !response.ok };
+    const result = await response.json();
+    if (response.ok) await checkPresentation(name, result);
+    return { status: response.status, body: result, isError: !response.ok };
   }
   const allTables = ["project", "project_member", "project_task", "time_entry", "running_timer", "project_milestone", "milestone_assignment", "task_checklist", "task_comment", "project_label", "project_note", "project_team", "project_team_member", "project_team_assignment", "audit_log"];
   async function snapshot() {

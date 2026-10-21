@@ -82,7 +82,12 @@ test("scoped UI static guards prevent legacy budget math and require saved-money
   }
   for (const file of ["app/(dashboard)/projects/page.tsx", "app/(dashboard)/projects/[id]/project-context.tsx", "app/(dashboard)/projects/[id]/layout.tsx", "app/(dashboard)/projects/[id]/milestones/page.tsx", "app/(dashboard)/crm/page.tsx", "app/(dashboard)/crm/analytics/page.tsx", "app/(dashboard)/crm/deals/[id]/layout.tsx"]) {
     const source = await readFile(file, "utf8");
-    assert.match(source, /projectCrmJson/); assert.doesNotMatch(source, /from ["']@\/lib\/money["']/);
+    if (file === "app/(dashboard)/projects/page.tsx") {
+      assert.match(source, /projectListJson\(await fetch/);
+      const reader = await readFile("i18n/project-presentation.ts", "utf8");
+      assert.match(reader, /projectCrmJson\(response\)/);
+    } else assert.match(source, /projectCrmJson/);
+    assert.doesNotMatch(source, /from ["']@\/lib\/money["']/);
   }
   const drawer = await readFile("components/dashboard/create-drawer.tsx", "utf8");
   const budget = drawer.slice(drawer.indexOf("function BudgetDrawer"), drawer.indexOf("// Employee Drawer"));

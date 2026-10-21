@@ -492,3 +492,14 @@ Verified scope: nine route TSX files (2,965 lines including blanks), plus the sh
 - [LOC-090](../tasks/LOC-090.md): Extract payroll analytics forecasting and reports catalogs.
 - [LOC-091](../tasks/LOC-091.md): Extract payroll tax liability catalogs.
 - [LOC-092](../tasks/LOC-092.md): Extract payroll settings catalogs.
+
+## LOC-068 project catalog children
+
+Verified 11 route TSX files totaling 5,262 lines plus a 242-line creation drawer; parent retains independent combined acceptance.
+
+- [LOC-093](../tasks/LOC-093.md): Extract project list creation and settings catalogs.
+- [LOC-094](../tasks/LOC-094.md): Extract project overview and navigation catalogs.
+- [LOC-095](../tasks/LOC-095.md): Extract project task catalogs.
+- [LOC-096](../tasks/LOC-096.md): Extract project time and billing catalogs.
+- [LOC-097](../tasks/LOC-097.md): Extract project milestone catalogs.
+- [LOC-098](../tasks/LOC-098.md): Extract project team and notes catalogs.

@@ -8,9 +8,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Section } from "@/components/dashboard/section";
 import { payrollMoneyDisplay as formatMoney } from "@/lib/money/payroll-display";
-import { useDealContext, getHeaders, SOURCE_LABELS } from "../layout";
+import { useDealContext, getHeaders } from "../layout";
+import { useCrmDetailPresentation } from "@/i18n/crm-detail-presentation";
+import { crmDealMutationJson, crmDealDeletedJson } from "@/i18n/crm-presentation";
 
 export default function DealSettingsPage() {
+  const { t, sourceLabel } = useCrmDetailPresentation();
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { deal, fetchDeal, confirm, saving, setSaving } = useDealContext();
@@ -30,11 +33,11 @@ export default function DealSettingsPage() {
           expectedCloseDate: (form.get("expectedCloseDate") as string) || null,
         }),
       });
-      if (!res.ok) throw new Error("Failed to update deal");
+      await crmDealMutationJson(res, id);
+      toast.success(t("updated"));
       await fetchDeal();
-      toast.success("Deal updated");
     } catch {
-      toast.error("Failed to update deal");
+      toast.error(t("updateFailed"));
     } finally {
       setSaving(false);
     }
@@ -42,9 +45,10 @@ export default function DealSettingsPage() {
 
   async function handleDelete() {
     const confirmed = await confirm({
-      title: `Delete "${deal.title}"?`,
-      description: "This deal and all its activities will be permanently removed. This action cannot be undone.",
-      confirmLabel: "Delete",
+      title: t("deleteTitle", { title: deal.title }),
+      description: t("deleteDescription"),
+      confirmLabel: t("delete"),
+      cancelLabel: t("cancel"),
       destructive: true,
     });
     if (!confirmed) return;
@@ -53,36 +57,36 @@ export default function DealSettingsPage() {
         method: "DELETE",
         headers: getHeaders(),
       });
-      if (!res.ok) throw new Error("Failed to delete deal");
-      toast.success("Deal deleted");
+      await crmDealDeletedJson(res);
+      toast.success(t("deleted"));
       router.push("/crm");
     } catch {
-      toast.error("Failed to delete deal");
+      toast.error(t("deleteFailed"));
     }
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-10">
-      <Section title="General" description="Basic deal information and identification.">
+      <Section title={t("general")} description={t("generalDescription")}>
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <Label className="text-xs">Deal Title</Label>
+            <Label className="text-xs">{t("dealTitle")}</Label>
             <Input name="title" required defaultValue={deal.title} />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label className="text-xs">Probability (%)</Label>
+              <Label className="text-xs">{t("probability")}</Label>
               <Input
                 name="probability"
                 type="number"
                 min={0}
                 max={100}
                 defaultValue={deal.probability ?? ""}
-                placeholder="0-100"
+                placeholder={t("probabilityPlaceholder")}
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Expected Close Date</Label>
+              <Label className="text-xs">{t("expectedCloseDate")}</Label>
               <Input
                 name="expectedCloseDate"
                 type="date"
@@ -95,18 +99,18 @@ export default function DealSettingsPage() {
 
       <div className="h-px bg-border" />
 
-      <Section title="Details" description="Source, contact, and assignment info.">
+      <Section title={t("details")} description={t("detailsDescription")}>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label className="text-xs">Source</Label>
+            <Label className="text-xs">{t("source")}</Label>
             <Input
-              value={deal.source ? (SOURCE_LABELS[deal.source] || deal.source) : "-"}
+              value={sourceLabel(deal.source)}
               disabled
               className="bg-muted/50"
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">Contact</Label>
+            <Label className="text-xs">{t("contact")}</Label>
             <Input
               value={deal.contact?.name || "-"}
               disabled
@@ -114,7 +118,7 @@ export default function DealSettingsPage() {
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">Assigned To</Label>
+            <Label className="text-xs">{t("assignedTo")}</Label>
             <Input
               value={deal.assignedUser?.name || "-"}
               disabled
@@ -122,7 +126,7 @@ export default function DealSettingsPage() {
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">Value</Label>
+            <Label className="text-xs">{t("value")}</Label>
             <Input
               value={formatMoney(deal.valueCents, deal.currency)}
               disabled
@@ -134,31 +138,31 @@ export default function DealSettingsPage() {
 
       <div className="h-px bg-border" />
 
-      <Section title="Notes" description="Internal notes about this deal.">
+      <Section title={t("notes")} description={t("notesDescription")}>
         <Textarea
           name="notes"
           defaultValue={deal.notes || ""}
           rows={3}
-          placeholder="Add notes about this deal..."
+          placeholder={t("notesPlaceholder")}
         />
       </Section>
 
       <div className="flex justify-end">
         <Button type="submit" size="sm" disabled={saving}>
-          {saving ? "Saving..." : "Save changes"}
+          {saving ? t("saving") : t("saveChanges")}
         </Button>
       </div>
 
       <div className="h-px bg-border" />
 
-      <Section title="Danger zone" description="Irreversible actions for this deal.">
+      <Section title={t("dangerZone")} description={t("dangerDescription")}>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-md border border-red-200 bg-red-50 dark:border-red-900/50 dark:bg-red-950/20 px-4 py-3">
           <div>
-            <p className="text-sm font-medium text-red-700 dark:text-red-400">Delete this deal</p>
-            <p className="text-xs text-red-600/70 dark:text-red-400/60">Once deleted, this cannot be undone.</p>
+            <p className="text-sm font-medium text-red-700 dark:text-red-400">{t("deleteDealHeading")}</p>
+            <p className="text-xs text-red-600/70 dark:text-red-400/60">{t("deleteWarning")}</p>
           </div>
           <Button type="button" size="sm" variant="destructive" onClick={handleDelete}>
-            Delete Deal
+            {t("deleteDeal")}
           </Button>
         </div>
       </Section>

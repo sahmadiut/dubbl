@@ -8,8 +8,6 @@ import {
   Phone,
   Calendar,
   ClipboardList,
-  Trophy,
-  XCircle,
   Activity,
   DollarSign,
   Target,
@@ -18,7 +16,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { payrollMoneyDisplay as formatMoney } from "@/lib/money/payroll-display";
 import { cn } from "@/lib/utils";
-import { useDealContext, SOURCE_LABELS, timeAgo } from "./layout";
+import { useDealContext } from "./layout";
+import { useCrmDetailPresentation } from "@/i18n/crm-detail-presentation";
 
 const ACTIVITY_ICONS: Record<string, typeof MessageSquare> = {
   note: MessageSquare,
@@ -37,6 +36,7 @@ const ACTIVITY_COLORS: Record<string, string> = {
 };
 
 export default function DealOverviewPage() {
+  const { t, sourceLabel, activityLabel, formatDate, formatTime, timeAgo } = useCrmDetailPresentation();
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { deal, stageChanging, changeStage } = useDealContext();
@@ -53,11 +53,11 @@ export default function DealOverviewPage() {
       <div className="space-y-4">
         {/* Deal info card */}
         <div className="rounded-xl border bg-card p-5 space-y-4">
-          <h3 className="text-sm font-semibold">Deal Information</h3>
+          <h3 className="text-sm font-semibold">{t("dealInformation")}</h3>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-3">
               <div>
-                <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-1">Contact</p>
+                <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-1">{t("contact")}</p>
                 {deal.contact ? (
                   <div>
                     <p className="text-sm font-medium">{deal.contact.name}</p>
@@ -70,20 +70,20 @@ export default function DealOverviewPage() {
                 )}
               </div>
               <div>
-                <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-1">Assigned To</p>
+                <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-1">{t("assignedTo")}</p>
                 <p className="text-sm">{deal.assignedUser?.name || "-"}</p>
               </div>
             </div>
             <div className="space-y-3">
               <div>
-                <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-1">Source</p>
-                <p className="text-sm">{deal.source ? (SOURCE_LABELS[deal.source] || deal.source) : "-"}</p>
+                <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-1">{t("source")}</p>
+                <p className="text-sm">{sourceLabel(deal.source)}</p>
               </div>
               <div>
-                <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-1">Expected Close</p>
+                <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-1">{t("expectedClose")}</p>
                 <p className="text-sm">
                   {deal.expectedCloseDate
-                    ? new Date(deal.expectedCloseDate).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })
+                    ? formatDate(deal.expectedCloseDate)
                     : "-"}
                 </p>
               </div>
@@ -93,7 +93,7 @@ export default function DealOverviewPage() {
             <>
               <div className="h-px bg-border" />
               <div>
-                <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-1.5">Notes</p>
+                <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-1.5">{t("notes")}</p>
                 <p className="text-sm text-muted-foreground whitespace-pre-wrap">{deal.notes}</p>
               </div>
             </>
@@ -102,7 +102,7 @@ export default function DealOverviewPage() {
             <>
               <div className="h-px bg-border" />
               <div>
-                <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-1.5">Lost Reason</p>
+                <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-1.5">{t("lostReason")}</p>
                 <p className="text-sm text-red-600 dark:text-red-400">{deal.lostReason}</p>
               </div>
             </>
@@ -112,25 +112,25 @@ export default function DealOverviewPage() {
         {/* Recent activity preview */}
         <div className="rounded-xl border bg-card p-5 space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold">Recent Activity</h3>
+            <h3 className="text-sm font-semibold">{t("recentActivity")}</h3>
             {deal.activities.length > 0 && (
               <button
                 onClick={() => router.push(`/crm/deals/${id}/activity`)}
                 className="text-xs text-muted-foreground hover:text-foreground transition-colors"
               >
-                View all ({deal.activities.length})
+                {t("viewAll", { count: deal.activities.length })}
               </button>
             )}
           </div>
           {deal.activities.length === 0 ? (
             <div className="py-4 text-center">
               <Activity className="size-6 text-muted-foreground/30 mx-auto mb-2" />
-              <p className="text-xs text-muted-foreground">No activity yet</p>
+              <p className="text-xs text-muted-foreground">{t("noActivity")}</p>
               <button
                 onClick={() => router.push(`/crm/deals/${id}/activity`)}
                 className="text-xs text-emerald-600 hover:underline mt-1 font-medium"
               >
-                Log first activity
+                {t("logFirst")}
               </button>
             </div>
           ) : (
@@ -144,8 +144,8 @@ export default function DealOverviewPage() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-medium">{activity.user?.name || "System"}</span>
-                        <Badge variant="outline" className="text-[9px] px-1 py-0 capitalize h-3.5">{activity.type}</Badge>
+                        <span className="text-xs font-medium">{activity.user?.name || t("system")}</span>
+                        <Badge variant="outline" className="text-[9px] px-1 py-0 capitalize h-3.5">{activityLabel(activity.type)}</Badge>
                         <span className="text-[10px] text-muted-foreground ml-auto shrink-0">{timeAgo(activity.createdAt)}</span>
                       </div>
                       {activity.content && (
@@ -164,7 +164,7 @@ export default function DealOverviewPage() {
       <div className="space-y-4">
         {/* Key metrics */}
         <div className="rounded-xl border bg-card p-4 space-y-3">
-          <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Key Metrics</h3>
+          <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("keyMetrics")}</h3>
           <div className="space-y-3">
             <div className="flex items-center gap-3">
               <div className="flex size-8 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-950/40">
@@ -172,7 +172,7 @@ export default function DealOverviewPage() {
               </div>
               <div>
                 <p className="text-sm font-bold font-mono tabular-nums">{formatMoney(deal.valueCents, deal.currency)}</p>
-                <p className="text-[10px] text-muted-foreground">Deal Value</p>
+                <p className="text-[10px] text-muted-foreground">{t("dealValue")}</p>
               </div>
             </div>
             {deal.probability !== null && (
@@ -196,7 +196,7 @@ export default function DealOverviewPage() {
                       }}
                     />
                   </div>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">Weighted Value</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">{t("weightedValue")}</p>
                 </div>
               </div>
             )}
@@ -206,7 +206,7 @@ export default function DealOverviewPage() {
         {/* Pipeline stages */}
         {stages.length > 0 && (
           <div className="rounded-xl border bg-card p-4 space-y-3">
-            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Pipeline Stage</h3>
+            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("pipelineStage")}</h3>
             <div className="space-y-1">
               {stages.map((stage, idx) => {
                 const isCurrent = stage.id === deal.stageId;
@@ -251,16 +251,16 @@ export default function DealOverviewPage() {
         {/* Created date */}
         <div className="rounded-xl border bg-card p-4">
           <p className="text-[11px] text-muted-foreground">
-            Created {new Date(deal.createdAt).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}
+            {t("createdOn", { date: formatTime(deal.createdAt) })}
           </p>
           {deal.wonAt && (
             <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1">
-              Won {new Date(deal.wonAt).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}
+              {t("wonOn", { date: formatTime(deal.wonAt) })}
             </p>
           )}
           {deal.lostAt && (
             <p className="text-[11px] text-red-600 dark:text-red-400 mt-1">
-              Lost {new Date(deal.lostAt).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}
+              {t("lostOn", { date: formatTime(deal.lostAt) })}
             </p>
           )}
         </div>

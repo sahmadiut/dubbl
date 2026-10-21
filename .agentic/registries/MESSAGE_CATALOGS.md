@@ -1,5 +1,12 @@
 # Message catalog foundation
 
+LOC-100 CRM deal overview/navigation/settings use 75 paired `CrmDetail`
+messages (8,715 compatible leaves per locale). See
+[scope and exceptions](CRM_DETAIL_CATALOGS.md) for checked reads/mutations,
+exact cents, date presentation and preserved REST/MCP contracts. Persian wording
+remains provisional; LOC-101/102, LOC-069/008/002 and native/RTL acceptance remain
+independent.
+
 LOC-099 CRM pipeline list and creation use 89 paired `CrmPipeline` messages
 (8,640 compatible keys per locale). See [scope and exceptions](CRM_PIPELINE_CATALOGS.md)
 for checked feedback, preserved fixed cents/dates and REST/MCP contracts.
@@ -343,6 +350,7 @@ Extraction ownership:
 | LOC-097 | LOC-068 child: project milestones |
 | LOC-098 | LOC-068 child: project team and notes |
 | LOC-069 | LOC-008 child: CRM and shared controls |
+| LOC-100 | LOC-069 child: CRM deal overview, navigation and settings; [scope and exceptions](CRM_DETAIL_CATALOGS.md) |
 | LOC-070 | LOC-008 child: reporting and shared controls |
 | LOC-071 | LOC-008 child: dashboard, documents and residual operations shared components |
 | LOC-009 | Public surfaces, landing/help, email/PDF and user-visible background content; remaining source audit |

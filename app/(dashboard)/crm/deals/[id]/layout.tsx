@@ -1,8 +1,9 @@
 "use client";
 
-import { projectCrmJson } from "@/lib/money/project-crm-ui";
+import { crmDealDetailJson, crmDealMutationJson, crmActivityCreatedJson, type CrmDealDetail } from "@/i18n/crm-presentation";
+import { useCrmDetailPresentation } from "@/i18n/crm-detail-presentation";
 
-import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter, usePathname } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -29,42 +30,11 @@ import { cn } from "@/lib/utils";
 // Shared interfaces
 // ---------------------------------------------------------------------------
 
-export interface DealDetail {
-  id: string;
-  title: string;
-  stageId: string;
-  valueCents: number;
-  currency: string;
-  probability: number | null;
-  expectedCloseDate: string | null;
-  source: string | null;
-  notes: string | null;
-  wonAt: string | null;
-  lostAt: string | null;
-  lostReason: string | null;
-  createdAt: string;
-  contact: { id: string; name: string; email: string | null } | null;
-  assignedUser: { id: string; name: string | null } | null;
-  pipeline: { name: string; stages: { id: string; name: string; color: string }[] } | null;
-  activities: {
-    id: string;
-    type: string;
-    content: string | null;
-    createdAt: string;
-    user: { name: string | null } | null;
-  }[];
-}
-
-export const SOURCE_LABELS: Record<string, string> = {
-  website: "Website",
-  referral: "Referral",
-  cold_outreach: "Cold Outreach",
-  event: "Event",
-  other: "Other",
-};
+export type DealDetail = CrmDealDetail;
 
 export function getHeaders() {
   const orgId = localStorage.getItem("activeOrgId") || "";
+  if (!orgId) throw new Error("Organization required");
   return { "x-organization-id": orgId, "Content-Type": "application/json" };
 }
 
@@ -87,9 +57,9 @@ export function timeAgo(dateStr: string) {
 // ---------------------------------------------------------------------------
 
 const TABS = [
-  { value: "overview", label: "Overview", icon: FileText },
-  { value: "activity", label: "Activity", icon: Activity },
-  { value: "settings", label: "Settings", icon: Settings2 },
+  { value: "overview", label: "overview", icon: FileText },
+  { value: "activity", label: "activity", icon: Activity },
+  { value: "settings", label: "settings", icon: Settings2 },
 ] as const;
 
 // ---------------------------------------------------------------------------
@@ -129,6 +99,7 @@ export function useDealContext() {
 // ---------------------------------------------------------------------------
 
 export default function DealDetailLayout({ children }: { children: React.ReactNode }) {
+  const { t } = useCrmDetailPresentation();
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const pathname = usePathname();
@@ -141,77 +112,93 @@ export default function DealDetailLayout({ children }: { children: React.ReactNo
   const [activityContent, setActivityContent] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [saving, setSaving] = useState(false);
+  const requestVersion = useRef(0);
+  const cancelReads = useCallback(() => { requestVersion.current++; }, []);
 
   useEntityTitle(deal?.title ?? undefined);
 
   const fetchDeal = useCallback(async () => {
+    const version = ++requestVersion.current;
     try {
       const res = await fetch(`/api/v1/crm/deals/${id}`, { headers: getHeaders() });
-      const data = await projectCrmJson(res);
-      if (data.deal) setDeal(data.deal);
+      const data = await crmDealDetailJson(res, id);
+      if (version === requestVersion.current) setDeal(data.deal);
     } catch {
-      toast.error("Failed to load deal");
+      if (version === requestVersion.current) toast.error(t("loadFailed"));
     } finally {
-      setLoading(false);
+      if (version === requestVersion.current) setLoading(false);
     }
-  }, [id]);
+  }, [id, t]);
 
   useEffect(() => {
+    setDeal(null);
+    setLoading(true);
     fetchDeal();
-  }, [fetchDeal]);
+    return cancelReads;
+  }, [fetchDeal, cancelReads]);
 
   async function changeStage(stageId: string) {
     setStageChanging(true);
     try {
-      await fetch(`/api/v1/crm/deals/${id}/stage`, {
+      await crmDealMutationJson(await fetch(`/api/v1/crm/deals/${id}/stage`, {
         method: "PATCH",
         headers: getHeaders(),
         body: JSON.stringify({ stageId }),
-      });
+      }), id);
+      toast.success(t("stageUpdated"));
       await fetchDeal();
-      toast.success("Stage updated");
     } catch {
-      toast.error("Failed to update stage");
+      toast.error(t("stageFailed"));
     } finally {
       setStageChanging(false);
     }
   }
 
   async function markWon() {
-    await fetch(`/api/v1/crm/deals/${id}/won`, { method: "POST", headers: getHeaders() });
-    await fetchDeal();
-    toast.success("Deal marked as won");
+    setStageChanging(true);
+    try {
+      await crmDealMutationJson(await fetch(`/api/v1/crm/deals/${id}/won`, { method: "POST", headers: getHeaders() }), id);
+      toast.success(t("markedWon"));
+      await fetchDeal();
+    } catch { toast.error(t("wonFailed")); }
+    finally { setStageChanging(false); }
   }
 
   async function markLost() {
-    await confirm({
-      title: "Mark deal as lost?",
-      description: "This deal will be moved to the closed lost stage.",
-      confirmLabel: "Mark Lost",
+    const confirmed = await confirm({
+      title: t("lostTitle"),
+      description: t("lostDescription"),
+      confirmLabel: t("markLost"),
+      cancelLabel: t("cancel"),
       destructive: true,
-      onConfirm: async () => {
-        await fetch(`/api/v1/crm/deals/${id}/lost`, {
-          method: "POST",
-          headers: getHeaders(),
-          body: JSON.stringify({ reason: null }),
-        });
-        await fetchDeal();
-        toast.success("Deal marked as lost");
-      },
     });
+    if (!confirmed) return;
+    setStageChanging(true);
+    try {
+      await crmDealMutationJson(await fetch(`/api/v1/crm/deals/${id}/lost`, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({ reason: null }),
+      }), id);
+      toast.success(t("markedLost"));
+      await fetchDeal();
+    } catch { toast.error(t("lostFailed")); }
+    finally { setStageChanging(false); }
   }
 
   async function addActivity() {
     if (!activityContent.trim()) return;
     setSubmitting(true);
     try {
-      await fetch(`/api/v1/crm/deals/${id}/activities`, {
+      await crmActivityCreatedJson(await fetch(`/api/v1/crm/deals/${id}/activities`, {
         method: "POST",
         headers: getHeaders(),
         body: JSON.stringify({ type: activityType, content: activityContent }),
-      });
+      }), id);
       setActivityContent("");
-      toast.success("Activity added");
+      toast.success(t("activityAdded"));
+    } catch {
+      toast.error(t("activityFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -221,14 +208,14 @@ export default function DealDetailLayout({ children }: { children: React.ReactNo
     : pathname.endsWith("/settings") ? "settings"
     : "overview";
 
-  if (loading) return <BrandLoader />;
+  if (loading || (deal && deal.id !== id)) return <BrandLoader />;
 
   if (!deal) {
     return (
       <div className="space-y-4">
-        <p className="text-sm text-muted-foreground">Deal not found</p>
+        <p className="text-sm text-muted-foreground">{t("unavailable")}</p>
         <Button variant="outline" size="sm" onClick={() => router.push("/crm")}>
-          Back to Pipeline
+          {t("backToPipeline")}
         </Button>
       </div>
     );
@@ -269,7 +256,7 @@ export default function DealDetailLayout({ children }: { children: React.ReactNo
           className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors mb-6"
         >
           <ArrowLeft className="size-3.5" />
-          Back to pipeline
+          {t("backToPipeline")}
         </button>
 
         {/* Header */}
@@ -279,12 +266,12 @@ export default function DealDetailLayout({ children }: { children: React.ReactNo
               <h1 className="text-lg sm:text-xl font-semibold tracking-tight truncate">{deal.title}</h1>
               {isWon && (
                 <Badge className="bg-emerald-100 text-emerald-700 border-0 dark:bg-emerald-900/60 dark:text-emerald-400 shrink-0">
-                  <Trophy className="size-3 mr-1" /> Won
+                  <Trophy className="size-3 mr-1" /> {t("won")}
                 </Badge>
               )}
               {isLost && (
                 <Badge className="bg-red-100 text-red-700 border-0 dark:bg-red-900/60 dark:text-red-400 shrink-0">
-                  <XCircle className="size-3 mr-1" /> Lost
+                  <XCircle className="size-3 mr-1" /> {t("lost")}
                 </Badge>
               )}
             </div>
@@ -315,11 +302,11 @@ export default function DealDetailLayout({ children }: { children: React.ReactNo
 
           {!isClosed && (
             <div className="flex items-center gap-2 shrink-0">
-              <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5 text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/30" onClick={markLost}>
-                <XCircle className="size-3" /> Mark Lost
+              <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5 text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/30" disabled={stageChanging} onClick={markLost}>
+                <XCircle className="size-3" /> {t("markLost")}
               </Button>
-              <Button size="sm" className="h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700" onClick={markWon}>
-                <Trophy className="size-3" /> Mark Won
+              <Button size="sm" className="h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700" disabled={stageChanging} onClick={markWon}>
+                <Trophy className="size-3" /> {t("markWon")}
               </Button>
             </div>
           )}
@@ -390,15 +377,15 @@ export default function DealDetailLayout({ children }: { children: React.ReactNo
 
         {/* Tabs */}
         <nav className="-mt-0 mb-8 flex items-center gap-1 overflow-x-auto border-b border-border">
-          {TABS.map((t) => {
-            const Icon = t.icon;
-            const tabHref = t.value === "overview"
+          {TABS.map((tab) => {
+            const Icon = tab.icon;
+            const tabHref = tab.value === "overview"
               ? `/crm/deals/${id}`
-              : `/crm/deals/${id}/${t.value}`;
-            const active = activeTab === t.value;
+              : `/crm/deals/${id}/${tab.value}`;
+            const active = activeTab === tab.value;
             return (
               <button
-                key={t.value}
+                key={tab.value}
                 onClick={() => router.push(tabHref)}
                 className={cn(
                   "flex shrink-0 items-center gap-1.5 border-b-2 px-2.5 pb-2.5 pt-3 text-[13px] font-medium transition-colors",
@@ -408,7 +395,7 @@ export default function DealDetailLayout({ children }: { children: React.ReactNo
                 )}
               >
                 <Icon className="size-3.5" />
-                {t.label}
+                {t(tab.label)}
               </button>
             );
           })}

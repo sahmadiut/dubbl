@@ -67,3 +67,50 @@ export async function crmDealsJson(response: Response) {
   for (const value of Object.values(record(summary.stageDistribution))) { const row = record(value); count(row.count); if (!Number.isSafeInteger(row.value)) throw new Error("Invalid stage total"); }
   return body as typeof body & { data: CrmDeal[]; summary: CrmSummary; pagination: { total: number } };
 }
+
+export interface CrmDealDetail extends CrmDeal {
+  notes: string | null; lostReason: string | null;
+  contact: { id: string; name: string; email: string | null } | null;
+  assignedUser: { id: string; name: string | null } | null;
+  pipeline: CrmPipeline | null;
+  activities: { id: string; type: string; content: string | null; createdAt: string; user: { name: string | null } | null }[];
+}
+export const crmActivityKeys = { note: "note", email: "email", call: "call", meeting: "meeting", task: "task" } as const;
+function nullableText(value: unknown) { return value === null || typeof value === "string"; }
+function activity(value: unknown, joins = true) {
+  const row = record(value);
+  if (!text(row.id) || !Object.hasOwn(crmActivityKeys, String(row.type)) || !nullableText(row.content) ||
+    typeof row.createdAt !== "string" || !Number.isFinite(Date.parse(row.createdAt))) throw new Error("Invalid CRM activity");
+  if (joins && row.user !== null && !nullableText(record(row.user).name)) throw new Error("Invalid CRM activity user");
+}
+export async function crmDealDetailJson(response: Response, expectedId: string) {
+  const body = await read(response); deal(body.deal, true);
+  const row = record(body.deal);
+  if (row.id !== expectedId || !nullableText(row.notes) || !nullableText(row.lostReason)) throw new Error("Invalid CRM detail");
+  if (row.contact !== null) {
+    const contact = record(row.contact);
+    if (!text(contact.id) || !nullableText(contact.email)) throw new Error("Invalid CRM contact");
+  }
+  if (row.assignedUser !== null && !text(record(row.assignedUser).id)) throw new Error("Invalid CRM assignee");
+  if (row.pipeline !== null) pipeline(row.pipeline);
+  if (!Array.isArray(row.activities)) throw new Error("Invalid CRM activities");
+  const ids = new Set<string>();
+  for (const value of row.activities) { activity(value); const id = record(value).id as string; if (ids.has(id)) throw new Error("Duplicate CRM activity"); ids.add(id); }
+  return body as typeof body & { deal: CrmDealDetail };
+}
+/** Mutation replies omit joins. Validate their actual wire shape, then refresh detail separately. */
+export async function crmDealMutationJson(response: Response, expectedId: string) {
+  const body = await crmDealCreatedJson(response);
+  if (body.deal.id !== expectedId) throw new Error("Invalid CRM mutation identity");
+  return body;
+}
+export async function crmDealDeletedJson(response: Response) {
+  const body = await read(response);
+  if (body.success !== true) throw new Error("Invalid CRM deletion");
+}
+export async function crmActivityCreatedJson(response: Response, expectedDealId: string) {
+  const body = await read(response); activity(body.activity, false);
+  const row = record(body.activity);
+  if (row.dealId !== expectedDealId || !text(row.userId)) throw new Error("Invalid CRM activity identity");
+  return body;
+}

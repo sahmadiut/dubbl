@@ -17,7 +17,15 @@ import { POST as lost } from "../../app/api/v1/crm/deals/[id]/lost/route";
 import { GET as activities, POST as activity } from "../../app/api/v1/crm/deals/[id]/activities/route";
 import { GET as analytics } from "../../app/api/v1/crm/analytics/route";
 import { registerAllTools } from "../../lib/mcp/tools";
-import { crmPipelinesJson, crmPipelineCreatedJson, crmDealCreatedJson, crmDealsJson } from "../../i18n/crm-presentation";
+import { crmPipelinesJson, crmPipelineCreatedJson, crmDealCreatedJson, crmDealsJson, crmDealDetailJson, crmDealMutationJson, crmDealDeletedJson, crmActivityCreatedJson } from "../../i18n/crm-presentation";
+
+async function checkedDealReply(body: { deal?: { id: string; activities?: unknown }; activity?: { dealId: string } }) {
+  if (body.deal) {
+    if (body.deal.activities) await crmDealDetailJson(Response.json(body), body.deal.id);
+    else await crmDealMutationJson(Response.json(body), body.deal.id);
+  }
+  if (body.activity) await crmActivityCreatedJson(Response.json(body), body.activity.dealId);
+}
 
 async function connect(ctx: AuthContext) {
   const server = new McpServer({ name: "CRM fixture", version: "1" }); registerAllTools(server, ctx);
@@ -31,7 +39,9 @@ async function connect(ctx: AuthContext) {
   }
   return { async call(name: string, args: Record<string, unknown> = {}) {
     const r = await client.callTool({ name, arguments: args }), text = (r.content as { text: string }[])[0].text;
-    return { isError: r.isError === true, body: text.startsWith("{") ? JSON.parse(text) : { error: text } };
+    const body = text.startsWith("{") ? JSON.parse(text) : { error: text };
+    if (r.isError !== true) await checkedDealReply(body);
+    return { isError: r.isError === true, body };
   }, async close() { await client.close(); await server.close(); } };
 }
 async function run() {
@@ -50,7 +60,7 @@ async function run() {
   const req = (body: unknown = {}, key = keys.a, query = "") => new Request("http://fixture.test/crm" + query,
     { method: "POST", headers: { authorization: `Bearer ${key}`, "content-type": "application/json", "x-organization-id": b.id }, body: JSON.stringify(body) });
   const p = (id: string) => ({ params: Promise.resolve({ id }) });
-  const data = async (r: Response, status = 200) => { const body = await r.json(); assert.equal(r.status, status, JSON.stringify(body)); return body; };
+  const data = async (r: Response, status = 200) => { const body = await r.json(); assert.equal(r.status, status, JSON.stringify(body)); if (r.ok) await checkedDealReply(body); return body; };
   async function snapshot() {
     const r = await db.execute(sql.raw("select jsonb_build_object('pipelines',(select jsonb_agg(to_jsonb(t) order by id) from pipeline t),'deals',(select jsonb_agg(to_jsonb(t) order by id) from deal t),'activities',(select jsonb_agg(to_jsonb(t) order by id) from deal_activity t),'audit',(select jsonb_agg(to_jsonb(t) order by id) from audit_log t)) as state"));
     return JSON.stringify(r.rows[0].state);
@@ -231,7 +241,8 @@ async function run() {
     const deletedRace = await Promise.all([deleteDeal(req(), p(active.id)), ma.call("delete_deal", { dealId: active.id })]);
     assert.equal(Number(deletedRace[0].status === 200) + Number(!deletedRace[1].isError), 1);
     await denied(() => activity(req({ type: "note" }), p(active.id)), 404); await mdenied("add_deal_activity", { dealId: active.id, type: "note" }, ma, 404);
-    await ma.call("delete_deal", { dealId: d.id }); await data(await deleteDeal(req(), p(exact.id)));
+    await crmDealDeletedJson(Response.json((await ma.call("delete_deal", { dealId: d.id })).body));
+    await crmDealDeletedJson(await deleteDeal(req(), p(exact.id)));
     assert.equal((await data(await getPipeline(req(), p(pl.id)))).pipeline.deals.length, 0);
     assert.equal((await ma.call("delete_pipeline", { pipelineId: pl.id })).body.success, true);
     await data(await deleteDeal(req(), p(maxima.id))); await data(await deletePipeline(req(), p(pl2.id)));

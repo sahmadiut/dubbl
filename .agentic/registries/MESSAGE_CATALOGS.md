@@ -1,5 +1,13 @@
 # Message catalog foundation
 
+LOC-068 independently accepts combined project presentation after LOC-093..098:
+11 route components, ProjectDrawer and 498 paired messages across seven
+namespaces (8,551 compatible keys per locale). See
+[combined ownership, exceptions and behavior](PROJECT_CATALOG_ACCEPTANCE.md).
+LOC-008/002, native Persian/RTL, output and release qualification remain
+independent; wording remains provisional. Existing timer-save retry and saved
+backend invoice-description limitations remain explicit.
+
 LOC-098 project members, team assignments and notes use 94 paired messages in
 `ProjectMembers` and `ProjectNotes` (8,551 compatible keys per locale). See
 [scope and exceptions](PROJECT_COLLABORATION_CATALOGS.md) for checked feedback,

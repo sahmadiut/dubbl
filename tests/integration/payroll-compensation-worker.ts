@@ -1,4 +1,5 @@
 import { payrollEmployeeDetailJson } from "../../i18n/payroll-employee-detail-presentation";
+import { payrollCompensationJson } from "../../i18n/payroll-compensation-presentation";
 import { payrollJson, payrollUiPayload } from "../../lib/money/payroll-ui";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -75,6 +76,12 @@ async function run() {
   const checkDetail = async <T extends Record<string, unknown>>(name: string, body: T) => {
     const kind = name === "get_compensation_band" ? "band" : null;
     if (kind) await payrollEmployeeDetailJson(Response.json(body), kind);
+    const presentation = name === "list_compensation_bands" ? "bands"
+      : name === "list_compensation_reviews" ? "reviews"
+      : ["create_compensation_band", "get_compensation_band", "update_compensation_band"].includes(name) ? "band"
+      : name === "get_compensation_review" ? "detail"
+      : ["create_compensation_review", "update_compensation_review"].includes(name) ? "review" : null;
+    if (presentation) await payrollCompensationJson(Response.json(body), presentation);
     return body;
   };
   const read = async (name: string, args: Args = {}) => checkDetail(name, await data(await rest(name, args), name.startsWith("create_") ? 201 : 200));

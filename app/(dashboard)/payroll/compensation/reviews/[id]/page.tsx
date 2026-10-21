@@ -1,42 +1,18 @@
 "use client";
 
-import { payrollJson } from "@/lib/money/payroll-ui";
+import { useTranslations } from "next-intl";
+import { payrollCompensationJson, compensationOrganization } from "@/i18n/payroll-compensation-presentation";
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { motion } from "motion/react";
-import { toast } from "sonner";
-import { ArrowLeft, Plus, BarChart3 } from "lucide-react";
+import { ArrowLeft, BarChart3 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { ContentReveal } from "@/components/ui/content-reveal";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { payrollMoneyDisplay as formatMoney } from "@/lib/money/payroll-display";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
-import { cn } from "@/lib/utils";
 
-interface ReviewDetail {
-  id: string;
-  name: string;
-  effectiveDate: string;
-  status: string;
-  totalBudget: number | null;
-  entries: ReviewEntry[];
-  currency: string;
-  totals: { currentSalary: number; proposedSalary: number; difference: number };
-}
-
-interface ReviewEntry {
-  id: string;
-  currentSalary: number;
-  proposedSalary: number;
-  adjustmentPercent: number | null;
-  reason: string | null;
-  approved: boolean | null;
-  employee: { name: string; employeeNumber: string } | null;
-}
+import type { CompensationReviewDetail as ReviewDetail } from "@/i18n/payroll-compensation-presentation";
 
 const statusColors: Record<string, string> = {
   draft: "",
@@ -45,25 +21,39 @@ const statusColors: Record<string, string> = {
 };
 
 export default function ReviewDetailPage() {
+  const t = useTranslations("PayrollCompensation");
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [review, setReview] = useState<ReviewDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [moneyError, setMoneyError] = useState<string | null>(null);
-  useDocumentTitle("Payroll · Review Details");
+  useDocumentTitle(t("detailDocumentTitle"));
 
-  const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
+  const orgId = compensationOrganization();
 
   useEffect(() => {
-    if (!orgId) return;
-    fetch(`/api/v1/payroll/compensation/reviews/${id}`, {
-      headers: { "x-organization-id": orgId },
-    })
-      .then((r) => payrollJson(r))
-      .then((data) => { if (data.error) toast.error(data.error); if (data.review) setReview(data.review); })
-      .catch(error => setMoneyError(error instanceof Error ? error.message : "Unsupported payroll data"))
-      .finally(() => setLoading(false));
-  }, [id, orgId]);
+    let active = true;
+    if (!orgId) { setMoneyError(t("organizationRequired")); setLoading(false); return; }
+    setLoading(true);
+    void (async () => {
+      try {
+        const response = await fetch(`/api/v1/payroll/compensation/reviews/${id}`, {
+          headers: { "x-organization-id": orgId },
+        });
+        if (response.status === 404) {
+          if (active) { setReview(null); setMoneyError(null); }
+          return;
+        }
+        const data = await payrollCompensationJson(response, "detail", id);
+        if (active) { setReview(data.review); setMoneyError(null); }
+      } catch {
+        if (active) setMoneyError(t("loadFailed"));
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => { active = false; };
+  }, [id, orgId, t]);
 
   if (loading) return <BrandLoader />;
   if (moneyError) return <p role="alert">{moneyError}</p>;
@@ -71,9 +61,9 @@ export default function ReviewDetailPage() {
     return (
       <ContentReveal>
         <button onClick={() => router.push("/payroll/compensation")} className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors mb-6">
-          <ArrowLeft className="size-3.5" /> Back
+          <ArrowLeft className="size-3.5" /> {t("back")}
         </button>
-        <p className="text-sm text-muted-foreground">Review not found</p>
+        <p className="text-sm text-muted-foreground">{t("notFound")}</p>
       </ContentReveal>
     );
   }
@@ -84,7 +74,7 @@ export default function ReviewDetailPage() {
   return (
     <ContentReveal className="space-y-6">
       <button onClick={() => router.push("/payroll/compensation")} className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors">
-        <ArrowLeft className="size-3.5" /> Back to compensation
+        <ArrowLeft className="size-3.5" /> {t("backToCompensation")}
       </button>
 
       <div className="flex items-center gap-3">
@@ -94,51 +84,51 @@ export default function ReviewDetailPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-lg font-semibold">{review.name}</h1>
-            <Badge variant="outline" className={statusColors[review.status] || ""}>{review.status.replace(/_/g, " ")}</Badge>
+            <Badge variant="outline" className={statusColors[review.status] || ""}>{t(`status_${review.status}`)}</Badge>
           </div>
-          <p className="text-sm text-muted-foreground">Effective: {review.effectiveDate}</p>
+          <p className="text-sm text-muted-foreground">{t("effective", { date: review.effectiveDate })}</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="rounded-xl border bg-card p-4">
-          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Current Total</p>
+          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("currentTotal")}</p>
           <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate">{formatMoney(totalCurrent, review.currency)}</p>
         </div>
         <div className="rounded-xl border bg-card p-4">
-          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Proposed Total</p>
+          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("proposedTotal")}</p>
           <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate text-emerald-600 dark:text-emerald-400">{formatMoney(totalProposed, review.currency)}</p>
         </div>
         <div className="rounded-xl border bg-card p-4">
-          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Total Increase</p>
+          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("totalIncrease")}</p>
           <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate">{formatMoney(review.totals.difference, review.currency)}</p>
         </div>
       </div>
 
       <div className="space-y-3">
-        <h3 className="text-sm font-semibold">Entries ({review.entries.length})</h3>
+        <h3 className="text-sm font-semibold">{t("entries", { count: String(review.entries.length) })}</h3>
         {review.entries.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-8 text-center">No entries yet</p>
+          <p className="text-sm text-muted-foreground py-8 text-center">{t("noEntries")}</p>
         ) : (
           <div className="rounded-xl border bg-card divide-y">
             {review.entries.map((e) => (
               <div key={e.id} className="flex items-center justify-between px-4 py-3">
                 <div className="min-w-0">
-                  <p className="text-sm font-medium">{e.employee?.name || "Unknown"}</p>
+                  <p className="text-sm font-medium">{e.employee?.name || t("unknown")}</p>
                   <p className="text-xs text-muted-foreground font-mono">{e.employee?.employeeNumber}</p>
                   {e.reason && <p className="text-xs text-muted-foreground mt-0.5">{e.reason}</p>}
                 </div>
                 <div className="flex items-center gap-4 shrink-0">
                   <div className="text-right">
-                    <p className="text-xs text-muted-foreground">Current</p>
+                    <p className="text-xs text-muted-foreground">{t("current")}</p>
                     <p className="text-sm font-mono tabular-nums">{formatMoney(e.currentSalary, review.currency)}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs text-muted-foreground">Proposed</p>
+                    <p className="text-xs text-muted-foreground">{t("proposed")}</p>
                     <p className="text-sm font-mono tabular-nums font-medium text-emerald-600 dark:text-emerald-400">{formatMoney(e.proposedSalary, review.currency)}</p>
                   </div>
                   {e.adjustmentPercent !== null && (
-                    <Badge variant="outline" className="text-[10px]">+{e.adjustmentPercent?.toFixed(1)}%</Badge>
+                    <Badge variant="outline" className="text-[10px]">{t("adjustment", { percent: e.adjustmentPercent.toFixed(1) })}</Badge>
                   )}
                 </div>
               </div>

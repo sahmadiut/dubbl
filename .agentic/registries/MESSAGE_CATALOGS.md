@@ -1,5 +1,12 @@
 # Message catalog foundation
 
+LOC-067 independently accepts the combined payroll catalog slice after
+LOC-079..092: 27 route components, two creation drawers and 1,043 paired messages
+across 14 namespaces (8,053 compatible keys per locale). See
+[combined ownership, output/error exceptions and behavior](PAYROLL_CATALOG_ACCEPTANCE.md).
+LOC-008/002 and native terminology, full RTL/calendar/numerals, output and release
+qualification remain independent. Persian wording is provisional.
+
 LOC-092 payroll settings use 124 paired `PayrollSettings` messages (8,053
 compatible keys per locale). See [scope and exceptions](PAYROLL_SETTINGS_CATALOGS.md)
 for the eight sections/five drawers, checked feedback and preserved configuration,

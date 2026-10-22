@@ -1,9 +1,10 @@
 "use client";
 
 import { financialCalendarUi, analyticalReportJson } from "@/lib/money/analytical-report-ui";
-import Link from "next/link";
 import { useState, useEffect } from "react";
-import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { BackToReports } from "../_components";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Button } from "@/components/ui/button";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
@@ -20,14 +21,14 @@ const typeColors: Record<string, { bg: string; text: string; dot: string }> = {
   budget_period_start: { bg: "bg-violet-50 dark:bg-violet-950/30", text: "text-violet-700 dark:text-violet-300", dot: "bg-violet-500" },
 };
 
-const typeLabels: Record<string, string> = {
-  invoice_due: "Invoice Due",
-  bill_due: "Bill Due",
-  recurring_generation: "Recurring",
-  budget_period_start: "Budget Period",
-};
-
 export default function FinancialCalendarPage() {
+  const t = useTranslations("ForecastCalendarReports");
+  const typeLabels = {
+    invoice_due: t("invoiceDue"),
+    bill_due: t("billDue"),
+    recurring_generation: t("recurring"),
+    budget_period_start: t("budgetPeriod"),
+  };
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(() => {
@@ -35,7 +36,7 @@ export default function FinancialCalendarPage() {
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
   const [events, setEvents] = useState<CalendarEvent[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     const orgId = localStorage.getItem("activeOrgId");
@@ -53,9 +54,9 @@ export default function FinancialCalendarPage() {
     })
       .then((r) => analyticalReportJson(r, financialCalendarUi))
       .then((data) => {
-        if (!cancelled) { setEvents(data.events); setError(null); }
+        if (!cancelled) { setEvents(data.events); setError(false); }
       })
-      .catch((err: Error) => { if (!cancelled) { setEvents([]); setError(err.message); } })
+      .catch(() => { if (!cancelled) { setEvents([]); setError(true); } })
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
@@ -84,16 +85,14 @@ export default function FinancialCalendarPage() {
 
   return (
     <ContentReveal className="space-y-6">
-      <Link href="/reports" className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors">
-        <ArrowLeft className="size-3.5" /> Back to reports
-      </Link>
+      <BackToReports />
 
       <PageHeader
-        title="What's due soon"
-        description="Upcoming invoice and bill due dates, repeating items, and budget periods on a calendar."
+        title={t("calendarTitle")}
+        description={t("calendarDescription")}
       />
 
-      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+      {error && <p role="alert" className="text-sm text-destructive">{t("calendarLoadError")}</p>}
 
       {loading ? (
         <BrandLoader className="h-48" />
@@ -103,24 +102,24 @@ export default function FinancialCalendarPage() {
             {/* Calendar Grid */}
             <div className="rounded-lg border overflow-hidden">
               <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/30">
-                <Button variant="ghost" size="icon" className="size-7" onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}>
+                <Button aria-label={t("previousMonth")} variant="ghost" size="icon" className="size-7" onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}>
                   <ChevronLeft className="size-4" />
                 </Button>
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-medium">{monthName}</p>
                   <Button variant="outline" size="sm" className="h-6 px-2 text-[11px]" onClick={() => { const now = new Date(); setCurrentMonth(new Date(now.getFullYear(), now.getMonth(), 1)); }}>
-                    Today
+                    {t("today")}
                   </Button>
                 </div>
-                <Button variant="ghost" size="icon" className="size-7" onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))}>
+                <Button aria-label={t("nextMonth")} variant="ghost" size="icon" className="size-7" onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))}>
                   <ChevronRight className="size-4" />
                 </Button>
               </div>
 
               <div className="p-2">
                 <div className="grid grid-cols-7 mb-1">
-                  {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
-                    <div key={d} className="text-center text-[10px] font-medium text-muted-foreground py-1.5">{d}</div>
+                  {(["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"] as const).map((d) => (
+                    <div key={d} className="text-center text-[10px] font-medium text-muted-foreground py-1.5">{t(d)}</div>
                   ))}
                 </div>
                 <div className="grid grid-cols-7">
@@ -158,7 +157,7 @@ export default function FinancialCalendarPage() {
                             </div>
                           ))}
                           {dayEvents.length > 3 && (
-                            <span className="text-[10px] text-muted-foreground bg-muted/80 rounded px-1 py-0.5">+{dayEvents.length - 3} more</span>
+                            <span className="text-[10px] text-muted-foreground bg-muted/80 rounded px-1 py-0.5">{t("moreEvents", { count: dayEvents.length - 3 })}</span>
                           )}
                         </div>
                       </button>
@@ -183,7 +182,7 @@ export default function FinancialCalendarPage() {
                 <div>
                   <p className="text-sm font-medium mb-2">{new Date(selectedDate + "T00:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</p>
                   {selectedEvents.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">No events on this date.</p>
+                    <p className="text-xs text-muted-foreground">{t("noEvents")}</p>
                   ) : (
                     <div className="space-y-2">
                       {selectedEvents.map((e, i) => (
@@ -205,14 +204,14 @@ export default function FinancialCalendarPage() {
                 </div>
               ) : (
                 <div className="rounded-lg border border-dashed p-6 text-center">
-                  <p className="text-sm text-muted-foreground">Click a date to see events</p>
+                  <p className="text-sm text-muted-foreground">{t("selectDate")}</p>
                 </div>
               )}
 
               {/* Upcoming list */}
               {events.length > 0 && (
                 <div>
-                  <p className="text-sm font-medium mb-2">All Events This Month</p>
+                  <p className="text-sm font-medium mb-2">{t("allEvents")}</p>
                   <div className="space-y-1 max-h-[400px] overflow-y-auto">
                     {events.map((e, i) => (
                       <div key={i} className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-muted/50 text-xs">

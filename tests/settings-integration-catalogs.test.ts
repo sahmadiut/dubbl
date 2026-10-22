@@ -69,19 +69,23 @@ test("period lock reads the actual API envelope, preserves dates, and rejects fa
 });
 
 test("actual general-settings effect loads the stored lock and reports errors without adopting failure data", async () => {
-  for (const locale of locales) for (const failed of [false, true]) {
+  for (const locale of locales) for (const failed of [false, true]) for (const irrEnabled of [undefined, false, true]) {
     const messages = locale === "en-US" ? en : fa;
-    const failures: string[] = [], dates: string[] = [];
+    const failures: string[] = [], dates: string[] = [], rolloutStates: boolean[] = [], organizations: unknown[] = [], forms: unknown[] = [];
     const effect = callback(`${root}/page.tsx`, "initialEffect", {
       localStorage: { getItem: () => "org-a" },
       errors: createTranslator({ locale, messages, namespace: "SettingsErrors" }),
       st: createTranslator({ locale, messages, namespace: "SettingsGeneral" }),
       requireSettingsResponse, readSettingsLockDate, settingsFailureMessage,
-      setLockDate: (date: string) => dates.push(date), setOrg() {}, setPeppolId() {}, setPeppolScheme() {}, setForm() {},
+      setLockDate: (date: string) => dates.push(date), setOrg: (org: unknown) => organizations.push(org), setPeppolId() {}, setPeppolScheme() {},
+      setForm: (form: unknown) => forms.push(form), setIrrEnabled: (enabled: boolean) => rolloutStates.push(enabled),
       toast: { error: (message: string) => failures.push(message) },
       fetch: async (url: string, init: RequestInit) => {
         assert.equal((init.headers as Record<string, string>)["x-organization-id"], "org-a");
-        return failed ? Response.json({ error: "server-secret" }, { status: 403 }) : Response.json(url.endsWith("period-lock") ? { periodLock: { lockDate: "2026-10-17" } } : { organization: { name: "Saved", defaultCurrency: "USD", fiscalYearStartMonth: 1 } });
+        return failed ? Response.json({ error: "server-secret" }, { status: 403 }) : Response.json(url.endsWith("period-lock") ? { periodLock: { lockDate: "2026-10-17" } } : {
+          organization: { name: "Saved", defaultCurrency: "USD", fiscalYearStartMonth: 1 },
+          ...(irrEnabled === undefined ? {} : { currencyRollout: { irrEnabled } }),
+        });
       },
     });
     effect();
@@ -89,6 +93,9 @@ test("actual general-settings effect loads the stored lock and reports errors wi
     await new Promise(resolve => setImmediate(resolve));
     assert.deepEqual(dates, failed ? [] : ["2026-10-17"]);
     assert.deepEqual(failures, failed ? [messages.SettingsErrors.forbidden, messages.SettingsErrors.forbidden] : []);
+    assert.deepEqual(rolloutStates, failed ? [] : [irrEnabled === true]);
+    assert.equal(organizations.length, failed ? 0 : 1);
+    assert.equal(forms.length, failed ? 0 : 1);
   }
 });
 

@@ -1,5 +1,12 @@
 # Message catalog foundation
 
+LOC-109 forecast and financial calendar pages use 39 paired
+ForecastCalendarReports messages (9,179 compatible keys per locale).
+See [scope and explicit data/output exceptions](FORECAST_CALENDAR_CATALOGS.md).
+Exact chart tooltips, queries, event identifiers and Gregorian month boundaries
+are preserved. LOC-070/008/002 and native terminology/RTL acceptance remain
+independent; Persian wording is provisional.
+
 LOC-108 analytical/comparison reports use 100 paired AnalyticalReports messages,
 including the shared budget progress labels. See [scope and exceptions](ANALYTICAL_REPORT_CATALOGS.md).
 Exact-money readers, chart tooltip integers, query/selection values and spreadsheet
@@ -402,7 +409,8 @@ Extraction ownership:
 | LOC-106 | LOC-070 child: trial balance and general ledger; [scope and exceptions](LEDGER_REPORT_CATALOGS.md) |
 | LOC-107 | LOC-070 child: aging, payment, vendor and duplicate reports; [scope and exceptions](AGING_VENDOR_REPORT_CATALOGS.md) |
 | LOC-108 | LOC-070 child: analytical/comparison reports; [scope and exceptions](ANALYTICAL_REPORT_CATALOGS.md) |
-| LOC-109..114 | LOC-070 remaining report workflow slices; see [complete ownership](REPORT_DIRECTORY_CATALOGS.md) |
+| LOC-109 | LOC-070 child: forecast and financial calendar; [scope and exceptions](FORECAST_CALENDAR_CATALOGS.md) |
+| LOC-110..114 | LOC-070 remaining report workflow slices; see [complete ownership](REPORT_DIRECTORY_CATALOGS.md) |
 | LOC-071 | LOC-008 child: dashboard, documents and residual operations shared components |
 | LOC-009 | Public surfaces, landing/help, email/PDF and user-visible background content; remaining source audit |
 | LOC-079 | LOC-067 child: payroll overview/navigation; [scope and exceptions](PAYROLL_OVERVIEW_CATALOGS.md) |

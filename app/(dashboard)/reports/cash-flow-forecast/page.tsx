@@ -1,9 +1,10 @@
 "use client";
 
 import { cashForecastUi, analyticalReportJson } from "@/lib/money/analytical-report-ui";
-import Link from "next/link";
 import { useState, useEffect } from "react";
-import { ArrowLeft, TrendingUp, TrendingDown, DollarSign } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { BackToReports } from "../_components";
+import { TrendingUp, TrendingDown, DollarSign } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
@@ -28,11 +29,12 @@ import {
 type ForecastWeek = ReturnType<typeof cashForecastUi>["weeks"][number];
 
 export default function CashFlowForecastPage() {
+  const t = useTranslations("ForecastCalendarReports");
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(true);
   const [currencyCode, setCurrencyCode] = useState("USD");
   const [currencyFilter, setCurrencyFilter] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(false);
   const [weeksAhead, setWeeksAhead] = useState(12);
   const [weeks, setWeeks] = useState<ForecastWeek[]>([]);
   const [totalInflows, setTotalInflows] = useState(0n);
@@ -52,15 +54,15 @@ export default function CashFlowForecastPage() {
       .then((r) => analyticalReportJson(r, cashForecastUi))
       .then((data) => {
         if (cancelled) return;
-        setError(null);
+        setError(false);
         setCurrencyCode(data.currencyCode);
         setWeeks(data.weeks || []);
         setTotalInflows(data.totalInflows);
         setTotalOutflows(data.totalOutflows);
         setNetForecast(data.netForecast);
       })
-      .catch((err: unknown) => {
-        if (!cancelled) { setWeeks([]); setTotalInflows(0n); setTotalOutflows(0n); setNetForecast(0n); setError(err instanceof Error ? err.message : "Unable to load cash forecast."); }
+      .catch(() => {
+        if (!cancelled) { setWeeks([]); setTotalInflows(0n); setTotalOutflows(0n); setNetForecast(0n); setError(true); }
       })
       .finally(() => {
         if (!cancelled) {
@@ -83,13 +85,11 @@ export default function CashFlowForecastPage() {
 
   return (
     <ContentReveal className="space-y-6">
-      <Link href="/reports" className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors">
-        <ArrowLeft className="size-3.5" /> Back to reports
-      </Link>
+      <BackToReports />
 
       <PageHeader
-        title="Cash coming up"
-        description="A forward look at money expected in and out, from invoices, bills, and repeating items."
+        title={t("forecastTitle")}
+        description={t("forecastDescription")}
       />
 
       <div className="flex items-center gap-3">
@@ -98,36 +98,32 @@ export default function CashFlowForecastPage() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="4">4 weeks</SelectItem>
-            <SelectItem value="8">8 weeks</SelectItem>
-            <SelectItem value="12">12 weeks</SelectItem>
-            <SelectItem value="26">26 weeks</SelectItem>
-            <SelectItem value="52">52 weeks</SelectItem>
+            {[4, 8, 12, 26, 52].map((count) => <SelectItem key={count} value={String(count)}>{t("weeks", { count })}</SelectItem>)}
           </SelectContent>
         </Select>
         <CurrencySelect value={currencyFilter} onValueChange={setCurrencyFilter} className="w-[220px]" />
-        {currencyFilter && <button type="button" className="text-sm underline" onClick={() => setCurrencyFilter("")}>Clear filter</button>}
+        {currencyFilter && <button type="button" className="text-sm underline" onClick={() => setCurrencyFilter("")}>{t("clearFilter")}</button>}
       </div>
-      <p className="text-sm text-muted-foreground">Recurring estimates use line subtotals before tax and discounts. Partial weeks are included.</p>
+      <p className="text-sm text-muted-foreground">{t("estimateHelp")}</p>
 
-      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+      {error && <p role="alert" className="text-sm text-destructive">{t("forecastLoadError")}</p>}
 
       {!error && <>
       <div className="grid gap-4 sm:grid-cols-3">
         <StatCard
-          title="Money expected in"
+          title={t("expectedIn")}
           value={statementMoneyText(totalInflows, currencyCode)}
           icon={TrendingUp}
           changeType="positive"
         />
         <StatCard
-          title="Money expected out"
+          title={t("expectedOut")}
           value={statementMoneyText(totalOutflows, currencyCode)}
           icon={TrendingDown}
           changeType="negative"
         />
         <StatCard
-          title="Expected change in cash"
+          title={t("expectedChange")}
           value={statementMoneyText(netForecast, currencyCode)}
           icon={DollarSign}
           changeType={netForecast >= 0 ? "positive" : "negative"}
@@ -139,7 +135,7 @@ export default function CashFlowForecastPage() {
       ) : weeks.length === 0 ? (
         <ContentReveal>
           <div className="rounded-xl border border-dashed py-12 text-center">
-            <p className="text-sm text-muted-foreground">No forecast data available. Create invoices, bills, or recurring templates to see projections.</p>
+            <p className="text-sm text-muted-foreground">{t("noForecast")}</p>
           </div>
         </ContentReveal>
       ) : (
@@ -147,7 +143,7 @@ export default function CashFlowForecastPage() {
           {/* Cumulative Net Chart */}
           <div className="space-y-6">
             <div>
-              <p className="text-sm font-medium mb-3">Cumulative Cash Flow</p>
+              <p className="text-sm font-medium mb-3">{t("cumulativeCashFlow")}</p>
               <div className="rounded-lg border p-4">
                 <ResponsiveContainer width="100%" height={300}>
                   <AreaChart data={chartData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
@@ -164,15 +160,15 @@ export default function CashFlowForecastPage() {
                       contentStyle={{ fontSize: 12, borderRadius: 8 }}
                       formatter={(_value, name, item) => {
                         const minor = item.payload?.minor as ForecastWeek | undefined;
-                        const value = name === "Inflows" ? minor?.inflows : name === "Outflows" ? minor?.outflows : minor?.cumulativeNet;
+                        const value = item.dataKey === "inflows" ? minor?.inflows : item.dataKey === "outflows" ? minor?.outflows : minor?.cumulativeNet;
                         return [value === undefined ? "" : statementMoneyText(value, currencyCode), name];
                       }}
                     />
                     <Legend wrapperStyle={{ fontSize: 12 }} />
                     <ReferenceLine y={0} stroke="#94a3b8" strokeDasharray="3 3" />
-                    <Area type="monotone" dataKey="inflows" name="Inflows" stroke="#10b981" fill="none" strokeWidth={1.5} />
-                    <Area type="monotone" dataKey="outflows" name="Outflows" stroke="#ef4444" fill="none" strokeWidth={1.5} />
-                    <Area type="monotone" dataKey="cumulative" name="Cumulative Net" stroke="#3b82f6" fill="url(#cumGrad)" strokeWidth={2} />
+                    <Area type="monotone" dataKey="inflows" name={t("inflows")} stroke="#10b981" fill="none" strokeWidth={1.5} />
+                    <Area type="monotone" dataKey="outflows" name={t("outflows")} stroke="#ef4444" fill="none" strokeWidth={1.5} />
+                    <Area type="monotone" dataKey="cumulative" name={t("cumulativeNet")} stroke="#3b82f6" fill="url(#cumGrad)" strokeWidth={2} />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -180,16 +176,16 @@ export default function CashFlowForecastPage() {
 
             {/* Weekly Breakdown Table */}
             <div>
-              <p className="text-sm font-medium mb-3">Weekly Breakdown</p>
+              <p className="text-sm font-medium mb-3">{t("weeklyBreakdown")}</p>
               <div className="rounded-lg border overflow-hidden">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b bg-muted/30">
-                      <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">Week Of</th>
-                      <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">Inflows</th>
-                      <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">Outflows</th>
-                      <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">Net</th>
-                      <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">Cumulative</th>
+                      <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("weekOf")}</th>
+                      <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("inflows")}</th>
+                      <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("outflows")}</th>
+                      <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("net")}</th>
+                      <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("cumulative")}</th>
                     </tr>
                   </thead>
                   <tbody>

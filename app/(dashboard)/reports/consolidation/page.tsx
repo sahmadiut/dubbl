@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   ArrowLeft,
@@ -87,6 +88,7 @@ function apiFetch(url: string, options: RequestInit = {}) {
 }
 
 export default function ConsolidationPage() {
+  const t = useTranslations("ConsolidationReports");
   const now = new Date();
   const [initialLoad, setInitialLoad] = useState(true);
   const [, setLoading] = useState(true);
@@ -145,15 +147,15 @@ export default function ConsolidationPage() {
       const res = await apiFetch(`/api/v1/consolidation/groups/${selectedGroupId}/report?${params}`);
       const data = await reportResultJson(res, consolidationReportUi);
       if (requestId === reportRequest.current.id) setReport(data);
-    } catch (cause) {
+    } catch {
       if (requestId === reportRequest.current.id) {
         setReport(null);
-        setReportError(cause instanceof Error ? cause.message : "Unable to load this report.");
+        setReportError(t("reportError"));
       }
     } finally {
       if (requestId === reportRequest.current.id) setReportLoading(false);
     }
-  }, [selectedGroupId, startDate, endDate]);
+  }, [selectedGroupId, startDate, endDate, t]);
 
   useEffect(() => {
     fetchGroups();
@@ -230,12 +232,12 @@ export default function ConsolidationPage() {
   return (
     <ContentReveal className="space-y-6">
       <Link href="/reports" className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors">
-        <ArrowLeft className="size-3.5" /> Back to reports
+        <ArrowLeft className="size-3.5" /> {t("back")}
       </Link>
 
       <PageHeader
-        title="Combined company reports"
-        description="One set of reports that adds up several of your businesses together. Sales and bills between those businesses are removed so you don't count them twice, and amounts in other currencies are converted into one currency."
+        title={t("title")}
+        description={t("description")}
       >
         {report && reportExport.data.length > 0 && (
           <ExportButton
@@ -249,16 +251,16 @@ export default function ConsolidationPage() {
       {/* Group Management */}
       <div className="rounded-xl border border-border/50 bg-card/80 p-4 sm:p-6 space-y-4">
         <div>
-          <h2 className="text-sm font-semibold">Company groups</h2>
+          <h2 className="text-sm font-semibold">{t("groups")}</h2>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            A group is the set of businesses you want to report on together. Create one, then add each business below.
+            {t("groupsHelp")}
           </p>
         </div>
 
         {/* Create group */}
         <div className="flex gap-2">
           <Input
-            placeholder="New group name"
+            placeholder={t("newGroup")}
             value={newGroupName}
             onChange={(e) => setNewGroupName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && createGroup()}
@@ -266,7 +268,7 @@ export default function ConsolidationPage() {
           />
           <Button onClick={createGroup} size="sm" disabled={!newGroupName.trim()}>
             <Plus className="size-4 mr-1" />
-            Create
+            {t("create")}
           </Button>
         </div>
 
@@ -290,6 +292,7 @@ export default function ConsolidationPage() {
                   {g.members.length}
                 </Badge>
                 <button
+                  aria-label={t("deleteGroup", { name: g.name })}
                   onClick={(e) => {
                     e.stopPropagation();
                     deleteGroup(g.id);
@@ -305,7 +308,7 @@ export default function ConsolidationPage() {
 
         {groups.length === 0 && (
           <p className="text-sm text-muted-foreground">
-            Create your first group to report on several of your businesses together.
+            {t("emptyGroups")}
           </p>
         )}
       </div>
@@ -314,7 +317,7 @@ export default function ConsolidationPage() {
       {selectedGroup && (
         <div className="rounded-xl border border-border/50 bg-card/80 p-4 sm:p-6 space-y-4">
           <h2 className="text-sm font-semibold">
-            Businesses in &quot;{selectedGroup.name}&quot;
+            {t("members", { name: selectedGroup.name })}
           </h2>
 
           {/* Add member - org picker */}
@@ -323,15 +326,15 @@ export default function ConsolidationPage() {
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-2">
                   <Plus className="size-4" />
-                  Add a business
+                  {t("addBusiness")}
                   <ChevronsUpDown className="size-3 opacity-50" />
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-[280px] p-0" align="start">
                 <Command>
-                  <CommandInput placeholder="Search organizations..." />
+                  <CommandInput placeholder={t("search")} />
                   <CommandList>
-                    <CommandEmpty>No organizations found.</CommandEmpty>
+                    <CommandEmpty>{t("notFound")}</CommandEmpty>
                     <CommandGroup>
                       {availableOrgs.map((org) => (
                         <CommandItem
@@ -359,8 +362,8 @@ export default function ConsolidationPage() {
           ) : (
             <p className="text-xs text-muted-foreground">
               {userOrgs.length <= 1
-                ? "You only belong to one organization. Create another org to add it here."
-                : "All your organizations have been added to this group."}
+                ? t("oneOrg")
+                : t("allAdded")}
             </p>
           )}
 
@@ -381,6 +384,7 @@ export default function ConsolidationPage() {
                   <Button
                     variant="ghost"
                     size="sm"
+                    aria-label={t("removeMember", { name: m.organization.name })}
                     onClick={() => removeMember(m.orgId)}
                     className="text-muted-foreground hover:text-red-500"
                   >
@@ -391,7 +395,7 @@ export default function ConsolidationPage() {
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">
-              No businesses added yet. Add one above to include it in the combined reports.
+              {t("emptyMembers")}
             </p>
           )}
         </div>
@@ -420,7 +424,7 @@ export default function ConsolidationPage() {
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
-              Profit & Loss
+              {t("pnl")}
             </button>
             <button
               onClick={() => setTab("balance-sheet")}
@@ -431,7 +435,7 @@ export default function ConsolidationPage() {
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
-              Balance Sheet
+              {t("balanceSheet")}
             </button>
           </div>
 
@@ -445,10 +449,10 @@ export default function ConsolidationPage() {
                 <div className="space-y-6">
                   {/* Stats */}
                   <div className="grid gap-4 sm:grid-cols-3">
-                    <StatCard title="Total Revenue" value={reportResultMoney(pnl.totalRevenue, report!.presentationCurrency)} icon={TrendingUp} changeType="positive" />
-                    <StatCard title="Total Expenses" value={reportResultMoney(pnl.totalExpenses, report!.presentationCurrency)} icon={TrendingDown} changeType="negative" />
+                    <StatCard title={t("totalRevenue")} value={reportResultMoney(pnl.totalRevenue, report!.presentationCurrency)} icon={TrendingUp} changeType="positive" />
+                    <StatCard title={t("totalExpenses")} value={reportResultMoney(pnl.totalExpenses, report!.presentationCurrency)} icon={TrendingDown} changeType="negative" />
                     <StatCard
-                      title="Net Income"
+                      title={t("netIncome")}
                       value={reportResultMoney(pnl.netIncome, report!.presentationCurrency)}
                       icon={DollarSign}
                       changeType={pnl.netIncome >= 0 ? "positive" : "negative"}
@@ -458,15 +462,15 @@ export default function ConsolidationPage() {
                   {/* Per Entity Summary */}
                   <div className="rounded-xl border border-border/50 overflow-hidden">
                     <div className="bg-muted/30 px-4 py-3">
-                      <h3 className="text-sm font-semibold">Each business</h3>
+                      <h3 className="text-sm font-semibold">{t("eachBusiness")}</h3>
                     </div>
                     <Table>
                       <TableHeader>
                         <TableRow className="border-border/50">
-                          <TableHead className="px-4">Business</TableHead>
-                          <TableHead className="px-4 text-right">Revenue</TableHead>
-                          <TableHead className="px-4 text-right">Expenses</TableHead>
-                          <TableHead className="px-4 text-right">Net Income</TableHead>
+                          <TableHead className="px-4">{t("business")}</TableHead>
+                          <TableHead className="px-4 text-right">{t("revenue")}</TableHead>
+                          <TableHead className="px-4 text-right">{t("expenses")}</TableHead>
+                          <TableHead className="px-4 text-right">{t("netIncome")}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -481,7 +485,7 @@ export default function ConsolidationPage() {
                           </TableRow>
                         ))}
                         <TableRow className="bg-muted/30 font-semibold">
-                          <TableCell className="px-4 py-3">Total</TableCell>
+                          <TableCell className="px-4 py-3">{t("total")}</TableCell>
                           <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(pnl.totalRevenue, report!.presentationCurrency)}</TableCell>
                           <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(pnl.totalExpenses, report!.presentationCurrency)}</TableCell>
                           <TableCell className={cn("px-4 py-3 text-right font-mono tabular-nums", pnl.netIncome >= 0 ? "text-emerald-600" : "text-red-600")}>
@@ -494,7 +498,7 @@ export default function ConsolidationPage() {
 
                   {/* Account Detail */}
                   <AccountDetailTable
-                    title="Account breakdown"
+                    title={t("accountBreakdown")}
                     currencyCode={report!.presentationCurrency}
                     accounts={pnl.accounts}
                     members={report!.members}
@@ -507,23 +511,23 @@ export default function ConsolidationPage() {
                 <div className="space-y-6">
                   {/* Stats */}
                   <div className="grid gap-4 sm:grid-cols-3">
-                    <StatCard title="Total Assets" value={reportResultMoney(bs.totalAssets, report!.presentationCurrency)} icon={TrendingUp} changeType="positive" />
-                    <StatCard title="Total Liabilities" value={reportResultMoney(bs.totalLiabilities, report!.presentationCurrency)} icon={TrendingDown} changeType="negative" />
-                    <StatCard title="Total Equity" value={reportResultMoney(bs.totalEquity, report!.presentationCurrency)} icon={DollarSign} changeType="positive" />
+                    <StatCard title={t("totalAssets")} value={reportResultMoney(bs.totalAssets, report!.presentationCurrency)} icon={TrendingUp} changeType="positive" />
+                    <StatCard title={t("totalLiabilities")} value={reportResultMoney(bs.totalLiabilities, report!.presentationCurrency)} icon={TrendingDown} changeType="negative" />
+                    <StatCard title={t("totalEquity")} value={reportResultMoney(bs.totalEquity, report!.presentationCurrency)} icon={DollarSign} changeType="positive" />
                   </div>
 
                   {/* Per Entity Summary */}
                   <div className="rounded-xl border border-border/50 overflow-hidden">
                     <div className="bg-muted/30 px-4 py-3">
-                      <h3 className="text-sm font-semibold">Each business</h3>
+                      <h3 className="text-sm font-semibold">{t("eachBusiness")}</h3>
                     </div>
                     <Table>
                       <TableHeader>
                         <TableRow className="border-border/50">
-                          <TableHead className="px-4">Business</TableHead>
-                          <TableHead className="px-4 text-right">Assets</TableHead>
-                          <TableHead className="px-4 text-right">Liabilities</TableHead>
-                          <TableHead className="px-4 text-right">Equity</TableHead>
+                          <TableHead className="px-4">{t("business")}</TableHead>
+                          <TableHead className="px-4 text-right">{t("assets")}</TableHead>
+                          <TableHead className="px-4 text-right">{t("liabilities")}</TableHead>
+                          <TableHead className="px-4 text-right">{t("equity")}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -536,7 +540,7 @@ export default function ConsolidationPage() {
                           </TableRow>
                         ))}
                         <TableRow className="bg-muted/30 font-semibold">
-                          <TableCell className="px-4 py-3">Total</TableCell>
+                          <TableCell className="px-4 py-3">{t("total")}</TableCell>
                           <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(bs.totalAssets, report!.presentationCurrency)}</TableCell>
                           <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(bs.totalLiabilities, report!.presentationCurrency)}</TableCell>
                           <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(bs.totalEquity, report!.presentationCurrency)}</TableCell>
@@ -547,7 +551,7 @@ export default function ConsolidationPage() {
 
                   {/* Account Detail */}
                   <AccountDetailTable
-                    title="Account breakdown"
+                    title={t("accountBreakdown")}
                     currencyCode={report!.presentationCurrency}
                     accounts={bs.accounts}
                     members={report!.members}
@@ -573,6 +577,7 @@ function AccountDetailTable({
   currencyCode: string;
   members: { orgId: string; label: string; orgName: string }[];
 }) {
+  const t = useTranslations("ConsolidationReports");
   if (accounts.length === 0) return null;
 
   // Group by type
@@ -584,11 +589,11 @@ function AccountDetailTable({
   }
 
   const typeLabels: Record<string, string> = {
-    revenue: "Revenue",
-    expense: "Expenses",
-    asset: "Assets",
-    liability: "Liabilities",
-    equity: "Equity",
+    revenue: t("revenue"),
+    expense: t("expenses"),
+    asset: t("assets"),
+    liability: t("liabilities"),
+    equity: t("equity"),
   };
 
   return (
@@ -599,13 +604,13 @@ function AccountDetailTable({
       <Table>
         <TableHeader>
           <TableRow className="border-border/50">
-            <TableHead className="px-4">Account</TableHead>
+            <TableHead className="px-4">{t("account")}</TableHead>
             {members.map((m) => (
               <TableHead key={m.orgId} className="px-4 text-right">
                 {m.label}
               </TableHead>
             ))}
-            <TableHead className="px-4 text-right">Total</TableHead>
+            <TableHead className="px-4 text-right">{t("total")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -630,6 +635,7 @@ function GroupSection({
   currencyCode: string;
   members: { orgId: string; label: string; orgName: string }[];
 }) {
+  const t = useTranslations("ConsolidationReports");
   const groupTotal = accounts.reduce((sum, a) => sum + a.total, 0n);
   const entityTotals: Record<string, bigint> = {};
   for (const m of members) {
@@ -660,7 +666,7 @@ function GroupSection({
         </TableRow>
       ))}
       <TableRow className="border-border/50 bg-muted/10 hover:bg-muted/10">
-        <TableCell className="px-4 py-2 font-semibold text-sm">Total {label}</TableCell>
+        <TableCell className="px-4 py-2 font-semibold text-sm">{t("totalLabel", { label })}</TableCell>
         {members.map((m) => (
           <TableCell key={m.orgId} className="px-4 py-2 text-right font-mono tabular-nums font-semibold">
             {reportResultMoney(entityTotals[m.orgId] ?? 0n, currencyCode)}

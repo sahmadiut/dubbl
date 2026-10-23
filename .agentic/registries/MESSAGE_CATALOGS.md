@@ -1,5 +1,12 @@
 # Message catalog foundation
 
+LOC-114 consolidation and report pack pages use 51 paired messages across
+ConsolidationReports and ReportPack (9,430 compatible keys per locale).
+See [scope, preserved exports and explicit exceptions](CONSOLIDATION_PACK_CATALOGS.md).
+Exact totals, organization scope, REST/MCP and workbook contracts remain intact.
+LOC-070/008/002 and native terminology/RTL qualification remain independent;
+Persian wording is provisional.
+
 LOC-109 forecast and financial calendar pages use 39 paired
 ForecastCalendarReports messages (9,179 compatible keys per locale).
 See [scope and explicit data/output exceptions](FORECAST_CALENDAR_CATALOGS.md).

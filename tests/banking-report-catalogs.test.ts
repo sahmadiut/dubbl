@@ -1,4 +1,4 @@
-﻿import assert from "node:assert/strict";
+import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createTranslator } from "next-intl";
 import { bankCashFlowUi, bankStatusUi, analyticalMoney } from "../lib/money/analytical-report-ui";
@@ -96,4 +96,3 @@ test("report effects retain org/filter contracts, checked adoption and cancellat
     }
   }
 });
-

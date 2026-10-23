@@ -458,3 +458,5 @@ LOC-116: [document email history scope and exceptions](DOCUMENT_EMAIL_HISTORY_CA
 LOC-118: [document workspace scope and exceptions](DOCUMENT_WORKSPACE_CATALOGS.md).
 
 LOC-119: [document send control scope and exceptions](DOCUMENT_SEND_CATALOGS.md).
+
+LOC-071: [independent combined dashboard/document catalog acceptance](DASHBOARD_DOCUMENT_CATALOG_ACCEPTANCE.md).

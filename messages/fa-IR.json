@@ -9956,5 +9956,30 @@
     "previewDocument": "پیش‌نمایش {type}",
     "sendEmail": "ارسال ایمیل",
     "markAsSent": "علامت‌گذاری به‌عنوان ارسال‌شده"
+  },
+  "PublicSigning": {
+    "unsafeInvoice": "نمایش ایمن این صورتحساب ممکن نیست. لطفاً با فرستنده تماس بگیرید.",
+    "heading": "امضای صورتحساب {number}",
+    "requestedFor": "درخواست برای {name} ({email})",
+    "contact": "مخاطب",
+    "invoice": "صورتحساب",
+    "issueDate": "تاریخ صدور",
+    "dueDate": "تاریخ سررسید",
+    "total": "جمع کل",
+    "alreadySigned": "قبلاً امضا شده",
+    "signedOn": "این صورتحساب در {date} امضا شده است.",
+    "previousDate": "تاریخی پیشین",
+    "expiredHeading": "پیوند منقضی شده",
+    "expiredDescription": "این پیوند امضا منقضی شده است. لطفاً از فرستنده پیوند جدیدی درخواست کنید.",
+    "declinedHeading": "امضا رد شده",
+    "declinedDescription": "این درخواست امضا رد شده است.",
+    "submitFailed": "ثبت امضا ناموفق بود",
+    "submitRetry": "ثبت امضا ناموفق بود. لطفاً دوباره تلاش کنید.",
+    "submittedHeading": "امضا ثبت شد",
+    "submittedDescription": "از امضای این صورتحساب سپاسگزاریم. فرستنده مطلع خواهد شد.",
+    "drawHint": "امضای خود را در زیر رسم کنید",
+    "clear": "پاک کردن",
+    "submitting": "در حال ثبت…",
+    "confirm": "امضا و تأیید"
   }
 }

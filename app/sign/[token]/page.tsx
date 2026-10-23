@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { getPublicInvoiceSignature } from "@/lib/api/invoice-signatures";
 import { AuthError } from "@/lib/api/auth-context";
 import { WireCompatibilityError } from "@/lib/money/wire";
@@ -11,6 +12,7 @@ export default async function SignPage({
   params: Promise<{ token: string }>;
 }) {
   const { token } = await params;
+  const t = await getTranslations("PublicSigning");
 
   let result;
   try { result = await getPublicInvoiceSignature(token); }
@@ -18,7 +20,7 @@ export default async function SignPage({
     if ((err instanceof AuthError && err.status === 404) || err instanceof z.ZodError) return notFound();
     if (err instanceof WireCompatibilityError) {
       return <div className="min-h-screen flex items-center justify-center p-4" role="alert">
-        This invoice cannot be displayed safely. Please contact the sender.
+        {t("unsafeInvoice")}
       </div>;
     }
     throw err;
@@ -35,10 +37,10 @@ export default async function SignPage({
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-            Sign Invoice {inv.invoiceNumber}
+            {t("heading", { number: inv.invoiceNumber })}
           </h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Requested for {sig.signerName} ({sig.signerEmail})
+            {t("requestedFor", { name: sig.signerName, email: sig.signerEmail })}
           </p>
         </div>
 
@@ -46,32 +48,32 @@ export default async function SignPage({
         <div className="space-y-3 mb-6 border-t border-b dark:border-gray-800 py-4">
           {inv.contact && (
             <div className="flex justify-between text-sm">
-              <span className="text-gray-500 dark:text-gray-400">Contact</span>
+              <span className="text-gray-500 dark:text-gray-400">{t("contact")}</span>
               <span className="text-gray-900 dark:text-gray-100 font-medium">
                 {inv.contact.name}
               </span>
             </div>
           )}
           <div className="flex justify-between text-sm">
-            <span className="text-gray-500 dark:text-gray-400">Invoice</span>
+            <span className="text-gray-500 dark:text-gray-400">{t("invoice")}</span>
             <span className="text-gray-900 dark:text-gray-100">
               {inv.invoiceNumber}
             </span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-gray-500 dark:text-gray-400">Issue date</span>
+            <span className="text-gray-500 dark:text-gray-400">{t("issueDate")}</span>
             <span className="text-gray-900 dark:text-gray-100">
               {inv.issueDate}
             </span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-gray-500 dark:text-gray-400">Due date</span>
+            <span className="text-gray-500 dark:text-gray-400">{t("dueDate")}</span>
             <span className="text-gray-900 dark:text-gray-100">
               {inv.dueDate}
             </span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-gray-500 dark:text-gray-400">Total</span>
+            <span className="text-gray-500 dark:text-gray-400">{t("total")}</span>
             <span className="text-gray-900 dark:text-gray-100 font-semibold">
               {inv.totalFormatted}
             </span>
@@ -97,14 +99,12 @@ export default async function SignPage({
               </svg>
             </div>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              Already Signed
+              {t("alreadySigned")}
             </h2>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              This invoice was signed on{" "}
-              {sig.signedAt
+              {t("signedOn", { date: sig.signedAt
                 ? new Date(sig.signedAt).toLocaleDateString()
-                : "a previous date"}
-              .
+                : t("previousDate") })}
             </p>
           </div>
         ) : isExpired ? (
@@ -125,11 +125,10 @@ export default async function SignPage({
               </svg>
             </div>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              Link Expired
+              {t("expiredHeading")}
             </h2>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              This signing link has expired. Please request a new one from the
-              sender.
+              {t("expiredDescription")}
             </p>
           </div>
         ) : isDeclined ? (
@@ -150,10 +149,10 @@ export default async function SignPage({
               </svg>
             </div>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              Signature Declined
+              {t("declinedHeading")}
             </h2>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              This signature request was declined.
+              {t("declinedDescription")}
             </p>
           </div>
         ) : (

@@ -9956,5 +9956,30 @@
     "previewDocument": "Preview {type}",
     "sendEmail": "Send Email",
     "markAsSent": "Mark as Sent"
+  },
+  "PublicSigning": {
+    "unsafeInvoice": "This invoice cannot be displayed safely. Please contact the sender.",
+    "heading": "Sign Invoice {number}",
+    "requestedFor": "Requested for {name} ({email})",
+    "contact": "Contact",
+    "invoice": "Invoice",
+    "issueDate": "Issue date",
+    "dueDate": "Due date",
+    "total": "Total",
+    "alreadySigned": "Already Signed",
+    "signedOn": "This invoice was signed on {date}.",
+    "previousDate": "a previous date",
+    "expiredHeading": "Link Expired",
+    "expiredDescription": "This signing link has expired. Please request a new one from the sender.",
+    "declinedHeading": "Signature Declined",
+    "declinedDescription": "This signature request was declined.",
+    "submitFailed": "Failed to submit signature",
+    "submitRetry": "Failed to submit signature. Please try again.",
+    "submittedHeading": "Signature Submitted",
+    "submittedDescription": "Thank you for signing this invoice. The sender will be notified.",
+    "drawHint": "Draw your signature below",
+    "clear": "Clear",
+    "submitting": "Submitting...",
+    "confirm": "Sign & Confirm"
   }
 }

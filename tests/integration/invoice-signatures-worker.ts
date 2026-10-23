@@ -3,7 +3,9 @@ import { createHash } from "node:crypto";
 import { mock } from "node:test";
 import { setTimeout } from "node:timers/promises";
 import React from "react";
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderToStaticMarkup } from "../helpers/presentation";
+import { createTranslator } from "next-intl";
+import en from "../../messages/en-US.json";
 import { eq, sql } from "drizzle-orm";
 import pg from "pg";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -13,7 +15,10 @@ import { db } from "../../lib/db";
 import { apiKey, auditLog, contact, customRole, emailConfig, invoice, invoiceSignature, member, organization, users } from "../../lib/db/schema";
 import type { AuthContext } from "../../lib/api/auth-context";
 
-// Only SMTP delivery is replaced; real handlers/services/SDK/database execute.
+// Request locale and SMTP delivery are controlled; real handlers/services/SDK/database execute.
+mock.module("next-intl/server", { namedExports: {
+  getTranslations: async () => createTranslator({ locale: "en-US", messages: en, namespace: "PublicSigning" }),
+} });
 const deliveries: { to: string; subject: string; html: string }[] = [];
 let failEmail = false;
 const smtp = await import("../../lib/email/smtp-client");

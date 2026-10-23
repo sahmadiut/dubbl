@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useRef, useState, useEffect, useCallback } from "react";
 import { Loader2, Check, Eraser } from "lucide-react";
 
@@ -8,6 +9,7 @@ interface Props {
 }
 
 export function SignatureCanvas({ token }: Props) {
+  const t = useTranslations("PublicSigning");
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasStrokes, setHasStrokes] = useState(false);
@@ -121,17 +123,17 @@ export function SignatureCanvas({ token }: Props) {
         body: JSON.stringify({ signatureDataUrl }),
       });
 
-      const json = await res.json();
+      await res.json();
 
       if (!res.ok) {
-        setError(json.error || "Failed to submit signature");
+        setError(t("submitFailed"));
         setSubmitting(false);
         return;
       }
 
       setSuccess(true);
     } catch {
-      setError("Failed to submit signature. Please try again.");
+      setError(t("submitRetry"));
       setSubmitting(false);
     }
   }
@@ -143,10 +145,10 @@ export function SignatureCanvas({ token }: Props) {
           <Check className="h-6 w-6 text-green-600 dark:text-green-400" />
         </div>
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-          Signature Submitted
+          {t("submittedHeading")}
         </h2>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Thank you for signing this invoice. The sender will be notified.
+          {t("submittedDescription")}
         </p>
       </div>
     );
@@ -155,7 +157,7 @@ export function SignatureCanvas({ token }: Props) {
   return (
     <div>
       <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-        Draw your signature below
+        {t("drawHint")}
       </p>
 
       <div className="border rounded-lg dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden">
@@ -184,7 +186,7 @@ export function SignatureCanvas({ token }: Props) {
           className="flex items-center justify-center gap-2 rounded-lg border dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium py-2.5 px-4 text-sm transition-colors"
         >
           <Eraser className="h-4 w-4" />
-          Clear
+          {t("clear")}
         </button>
 
         <button
@@ -196,12 +198,12 @@ export function SignatureCanvas({ token }: Props) {
           {submitting ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              Submitting...
+              {t("submitting")}
             </>
           ) : (
             <>
               <Check className="h-4 w-4" />
-              Sign & Confirm
+              {t("confirm")}
             </>
           )}
         </button>

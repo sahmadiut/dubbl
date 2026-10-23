@@ -409,7 +409,7 @@ Extraction ownership:
 | LOC-098 | LOC-068 child: project team and notes |
 | LOC-069 | LOC-008 child: CRM and shared controls |
 | LOC-100 | LOC-069 child: CRM deal overview, navigation and settings; [scope and exceptions](CRM_DETAIL_CATALOGS.md) |
-| LOC-070 | LOC-008 child: reporting and shared controls |
+| LOC-070 | LOC-008 child: independent combined reporting acceptance; [coverage, exceptions and output ownership](REPORT_CATALOG_ACCEPTANCE.md) |
 | LOC-103 | LOC-070 child: report directory/loading, back link and basis toggle; [scope and split](REPORT_DIRECTORY_CATALOGS.md) |
 | LOC-104 | LOC-070 child: profit/loss, income statement and executive summary; [scope and exceptions](INCOME_REPORT_CATALOGS.md) |
 | LOC-105 | LOC-070 child: balance sheet, comparative balance sheet and cash flow; [scope and exceptions](BALANCE_CASH_REPORT_CATALOGS.md) |

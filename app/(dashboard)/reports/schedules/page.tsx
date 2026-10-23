@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
 import { Plus, Mail, Clock, X, CalendarClock, Loader2 } from "lucide-react";
@@ -58,42 +59,38 @@ interface ReportSchedule {
   savedReport: SavedReport | null;
 }
 
-// Plain-language labels (the person reading this isn't an accountant).
-const frequencyLabels: Record<string, string> = {
-  daily: "Every day",
-  weekly: "Every week",
-  monthly: "Every month",
-  quarterly: "Every three months",
-};
-
-const formatLabels: Record<string, string> = {
-  pdf: "PDF",
-  csv: "Spreadsheet (CSV)",
-  xlsx: "Excel (XLSX)",
-};
-
-const dayOfWeekLabels = [
-  "Sunday",
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-];
-
-function describeTiming(s: ReportSchedule): string {
-  const at = `at ${s.timeOfDay}`;
-  if (s.frequency === "weekly" && s.dayOfWeek != null) {
-    return `${dayOfWeekLabels[s.dayOfWeek]} ${at}`;
-  }
-  if ((s.frequency === "monthly" || s.frequency === "quarterly") && s.dayOfMonth != null) {
-    return `Day ${s.dayOfMonth} ${at}`;
-  }
-  return at;
-}
-
 export default function ReportSchedulesPage() {
+  const t = useTranslations("ScheduledReports");
+  // Plain-language labels (the person reading this isn't an accountant).
+  const frequencyLabels: Record<string, string> = {
+    daily: t("daily"),
+    weekly: t("weekly"),
+    monthly: t("monthly"),
+    quarterly: t("quarterly"),
+  };
+
+  const formatLabels: Record<string, string> = {
+    pdf: t("pdf"),
+    csv: t("csv"),
+    xlsx: t("xlsx"),
+  };
+
+  const dayOfWeekLabels = [
+    t("sunday"),
+    t("monday"),
+    t("tuesday"),
+    t("wednesday"),
+    t("thursday"),
+    t("friday"),
+    t("saturday"),
+  ];
+
+  function describeTiming(s: ReportSchedule): string {
+    if (s.frequency === "weekly" && s.dayOfWeek != null) return t("weeklyTiming", { day: dayOfWeekLabels[s.dayOfWeek], time: s.timeOfDay });
+    if ((s.frequency === "monthly" || s.frequency === "quarterly") && s.dayOfMonth != null) return t("monthlyTiming", { day: String(s.dayOfMonth), time: s.timeOfDay });
+    return t("at", { time: s.timeOfDay });
+  }
+
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(true);
   const [schedules, setSchedules] = useState<ReportSchedule[]>([]);
@@ -122,7 +119,7 @@ export default function ReportSchedulesPage() {
     setLoading(true);
 
     Promise.all([
-      fetch("/api/v1/report-schedules?limit=200", {
+      fetch("/api/v1/report-schedules?limit=100", {
         headers: { "x-organization-id": orgId },
       }).then((r) => r.json()),
       fetch("/api/v1/reports/saved", {
@@ -167,11 +164,11 @@ export default function ReportSchedulesPage() {
       .filter(Boolean);
 
     if (!savedReportId) {
-      setFormError("Pick which report to send.");
+      setFormError(t("pickReport"));
       return;
     }
     if (emails.length === 0) {
-      setFormError("Add at least one email address.");
+      setFormError(t("addRecipient"));
       return;
     }
 
@@ -197,13 +194,14 @@ export default function ReportSchedulesPage() {
         body: JSON.stringify(body),
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        setFormError(err.error || "Couldn't set up this schedule. Check the details and try again.");
+        setFormError(t("createError"));
         return;
       }
       setDialogOpen(false);
       resetForm();
       setRefreshKey((k) => k + 1);
+    } catch {
+      setFormError(t("createError"));
     } finally {
       setSubmitting(false);
     }
@@ -217,6 +215,7 @@ export default function ReportSchedulesPage() {
     dayOfMonth,
     timeOfDay,
     resetForm,
+    t,
   ]);
 
   if (initialLoad) return <BrandLoader />;
@@ -228,8 +227,8 @@ export default function ReportSchedulesPage() {
       <BackToReports />
 
       <PageHeader
-        title="Scheduled report emails"
-        description="Email a saved report to people automatically, on a regular schedule."
+        title={t("title")}
+        description={t("description")}
       >
         <Button
           onClick={() => {
@@ -241,14 +240,12 @@ export default function ReportSchedulesPage() {
           disabled={!hasSavedReports}
         >
           <Plus className="mr-2 size-4" />
-          Email a report automatically
+          {t("create")}
         </Button>
       </PageHeader>
 
       <ReportHelp>
-        Set up a saved report to be emailed out on its own — daily, weekly,
-        monthly, or every three months. We&apos;ll send it to the people you
-        choose, as a PDF or spreadsheet, so nobody has to remember to run it.
+        {t("help")}
       </ReportHelp>
 
       {loading ? (
@@ -256,23 +253,20 @@ export default function ReportSchedulesPage() {
       ) : !hasSavedReports ? (
         <div className="rounded-lg border bg-muted/20 p-8 text-center">
           <CalendarClock className="mx-auto size-8 text-muted-foreground/60" />
-          <p className="mt-3 text-sm font-medium">No saved reports yet</p>
+          <p className="mt-3 text-sm font-medium">{t("noReports")}</p>
           <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-            Before you can email a report automatically, you need to save one
-            first. Build a report, save it, then come back here to put it on a
-            schedule.
+            {t("noReportsHelp")}
           </p>
           <Button asChild variant="outline" size="sm" className="mt-4">
-            <Link href="/reports/custom">Build and save a report</Link>
+            <Link href="/reports/custom">{t("build")}</Link>
           </Button>
         </div>
       ) : schedules.length === 0 ? (
         <div className="rounded-lg border bg-muted/20 p-8 text-center">
           <Mail className="mx-auto size-8 text-muted-foreground/60" />
-          <p className="mt-3 text-sm font-medium">Nothing scheduled yet</p>
+          <p className="mt-3 text-sm font-medium">{t("empty")}</p>
           <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-            Set up your first automatic report email and we&apos;ll send it out
-            for you on the schedule you pick.
+            {t("emptyHelp")}
           </p>
           <Button
             onClick={() => {
@@ -283,7 +277,7 @@ export default function ReportSchedulesPage() {
             className="mt-4 bg-emerald-600 hover:bg-emerald-700"
           >
             <Plus className="mr-2 size-4" />
-            Email a report automatically
+            {t("create")}
           </Button>
         </div>
       ) : (
@@ -292,20 +286,20 @@ export default function ReportSchedulesPage() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
-                  <TableHead>Report</TableHead>
-                  <TableHead className="w-40">How often</TableHead>
-                  <TableHead className="w-44">When</TableHead>
-                  <TableHead className="w-36">Sent as</TableHead>
-                  <TableHead>Sent to</TableHead>
-                  <TableHead className="w-44">Next send</TableHead>
-                  <TableHead className="w-24">Status</TableHead>
+                  <TableHead>{t("report")}</TableHead>
+                  <TableHead className="w-40">{t("frequency")}</TableHead>
+                  <TableHead className="w-44">{t("when")}</TableHead>
+                  <TableHead className="w-36">{t("sentAs")}</TableHead>
+                  <TableHead>{t("sentTo")}</TableHead>
+                  <TableHead className="w-44">{t("nextSend")}</TableHead>
+                  <TableHead className="w-24">{t("status")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {schedules.map((s) => (
                   <TableRow key={s.id}>
                     <TableCell className="font-medium">
-                      {s.savedReport?.name || "Saved report"}
+                      {s.savedReport?.name || t("savedReport")}
                     </TableCell>
                     <TableCell className="text-sm">
                       {frequencyLabels[s.frequency] || s.frequency}
@@ -336,7 +330,7 @@ export default function ReportSchedulesPage() {
                             : "border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300"
                         }
                       >
-                        {s.isActive ? "On" : "Paused"}
+                        {s.isActive ? t("on") : t("paused")}
                       </Badge>
                     </TableCell>
                   </TableRow>
@@ -350,18 +344,18 @@ export default function ReportSchedulesPage() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Email this report automatically</DialogTitle>
+            <DialogTitle>{t("dialogTitle")}</DialogTitle>
             <DialogDescription>
-              Pick a saved report and we&apos;ll email it out on a schedule.
+              {t("dialogDescription")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <Label>Which report to send</Label>
+              <Label>{t("whichReport")}</Label>
               <Select value={savedReportId} onValueChange={setSavedReportId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Choose a saved report" />
+                  <SelectValue placeholder={t("chooseReport")} />
                 </SelectTrigger>
                 <SelectContent>
                   {savedReports.map((r) => (
@@ -375,7 +369,7 @@ export default function ReportSchedulesPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>How often</Label>
+                <Label>{t("frequency")}</Label>
                 <Select
                   value={frequency}
                   onValueChange={(v) =>
@@ -386,16 +380,16 @@ export default function ReportSchedulesPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="daily">Every day</SelectItem>
-                    <SelectItem value="weekly">Every week</SelectItem>
-                    <SelectItem value="monthly">Every month</SelectItem>
-                    <SelectItem value="quarterly">Every three months</SelectItem>
+                    <SelectItem value="daily">{t("daily")}</SelectItem>
+                    <SelectItem value="weekly">{t("weekly")}</SelectItem>
+                    <SelectItem value="monthly">{t("monthly")}</SelectItem>
+                    <SelectItem value="quarterly">{t("quarterly")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-1.5">
-                <Label>Send as</Label>
+                <Label>{t("sendAs")}</Label>
                 <Select
                   value={format}
                   onValueChange={(v) =>
@@ -406,9 +400,9 @@ export default function ReportSchedulesPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="pdf">PDF</SelectItem>
-                    <SelectItem value="csv">Spreadsheet (CSV)</SelectItem>
-                    <SelectItem value="xlsx">Excel (XLSX)</SelectItem>
+                    <SelectItem value="pdf">{t("pdf")}</SelectItem>
+                    <SelectItem value="csv">{t("csv")}</SelectItem>
+                    <SelectItem value="xlsx">{t("xlsx")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -416,7 +410,7 @@ export default function ReportSchedulesPage() {
 
             {frequency === "weekly" && (
               <div className="space-y-1.5">
-                <Label>Which day of the week</Label>
+                <Label>{t("weekDay")}</Label>
                 <Select value={dayOfWeek} onValueChange={setDayOfWeek}>
                   <SelectTrigger>
                     <SelectValue />
@@ -434,7 +428,7 @@ export default function ReportSchedulesPage() {
 
             {(frequency === "monthly" || frequency === "quarterly") && (
               <div className="space-y-1.5">
-                <Label>Which day of the month</Label>
+                <Label>{t("monthDay")}</Label>
                 <Select value={dayOfMonth} onValueChange={setDayOfMonth}>
                   <SelectTrigger>
                     <SelectValue />
@@ -442,7 +436,7 @@ export default function ReportSchedulesPage() {
                   <SelectContent>
                     {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => (
                       <SelectItem key={d} value={String(d)}>
-                        Day {d}
+                        {t("day", { day: String(d) })}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -451,7 +445,7 @@ export default function ReportSchedulesPage() {
             )}
 
             <div className="space-y-1.5">
-              <Label htmlFor="timeOfDay">Time of day</Label>
+              <Label htmlFor="timeOfDay">{t("time")}</Label>
               <Input
                 id="timeOfDay"
                 type="time"
@@ -461,7 +455,7 @@ export default function ReportSchedulesPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="recipients">Send to (email addresses)</Label>
+              <Label htmlFor="recipients">{t("recipients")}</Label>
               <Input
                 id="recipients"
                 placeholder="name@example.com, another@example.com"
@@ -469,7 +463,7 @@ export default function ReportSchedulesPage() {
                 onChange={(e) => setRecipients(e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
-                Separate multiple addresses with commas.
+                {t("recipientHelp")}
               </p>
             </div>
 
@@ -487,7 +481,7 @@ export default function ReportSchedulesPage() {
               onClick={() => setDialogOpen(false)}
               disabled={submitting}
             >
-              Cancel
+              {t("cancel")}
             </Button>
             <Button
               onClick={handleCreate}
@@ -495,7 +489,7 @@ export default function ReportSchedulesPage() {
               className="bg-emerald-600 hover:bg-emerald-700"
             >
               {submitting && <Loader2 className="mr-2 size-4 animate-spin" />}
-              Schedule it
+              {t("schedule")}
             </Button>
           </DialogFooter>
         </DialogContent>

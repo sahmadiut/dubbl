@@ -413,7 +413,8 @@ Extraction ownership:
 | LOC-110 | LOC-070 child: 1099, tax summary and VAT return; [scope and exceptions](TAX_REPORT_CATALOGS.md) |
 | LOC-111 | LOC-070 child: bank cash flow and reconciliation status; [scope and exceptions](BANKING_REPORT_CATALOGS.md) |
 | LOC-112 | Saved/custom workflows; [scope and exceptions](CUSTOM_REPORT_CATALOGS.md) |
-| LOC-113..114 | LOC-070 remaining report workflow slices; see [complete ownership](REPORT_DIRECTORY_CATALOGS.md) |
+| LOC-113 | Scheduled report workflow; [scope and exceptions](SCHEDULED_REPORT_CATALOGS.md) |
+| LOC-114 | LOC-070 remaining report workflow slice; see [complete ownership](REPORT_DIRECTORY_CATALOGS.md) |
 | LOC-071 | LOC-008 child: dashboard, documents and residual operations shared components |
 | LOC-009 | Public surfaces, landing/help, email/PDF and user-visible background content; remaining source audit |
 | LOC-079 | LOC-067 child: payroll overview/navigation; [scope and exceptions](PAYROLL_OVERVIEW_CATALOGS.md) |

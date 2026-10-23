@@ -1,3 +1,4 @@
+import { backgroundTranslator } from "@/i18n/background";
 /**
  * Normalized financial-statement export.
  *
@@ -90,7 +91,7 @@ function resolveColumns(statement: Statement): string[] {
   if (statement.columns && statement.columns.length > 0) {
     return statement.columns;
   }
-  return [`Amount (${statement.currency})`];
+  return [backgroundTranslator()("amountHeader", { currency: statement.currency })];
 }
 
 /** Whether a statement is in multi-column mode. */
@@ -163,8 +164,8 @@ export async function toXlsx(statement: Statement): Promise<Buffer> {
   // One spreadsheet column per amount column, keyed amount0, amount1, …
   const amountKeys = columnHeaders.map((_, i) => `amount${i}`);
   ws.columns = [
-    { header: "Code", key: "code", width: 12 },
-    { header: "Account", key: "name", width: 48 },
+    { header: backgroundTranslator()("code"), key: "code", width: 12 },
+    { header: backgroundTranslator()("account"), key: "name", width: 48 },
     ...columnHeaders.map((header, i) => ({
       header: sanitizeText(header),
       key: amountKeys[i],
@@ -209,7 +210,7 @@ export async function toXlsx(statement: Statement): Promise<Buffer> {
     }
 
     if (section.subtotal !== undefined || section.subtotals !== undefined) {
-      const values: Record<string, unknown> = { name: `Total ${section.label}` };
+      const values: Record<string, unknown> = { name: backgroundTranslator()("totalSection", { label: section.label }) };
       setAmounts(values, resolveAmounts(statement, section.subtotal, section.subtotals));
       const subtotalRow = ws.addRow(values);
       subtotalRow.font = { bold: true };
@@ -221,7 +222,7 @@ export async function toXlsx(statement: Statement): Promise<Buffer> {
   }
 
   if (statement.grandTotal !== undefined || statement.grandTotals !== undefined) {
-    const values: Record<string, unknown> = { name: "Total" };
+    const values: Record<string, unknown> = { name: backgroundTranslator()("total") };
     setAmounts(values, resolveAmounts(statement, statement.grandTotal, statement.grandTotals));
     const totalRow = ws.addRow(values);
     totalRow.font = { bold: true, size: 12 };
@@ -238,7 +239,7 @@ function indent(name: string, depth: number): string {
 
 function sheetName(title: string): string {
   // Excel sheet names: max 31 chars, no : \ / ? * [ ]
-  return title.replace(/[:\\/?*[\]]/g, " ").slice(0, 31) || "Report";
+  return title.replace(/[:\\/?*[\]]/g, " ").slice(0, 31) || backgroundTranslator()("report");
 }
 
 // --- PDF rendering -------------------------------------------------------
@@ -356,7 +357,7 @@ function StatementDocument(statement: Statement): React.ReactElement {
             View,
             { style: styles.subtotalRow },
             h(Text, { style: styles.cellCode }, ""),
-            h(Text, { style: [styles.cellName, styles.bold] }, `Total ${section.label}`),
+            h(Text, { style: [styles.cellName, styles.bold] }, backgroundTranslator()("totalSection", { label: section.label })),
             ...amountCells(section.subtotal, section.subtotals, true)
           )
         : null;
@@ -376,7 +377,7 @@ function StatementDocument(statement: Statement): React.ReactElement {
           View,
           { style: styles.grandRow },
           h(Text, { style: styles.cellCode }, ""),
-          h(Text, { style: [styles.cellName, styles.bold] }, "Total"),
+          h(Text, { style: [styles.cellName, styles.bold] }, backgroundTranslator()("total")),
           ...amountCells(statement.grandTotal, statement.grandTotals, true)
         )
       : null;

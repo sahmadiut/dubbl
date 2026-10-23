@@ -1,3 +1,4 @@
+import { backgroundTranslator } from "@/i18n/background";
 import { db } from "@/lib/db";
 import { notification, notificationPreference, notificationDigestQueue, users } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
@@ -74,14 +75,14 @@ export async function deliverNotificationEmail(params: SendNotificationParams, c
 
       if (user?.email) {
         const element = createElement(NotificationDigestEmail, {
-          userName: user.name || "there",
+          userName: user.name || backgroundTranslator()("there"),
           orgName: "dubbl",
           notifications: [
             {
               type: params.type,
               title: params.title,
               body: params.body,
-              createdAt: "Just now",
+              createdAt: backgroundTranslator()("justNow"),
             },
           ],
           dashboardUrl: toAppUrl("/notifications"),
@@ -91,7 +92,7 @@ export async function deliverNotificationEmail(params: SendNotificationParams, c
 
         await sendPlatformEmail({
           to: user.email,
-          subject: `dubbl: ${params.title}`,
+          subject: backgroundTranslator()("immediateSubject", { title: params.title }),
           html,
         });
       }

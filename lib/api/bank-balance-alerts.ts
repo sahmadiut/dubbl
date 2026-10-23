@@ -1,3 +1,4 @@
+import { backgroundTranslator } from "@/i18n/background";
 import { db } from "@/lib/db";
 import { bankAccount, member, notification, organization } from "@/lib/db/schema";
 import { eq, and, sql, inArray, isNull, gte, lt } from "drizzle-orm";
@@ -42,7 +43,7 @@ export async function checkLowBankBalances(): Promise<{ checked: number; alerted
         // SQL text keeps full int64 digits; malformed currency skips this account only.
         const balance = toMajorDecimal(money(BigInt(account.balance), account.currencyCode));
         const threshold = toMajorDecimal(money(BigInt(account.lowBalanceThreshold), account.currencyCode));
-        const body = `Balance ${account.currencyCode} ${balance} is below threshold ${account.currencyCode} ${threshold}`;
+        const body = backgroundTranslator()("bankBody", { currency: account.currencyCode, balance, threshold });
         const admins = await tx.query.member.findMany({ where: and(eq(member.organizationId, account.organizationId), inArray(member.role, ["owner", "admin"])) });
         const created = [];
         for (const userId of new Set(admins.map(admin => admin.userId))) {
@@ -50,7 +51,7 @@ export async function checkLowBankBalances(): Promise<{ checked: number; alerted
             eq(notification.type, "low_bank_balance"), eq(notification.entityType, "bank_account"), eq(notification.entityId, account.id),
             gte(notification.createdAt, start), lt(notification.createdAt, end)) });
           if (prior) continue;
-          const params = { orgId: account.organizationId, userId, type: "low_bank_balance" as const, title: `Low balance alert: ${account.accountName}`,
+          const params = { orgId: account.organizationId, userId, type: "low_bank_balance" as const, title: backgroundTranslator()("bankTitle", { name: account.accountName }),
             body, entityType: "bank_account", entityId: account.id };
           const [row] = await tx.insert(notification).values({ organizationId: account.organizationId, userId, type: params.type, title: params.title,
             body, entityType: params.entityType, entityId: account.id, channel: "in_app" }).returning({ id: notification.id });

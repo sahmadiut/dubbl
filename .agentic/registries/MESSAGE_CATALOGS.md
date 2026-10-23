@@ -468,3 +468,5 @@ LOC-119: [document send control scope and exceptions](DOCUMENT_SEND_CATALOGS.md)
 LOC-071: [independent combined dashboard/document catalog acceptance](DASHBOARD_DOCUMENT_CATALOG_ACCEPTANCE.md).
 
 LOC-123: [email and document output extraction, exceptions and qualification limits](OUTPUT_CATALOGS.md).
+
+LOC-124: [background delivery and residual message inventory, exceptions and qualification limits](BACKGROUND_CATALOGS.md).

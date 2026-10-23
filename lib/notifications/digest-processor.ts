@@ -1,3 +1,4 @@
+import { backgroundTranslator, digestTime } from "@/i18n/background";
 import { db } from "@/lib/db";
 import {
   notificationDigestQueue,
@@ -82,25 +83,14 @@ export async function processDigests() {
 
       if (!user?.email) continue;
 
-      // Format timestamps
-      const formatTime = (date: Date) => {
-        const now = new Date();
-        const diffMs = now.getTime() - date.getTime();
-        const diffMin = Math.floor(diffMs / 60000);
-        if (diffMin < 60) return `${diffMin}m ago`;
-        const diffHrs = Math.floor(diffMin / 60);
-        if (diffHrs < 24) return `${diffHrs}h ago`;
-        return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-      };
-
       const element = createElement(NotificationDigestEmail, {
-        userName: user.name || "there",
+        userName: user.name || backgroundTranslator()("there"),
         orgName: org?.name || "dubbl",
         notifications: notifications.map((n) => ({
           type: n.type,
           title: n.title,
           body: n.body,
-          createdAt: formatTime(n.createdAt),
+          createdAt: digestTime(n.createdAt),
         })),
         dashboardUrl: toAppUrl("/notifications"),
       });
@@ -109,7 +99,7 @@ export async function processDigests() {
 
       await sendPlatformEmail({
         to: user.email,
-        subject: `You have ${notifications.length} new notification${notifications.length !== 1 ? "s" : ""} on dubbl`,
+        subject: backgroundTranslator()("digestSubject", { count: notifications.length }),
         html,
       });
 

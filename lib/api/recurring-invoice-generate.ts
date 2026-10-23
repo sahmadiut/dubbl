@@ -1,3 +1,4 @@
+import { backgroundTranslator } from "@/i18n/background";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
@@ -70,7 +71,7 @@ export async function processRecurringInvoiceTemplate(orgId: string, id: string,
         const html = await renderDocumentEmailHtml({ organizationName: sender.name, contactName: result.email.name,
           documentType: "Invoice", documentNumber: inv.invoiceNumber, issueDateFormatted: inv.issueDate, dueDateFormatted: inv.dueDate });
         await sendDocumentEmail({ orgId, userId: result.ctx!.userId, documentType: "invoice", documentId: inv.id,
-          recipientEmail: result.email.email, subject: `Invoice ${inv.invoiceNumber}`, body: html, attachPdf: false });
+          recipientEmail: result.email.email, subject: backgroundTranslator()("invoiceSubject", { number: inv.invoiceNumber }), body: html, attachPdf: false });
       } catch { /* Existing delivery policy is best effort; failed sends are visible in document email history. */ }
     }
   }

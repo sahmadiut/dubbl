@@ -1,3 +1,4 @@
+import { backgroundTranslator } from "@/i18n/background";
 import { statementMoneyText } from "@/lib/reports/statement-money";
 import { getContactStatement } from "./contact-statements";
 import { db } from "@/lib/db";
@@ -9,15 +10,16 @@ import { sendEmail } from "@/lib/email/smtp-client";
 
 function escapeHtml(value: string) { return value.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!); }
 const typeLabels: Record<string, string> = {
-  invoice: "Invoice",
-  credit_note: "Credit Note",
-  payment: "Payment",
-  bill: "Bill",
-  debit_note: "Debit Note",
+  invoice: backgroundTranslator()("invoice"),
+  credit_note: backgroundTranslator()("creditNote"),
+  payment: backgroundTranslator()("payment"),
+  bill: backgroundTranslator()("bill"),
+  debit_note: backgroundTranslator()("debitNote"),
 };
 
 
 export function renderContactStatement(result: Awaited<ReturnType<typeof getContactStatement>>, email = false) {
+  const t = backgroundTranslator();
   const { startDate, endDate, openingBalance, closingBalance, totalDebit, totalCredit, currencyCode } = result.data;
   const c = { ...result.data.contact, name: escapeHtml(result.data.contact.name), email: result.data.contact.email ? escapeHtml(result.data.contact.email) : null };
   const orgName = escapeHtml(result.organizationName);
@@ -46,7 +48,7 @@ export function renderContactStatement(result: Awaited<ReturnType<typeof getCont
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Statement - ${c.name}</title>
+  <title>${t("statement")} - ${c.name}</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 12px; color: #111; padding: 40px; max-width: 1000px; margin: 0 auto; }
@@ -77,11 +79,11 @@ export function renderContactStatement(result: Awaited<ReturnType<typeof getCont
   </style>
 </head>
 <body>
-  <button class="print-btn no-print" onclick="window.print()">Print / Save PDF</button>
+  <button class="print-btn no-print" onclick="window.print()">${t("print")}</button>
 
   <div class="header">
     <div>
-      <h1>Statement</h1>
+      <h1>${t("statement")}</h1>
       <div class="org-name">${orgName}</div>
     </div>
     <div style="text-align: right;">
@@ -93,13 +95,13 @@ export function renderContactStatement(result: Awaited<ReturnType<typeof getCont
   <div class="meta">
     <div class="meta-block">
       <dl>
-        <dt>Period</dt>
-        <dd>${formatDate(startDate)} to ${formatDate(endDate)}</dd>
+        <dt>${t("period")}</dt>
+        <dd>${t("statementPeriod", { start: formatDate(startDate), end: formatDate(endDate) })}</dd>
       </dl>
     </div>
     <div class="meta-block" style="text-align: right;">
       <dl>
-        <dt>Generated</dt>
+        <dt>${t("generated")}</dt>
         <dd>${formatDate(now.toISOString().slice(0, 10))}</dd>
       </dl>
     </div>
@@ -108,23 +110,23 @@ export function renderContactStatement(result: Awaited<ReturnType<typeof getCont
   <table>
     <thead>
       <tr>
-        <th>Date</th>
-        <th>Type</th>
-        <th>Reference</th>
-        <th>Description</th>
-        <th class="amount">Debit</th>
-        <th class="amount">Credit</th>
-        <th class="amount">Balance</th>
+        <th>${t("date")}</th>
+        <th>${t("type")}</th>
+        <th>${t("reference")}</th>
+        <th>${t("description")}</th>
+        <th class="amount">${t("debit")}</th>
+        <th class="amount">${t("credit")}</th>
+        <th class="amount">${t("balance")}</th>
       </tr>
     </thead>
     <tbody>
       <tr class="opening-row">
-        <td colspan="6">Opening Balance</td>
+        <td colspan="6">${t("openingBalance")}</td>
         <td class="amount">${fmtMoney(openingBalance)}</td>
       </tr>
       ${transactionRows}
       <tr class="closing-row">
-        <td colspan="6">Closing Balance</td>
+        <td colspan="6">${t("closingBalance")}</td>
         <td class="amount">${fmtMoney(closingBalance)}</td>
       </tr>
     </tbody>
@@ -132,19 +134,19 @@ export function renderContactStatement(result: Awaited<ReturnType<typeof getCont
 
   <div class="summary">
     <div class="summary-item">
-      <div class="label">Opening Balance</div>
+      <div class="label">${t("openingBalance")}</div>
       <div class="value">${fmtMoney(openingBalance)}</div>
     </div>
     <div class="summary-item">
-      <div class="label">Total Debited</div>
+      <div class="label">${t("totalDebited")}</div>
       <div class="value">${fmtMoney(totalDebit)}</div>
     </div>
     <div class="summary-item">
-      <div class="label">Total Credited</div>
+      <div class="label">${t("totalCredited")}</div>
       <div class="value">${fmtMoney(totalCredit)}</div>
     </div>
     <div class="summary-item">
-      <div class="label">Closing Balance</div>
+      <div class="label">${t("closingBalance")}</div>
       <div class="value">${fmtMoney(closingBalance)}</div>
     </div>
   </div>
@@ -175,14 +177,14 @@ export function renderContactStatement(result: Awaited<ReturnType<typeof getCont
 <head><meta charset="UTF-8" /></head>
 <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#111;padding:0;margin:0;">
   <div style="max-width:700px;margin:0 auto;padding:32px 20px;">
-    <h1 style="font-size:20px;font-weight:700;margin:0 0 4px;">Statement</h1>
+    <h1 style="font-size:20px;font-weight:700;margin:0 0 4px;">${t("statement")}</h1>
     <p style="font-size:13px;color:#666;margin:0 0 24px;">${orgName}</p>
 
     <table style="width:100%;margin-bottom:16px;" cellpadding="0" cellspacing="0">
       <tr>
         <td style="font-size:13px;"><strong>${c.name}</strong></td>
         <td style="font-size:12px;text-align:right;color:#666;">
-          ${formatDate(startDate)} to ${formatDate(endDate)}
+          ${t("statementPeriod", { start: formatDate(startDate), end: formatDate(endDate) })}
         </td>
       </tr>
     </table>
@@ -190,23 +192,23 @@ export function renderContactStatement(result: Awaited<ReturnType<typeof getCont
     <table style="width:100%;border-collapse:collapse;margin-bottom:24px;" cellpadding="0" cellspacing="0">
       <thead>
         <tr style="background:#f5f5f5;">
-          <th style="padding:8px;text-align:left;font-size:10px;text-transform:uppercase;color:#888;font-weight:500;border-bottom:1px solid #ddd;">Date</th>
-          <th style="padding:8px;text-align:left;font-size:10px;text-transform:uppercase;color:#888;font-weight:500;border-bottom:1px solid #ddd;">Type</th>
-          <th style="padding:8px;text-align:left;font-size:10px;text-transform:uppercase;color:#888;font-weight:500;border-bottom:1px solid #ddd;">Ref</th>
-          <th style="padding:8px;text-align:left;font-size:10px;text-transform:uppercase;color:#888;font-weight:500;border-bottom:1px solid #ddd;">Description</th>
-          <th style="padding:8px;text-align:right;font-size:10px;text-transform:uppercase;color:#888;font-weight:500;border-bottom:1px solid #ddd;">Debit</th>
-          <th style="padding:8px;text-align:right;font-size:10px;text-transform:uppercase;color:#888;font-weight:500;border-bottom:1px solid #ddd;">Credit</th>
-          <th style="padding:8px;text-align:right;font-size:10px;text-transform:uppercase;color:#888;font-weight:500;border-bottom:1px solid #ddd;">Balance</th>
+          <th style="padding:8px;text-align:left;font-size:10px;text-transform:uppercase;color:#888;font-weight:500;border-bottom:1px solid #ddd;">${t("date")}</th>
+          <th style="padding:8px;text-align:left;font-size:10px;text-transform:uppercase;color:#888;font-weight:500;border-bottom:1px solid #ddd;">${t("type")}</th>
+          <th style="padding:8px;text-align:left;font-size:10px;text-transform:uppercase;color:#888;font-weight:500;border-bottom:1px solid #ddd;">${t("ref")}</th>
+          <th style="padding:8px;text-align:left;font-size:10px;text-transform:uppercase;color:#888;font-weight:500;border-bottom:1px solid #ddd;">${t("description")}</th>
+          <th style="padding:8px;text-align:right;font-size:10px;text-transform:uppercase;color:#888;font-weight:500;border-bottom:1px solid #ddd;">${t("debit")}</th>
+          <th style="padding:8px;text-align:right;font-size:10px;text-transform:uppercase;color:#888;font-weight:500;border-bottom:1px solid #ddd;">${t("credit")}</th>
+          <th style="padding:8px;text-align:right;font-size:10px;text-transform:uppercase;color:#888;font-weight:500;border-bottom:1px solid #ddd;">${t("balance")}</th>
         </tr>
       </thead>
       <tbody>
         <tr style="background:#f9f9f9;">
-          <td colspan="6" style="padding:8px;font-size:12px;font-weight:600;border-bottom:1px solid #eee;">Opening Balance</td>
+          <td colspan="6" style="padding:8px;font-size:12px;font-weight:600;border-bottom:1px solid #eee;">${t("openingBalance")}</td>
           <td style="padding:8px;font-size:12px;font-weight:600;text-align:right;font-family:monospace;border-bottom:1px solid #eee;">${fmtMoney(openingBalance)}</td>
         </tr>
         ${transactionRows}
         <tr style="background:#f9f9f9;">
-          <td colspan="6" style="padding:8px;font-size:12px;font-weight:600;border-bottom:1px solid #ddd;">Closing Balance</td>
+          <td colspan="6" style="padding:8px;font-size:12px;font-weight:600;border-bottom:1px solid #ddd;">${t("closingBalance")}</td>
           <td style="padding:8px;font-size:12px;font-weight:600;text-align:right;font-family:monospace;border-bottom:1px solid #ddd;">${fmtMoney(closingBalance)}</td>
         </tr>
       </tbody>
@@ -215,26 +217,26 @@ export function renderContactStatement(result: Awaited<ReturnType<typeof getCont
     <table style="width:100%;border-collapse:collapse;background:#f5f5f5;border-radius:6px;" cellpadding="12" cellspacing="0">
       <tr>
         <td style="text-align:center;">
-          <div style="font-size:10px;text-transform:uppercase;color:#888;">Opening</div>
+          <div style="font-size:10px;text-transform:uppercase;color:#888;">${t("opening")}</div>
           <div style="font-size:14px;font-weight:600;font-family:monospace;">${fmtMoney(openingBalance)}</div>
         </td>
         <td style="text-align:center;">
-          <div style="font-size:10px;text-transform:uppercase;color:#888;">Debited</div>
+          <div style="font-size:10px;text-transform:uppercase;color:#888;">${t("debited")}</div>
           <div style="font-size:14px;font-weight:600;font-family:monospace;">${fmtMoney(totalDebit)}</div>
         </td>
         <td style="text-align:center;">
-          <div style="font-size:10px;text-transform:uppercase;color:#888;">Credited</div>
+          <div style="font-size:10px;text-transform:uppercase;color:#888;">${t("credited")}</div>
           <div style="font-size:14px;font-weight:600;font-family:monospace;">${fmtMoney(totalCredit)}</div>
         </td>
         <td style="text-align:center;">
-          <div style="font-size:10px;text-transform:uppercase;color:#888;">Closing</div>
+          <div style="font-size:10px;text-transform:uppercase;color:#888;">${t("closing")}</div>
           <div style="font-size:14px;font-weight:600;font-family:monospace;">${fmtMoney(closingBalance)}</div>
         </td>
       </tr>
     </table>
 
     <p style="font-size:11px;color:#999;margin-top:24px;">
-      This statement was generated on ${formatDate(now.toISOString().slice(0, 10))} by ${orgName}.
+      ${t("statementGenerated", { date: formatDate(now.toISOString().slice(0, 10)), name: orgName })}
     </p>
   </div>
 </body>
@@ -252,6 +254,6 @@ export async function sendContactStatement(ctx: AuthContext, id: string, input: 
   const html = renderContactStatement(result, true);
   const config = await db.query.emailConfig.findFirst({ where: eq(emailConfig.organizationId, ctx.organizationId) });
   if (!config) throw new AuthError("Email not configured. Please set up SMTP settings first.", 400);
-  await sendEmail(config, { to, subject: `Statement from ${result.organizationName} - ${result.data.startDate} to ${result.data.endDate}`, html });
+  await sendEmail(config, { to, subject: backgroundTranslator()("statementSubject", { name: result.organizationName, start: result.data.startDate, end: result.data.endDate }), html });
   return { success: true };
 }

@@ -1,3 +1,4 @@
+import { backgroundTranslator } from "@/i18n/background";
 import { z } from "zod";
 import { budgetReportCurrency, budgetReportMoney, budgetReportRound, budgetReportStoredAmount } from "./budget-report-wire";
 import { WireCompatibilityError } from "@/lib/money/wire";
@@ -20,5 +21,5 @@ export function budgetAlertAmounts(amount: number, netActual: bigint, percent: n
 
 export function budgetAlertBody(label: string, value: ReturnType<typeof budgetAlertAmounts>) {
   const format = (minor: string) => `${value.currencyCode} ${toMajorDecimal(money(BigInt(minor), value.currencyCode))}`;
-  return `Period ${label}: actual ${format(value.actualMinor)} vs budget ${format(value.budgetedMinor)} (${value.thresholdPct}% threshold)`;
+  return backgroundTranslator()("budgetBody", { label, actual: format(value.actualMinor), budgeted: format(value.budgetedMinor), percent: String(value.thresholdPct) });
 }

@@ -1,3 +1,4 @@
+import { backgroundTranslator } from "@/i18n/background";
 import { db } from "@/lib/db";
 import { budget, budgetLine, budgetPeriod, journalLine, journalEntry, member, notification } from "@/lib/db/schema";
 import { eq, and, sql, gte, lte, inArray, isNull, asc } from "drizzle-orm";
@@ -66,7 +67,7 @@ async function runBudgetAlerts(organizationId?: string, now = new Date()) {
               eq(notification.entityId, period.id), eq(notification.channel, "in_app")) });
             if (exists) continue;
             pending.push({ orgId: b.organizationId, userId, type: "budget_exceeded",
-              title: `Budget "${b.name}" exceeded threshold`, body, entityType: "budget_period", entityId: period.id });
+              title: backgroundTranslator()("budgetTitle", { name: b.name }), body, entityType: "budget_period", entityId: period.id });
           }
         }
       }

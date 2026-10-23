@@ -1,10 +1,14 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { motion } from "motion/react";
 import { Container } from "@/components/shared/container";
 import { SectionHeader } from "@/components/shared/section-header";
 import { ScrollReveal } from "@/components/shared/scroll-reveal";
 import { Terminal, Code2, Package } from "lucide-react";
+
+type LandingTranslator = ReturnType<typeof useTranslations>;
 
 /* ------------------------------------------------------------------ */
 /*  Code Cards                                                         */
@@ -157,12 +161,12 @@ function SDKCard() {
 /*  Feature Badges                                                     */
 /* ------------------------------------------------------------------ */
 
-const badges = [
-  "TypeScript SDK",
+const getBadges = (t: LandingTranslator) => [
+  t("typeScriptSDK"),
   "REST API",
-  "MCP Protocol",
-  "Webhooks",
-  "Self-hostable",
+  t("mCPProtocol"),
+  t("webhooks"),
+  t("selfHostable"),
   "Apache 2.0",
 ];
 
@@ -171,13 +175,14 @@ const badges = [
 /* ------------------------------------------------------------------ */
 
 export function Testimonials() {
+  const t = useTranslations("LandingFeatures");
   return (
     <section id="community" className="py-16 md:py-20">
       <Container>
         <SectionHeader
-          badge="Developer Experience"
-          title="Built API-first"
-          subtitle="REST API, MCP protocol, and self-hosting. Extend and integrate with anything."
+          badge={t("developerExperience")}
+          title={t("builtAPIFirst")}
+          subtitle={t("rESTAPIMCPProtocolAndSelfHostingExtendAnd")}
         />
 
         <div className="grid gap-5 lg:grid-cols-[1.2fr_1fr]">
@@ -200,7 +205,7 @@ export function Testimonials() {
         {/* Badges row */}
         <ScrollReveal delay={0.3}>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            {badges.map((badge, i) => (
+            {getBadges(t).map((badge, i) => (
               <motion.span
                 key={badge}
                 initial={{ opacity: 0, y: 8 }}

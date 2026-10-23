@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { motion } from "motion/react";
 import { Github, Eye, Unlock, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -8,28 +10,30 @@ import { Container } from "@/components/shared/container";
 import { SectionHeader } from "@/components/shared/section-header";
 import { ScrollReveal } from "@/components/shared/scroll-reveal";
 
+type LandingTranslator = ReturnType<typeof useTranslations>;
+
 /* ------------------------------------------------------------------ */
 /*  Value Pillars                                                      */
 /* ------------------------------------------------------------------ */
 
-const values = [
+const getValues = (t: LandingTranslator) => [
   {
     icon: Eye,
-    title: "Fully Transparent",
+    title: t("fullyTransparent"),
     description:
-      "Every line of code is public. Audit the security, verify the logic, trust the system.",
+      t("everyLineOfCodeIsPublicAuditTheSecurity"),
   },
   {
     icon: Unlock,
-    title: "Zero Lock-In",
+    title: t("zeroLockIn"),
     description:
-      "Self-host on your own infrastructure. Export your data anytime, in any format.",
+      t("selfHostOnYourOwnInfrastructureExportYourData"),
   },
   {
     icon: Users,
-    title: "Community-Driven",
+    title: t("communityDriven"),
     description:
-      "Public roadmap, open issues, and pull requests welcome. Built by and for its users.",
+      t("publicRoadmapOpenIssuesAndPullRequestsWelcomeBuilt"),
   },
 ];
 
@@ -93,6 +97,7 @@ function TerminalBlock() {
 /* ------------------------------------------------------------------ */
 
 export function OpenSource() {
+  const t = useTranslations("LandingFeatures");
   return (
     <section id="open-source" className="py-16 md:py-24">
       <Container>
@@ -100,16 +105,16 @@ export function OpenSource() {
           <div className="overflow-hidden rounded-2xl border border-border bg-card">
             <div className="p-8 md:p-10 lg:p-12">
               <SectionHeader
-                badge="Open Source"
-                title="Fork it. Extend it. Own it."
-                subtitle="dubbl is fully open source under the Apache 2.0 license. No vendor lock-in, no hidden fees, no surprises. Your data, your rules."
+                badge={t("openSource")}
+                title={t("forkItExtendItOwnIt")}
+                subtitle={t("dubblIsFullyOpenSourceUnderTheApache2")}
                 align="left"
                 className="mb-8 md:mb-10"
               />
 
               {/* Value pillars */}
               <div className="grid gap-6 sm:grid-cols-3">
-                {values.map((value, i) => (
+                {getValues(t).map((value, i) => (
                   <motion.div
                     key={value.title}
                     initial={{ opacity: 0, y: 16 }}
@@ -165,14 +170,14 @@ export function OpenSource() {
                     rel="noopener noreferrer"
                   >
                     <Github className="size-4" />
-                    View Repository
+                    {t("viewRepository")}
                   </a>
                 </Button>
                 <Badge
                   variant="secondary"
                   className="border-border px-3 py-1.5 text-xs font-medium"
                 >
-                  Apache 2.0 License
+                  {t("apache20License")}
                 </Badge>
               </motion.div>
             </div>

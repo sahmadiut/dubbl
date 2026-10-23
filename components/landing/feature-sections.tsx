@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -17,24 +19,25 @@ import { ScrollReveal } from "@/components/shared/scroll-reveal";
 import { AnimatedCounter } from "@/components/shared/animated-counter";
 import { cn } from "@/lib/utils";
 
+type LandingTranslator = ReturnType<typeof useTranslations>;
+
 /* -------------------------------------------------------------------------- */
 /*  Problem Cards — realistic mockup internals                                */
 /* -------------------------------------------------------------------------- */
 
-
-
 function BankTimelineMockup() {
+  const t = useTranslations("LandingFeatures");
   const events = [
-    { label: "ACH Transfer — Payroll", status: "success", time: "2 days ago" },
-    { label: "Wire — Vendor #4092", status: "failed", time: "3 days ago" },
-    { label: "Direct Debit — Office Lease", status: "delayed", time: "5 days ago" },
-    { label: "Card Payment — SaaS Sub", status: "success", time: "6 days ago" },
+    { label: t("aCHTransferPayroll"), status: "success", time: t("demo2DaysAgo") },
+    { label: t("wireVendor4092"), status: "failed", time: t("demo3DaysAgo") },
+    { label: t("directDebitOfficeLease"), status: "delayed", time: t("demo5DaysAgo") },
+    { label: t("cardPaymentSaaSSub"), status: "success", time: t("demo6DaysAgo") },
   ];
 
   const statusStyles: Record<string, { dot: string; label: string }> = {
-    success: { dot: "bg-emerald-500", label: "Synced" },
-    failed: { dot: "bg-red-500", label: "Failed" },
-    delayed: { dot: "bg-amber-500", label: "Delayed" },
+    success: { dot: "bg-emerald-500", label: t("synced") },
+    failed: { dot: "bg-red-500", label: t("failed") },
+    delayed: { dot: "bg-amber-500", label: t("delayed") },
   };
 
   return (
@@ -78,6 +81,7 @@ function BankTimelineMockup() {
 }
 
 function MissingRecordsMockup() {
+  const t = useTranslations("LandingFeatures");
   const rows = [
     { id: "INV-1041", vendor: "Acme Corp", amount: "$3,200", status: "ok" },
     { id: "INV-1042", vendor: "—", amount: "—", status: "missing" },
@@ -94,10 +98,10 @@ function MissingRecordsMockup() {
         transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
       />
       <div className="grid grid-cols-4 border-b border-border bg-muted/60 text-[10px] font-semibold text-muted-foreground">
-        <div className="border-r border-border px-3 py-1.5">Invoice</div>
-        <div className="border-r border-border px-3 py-1.5">Vendor</div>
-        <div className="border-r border-border px-3 py-1.5">Amount</div>
-        <div className="px-3 py-1.5">Status</div>
+        <div className="border-r border-border px-3 py-1.5">{t("invoice")}</div>
+        <div className="border-r border-border px-3 py-1.5">{t("vendor")}</div>
+        <div className="border-r border-border px-3 py-1.5">{t("amount")}</div>
+        <div className="px-3 py-1.5">{t("status")}</div>
       </div>
       {rows.map((row, i) => (
         <div
@@ -129,16 +133,16 @@ function MissingRecordsMockup() {
           </div>
           <div className="px-3 py-1.5">
             {row.status === "ok" ? (
-              <span className="text-emerald-600 dark:text-emerald-400">Complete</span>
+              <span className="text-emerald-600 dark:text-emerald-400">{t("complete")}</span>
             ) : row.status === "missing" ? (
               <span className="inline-flex items-center gap-1 font-semibold text-red-600 dark:text-red-400">
                 <AlertTriangle className="size-2.5" />
-                Missing
+                {t("missing")}
               </span>
             ) : (
               <span className="inline-flex items-center gap-1 font-semibold text-amber-600 dark:text-amber-400">
                 <AlertTriangle className="size-2.5" />
-                Partial
+                {t("partial")}
               </span>
             )}
           </div>
@@ -153,6 +157,7 @@ function MissingRecordsMockup() {
 /* -------------------------------------------------------------------------- */
 
 function ProblemSection() {
+  const t = useTranslations("LandingFeatures");
   return (
     <section className="py-16 md:py-20">
       <Container>
@@ -176,19 +181,14 @@ function ProblemSection() {
               <div className="mb-5">
                 <span className="inline-flex items-center gap-2 rounded-full border border-red-300/60 bg-red-900/30 px-4 py-1.5 text-sm font-medium text-white backdrop-blur-sm">
                   <span className="inline-block size-1.5 rounded-full bg-red-300" />
-                  The Problem
+                  {t("theProblem")}
                 </span>
               </div>
               <h2 className="text-3xl font-bold tracking-tight text-white md:text-4xl lg:text-5xl">
-                You&apos;re managing your business across{" "}
-                <span className="text-red-950">
-                  too many disconnected tools
-                </span>
+                {t.rich("problemHeading", {em: (chunks) => <span className="text-red-950">{chunks}</span>})}
               </h2>
               <p className="mt-5 max-w-2xl text-lg leading-relaxed text-red-100">
-                Separate tools for accounting, project tracking, inventory,
-                payroll, and CRM. Context switching kills productivity and data
-                never lines up.
+                {t("separateToolsForAccountingProjectTrackingInventoryPayrollAnd")}
               </p>
             </div>
           </div>
@@ -277,16 +277,15 @@ function ProblemSection() {
                       </div>
                       <div>
                         <h3 className="text-lg font-semibold text-foreground">
-                          Spreadsheet errors
+                          {t("spreadsheetErrors")}
                         </h3>
                         <p className="text-xs text-muted-foreground">
-                          Silently corrupting your data
+                          {t("silentlyCorruptingYourData")}
                         </p>
                       </div>
                     </div>
                     <p className="text-sm leading-relaxed text-muted-foreground">
-                      Copy-paste mistakes, broken formulas, and missing references
-                      silently corrupt your data across dozens of tabs.
+                      {t("copyPasteMistakesBrokenFormulasAndMissingReferencesSilently")}
                     </p>
                     <div className="mt-5 flex gap-3">
                       <div className="flex-1 rounded-lg border border-red-200 bg-red-50 p-3 text-center dark:border-red-900/40 dark:bg-red-950/30">
@@ -296,7 +295,7 @@ function ProblemSection() {
                           className="text-2xl font-bold text-red-600 dark:text-red-400"
                         />
                         <p className="mt-0.5 text-[10px] text-muted-foreground">
-                          contain errors
+                          {t("containErrors")}
                         </p>
                       </div>
                       <div className="flex-1 rounded-lg border border-red-200 bg-red-50 p-3 text-center dark:border-red-900/40 dark:bg-red-950/30">
@@ -306,7 +305,7 @@ function ProblemSection() {
                           className="text-2xl font-bold text-red-600 dark:text-red-400"
                         />
                         <p className="mt-0.5 text-[10px] text-muted-foreground">
-                          wasted / month
+                          {t("wastedMonth")}
                         </p>
                       </div>
                       <div className="flex-1 rounded-lg border border-red-200 bg-red-50 p-3 text-center dark:border-red-900/40 dark:bg-red-950/30">
@@ -315,7 +314,7 @@ function ProblemSection() {
                           className="text-2xl font-bold text-red-600 dark:text-red-400"
                         />
                         <p className="mt-0.5 text-[10px] text-muted-foreground">
-                          errors found
+                          {t("errorsFound")}
                         </p>
                       </div>
                     </div>
@@ -345,12 +344,11 @@ function ProblemSection() {
                       <Clock className="size-4 text-red-600 dark:text-red-400" />
                     </div>
                     <h3 className="text-sm font-semibold text-foreground">
-                      Delayed bank data
+                      {t("delayedBankData")}
                     </h3>
                   </div>
                   <p className="text-xs leading-relaxed text-muted-foreground">
-                    Statements arrive days late. Reconciliation is always
-                    lagging behind reality.
+                    {t("statementsArriveDaysLateReconciliationIsAlwaysLaggingBehind")}
                   </p>
                   <BankTimelineMockup />
                 </div>
@@ -375,12 +373,11 @@ function ProblemSection() {
                       <FileQuestion className="size-4 text-red-600 dark:text-red-400" />
                     </div>
                     <h3 className="text-sm font-semibold text-foreground">
-                      Missing records
+                      {t("missingRecords")}
                     </h3>
                   </div>
                   <p className="text-xs leading-relaxed text-muted-foreground">
-                    Gaps in vendor data, lost invoices, and unknown line items
-                    make reporting unreliable.
+                    {t("gapsInVendorDataLostInvoicesAndUnknownLine")}
                   </p>
                   <div className="mt-4">
                     <MissingRecordsMockup />
@@ -400,16 +397,16 @@ function ProblemSection() {
 /* -------------------------------------------------------------------------- */
 
 /* --- View 0: Animated Marquee Rows --- */
-const marqueeConfig: { size: "lg" | "md" | "sm"; pills: string[] }[] = [
-  { size: "lg", pills: ["Invoice #2847 — $12,580 sent", "P&L report generated ✓", "Statement imported", "Expense claim approved", "Tax return ready ✓"] },
-  { size: "sm", pills: ["Categorized", "Sent", "Paid", "Filed", "Logged", "Synced", "Approved", "Imported", "Auto-tagged", "Booked", "Invoiced", "Tracked"] },
-  { size: "md", pills: ["QuickBooks CSV parsed", "Chase CSV parsed", "Bill from AWS - $3,240", "Receipt: $340 office", "Xero export loaded", "Wave CSV imported", "Bank statement parsed", "CSV import complete"] },
-  { size: "lg", pills: ["$45,000 payment received ✓", "Balance sheet updated", "Multi-currency enabled", "Payroll processed ✓", "Cash flow forecast ready"] },
-  { size: "sm", pills: ["Reconciled", "Updated", "Matched", "Sorted", "Verified", "Closed", "Exported", "Synced", "Tagged", "Archived", "Settled", "Reviewed"] },
-  { size: "md", pills: ["Invoice to Acme Corp", "Bill: $1,200 rent", "Expense: $89 SaaS", "Credit note issued", "Recurring invoice set", "Vendor payment sent", "Client deposit logged", "Journal entry posted"] },
-  { size: "lg", pills: ["Year-end close complete ✓", "Auto-categorized $174,900", "GST auto-calculated", "Client portal live ✓", "Global statement imports"] },
-  { size: "sm", pills: ["Booked", "Paid", "Sent", "Filed", "Logged", "Tagged", "Approved", "Synced", "Tracked", "Closed", "Imported", "Done"] },
-  { size: "md", pills: ["Bank CSV reconciled", "Statement imported", "Payroll entry posted", "Multi-currency entry", "Expense categorized", "CSV mapped", "Bank CSV imported", "Transactions matched"] },
+const getMarqueeConfig = (t: LandingTranslator): { size: "lg" | "md" | "sm"; pills: { label: string; featured: boolean }[] }[] => [
+  { size: "lg", pills: [{ label: t("invoice284712580Sent"), featured: true }, { label: t("pLReportGenerated"), featured: true }, { label: t("statementImported"), featured: false }, { label: t("expenseClaimApproved"), featured: false }, { label: t("taxReturnReady"), featured: true }] },
+  { size: "sm", pills: [{ label: t("categorized"), featured: false }, { label: t("sent"), featured: false }, { label: t("paid"), featured: false }, { label: t("filed"), featured: false }, { label: t("logged"), featured: false }, { label: t("synced"), featured: false }, { label: t("approved"), featured: false }, { label: t("imported"), featured: false }, { label: t("autoTagged"), featured: false }, { label: t("booked"), featured: false }, { label: t("invoiced"), featured: false }, { label: t("tracked"), featured: false }] },
+  { size: "md", pills: [{ label: t("quickBooksCSVParsed"), featured: false }, { label: t("chaseCSVParsed"), featured: false }, { label: t("billFromAWS3240"), featured: true }, { label: t("receipt340Office"), featured: true }, { label: t("xeroExportLoaded"), featured: false }, { label: t("waveCSVImported"), featured: false }, { label: t("bankStatementParsed"), featured: false }, { label: t("cSVImportComplete"), featured: false }] },
+  { size: "lg", pills: [{ label: t("demo45000PaymentReceived"), featured: true }, { label: t("balanceSheetUpdated"), featured: false }, { label: t("multiCurrencyEnabled"), featured: false }, { label: t("payrollProcessed"), featured: true }, { label: t("cashFlowForecastReady"), featured: true }] },
+  { size: "sm", pills: [{ label: t("reconciled"), featured: false }, { label: t("updated"), featured: false }, { label: t("matched"), featured: false }, { label: t("sorted"), featured: false }, { label: t("verified"), featured: false }, { label: t("closed"), featured: false }, { label: t("exported"), featured: false }, { label: t("synced"), featured: false }, { label: t("tagged"), featured: false }, { label: t("archived"), featured: false }, { label: t("settled"), featured: false }, { label: t("reviewed"), featured: false }] },
+  { size: "md", pills: [{ label: t("invoiceToAcmeCorp"), featured: false }, { label: t("bill1200Rent"), featured: true }, { label: t("expense89SaaS"), featured: true }, { label: t("creditNoteIssued"), featured: false }, { label: t("recurringInvoiceSet"), featured: false }, { label: t("vendorPaymentSent"), featured: false }, { label: t("clientDepositLogged"), featured: false }, { label: t("journalEntryPosted"), featured: false }] },
+  { size: "lg", pills: [{ label: t("yearEndCloseComplete"), featured: true }, { label: t("autoCategorized174900"), featured: true }, { label: t("gSTAutoCalculated"), featured: false }, { label: t("clientPortalLive"), featured: true }, { label: t("globalStatementImports"), featured: false }] },
+  { size: "sm", pills: [{ label: t("booked"), featured: false }, { label: t("paid"), featured: false }, { label: t("sent"), featured: false }, { label: t("filed"), featured: false }, { label: t("logged"), featured: false }, { label: t("tagged"), featured: false }, { label: t("approved"), featured: false }, { label: t("synced"), featured: false }, { label: t("tracked"), featured: false }, { label: t("closed"), featured: false }, { label: t("imported"), featured: false }, { label: t("done"), featured: false }] },
+  { size: "md", pills: [{ label: t("bankCSVReconciled"), featured: false }, { label: t("statementImported"), featured: false }, { label: t("payrollEntryPosted"), featured: false }, { label: t("multiCurrencyEntry"), featured: false }, { label: t("expenseCategorized"), featured: false }, { label: t("cSVMapped"), featured: false }, { label: t("bankCSVImported"), featured: false }, { label: t("transactionsMatched"), featured: false }] },
 ];
 
 const marqueeSizeClasses = {
@@ -419,9 +416,10 @@ const marqueeSizeClasses = {
 };
 
 function MarqueeView() {
+  const t = useTranslations("LandingFeatures");
   return (
     <div className="flex h-full flex-col justify-evenly overflow-hidden">
-      {marqueeConfig.map((row, rowIdx) => {
+      {getMarqueeConfig(t).map((row, rowIdx) => {
         const duration = 25 + (rowIdx % 4) * 8;
         const reverse = rowIdx % 2 === 1;
         const sizeClass = marqueeSizeClasses[row.size];
@@ -434,7 +432,7 @@ function MarqueeView() {
               }}
             >
               {[...row.pills, ...row.pills, ...row.pills, ...row.pills].map((pill, j) => {
-                const isFeatured = pill.includes("✓") || pill.includes("$") || pill.includes("ready");
+                const isFeatured = pill.featured;
                 return (
                   <span
                     key={j}
@@ -446,7 +444,7 @@ function MarqueeView() {
                         : "bg-white/10"
                     )}
                   >
-                    {pill}
+                    {pill.label}
                   </span>
                 );
               })}
@@ -469,21 +467,21 @@ function MarqueeView() {
 }
 
 /* --- View 1: Connected Node Network --- */
-const networkNodes = [
-  { label: "Invoices", x: 8, y: 12 },
-  { label: "CSV Import", x: 28, y: 8 },
-  { label: "Reconciliation", x: 5, y: 42 },
-  { label: "Expenses", x: 25, y: 48 },
-  { label: "P&L Report", x: 48, y: 15 },
-  { label: "Tax filing", x: 72, y: 10 },
-  { label: "Clients", x: 88, y: 18 },
-  { label: "Bills", x: 68, y: 42 },
-  { label: "Payroll", x: 8, y: 75 },
-  { label: "Receipts", x: 42, y: 78 },
-  { label: "Accounts", x: 75, y: 75 },
-  { label: "Multi-currency", x: 88, y: 55 },
-  { label: "Balance sheet", x: 52, y: 52 },
-  { label: "Journal entries", x: 15, y: 25 },
+const getNetworkNodes = (t: LandingTranslator) => [
+  { label: t("invoices"), x: 8, y: 12 },
+  { label: t("cSVImport"), x: 28, y: 8 },
+  { label: t("reconciliation"), x: 5, y: 42 },
+  { label: t("expenses"), x: 25, y: 48 },
+  { label: t("pLReport"), x: 48, y: 15 },
+  { label: t("taxFiling"), x: 72, y: 10 },
+  { label: t("clients"), x: 88, y: 18 },
+  { label: t("bills"), x: 68, y: 42 },
+  { label: t("payroll"), x: 8, y: 75 },
+  { label: t("receipts"), x: 42, y: 78 },
+  { label: t("accounts"), x: 75, y: 75 },
+  { label: t("multiCurrency2"), x: 88, y: 55 },
+  { label: t("balanceSheet"), x: 52, y: 52 },
+  { label: t("journalEntries2"), x: 15, y: 25 },
 ];
 
 const networkEdges = [
@@ -493,16 +491,18 @@ const networkEdges = [
 ];
 
 function NetworkView() {
+  const t = useTranslations("LandingFeatures");
+  const nodes = getNetworkNodes(t);
   return (
     <div className="relative h-full w-full">
       <svg className="absolute inset-0 h-full w-full">
         {networkEdges.map(([from, to], i) => (
           <motion.line
             key={i}
-            x1={`${networkNodes[from].x}%`}
-            y1={`${networkNodes[from].y}%`}
-            x2={`${networkNodes[to].x}%`}
-            y2={`${networkNodes[to].y}%`}
+            x1={`${nodes[from].x}%`}
+            y1={`${nodes[from].y}%`}
+            x2={`${nodes[to].x}%`}
+            y2={`${nodes[to].y}%`}
             stroke="white"
             strokeOpacity="0.15"
             strokeWidth="1"
@@ -516,7 +516,7 @@ function NetworkView() {
           />
         ))}
       </svg>
-      {networkNodes.map((node, i) => (
+      {nodes.map((node, i) => (
         <motion.div
           key={i}
           className="absolute rounded-xl bg-white/15 px-3 py-1.5 text-[10px] font-medium text-white backdrop-blur-sm"
@@ -541,21 +541,22 @@ function NetworkView() {
 }
 
 /* --- View 2: Stacked Receipt Cards --- */
-const receiptCards = [
-  { desc: "Invoice — Acme Corp", amount: "+$12,580", status: "Sent", x: 4, y: 6, rotate: -4, z: 1 },
-  { desc: "Bill — AWS hosting", amount: "-$3,240", status: "Paid", x: 62, y: 4, rotate: 3, z: 2 },
-  { desc: "Payroll — March", amount: "-$28,450", status: "Processed", x: 30, y: 18, rotate: -2, z: 3 },
-  { desc: "Client payment", amount: "+$45,000", status: "Received", x: 72, y: 28, rotate: 5, z: 2 },
-  { desc: "Expense — Office rent", amount: "-$8,900", status: "Booked", x: 6, y: 55, rotate: 2, z: 1 },
-  { desc: "Bank CSV — Chase", amount: "+$67,800", status: "Imported", x: 55, y: 62, rotate: -5, z: 2 },
-  { desc: "Revenue — Sales", amount: "+$92,100", status: "Booked", x: 78, y: 70, rotate: 3, z: 1 },
-  { desc: "Credit note — #CN-041", amount: "-$2,400", status: "Issued", x: 22, y: 72, rotate: -3, z: 3 },
+const getReceiptCards = (t: LandingTranslator) => [
+  { desc: t("invoiceAcmeCorp"), amount: "+$12,580", status: t("sent"), x: 4, y: 6, rotate: -4, z: 1 },
+  { desc: t("billAWSHosting"), amount: "-$3,240", status: t("paid"), x: 62, y: 4, rotate: 3, z: 2 },
+  { desc: t("payrollMarch"), amount: "-$28,450", status: t("processed"), x: 30, y: 18, rotate: -2, z: 3 },
+  { desc: t("clientPayment"), amount: "+$45,000", status: t("received"), x: 72, y: 28, rotate: 5, z: 2 },
+  { desc: t("expenseOfficeRent"), amount: "-$8,900", status: t("booked"), x: 6, y: 55, rotate: 2, z: 1 },
+  { desc: t("bankCSVChase"), amount: "+$67,800", status: t("imported"), x: 55, y: 62, rotate: -5, z: 2 },
+  { desc: t("revenueSales"), amount: "+$92,100", status: t("booked"), x: 78, y: 70, rotate: 3, z: 1 },
+  { desc: t("creditNoteCN041"), amount: "-$2,400", status: t("issued"), x: 22, y: 72, rotate: -3, z: 3 },
 ];
 
 function ReceiptView() {
+  const t = useTranslations("LandingFeatures");
   return (
     <div className="relative h-full w-full">
-      {receiptCards.map((card, i) => (
+      {getReceiptCards(t).map((card, i) => (
         <motion.div
           key={i}
           className="absolute w-[160px] rounded-xl bg-white/15 p-3 backdrop-blur-sm md:w-[180px]"
@@ -604,6 +605,7 @@ function ReceiptView() {
 const CYCLE_DURATION = 6000;
 
 function SolutionShowcase() {
+  const t = useTranslations("LandingFeatures");
   const [activeView, setActiveView] = useState(0);
   const [progressKey, setProgressKey] = useState(0);
 
@@ -686,6 +688,8 @@ function SolutionShowcase() {
           <button
             key={`${idx}-${progressKey}`}
             onClick={() => goTo(idx)}
+            aria-label={t("showView", {number: idx + 1})}
+            aria-pressed={idx === activeView}
             className="h-1 w-8 cursor-pointer overflow-hidden rounded-full bg-white/25"
           >
             <div
@@ -714,25 +718,26 @@ function SolutionShowcase() {
 /*  Solution Section                                                          */
 /* -------------------------------------------------------------------------- */
 
-const capabilities = [
+const getCapabilities = (t: LandingTranslator) => [
   {
-    headline: "Unlimited Invoices",
-    description: "Create, send, and track invoices with no caps or usage limits.",
+    headline: t("unlimitedInvoices"),
+    description: t("createSendAndTrackInvoicesWithNoCapsOr"),
     icon: FileText,
   },
   {
-    headline: "CSV Import & Export",
-    description: "Import from QuickBooks, Xero, FreshBooks, Wave, or any CSV format. Live bank feeds coming soon.",
+    headline: t("cSVImportExport"),
+    description: t("importFromQuickBooksXeroFreshBooksWaveOrAnyCSV"),
     icon: Building2,
   },
   {
-    headline: "15 MCP Tool Modules",
-    description: "Let AI agents manage your business data through the Model Context Protocol.",
+    headline: t("demo15MCPToolModules"),
+    description: t("letAIAgentsManageYourBusinessDataThroughThe"),
     icon: Globe,
   },
 ];
 
 function SolutionSection() {
+  const t = useTranslations("LandingFeatures");
   return (
     <section className="py-16 md:py-20">
       <Container>
@@ -756,19 +761,14 @@ function SolutionSection() {
               <div className="mb-5">
                 <span className="inline-flex items-center gap-2 rounded-full border border-emerald-300/60 bg-emerald-900/30 px-4 py-1.5 text-sm font-medium text-white backdrop-blur-sm">
                   <span className="inline-block size-1.5 rounded-full bg-emerald-300" />
-                  The Solution
+                  {t("theSolution")}
                 </span>
               </div>
               <h2 className="text-3xl font-bold tracking-tight text-white md:text-4xl lg:text-5xl">
-                One unified platform for{" "}
-                <span className="text-emerald-950">
-                  your entire business
-                </span>
+                {t.rich("solutionHeading", {em: (chunks) => <span className="text-emerald-950">{chunks}</span>})}
               </h2>
               <p className="mt-5 max-w-2xl text-lg leading-relaxed text-emerald-100">
-                dubbl brings accounting, invoicing, inventory, project management,
-                payroll, and CRM into one place. AI-ready with built-in MCP
-                support.
+                {t("dubblBringsAccountingInvoicingInventoryProjectManagementPayrollAnd")}
               </p>
             </div>
           </div>
@@ -776,7 +776,7 @@ function SolutionSection() {
 
         {/* Capabilities row */}
         <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-3">
-          {capabilities.map((cap, i) => (
+          {getCapabilities(t).map((cap, i) => (
             <ScrollReveal key={cap.headline} delay={0.1 + i * 0.1}>
               <motion.div
                 whileHover={{ y: -4 }}
@@ -833,9 +833,9 @@ function SolutionSection() {
         <ScrollReveal delay={0.3}>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
             {[
-              "Self-hostable",
-              "Full audit trail",
-              "CSV import from any source",
+              t("selfHostable"),
+              t("fullAuditTrail"),
+              t("cSVImportFromAnySource"),
               "API-first",
             ].map((item) => (
               <div

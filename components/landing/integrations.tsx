@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import {
   CreditCard,
   FileText,
@@ -19,6 +21,8 @@ import { ScrollReveal } from "@/components/shared/scroll-reveal";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
 
+type LandingTranslator = ReturnType<typeof useTranslations>;
+
 /* ------------------------------------------------------------------ */
 /*  Data                                                               */
 /* ------------------------------------------------------------------ */
@@ -30,22 +34,22 @@ interface Integration {
   color: string; // icon hover color class
 }
 
-const row1: Integration[] = [
+const getRow1 = (t: LandingTranslator): Integration[] => [
   { name: "Stripe", category: "Payments", icon: CreditCard, color: "text-blue-500" },
-  { name: "QuickBooks", category: "CSV Import", icon: FileText, color: "text-amber-500" },
-  { name: "Xero", category: "CSV Import", icon: ArrowLeftRight, color: "text-amber-500" },
-  { name: "FreshBooks", category: "CSV Import", icon: Receipt, color: "text-emerald-500" },
-  { name: "Wave", category: "CSV Import", icon: Waves, color: "text-amber-500" },
-  { name: "REST API", category: "Custom", icon: Code2, color: "text-purple-500" },
+  { name: "QuickBooks", category: t("cSVImport"), icon: FileText, color: "text-amber-500" },
+  { name: "Xero", category: t("cSVImport"), icon: ArrowLeftRight, color: "text-amber-500" },
+  { name: "FreshBooks", category: t("cSVImport"), icon: Receipt, color: "text-emerald-500" },
+  { name: "Wave", category: t("cSVImport"), icon: Waves, color: "text-amber-500" },
+  { name: "REST API", category: t("custom"), icon: Code2, color: "text-purple-500" },
 ];
 
-const row2: Integration[] = [
-  { name: "CSV Import", category: "Any Format", icon: FileText, color: "text-blue-500" },
-  { name: "Bank Feeds", category: "Coming Soon", icon: Landmark, color: "text-emerald-500" },
-  { name: "Invoicing", category: "Built-in", icon: Send, color: "text-blue-500" },
-  { name: "Inventory", category: "Built-in", icon: ShoppingBag, color: "text-purple-500" },
-  { name: "Projects", category: "Built-in", icon: Store, color: "text-emerald-500" },
-  { name: "Self-Host", category: "Full Control", icon: Building2, color: "text-emerald-500" },
+const getRow2 = (t: LandingTranslator): Integration[] => [
+  { name: t("cSVImport"), category: t("anyFormat"), icon: FileText, color: "text-blue-500" },
+  { name: t("bankFeeds"), category: t("comingSoon"), icon: Landmark, color: "text-emerald-500" },
+  { name: t("invoicing"), category: t("builtIn"), icon: Send, color: "text-blue-500" },
+  { name: t("inventory"), category: t("builtIn"), icon: ShoppingBag, color: "text-purple-500" },
+  { name: t("projects"), category: t("builtIn"), icon: Store, color: "text-emerald-500" },
+  { name: t("selfHost"), category: t("fullControl"), icon: Building2, color: "text-emerald-500" },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -100,13 +104,14 @@ function MarqueeRow({
 /* ------------------------------------------------------------------ */
 
 export function Integrations() {
+  const t = useTranslations("LandingFeatures");
   return (
     <section className="py-16 md:py-20">
       <Container>
         <SectionHeader
-          badge="Import & Integrate"
-          title="Bring your data with you"
-          subtitle="Import from QuickBooks, Xero, FreshBooks, Wave, or any CSV. Live bank feeds coming soon."
+          badge={t("importIntegrate")}
+          title={t("bringYourDataWithYou")}
+          subtitle={t("importFromQuickBooksXeroFreshBooksWaveOrAnyCSV2")}
         />
 
         <ScrollReveal>
@@ -121,8 +126,8 @@ export function Integrations() {
               }}
             >
               <div className="space-y-4">
-                <MarqueeRow items={row1} duration={40} />
-                <MarqueeRow items={row2} reverse duration={45} />
+                <MarqueeRow items={getRow1(t)} duration={40} />
+                <MarqueeRow items={getRow2(t)} reverse duration={45} />
               </div>
             </div>
           </div>

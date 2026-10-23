@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { motion } from "motion/react";
 import {
   Globe,
@@ -21,6 +23,8 @@ import { Container } from "@/components/shared/container";
 import { SectionHeader } from "@/components/shared/section-header";
 import { ScrollReveal } from "@/components/shared/scroll-reveal";
 import { cn } from "@/lib/utils";
+
+type LandingTranslator = ReturnType<typeof useTranslations>;
 
 /* ------------------------------------------------------------------ */
 /*  Shared: Mini window chrome for mockup areas                       */
@@ -49,17 +53,18 @@ function WindowChrome({ children, title }: { children: React.ReactNode; title: s
 /* ------------------------------------------------------------------ */
 
 function LedgerMockup() {
+  const t = useTranslations("LandingFeatures");
   const rows = [
-    { date: "Mar 01", account: "Cash (1000)", debit: "12,450.00", credit: "—" },
-    { date: "Mar 01", account: "Revenue (4000)", debit: "—", credit: "12,450.00" },
-    { date: "Mar 02", account: "Office Supplies (5200)", debit: "3,200.00", credit: "—" },
-    { date: "Mar 02", account: "Accounts Payable (2000)", debit: "—", credit: "3,200.00" },
+    { date: "Mar 01", account: t("cash1000"), debit: "12,450.00", credit: "—" },
+    { date: "Mar 01", account: t("revenue4000"), debit: "—", credit: "12,450.00" },
+    { date: "Mar 02", account: t("officeSupplies5200"), debit: "3,200.00", credit: "—" },
+    { date: "Mar 02", account: t("accountsPayable2000"), debit: "—", credit: "3,200.00" },
   ];
 
-  const columns = ["Date", "Account", "Debit", "Credit"];
+  const columns = [t("date"), t("account"), t("debit"), t("credit")];
 
   return (
-    <WindowChrome title="General Ledger — March 2026">
+    <WindowChrome title={t("generalLedgerMarch2026")}>
       <div className="overflow-hidden rounded-md border border-border">
         {/* Table header */}
         <div className="grid grid-cols-[60px_1fr_80px_80px] bg-muted/80 px-3 py-2">
@@ -101,7 +106,7 @@ function LedgerMockup() {
           className="grid grid-cols-[60px_1fr_80px_80px] border-t border-border bg-muted/50 px-3 py-2 text-[11px]"
         >
           <span />
-          <span className="font-semibold text-muted-foreground">Total</span>
+          <span className="font-semibold text-muted-foreground">{t("total")}</span>
           <span className="font-bold tabular-nums text-foreground">15,650.00</span>
           <span className="font-bold tabular-nums text-foreground">15,650.00</span>
         </motion.div>
@@ -116,7 +121,7 @@ function LedgerMockup() {
       >
         <CheckCircle2 className="size-3.5 text-emerald-600 dark:text-emerald-400" />
         <span className="text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
-          Balanced — Debits equal Credits
+          {t("balancedDebitsEqualCredits")}
         </span>
       </motion.div>
     </WindowChrome>
@@ -128,10 +133,11 @@ function LedgerMockup() {
 /* ------------------------------------------------------------------ */
 
 function ReportsMockup() {
+  const t = useTranslations("LandingFeatures");
   const kpis = [
-    { label: "Revenue", value: "$84.2k", change: "+12.4%", positive: true },
-    { label: "Expenses", value: "$41.8k", change: "+3.1%", positive: false },
-    { label: "Profit", value: "$42.3k", change: "+21.8%", positive: true },
+    { label: t("revenue"), value: "$84.2k", change: "+12.4%", positive: true },
+    { label: t("expenses"), value: "$41.8k", change: "+3.1%", positive: false },
+    { label: t("profit"), value: "$42.3k", change: "+21.8%", positive: true },
   ];
 
   // SVG chart data points (normalized 0-1 range, mapped to viewBox)
@@ -169,7 +175,7 @@ function ReportsMockup() {
   const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
   return (
-    <WindowChrome title="Financial Reports — FY 2026">
+    <WindowChrome title={t("financialReportsFY2026")}>
       {/* KPI row */}
       <div className="mb-3 grid grid-cols-3 gap-2">
         {kpis.map((kpi, i) => (
@@ -283,11 +289,11 @@ function ReportsMockup() {
         <div className="mt-1.5 flex items-center justify-center gap-4">
           <div className="flex items-center gap-1.5">
             <div className="h-0.5 w-4 rounded-full bg-emerald-500 dark:bg-emerald-400" />
-            <span className="text-[9px] font-medium text-muted-foreground">Revenue</span>
+            <span className="text-[9px] font-medium text-muted-foreground">{t("revenue")}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="h-0.5 w-4 rounded-full border-b border-dashed border-amber-500 dark:border-amber-400" />
-            <span className="text-[9px] font-medium text-muted-foreground">Expenses</span>
+            <span className="text-[9px] font-medium text-muted-foreground">{t("expenses")}</span>
           </div>
         </div>
       </motion.div>
@@ -300,28 +306,29 @@ function ReportsMockup() {
 /* ------------------------------------------------------------------ */
 
 function ReconciliationMockup() {
+  const t = useTranslations("LandingFeatures");
   const bankItems = [
-    { id: "TXN-4821", desc: "Shopify Deposit", amount: "+$4,250.00", status: "matched" as const },
-    { id: "TXN-4822", desc: "AWS Invoice", amount: "-$1,840.00", status: "matched" as const },
-    { id: "TXN-4823", desc: "Wire Transfer", amount: "+$8,600.00", status: "unmatched" as const },
+    { id: "TXN-4821", desc: t("shopifyDeposit"), amount: "+$4,250.00", status: "matched" as const },
+    { id: "TXN-4822", desc: t("aWSInvoice"), amount: "-$1,840.00", status: "matched" as const },
+    { id: "TXN-4823", desc: t("wireTransfer"), amount: "+$8,600.00", status: "unmatched" as const },
     { id: "TXN-4824", desc: "Stripe Payout", amount: "+$2,190.00", status: "matched" as const },
   ];
 
   const journalItems = [
-    { id: "JE-1042", desc: "Sales Revenue", amount: "$4,250.00", status: "matched" as const },
-    { id: "JE-1043", desc: "Cloud Infrastructure", amount: "$1,840.00", status: "matched" as const },
-    { id: "JE-????", desc: "No match found", amount: "—", status: "unmatched" as const },
-    { id: "JE-1045", desc: "Payment Processing", amount: "$2,190.00", status: "matched" as const },
+    { id: "JE-1042", desc: t("salesRevenue"), amount: "$4,250.00", status: "matched" as const },
+    { id: "JE-1043", desc: t("cloudInfrastructure"), amount: "$1,840.00", status: "matched" as const },
+    { id: "JE-????", desc: t("noMatchFound"), amount: "—", status: "unmatched" as const },
+    { id: "JE-1045", desc: t("paymentProcessing"), amount: "$2,190.00", status: "matched" as const },
   ];
 
   return (
-    <WindowChrome title="Bank Reconciliation — Checking ****4821">
+    <WindowChrome title={t("bankReconciliationChecking4821")}>
       <div className="grid grid-cols-[1fr_24px_1fr] gap-0">
         {/* Bank Statement Column */}
         <div>
           <div className="mb-2 rounded-t-md bg-muted/80 px-2 py-1.5">
             <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Bank Statement
+              {t("bankStatement")}
             </span>
           </div>
           <div className="space-y-1.5">
@@ -378,7 +385,7 @@ function ReconciliationMockup() {
         <div>
           <div className="mb-2 rounded-t-md bg-muted/80 px-2 py-1.5">
             <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Journal Entries
+              {t("journalEntries")}
             </span>
           </div>
           <div className="space-y-1.5">
@@ -434,13 +441,11 @@ function ReconciliationMockup() {
       >
         <div className="flex items-center gap-3">
           <span className="flex items-center gap-1 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
-            <CheckCircle2 className="size-3" /> 3 matched
-          </span>
+            <CheckCircle2 className="size-3" /> {t("demo3Matched")}</span>
           <span className="flex items-center gap-1 text-[10px] font-medium text-amber-600 dark:text-amber-400">
-            <Clock className="size-3" /> 1 pending
-          </span>
+            <Clock className="size-3" /> {t("demo1Pending")}</span>
         </div>
-        <span className="text-[10px] font-semibold tabular-nums text-muted-foreground">75% reconciled</span>
+        <span className="text-[10px] font-semibold tabular-nums text-muted-foreground">{t("demo75Reconciled")}</span>
       </motion.div>
     </WindowChrome>
   );
@@ -451,54 +456,55 @@ function ReconciliationMockup() {
 /* ------------------------------------------------------------------ */
 
 function AuditTrailMockup() {
+  const t = useTranslations("LandingFeatures");
   const events = [
     {
       user: "AW",
       name: "Alice Wang",
-      action: "Created journal entry",
+      action: t("createdJournalEntry"),
       entity: "JE-1042",
       entityType: "entry",
-      time: "2 min ago",
+      time: t("demo2MinAgo"),
       icon: FileText,
       color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300",
     },
     {
       user: "BM",
       name: "Bob Martinez",
-      action: "Approved invoice",
+      action: t("approvedInvoice"),
       entity: "INV-389",
       entityType: "invoice",
-      time: "18 min ago",
+      time: t("demo18MinAgo"),
       icon: CheckCircle2,
       color: "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300",
     },
     {
       user: "CS",
       name: "Carol Singh",
-      action: "Updated account",
-      entity: "4100 — Revenue",
+      action: t("updatedAccount"),
+      entity: t("demo4100Revenue"),
       entityType: "account",
-      time: "1 hour ago",
+      time: t("demo1HourAgo"),
       icon: Edit3,
       color: "bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300",
     },
     {
       user: "SYS",
-      name: "System",
-      action: "Deleted draft entry",
+      name: t("system"),
+      action: t("deletedDraftEntry"),
       entity: "JE-1038",
       entityType: "entry",
-      time: "3 hours ago",
+      time: t("demo3HoursAgo"),
       icon: Trash2,
       color: "bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300",
     },
   ];
 
   return (
-    <WindowChrome title="Audit Trail — Activity Log">
+    <WindowChrome title={t("auditTrailActivityLog")}>
       {/* Filter bar */}
       <div className="mb-3 flex items-center gap-2">
-        {["All", "Entries", "Invoices", "Accounts"].map((filter, i) => (
+        {[t("all"), t("entries"), t("invoices"), t("accounts")].map((filter, i) => (
           <span
             key={filter}
             className={cn(
@@ -561,7 +567,7 @@ function AuditTrailMockup() {
         className="mt-1 text-center"
       >
         <span className="cursor-pointer text-[10px] font-medium text-muted-foreground transition-colors hover:text-foreground">
-          View full history
+          {t("viewFullHistory")}
         </span>
       </motion.div>
     </WindowChrome>
@@ -572,32 +578,32 @@ function AuditTrailMockup() {
 /*  Main feature card data                                            */
 /* ------------------------------------------------------------------ */
 
-const mainFeatures = [
+const getMainFeatures = (t: LandingTranslator) => [
   {
-    title: "Double-Entry Ledger",
+    title: t("doubleEntryLedger"),
     description:
-      "Every transaction balances automatically. Debits always equal credits, enforced at the database level so your books stay accurate.",
+      t("everyTransactionBalancesAutomaticallyDebitsAlwaysEqualCreditsEnforced"),
     mockup: <LedgerMockup />,
     icon: BookOpen,
   },
   {
-    title: "Financial Reports",
+    title: t("financialReports"),
     description:
-      "Balance sheets, P&L, and cash flow statements generated instantly. Always up-to-date, always audit-ready.",
+      t("balanceSheetsPLAndCashFlowStatementsGenerated"),
     mockup: <ReportsMockup />,
     icon: BarChart3,
   },
   {
-    title: "Bank Reconciliation",
+    title: t("bankReconciliation"),
     description:
-      "Automatically match imported bank transactions to your journal entries. Spot discrepancies before they become problems.",
+      t("automaticallyMatchImportedBankTransactionsToYourJournalEntries"),
     mockup: <ReconciliationMockup />,
     icon: ArrowLeftRight,
   },
   {
-    title: "Audit Trail",
+    title: t("auditTrail"),
     description:
-      "Every change is logged with who, what, and when. Full compliance history at your fingertips for any audit.",
+      t("everyChangeIsLoggedWithWhoWhatAndWhen"),
     mockup: <AuditTrailMockup />,
     icon: Shield,
   },
@@ -607,11 +613,11 @@ const mainFeatures = [
 /*  Secondary feature card data                                       */
 /* ------------------------------------------------------------------ */
 
-const secondaryFeatures = [
+const getSecondaryFeatures = (t: LandingTranslator) => [
   {
-    title: "Multi-Currency",
+    title: t("multiCurrency"),
     description:
-      "Transact in any currency with automatic rate conversion and realized gain/loss tracking.",
+      t("transactInAnyCurrencyWithAutomaticRateConversionAnd"),
     icon: Globe,
     iconColor: "bg-amber-100 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400",
   },
@@ -623,9 +629,9 @@ const secondaryFeatures = [
     iconColor: "bg-blue-100 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400",
   },
   {
-    title: "MCP Protocol",
+    title: t("mCPProtocol"),
     description:
-      "Connect AI assistants directly to your business data. 15 built-in tool modules let AI agents manage contacts, invoices, inventory, and more.",
+      t("connectAIAssistantsDirectlyToYourBusinessData15"),
     icon: Plug,
     iconColor: "bg-emerald-100 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400",
   },
@@ -636,18 +642,19 @@ const secondaryFeatures = [
 /* ------------------------------------------------------------------ */
 
 export function BentoFeatures() {
+  const t = useTranslations("LandingFeatures");
   return (
     <section id="features" className="py-16 md:py-24">
       <Container>
         <SectionHeader
-          badge="Features"
-          title="Powerful features for modern teams"
-          subtitle="From double-entry bookkeeping and inventory to project management and AI integrations."
+          badge={t("features")}
+          title={t("powerfulFeaturesForModernTeams")}
+          subtitle={t("fromDoubleEntryBookkeepingAndInventoryToProjectManagement")}
         />
 
         {/* ---- 2x2 Main Feature Cards ---- */}
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-          {mainFeatures.map((feature, i) => (
+          {getMainFeatures(t).map((feature, i) => (
             <ScrollReveal key={feature.title} delay={i * 0.06}>
               <motion.div
                 whileHover={{
@@ -694,7 +701,7 @@ export function BentoFeatures() {
 
         {/* ---- 3-column Secondary Feature Cards ---- */}
         <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-3">
-          {secondaryFeatures.map((feature, i) => (
+          {getSecondaryFeatures(t).map((feature, i) => (
             <ScrollReveal key={feature.title} delay={0.3 + i * 0.06}>
               <motion.div
                 whileHover={{ scale: 1.015 }}

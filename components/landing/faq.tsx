@@ -1,3 +1,5 @@
+import { useTranslations } from "next-intl";
+
 import {
   Accordion,
   AccordionContent,
@@ -7,55 +9,58 @@ import {
 import { Container } from "@/components/shared/container";
 import { SectionHeader } from "@/components/shared/section-header";
 
-const faqs = [
+type LandingTranslator = ReturnType<typeof useTranslations>;
+
+const getFaqs = (t: LandingTranslator) => [
   {
-    question: "Is dubbl really free?",
+    question: t("isDubblReallyFree"),
     answer:
-      "Yes. dubbl is open source under the Apache 2.0 license. You can self-host it for free with no feature limitations, no user caps, and no hidden costs.",
+      t("yesDubblIsOpenSourceUnderTheApache2"),
   },
   {
-    question: "Can I self-host dubbl?",
+    question: t("canISelfHostDubbl"),
     answer:
-      "Absolutely. dubbl is designed for self-hosting. We provide Docker images, Helm charts, and comprehensive deployment guides for AWS, GCP, and bare metal.",
+      t("absolutelyDubblIsDesignedForSelfHostingWeProvide"),
   },
   {
-    question: "Does dubbl support multi-currency?",
+    question: t("doesDubblSupportMultiCurrency"),
     answer:
-      "Yes. dubbl supports transactions in any currency with automatic exchange rate conversion. Realized and unrealized gain/loss tracking is built in.",
+      t("yesDubblSupportsTransactionsInAnyCurrencyWithAutomatic"),
   },
   {
-    question: "How does double-entry bookkeeping work in dubbl?",
+    question: t("howDoesDoubleEntryBookkeepingWorkInDubbl"),
     answer:
-      "Every transaction must have balanced debits and credits. This is enforced at the database level, meaning it's impossible to create an unbalanced entry. dubbl supports multi-leg journal entries for complex transactions.",
+      t("everyTransactionMustHaveBalancedDebitsAndCreditsThis"),
   },
   {
-    question: "Can I migrate from QuickBooks or Xero?",
+    question: t("canIMigrateFromQuickBooksOrXero"),
     answer:
-      "Yes. dubbl supports CSV import with built-in column mapping for QuickBooks, Xero, FreshBooks, and Wave. You can import accounts, contacts, invoices, bills, journal entries, products, and bank transactions from any CSV file.",
+      t("yesDubblSupportsCSVImportWithBuiltInColumn"),
   },
   {
-    question: "Is there an API?",
+    question: t("isThereAnAPI"),
     answer:
-      "dubbl is API-first. Every feature available in the UI is also accessible via our REST API with comprehensive OpenAPI documentation. dubbl also supports the Model Context Protocol (MCP), allowing AI assistants to interact with your business data directly.",
+      t("dubblIsAPIFirstEveryFeatureAvailableInThe"),
   },
   {
-    question: "How do I contribute to dubbl?",
+    question: t("howDoIContributeToDubbl"),
     answer:
-      "We welcome contributions! Check out our GitHub repository for contributing guidelines, open issues labeled 'good first issue', and our development setup guide.",
+      t("weWelcomeContributionsCheckOutOurGitHubRepositoryFor"),
   },
   {
-    question: "Is dubbl suitable for enterprise use?",
+    question: t("isDubblSuitableForEnterpriseUse"),
     answer:
-      "Yes. dubbl includes features like audit trails, role-based access control, SSO/SAML support, and multi-tenant architecture. Beyond accounting, dubbl covers inventory management, project management, payroll, and CRM. Many companies use dubbl in production as their core business platform.",
+      t("yesDubblIncludesFeaturesLikeAuditTrailsRoleBased"),
   },
   {
-    question: "What is MCP support?",
+    question: t("whatIsMCPSupport"),
     answer:
-      "MCP (Model Context Protocol) is an open standard that lets AI assistants interact with external tools and data. dubbl ships with 15 built-in MCP tool modules covering contacts, invoices, inventory, projects, and more. This means AI agents like Claude can read, create, and manage your business data directly through a structured protocol.",
+      t("mCPModelContextProtocolIsAnOpenStandardThat"),
   },
 ];
 
 export function FAQ() {
+  const t = useTranslations("LandingFeatures");
   return (
     <section className="py-16 md:py-20">
       <Container>
@@ -63,29 +68,26 @@ export function FAQ() {
           {/* Left column */}
           <div>
             <SectionHeader
-              badge="FAQs"
-              title="Frequently asked questions"
+              badge={t("fAQs")}
+              title={t("frequentlyAskedQuestions")}
               align="left"
               className="mb-6"
             />
             <p className="text-sm text-muted-foreground">
-              Can&apos;t find what you&apos;re looking for? Reach out on{" "}
-              <a
+              {t.rich("contactHelp", {em: (chunks) => <a
                 href="https://github.com/dubbl-org/dubbl/discussions"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-emerald-600 underline underline-offset-4 hover:text-emerald-500 dark:text-emerald-400 dark:hover:text-emerald-300"
               >
-                GitHub Discussions
-              </a>
-              .
+                {chunks}</a>})}
             </p>
           </div>
 
           {/* Right column */}
           <div>
             <Accordion type="single" collapsible className="w-full">
-              {faqs.map((faq, i) => (
+              {getFaqs(t).map((faq, i) => (
                 <AccordionItem
                   key={i}
                   value={`item-${i}`}

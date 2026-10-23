@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { motion } from "motion/react";
 import {
   CreditCard,
@@ -20,32 +22,35 @@ import { SectionHeader } from "@/components/shared/section-header";
 import { ScrollReveal } from "@/components/shared/scroll-reveal";
 import { cn } from "@/lib/utils";
 
+type LandingTranslator = ReturnType<typeof useTranslations>;
+
 /* ------------------------------------------------------------------ */
 /*  Step 1: Connect — Real integration settings panel                 */
 /* ------------------------------------------------------------------ */
 
-const integrations = [
+const getIntegrations = (t: LandingTranslator) => [
   {
-    name: "QuickBooks CSV",
+    name: t("quickBooksCSV"),
     icon: FileText,
     status: "connected" as const,
-    description: "Accounts imported",
+    description: t("accountsImported"),
   },
   {
-    name: "Bank Statement",
+    name: t("bankStatement"),
     icon: Building2,
     status: "connected" as const,
-    description: "CSV imported",
+    description: t("cSVImported"),
   },
   {
-    name: "Xero Export",
+    name: t("xeroExport"),
     icon: CreditCard,
     status: "pending" as const,
-    description: "Ready to import",
+    description: t("readyToImport"),
   },
 ];
 
 function ConnectVisual() {
+  const t = useTranslations("LandingFeatures");
   return (
     <div className="rounded-xl rounded-b-none bg-card p-4">
       {/* Panel header */}
@@ -57,14 +62,14 @@ function ConnectVisual() {
         className="mb-3 flex items-center justify-between"
       >
         <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Integrations
+          {t("integrations")}
         </span>
-        <span className="text-[10px] text-muted-foreground">2 of 3 imported</span>
+        <span className="text-[10px] text-muted-foreground">{t("demo2Of3Imported")}</span>
       </motion.div>
 
       {/* Integration rows */}
       <div className="space-y-2">
-        {integrations.map((item, i) => (
+        {getIntegrations(t).map((item, i) => (
           <motion.div
             key={item.name}
             initial={{ opacity: 0, x: -14 }}
@@ -101,7 +106,7 @@ function ConnectVisual() {
                     : "text-amber-500 dark:text-amber-400"
                 )}
               >
-                {item.status === "connected" ? "Active" : "Pending"}
+                {item.status === "connected" ? t("active") : t("pending")}
               </span>
               {/* Toggle switch */}
               <div
@@ -132,7 +137,7 @@ function ConnectVisual() {
         transition={{ delay: 0.7, duration: 0.35 }}
         className="mt-3 flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-border py-2 text-[10px] font-medium text-muted-foreground"
       >
-        <span>+ Import another CSV</span>
+        <span>{t("importAnotherCSV")}</span>
       </motion.div>
     </div>
   );
@@ -143,6 +148,7 @@ function ConnectVisual() {
 /* ------------------------------------------------------------------ */
 
 function CategorizeVisual() {
+  const t = useTranslations("LandingFeatures");
   return (
     <div className="rounded-xl rounded-b-none bg-card p-4">
       {/* Transaction being categorized */}
@@ -154,7 +160,7 @@ function CategorizeVisual() {
         className="mb-3"
       >
         <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Categorize Transaction
+          {t("categorizeTransaction")}
         </span>
       </motion.div>
 
@@ -167,7 +173,7 @@ function CategorizeVisual() {
         className="mb-3 flex items-center justify-between rounded-lg border border-border bg-card px-3 py-2.5"
       >
         <div>
-          <p className="text-xs font-semibold text-foreground">AWS Cloud Services</p>
+          <p className="text-xs font-semibold text-foreground">{t("aWSCloudServices")}</p>
           <p className="text-[10px] text-muted-foreground">Mar 1, 2026</p>
         </div>
         <span className="text-sm font-bold tabular-nums text-foreground">
@@ -184,13 +190,13 @@ function CategorizeVisual() {
         className="mb-2.5"
       >
         <label className="mb-1 block text-[10px] font-medium text-muted-foreground">
-          Category
+          {t("category")}
         </label>
         <div className="flex items-center justify-between rounded-lg border border-border bg-card px-3 py-2">
           <div className="flex items-center gap-2">
             <div className="size-2 rounded-full bg-blue-400" />
             <span className="text-xs font-medium text-foreground">
-              Software & Tools
+              {t("softwareTools")}
             </span>
           </div>
           <ChevronDown className="size-3 text-muted-foreground" />
@@ -207,21 +213,21 @@ function CategorizeVisual() {
       >
         <div>
           <label className="mb-1 block text-[10px] font-medium text-muted-foreground">
-            Debit
+            {t("debit")}
           </label>
           <div className="rounded-lg border border-emerald-300 bg-emerald-50/50 px-3 py-2 dark:border-emerald-800 dark:bg-emerald-950/30">
             <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
-              6200 &middot; Software
+              {t("demo6200Software")}
             </span>
           </div>
         </div>
         <div>
           <label className="mb-1 block text-[10px] font-medium text-muted-foreground">
-            Credit
+            {t("credit")}
           </label>
           <div className="rounded-lg border border-border bg-card px-3 py-2">
             <span className="text-xs font-semibold text-foreground">
-              1000 &middot; Cash
+              {t("demo1000Cash")}
             </span>
           </div>
         </div>
@@ -237,7 +243,7 @@ function CategorizeVisual() {
       >
         <Check className="size-3 text-emerald-600 dark:text-emerald-400" />
         <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-          Balanced · $2,450.00
+          {t("balanced245000")}
         </span>
       </motion.div>
     </div>
@@ -248,23 +254,23 @@ function CategorizeVisual() {
 /*  Step 3: Insights — Real mini dashboard with KPIs + chart           */
 /* ------------------------------------------------------------------ */
 
-const kpis = [
+const getKpis = (t: LandingTranslator) => [
   {
-    label: "Revenue",
+    label: t("revenue"),
     value: "$84.2k",
     change: "+12.4%",
     trend: "up" as const,
     icon: DollarSign,
   },
   {
-    label: "Expenses",
+    label: t("expenses"),
     value: "$41.8k",
     change: "+3.1%",
     trend: "up" as const,
     icon: BarChart3,
   },
   {
-    label: "Margin",
+    label: t("margin"),
     value: "50.3%",
     change: "+4.2%",
     trend: "up" as const,
@@ -282,6 +288,7 @@ const chartBars = [
 ];
 
 function InsightsVisual() {
+  const t = useTranslations("LandingFeatures");
   return (
     <div className="rounded-xl rounded-b-none bg-card p-4">
       {/* Dashboard header */}
@@ -293,16 +300,16 @@ function InsightsVisual() {
         className="mb-3 flex items-center justify-between"
       >
         <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Overview
+          {t("overview")}
         </span>
         <span className="rounded-md border border-border bg-card px-2 py-0.5 text-[10px] text-muted-foreground">
-          Last 6 months
+          {t("last6Months")}
         </span>
       </motion.div>
 
       {/* KPI boxes */}
       <div className="mb-3 grid grid-cols-3 gap-2">
-        {kpis.map((kpi, i) => (
+        {getKpis(t).map((kpi, i) => (
           <motion.div
             key={kpi.label}
             initial={{ opacity: 0, y: 10 }}
@@ -352,11 +359,11 @@ function InsightsVisual() {
         <div className="mb-2 flex items-center gap-3">
           <div className="flex items-center gap-1">
             <div className="size-1.5 rounded-full bg-emerald-500" />
-            <span className="text-[9px] text-muted-foreground">Revenue</span>
+            <span className="text-[9px] text-muted-foreground">{t("revenue")}</span>
           </div>
           <div className="flex items-center gap-1">
             <div className="size-1.5 rounded-full bg-rose-400" />
-            <span className="text-[9px] text-muted-foreground">Expenses</span>
+            <span className="text-[9px] text-muted-foreground">{t("expenses")}</span>
           </div>
         </div>
 
@@ -403,23 +410,23 @@ function InsightsVisual() {
 /*  Steps data                                                        */
 /* ------------------------------------------------------------------ */
 
-const steps = [
+const getSteps = (t: LandingTranslator) => [
   {
     step: 1,
-    title: "Connect",
-    subtitle: "Import your data from QuickBooks, Xero, FreshBooks, Wave, or any CSV file.",
+    title: t("connect"),
+    subtitle: t("importYourDataFromQuickBooksXeroFreshBooksWaveOr"),
     visual: <ConnectVisual />,
   },
   {
     step: 2,
-    title: "Categorize",
-    subtitle: "Organize your data across accounting, inventory, projects, and more.",
+    title: t("categorize"),
+    subtitle: t("organizeYourDataAcrossAccountingInventoryProjectsAndMore"),
     visual: <CategorizeVisual />,
   },
   {
     step: 3,
-    title: "Insights",
-    subtitle: "See your entire business clearly with real-time dashboards and reports.",
+    title: t("insights"),
+    subtitle: t("seeYourEntireBusinessClearlyWithRealTimeDashboards"),
     visual: <InsightsVisual />,
   },
 ];
@@ -468,19 +475,20 @@ function DashedConnectors() {
 /* ------------------------------------------------------------------ */
 
 export function HowItWorks() {
+  const t = useTranslations("LandingFeatures");
   return (
     <section className="py-16 md:py-20">
       <Container>
         <SectionHeader
-          badge="How it works"
-          title="Three steps to get started"
-          subtitle="From connection to insight in minutes, not months."
+          badge={t("howItWorks")}
+          title={t("threeStepsToGetStarted")}
+          subtitle={t("fromConnectionToInsightInMinutesNotMonths")}
         />
 
         <div className="relative grid grid-cols-1 gap-6 md:grid-cols-3">
           <DashedConnectors />
 
-          {steps.map((item, i) => (
+          {getSteps(t).map((item, i) => (
             <ScrollReveal key={item.step} delay={i * 0.12}>
               <motion.div
                 whileHover={{ y: -4 }}

@@ -1,11 +1,15 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { motion } from "motion/react";
 import { Container } from "@/components/shared/container";
 import { SectionHeader } from "@/components/shared/section-header";
 import { ScrollReveal } from "@/components/shared/scroll-reveal";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+type LandingTranslator = ReturnType<typeof useTranslations>;
 
 /* ------------------------------------------------------------------ */
 /*  KPI Sparkline — tiny inline chart                                  */
@@ -43,19 +47,19 @@ function Sparkline({ trend }: { trend: "up" | "down" | "stable" }) {
 /*  Data                                                               */
 /* ------------------------------------------------------------------ */
 
-const kpis = [
-  { label: "Revenue", value: "$84,200", change: "+12.5%", up: true, trend: "up" as const },
-  { label: "Expenses", value: "$41,800", change: "+3.2%", up: false, trend: "up" as const },
-  { label: "Net Profit", value: "$42,400", change: "+18.7%", up: true, trend: "up" as const },
-  { label: "Cash Balance", value: "$48,250", change: "+2.1%", up: true, trend: "stable" as const },
+const getKpis = (t: LandingTranslator) => [
+  { label: t("revenue"), value: "$84,200", change: "+12.5%", up: true, trend: "up" as const },
+  { label: t("expenses"), value: "$41,800", change: "+3.2%", up: false, trend: "up" as const },
+  { label: t("netProfit"), value: "$42,400", change: "+18.7%", up: true, trend: "up" as const },
+  { label: t("cashBalance"), value: "$48,250", change: "+2.1%", up: true, trend: "stable" as const },
 ];
 
-const transactions = [
-  { date: "Mar 01", desc: "Client Invoice #1024", amount: "+$12,500", type: "income" },
-  { date: "Feb 28", desc: "Office Rent — Q1", amount: "-$3,200", type: "expense" },
-  { date: "Feb 27", desc: "Software Subscription", amount: "-$299", type: "expense" },
-  { date: "Feb 26", desc: "Consulting Revenue", amount: "+$8,000", type: "income" },
-  { date: "Feb 25", desc: "Equipment Purchase", amount: "-$1,450", type: "expense" },
+const getTransactions = (t: LandingTranslator) => [
+  { date: "Mar 01", desc: t("clientInvoice1024"), amount: "+$12,500", type: "income" },
+  { date: "Feb 28", desc: t("officeRentQ1"), amount: "-$3,200", type: "expense" },
+  { date: "Feb 27", desc: t("softwareSubscription"), amount: "-$299", type: "expense" },
+  { date: "Feb 26", desc: t("consultingRevenue"), amount: "+$8,000", type: "income" },
+  { date: "Feb 25", desc: t("equipmentPurchase"), amount: "-$1,450", type: "expense" },
 ];
 
 const linePoints = [
@@ -64,10 +68,10 @@ const linePoints = [
   [300, 28], [330, 22], [360, 18],
 ] as const;
 
-const accountSegments = [
-  { label: "Assets", pct: 60, color: "bg-emerald-500" },
-  { label: "Liabilities", pct: 17, color: "bg-red-400" },
-  { label: "Equity", pct: 23, color: "bg-blue-500" },
+const getAccountSegments = (t: LandingTranslator) => [
+  { label: t("assets"), pct: 60, color: "bg-emerald-500" },
+  { label: t("liabilities"), pct: 17, color: "bg-red-400" },
+  { label: t("equity"), pct: 23, color: "bg-blue-500" },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -75,6 +79,7 @@ const accountSegments = [
 /* ------------------------------------------------------------------ */
 
 export function DashboardPreview() {
+  const t = useTranslations("LandingFeatures");
   const chartPolyline = linePoints.map(([x, y]) => `${x},${y}`).join(" ");
   const areaPolygon = `0,100 ${chartPolyline} 360,100`;
 
@@ -85,9 +90,9 @@ export function DashboardPreview() {
 
       <Container className="relative">
         <SectionHeader
-          badge="Product"
-          title="Your finances at a glance"
-          subtitle="A real-time dashboard for your finances, projects, inventory, and team - all in one place."
+          badge={t("product")}
+          title={t("yourFinancesAtAGlance")}
+          subtitle={t("aRealTimeDashboardForYourFinancesProjectsInventory")}
         />
 
         <ScrollReveal>
@@ -101,7 +106,7 @@ export function DashboardPreview() {
             <div className="p-5 md:p-8">
               {/* KPI Row */}
               <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                {kpis.map((kpi, i) => (
+                {getKpis(t).map((kpi, i) => (
                   <motion.div
                     key={kpi.label}
                     initial={{ opacity: 0, y: 14 }}
@@ -152,10 +157,10 @@ export function DashboardPreview() {
                 >
                   <div className="mb-4 flex items-center justify-between">
                     <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Revenue Trend
+                      {t("revenueTrend")}
                     </p>
                     <span className="rounded-md bg-muted px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground">
-                      6 months
+                      {t("demo6Months")}
                     </span>
                   </div>
                   <svg
@@ -230,14 +235,14 @@ export function DashboardPreview() {
                 >
                   <div className="mb-4 flex items-center justify-between">
                     <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Recent Transactions
+                      {t("recentTransactions")}
                     </p>
                     <span className="rounded-md bg-muted px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground">
-                      Last 7 days
+                      {t("last7Days")}
                     </span>
                   </div>
                   <div className="space-y-0">
-                    {transactions.map((tx, i) => (
+                    {getTransactions(t).map((tx, i) => (
                       <motion.div
                         key={i}
                         initial={{ opacity: 0, x: -12 }}
@@ -279,10 +284,10 @@ export function DashboardPreview() {
                 className="mt-5 rounded-xl border border-border bg-background p-5"
               >
                 <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Account Breakdown
+                  {t("accountBreakdown")}
                 </p>
                 <div className="flex h-3 overflow-hidden rounded-full">
-                  {accountSegments.map((seg) => (
+                  {getAccountSegments(t).map((seg) => (
                     <motion.div
                       key={seg.label}
                       className={cn("h-full first:rounded-l-full last:rounded-r-full", seg.color)}
@@ -294,7 +299,7 @@ export function DashboardPreview() {
                   ))}
                 </div>
                 <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1">
-                  {accountSegments.map((seg) => (
+                  {getAccountSegments(t).map((seg) => (
                     <div key={seg.label} className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span className={cn("inline-block size-2 rounded-full", seg.color)} />
                       {seg.label} {seg.pct}%

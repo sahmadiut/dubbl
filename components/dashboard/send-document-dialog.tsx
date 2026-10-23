@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Send, Paperclip, Eye, Pencil, Mail, Loader2, CreditCard, FileText, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -88,6 +89,7 @@ export function SendDocumentDialog({
   sendApiUrl,
   onSent,
 }: SendDocumentDialogProps) {
+  const t = useTranslations("DocumentSend");
   const [recipientEmail, setRecipientEmail] = useState("");
   const [personalMessage, setPersonalMessage] = useState("");
   const [attachPdf, setAttachPdf] = useState(true);
@@ -104,14 +106,16 @@ export function SendDocumentDialog({
   const [includePaymentLink, setIncludePaymentLink] = useState(false);
   const [stripeConnected, setStripeConnected] = useState<boolean | null>(null);
 
-  const typeLabel = documentTypeLabels[documentType] || "Document";
+  const templateTypeLabel = documentTypeLabels[documentType] || "Document";
+  const typeLabel = t(`type_${documentType}`);
+  const lowerTypeLabel = t(`lowerType_${documentType}`);
   const renderRoute = documentRenderRoute[documentType];
   const canPreviewDocument = Boolean(renderRoute && documentId);
   const showAttachPdf = documentType === "invoice";
   const isInvoice = documentType === "invoice";
   let amountFormatted: string | undefined, moneyError: string | undefined;
   try { amountFormatted = publicEmailMoney(amountDue, currencyCode); }
-  catch { moneyError = "Unable to display the saved document amount safely"; }
+  catch { moneyError = t("moneyError"); }
   const dueDateFormatted = formatDateDisplay(dueDate);
   const issueDateFormatted = formatDateDisplay(issueDate);
 
@@ -200,11 +204,11 @@ export function SendDocumentDialog({
         const data = await res.json();
         setPreviewHtml(data.html);
       } else {
-        toast.error("Failed to load preview");
+        toast.error(t("previewFailed"));
         setPreviewing(false);
       }
     } catch {
-      toast.error("Failed to load preview");
+      toast.error(t("previewFailed"));
       setPreviewing(false);
     } finally {
       setPreviewLoading(false);
@@ -241,7 +245,7 @@ export function SendDocumentDialog({
   async function handleSendEmail() {
     if (moneyError) { toast.error(moneyError); return; }
     if (!orgId || !recipientEmail) {
-      toast.error("Recipient email is required");
+      toast.error(t("recipientRequired"));
       return;
     }
 
@@ -256,7 +260,7 @@ export function SendDocumentDialog({
         body: JSON.stringify({
           sendEmail: true,
           recipientEmail,
-          subject: `${typeLabel} ${documentNumber} from ${organizationName}`,
+          subject: `${templateTypeLabel} ${documentNumber} from ${organizationName}`,
           templateProps: buildTemplateProps(),
           attachPdf,
           ...(isInvoice ? { includePaymentLink } : {}),
@@ -264,13 +268,14 @@ export function SendDocumentDialog({
       });
 
       if (res.ok) {
-        toast.success(`${typeLabel} sent via email`);
+        toast.success(t("sent", { type: typeLabel }));
         onOpenChange(false);
         onSent();
       } else {
-        const data = await res.json().catch(() => ({}));
-        toast.error(typeof data.error === "string" ? data.error : `Failed to send ${typeLabel.toLowerCase()}`);
+        toast.error(t("sendFailed", { type: lowerTypeLabel }));
       }
+    } catch {
+      toast.error(t("sendFailed", { type: lowerTypeLabel }));
     } finally {
       setSending(false);
     }
@@ -286,12 +291,14 @@ export function SendDocumentDialog({
       });
 
       if (res.ok) {
-        toast.success(`${typeLabel} marked as sent`);
+        toast.success(t("marked", { type: typeLabel }));
         onOpenChange(false);
         onSent();
       } else {
-        toast.error(`Failed to mark ${typeLabel.toLowerCase()} as sent`);
+        toast.error(t("markFailed", { type: lowerTypeLabel }));
       }
+    } catch {
+      toast.error(t("markFailed", { type: lowerTypeLabel }));
     } finally {
       setMarkingAsSent(false);
     }
@@ -306,7 +313,7 @@ export function SendDocumentDialog({
               <Mail className="size-5" />
             </div>
             <div>
-              <SheetTitle className="text-lg">Send {typeLabel}</SheetTitle>
+              <SheetTitle className="text-lg">{t("title", { type: typeLabel })}</SheetTitle>
               <SheetDescription>{documentNumber}</SheetDescription>
             </div>
           </div>
@@ -318,7 +325,7 @@ export function SendDocumentDialog({
             <div className="flex flex-col h-full">
               <div className="flex items-center justify-between px-4 py-2.5 sm:px-6 border-b bg-muted/30">
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  {typeLabel} Preview
+                  {t("documentPreviewHeading", { type: typeLabel })}
                 </p>
                 <Button
                   variant="ghost"
@@ -327,7 +334,7 @@ export function SendDocumentDialog({
                   onClick={() => setDocPreviewing(false)}
                 >
                   <ArrowLeft className="size-3" />
-                  Back
+                  {t("back")}
                 </Button>
               </div>
               {docPreviewLoading ? (
@@ -338,10 +345,10 @@ export function SendDocumentDialog({
                 <div className="flex-1 flex flex-col items-center justify-center gap-3 py-20 px-6 text-center">
                   <FileText className="size-8 text-muted-foreground" />
                   <p className="text-sm text-muted-foreground">
-                    Couldn&apos;t load the {typeLabel.toLowerCase()} preview.
+                    {t("documentPreviewFailed", { type: lowerTypeLabel })}
                   </p>
                   <Button variant="outline" size="sm" onClick={handleDocumentPreview}>
-                    Try again
+                    {t("retry")}
                   </Button>
                 </div>
               ) : (
@@ -350,7 +357,7 @@ export function SendDocumentDialog({
                     src={docPreviewUrl}
                     className="w-full h-full border-0 rounded-lg bg-white"
                     style={{ minHeight: 700 }}
-                    title={`${typeLabel} preview`}
+                    title={t("documentPreviewTitle", { type: typeLabel })}
                   />
                 </div>
               )}
@@ -359,10 +366,10 @@ export function SendDocumentDialog({
             /* ---- Email Preview ---- */
             <div className="flex flex-col h-full">
               <div className="flex items-center justify-between px-4 py-2.5 sm:px-6 border-b bg-muted/30">
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Email Preview</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("emailPreviewHeading")}</p>
                 <Button variant="ghost" size="sm" className="h-7 text-xs gap-1.5" onClick={() => setPreviewing(false)}>
                   <Pencil className="size-3" />
-                  Edit
+                  {t("edit")}
                 </Button>
               </div>
               {previewLoading ? (
@@ -375,7 +382,7 @@ export function SendDocumentDialog({
                     srcDoc={previewHtml}
                     className="w-full border-0 rounded-lg"
                     style={{ minHeight: 700 }}
-                    title="Email preview"
+                    title={t("emailPreviewTitle")}
                     sandbox="allow-same-origin"
                     onLoad={(e) => {
                       const frame = e.currentTarget;
@@ -394,7 +401,7 @@ export function SendDocumentDialog({
               {moneyError && <p role="alert" className="text-sm text-destructive">{moneyError}</p>}
               {/* Recipient */}
               <div className="space-y-2">
-                <Label className="text-xs">To</Label>
+                <Label className="text-xs">{t("to")}</Label>
                 <Input
                   type="email"
                   value={recipientEmail}
@@ -406,7 +413,7 @@ export function SendDocumentDialog({
               {/* Document summary (read-only, shows what the email will contain) */}
               <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Email will include
+                  {t("emailIncludes")}
                 </p>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
@@ -414,33 +421,33 @@ export function SendDocumentDialog({
                     <p className="text-sm font-mono font-semibold">{documentNumber}</p>
                   </div>
                   <div>
-                    <p className="text-[11px] text-muted-foreground">From</p>
+                    <p className="text-[11px] text-muted-foreground">{t("from")}</p>
                     <p className="text-sm font-medium">{organizationName || "-"}</p>
                   </div>
                   {amountFormatted && (
                     <div>
                       <p className="text-[11px] text-muted-foreground">
-                        {documentType === "quote" ? "Total" : "Amount Due"}
+                        {documentType === "quote" ? t("total") : t("amountDue")}
                       </p>
                       <p className="text-sm font-mono font-semibold">{amountFormatted}</p>
                     </div>
                   )}
                   {dueDateFormatted && documentType !== "quote" && (
                     <div>
-                      <p className="text-[11px] text-muted-foreground">Due Date</p>
+                      <p className="text-[11px] text-muted-foreground">{t("dueDate")}</p>
                       <p className="text-sm font-medium">{dueDateFormatted}</p>
                     </div>
                   )}
                   {issueDateFormatted && (
                     <div>
                       <p className="text-[11px] text-muted-foreground">
-                        {documentType === "quote" ? "Valid Until" : "Issue Date"}
+                        {documentType === "quote" ? t("validUntil") : t("issueDate")}
                       </p>
                       <p className="text-sm font-medium">{issueDateFormatted}</p>
                     </div>
                   )}
                   <div>
-                    <p className="text-[11px] text-muted-foreground">Recipient</p>
+                    <p className="text-[11px] text-muted-foreground">{t("recipient")}</p>
                     <p className="text-sm font-medium">{contactName || "-"}</p>
                   </div>
                 </div>
@@ -448,16 +455,16 @@ export function SendDocumentDialog({
 
               {/* Personal message */}
               <div className="space-y-2">
-                <Label className="text-xs">Personal Message (optional)</Label>
+                <Label className="text-xs">{t("personalMessage")}</Label>
                 <Textarea
                   value={personalMessage}
                   onChange={(e) => setPersonalMessage(e.target.value)}
                   rows={4}
                   className="text-sm"
-                  placeholder={`Add a note for ${contactName || "the recipient"}...`}
+                  placeholder={contactName ? t("noteFor", { name: contactName }) : t("noteForRecipient")}
                 />
                 <p className="text-[11px] text-muted-foreground">
-                  This message will appear above the document details in the email.
+                  {t("messageHelp")}
                 </p>
               </div>
 
@@ -504,7 +511,7 @@ export function SendDocumentDialog({
                     />
                     <label htmlFor="attach-pdf" className="flex items-center gap-1.5 text-sm cursor-pointer">
                       <Paperclip className="size-3.5 text-muted-foreground" />
-                      Attach PDF
+                      {t("attachPdf")}
                     </label>
                   </div>
                 )}
@@ -518,7 +525,7 @@ export function SendDocumentDialog({
                     onClick={handlePreview}
                   >
                     <Eye className="size-3.5" />
-                    Preview Email
+                    {t("previewEmail")}
                   </Button>
                   {canPreviewDocument && (
                     <Button
@@ -529,7 +536,7 @@ export function SendDocumentDialog({
                       onClick={handleDocumentPreview}
                     >
                       <FileText className="size-3.5" />
-                      Preview {typeLabel}
+                      {t("previewDocument", { type: typeLabel })}
                     </Button>
                   )}
                 </div>
@@ -547,7 +554,7 @@ export function SendDocumentDialog({
             className="flex-1 bg-emerald-600 hover:bg-emerald-700"
           >
             <Send className="mr-2 size-4" />
-            Send Email
+            {t("sendEmail")}
           </Button>
           <Button
             variant="outline"
@@ -555,7 +562,7 @@ export function SendDocumentDialog({
             loading={markingAsSent}
             disabled={sending}
           >
-            Mark as Sent
+            {t("markAsSent")}
           </Button>
         </div>
       </SheetContent>

@@ -456,3 +456,5 @@ payload serialization. No DB/API/schema change is part of LOC-005.
 LOC-116: [document email history scope and exceptions](DOCUMENT_EMAIL_HISTORY_CATALOGS.md).
 
 LOC-118: [document workspace scope and exceptions](DOCUMENT_WORKSPACE_CATALOGS.md).
+
+LOC-119: [document send control scope and exceptions](DOCUMENT_SEND_CATALOGS.md).

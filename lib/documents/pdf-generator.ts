@@ -1,6 +1,8 @@
+import { outputTranslator } from "@/i18n/output";
 import { documentMoneyText as formatMoney, documentRenderDto, documentHundredths } from "./render-wire";
 
 interface TemplateSettings {
+  locale?: import("@/i18n/locale").AppLocale;
   logoUrl?: string | null;
   accentColor?: string | null;
   headerHtml?: string | null;
@@ -50,8 +52,8 @@ interface InvoiceData {
   notes?: string | null;
 }
 
-function getTaxIdLabel(countryCode?: string | null): string {
-  if (!countryCode) return "Tax ID";
+function getTaxIdLabel(t: ReturnType<typeof outputTranslator>, countryCode?: string | null): string {
+  if (!countryCode) return t("taxId");
   const cc = countryCode.toUpperCase();
   const EU = [
     "AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR",
@@ -62,13 +64,13 @@ function getTaxIdLabel(countryCode?: string | null): string {
   if (cc === "AU") return "ABN";
   if (cc === "NZ") return "GST";
   if (cc === "CA") return "GST/HST";
-  return "Tax ID";
+  return t("taxId");
 }
 
-function getInvoiceTitle(countryCode?: string | null, hasTaxId?: boolean): string {
+function getInvoiceTitle(t: ReturnType<typeof outputTranslator>, countryCode?: string | null, hasTaxId?: boolean): string {
   const cc = countryCode?.toUpperCase();
-  if ((cc === "AU" || cc === "NZ") && hasTaxId) return "Tax Invoice";
-  return "Invoice";
+  if ((cc === "AU" || cc === "NZ") && hasTaxId) return t("taxInvoice");
+  return t("invoice");
 }
 
 // Per-document-type presentation config so we can reuse the invoice template
@@ -90,48 +92,48 @@ interface DocTypeConfig {
   showAmountDue: boolean;
 }
 
-const DOC_CONFIGS: Record<DocumentKind, DocTypeConfig> = {
+const documentConfigs = (t: ReturnType<typeof outputTranslator>): Record<DocumentKind, DocTypeConfig> => ({
   invoice: {
-    title: "Invoice",
-    numberLabel: "Invoice number",
-    secondDateLabel: "Date due",
-    partyLabel: "Bill to",
+    title: t("invoice"),
+    numberLabel: t("invoiceNumber"),
+    secondDateLabel: t("dateDue"),
+    partyLabel: t("billTo"),
     supplierFacing: false,
     showAmountDue: true,
   },
   quote: {
-    title: "Quote",
-    numberLabel: "Quote number",
-    secondDateLabel: "Valid until",
-    partyLabel: "Prepared for",
+    title: t("quote"),
+    numberLabel: t("quoteNumber"),
+    secondDateLabel: t("validUntil"),
+    partyLabel: t("preparedFor"),
     supplierFacing: false,
     showAmountDue: false,
   },
   credit_note: {
-    title: "Credit Note",
-    numberLabel: "Credit note number",
+    title: t("creditNote"),
+    numberLabel: t("creditNoteNumber"),
     secondDateLabel: null,
-    partyLabel: "Credit to",
+    partyLabel: t("creditTo"),
     supplierFacing: false,
     showAmountDue: false,
   },
   purchase_order: {
-    title: "Purchase Order",
-    numberLabel: "Order number",
-    secondDateLabel: "Delivery date",
-    partyLabel: "Supplier",
+    title: t("purchaseOrder"),
+    numberLabel: t("orderNumber"),
+    secondDateLabel: t("deliveryDate"),
+    partyLabel: t("supplier"),
     supplierFacing: true,
     showAmountDue: false,
   },
   debit_note: {
-    title: "Debit Note",
-    numberLabel: "Debit note number",
+    title: t("debitNote"),
+    numberLabel: t("debitNoteNumber"),
     secondDateLabel: null,
-    partyLabel: "Supplier",
+    partyLabel: t("supplier"),
     supplierFacing: true,
     showAmountDue: false,
   },
-};
+});
 
 export type DocumentKind = "invoice" | "quote" | "credit_note" | "purchase_order" | "debit_note";
 
@@ -163,12 +165,13 @@ export function generateDocumentHtml(
   org: OrgInfo,
   template: TemplateSettings
 ): string {
+  const t = outputTranslator(template.locale);
   doc = documentRenderDto(doc);
-  const cfg = DOC_CONFIGS[kind];
+  const cfg = documentConfigs(t)[kind];
   const accent = template.accentColor || "#10b981";
-  const taxIdLabel = getTaxIdLabel(org.countryCode);
+  const taxIdLabel = getTaxIdLabel(t, org.countryCode);
   // Only invoices localize the heading ("Tax Invoice"); others use the fixed title.
-  const docTitle = kind === "invoice" ? getInvoiceTitle(org.countryCode, !!org.taxId) : cfg.title;
+  const docTitle = kind === "invoice" ? getInvoiceTitle(t, org.countryCode, !!org.taxId) : cfg.title;
   const amountPaid = doc.amountPaid ?? 0;
   const amountDue = doc.amountDue ?? doc.total;
 
@@ -216,21 +219,21 @@ export function generateDocumentHtml(
   const taxRow =
     template.showTaxBreakdown !== false && doc.taxTotal > 0
       ? `<tr>
-          <td colspan="3" style="text-align:right;padding:3px 6px 3px 0;color:#6b7280;font-size:12px;border-top:0.5px solid #e5e7eb;">Tax</td>
+          <td colspan="3" style="text-align:right;padding:3px 6px 3px 0;color:#6b7280;font-size:12px;border-top:0.5px solid #e5e7eb;">${t("tax")}</td>
           <td style="text-align:right;padding:3px 0;font-size:12px;border-top:0.5px solid #e5e7eb;">${formatMoney(doc.taxTotal, doc.currencyCode)}</td>
         </tr>`
       : "";
 
   const paidRow = cfg.showAmountDue && amountPaid > 0
     ? `<tr>
-        <td colspan="3" style="text-align:right;padding:3px 6px 3px 0;color:#6b7280;font-size:12px;border-top:0.5px solid #e5e7eb;">Amount paid</td>
+        <td colspan="3" style="text-align:right;padding:3px 6px 3px 0;color:#6b7280;font-size:12px;border-top:0.5px solid #e5e7eb;">${t("amountPaid")}</td>
         <td style="text-align:right;padding:3px 0;font-size:12px;border-top:0.5px solid #e5e7eb;">${formatMoney(amountPaid, doc.currencyCode)}</td>
       </tr>`
     : "";
 
   const amountDueRow = cfg.showAmountDue
     ? `<tr>
-        <td colspan="3" style="text-align:right;padding:3px 6px 3px 0;font-weight:600;font-size:12px;border-top:0.5px solid #e5e7eb;">Amount due</td>
+        <td colspan="3" style="text-align:right;padding:3px 6px 3px 0;font-weight:600;font-size:12px;border-top:0.5px solid #e5e7eb;">${t("amountDue")}</td>
         <td style="text-align:right;padding:3px 0;font-weight:600;font-size:12px;border-top:0.5px solid #e5e7eb;">${formatMoney(amountDue, doc.currencyCode)}</td>
       </tr>`
     : "";
@@ -240,7 +243,7 @@ export function generateDocumentHtml(
     : "";
   const bankDetailsSection = bankDetailsText
     ? `<div style="margin-top:24px;">
-        <p style="font-size:12px;font-weight:600;color:#111827;margin:0 0 4px;">Bank details</p>
+        <p style="font-size:12px;font-weight:600;color:#111827;margin:0 0 4px;">${t("bankDetails")}</p>
         <p style="font-size:12px;color:#6b7280;margin:0;white-space:pre-wrap;">${escapeHtml(bankDetailsText)}</p>
       </div>`
     : "";
@@ -250,7 +253,7 @@ export function generateDocumentHtml(
     : "";
   const paymentInstructionsSection = paymentInstructionsText
     ? `<div style="margin-top:16px;">
-        <p style="font-size:12px;font-weight:600;color:#111827;margin:0 0 4px;">Payment instructions</p>
+        <p style="font-size:12px;font-weight:600;color:#111827;margin:0 0 4px;">${t("paymentInstructions")}</p>
         <p style="font-size:12px;color:#6b7280;margin:0;white-space:pre-wrap;">${escapeHtml(paymentInstructionsText)}</p>
       </div>`
     : "";
@@ -270,15 +273,15 @@ export function generateDocumentHtml(
     : "";
 
   const dueSummary = cfg.showAmountDue
-    ? `<p style="font-size:18px;font-weight:600;margin:0 0 24px;">${formatMoney(amountDue, doc.currencyCode)} due ${doc.secondDate || doc.issueDate}</p>`
+    ? `<p style="font-size:18px;font-weight:600;margin:0 0 24px;">${formatMoney(amountDue, doc.currencyCode)} ${t("due")} ${doc.secondDate || doc.issueDate}</p>`
     : `<p style="font-size:18px;font-weight:600;margin:0 0 24px;">${formatMoney(doc.total, doc.currencyCode)}</p>`;
 
   const footerSummary = cfg.showAmountDue
-    ? `${doc.documentNumber} · ${formatMoney(amountDue, doc.currencyCode)} due ${doc.secondDate || doc.issueDate}`
+    ? `${doc.documentNumber} · ${formatMoney(amountDue, doc.currencyCode)} ${t("due")} ${doc.secondDate || doc.issueDate}`
     : `${doc.documentNumber} · ${formatMoney(doc.total, doc.currencyCode)}`;
 
   return `<!DOCTYPE html>
-<html>
+<html lang="${template.locale ?? "en-US"}" dir="${template.locale === "fa-IR" ? "rtl" : "ltr"}">
 <head><meta charset="utf-8"><title>${docTitle} ${doc.documentNumber}</title></head>
 <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Inter',sans-serif;margin:0;padding:0;color:#111827;max-width:800px;">
   <!-- Accent bar -->
@@ -297,12 +300,12 @@ export function generateDocumentHtml(
       <td style="padding:2px 0;font-weight:600;">${doc.documentNumber}</td>
     </tr>
     <tr>
-      <td style="padding:2px 12px 2px 0;color:#6b7280;">Date of issue</td>
+      <td style="padding:2px 12px 2px 0;color:#6b7280;">${t("dateIssue")}</td>
       <td style="padding:2px 0;">${doc.issueDate}</td>
     </tr>
     ${secondDateRow}
     ${doc.reference ? `<tr>
-      <td style="padding:2px 12px 2px 0;color:#6b7280;">Reference</td>
+      <td style="padding:2px 12px 2px 0;color:#6b7280;">${t("reference")}</td>
       <td style="padding:2px 0;">${escapeHtml(doc.reference)}</td>
     </tr>` : ""}
   </table>
@@ -315,7 +318,7 @@ export function generateDocumentHtml(
       ${org.email ? `<p style="font-size:12px;color:#6b7280;margin:0 0 1px;">${escapeHtml(org.email)}</p>` : ""}
       ${org.phone ? `<p style="font-size:12px;color:#6b7280;margin:0 0 1px;">${escapeHtml(org.phone)}</p>` : ""}
       ${org.taxId ? `<p style="font-size:12px;color:#6b7280;margin:0 0 1px;">${taxIdLabel}: ${escapeHtml(org.taxId)}</p>` : ""}
-      ${org.registrationNumber ? `<p style="font-size:12px;color:#6b7280;margin:0;">Reg: ${escapeHtml(org.registrationNumber)}</p>` : ""}
+      ${org.registrationNumber ? `<p style="font-size:12px;color:#6b7280;margin:0;">${t("reg")}: ${escapeHtml(org.registrationNumber)}</p>` : ""}
     </div>
     <div style="width:200px;">
       <p style="font-size:13px;font-weight:600;margin:0 0 3px;">${cfg.partyLabel}</p>
@@ -333,21 +336,21 @@ export function generateDocumentHtml(
   <table style="width:100%;border-collapse:collapse;">
     <thead>
       <tr>
-        <th style="padding:6px 0;text-align:left;border-bottom:1px solid #111827;font-size:11px;font-weight:400;color:#6b7280;">Description</th>
-        <th style="padding:6px 0;text-align:right;border-bottom:1px solid #111827;font-size:11px;font-weight:400;color:#6b7280;">Qty</th>
-        <th style="padding:6px 0;text-align:right;border-bottom:1px solid #111827;font-size:11px;font-weight:400;color:#6b7280;">Unit price</th>
-        <th style="padding:6px 0;text-align:right;border-bottom:1px solid #111827;font-size:11px;font-weight:400;color:#6b7280;">Amount</th>
+        <th style="padding:6px 0;text-align:left;border-bottom:1px solid #111827;font-size:11px;font-weight:400;color:#6b7280;">${t("description")}</th>
+        <th style="padding:6px 0;text-align:right;border-bottom:1px solid #111827;font-size:11px;font-weight:400;color:#6b7280;">${t("qty")}</th>
+        <th style="padding:6px 0;text-align:right;border-bottom:1px solid #111827;font-size:11px;font-weight:400;color:#6b7280;">${t("unitPrice")}</th>
+        <th style="padding:6px 0;text-align:right;border-bottom:1px solid #111827;font-size:11px;font-weight:400;color:#6b7280;">${t("amount")}</th>
       </tr>
     </thead>
     <tbody>${linesHtml}</tbody>
     <tfoot>
       <tr>
-        <td colspan="3" style="text-align:right;padding:3px 6px 3px 0;color:#6b7280;font-size:12px;border-top:0.5px solid #e5e7eb;">Subtotal</td>
+        <td colspan="3" style="text-align:right;padding:3px 6px 3px 0;color:#6b7280;font-size:12px;border-top:0.5px solid #e5e7eb;">${t("subtotal")}</td>
         <td style="text-align:right;padding:3px 0;font-size:12px;border-top:0.5px solid #e5e7eb;">${formatMoney(doc.subtotal, doc.currencyCode)}</td>
       </tr>
       ${taxRow}
       <tr>
-        <td colspan="3" style="text-align:right;padding:3px 6px 3px 0;color:#6b7280;font-size:12px;border-top:0.5px solid #e5e7eb;">Total</td>
+        <td colspan="3" style="text-align:right;padding:3px 6px 3px 0;color:#6b7280;font-size:12px;border-top:0.5px solid #e5e7eb;">${t("total")}</td>
         <td style="text-align:right;padding:3px 0;font-size:12px;border-top:0.5px solid #e5e7eb;">${formatMoney(doc.total, doc.currencyCode)}</td>
       </tr>
       ${paidRow}
@@ -412,10 +415,11 @@ export function generateInvoiceHtml(
   org: OrgInfo,
   template: TemplateSettings
 ): string {
+  const t = outputTranslator(template.locale);
   invoice = documentRenderDto(invoice);
   const accent = template.accentColor || "#10b981";
-  const taxIdLabel = getTaxIdLabel(org.countryCode);
-  const invoiceTitle = getInvoiceTitle(org.countryCode, !!org.taxId);
+  const taxIdLabel = getTaxIdLabel(t, org.countryCode);
+  const invoiceTitle = getInvoiceTitle(t, org.countryCode, !!org.taxId);
   const amountPaid = invoice.amountPaid ?? 0;
   const amountDue = invoice.amountDue ?? invoice.total;
 
@@ -462,14 +466,14 @@ export function generateInvoiceHtml(
   const taxRow =
     template.showTaxBreakdown !== false && invoice.taxTotal > 0
       ? `<tr>
-          <td colspan="3" style="text-align:right;padding:3px 6px 3px 0;color:#6b7280;font-size:12px;border-top:0.5px solid #e5e7eb;">Tax</td>
+          <td colspan="3" style="text-align:right;padding:3px 6px 3px 0;color:#6b7280;font-size:12px;border-top:0.5px solid #e5e7eb;">${t("tax")}</td>
           <td style="text-align:right;padding:3px 0;font-size:12px;border-top:0.5px solid #e5e7eb;">${formatMoney(invoice.taxTotal, invoice.currencyCode)}</td>
         </tr>`
       : "";
 
   const paidRow = amountPaid > 0
     ? `<tr>
-        <td colspan="3" style="text-align:right;padding:3px 6px 3px 0;color:#6b7280;font-size:12px;border-top:0.5px solid #e5e7eb;">Amount paid</td>
+        <td colspan="3" style="text-align:right;padding:3px 6px 3px 0;color:#6b7280;font-size:12px;border-top:0.5px solid #e5e7eb;">${t("amountPaid")}</td>
         <td style="text-align:right;padding:3px 0;font-size:12px;border-top:0.5px solid #e5e7eb;">${formatMoney(amountPaid, invoice.currencyCode)}</td>
       </tr>`
     : "";
@@ -479,7 +483,7 @@ export function generateInvoiceHtml(
     : "";
   const bankDetailsSection = bankDetailsText
     ? `<div style="margin-top:24px;">
-        <p style="font-size:12px;font-weight:600;color:#111827;margin:0 0 4px;">Bank details</p>
+        <p style="font-size:12px;font-weight:600;color:#111827;margin:0 0 4px;">${t("bankDetails")}</p>
         <p style="font-size:12px;color:#6b7280;margin:0;white-space:pre-wrap;">${escapeHtml(bankDetailsText)}</p>
       </div>`
     : "";
@@ -489,7 +493,7 @@ export function generateInvoiceHtml(
     : "";
   const paymentInstructionsSection = paymentInstructionsText
     ? `<div style="margin-top:16px;">
-        <p style="font-size:12px;font-weight:600;color:#111827;margin:0 0 4px;">Payment instructions</p>
+        <p style="font-size:12px;font-weight:600;color:#111827;margin:0 0 4px;">${t("paymentInstructions")}</p>
         <p style="font-size:12px;color:#6b7280;margin:0;white-space:pre-wrap;">${escapeHtml(paymentInstructionsText)}</p>
       </div>`
     : "";
@@ -502,8 +506,8 @@ export function generateInvoiceHtml(
     : "";
 
   return `<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><title>Invoice ${invoice.invoiceNumber}</title></head>
+<html lang="${template.locale ?? "en-US"}" dir="${template.locale === "fa-IR" ? "rtl" : "ltr"}">
+<head><meta charset="utf-8"><title>${t("invoice")} ${invoice.invoiceNumber}</title></head>
 <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Inter',sans-serif;margin:0;padding:0;color:#111827;max-width:800px;">
   <!-- Accent bar -->
   <div style="height:4px;background:${accent};"></div>
@@ -517,19 +521,19 @@ export function generateInvoiceHtml(
   <!-- Metadata -->
   <table style="font-size:12px;border-collapse:collapse;margin-bottom:24px;">
     <tr>
-      <td style="padding:2px 12px 2px 0;font-weight:600;">Invoice number</td>
+      <td style="padding:2px 12px 2px 0;font-weight:600;">${t("invoiceNumber")}</td>
       <td style="padding:2px 0;font-weight:600;">${invoice.invoiceNumber}</td>
     </tr>
     <tr>
-      <td style="padding:2px 12px 2px 0;color:#6b7280;">Date of issue</td>
+      <td style="padding:2px 12px 2px 0;color:#6b7280;">${t("dateIssue")}</td>
       <td style="padding:2px 0;">${invoice.issueDate}</td>
     </tr>
     <tr>
-      <td style="padding:2px 12px 2px 0;color:#6b7280;">Date due</td>
+      <td style="padding:2px 12px 2px 0;color:#6b7280;">${t("dateDue")}</td>
       <td style="padding:2px 0;">${invoice.dueDate}</td>
     </tr>
     ${invoice.reference ? `<tr>
-      <td style="padding:2px 12px 2px 0;color:#6b7280;">Reference</td>
+      <td style="padding:2px 12px 2px 0;color:#6b7280;">${t("reference")}</td>
       <td style="padding:2px 0;">${escapeHtml(invoice.reference)}</td>
     </tr>` : ""}
   </table>
@@ -542,10 +546,10 @@ export function generateInvoiceHtml(
       ${org.email ? `<p style="font-size:12px;color:#6b7280;margin:0 0 1px;">${escapeHtml(org.email)}</p>` : ""}
       ${org.phone ? `<p style="font-size:12px;color:#6b7280;margin:0 0 1px;">${escapeHtml(org.phone)}</p>` : ""}
       ${org.taxId ? `<p style="font-size:12px;color:#6b7280;margin:0 0 1px;">${taxIdLabel}: ${escapeHtml(org.taxId)}</p>` : ""}
-      ${org.registrationNumber ? `<p style="font-size:12px;color:#6b7280;margin:0;">Reg: ${escapeHtml(org.registrationNumber)}</p>` : ""}
+      ${org.registrationNumber ? `<p style="font-size:12px;color:#6b7280;margin:0;">${t("reg")}: ${escapeHtml(org.registrationNumber)}</p>` : ""}
     </div>
     <div style="width:200px;">
-      <p style="font-size:13px;font-weight:600;margin:0 0 3px;">Bill to</p>
+      <p style="font-size:13px;font-weight:600;margin:0 0 3px;">${t("billTo")}</p>
       <p style="font-size:12px;color:#6b7280;margin:0 0 1px;">${escapeHtml(invoice.contactName)}</p>
       ${invoice.contactAddress ? `<p style="font-size:12px;color:#6b7280;margin:0 0 1px;">${escapeHtml(invoice.contactAddress)}</p>` : ""}
       ${invoice.contactEmail ? `<p style="font-size:12px;color:#6b7280;margin:0 0 1px;">${escapeHtml(invoice.contactEmail)}</p>` : ""}
@@ -554,32 +558,32 @@ export function generateInvoiceHtml(
   </div>
 
   <!-- Due amount summary -->
-  <p style="font-size:18px;font-weight:600;margin:0 0 24px;">${formatMoney(amountDue, invoice.currencyCode)} due ${invoice.dueDate}</p>
+  <p style="font-size:18px;font-weight:600;margin:0 0 24px;">${formatMoney(amountDue, invoice.currencyCode)} ${t("due")} ${invoice.dueDate}</p>
 
   <!-- Line Items -->
   <table style="width:100%;border-collapse:collapse;">
     <thead>
       <tr>
-        <th style="padding:6px 0;text-align:left;border-bottom:1px solid #111827;font-size:11px;font-weight:400;color:#6b7280;">Description</th>
-        <th style="padding:6px 0;text-align:right;border-bottom:1px solid #111827;font-size:11px;font-weight:400;color:#6b7280;">Qty</th>
-        <th style="padding:6px 0;text-align:right;border-bottom:1px solid #111827;font-size:11px;font-weight:400;color:#6b7280;">Unit price</th>
-        <th style="padding:6px 0;text-align:right;border-bottom:1px solid #111827;font-size:11px;font-weight:400;color:#6b7280;">Amount</th>
+        <th style="padding:6px 0;text-align:left;border-bottom:1px solid #111827;font-size:11px;font-weight:400;color:#6b7280;">${t("description")}</th>
+        <th style="padding:6px 0;text-align:right;border-bottom:1px solid #111827;font-size:11px;font-weight:400;color:#6b7280;">${t("qty")}</th>
+        <th style="padding:6px 0;text-align:right;border-bottom:1px solid #111827;font-size:11px;font-weight:400;color:#6b7280;">${t("unitPrice")}</th>
+        <th style="padding:6px 0;text-align:right;border-bottom:1px solid #111827;font-size:11px;font-weight:400;color:#6b7280;">${t("amount")}</th>
       </tr>
     </thead>
     <tbody>${linesHtml}</tbody>
     <tfoot>
       <tr>
-        <td colspan="3" style="text-align:right;padding:3px 6px 3px 0;color:#6b7280;font-size:12px;border-top:0.5px solid #e5e7eb;">Subtotal</td>
+        <td colspan="3" style="text-align:right;padding:3px 6px 3px 0;color:#6b7280;font-size:12px;border-top:0.5px solid #e5e7eb;">${t("subtotal")}</td>
         <td style="text-align:right;padding:3px 0;font-size:12px;border-top:0.5px solid #e5e7eb;">${formatMoney(invoice.subtotal, invoice.currencyCode)}</td>
       </tr>
       ${taxRow}
       <tr>
-        <td colspan="3" style="text-align:right;padding:3px 6px 3px 0;color:#6b7280;font-size:12px;border-top:0.5px solid #e5e7eb;">Total</td>
+        <td colspan="3" style="text-align:right;padding:3px 6px 3px 0;color:#6b7280;font-size:12px;border-top:0.5px solid #e5e7eb;">${t("total")}</td>
         <td style="text-align:right;padding:3px 0;font-size:12px;border-top:0.5px solid #e5e7eb;">${formatMoney(invoice.total, invoice.currencyCode)}</td>
       </tr>
       ${paidRow}
       <tr>
-        <td colspan="3" style="text-align:right;padding:3px 6px 3px 0;font-weight:600;font-size:12px;border-top:0.5px solid #e5e7eb;">Amount due</td>
+        <td colspan="3" style="text-align:right;padding:3px 6px 3px 0;font-weight:600;font-size:12px;border-top:0.5px solid #e5e7eb;">${t("amountDue")}</td>
         <td style="text-align:right;padding:3px 0;font-weight:600;font-size:12px;border-top:0.5px solid #e5e7eb;">${formatMoney(amountDue, invoice.currencyCode)}</td>
       </tr>
     </tfoot>
@@ -592,7 +596,7 @@ export function generateInvoiceHtml(
 
   <!-- Footer -->
   <div style="margin-top:40px;padding-top:8px;border-top:0.5px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center;">
-    <span style="font-size:10px;color:#6b7280;">${invoice.invoiceNumber} · ${formatMoney(amountDue, invoice.currencyCode)} due ${invoice.dueDate}</span>
+    <span style="font-size:10px;color:#6b7280;">${invoice.invoiceNumber} · ${formatMoney(amountDue, invoice.currencyCode)} ${t("due")} ${invoice.dueDate}</span>
     <a href="https://dubbl.dev" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
       <svg viewBox="0 0 40 32" fill="none" xmlns="http://www.w3.org/2000/svg" width="12" height="9">
         <path d="M18 4h8a10 10 0 0 1 10 10v4a10 10 0 0 1-10 10h-8V4z" fill="#d1d5db"/>

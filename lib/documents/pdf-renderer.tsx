@@ -1,3 +1,4 @@
+import { outputTranslator } from "@/i18n/output";
 import React from "react";
 import { documentMoneyText as fmtMoney, documentRenderDto, documentHundredths } from "./render-wire";
 import {
@@ -11,6 +12,8 @@ import {
   Path,
   Link,
 } from "@react-pdf/renderer";
+
+const t = outputTranslator();
 
 export interface OrgInfo {
   name: string;
@@ -65,7 +68,7 @@ export interface PdfTemplateSettings {
 }
 
 function getTaxIdLabel(countryCode?: string | null): string {
-  if (!countryCode) return "Tax ID";
+  if (!countryCode) return t("taxId");
   const cc = countryCode.toUpperCase();
   const EU = [
     "AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR",
@@ -76,13 +79,13 @@ function getTaxIdLabel(countryCode?: string | null): string {
   if (cc === "AU") return "ABN";
   if (cc === "NZ") return "GST";
   if (cc === "CA") return "GST/HST";
-  return "Tax ID";
+  return t("taxId");
 }
 
 function getInvoiceTitle(countryCode?: string | null, hasTaxId?: boolean): string {
   const cc = countryCode?.toUpperCase();
-  if ((cc === "AU" || cc === "NZ") && hasTaxId) return "Tax Invoice";
-  return "Invoice";
+  if ((cc === "AU" || cc === "NZ") && hasTaxId) return t("taxInvoice");
+  return t("invoice");
 }
 
 function replacePlaceholders(text: string, vars: Record<string, string>): string {
@@ -177,8 +180,8 @@ function InvoiceDocument({ invoice: inv, org, contact, template, labels }: Invoi
   // the wording or suppress them: dateLabel === null hides the date row, and
   // summaryNoun === null shows just the amount with no "due {date}".
   const showDateRow = labels?.dateLabel !== null;
-  const dateRowLabel = labels?.dateLabel ?? "Date due";
-  const summaryNoun = labels?.summaryNoun === undefined ? "due" : labels.summaryNoun;
+  const dateRowLabel = labels?.dateLabel ?? t("dateDue");
+  const summaryNoun = labels?.summaryNoun === undefined ? t("due") : labels.summaryNoun;
   const summaryText = summaryNoun
     ? `${fmtMoney(amountDue, inv.currencyCode)} ${summaryNoun} ${inv.dueDate}`
     : fmtMoney(amountDue, inv.currencyCode);
@@ -212,11 +215,11 @@ function InvoiceDocument({ invoice: inv, org, contact, template, labels }: Invoi
         {/* Metadata */}
         <View style={s.metaBlock}>
           <View style={s.metaRow}>
-            <Text style={[s.metaLabel, { fontFamily: "Helvetica-Bold" }]}>{labels?.numberLabel ?? "Invoice number"}</Text>
+            <Text style={[s.metaLabel, { fontFamily: "Helvetica-Bold" }]}>{labels?.numberLabel ?? t("invoiceNumber")}</Text>
             <Text style={s.metaValue}>{inv.invoiceNumber}</Text>
           </View>
           <View style={s.metaRow}>
-            <Text style={s.metaLabel}>Date of issue</Text>
+            <Text style={s.metaLabel}>{t("dateIssue")}</Text>
             <Text style={{ fontSize: 9 }}>{inv.issueDate}</Text>
           </View>
           {showDateRow && (
@@ -227,7 +230,7 @@ function InvoiceDocument({ invoice: inv, org, contact, template, labels }: Invoi
           )}
           {inv.reference && (
             <View style={s.metaRow}>
-              <Text style={s.metaLabel}>Reference</Text>
+              <Text style={s.metaLabel}>{t("reference")}</Text>
               <Text style={{ fontSize: 9 }}>{inv.reference}</Text>
             </View>
           )}
@@ -241,10 +244,10 @@ function InvoiceDocument({ invoice: inv, org, contact, template, labels }: Invoi
             {org.email && <Text style={s.partyDetail}>{org.email}</Text>}
             {org.phone && <Text style={s.partyDetail}>{org.phone}</Text>}
             {org.taxId && <Text style={s.partyDetail}>{taxLabel}: {org.taxId}</Text>}
-            {org.registrationNumber && <Text style={s.partyDetail}>Reg: {org.registrationNumber}</Text>}
+            {org.registrationNumber && <Text style={s.partyDetail}>{t("reg")}: {org.registrationNumber}</Text>}
           </View>
           <View style={s.buyerCol}>
-            <Text style={s.billToLabel}>{labels?.partyLabel ?? "Bill to"}</Text>
+            <Text style={s.billToLabel}>{labels?.partyLabel ?? t("billTo")}</Text>
             <Text style={s.partyDetail}>{contact.name}</Text>
             {contact.address && <Text style={s.partyDetail}>{contact.address}</Text>}
             {contact.email && <Text style={s.partyDetail}>{contact.email}</Text>}
@@ -258,11 +261,11 @@ function InvoiceDocument({ invoice: inv, org, contact, template, labels }: Invoi
         {/* Line Items */}
         <View style={s.table}>
           <View style={s.tableHeader}>
-            <Text style={[s.th, s.cellDesc]}>Description</Text>
-            <Text style={[s.th, s.cellQty]}>Qty</Text>
-            <Text style={[s.th, s.cellPrice]}>Unit price</Text>
-            {hasDiscount && <Text style={[s.th, s.cellDiscount]}>Discount</Text>}
-            <Text style={[s.th, s.cellAmount]}>Amount</Text>
+            <Text style={[s.th, s.cellDesc]}>{t("description")}</Text>
+            <Text style={[s.th, s.cellQty]}>{t("qty")}</Text>
+            <Text style={[s.th, s.cellPrice]}>{t("unitPrice")}</Text>
+            {hasDiscount && <Text style={[s.th, s.cellDiscount]}>{t("discount")}</Text>}
+            <Text style={[s.th, s.cellAmount]}>{t("amount")}</Text>
           </View>
           {inv.lines.map((line, i) => (
             <View key={i} style={s.tableRow}>
@@ -283,27 +286,27 @@ function InvoiceDocument({ invoice: inv, org, contact, template, labels }: Invoi
         <View style={s.totalsContainer}>
           <View style={s.totalsBlock}>
             <View style={s.totalRow}>
-              <Text style={s.totalLabel}>Subtotal</Text>
+              <Text style={s.totalLabel}>{t("subtotal")}</Text>
               <Text style={s.totalValue}>{fmtMoney(inv.subtotal, inv.currencyCode)}</Text>
             </View>
             {template.showTaxBreakdown !== false && inv.taxTotal > 0 && (
               <View style={s.totalRow}>
-                <Text style={s.totalLabel}>Tax</Text>
+                <Text style={s.totalLabel}>{t("tax")}</Text>
                 <Text style={s.totalValue}>{fmtMoney(inv.taxTotal, inv.currencyCode)}</Text>
               </View>
             )}
             <View style={s.totalRow}>
-              <Text style={s.totalLabel}>Total</Text>
+              <Text style={s.totalLabel}>{t("total")}</Text>
               <Text style={s.totalValue}>{fmtMoney(inv.total, inv.currencyCode)}</Text>
             </View>
             {amountPaid > 0 && (
               <View style={s.totalRow}>
-                <Text style={s.totalLabel}>Amount paid</Text>
+                <Text style={s.totalLabel}>{t("amountPaid")}</Text>
                 <Text style={s.totalValue}>{fmtMoney(amountPaid, inv.currencyCode)}</Text>
               </View>
             )}
             <View style={s.amountDueRow}>
-              <Text style={s.amountDueLabel}>{labels?.amountLabel ?? "Amount due"}</Text>
+              <Text style={s.amountDueLabel}>{labels?.amountLabel ?? t("amountDue")}</Text>
               <Text style={s.amountDueValue}>{fmtMoney(amountDue, inv.currencyCode)}</Text>
             </View>
           </View>
@@ -312,7 +315,7 @@ function InvoiceDocument({ invoice: inv, org, contact, template, labels }: Invoi
         {/* Bank Details */}
         {bankDetailsText && (
           <View style={s.infoSection}>
-            <Text style={s.infoTitle}>Bank details</Text>
+            <Text style={s.infoTitle}>{t("bankDetails")}</Text>
             <Text style={s.infoText}>{bankDetailsText}</Text>
           </View>
         )}
@@ -320,7 +323,7 @@ function InvoiceDocument({ invoice: inv, org, contact, template, labels }: Invoi
         {/* Payment Instructions */}
         {paymentInstructionsText && (
           <View style={s.infoSection}>
-            <Text style={s.infoTitle}>Payment instructions</Text>
+            <Text style={s.infoTitle}>{t("paymentInstructions")}</Text>
             <Text style={s.infoText}>{paymentInstructionsText}</Text>
           </View>
         )}

@@ -1,3 +1,5 @@
+import { outputTranslator } from "@/i18n/output";
+import type { AppLocale } from "@/i18n/locale";
 import {
   Section,
   Text,
@@ -8,41 +10,45 @@ import { EmailLayout } from "./layout";
 import { toAppUrl } from "@/lib/public-url";
 
 interface OrgCreatedEmailProps {
+  locale?: AppLocale;
   userName: string;
   orgName: string;
   dashboardUrl?: string;
 }
 
 export function OrgCreatedEmail({
-  userName = "there",
-  orgName = "Your Organization",
+  locale = "en-US",
+  userName,
+  orgName,
   dashboardUrl = toAppUrl("/dashboard"),
 }: OrgCreatedEmailProps) {
+  const t = outputTranslator(locale);
+  orgName ??= t("yourOrg");
+  userName ??= t("there");
   return (
-    <EmailLayout preview={`${orgName} is ready`}>
+    <EmailLayout locale={locale} preview={t("orgPreview", { orgName })}>
       <Section style={content}>
-        <Text style={heading}>{orgName} is ready to go</Text>
+        <Text style={heading}>{t("orgHeading", { orgName })}</Text>
         <Text style={subtext}>
-          Nice one, {userName}. Your organization has been created. Here are a
-          few things to do next.
+          {t("orgIntro", { userName })}
         </Text>
 
         <table cellPadding="0" cellSpacing="0" role="presentation" style={{ width: "100%" }}>
           {[
             {
               num: "1",
-              title: "Set up your business info",
-              desc: "Add your company details, address, and tax information so your invoices and reports are accurate.",
+              title: t("setup"),
+              desc: t("setupDesc"),
             },
             {
               num: "2",
-              title: "Invite team members",
-              desc: "Bring your team on board. Assign roles like admin or member to control what they can access.",
+              title: t("inviteTeam"),
+              desc: t("inviteTeamDesc"),
             },
             {
               num: "3",
-              title: "Connect your bank account",
-              desc: "Link your bank to automatically import transactions and keep your books up to date.",
+              title: t("connectBank"),
+              desc: t("connectBankDesc"),
             },
           ].map((step) => (
             <tr key={step.num}>
@@ -65,7 +71,7 @@ export function OrgCreatedEmail({
 
         <Section style={buttonSection}>
           <Button style={button} href={dashboardUrl}>
-            Set Up Your Organization
+            {t("openOrg")}
           </Button>
         </Section>
       </Section>

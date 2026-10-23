@@ -1,3 +1,5 @@
+import { outputTranslator } from "@/i18n/output";
+import type { AppLocale } from "@/i18n/locale";
 import {
   Section,
   Text,
@@ -8,6 +10,7 @@ import { EmailLayout } from "./layout";
 import { toAppUrl } from "@/lib/public-url";
 
 interface MemberInviteEmailProps {
+  locale?: AppLocale;
   inviterName: string;
   orgName: string;
   role: string;
@@ -15,36 +18,39 @@ interface MemberInviteEmailProps {
 }
 
 export function MemberInviteEmail({
-  inviterName = "Someone",
-  orgName = "an organization",
+  locale = "en-US",
+  inviterName,
+  orgName,
   role = "member",
   loginUrl = toAppUrl("/sign-in"),
 }: MemberInviteEmailProps) {
+  const t = outputTranslator(locale);
+  orgName ??= t("anOrg");
+  inviterName ??= t("someone");
   return (
-    <EmailLayout preview={`You've been invited to ${orgName}`}>
+    <EmailLayout locale={locale} preview={t("invitePreview", { orgName })}>
       <Section style={content}>
-        <Text style={heading}>You&apos;re invited to join {orgName}</Text>
+        <Text style={heading}>{t("inviteHeading", { orgName })}</Text>
         <Text style={subtext}>
-          {inviterName} has invited you to join <strong>{orgName}</strong> as a{" "}
-          <strong>{role}</strong>. Accept the invitation below to get started.
+          {t.rich("inviteIntro", { inviterName, orgName, role, strong: (chunks) => <strong>{chunks}</strong> })}
         </Text>
 
         <table cellPadding="0" cellSpacing="0" role="presentation" style={infoTable}>
           <tr>
             <td style={infoRow}>
-              <Text style={infoLabel}>Organization</Text>
+              <Text style={infoLabel}>{t("organization")}</Text>
               <Text style={infoValue}>{orgName}</Text>
             </td>
           </tr>
           <tr>
             <td style={infoRow}>
-              <Text style={infoLabel}>Your role</Text>
+              <Text style={infoLabel}>{t("yourRole")}</Text>
               <Text style={infoValue}>{role}</Text>
             </td>
           </tr>
           <tr>
             <td style={{ ...infoRow, borderBottom: "none", paddingBottom: 0 }}>
-              <Text style={infoLabel}>Invited by</Text>
+              <Text style={infoLabel}>{t("invitedBy")}</Text>
               <Text style={infoValue}>{inviterName}</Text>
             </td>
           </tr>
@@ -52,7 +58,7 @@ export function MemberInviteEmail({
 
         <Section style={buttonSection}>
           <Button style={button} href={loginUrl}>
-            Accept Invitation
+            {t("acceptInvite")}
           </Button>
         </Section>
       </Section>

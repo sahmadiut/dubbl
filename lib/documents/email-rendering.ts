@@ -1,3 +1,4 @@
+import { outputDocumentKind, outputTranslator } from "@/i18n/output";
 import { z } from "zod";
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
@@ -51,7 +52,7 @@ export async function sendRenderedDocumentEmail(ctx: AuthContext, input: unknown
     amountFormatted: amount === undefined ? undefined : documentMoneyText(amount, rendered.document.currencyCode),
     dueDateFormatted: fmtDate(parsed.dueDate), issueDateFormatted: fmtDate(parsed.issueDate), buttonLabel: parsed.buttonLabel });
   const result = await sendDocumentEmail({ orgId: ctx.organizationId, userId: ctx.userId, documentType: parsed.documentType, documentId: parsed.documentId,
-    recipientEmail: parsed.recipientEmail, subject: `${parsed.documentType.replaceAll("_", " ").replace(/\b\w/g, c => c.toUpperCase())} ${parsed.documentNumber} from ${org.name}`,
+    recipientEmail: parsed.recipientEmail, subject: outputTranslator()(`${outputDocumentKind(parsed.documentType)}Preview`, { documentNumber: parsed.documentNumber, organizationName: org.name }),
     body: html, attachPdf: parsed.attachPdf, ...(parsed.attachPdf ? { pdfBuffer: Buffer.from(rendered.content, "base64"), pdfFilename: rendered.filename } : {}), replyTo: org.contactEmail || undefined });
   return { success: true, emailLogId: result.id, status: result.status };
 }

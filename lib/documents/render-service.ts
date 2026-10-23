@@ -1,3 +1,4 @@
+import { outputTranslator } from "@/i18n/output";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { invoice, quote, creditNote, purchaseOrder, debitNote, organization, documentTemplate } from "@/lib/db/schema";
@@ -11,12 +12,14 @@ import { renderInvoicePdf } from "./pdf-renderer";
 import { formatContactAddress } from "./snapshots";
 import { documentRenderDto, renderFormat, renderId } from "./render-wire";
 
+const t = outputTranslator();
+
 const labels = {
   invoice: undefined,
-  quote: { title: "Quote", numberLabel: "Quote number", partyLabel: "Quote for", amountLabel: "Total", dateLabel: "Valid until", summaryNoun: "valid until" },
-  credit_note: { title: "Credit Note", numberLabel: "Credit note number", partyLabel: "Credit to", amountLabel: "Credit total", dateLabel: null, summaryNoun: null },
-  purchase_order: { title: "Purchase Order", numberLabel: "PO number", partyLabel: "Supplier", amountLabel: "Order total", dateLabel: "Delivery date", summaryNoun: null },
-  debit_note: { title: "Debit Note", numberLabel: "Debit note number", partyLabel: "Supplier", amountLabel: "Debit total", dateLabel: null, summaryNoun: null },
+  quote: { title: t("quote"), numberLabel: t("quoteNumber"), partyLabel: t("quoteFor"), amountLabel: t("total"), dateLabel: t("validUntil"), summaryNoun: t("validUntilNoun") },
+  credit_note: { title: t("creditNote"), numberLabel: t("creditNoteNumber"), partyLabel: t("creditTo"), amountLabel: t("creditTotal"), dateLabel: null, summaryNoun: null },
+  purchase_order: { title: t("purchaseOrder"), numberLabel: t("poNumber"), partyLabel: t("supplier"), amountLabel: t("orderTotal"), dateLabel: t("deliveryDate"), summaryNoun: null },
+  debit_note: { title: t("debitNote"), numberLabel: t("debitNoteNumber"), partyLabel: t("supplier"), amountLabel: t("debitTotal"), dateLabel: null, summaryNoun: null },
 };
 function partyText(snapshot: Record<string, unknown> | null, key: string, fallback: string | null) {
   if (!snapshot || !(key in snapshot)) return fallback;
@@ -73,12 +76,12 @@ export async function renderDocument(ctx: AuthContext | null, kind: DocumentKind
     const liveOrg = orgInfo(org);
     const sender = { ...liveOrg };
     for (const key of Object.keys(sender) as (keyof typeof sender)[]) sender[key] = partyText(saved.sender, key, sender[key])!;
-    sender.name = sender.name ?? "Company";
+    sender.name = sender.name ?? t("company");
     const documentNumber = "invoiceNumber" in found ? found.invoiceNumber : "quoteNumber" in found ? found.quoteNumber
       : "creditNoteNumber" in found ? found.creditNoteNumber : "poNumber" in found ? found.poNumber : found.debitNoteNumber;
     const secondDate = "dueDate" in found ? found.dueDate : "expiryDate" in found ? found.expiryDate : "deliveryDate" in found ? found.deliveryDate : null;
     const data: DocumentData = { documentNumber, issueDate: found.issueDate, secondDate,
-      contactName: partyText(saved.recipient, "name", found.contact.name) ?? "Unknown",
+      contactName: partyText(saved.recipient, "name", found.contact.name) ?? t("unknown"),
       contactEmail: partyText(saved.recipient, "email", found.contact.email),
       contactAddress: partyText(saved.recipient, "address", formatContactAddress(found.contact.addresses as Parameters<typeof formatContactAddress>[0])),
       contactTaxNumber: partyText(saved.recipient, "taxNumber", found.contact.taxNumber),
@@ -96,10 +99,10 @@ export async function previewDocumentTemplate(ctx: AuthContext, id: string, form
     const org = await tx.query.organization.findFirst({ where: and(eq(organization.id, ctx.organizationId), isNull(organization.deletedAt)) });
     if (!template || !org) throw new AuthError("Template not found", 404);
     return output(template.type === "quote" ? "quote" : template.type === "purchase_order" ? "purchase_order" : "invoice", {
-      documentNumber: "INV-0001", issueDate: "2026-03-10", secondDate: "2026-04-09", contactName: "Sample Customer",
+      documentNumber: "INV-0001", issueDate: "2026-03-10", secondDate: "2026-04-09", contactName: t("sampleCustomer"),
       contactEmail: "customer@example.com", contactAddress: "123 Main St", contactTaxNumber: "US123456789",
-      lines: [{ description: "Web Development Services", quantity: 100, unitPrice: 15000, taxAmount: 1500, amount: 15000 },
-        { description: "UI/UX Design", quantity: 200, unitPrice: 7500, taxAmount: 1500, amount: 15000 }],
+      lines: [{ description: t("sampleWeb"), quantity: 100, unitPrice: 15000, taxAmount: 1500, amount: 15000 },
+        { description: t("sampleDesign"), quantity: 200, unitPrice: 7500, taxAmount: 1500, amount: 15000 }],
       subtotal: 30000, taxTotal: 3000, total: 33000, amountPaid: 0, amountDue: 33000, currencyCode: org.defaultCurrency,
       reference: "PO-123", notes: null }, orgInfo(org), template, format);
   }, { isolationLevel: "repeatable read", accessMode: "read only" });

@@ -1,3 +1,5 @@
+import { outputTranslator } from "@/i18n/output";
+import type { AppLocale } from "@/i18n/locale";
 import {
   Section,
   Text,
@@ -15,6 +17,7 @@ interface DigestNotification {
 }
 
 interface NotificationDigestProps {
+  locale?: AppLocale;
   userName: string;
   orgName: string;
   notifications: DigestNotification[];
@@ -33,26 +36,29 @@ const TYPE_COLOR: Record<string, string> = {
 };
 
 export function NotificationDigestEmail({
-  userName = "there",
+  locale = "en-US",
+  userName,
   orgName = "Acme Corp",
   notifications = [],
   dashboardUrl = toAppUrl("/notifications"),
   unsubscribeUrl,
 }: NotificationDigestProps) {
+  const t = outputTranslator(locale);
+  userName ??= t("there");
   const MAX_SHOWN = 9;
   const count = notifications.length;
   const shown = notifications.slice(0, MAX_SHOWN);
   const remaining = count - shown.length;
-  const preview = `You have ${count} new notification${count !== 1 ? "s" : ""} on dubbl`;
+  const preview = t("digestPreview", { count });
 
   return (
-    <EmailLayout preview={preview} unsubscribeUrl={unsubscribeUrl}>
+    <EmailLayout locale={locale} preview={preview} unsubscribeUrl={unsubscribeUrl}>
       <Section style={content}>
         <Text style={heading}>
-          {count} new notification{count !== 1 ? "s" : ""}
+          {t("digestHeading", { count })}
         </Text>
         <Text style={subtext}>
-          Hi {userName}, here is a summary of recent activity on {orgName}.
+          {t("digestIntro", { userName, orgName })}
         </Text>
 
         <table cellPadding="0" cellSpacing="0" role="presentation" style={{ width: "100%" }}>
@@ -86,13 +92,13 @@ export function NotificationDigestEmail({
 
         {remaining > 0 && (
           <Text style={moreText}>
-            +{remaining} more notification{remaining !== 1 ? "s" : ""}
+            {t("digestMore", { count: remaining })}
           </Text>
         )}
 
         <Section style={buttonSection}>
           <Button style={button} href={dashboardUrl}>
-            View in Dashboard
+            {t("viewDashboard")}
           </Button>
         </Section>
       </Section>

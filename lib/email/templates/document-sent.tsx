@@ -1,3 +1,5 @@
+import { outputDocumentKind, outputTranslator } from "@/i18n/output";
+import type { AppLocale } from "@/i18n/locale";
 import {
   Section,
   Text,
@@ -8,6 +10,7 @@ import * as React from "react";
 import { EmailLayout } from "./layout";
 
 export interface DocumentSentEmailProps {
+  locale?: AppLocale;
   organizationName: string;
   contactName: string;
   documentType: string;
@@ -20,21 +23,9 @@ export interface DocumentSentEmailProps {
   buttonLabel?: string;
 }
 
-const documentTypeLabels: Record<string, string> = {
-  invoice: "Invoice",
-  quote: "Quote",
-  credit_note: "Credit Note",
-  purchase_order: "Purchase Order",
-  debit_note: "Debit Note",
-};
-
-function getHeading(typeLabel: string, organizationName: string) {
-  const article = /^[aeiou]/i.test(typeLabel) ? "an" : "a";
-  return `${article} ${typeLabel.toLowerCase()} from ${organizationName}`;
-}
-
 export function DocumentSentEmail({
-  organizationName = "Your Company",
+  locale = "en-US",
+  organizationName,
   documentType = "invoice",
   documentNumber = "",
   personalMessage,
@@ -44,18 +35,19 @@ export function DocumentSentEmail({
   viewUrl,
   buttonLabel,
 }: DocumentSentEmailProps) {
-  const typeLabel = documentTypeLabels[documentType] || "Document";
-  const preview = `${typeLabel} ${documentNumber} from ${organizationName}`;
-
-  const amountLabel = documentType === "quote" ? "Total" : "Amount due";
-  const dateLabel = documentType === "quote" ? "Valid until" : "Due date";
+  const t = outputTranslator(locale);
+  organizationName ??= t("yourCompany");
+  const kind = outputDocumentKind(documentType);
+  const preview = t(`${kind}Preview`, { documentNumber, organizationName });
+  const amountLabel = documentType === "quote" ? t("total") : t("amountDue");
+  const dateLabel = documentType === "quote" ? t("validUntil") : t("dueDate");
 
   return (
-    <EmailLayout preview={preview}>
+    <EmailLayout locale={locale} preview={preview}>
       <Section style={content}>
         {/* Heading */}
         <Text style={heading}>
-          You have {getHeading(typeLabel, organizationName)}
+          {t(`${kind}Heading`, { organizationName })}
         </Text>
 
         {/* Document number */}
@@ -79,7 +71,7 @@ export function DocumentSentEmail({
             <tr>
               {issueDateFormatted && (
                 <td style={metaCell}>
-                  <Text style={metaLabel}>Issued</Text>
+                  <Text style={metaLabel}>{t("issued")}</Text>
                   <Text style={metaValue}>{issueDateFormatted}</Text>
                 </td>
               )}
@@ -97,7 +89,7 @@ export function DocumentSentEmail({
         {viewUrl && (
           <Section style={buttonWrap}>
             <Button style={button} href={viewUrl}>
-              {buttonLabel || `View ${typeLabel.toLowerCase()}`}
+              {buttonLabel || t(`${kind}Button`)}
             </Button>
           </Section>
         )}

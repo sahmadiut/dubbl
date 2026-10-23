@@ -1,3 +1,5 @@
+import { outputTranslator } from "@/i18n/output";
+import type { AppLocale } from "@/i18n/locale";
 import {
   Body,
   Container,
@@ -14,6 +16,7 @@ import * as React from "react";
 import { getPublicAppUrl, toSiteUrl } from "@/lib/public-url";
 
 interface LayoutProps {
+  locale?: AppLocale;
   preview: string;
   children: React.ReactNode;
   unsubscribeUrl?: string;
@@ -21,9 +24,10 @@ interface LayoutProps {
 
 const APP_URL = getPublicAppUrl();
 
-export function EmailLayout({ preview, children, unsubscribeUrl }: LayoutProps) {
+export function EmailLayout({ preview, children, unsubscribeUrl, locale = "en-US" }: LayoutProps) {
+  const t = outputTranslator(locale);
   return (
-    <Html>
+    <Html lang={locale} dir={locale === "fa-IR" ? "rtl" : "ltr"}>
       <Head />
       <Preview>{preview}</Preview>
       <Body style={body}>
@@ -55,17 +59,17 @@ export function EmailLayout({ preview, children, unsubscribeUrl }: LayoutProps) 
           <Section style={footer}>
             <Text style={footerLinks}>
               <Link href={toSiteUrl("/terms")} style={footerLink}>
-                Terms of Service
+                {t("terms")}
               </Link>
               {" · "}
               <Link href={toSiteUrl("/privacy")} style={footerLink}>
-                Privacy Policy
+                {t("privacy")}
               </Link>
               {unsubscribeUrl && (
                 <>
                   {" · "}
                   <Link href={unsubscribeUrl} style={footerLink}>
-                    Unsubscribe
+                    {t("unsubscribe")}
                   </Link>
                 </>
               )}

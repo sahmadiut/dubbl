@@ -1,3 +1,5 @@
+import { outputTranslator } from "@/i18n/output";
+import type { AppLocale } from "@/i18n/locale";
 import {
   Section,
   Text,
@@ -8,31 +10,33 @@ import { EmailLayout } from "./layout";
 import { toAppUrl } from "@/lib/public-url";
 
 interface WelcomeEmailProps {
+  locale?: AppLocale;
   userName: string;
   loginUrl?: string;
 }
 
 export function WelcomeEmail({
-  userName = "there",
+  locale = "en-US",
+  userName,
   loginUrl = toAppUrl("/sign-in"),
 }: WelcomeEmailProps) {
+  const t = outputTranslator(locale);
+  userName ??= t("there");
   return (
-    <EmailLayout preview="Welcome to dubbl">
+    <EmailLayout locale={locale} preview={t("welcomePreview")}>
       <Section style={content}>
-        <Text style={heading}>Welcome to dubbl, {userName}</Text>
+        <Text style={heading}>{t("welcomeHeading", { userName })}</Text>
         <Text style={subtext}>
-          You now have access to everything you need to manage your business
-          finances. Invoicing, double-entry accounting, team management, and
-          more.
+          {t("welcomeIntro")}
         </Text>
 
         <table cellPadding="0" cellSpacing="0" role="presentation" style={{ width: "100%" }}>
           <tr>
             <td style={featureCell}>
               <div style={featureCard}>
-                <Text style={featureTitle}>Invoicing</Text>
+                <Text style={featureTitle}>{t("invoicing")}</Text>
                 <Text style={featureDesc}>
-                  Create and send professional invoices. Track payments and manage your cash flow.
+                  {t("featureInvoices")}
                 </Text>
               </div>
             </td>
@@ -40,9 +44,9 @@ export function WelcomeEmail({
           <tr>
             <td style={featureCell}>
               <div style={featureCard}>
-                <Text style={featureTitle}>Accounting</Text>
+                <Text style={featureTitle}>{t("accounting")}</Text>
                 <Text style={featureDesc}>
-                  Double-entry bookkeeping with automated reports and real-time financial insights.
+                  {t("featureAccounting")}
                 </Text>
               </div>
             </td>
@@ -50,9 +54,9 @@ export function WelcomeEmail({
           <tr>
             <td style={featureCell}>
               <div style={featureCard}>
-                <Text style={featureTitle}>Team Management</Text>
+                <Text style={featureTitle}>{t("team")}</Text>
                 <Text style={featureDesc}>
-                  Invite your team, assign roles, and collaborate on your finances with full control.
+                  {t("featureTeam")}
                 </Text>
               </div>
             </td>
@@ -61,7 +65,7 @@ export function WelcomeEmail({
 
         <Section style={buttonSection}>
           <Button style={button} href={loginUrl}>
-            Go to Dashboard
+            {t("dashboard")}
           </Button>
         </Section>
       </Section>

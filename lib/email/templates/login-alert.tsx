@@ -1,3 +1,5 @@
+import { outputTranslator } from "@/i18n/output";
+import type { AppLocale } from "@/i18n/locale";
 import {
   Section,
   Text,
@@ -8,6 +10,7 @@ import { EmailLayout } from "./layout";
 import { toAppUrl } from "@/lib/public-url";
 
 interface LoginAlertEmailProps {
+  locale?: AppLocale;
   userName: string;
   ipAddress: string;
   userAgent?: string;
@@ -17,51 +20,54 @@ interface LoginAlertEmailProps {
 }
 
 export function LoginAlertEmail({
-  userName = "there",
-  ipAddress = "Unknown",
-  userAgent = "Unknown browser",
+  locale = "en-US",
+  userName,
+  ipAddress,
+  userAgent,
   provider = "credentials",
   timestamp = new Date().toLocaleString(),
   securityUrl = toAppUrl("/settings"),
 }: LoginAlertEmailProps) {
+  const t = outputTranslator(locale);
+  userAgent ??= t("unknownBrowser");
+  ipAddress ??= t("unknown");
+  userName ??= t("there");
   return (
-    <EmailLayout preview={`New sign-in from ${ipAddress}`}>
+    <EmailLayout locale={locale} preview={t("loginPreview", { ipAddress })}>
       <Section style={content}>
-        <Text style={heading}>New sign-in detected</Text>
+        <Text style={heading}>{t("loginHeading")}</Text>
         <Text style={subtext}>
-          Hi {userName}, we noticed a sign-in to your dubbl account from an IP
-          address we have not seen before. If this was you, no action is needed.
+          {t("loginIntro", { userName })}
         </Text>
 
         <div style={detailsCard}>
           <table cellPadding="0" cellSpacing="0" role="presentation" style={{ width: "100%" }}>
             <tr>
-              <td style={detailLabel}>IP Address</td>
+              <td style={detailLabel}>{t("ip")}</td>
               <td style={detailValue}>{ipAddress}</td>
             </tr>
             <tr>
-              <td style={detailLabel}>Browser</td>
+              <td style={detailLabel}>{t("browser")}</td>
               <td style={detailValue}>{userAgent}</td>
             </tr>
             <tr>
-              <td style={detailLabel}>Method</td>
+              <td style={detailLabel}>{t("method")}</td>
               <td style={detailValue}>{provider}</td>
             </tr>
             <tr>
-              <td style={detailLabel}>Time</td>
+              <td style={detailLabel}>{t("time")}</td>
               <td style={detailValue}>{timestamp}</td>
             </tr>
           </table>
         </div>
 
         <Text style={warningText}>
-          If you did not sign in, please change your password immediately and
-          review your account activity.
+          {t("loginWarning")}
         </Text>
 
         <Section style={buttonSection}>
           <Button style={button} href={securityUrl}>
-            Review Account
+            {t("reviewAccount")}
           </Button>
         </Section>
       </Section>

@@ -1,5 +1,11 @@
 # Message catalog foundation
 
+LOC-008 independently accepts the combined operations/reporting slice: 101 route
+components, 56 namespaces and 3,442 paired messages. See
+[combined ownership, residual shared-control audit and exceptions](OPERATIONS_CATALOG_ACCEPTANCE.md).
+Full catalogs contain 9,660 compatible keys per locale. LOC-002, LOC-009 and
+native Persian/RTL/calendar/numeral qualification remain independent.
+
 LOC-114 consolidation and report pack pages use 51 paired messages across
 ConsolidationReports and ReportPack (9,430 compatible keys per locale).
 See [scope, preserved exports and explicit exceptions](CONSOLIDATION_PACK_CATALOGS.md).

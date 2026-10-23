@@ -2,6 +2,7 @@
 
 import { bankCashFlowUi, bankAccountPickerUi, analyticalReportJson, analyticalAbs } from "@/lib/money/analytical-report-ui";
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { ArrowDownToLine, ArrowUpFromLine, Wallet } from "lucide-react";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
@@ -28,13 +29,10 @@ interface BankAccount {
   currencyCode?: string;
 }
 
-const GROUP_OPTIONS: { value: string; label: string }[] = [
-  { value: "day", label: "By day" },
-  { value: "week", label: "By week" },
-  { value: "month", label: "By month" },
-];
+const GROUP_OPTIONS = ["day", "week", "month"] as const;
 
 export default function BankCashFlowPage() {
+  const t = useTranslations("BankingReports");
   const now = new Date();
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -43,7 +41,7 @@ export default function BankCashFlowPage() {
   const [groupBy, setGroupBy] = useState("month");
   const [bankAccountId, setBankAccountId] = useState("");
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(false);
   const [data, setData] = useState<BankCashFlowData | null>(null);
 
   // Load the org's bank accounts for the account picker.
@@ -78,12 +76,10 @@ export default function BankCashFlowPage() {
       .then((r) => analyticalReportJson(r, bankCashFlowUi))
       .then((d) => {
         if (cancelled) return;
-        setError(null);
+        setError(false);
         setData(d);
       })
-      .catch((err: unknown) => {
-        if (!cancelled) { setData(null); setError(err instanceof Error ? err.message : "Unable to load bank cash flow."); }
-      })
+      .catch(() => { if (!cancelled) { setData(null); setError(true); } })
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
@@ -106,8 +102,8 @@ export default function BankCashFlowPage() {
       <BackToReports />
 
       <PageHeader
-        title="Money in and out of your bank accounts"
-        description="Cash that actually moved through your bank accounts, period by period."
+        title={t("flowTitle")}
+        description={t("flowDescription")}
       >
         <ExportButton
           data={(loading || error ? [] : periods).map(p => ({ ...p, currencyCode: currency }))}
@@ -116,14 +112,9 @@ export default function BankCashFlowPage() {
         />
       </PageHeader>
 
-      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+      {error && <p role="alert" className="text-sm text-destructive">{t("flowError")}</p>}
 
-      <ReportHelp>
-        Every penny that came into and went out of your bank accounts over the
-        chosen dates, grouped into periods. &ldquo;Money in&rdquo; is deposits and
-        receipts; &ldquo;money out&rdquo; is payments and withdrawals. The running
-        balance shows how each period changed the cash on hand.
-      </ReportHelp>
+      <ReportHelp>{t("flowHelp")}</ReportHelp>
 
       <div className="flex flex-col gap-3 rounded-lg border bg-muted/20 p-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-4">
         <DateRangeFilter
@@ -135,13 +126,14 @@ export default function BankCashFlowPage() {
           }}
         />
         <div className="flex flex-col gap-1">
-          <span className="text-[13px] text-muted-foreground">Bank account</span>
+          <span className="text-[13px] text-muted-foreground">{t("bankAccount")}</span>
           <select
+            aria-label={t("bankAccount")}
             value={bankAccountId}
             onChange={(e) => setBankAccountId(e.target.value)}
             className="h-9 rounded-md border bg-background px-2 text-sm"
           >
-            <option value="">All bank accounts</option>
+            <option value="">{t("allAccounts")}</option>
             {accounts.map((a) => (
               <option key={a.id} value={a.id}>
                 {a.accountName}
@@ -150,15 +142,16 @@ export default function BankCashFlowPage() {
           </select>
         </div>
         <div className="flex flex-col gap-1">
-          <span className="text-[13px] text-muted-foreground">Group</span>
+          <span className="text-[13px] text-muted-foreground">{t("group")}</span>
           <select
+            aria-label={t("group")}
             value={groupBy}
             onChange={(e) => setGroupBy(e.target.value)}
             className="h-9 rounded-md border bg-background px-2 text-sm"
           >
             {GROUP_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
+              <option key={o} value={o}>
+                {t(o)}
               </option>
             ))}
           </select>
@@ -171,17 +164,17 @@ export default function BankCashFlowPage() {
         <ContentReveal className="space-y-6">
           <div className="grid gap-4 sm:grid-cols-3">
             <StatCard
-              title="Money in"
+              title={t("moneyIn")}
               value={formatMoney(totals.inflows, currency)}
               icon={ArrowDownToLine}
             />
             <StatCard
-              title="Money out"
+              title={t("moneyOut")}
               value={formatMoney(analyticalAbs(totals.outflows), currency)}
               icon={ArrowUpFromLine}
             />
             <StatCard
-              title="Net change"
+              title={t("netChange")}
               value={formatMoney(totals.net, currency)}
               icon={Wallet}
             />
@@ -191,11 +184,11 @@ export default function BankCashFlowPage() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
-                  <TableHead>Period</TableHead>
-                  <TableHead className="w-32 text-right">Money in</TableHead>
-                  <TableHead className="w-32 text-right">Money out</TableHead>
-                  <TableHead className="w-32 text-right">Net change</TableHead>
-                  <TableHead className="w-36 text-right">Cumulative net change</TableHead>
+                  <TableHead>{t("period")}</TableHead>
+                  <TableHead className="w-32 text-right">{t("moneyIn")}</TableHead>
+                  <TableHead className="w-32 text-right">{t("moneyOut")}</TableHead>
+                  <TableHead className="w-32 text-right">{t("netChange")}</TableHead>
+                  <TableHead className="w-36 text-right">{t("cumulative")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -205,7 +198,7 @@ export default function BankCashFlowPage() {
                       colSpan={5}
                       className="text-center text-sm text-muted-foreground py-8"
                     >
-                      No bank movements in this date range.
+                      {t("flowEmpty")}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -231,7 +224,7 @@ export default function BankCashFlowPage() {
               {periods.length > 0 && (
                 <TableBody>
                   <TableRow className="bg-muted/30 font-bold">
-                    <TableCell>Total</TableCell>
+                    <TableCell>{t("total")}</TableCell>
                     <TableCell className="text-right font-mono text-sm tabular-nums">
                       {formatMoney(totals.inflows, currency)}
                     </TableCell>

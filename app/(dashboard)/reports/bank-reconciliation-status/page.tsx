@@ -3,6 +3,7 @@
 import { bankStatusUi, analyticalReportJson } from "@/lib/money/analytical-report-ui";
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ContentReveal } from "@/components/ui/content-reveal";
@@ -29,9 +30,10 @@ function fmtDate(d: string | null | undefined): string {
 }
 
 export default function BankReconciliationStatusPage() {
+  const t = useTranslations("BankingReports");
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(false);
   const [data, setData] = useState<StatusData | null>(null);
 
   useEffect(() => {
@@ -46,12 +48,10 @@ export default function BankReconciliationStatusPage() {
       .then((r) => analyticalReportJson(r, bankStatusUi))
       .then((d) => {
         if (cancelled) return;
-        setError(null);
+        setError(false);
         setData(d);
       })
-      .catch((err: unknown) => {
-        if (!cancelled) { setData(null); setError(err instanceof Error ? err.message : "Unable to load bank reconciliation status."); }
-      })
+      .catch(() => { if (!cancelled) { setData(null); setError(true); } })
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
@@ -88,8 +88,8 @@ export default function BankReconciliationStatusPage() {
       <BackToReports />
 
       <PageHeader
-        title="Bank tidy-up status"
-        description="Which accounts are fully checked off, and what's still waiting to be reviewed."
+        title={t("statusTitle")}
+        description={t("statusDescription")}
       >
         <ExportButton
           data={loading || error ? [] : exportRows}
@@ -107,22 +107,16 @@ export default function BankReconciliationStatusPage() {
         />
       </PageHeader>
 
-      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+      {error && <p role="alert" className="text-sm text-destructive">{t("statusError")}</p>}
 
-      <ReportHelp>
-        For each bank account, this shows how many transactions you&apos;ve already
-        confirmed and how many are still waiting for you to review. Anything still
-        waiting — especially older items — is worth checking so your books match
-        your real bank balance. Accountants call this bank reconciliation.
-      </ReportHelp>
+      <ReportHelp>{t("statusHelp")}</ReportHelp>
 
       {loading ? (
         <BrandLoader className="h-48" />
       ) : error ? null : accounts.length === 0 ? (
         <ContentReveal>
           <div className="rounded-lg border bg-muted/20 p-8 text-center text-sm text-muted-foreground">
-            No bank accounts yet. Add a bank account to start tracking what&apos;s
-            been reviewed.
+            {t("statusEmpty")}
           </div>
         </ContentReveal>
       ) : (
@@ -131,14 +125,14 @@ export default function BankReconciliationStatusPage() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
-                  <TableHead>Account</TableHead>
-                  <TableHead className="text-right">Bank balance</TableHead>
-                  <TableHead className="text-right">Still to review</TableHead>
-                  <TableHead className="text-right">Value waiting</TableHead>
-                  <TableHead className="text-right">Older than 60 days</TableHead>
-                  <TableHead>Last reviewed</TableHead>
-                  <TableHead>Last import</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>{t("account")}</TableHead>
+                  <TableHead className="text-right">{t("balance")}</TableHead>
+                  <TableHead className="text-right">{t("toReview")}</TableHead>
+                  <TableHead className="text-right">{t("waitingValue")}</TableHead>
+                  <TableHead className="text-right">{t("older")}</TableHead>
+                  <TableHead>{t("lastReviewed")}</TableHead>
+                  <TableHead>{t("lastImport")}</TableHead>
+                  <TableHead>{t("status")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -157,7 +151,7 @@ export default function BankReconciliationStatusPage() {
                         {a.gaps.hasGap && (
                           <div className="mt-0.5 flex items-center gap-1 text-xs text-amber-600">
                             <AlertTriangle className="size-3" />
-                            Possible missing statement ({a.gaps.gapDays} day gap)
+                            {t("gap", { days: a.gaps.gapDays ?? 0 })}
                           </div>
                         )}
                       </TableCell>
@@ -190,14 +184,14 @@ export default function BankReconciliationStatusPage() {
                       <TableCell>
                         {isClear ? (
                           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
-                            <CheckCircle2 className="size-3" /> All caught up
+                            <CheckCircle2 className="size-3" /> {t("caughtUp")}
                           </span>
                         ) : (
                           <Link
                             href={`/accounting/banking/${a.id}/reconcile`}
                             className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 hover:bg-amber-100"
                           >
-                            {a.unreconciled.count} to review
+                            {t("reviewCount", { count: a.unreconciled.count })}
                           </Link>
                         )}
                       </TableCell>
@@ -205,7 +199,7 @@ export default function BankReconciliationStatusPage() {
                   );
                 })}
                 <TableRow className="bg-muted/30 font-bold">
-                  <TableCell>Total</TableCell>
+                  <TableCell>{t("total")}</TableCell>
                   <TableCell />
                   <TableCell className="text-right font-mono tabular-nums">
                     {totalCount}
@@ -222,9 +216,7 @@ export default function BankReconciliationStatusPage() {
           </div>
 
           <p className="text-xs text-muted-foreground">
-            &quot;Still to review&quot; is the number of bank lines you haven&apos;t
-            confirmed yet. Items older than 60 days are worth a closer look — they
-            may be duplicates or things that never got matched.
+            {t("statusNote")}
           </p>
         </ContentReveal>
       )}

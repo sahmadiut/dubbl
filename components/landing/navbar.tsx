@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Menu, ArrowRight } from "lucide-react";
@@ -17,12 +19,13 @@ import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
-  { label: "Features", href: "#features" },
-  { label: "Pricing", href: "/pricing" },
-  { label: "Docs", href: "/docs" },
-];
+  { label: "navFeatures", href: "#features" },
+  { label: "navPricing", href: "/pricing" },
+  { label: "navDocs", href: "/docs" },
+] as const;
 
 export function Navbar() {
+  const t = useTranslations("LandingShell");
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -58,11 +61,11 @@ export function Navbar() {
           <div className="hidden items-center gap-1 md:flex">
             {navLinks.map((link) => (
               <Link
-                key={link.label}
+                key={link.href}
                 href={link.href}
                 className="relative px-4 py-2 text-sm text-muted-foreground transition-colors duration-200 hover:text-foreground"
               >
-                {link.label}
+                {t(link.label)}
               </Link>
             ))}
           </div>
@@ -75,7 +78,7 @@ export function Navbar() {
               href="/sign-in"
               className="px-3 py-2 text-sm text-muted-foreground transition-colors duration-200 hover:text-foreground"
             >
-              Sign in
+              {t("signIn")}
             </Link>
             <Button
               asChild
@@ -83,7 +86,7 @@ export function Navbar() {
               className="rounded-full bg-emerald-600 px-5 text-white hover:bg-emerald-500 transition-all duration-200 shadow-[0_0_20px_rgba(16,185,129,0.1)] hover:shadow-[0_0_25px_rgba(16,185,129,0.2)]"
             >
               <Link href="/sign-up" className="flex items-center gap-1.5">
-                Get Started
+                {t("getStarted")}
                 <ArrowRight className="size-3.5" />
               </Link>
             </Button>
@@ -96,6 +99,7 @@ export function Navbar() {
               <SheetTrigger asChild>
                 <Button
                   variant="ghost"
+                  aria-label={t("openMenu")}
                   size="icon"
                   className="text-muted-foreground hover:text-foreground"
                 >
@@ -119,12 +123,12 @@ export function Navbar() {
                   <nav className="flex flex-col gap-1 px-4 pt-4">
                     {navLinks.map((link) => (
                       <Link
-                        key={link.label}
+                        key={link.href}
                         href={link.href}
                         onClick={() => setMobileOpen(false)}
                         className="rounded-lg px-3 py-2.5 text-[15px] text-muted-foreground transition-colors duration-200 hover:bg-accent hover:text-foreground"
                       >
-                        {link.label}
+                        {t(link.label)}
                       </Link>
                     ))}
                   </nav>
@@ -141,7 +145,7 @@ export function Navbar() {
                         href="/sign-in"
                         onClick={() => setMobileOpen(false)}
                       >
-                        Sign in
+                        {t("signIn")}
                       </Link>
                     </Button>
                     <Button
@@ -153,7 +157,7 @@ export function Navbar() {
                         onClick={() => setMobileOpen(false)}
                         className="flex items-center justify-center gap-1.5"
                       >
-                        Get Started
+                        {t("getStarted")}
                         <ArrowRight className="size-3.5" />
                       </Link>
                     </Button>

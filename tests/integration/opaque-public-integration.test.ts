@@ -22,7 +22,7 @@ test("MON-034 every persisted JSON declaration has a boundary owner", async () =
 test("MON-034 snapshots, audit, signing and public rendering compose without unit loss", async () => {
   await withDatabase(async (_pool, url) => {
     applyCurrent(url);
-    const result = spawnSync(process.execPath, ["--import", "tsx", "tests/integration/opaque-public-integration-worker.ts"], {
+    const result = spawnSync(process.execPath, ["--experimental-test-module-mocks", "--import", "tsx", "tests/integration/opaque-public-integration-worker.ts"], {
       env: { ...process.env, DATABASE_URL: url, STRIPE_SECRET_KEY: "", RESEND_API_KEY: "", IRR_PRODUCTION_ENABLED: "false" },
       encoding: "utf8", timeout: 180000,
     });

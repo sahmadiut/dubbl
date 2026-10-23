@@ -430,3 +430,10 @@ LOC-103 owns directory/shared primitives; later slices depend on that foundation
 - [LOC-118](../tasks/LOC-118.md): Extract document workspace catalogs; LOC-071 child.
 
 - [LOC-119](../tasks/LOC-119.md): Extract document send control catalogs; LOC-071 child.
+
+## LOC-122 landing/help bounded extraction
+
+- [LOC-125](../tasks/LOC-125.md): Extract landing shell and conversion catalogs; LOC-122 child.
+- [LOC-126](../tasks/LOC-126.md): Extract landing feature and help catalogs; LOC-122 child.
+- [LOC-127](../tasks/LOC-127.md): Extract public pricing and legal catalogs; LOC-122 child.
+- [LOC-128](../tasks/LOC-128.md): Extract documentation chrome and public metadata catalogs; LOC-122 child.

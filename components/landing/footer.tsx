@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { Github, Twitter, ShieldCheck } from "lucide-react";
 import { Logo } from "@/components/shared/logo";
@@ -10,49 +11,50 @@ type FooterLink = {
   external?: boolean;
 };
 
-const footerLinks: Record<string, FooterLink[]> = {
-  Product: [
-    { label: "Pricing", href: "/pricing" },
-    { label: "Features", href: "/#features" },
-    { label: "Integrations", href: "/#integrations" },
-    { label: "Self-Hosting", href: "/docs/self-hosting" },
-    { label: "Changelog", href: "https://github.com/dubbl-org/dubbl/releases", external: true },
-  ],
-  Resources: [
-    { label: "Documentation", href: "/docs" },
-    { label: "Getting Started", href: "/docs/getting-started" },
-    { label: "Migration Guide", href: "/docs/guides/import-export" },
-    { label: "Jurisdiction Guide", href: "/docs/guides/jurisdictions" },
-    { label: "API Reference", href: "/docs/api-reference" },
-  ],
-  Guides: [
-    { label: "Multi-Currency", href: "/docs/guides/multi-currency" },
-    { label: "Stripe Integration", href: "/docs/guides/stripe-integration" },
-    { label: "Tax Filing Prep", href: "/docs/guides/tax-filing-prep" },
-    { label: "Backups & Recovery", href: "/docs/settings/backups" },
-    { label: "MCP for AI Agents", href: "/docs/guides/mcp" },
-  ],
-  Developers: [
-    { label: "GitHub", href: "https://github.com/dubbl-org/dubbl", external: true },
-    { label: "Contributing", href: "/docs/contributing" },
-    { label: "Developer Guide", href: "/docs/guides/developer-guide" },
-    { label: "API Keys", href: "/docs/settings/api-keys" },
-    { label: "Status", href: "https://status.dubbl.dev", external: true },
-  ],
-  Company: [
-    { label: "Privacy Policy", href: "/privacy" },
-    { label: "Terms of Service", href: "/terms" },
-    { label: "Audit Log", href: "/docs/settings/audit-log" },
-    { label: "Security", href: "/docs/self-hosting" },
-  ],
-};
-
-const socialLinks = [
-  { icon: Github, href: "https://github.com/dubbl-org/dubbl", label: "GitHub" },
-  { icon: Twitter, href: "https://x.com/DubblHQ", label: "X" },
-];
-
 export function Footer() {
+  const t = useTranslations("LandingShell");
+  const footerLinks: Record<string, FooterLink[]> = {
+    [t("footerProduct")]: [
+      { label: t("navPricing"), href: "/pricing" },
+      { label: t("navFeatures"), href: "/#features" },
+      { label: t("integrations"), href: "/#integrations" },
+      { label: t("selfHosting"), href: "/docs/self-hosting" },
+      { label: t("changelog"), href: "https://github.com/dubbl-org/dubbl/releases", external: true },
+    ],
+    [t("footerResources")]: [
+      { label: t("documentation"), href: "/docs" },
+      { label: t("gettingStarted"), href: "/docs/getting-started" },
+      { label: t("migrationGuide"), href: "/docs/guides/import-export" },
+      { label: t("jurisdictionGuide"), href: "/docs/guides/jurisdictions" },
+      { label: t("apiReference"), href: "/docs/api-reference" },
+    ],
+    [t("footerGuides")]: [
+      { label: t("multiCurrency"), href: "/docs/guides/multi-currency" },
+      { label: "Stripe Integration", href: "/docs/guides/stripe-integration" },
+      { label: t("taxFilingPrep"), href: "/docs/guides/tax-filing-prep" },
+      { label: t("backupsRecovery"), href: "/docs/settings/backups" },
+      { label: t("mcpAgents"), href: "/docs/guides/mcp" },
+    ],
+    [t("footerDevelopers")]: [
+      { label: "GitHub", href: "https://github.com/dubbl-org/dubbl", external: true },
+      { label: t("contributing"), href: "/docs/contributing" },
+      { label: t("developerGuide"), href: "/docs/guides/developer-guide" },
+      { label: t("apiKeys"), href: "/docs/settings/api-keys" },
+      { label: t("status"), href: "https://status.dubbl.dev", external: true },
+    ],
+    [t("footerCompany")]: [
+      { label: t("privacyPolicy"), href: "/privacy" },
+      { label: t("termsService"), href: "/terms" },
+      { label: t("auditLog"), href: "/docs/settings/audit-log" },
+      { label: t("security"), href: "/docs/self-hosting" },
+    ],
+  };
+
+  const socialLinks = [
+    { icon: Github, href: "https://github.com/dubbl-org/dubbl", label: "GitHub" },
+    { icon: Twitter, href: "https://x.com/DubblHQ", label: "X" },
+  ];
+
   return (
     <footer className="bg-[#0a0a0a] pt-16 pb-8 text-white">
       <Container>
@@ -67,7 +69,7 @@ export function Footer() {
               </span>
             </div>
             <p className="mt-3 max-w-[220px] text-sm leading-relaxed text-white/50">
-              Open source business management platform for modern teams.
+              {t("footerDescription")}
             </p>
             <div className="mt-5 flex items-center gap-2.5">
               {socialLinks.map((link) => (
@@ -125,16 +127,16 @@ export function Footer() {
         <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
           <div className="flex flex-col gap-1">
             <p className="text-xs text-white/40">
-              &copy; 2026 dubbl. Apache 2.0 License.
+              {t("copyright", { year: "2026" })}
             </p>
             <p className="text-[11px] text-white/25">
-              Mindroot Ltd &middot; Registered in England and Wales &middot; Company No. 16543299 &middot; 71-75 Shelton Street, London, WC2H 9JQ
+              {t("companyDetails")}
             </p>
           </div>
           <div className="flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5">
             <ShieldCheck className="size-3.5 text-emerald-400" />
             <span className="text-xs font-medium text-white/60">
-              Open Source &middot; Self-Hostable
+              {t("openSelfHostable")}
             </span>
           </div>
         </div>

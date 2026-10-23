@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { Container } from "@/components/shared/container";
 
 const technologies = [
@@ -12,11 +14,12 @@ const technologies = [
 ];
 
 export function TrustBar() {
+  const t = useTranslations("LandingShell");
   return (
     <section className="border-y border-border/50 py-8">
       <Container>
         <p className="mb-6 text-center text-sm tracking-wide text-muted-foreground">
-          Built with the tools you already trust
+          {t("trustedTools")}
         </p>
       </Container>
       <div

@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import { createHash, randomUUID } from "node:crypto";
+import { mock } from "node:test";
 import React from "react";
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderToStaticMarkup } from "../helpers/presentation";
+import { createTranslator } from "next-intl";
+import en from "../../messages/en-US.json";
 import { eq, sql } from "drizzle-orm";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -21,7 +24,13 @@ import { POST as sign } from "../../app/api/sign/[token]/route";
 import { GET as portalRender } from "../../app/api/portal/[token]/invoices/[id]/pdf/route";
 import { GET as payRender } from "../../app/api/pay/[token]/pdf/route";
 import { GET as adminRead, PATCH as adminWrite } from "../../app/api/v1/admin/organizations/[id]/route";
-import SignPage from "../../app/sign/[token]/page";
+
+// Supply only the Next request-locale boundary; production page/services, real
+// next-intl rendering, registered MCP tools and PostgreSQL still execute.
+mock.module("next-intl/server", { namedExports: {
+  getTranslations: async () => createTranslator({ locale: "en-US", messages: en, namespace: "PublicSigning" }),
+} });
+const { default: SignPage } = await import("../../app/sign/[token]/page");
 
 Object.assign(globalThis, { React }); // tsx JSX-preserve runtime; no browser/server.
 const png = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=";

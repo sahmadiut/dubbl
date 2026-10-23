@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { motion } from "motion/react";
 import { ArrowRight, Github } from "lucide-react";
 import Link from "next/link";
@@ -49,6 +51,7 @@ function FloatingCard({
 }
 
 function DataVisuals() {
+  const t = useTranslations("LandingShell");
   // Line chart path data — animates drawing continuously
   const chartPath = "M 0 40 C 10 38, 20 35, 30 30 S 50 20, 60 22 S 80 28, 90 18 S 110 8, 120 12 S 140 20, 150 10 S 170 5, 180 8";
   const chartPath2 = "M 0 44 C 15 42, 25 40, 35 36 S 55 30, 65 32 S 85 35, 95 28 S 115 22, 125 26 S 145 30, 155 20 S 175 18, 180 22";
@@ -62,7 +65,7 @@ function DataVisuals() {
         rotate={-2}
       >
         <div className="mb-1 flex items-center justify-between">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Revenue</p>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{t("revenue")}</p>
           <motion.span
             className="font-mono text-[11px] font-bold tabular-nums text-emerald-600 dark:text-emerald-400"
             animate={{ opacity: [1, 0.5, 1] }}
@@ -128,7 +131,7 @@ function DataVisuals() {
             animate={{ scale: [1, 1.4, 1] }}
             transition={{ duration: 2, repeat: Infinity }}
           />
-          <span className="text-[9px] text-emerald-600 dark:text-emerald-400">+12.5% this month</span>
+          <span className="text-[9px] text-emerald-600 dark:text-emerald-400">{t("monthlyChange", { change: "+12.5%" })}</span>
         </div>
       </FloatingCard>
 
@@ -139,7 +142,7 @@ function DataVisuals() {
         rotate={1.5}
       >
         <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Monthly P&amp;L
+          {t("monthlyProfitLoss")}
         </p>
         <div className="flex items-end gap-[3px]" style={{ height: 48 }}>
           {[35, 52, 44, 70, 58, 82, 65, 90, 74, 85, 95].map((h, i) => (
@@ -159,8 +162,8 @@ function DataVisuals() {
           ))}
         </div>
         <div className="mt-1.5 flex items-center justify-between">
-          <span className="text-[8px] text-muted-foreground">Jan</span>
-          <span className="text-[8px] text-muted-foreground">Nov</span>
+          <span className="text-[8px] text-muted-foreground">{t("january")}</span>
+          <span className="text-[8px] text-muted-foreground">{t("november")}</span>
         </div>
       </FloatingCard>
 
@@ -172,7 +175,7 @@ function DataVisuals() {
       >
         <div className="mb-2 flex items-center justify-between">
           <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Live Feed
+            {t("liveFeed")}
           </p>
           <motion.div
             className="flex items-center gap-1"
@@ -180,13 +183,13 @@ function DataVisuals() {
             transition={{ duration: 1.5, repeat: Infinity }}
           >
             <div className="size-1.5 rounded-full bg-emerald-500" />
-            <span className="text-[8px] font-medium text-emerald-600 dark:text-emerald-400">LIVE</span>
+            <span className="text-[8px] font-medium text-emerald-600 dark:text-emerald-400">{t("live")}</span>
           </motion.div>
         </div>
         {[
-          { desc: "Client Payment", amount: "+$12,500", positive: true, delay: 0 },
-          { desc: "Office Supplies", amount: "-$240", positive: false, delay: 2 },
-          { desc: "Consulting", amount: "+$5,000", positive: true, delay: 4 },
+          { desc: t("clientPayment"), amount: "+$12,500", positive: true, delay: 0 },
+          { desc: t("officeSupplies"), amount: "-$240", positive: false, delay: 2 },
+          { desc: t("consulting"), amount: "+$5,000", positive: true, delay: 4 },
         ].map((tx) => (
           <motion.div
             key={tx.desc}
@@ -212,7 +215,7 @@ function DataVisuals() {
         rotate={2}
       >
         <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Asset Allocation
+          {t("assetAllocation")}
         </p>
         <div className="flex items-center gap-3">
           <svg viewBox="0 0 36 36" className="size-14">
@@ -252,9 +255,9 @@ function DataVisuals() {
           </svg>
           <div className="space-y-1.5">
             {[
-              { label: "Cash", pct: "58%", color: "bg-emerald-500" },
-              { label: "Receivables", pct: "26%", color: "bg-teal-600" },
-              { label: "Other", pct: "16%", color: "bg-emerald-300" },
+              { label: t("cash"), pct: "58%", color: "bg-emerald-500" },
+              { label: t("receivables"), pct: "26%", color: "bg-teal-600" },
+              { label: t("other"), pct: "16%", color: "bg-emerald-300" },
             ].map((s) => (
               <div key={s.label} className="flex items-center gap-1.5">
                 <div className={cn("size-1.5 rounded-full", s.color)} />
@@ -273,12 +276,12 @@ function DataVisuals() {
         rotate={-1.5}
       >
         <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Quick Stats
+          {t("quickStats")}
         </p>
         {[
-          { label: "Accounts", value: "23", spark: "M0 8 L3 6 L6 7 L9 4 L12 5 L15 3 L18 4 L21 2 L24 3" },
-          { label: "Entries", value: "142", spark: "M0 6 L3 8 L6 5 L9 7 L12 3 L15 5 L18 2 L21 4 L24 1" },
-          { label: "Contacts", value: "38", spark: "M0 5 L3 4 L6 6 L9 3 L12 5 L15 2 L18 3 L21 1 L24 2" },
+          { label: t("accounts"), value: "23", spark: "M0 8 L3 6 L6 7 L9 4 L12 5 L15 3 L18 4 L21 2 L24 3" },
+          { label: t("entries"), value: "142", spark: "M0 6 L3 8 L6 5 L9 7 L12 3 L15 5 L18 2 L21 4 L24 1" },
+          { label: t("contacts"), value: "38", spark: "M0 5 L3 4 L6 6 L9 3 L12 5 L15 2 L18 3 L21 1 L24 2" },
         ].map((s, i) => (
           <div key={s.label} className="flex items-center justify-between border-b border-border/30 py-1.5 last:border-0">
             <div>
@@ -308,12 +311,12 @@ function DataVisuals() {
         rotate={1}
       >
         <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Invoices
+          {t("invoices")}
         </p>
         {[
-          { id: "INV-012", status: "Paid", pct: 100, color: "bg-emerald-500", text: "text-emerald-600 dark:text-emerald-400" },
-          { id: "INV-011", status: "Sent", pct: 60, color: "bg-blue-500", text: "text-blue-600 dark:text-blue-400" },
-          { id: "INV-010", status: "Overdue", pct: 0, color: "bg-red-500", text: "text-red-500 dark:text-red-400" },
+          { id: "INV-012", status: t("paid"), pct: 100, color: "bg-emerald-500", text: "text-emerald-600 dark:text-emerald-400" },
+          { id: "INV-011", status: t("sent"), pct: 60, color: "bg-blue-500", text: "text-blue-600 dark:text-blue-400" },
+          { id: "INV-010", status: t("overdue"), pct: 0, color: "bg-red-500", text: "text-red-500 dark:text-red-400" },
         ].map((inv, i) => (
           <div key={inv.id} className="border-b border-border/30 py-1.5 last:border-0">
             <div className="flex items-center justify-between">
@@ -474,18 +477,19 @@ function HeroBackground() {
 /*  Live ticker — scrolling events at the top                          */
 /* ------------------------------------------------------------------ */
 
-const tickerEvents = [
-  "Invoice INV-048 paid  $4,200",
-  "New account created  Accounts Receivable",
-  "Journal entry JE-102 posted",
-  "Bank reconciliation completed  Dec 2025",
-  "Revenue recognized  $12,500",
-  "Expense recorded  Office Supplies $240",
-  "Trial balance verified  Balanced",
-  "API call  POST /v1/transactions",
-];
-
 function LiveTicker() {
+  const t = useTranslations("LandingShell");
+  const tickerEvents = [
+    t("tickerInvoice", { number: "INV-048", amount: "$4,200" }),
+    t("tickerAccount"),
+    t("tickerJournal", { number: "JE-102" }),
+    t("tickerReconciliation", { period: "Dec 2025" }),
+    t("tickerRevenue", { amount: "$12,500" }),
+    t("tickerExpense", { amount: "$240" }),
+    t("tickerTrialBalance"),
+    t("tickerApi", { request: "POST /v1/transactions" }),
+  ];
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -514,6 +518,7 @@ function LiveTicker() {
 /* ------------------------------------------------------------------ */
 
 export function Hero() {
+  const t = useTranslations("LandingShell");
   return (
     <section className="relative flex min-h-screen items-center overflow-hidden py-20">
       <HeroBackground />
@@ -564,11 +569,9 @@ export function Hero() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
             >
-              Business management{" "}
-              <span className="pr-1 italic bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-400 bg-clip-text text-transparent dark:from-emerald-400 dark:via-emerald-300 dark:to-teal-300 decoration-clone">
-                for modern
-              </span>{" "}
-              teams
+              {t.rich("heroHeading", {
+                em: (chunks) => <em className="pr-1 italic bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-400 bg-clip-text text-transparent dark:from-emerald-400 dark:via-emerald-300 dark:to-teal-300 decoration-clone">{chunks}</em>,
+              })}
             </motion.h1>
           </div>
 
@@ -579,9 +582,7 @@ export function Hero() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
-            Accounting, projects, inventory, payroll, and CRM in one
-            platform. Self-host, extend via API and MCP, and own your
-            data. Forever free.
+            {t("heroDescription")}
           </motion.p>
 
           {/* CTA */}
@@ -613,7 +614,7 @@ export function Hero() {
                     ease: "easeInOut",
                   }}
                 />
-                <span className="relative">Get Started Free</span>
+                <span className="relative">{t("getStartedFree")}</span>
                 <ArrowRight className="relative size-4 transition-transform group-hover:translate-x-0.5" />
               </Link>
 
@@ -650,9 +651,9 @@ export function Hero() {
             {/* Trust signals — terminal style */}
             <div className="mt-12 flex items-center gap-3 font-mono text-[11px] text-muted-foreground sm:gap-5">
               {[
-                { icon: "Apache-2.0", label: "Licensed" },
-                { icon: "Self-host", label: "Ready" },
-                { icon: "MCP-ready", label: "AI-native" },
+                { icon: "Apache-2.0", label: t("licensed") },
+                { icon: t("selfHost"), label: t("ready") },
+                { icon: t("mcpReady"), label: t("aiNative") },
               ].map((item, i) => (
                 <div key={item.icon} className="flex items-center gap-2">
                   {i > 0 && (

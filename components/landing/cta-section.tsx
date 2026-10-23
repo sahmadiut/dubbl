@@ -1,11 +1,14 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { ArrowRight } from "lucide-react";
 import { Container } from "@/components/shared/container";
 import { ScrollReveal } from "@/components/shared/scroll-reveal";
 import Link from "next/link";
 
 export function CTASection() {
+  const t = useTranslations("LandingShell");
   return (
     <section className="relative overflow-hidden bg-[#0a0a0a] py-16 text-white md:py-20">
       {/* Blueprint hash overlay */}
@@ -46,28 +49,27 @@ export function CTASection() {
         <ScrollReveal>
           <div className="text-center">
             <h2 className="text-3xl font-bold tracking-tight text-white md:text-4xl lg:text-5xl">
-              Start managing your business today
+              {t("ctaHeading")}
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-lg text-white/60">
-              Self-host in minutes, extend via API and MCP, and own your
-              data. Forever free.
+              {t("ctaDescription")}
             </p>
             <p className="mt-6 text-sm text-white/40">
-              Open source &middot; Self-hostable &middot; Free forever
+              {t("ctaTrust")}
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
                 href="/sign-up"
                 className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-8 text-sm font-medium text-white transition-colors hover:bg-emerald-500"
               >
-                Get Started
+                {t("getStarted")}
                 <ArrowRight className="size-4" />
               </Link>
               <Link
                 href="/contact"
                 className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-white/20 px-8 text-sm font-medium text-white transition-colors hover:bg-white/5"
               >
-                Contact Sales
+                {t("contactSales")}
               </Link>
             </div>
           </div>

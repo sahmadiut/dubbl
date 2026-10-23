@@ -556,3 +556,11 @@ LOC-103 owns directory/shared primitives; later slices depend on that foundation
 - [LOC-112](../tasks/LOC-112.md): Extract saved and custom report catalogs.
 - [LOC-113](../tasks/LOC-113.md): Extract scheduled report catalogs.
 - [LOC-114](../tasks/LOC-114.md): Extract consolidation and report pack catalogs.
+
+- [LOC-116](../tasks/LOC-116.md): Extract document email history catalogs; LOC-071 child.
+
+- [LOC-117](../tasks/LOC-117.md): Extract dashboard overview and widget catalogs; LOC-071 child.
+
+- [LOC-118](../tasks/LOC-118.md): Extract document workspace catalogs; LOC-071 child.
+
+- [LOC-119](../tasks/LOC-119.md): Extract document send control catalogs; LOC-071 child.

@@ -9718,5 +9718,14 @@
     "trialDesc": "Every account's balance, with the two sides that should match.",
     "cashName": "Where your cash went",
     "cashDesc": "A summary of how your cash changed over the period."
+  },
+  "DocumentEmailHistory": {
+    "title": "Email History",
+    "resent": "Email resent",
+    "resendFailed": "Failed to resend",
+    "sent": "Sent",
+    "failed": "Failed",
+    "unknownStatus": "Unknown status",
+    "resend": "Resend"
   }
 }

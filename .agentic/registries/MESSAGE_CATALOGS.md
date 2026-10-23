@@ -452,3 +452,5 @@ rendered preference controls, and lint rejection. Compile-time negative probes
 ensure missing namespaces/keys fail typecheck. Existing
 [locale tests](../../tests/locale.test.ts) cover preference precedence and provider
 payload serialization. No DB/API/schema change is part of LOC-005.
+
+LOC-116: [document email history scope and exceptions](DOCUMENT_EMAIL_HISTORY_CATALOGS.md).

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations, useFormatter } from "next-intl";
 import { toast } from "sonner";
 import { Mail, RotateCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -19,19 +20,9 @@ interface EmailHistoryProps {
   documentId: string;
 }
 
-function timeAgo(dateStr: string) {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 30) return `${days}d ago`;
-  return new Date(dateStr).toLocaleDateString();
-}
-
 export function EmailHistory({ documentType, documentId }: EmailHistoryProps) {
+  const t = useTranslations("DocumentEmailHistory");
+  const format = useFormatter();
   const [emails, setEmails] = useState<EmailLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [resendingId, setResendingId] = useState<string | null>(null);
@@ -47,6 +38,7 @@ export function EmailHistory({ documentType, documentId }: EmailHistoryProps) {
       .then((data) => {
         if (data.emails) setEmails(data.emails);
       })
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, [orgId, documentType, documentId]);
 
@@ -63,12 +55,13 @@ export function EmailHistory({ documentType, documentId }: EmailHistoryProps) {
         headers: { "x-organization-id": orgId },
       });
       if (res.ok) {
-        toast.success("Email resent");
+        toast.success(t("resent"));
         loadEmails();
       } else {
-        const data = await res.json().catch(() => ({}));
-        toast.error(typeof data.error === "string" ? data.error : "Failed to resend");
+        toast.error(t("resendFailed"));
       }
+    } catch {
+      toast.error(t("resendFailed"));
     } finally {
       setResendingId(null);
     }
@@ -81,7 +74,7 @@ export function EmailHistory({ documentType, documentId }: EmailHistoryProps) {
       <div className="flex items-center gap-2 border-b bg-muted/30 px-5 py-3">
         <Mail className="size-3.5 text-muted-foreground" />
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Email History
+          {t("title")}
         </p>
       </div>
       <div className="divide-y">
@@ -98,12 +91,12 @@ export function EmailHistory({ documentType, documentId }: EmailHistoryProps) {
                       : "border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300"
                   }
                 >
-                  {email.status}
+                  {email.status === "sent" ? t("sent") : email.status === "failed" ? t("failed") : t("unknownStatus")}
                 </Badge>
               </div>
               <div className="flex items-center gap-2 mt-0.5">
                 <p className="text-xs text-muted-foreground truncate">{email.subject}</p>
-                <span className="text-xs text-muted-foreground shrink-0">{timeAgo(email.sentAt)}</span>
+                <span className="text-xs text-muted-foreground shrink-0">{format.relativeTime(new Date(email.sentAt))}</span>
               </div>
             </div>
             <Button
@@ -114,7 +107,7 @@ export function EmailHistory({ documentType, documentId }: EmailHistoryProps) {
               disabled={resendingId === email.id}
             >
               <RotateCw className={`size-3 ${resendingId === email.id ? "animate-spin" : ""}`} />
-              Resend
+              {t("resend")}
             </Button>
           </div>
         ))}

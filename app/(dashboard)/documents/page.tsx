@@ -1,5 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { AuthPresentationError } from "@/i18n/auth-errors";
+
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -110,6 +113,7 @@ const ROW_VARIANTS = {
 };
 
 export default function DocumentsPage() {
+  const t = useTranslations("DocumentWorkspace");
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [folders, setFolders] = useState<DocFolder[]>([]);
   const [documents, setDocuments] = useState<Doc[]>([]);
@@ -130,7 +134,7 @@ export default function DocumentsPage() {
   const [typeFilter, setTypeFilter] = useState<"all" | "documents" | "images" | "spreadsheets">("all");
   const [sortBy, setSortBy] = useState<"name" | "date" | "size">("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  useDocumentTitle("Documents · All Documents");
+  useDocumentTitle(t("documentTitle"));
   const [selectedDoc, setSelectedDoc] = useState<Doc | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -184,15 +188,14 @@ export default function DocumentsPage() {
         body: JSON.stringify({ name: newFolderName, parentId: currentFolder }),
       });
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Failed to create folder");
+        throw new AuthPresentationError(t("createFolderFailed"));
       }
       setNewFolderOpen(false);
       setNewFolderName("");
       await fetchData();
-      toast.success("Folder created");
+      toast.success(t("folderCreated"));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create folder");
+      toast.error(err instanceof AuthPresentationError ? err.message : t("createFolderFailed"));
     } finally {
       setCreating(false);
     }
@@ -200,9 +203,9 @@ export default function DocumentsPage() {
 
   async function handleDeleteDoc(doc: Doc) {
     await confirm({
-      title: `Delete "${doc.fileName}"?`,
-      description: "This file will be permanently deleted.",
-      confirmLabel: "Delete",
+      title: t("deleteFile", { name: doc.fileName }),
+      description: t("deleteFileHelp"),
+      confirmLabel: t("delete"),
       destructive: true,
       onConfirm: async () => {
         await fetch(`/api/v1/documents/${doc.id}`, {
@@ -210,16 +213,16 @@ export default function DocumentsPage() {
           headers: getHeaders(),
         });
         await fetchData();
-        toast.success("File deleted");
+        toast.success(t("fileDeleted"));
       },
     });
   }
 
   async function handleDeleteFolder(folder: DocFolder) {
     await confirm({
-      title: `Delete folder "${folder.name}"?`,
-      description: "This folder will be removed. Documents inside will become unorganized.",
-      confirmLabel: "Delete",
+      title: t("deleteFolder", { name: folder.name }),
+      description: t("deleteFolderHelp"),
+      confirmLabel: t("delete"),
       destructive: true,
       onConfirm: async () => {
         await fetch(`/api/v1/documents/folders/${folder.id}`, {
@@ -228,7 +231,7 @@ export default function DocumentsPage() {
         });
         if (currentFolder === folder.id) setCurrentFolder(null);
         await fetchData();
-        toast.success("Folder deleted");
+        toast.success(t("folderDeleted"));
       },
     });
   }
@@ -264,8 +267,7 @@ export default function DocumentsPage() {
           }),
         });
         if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          throw new Error(data.error || `Failed to upload ${file.name}`);
+          throw new AuthPresentationError(t("fileUploadFailed", { name: file.name }));
         }
         const { uploadUrl } = await res.json();
         await fetch(uploadUrl, {
@@ -275,9 +277,9 @@ export default function DocumentsPage() {
         });
       }
       await fetchData();
-      toast.success(files.length === 1 ? "File uploaded" : `${files.length} files uploaded`);
+      toast.success(t("uploadedFiles", { count: files.length }));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Upload failed");
+      toast.error(err instanceof AuthPresentationError ? err.message : t("uploadFailed"));
     } finally {
       setUploading(false);
       setPendingFiles([]);
@@ -309,17 +311,16 @@ export default function DocumentsPage() {
         body: JSON.stringify({ visibility: newVisibility }),
       });
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Failed to update visibility");
+        throw new AuthPresentationError(t("visibilityFailed"));
       }
       await fetchData();
       // Update selected doc if it's the same one
       if (selectedDoc?.id === doc.id) {
         setSelectedDoc({ ...doc, visibility: newVisibility });
       }
-      toast.success(newVisibility === "private" ? "File set to private" : "File shared with team");
+      toast.success(newVisibility === "private" ? t("privateSuccess") : t("sharedSuccess"));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to update");
+      toast.error(err instanceof AuthPresentationError ? err.message : t("updateFailed"));
     }
   }
 
@@ -362,15 +363,14 @@ export default function DocumentsPage() {
         body: JSON.stringify({ fileName: newName.trim() }),
       });
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Failed to rename");
+        throw new AuthPresentationError(t("renameFailed"));
       }
       await fetchData();
       setSelectedDoc({ ...doc, fileName: newName.trim() });
       setEditingName(false);
-      toast.success("File renamed");
+      toast.success(t("renamed"));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to rename");
+      toast.error(err instanceof AuthPresentationError ? err.message : t("renameFailed"));
     } finally {
       setSavingName(false);
     }
@@ -393,7 +393,7 @@ export default function DocumentsPage() {
   );
 
   function getBreadcrumb(): { id: string | null; name: string }[] {
-    const crumbs: { id: string | null; name: string }[] = [{ id: null, name: "Documents" }];
+    const crumbs: { id: string | null; name: string }[] = [{ id: null, name: t("documents") }];
     if (!currentFolder) return crumbs;
     const path: DocFolder[] = [];
     let current = folders.find((f) => f.id === currentFolder);
@@ -450,7 +450,7 @@ export default function DocumentsPage() {
     }}>
       <DialogContent className="max-w-sm">
         <DialogHeader>
-          <DialogTitle>Upload {pendingFiles.length === 1 ? "File" : `${pendingFiles.length} Files`}</DialogTitle>
+          <DialogTitle>{t("uploadTitle", { count: pendingFiles.length })}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-1.5">
@@ -473,7 +473,7 @@ export default function DocumentsPage() {
                   </div>
                   {isDuplicate && (
                     <p className="text-[11px] text-amber-600 dark:text-amber-400 pl-1">
-                      A file with this name already exists and will be kept as a separate copy.
+                      {t("duplicateHelp")}
                     </p>
                   )}
                 </div>
@@ -481,7 +481,7 @@ export default function DocumentsPage() {
             })}
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-medium">Visibility</label>
+            <label className="text-xs font-medium">{t("visibility")}</label>
             <Select value={uploadVisibility} onValueChange={(v) => setUploadVisibility(v as "organization" | "private")}>
               <SelectTrigger className="h-9 text-xs">
                 <SelectValue />
@@ -490,13 +490,13 @@ export default function DocumentsPage() {
                 <SelectItem value="organization">
                   <div className="flex items-center gap-2">
                     <Users className="size-3.5 text-muted-foreground" />
-                    <span>Shared with team</span>
+                    <span>{t("sharedWithTeam")}</span>
                   </div>
                 </SelectItem>
                 <SelectItem value="private">
                   <div className="flex items-center gap-2">
                     <Lock className="size-3.5 text-muted-foreground" />
-                    <span>Private (only you)</span>
+                    <span>{t("privateOnlyYou")}</span>
                   </div>
                 </SelectItem>
               </SelectContent>
@@ -504,13 +504,13 @@ export default function DocumentsPage() {
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => { setUploadDialogOpen(false); setPendingFiles([]); setUploadNames({}); }}>Cancel</Button>
+          <Button variant="outline" onClick={() => { setUploadDialogOpen(false); setPendingFiles([]); setUploadNames({}); }}>{t("cancel")}</Button>
           <Button
             onClick={() => handleUpload(pendingFiles, uploadVisibility)}
             disabled={pendingFiles.length === 0 || uploading}
             className="bg-emerald-600 hover:bg-emerald-700"
           >
-            {uploading ? "Uploading..." : "Upload"}
+            {uploading ? t("uploading") : t("upload")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -521,19 +521,19 @@ export default function DocumentsPage() {
     <Dialog open={newFolderOpen} onOpenChange={setNewFolderOpen}>
       <DialogContent className="max-w-sm">
         <DialogHeader>
-          <DialogTitle>New Folder</DialogTitle>
+          <DialogTitle>{t("newFolder")}</DialogTitle>
         </DialogHeader>
         <Input
-          placeholder="Folder name"
+          placeholder={t("folderName")}
           value={newFolderName}
           onChange={(e) => setNewFolderName(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && newFolderName.trim() && handleCreateFolder()}
           disabled={creating}
         />
         <DialogFooter>
-          <Button variant="outline" onClick={() => setNewFolderOpen(false)} disabled={creating}>Cancel</Button>
+          <Button variant="outline" onClick={() => setNewFolderOpen(false)} disabled={creating}>{t("cancel")}</Button>
           <Button onClick={handleCreateFolder} disabled={!newFolderName.trim() || creating}>
-            {creating ? "Creating..." : "Create"}
+            {creating ? t("creating") : t("create")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -547,9 +547,9 @@ export default function DocumentsPage() {
           {/* Top: title + CTA */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h2 className="text-lg font-semibold tracking-tight">Document Hub</h2>
+              <h2 className="text-lg font-semibold tracking-tight">{t("hub")}</h2>
               <p className="mt-1 text-sm text-muted-foreground max-w-md">
-                Organize your business files in one place. Create folders, upload documents, and keep everything accessible to your team.
+                {t("hubHelp")}
               </p>
             </div>
             <Button
@@ -557,7 +557,7 @@ export default function DocumentsPage() {
               className="bg-emerald-600 hover:bg-emerald-700 shrink-0"
             >
               <FolderPlus className="mr-2 size-4" />
-              Create Folder
+              {t("createFolder")}
             </Button>
           </div>
 
@@ -566,19 +566,19 @@ export default function DocumentsPage() {
             <div className="rounded-xl border bg-card overflow-hidden shadow-sm">
               <div className="bg-muted/30 px-5 py-3 border-b">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  Example file browser
+                  {t("exampleBrowser")}
                 </p>
               </div>
               <div className="divide-y">
                 {/* Mock folders */}
                 {[
-                  { name: "Contracts", icon: Folder, color: "text-amber-500" },
-                  { name: "Invoices", icon: Folder, color: "text-amber-500" },
+                  { name: t("contracts"), icon: Folder, color: "text-amber-500" },
+                  { name: t("invoices"), icon: Folder, color: "text-amber-500" },
                 ].map(({ name, icon: Icon, color }) => (
                   <div key={name} className="flex items-center gap-3 px-5 py-3">
                     <Icon className={`size-5 ${color} shrink-0`} />
                     <span className="text-sm font-medium">{name}</span>
-                    <Badge variant="outline" className="ml-auto text-[10px]">Folder</Badge>
+                    <Badge variant="outline" className="ml-auto text-[10px]">{t("folder")}</Badge>
                   </div>
                 ))}
                 {/* Mock files */}
@@ -599,7 +599,7 @@ export default function DocumentsPage() {
               </div>
               <div className="border-t bg-muted/20 px-5 py-2.5">
                 <p className="text-[11px] text-muted-foreground font-mono tabular-nums">
-                  2 folders · 3 files · 4.5 MB total
+                  {t("exampleSummary")}
                 </p>
               </div>
             </div>
@@ -607,30 +607,30 @@ export default function DocumentsPage() {
             {/* Right: benefits */}
             <div className="space-y-3">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Why use Document Hub
+                {t("whyHub")}
               </p>
               {[
                 {
-                  title: "Nested folder structure",
-                  desc: "Create folders and subfolders to organize documents by project, client, or department.",
+                  title: t("nestedTitle"),
+                  desc: t("nestedHelp"),
                   icon: FolderOpen,
                   color: "border-l-amber-400",
                 },
                 {
-                  title: "Quick file access",
-                  desc: "Browse, download, and manage files from a single place. No more digging through emails.",
+                  title: t("quickTitle"),
+                  desc: t("quickHelp"),
                   icon: Search,
                   color: "border-l-blue-400",
                 },
                 {
-                  title: "Secure and scoped",
-                  desc: "All files are encrypted and scoped to your organization. Only your team has access.",
+                  title: t("secureTitle"),
+                  desc: t("secureHelp"),
                   icon: Lock,
                   color: "border-l-emerald-400",
                 },
                 {
-                  title: "Team-wide visibility",
-                  desc: "Every team member can access shared documents, keeping everyone on the same page.",
+                  title: t("teamTitle"),
+                  desc: t("teamHelp"),
                   icon: Users,
                   color: "border-l-violet-400",
                 },
@@ -683,16 +683,16 @@ export default function DocumentsPage() {
       )}
 
       <PageHeader
-        title={currentFolderObj ? currentFolderObj.name : "Documents"}
+        title={currentFolderObj ? currentFolderObj.name : t("documents")}
         description={
           currentFolder
-            ? `${totalFolders > 0 ? `${totalFolders} folder${totalFolders !== 1 ? "s" : ""}` : ""}${totalFolders > 0 && totalFiles > 0 ? " · " : ""}${totalFiles > 0 ? `${totalFiles} file${totalFiles !== 1 ? "s" : ""} · ${formatFileSize(totalSize)}` : ""}${totalFolders === 0 && totalFiles === 0 ? "Empty folder" : ""}`
-            : `${folders.length} folder${folders.length !== 1 ? "s" : ""} · ${totalFiles} file${totalFiles !== 1 ? "s" : ""}${totalSize > 0 ? ` · ${formatFileSize(totalSize)}` : ""}`
+            ? [totalFolders > 0 ? t("folderCount", { count: totalFolders }) : "", totalFiles > 0 ? `${t("fileCount", { count: totalFiles })} · ${formatFileSize(totalSize)}` : "", totalFolders === 0 && totalFiles === 0 ? t("emptyFolder") : ""].filter(Boolean).join(" · ")
+            : [t("folderCount", { count: folders.length }), t("fileCount", { count: totalFiles }), totalSize > 0 ? formatFileSize(totalSize) : ""].filter(Boolean).join(" · ")
         }
       >
         <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5" onClick={() => setNewFolderOpen(true)}>
           <FolderPlus className="size-3" />
-          New Folder
+          {t("newFolder")}
         </Button>
         <Button
           size="sm"
@@ -701,7 +701,7 @@ export default function DocumentsPage() {
           disabled={uploading}
         >
           <Upload className="size-3" />
-          {uploading ? "Uploading..." : "Upload Files"}
+          {uploading ? t("uploading") : t("uploadFiles")}
         </Button>
       </PageHeader>
 
@@ -710,10 +710,10 @@ export default function DocumentsPage() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Tabs value={typeFilter} onValueChange={(v) => setTypeFilter(v as typeof typeFilter)}>
             <TabsList>
-              <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="documents">Documents</TabsTrigger>
-              <TabsTrigger value="images">Images</TabsTrigger>
-              <TabsTrigger value="spreadsheets">Spreadsheets</TabsTrigger>
+              <TabsTrigger value="all">{t("all")}</TabsTrigger>
+              <TabsTrigger value="documents">{t("documents")}</TabsTrigger>
+              <TabsTrigger value="images">{t("images")}</TabsTrigger>
+              <TabsTrigger value="spreadsheets">{t("spreadsheets")}</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
@@ -722,7 +722,7 @@ export default function DocumentsPage() {
           <SearchInput
             value={search}
             onChange={setSearch}
-            placeholder="Search files and folders..."
+            placeholder={t("search")}
             loading={isSearching}
           />
 
@@ -732,9 +732,9 @@ export default function DocumentsPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="name">Name</SelectItem>
-              <SelectItem value="date">Date</SelectItem>
-              <SelectItem value="size">Size</SelectItem>
+              <SelectItem value="name">{t("name")}</SelectItem>
+              <SelectItem value="date">{t("date")}</SelectItem>
+              <SelectItem value="size">{t("size")}</SelectItem>
             </SelectContent>
           </Select>
 
@@ -742,6 +742,7 @@ export default function DocumentsPage() {
             variant="outline"
             size="icon"
             className="size-8 shrink-0"
+            aria-label={t("toggleSort")}
             onClick={() => setSortOrder((prev) => prev === "asc" ? "desc" : "asc")}
           >
             <ArrowUpDown className={cn("size-3.5 transition-transform", sortOrder === "asc" && "rotate-180")} />
@@ -763,9 +764,9 @@ export default function DocumentsPage() {
             <div className="mx-auto flex size-10 items-center justify-center rounded-xl bg-muted mb-3">
               <Search className="size-5 text-muted-foreground" />
             </div>
-            <p className="text-sm font-medium">No results</p>
+            <p className="text-sm font-medium">{t("noResults")}</p>
             <p className="text-xs text-muted-foreground mt-1">
-              {q ? "Try a different search term" : "No files match this filter"}
+              {q ? t("searchHelp") : t("filterHelp")}
             </p>
           </motion.div>
         ) : !hasResults ? (
@@ -788,10 +789,10 @@ export default function DocumentsPage() {
               <Upload className="size-5 text-muted-foreground" />
             </div>
             <h3 className="mt-4 text-sm font-medium">
-              {dragOver ? "Drop files here" : "Drop files or click to upload"}
+              {dragOver ? t("dropHere") : t("dropOrClick")}
             </h3>
             <p className="mt-1 text-xs text-muted-foreground max-w-xs">
-              Drag and drop files into this folder, or click to browse your computer.
+              {t("dropHelp")}
             </p>
           </motion.div>
         ) : (
@@ -811,9 +812,9 @@ export default function DocumentsPage() {
             >
               {/* Column header */}
               <div className="flex items-center gap-3 px-4 py-2 bg-muted/30 border-b">
-                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide flex-1">Name</span>
-                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide w-20 text-right hidden sm:block">Size</span>
-                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide w-24 text-right hidden sm:block">Date</span>
+                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide flex-1">{t("name")}</span>
+                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide w-20 text-right hidden sm:block">{t("size")}</span>
+                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide w-24 text-right hidden sm:block">{t("date")}</span>
                 <span className="w-16 shrink-0" />
               </div>
 
@@ -845,7 +846,8 @@ export default function DocumentsPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="size-7 p-0 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                          aria-label={t("moreActions")}
+                            className="size-7 p-0 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
                         >
                           <MoreHorizontal className="size-3.5" />
                         </Button>
@@ -855,7 +857,7 @@ export default function DocumentsPage() {
                           variant="destructive"
                           onClick={() => handleDeleteFolder(folder)}
                         >
-                          <Trash2 className="size-4" /> Delete
+                          <Trash2 className="size-4" /> {t("delete")}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -881,7 +883,7 @@ export default function DocumentsPage() {
                     {doc.visibility === "private" && (
                       <Badge variant="outline" className="shrink-0 text-[10px] gap-1 px-1.5 py-0 h-5 border-amber-200 text-amber-700 dark:border-amber-800 dark:text-amber-400">
                         <Lock className="size-2.5" />
-                        Private
+                        {t("private")}
                       </Badge>
                     )}
                     <span className="text-[11px] text-muted-foreground tabular-nums w-20 text-right hidden sm:block">
@@ -896,6 +898,7 @@ export default function DocumentsPage() {
                           <Button
                             variant="ghost"
                             size="sm"
+                            aria-label={t("moreActions")}
                             className="size-7 p-0 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
                           >
                             <MoreHorizontal className="size-3.5" />
@@ -903,20 +906,20 @@ export default function DocumentsPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => handleDownload(doc)}>
-                            <Download className="size-4" /> Download
+                            <Download className="size-4" /> {t("download")}
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleToggleVisibility(doc)}>
                             {doc.visibility === "private" ? (
-                              <><Users className="size-4" /> Share with team</>
+                              <><Users className="size-4" /> {t("share")}</>
                             ) : (
-                              <><Lock className="size-4" /> Make private</>
+                              <><Lock className="size-4" /> {t("makePrivate")}</>
                             )}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             variant="destructive"
                             onClick={() => handleDeleteDoc(doc)}
                           >
-                            <Trash2 className="size-4" /> Delete
+                            <Trash2 className="size-4" /> {t("delete")}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -936,8 +939,8 @@ export default function DocumentsPage() {
             return (
               <>
                 <SheetHeader>
-                  <SheetTitle>File Details</SheetTitle>
-                  <SheetDescription className="sr-only">View and edit file</SheetDescription>
+                  <SheetTitle>{t("details")}</SheetTitle>
+                  <SheetDescription className="sr-only">{t("viewEdit")}</SheetDescription>
                 </SheetHeader>
 
                 <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-5">
@@ -945,7 +948,7 @@ export default function DocumentsPage() {
                   {previewLoading ? (
                     <div className="flex flex-col items-center justify-center rounded-xl bg-muted/50 border py-12">
                       <div className="size-6 border-2 border-muted-foreground/20 border-t-muted-foreground rounded-full animate-spin" />
-                      <p className="mt-3 text-[11px] text-muted-foreground">Loading preview...</p>
+                      <p className="mt-3 text-[11px] text-muted-foreground">{t("loadingPreview")}</p>
                     </div>
                   ) : previewUrl && selectedDoc.mimeType.startsWith("image/") ? (
                     <button
@@ -974,7 +977,7 @@ export default function DocumentsPage() {
                         className="absolute top-2 right-2 flex items-center gap-1.5 rounded-lg bg-background/90 backdrop-blur-sm border shadow-sm px-2.5 py-1.5 text-[11px] font-medium opacity-0 group-hover/preview:opacity-100 transition-opacity hover:bg-background"
                       >
                         <ExternalLink className="size-3" />
-                        Open
+                        {t("open")}
                       </button>
                     </div>
                   ) : (
@@ -990,7 +993,7 @@ export default function DocumentsPage() {
 
                   {/* Editable name */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-medium">File name</label>
+                    <label className="text-xs font-medium">{t("fileName")}</label>
                     {editingName ? (
                       <div className="flex items-center gap-1.5">
                         <Input
@@ -1008,6 +1011,7 @@ export default function DocumentsPage() {
                           variant="outline"
                           size="icon"
                           className="size-9 shrink-0"
+                          aria-label={t("saveName")}
                           onClick={() => handleRename(selectedDoc, editName)}
                           disabled={savingName}
                         >
@@ -1017,6 +1021,7 @@ export default function DocumentsPage() {
                           variant="outline"
                           size="icon"
                           className="size-9 shrink-0"
+                          aria-label={t("cancel")}
                           onClick={() => setEditingName(false)}
                           disabled={savingName}
                         >
@@ -1036,7 +1041,7 @@ export default function DocumentsPage() {
 
                   {/* Visibility */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-medium">Visibility</label>
+                    <label className="text-xs font-medium">{t("visibility")}</label>
                     <Select
                       value={selectedDoc.visibility}
                       onValueChange={(v) => handleToggleVisibility({ ...selectedDoc, visibility: v === "private" ? "organization" : "private" })}
@@ -1048,13 +1053,13 @@ export default function DocumentsPage() {
                         <SelectItem value="organization">
                           <div className="flex items-center gap-2">
                             <Users className="size-3.5 text-muted-foreground" />
-                            <span>Shared with team</span>
+                            <span>{t("sharedWithTeam")}</span>
                           </div>
                         </SelectItem>
                         <SelectItem value="private">
                           <div className="flex items-center gap-2">
                             <Lock className="size-3.5 text-muted-foreground" />
-                            <span>Private (only you)</span>
+                            <span>{t("privateOnlyYou")}</span>
                           </div>
                         </SelectItem>
                       </SelectContent>
@@ -1064,15 +1069,15 @@ export default function DocumentsPage() {
                   {/* Metadata */}
                   <div className="rounded-lg border divide-y">
                     <div className="flex items-center justify-between px-3 py-2.5">
-                      <span className="text-xs text-muted-foreground">Type</span>
+                      <span className="text-xs text-muted-foreground">{t("type")}</span>
                       <span className="text-xs font-medium">{selectedDoc.mimeType.split("/").pop()?.toUpperCase()}</span>
                     </div>
                     <div className="flex items-center justify-between px-3 py-2.5">
-                      <span className="text-xs text-muted-foreground">Size</span>
+                      <span className="text-xs text-muted-foreground">{t("size")}</span>
                       <span className="text-xs font-medium font-mono tabular-nums">{formatFileSize(selectedDoc.fileSize)}</span>
                     </div>
                     <div className="flex items-center justify-between px-3 py-2.5">
-                      <span className="text-xs text-muted-foreground">Uploaded</span>
+                      <span className="text-xs text-muted-foreground">{t("uploaded")}</span>
                       <span className="text-xs font-medium">{new Date(selectedDoc.createdAt).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}</span>
                     </div>
                   </div>
@@ -1086,7 +1091,7 @@ export default function DocumentsPage() {
                       onClick={() => handleDownload(selectedDoc)}
                     >
                       <Download className="size-3.5" />
-                      Download
+                      {t("download")}
                     </Button>
                     <Button
                       size="sm"
@@ -1105,7 +1110,7 @@ export default function DocumentsPage() {
                       }}
                     >
                       <ExternalLink className="size-3.5" />
-                      Open
+                      {t("open")}
                     </Button>
                     <Button
                       variant="outline"
@@ -1118,7 +1123,7 @@ export default function DocumentsPage() {
                       }}
                     >
                       <Trash2 className="size-3.5" />
-                      Delete
+                      {t("delete")}
                     </Button>
                   </div>
                 </div>

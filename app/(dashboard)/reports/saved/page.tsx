@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
@@ -59,28 +60,19 @@ interface ReportSchedule {
   lastRunStatus: string | null;
 }
 
-// Plain-language label for each data source (end users aren't accountants).
-const DATA_SOURCE_LABELS: Record<string, string> = {
-  invoices: "Invoices",
-  expenses: "Expenses",
-  transactions: "Bank transactions",
-  payroll: "Payroll",
-  inventory: "Inventory",
-  contacts: "Contacts",
-};
-
-function formatDate(value: string | null): string {
-  if (!value) return "Never";
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "Never";
-  return d.toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
-
 export default function SavedReportsPage() {
+  const t = useTranslations("CustomReports");
+  function sourceLabel(source: string) {
+    switch (source) {
+      case "invoices": return t("invoices");
+      case "expenses": return t("expenses");
+      case "transactions": return t("transactions");
+      case "payroll": return t("payroll");
+      case "inventory": return t("inventory");
+      case "contacts": return t("contacts");
+      default: return source;
+    }
+  }
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -97,7 +89,13 @@ export default function SavedReportsPage() {
   const [running, setRunning] = useState(false);
   const [results, setResults] = useState<Record<string, unknown>[] | null>(null);
 
-  useDocumentTitle("Reports · Saved reports");
+  useDocumentTitle(t("savedTitle"));
+
+  function formatDate(value: string | null) {
+    if (!value || Number.isNaN(new Date(value).getTime())) return t("never");
+    return new Date(value).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+  }
+
 
   function getHeaders() {
     const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") || "" : "";
@@ -156,8 +154,8 @@ export default function SavedReportsPage() {
       });
       const rows = await reportResultJson(res, body => customReportUi(body, config));
       if (requestId === runRequest.current) setResults(rows);
-    } catch (cause) {
-      const message = cause instanceof Error ? cause.message : "Unable to run report.";
+    } catch {
+      const message = t("runError");
       if (requestId === runRequest.current) {
         setResults(null); setRunError(message); toast.error(message);
       }
@@ -176,9 +174,9 @@ export default function SavedReportsPage() {
 
   async function handleDelete(report: SavedReport) {
     await confirm({
-      title: `Delete "${report.name}"?`,
-      description: "This saved report will be permanently deleted.",
-      confirmLabel: "Delete",
+      title: t("deleteTitle", { name: report.name }),
+      description: t("deleteDescription"),
+      confirmLabel: t("delete"),
       destructive: true,
       onConfirm: async () => {
         const res = await fetch(`/api/v1/reports/saved/${report.id}`, {
@@ -186,10 +184,10 @@ export default function SavedReportsPage() {
           headers: getHeaders(),
         });
         if (res.ok) {
-          toast.success("Report deleted");
+          toast.success(t("deleted"));
           fetchReports();
         } else {
-          toast.error("Failed to delete report");
+          toast.error(t("deleteError"));
         }
       },
     });
@@ -198,7 +196,7 @@ export default function SavedReportsPage() {
   const columns: Column<SavedReport>[] = [
     {
       key: "name",
-      header: "Name",
+      header: t("name"),
       render: (r) => (
         <div className="min-w-0">
           <p className="text-sm font-medium truncate">{r.name}</p>
@@ -210,17 +208,17 @@ export default function SavedReportsPage() {
     },
     {
       key: "source",
-      header: "Based on",
+      header: t("basedOn"),
       className: "w-40",
       render: (r) => (
         <Badge variant="outline" className="text-[11px]">
-          {DATA_SOURCE_LABELS[r.config.dataSource] || r.config.dataSource}
+          {sourceLabel(r.config.dataSource)}
         </Badge>
       ),
     },
     {
       key: "columns",
-      header: "Columns",
+      header: t("columns"),
       className: "w-24 text-right",
       render: (r) => (
         <span className="text-sm tabular-nums text-muted-foreground">
@@ -230,7 +228,7 @@ export default function SavedReportsPage() {
     },
     {
       key: "lastRun",
-      header: "Last run",
+      header: t("lastRun"),
       className: "w-32",
       render: (r) => (
         <span className="text-sm text-muted-foreground">
@@ -240,7 +238,7 @@ export default function SavedReportsPage() {
     },
     {
       key: "updated",
-      header: "Updated",
+      header: t("updated"),
       className: "w-32",
       render: (r) => (
         <span className="text-sm text-muted-foreground">{formatDate(r.updatedAt)}</span>
@@ -261,13 +259,14 @@ export default function SavedReportsPage() {
               openRun(r);
             }}
           >
-            <Play className="size-3" /> Run
+            <Play className="size-3" /> {t("run")}
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
                 size="sm"
+                aria-label={t("actions")}
                 className="size-7 p-0"
                 onClick={(e) => e.stopPropagation()}
               >
@@ -276,10 +275,10 @@ export default function SavedReportsPage() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => handleExport(r)}>
-                <Download className="size-4" /> Export CSV
+                <Download className="size-4" /> {t("export")}
               </DropdownMenuItem>
               <DropdownMenuItem variant="destructive" onClick={() => handleDelete(r)}>
-                <Trash2 className="size-4" /> Delete
+                <Trash2 className="size-4" /> {t("delete")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -296,16 +295,16 @@ export default function SavedReportsPage() {
         href="/reports"
         className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors"
       >
-        <ArrowLeft className="size-3.5" /> Back to reports
+        <ArrowLeft className="size-3.5" /> {t("back")}
       </Link>
 
       <PageHeader
-        title="Saved reports"
-        description="Reports you've built and saved. Run one to see the latest data, or export it to a spreadsheet."
+        title={t("savedTitle")}
+        description={t("savedDescription")}
       >
         <Button asChild size="sm" className="h-7 text-xs gap-1">
           <Link href="/reports/custom">
-            <Plus className="size-3" /> New report
+            <Plus className="size-3" /> {t("newSaved")}
           </Link>
         </Button>
       </PageHeader>
@@ -317,12 +316,12 @@ export default function SavedReportsPage() {
           <div className="flex size-12 items-center justify-center rounded-2xl bg-muted">
             <BarChart3 className="size-6 text-muted-foreground" />
           </div>
-          <h3 className="mt-4 text-sm font-medium">No saved reports yet</h3>
+          <h3 className="mt-4 text-sm font-medium">{t("savedEmpty")}</h3>
           <p className="mt-1 text-xs text-muted-foreground max-w-xs">
-            Build a custom report from your invoices, contacts, inventory, or transactions and save it here.
+            {t("savedEmptyDescription")}
           </p>
           <Button asChild size="sm" className="mt-4">
-            <Link href="/reports/custom">Create a report</Link>
+            <Link href="/reports/custom">{t("createSaved")}</Link>
           </Button>
         </div>
       ) : (
@@ -331,7 +330,7 @@ export default function SavedReportsPage() {
             columns={columns}
             data={reports}
             loading={false}
-            emptyMessage="No saved reports."
+            emptyMessage={t("emptyTable")}
             onRowClick={(r) => openRun(r)}
           />
         </ContentReveal>
@@ -341,14 +340,14 @@ export default function SavedReportsPage() {
       <Dialog open={runOpen} onOpenChange={setRunOpen}>
         <DialogContent className="max-w-4xl max-h-[85vh] overflow-auto">
           <DialogHeader>
-            <DialogTitle>{runReportItem?.name || "Report"}</DialogTitle>
+            <DialogTitle>{runReportItem?.name || t("report")}</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <p className="text-xs text-muted-foreground">
                 {runReportItem
-                  ? `Based on ${DATA_SOURCE_LABELS[runReportItem.config.dataSource] || runReportItem.config.dataSource}`
+                  ? t("sourceSummary", { source: sourceLabel(runReportItem.config.dataSource) })
                   : ""}
               </p>
               {runReportItem && (
@@ -358,13 +357,13 @@ export default function SavedReportsPage() {
                   className="h-7 gap-1 text-xs"
                   onClick={() => handleExport(runReportItem)}
                 >
-                  <Download className="size-3" /> Export CSV
+                  <Download className="size-3" /> {t("export")}
                 </Button>
               )}
             </div>
 
             {runError && <p role="alert" className="text-sm text-destructive">{runError}</p>}
-            <p className="text-xs text-muted-foreground">Amounts use each row&apos;s currency. Columns ending in Minor and CSV amounts use raw minor units.</p>
+            <p className="text-xs text-muted-foreground">{t("units")}</p>
             {running ? (
               <BrandLoader className="h-48" />
             ) : results && runReportItem ? (
@@ -398,7 +397,7 @@ export default function SavedReportsPage() {
                           colSpan={runReportItem.config.columns.length}
                           className="px-3 py-8 text-center text-xs text-muted-foreground"
                         >
-                          No data found
+                          {t("noData")}
                         </td>
                       </tr>
                     )}
@@ -406,7 +405,7 @@ export default function SavedReportsPage() {
                 </table>
                 {results.length > 50 && (
                   <div className="px-3 py-2 text-xs text-muted-foreground border-t">
-                    Showing 50 of {results.length} rows
+                    {t("showing", { count: results.length })}
                   </div>
                 )}
               </div>

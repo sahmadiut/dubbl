@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
@@ -59,24 +60,36 @@ interface SavedReport {
 
 const DATA_SOURCES: Record<string, { label: string; columns: string[] }> = {
   invoices: {
-    label: "Invoices",
+    label: "invoices",
     columns: ["invoiceNumber", "contactName", "status", "issueDate", "dueDate", "subtotal", "taxTotal", "total", "amountPaid", "amountDue", "currencyCode"],
   },
   contacts: {
-    label: "Contacts",
+    label: "contacts",
     columns: ["name", "email", "type", "phone", "paymentTermsDays", "creditLimit"],
   },
   inventory: {
-    label: "Inventory",
+    label: "inventory",
     columns: ["code", "name", "category", "purchasePrice", "salePrice", "quantityOnHand", "reorderPoint", "isActive"],
   },
   transactions: {
-    label: "Transactions",
+    label: "transactions",
     columns: ["date", "description", "amount", "status", "payee"],
   },
 };
 
 export default function CustomReportsPage() {
+  const t = useTranslations("CustomReports");
+  function sourceLabel(source: string) {
+    switch (source) {
+      case "invoices": return t("invoices");
+      case "expenses": return t("expenses");
+      case "transactions": return t("transactions");
+      case "payroll": return t("payroll");
+      case "inventory": return t("inventory");
+      case "contacts": return t("contacts");
+      default: return source;
+    }
+  }
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -135,8 +148,8 @@ export default function CustomReportsPage() {
       });
       const rows = await reportResultJson(res, body => customReportUi(body, config));
       if (requestId === runRequest.current) setResults(rows);
-    } catch (cause) {
-      const message = cause instanceof Error ? cause.message : "Unable to run report.";
+    } catch {
+      const message = t("runError");
       if (requestId === runRequest.current) {
         setResults(null); setRunError(message); toast.error(message);
       }
@@ -147,7 +160,7 @@ export default function CustomReportsPage() {
 
   async function saveReport() {
     if (!reportName.trim()) {
-      toast.error("Please enter a report name");
+      toast.error(t("enterName"));
       return;
     }
     await fetch("/api/v1/reports/saved", {
@@ -163,23 +176,23 @@ export default function CustomReportsPage() {
         },
       }),
     });
-    toast.success("Report saved");
+    toast.success(t("saved"));
     setBuilderOpen(false);
     fetchReports();
   }
 
   async function handleDelete(report: SavedReport) {
     await confirm({
-      title: `Delete "${report.name}"?`,
-      description: "This saved report will be permanently deleted.",
-      confirmLabel: "Delete",
+      title: t("deleteTitle", { name: report.name }),
+      description: t("deleteDescription"),
+      confirmLabel: t("delete"),
       destructive: true,
       onConfirm: async () => {
         await fetch(`/api/v1/reports/saved/${report.id}`, {
           method: "DELETE",
           headers: getHeaders(),
         });
-        toast.success("Report deleted");
+        toast.success(t("deleted"));
         fetchReports();
       },
     });
@@ -197,13 +210,13 @@ export default function CustomReportsPage() {
   return (
     <ContentReveal className="space-y-6">
       <Link href="/reports" className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors">
-        <ArrowLeft className="size-3.5" /> Back to reports
+        <ArrowLeft className="size-3.5" /> {t("back")}
       </Link>
 
-      <PageHeader title="Custom Reports" description="Build and save custom reports from your data.">
+      <PageHeader title={t("customTitle")} description={t("customDescription")}>
         <Button size="sm" className="h-7 text-xs gap-1" onClick={openBuilder}>
           <Plus className="size-3" />
-          New Report
+          {t("newCustom")}
         </Button>
       </PageHeader>
 
@@ -216,12 +229,12 @@ export default function CustomReportsPage() {
               <div className="flex size-12 items-center justify-center rounded-2xl bg-muted">
                 <BarChart3 className="size-6 text-muted-foreground" />
               </div>
-              <h3 className="mt-4 text-sm font-medium">No custom reports</h3>
+              <h3 className="mt-4 text-sm font-medium">{t("customEmpty")}</h3>
               <p className="mt-1 text-xs text-muted-foreground">
-                Create a custom report to analyze your data.
+                {t("customEmptyDescription")}
               </p>
               <Button size="sm" className="mt-4" onClick={openBuilder}>
-                Create Report
+                {t("createCustom")}
               </Button>
             </div>
           ) : (
@@ -232,22 +245,22 @@ export default function CustomReportsPage() {
                     <div className="min-w-0">
                       <h3 className="text-sm font-medium truncate">{report.name}</h3>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        {DATA_SOURCES[report.config.dataSource]?.label || report.config.dataSource}
-                        {" "}· {report.config.columns.length} columns
+                        {sourceLabel(report.config.dataSource)}
+                        {" ? "}{t("columnCount", { count: report.config.columns.length })}
                       </p>
                     </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="size-7 p-0">
+                        <Button variant="ghost" size="sm" aria-label={t("actions")} className="size-7 p-0">
                           <MoreHorizontal className="size-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => handleExport(report)}>
-                          <Download className="size-4" /> Export CSV
+                          <Download className="size-4" /> {t("export")}
                         </DropdownMenuItem>
                         <DropdownMenuItem variant="destructive" onClick={() => handleDelete(report)}>
-                          <Trash2 className="size-4" /> Delete
+                          <Trash2 className="size-4" /> {t("delete")}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -271,16 +284,16 @@ export default function CustomReportsPage() {
       <Dialog open={builderOpen} onOpenChange={setBuilderOpen}>
         <DialogContent className="max-w-4xl max-h-[85vh] overflow-auto">
           <DialogHeader>
-            <DialogTitle>Report Builder</DialogTitle>
+            <DialogTitle>{t("builder")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label>Report Name</Label>
-                <Input value={reportName} onChange={(e) => setReportName(e.target.value)} placeholder="Monthly Sales Report" />
+                <Label>{t("reportName")}</Label>
+                <Input value={reportName} onChange={(e) => setReportName(e.target.value)} placeholder={t("placeholder")} />
               </div>
               <div className="space-y-1.5">
-                <Label>Data Source</Label>
+                <Label>{t("dataSource")}</Label>
                 <Select value={dataSource} onValueChange={(v) => {
                   invalidateRun();
                   setDataSource(v);
@@ -290,7 +303,7 @@ export default function CustomReportsPage() {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {Object.entries(DATA_SOURCES).map(([k, v]) => (
-                      <SelectItem key={k} value={k}>{v.label}</SelectItem>
+                      <SelectItem key={k} value={k}>{sourceLabel(v.label)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -298,7 +311,7 @@ export default function CustomReportsPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label>Columns</Label>
+              <Label>{t("columns")}</Label>
               <div className="flex flex-wrap gap-1.5">
                 {availableColumns.map((col) => {
                   const selected = selectedColumns.includes(col);
@@ -327,16 +340,16 @@ export default function CustomReportsPage() {
             <div className="flex gap-2">
               <Button size="sm" className="gap-1" onClick={runReport} disabled={running || selectedColumns.length === 0}>
                 <Play className="size-3" />
-                {running ? "Running..." : "Run Report"}
+                {running ? t("running") : t("runReport")}
               </Button>
               <Button size="sm" variant="outline" className="gap-1" onClick={saveReport} disabled={!reportName.trim()}>
                 <Save className="size-3" />
-                Save
+                {t("save")}
               </Button>
             </div>
 
             {runError && <p role="alert" className="text-sm text-destructive">{runError}</p>}
-            <p className="text-xs text-muted-foreground">Amounts use each row&apos;s currency. Columns ending in Minor and CSV amounts use raw minor units.</p>
+            <p className="text-xs text-muted-foreground">{t("units")}</p>
             {results && (
               <div className="border rounded-lg overflow-x-auto">
                 <table className="w-full text-sm">
@@ -362,7 +375,7 @@ export default function CustomReportsPage() {
                     {results.length === 0 && (
                       <tr>
                         <td colSpan={selectedColumns.length} className="px-3 py-8 text-center text-xs text-muted-foreground">
-                          No data found
+                          {t("noData")}
                         </td>
                       </tr>
                     )}
@@ -370,7 +383,7 @@ export default function CustomReportsPage() {
                 </table>
                 {results.length > 50 && (
                   <div className="px-3 py-2 text-xs text-muted-foreground border-t">
-                    Showing 50 of {results.length} rows
+                    {t("showing", { count: results.length })}
                   </div>
                 )}
               </div>

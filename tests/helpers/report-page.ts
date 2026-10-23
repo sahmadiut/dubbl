@@ -6,6 +6,7 @@ import * as React from "react";
 import * as jsx from "react/jsx-runtime";
 import * as nextIntl from "next-intl";
 import ts from "typescript";
+import * as Dialog from "../../components/ui/dialog";
 import * as BrandLoader from "../../components/dashboard/brand-loader";
 import * as ReportComponents from "../../app/(dashboard)/reports/_components";
 import * as DateRangeFilter from "../../components/dashboard/date-range-filter";
@@ -51,7 +52,9 @@ export function renderReportPage(route: string, states: Record<string, unknown> 
     } };
     if (id === "react/jsx-runtime") return { ...jsx, jsx: capture(jsx.jsx), jsxs: capture(jsx.jsxs) };
     if (id === "next/navigation") return { useRouter: () => ({ push: (url: string) => h.events.push(["push", url]) }) };
+    if (id.endsWith("/use-confirm")) return { useConfirm: () => ({ dialog: null, confirm: async (options: unknown) => { h.events.push(["confirm", options]); } }) };
     if (id === "next-intl") return nextIntl;
+    if (id.endsWith("/ui/dialog")) return Dialog;
     if (id.endsWith("/brand-loader")) return BrandLoader;
     if (id === "../_components") return ReportComponents;
     if (id.endsWith("/date-range-filter")) return DateRangeFilter;

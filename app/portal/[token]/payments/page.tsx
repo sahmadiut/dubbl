@@ -1,5 +1,8 @@
 "use client";
 
+import { portalStatusKey } from "@/i18n/public-portal-presentation";
+import { useTranslations } from "next-intl";
+
 import { portalPaymentsSchema } from "@/lib/money/public-ui";
 import { clientJson } from "@/lib/api/client-response";
 
@@ -29,6 +32,7 @@ interface Payment {
 
 
 export default function PortalPaymentsPage() {
+  const t = useTranslations("PublicPortal");
   const { token } = useParams<{ token: string }>();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,37 +44,37 @@ export default function PortalPaymentsPage() {
     fetch(`/api/v1/portal/${token}/payments`)
       .then(r => clientJson(r, "Unable to load payments"))
       .then(value => { const data = portalPaymentsSchema.parse(value); if (active) setPayments(data.data); })
-      .catch(() => { if (active) setError("Unable to load payments safely. Please try again or contact the sender."); })
+      .catch(() => { if (active) setError(t("paymentLoadFailed")); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [token]);
+  }, [token, t]);
 
   if (loading) {
-    return <div className="flex min-h-[400px] items-center justify-center"><p className="text-sm text-gray-500">Loading...</p></div>;
+    return <div className="flex min-h-[400px] items-center justify-center"><p className="text-sm text-gray-500">{t("loading")}</p></div>;
   }
 
   if (error) return <p role="alert" className="text-sm text-red-600">{error}</p>;
 
   return (
     <div className="space-y-6">
-      <h2 className="text-lg font-semibold">Payment History</h2>
+      <h2 className="text-lg font-semibold">{t("paymentHistory")}</h2>
 
       <div className="rounded-lg border">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Invoice</TableHead>
-              <TableHead className="text-right">Invoice Total</TableHead>
-              <TableHead className="text-right">Amount Paid</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>{t("invoice")}</TableHead>
+              <TableHead className="text-right">{t("invoiceTotal")}</TableHead>
+              <TableHead className="text-right">{t("amountPaid")}</TableHead>
+              <TableHead>{t("date")}</TableHead>
+              <TableHead>{t("statusLabel")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {payments.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center text-sm text-gray-500 py-8">
-                  No payments found
+                  {t("noPayments")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -82,7 +86,7 @@ export default function PortalPaymentsPage() {
                   <TableCell className="text-sm">{p.paidAt ? new Date(p.paidAt).toLocaleDateString() : "-"}</TableCell>
                   <TableCell>
                     <Badge variant={p.status === "paid" ? "default" : "secondary"} className="text-xs">
-                      {p.status}
+                      {t(portalStatusKey(p.status))}
                     </Badge>
                   </TableCell>
                 </TableRow>

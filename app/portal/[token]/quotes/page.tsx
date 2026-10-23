@@ -1,5 +1,8 @@
 "use client";
 
+import { portalStatusKey } from "@/i18n/public-portal-presentation";
+import { useTranslations } from "next-intl";
+
 import { portalQuotesSchema, acceptedQuoteSchema } from "@/lib/money/public-ui";
 import { clientJson } from "@/lib/api/client-response";
 
@@ -30,6 +33,7 @@ interface Quote {
 
 
 export default function PortalQuotesPage() {
+  const t = useTranslations("PublicPortal");
   const { token } = useParams<{ token: string }>();
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,9 +45,9 @@ export default function PortalQuotesPage() {
     try {
       const data = portalQuotesSchema.parse(await clientJson(await fetch(`/api/v1/portal/${token}/quotes`), "Unable to load quotes"));
       if (active()) setQuotes(data.data);
-    } catch { if (active()) setError("Unable to load quotes safely. Please try again or contact the sender."); }
+    } catch { if (active()) setError(t("quoteLoadFailed")); }
     finally { if (active()) setLoading(false); }
-  }, [token]);
+  }, [token, t]);
 
   useEffect(() => {
     let active = true;
@@ -57,28 +61,28 @@ export default function PortalQuotesPage() {
     try {
       acceptedQuoteSchema.parse(await clientJson(await fetch(`/api/v1/portal/${token}/quotes/${id}/accept`, { method: "POST" }), "Unable to accept quote"));
       await loadQuotes();
-    } catch { setError("Unable to accept quote. Please reload and try again."); }
+    } catch { setError(t("quoteAcceptFailed")); }
     finally { setAccepting(null); }
   };
 
   if (loading) {
-    return <div className="flex min-h-[400px] items-center justify-center"><p className="text-sm text-gray-500">Loading...</p></div>;
+    return <div className="flex min-h-[400px] items-center justify-center"><p className="text-sm text-gray-500">{t("loading")}</p></div>;
   }
 
   return (
     <div className="space-y-6">
-      <h2 className="text-lg font-semibold">Quotes</h2>
+      <h2 className="text-lg font-semibold">{t("quotes")}</h2>
       {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
 
       <div className="rounded-lg border">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Quote #</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Expiry</TableHead>
-              <TableHead className="text-right">Total</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>{t("quoteNumber")}</TableHead>
+              <TableHead>{t("date")}</TableHead>
+              <TableHead>{t("expiry")}</TableHead>
+              <TableHead className="text-right">{t("total")}</TableHead>
+              <TableHead>{t("statusLabel")}</TableHead>
               <TableHead />
             </TableRow>
           </TableHeader>
@@ -86,7 +90,7 @@ export default function PortalQuotesPage() {
             {error && quotes.length === 0 ? null : quotes.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center text-sm text-gray-500 py-8">
-                  No quotes found
+                  {t("noQuotes")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -98,13 +102,13 @@ export default function PortalQuotesPage() {
                   <TableCell className="text-sm text-right">{formatMoney(q.total, q.currencyCode)}</TableCell>
                   <TableCell>
                     <Badge variant={q.status === "accepted" ? "default" : q.status === "declined" ? "destructive" : "secondary"} className="text-xs">
-                      {q.status}
+                      {t(portalStatusKey(q.status))}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     {q.status === "sent" && (
                       <Button size="sm" variant="outline" disabled={!!accepting || !!error} onClick={() => handleAccept(q.id)}>
-                        Accept
+                        {t("accept")}
                       </Button>
                     )}
                   </TableCell>

@@ -1,5 +1,8 @@
 "use client";
 
+import { portalStatusKey } from "@/i18n/public-portal-presentation";
+import { useTranslations } from "next-intl";
+
 import { portalStatementSchema } from "@/lib/money/public-ui";
 import { clientJson, clientPdf, downloadBlob } from "@/lib/api/client-response";
 
@@ -31,6 +34,7 @@ interface StatementLine {
 
 
 export default function PortalStatementsPage() {
+  const t = useTranslations("PublicPortal");
   const { token } = useParams<{ token: string }>();
   const [lines, setLines] = useState<StatementLine[]>([]);
   const [totalOutstanding, setTotalOutstanding] = useState(0);
@@ -47,13 +51,13 @@ export default function PortalStatementsPage() {
         const data = portalStatementSchema.parse(value);
         if (active) { setLines(data.lines); setTotalOutstanding(data.totalOutstanding); setCurrencyCode(data.currencyCode); }
       })
-      .catch(() => { if (active) setError("Unable to load statement safely. Please try again or contact the sender."); })
+      .catch(() => { if (active) setError(t("statementLoadFailed")); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [token]);
+  }, [token, t]);
 
   if (loading) {
-    return <div className="flex min-h-[400px] items-center justify-center"><p className="text-sm text-gray-500">Loading...</p></div>;
+    return <div className="flex min-h-[400px] items-center justify-center"><p className="text-sm text-gray-500">{t("loading")}</p></div>;
   }
 
   if (error) return <p role="alert" className="text-sm text-red-600">{error}</p>;
@@ -61,18 +65,18 @@ export default function PortalStatementsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Statement of Account</h2>
+        <h2 className="text-lg font-semibold">{t("statement")}</h2>
         <div className="flex items-center gap-4">
           <Button variant="outline" size="sm" className="gap-1" onClick={async () => {
             try {
               const blob = await clientPdf(await fetch(`/api/portal/${token}/statements/pdf?format=pdf`));
               downloadBlob(blob, "statement.pdf");
-            } catch { setError("Unable to download statement. Please try again."); }
+            } catch { setError(t("statementDownloadFailed")); }
           }}>
-            <Download className="size-4" />Download statement (PDF)
+            <Download className="size-4" />{t("downloadStatement")}
           </Button>
           <div className="text-right">
-            <p className="text-sm text-gray-500">Total Outstanding</p>
+            <p className="text-sm text-gray-500">{t("outstanding")}</p>
             <p className="text-xl font-bold">{formatMoney(totalOutstanding, currencyCode)}</p>
           </div>
         </div>
@@ -82,19 +86,19 @@ export default function PortalStatementsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead className="text-right">Amount</TableHead>
-              <TableHead className="text-right">Paid</TableHead>
-              <TableHead className="text-right">Balance</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>{t("date")}</TableHead>
+              <TableHead>{t("description")}</TableHead>
+              <TableHead className="text-right">{t("amount")}</TableHead>
+              <TableHead className="text-right">{t("paid")}</TableHead>
+              <TableHead className="text-right">{t("balance")}</TableHead>
+              <TableHead>{t("statusLabel")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {lines.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center text-sm text-gray-500 py-8">
-                  No transactions found
+                  {t("noTransactions")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -107,7 +111,7 @@ export default function PortalStatementsPage() {
                   <TableCell className="text-sm text-right font-medium">{formatMoney(line.balance, currencyCode)}</TableCell>
                   <TableCell>
                     <Badge variant={line.status === "paid" ? "default" : "secondary"} className="text-xs">
-                      {line.status}
+                      {t(portalStatusKey(line.status))}
                     </Badge>
                   </TableCell>
                 </TableRow>

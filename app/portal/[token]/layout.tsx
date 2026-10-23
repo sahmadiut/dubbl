@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useState, useEffect } from "react";
 import { useParams, usePathname } from "next/navigation";
 import Link from "next/link";
@@ -12,14 +14,15 @@ interface PortalInfo {
 }
 
 const tabs = [
-  { href: "", label: "Overview", icon: FileText },
-  { href: "/invoices", label: "Invoices", icon: FileText },
-  { href: "/statements", label: "Statements", icon: ScrollText },
-  { href: "/quotes", label: "Quotes", icon: MessageSquare },
-  { href: "/payments", label: "Payments", icon: CreditCard },
-];
+  { href: "", label: "overview", icon: FileText },
+  { href: "/invoices", label: "invoices", icon: FileText },
+  { href: "/statements", label: "statements", icon: ScrollText },
+  { href: "/quotes", label: "quotes", icon: MessageSquare },
+  { href: "/payments", label: "payments", icon: CreditCard },
+] as const;
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
+  const t = useTranslations("PublicPortal");
   const { token } = useParams<{ token: string }>();
   const pathname = usePathname();
   const [info, setInfo] = useState<PortalInfo | null>(null);
@@ -39,9 +42,9 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
         <div className="mx-auto max-w-4xl flex items-center justify-between">
           <div>
             <h1 className="text-lg font-semibold text-gray-900">
-              {info?.organization.name || "Loading..."}
+              {info?.organization.name || t("loading")}
             </h1>
-            <p className="text-sm text-gray-500">Customer Portal</p>
+            <p className="text-sm text-gray-500">{t("portal")}</p>
           </div>
           <p className="text-sm text-gray-600">{info?.contact.name}</p>
         </div>
@@ -66,7 +69,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                 )}
               >
                 <tab.icon className="size-4" />
-                {tab.label}
+                {t(tab.label)}
               </Link>
             );
           })}

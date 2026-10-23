@@ -1,5 +1,8 @@
 "use client";
 
+import { portalStatusKey } from "@/i18n/public-portal-presentation";
+import { useTranslations } from "next-intl";
+
 import { portalInvoicesSchema } from "@/lib/money/public-ui";
 import { clientJson, clientPdf, downloadBlob } from "@/lib/api/client-response";
 
@@ -41,6 +44,7 @@ const statusColors: Record<string, string> = {
 };
 
 export default function PortalInvoicesPage() {
+  const t = useTranslations("PublicPortal");
   const { token } = useParams<{ token: string }>();
   const [invoices, setInvoices] = useState<PortalInvoice[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,10 +56,10 @@ export default function PortalInvoicesPage() {
     fetch(`/api/portal/${token}/invoices`)
       .then(r => clientJson(r, "Unable to load invoices"))
       .then(value => { const data = portalInvoicesSchema.parse(value); if (active) setInvoices(data.data); })
-      .catch(() => { if (active) setError("Unable to load invoices safely. Please try again or contact the sender."); })
+      .catch(() => { if (active) setError(t("invoiceLoadFailed")); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [token]);
+  }, [token, t]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -64,19 +68,19 @@ export default function PortalInvoicesPage() {
           <Link href={`/portal/${token}`} className="text-gray-400 hover:text-gray-600">
             <ArrowLeft className="size-4" />
           </Link>
-          <h1 className="text-lg font-semibold text-gray-900">Invoices</h1>
+          <h1 className="text-lg font-semibold text-gray-900">{t("invoices")}</h1>
         </div>
       </header>
 
       <main className="mx-auto max-w-3xl px-6 py-8">
         {loading ? (
-          <p className="text-sm text-gray-500">Loading invoices...</p>
+          <p className="text-sm text-gray-500">{t("loadingInvoices")}</p>
         ) : error ? (
           <p role="alert" className="text-sm text-red-600">{error}</p>
         ) : invoices.length === 0 ? (
           <div className="text-center py-16">
             <FileText className="size-8 text-gray-300 mx-auto" />
-            <p className="mt-3 text-sm text-gray-500">No invoices found</p>
+            <p className="mt-3 text-sm text-gray-500">{t("noInvoices")}</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -88,12 +92,12 @@ export default function PortalInvoicesPage() {
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-gray-900">{inv.invoiceNumber}</p>
                   <p className="text-xs text-gray-500 mt-0.5">
-                    Issued {inv.issueDate} · Due {inv.dueDate}
+                    {t("issuedDue", { issueDate: inv.issueDate, dueDate: inv.dueDate })}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
                   <Badge variant="outline" className={statusColors[inv.status]}>
-                    {inv.status}
+                    {t(portalStatusKey(inv.status))}
                   </Badge>
                   <span className="text-sm font-mono tabular-nums font-medium text-gray-900">
                     {formatMoney(inv.total, inv.currencyCode)}
@@ -102,15 +106,15 @@ export default function PortalInvoicesPage() {
                     try {
                       const blob = await clientPdf(await fetch(`/api/portal/${token}/invoices/${inv.id}/pdf`));
                       downloadBlob(blob, `${inv.invoiceNumber}.pdf`);
-                    } catch { setError("Unable to download invoice. Please try again."); }
+                    } catch { setError(t("invoiceDownloadFailed")); }
                   }}>
-                    <Download className="size-3" />PDF
+                    <Download className="size-3" />{t("pdf")}
                   </Button>
                   {PAYABLE_STATUSES.has(inv.status) && inv.paymentLinkToken && (
                     <a href={`/pay/${inv.paymentLinkToken}`}>
                       <Button size="sm" className="h-7 text-xs gap-1">
                         <CreditCard className="size-3" />
-                        Pay now
+                        {t("payNow")}
                       </Button>
                     </a>
                   )}

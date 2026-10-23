@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import {
   AreaChart,
   Area,
@@ -11,18 +12,18 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import { TrendingUp, TrendingDown, ArrowRight } from "lucide-react";
 import { displayMoney, displayJson, cashForecastUi, forecastChartPoint, type CashForecastUi } from "@/lib/money/contact-dashboard-ui";
 import { CurrencySelect } from "@/components/ui/currency-select";
 import { cn } from "@/lib/utils";
 
 const periods = [
-  { label: "30 days", weeks: 4 },
-  { label: "60 days", weeks: 9 },
-  { label: "90 days", weeks: 13 },
+  { days: 30, weeks: 4 },
+  { days: 60, weeks: 9 },
+  { days: 90, weeks: 13 },
 ];
 
 function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: { dataKey: "inflows" | "outflows" | "balance"; payload: ReturnType<typeof forecastChartPoint> }[]; label?: string }) {
+  const t = useTranslations("DashboardOverview");
   if (!active || !payload?.length) return null;
   return (
     <div className="rounded-lg border bg-card p-3 shadow-md">
@@ -33,7 +34,7 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
           className="flex items-center justify-between gap-4 text-xs"
         >
           <span className="text-muted-foreground capitalize">
-            {entry.dataKey}
+            {t(entry.dataKey)}
           </span>
           <span
             className={cn(
@@ -54,10 +55,11 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
 }
 
 export function CashFlowWidget() {
+  const t = useTranslations("DashboardOverview");
   const [currencyCode, setCurrencyCode] = useState("");
   const [weeks, setWeeks] = useState(4);
   const [forecast, setForecast] = useState<CashForecastUi | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<"forecastError" | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -77,7 +79,7 @@ export function CashFlowWidget() {
         const data = await displayJson(r, cashForecastUi);
         if (active) setForecast(data);
       } catch {
-        if (active) { setForecast(null); setError("Unable to load this cash-flow forecast. Select a currency if documents use multiple currencies."); }
+        if (active) { setForecast(null); setError("forecastError"); }
       } finally {
         if (active) setLoading(false);
       }
@@ -91,7 +93,7 @@ export function CashFlowWidget() {
     <div className="rounded-lg border bg-card p-5">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-          Cash Flow Forecast
+          {t("forecastTitle")}
         </h3>
         <div className="flex gap-1 rounded-lg bg-muted p-0.5">
           {periods.map((p) => (
@@ -105,7 +107,7 @@ export function CashFlowWidget() {
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
-              {p.label}
+              {t("periodDays", { count: p.days })}
             </button>
           ))}
         </div>
@@ -182,6 +184,7 @@ export function CashFlowWidget() {
                 <Area
                   type="monotone"
                   dataKey="inflows"
+                  name={t("inflows")}
                   stroke="#10b981"
                   fill="url(#inflowGrad)"
                   strokeWidth={2}
@@ -189,6 +192,7 @@ export function CashFlowWidget() {
                 <Area
                   type="monotone"
                   dataKey="outflows"
+                  name={t("outflows")}
                   stroke="#ef4444"
                   fill="url(#outflowGrad)"
                   strokeWidth={2}
@@ -196,6 +200,7 @@ export function CashFlowWidget() {
                 <Area
                   type="monotone"
                   dataKey="balance"
+                  name={t("balance")}
                   stroke="#3b82f6"
                   fill="none"
                   strokeWidth={2}
@@ -207,19 +212,19 @@ export function CashFlowWidget() {
 
           <div className="mt-4 grid grid-cols-3 gap-4 border-t pt-4">
             <div className="text-center">
-              <p className="text-xs text-muted-foreground">Expected In</p>
+              <p className="text-xs text-muted-foreground">{t("expectedIn")}</p>
               <p className="text-sm font-bold font-mono tabular-nums text-emerald-600">
                 {displayMoney(forecast.totalInflows, forecast.currencyCode)}
               </p>
             </div>
             <div className="text-center">
-              <p className="text-xs text-muted-foreground">Expected Out</p>
+              <p className="text-xs text-muted-foreground">{t("expectedOut")}</p>
               <p className="text-sm font-bold font-mono tabular-nums text-red-600">
                 {displayMoney(forecast.totalOutflows, forecast.currencyCode)}
               </p>
             </div>
             <div className="text-center">
-              <p className="text-xs text-muted-foreground">Net Position</p>
+              <p className="text-xs text-muted-foreground">{t("netPosition")}</p>
               <p
                 className={cn(
                   "text-sm font-bold font-mono tabular-nums",
@@ -233,7 +238,7 @@ export function CashFlowWidget() {
             </div>
           </div>
         </>
-      ) : error ? <p role="alert" className="text-sm text-red-600">{error}</p> : null}
+      ) : error ? <p role="alert" className="text-sm text-red-600">{t(error)}</p> : null}
     </div>
   );
 }

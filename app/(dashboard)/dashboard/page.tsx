@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
@@ -40,64 +41,17 @@ import { useCreateDrawer } from "@/components/dashboard/create-drawer";
 import { CashFlowWidget } from "@/components/dashboard/cash-flow-widget";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 
-const GREETINGS_MORNING = [
-  "Good morning",
-  "Rise and shine",
-  "Morning",
-  "Top of the morning",
-];
+type GreetingKey = `morning${0 | 1 | 2 | 3}` | `afternoon${0 | 1 | 2}` | `evening${0 | 1 | 2}` | `anytime${0 | 1 | 2 | 3 | 4 | 5 | 6}` | `day${0 | 1 | 2 | 3 | 4 | 5 | 6}`;
 
-const GREETINGS_AFTERNOON = [
-  "Good afternoon",
-  "Hope your afternoon is going well",
-  "Afternoon",
-];
-
-const GREETINGS_EVENING = [
-  "Good evening",
-  "Evening",
-  "Hope you had a great day",
-];
-
-const GREETINGS_ANYTIME = [
-  "Welcome back",
-  "Hey there",
-  "Nice to see you",
-  "Hello",
-  "Hi there",
-  "Great to have you back",
-  "Ready to go",
-];
-
-const DAY_NAMES = [
-  "Sunday",
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-];
-
-function pickGreeting(): string {
+function pickGreeting(): GreetingKey {
   const now = new Date();
   const hour = now.getHours();
-  const day = DAY_NAMES[now.getDay()];
-
-  const timePool =
-    hour >= 5 && hour < 12
-      ? GREETINGS_MORNING
-      : hour >= 12 && hour < 17
-      ? GREETINGS_AFTERNOON
-      : GREETINGS_EVENING;
-
-  const allOptions = [
-    ...timePool,
-    ...GREETINGS_ANYTIME,
-    `Happy ${day}`,
-  ];
-
-  return allOptions[Math.floor(Math.random() * allOptions.length)];
+  const timePool = hour >= 5 && hour < 12
+    ? ["morning0", "morning1", "morning2", "morning3"]
+    : hour >= 12 && hour < 17 ? ["afternoon0", "afternoon1", "afternoon2"]
+    : ["evening0", "evening1", "evening2"];
+  const options = [...timePool, ...Array.from({ length: 7 }, (_, i) => `anytime${i}`), `day${now.getDay()}`];
+  return options[Math.floor(Math.random() * options.length)] as GreetingKey;
 }
 
 interface Entry {
@@ -115,7 +69,8 @@ type PnLData = Pick<ProfitLossUi, "totalRevenue" | "totalExpenses" | "netIncome"
 type AgingBucket = Pick<AgingUi["buckets"][number], "label" | "total" | "count">;
 type AgingData = { buckets: AgingBucket[]; grandTotal: bigint; currencyCode: string };
 
-const columns: Column<Entry>[] = [
+function entryColumns(t: ReturnType<typeof useTranslations>): Column<Entry>[] {
+  return [
   {
     key: "number",
     header: "#",
@@ -128,18 +83,18 @@ const columns: Column<Entry>[] = [
   },
   {
     key: "date",
-    header: "Date",
+    header: t("date"),
     className: "w-28",
     render: (r) => <span className="text-sm">{r.date}</span>,
   },
   {
     key: "description",
-    header: "Description",
+    header: t("description"),
     render: (r) => <span className="text-sm font-medium">{r.description}</span>,
   },
   {
     key: "status",
-    header: "Status",
+    header: t("status"),
     className: "w-24",
     render: (r) => (
       <Badge
@@ -152,13 +107,13 @@ const columns: Column<Entry>[] = [
             : ""
         }
       >
-        {r.status}
+        {t(`status_${r.status}`)}
       </Badge>
     ),
   },
   {
     key: "amount",
-    header: "Amount",
+    header: t("amount"),
     className: "w-28 text-right",
     render: (r) => (
       <span className="font-mono text-sm tabular-nums">
@@ -166,7 +121,8 @@ const columns: Column<Entry>[] = [
       </span>
     ),
   },
-];
+  ];
+}
 
 const BUCKET_COLORS = [
   "bg-emerald-500",
@@ -187,6 +143,7 @@ function AgingColumn({
   buckets: AgingBucket[];
   currencyCode: string;
 }) {
+  const t = useTranslations("DashboardOverview");
   const maxBucket = buckets.reduce((max, bucket) => bucket.total > max ? bucket.total : max, 1n);
 
   return (
@@ -201,7 +158,7 @@ function AgingColumn({
           return (
             <div key={bucket.label} className="space-y-1">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">{bucket.label}</span>
+                <span className="text-muted-foreground">{t((["bucket0", "bucket1", "bucket2", "bucket3", "bucket4"] as const)[i])}</span>
                 <span className="font-mono tabular-nums">
                   {formatMoney(bucket.total, currencyCode)}
                 </span>
@@ -238,6 +195,8 @@ function KpiItem({ label, value, good }: { label: string; value: string; good: b
 }
 
 export default function DashboardPage() {
+  const t = useTranslations("DashboardOverview");
+  const columns = entryColumns(t);
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
   const { data: session } = useSession();
@@ -262,7 +221,7 @@ export default function DashboardPage() {
     grandTotal: 0n,
   });
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<"loadError" | "reportError" | "alertError" | null>(null);
   const [sparklines, setSparklines] = useState<{
     revenue: number[];
     expenses: number[];
@@ -284,7 +243,7 @@ export default function DashboardPage() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [dismissingOnboarding, setDismissingOnboarding] = useState(false);
 
-  useDocumentTitle("Dashboard \u00B7 Overview");
+  useDocumentTitle(t("documentTitle"));
 
   useEffect(() => {
     const id = localStorage.getItem("activeOrgId");
@@ -309,7 +268,7 @@ export default function DashboardPage() {
         if (apData?.buckets) setPayables(apData);
       })
       .then(() => devDelay())
-      .catch(() => setError("Unable to load valid dashboard amounts. If documents use multiple currencies, use the currency filters in Reports."))
+      .catch(() => setError("loadError"))
       .finally(() => setLoading(false));
 
     // Load sparkline trends in background
@@ -318,7 +277,7 @@ export default function DashboardPage() {
       .then((data) => {
         setSparklines(data);
       })
-      .catch(() => setError("Unable to load valid dashboard report amounts."));
+      .catch(() => setError("reportError"));
 
     // Load budget alerts in background
     fetch("/api/v1/reports/budget-vs-actual", { headers })
@@ -339,7 +298,7 @@ export default function DashboardPage() {
           setBudgetAlerts(alerts);
         }
       })
-      .catch(() => setError("Unable to load valid dashboard report amounts."));
+      .catch(() => setError("reportError"));
 
     // Load financial ratios in background
     fetch("/api/v1/reports/financial-ratios", { headers })
@@ -347,13 +306,13 @@ export default function DashboardPage() {
       .then((data) => {
         if (data.ratios) setRatios(data.ratios);
       })
-      .catch(() => setError("Unable to load valid dashboard report amounts."));
+      .catch(() => setError("reportError"));
 
     // Load action alerts in background
     fetch("/api/v1/dashboard/alerts", { headers })
       .then((r) => displayJson(r, dashboardAlertsUi))
       .then((data) => setActionAlerts(data))
-      .catch(() => setError("Unable to load valid dashboard alert amounts."));
+      .catch(() => setError("alertError"));
 
     // Decide whether to show the getting-started checklist (org never onboarded).
     fetch("/api/v1/organization", { headers })
@@ -418,7 +377,7 @@ export default function DashboardPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
-            <ErrorState message={error} onRetry={() => window.location.reload()} />
+            <ErrorState message={t(error)} onRetry={() => window.location.reload()} />
           </motion.div>
         ) : (
           <motion.div
@@ -453,11 +412,10 @@ export default function DashboardPage() {
               />
               <div className="relative p-5 sm:p-8">
                 <h2 className="text-xl sm:text-2xl font-bold text-emerald-950">
-                  {greeting}{firstName ? `, ${firstName}` : ""}
+                  {firstName ? t("greetingWithName", { greeting: t(greeting), name: firstName }) : t(greeting)}
                 </h2>
                 <p className="mt-1 max-w-lg text-sm text-emerald-950/70">
-                  Here is your financial overview. Jump into any section to get
-                  started or continue where you left off.
+                  {t("overviewHelp")}
                 </p>
                 <div className="mt-5 flex flex-wrap gap-2">
                   <Button
@@ -466,7 +424,7 @@ export default function DashboardPage() {
                     onClick={() => router.push("/accounting/accounts")}
                   >
                     <Landmark className="mr-1.5 size-3.5" />
-                    Accounts
+                    {t("accounts")}
                   </Button>
                   <Button
                     size="sm"
@@ -474,7 +432,7 @@ export default function DashboardPage() {
                     onClick={() => openDrawer("entry")}
                   >
                     <BookOpen className="mr-1.5 size-3.5" />
-                    New entry
+                    {t("newEntry")}
                   </Button>
                   <Button
                     size="sm"
@@ -482,7 +440,7 @@ export default function DashboardPage() {
                     onClick={() => openDrawer("invoice")}
                   >
                     <FileText className="mr-1.5 size-3.5" />
-                    New invoice
+                    {t("newInvoice")}
                   </Button>
                   <Button
                     size="sm"
@@ -490,7 +448,7 @@ export default function DashboardPage() {
                     onClick={() => router.push("/contacts")}
                   >
                     <Users className="mr-1.5 size-3.5" />
-                    Contacts
+                    {t("contacts")}
                   </Button>
                 </div>
               </div>
@@ -502,38 +460,38 @@ export default function DashboardPage() {
                 <button
                   onClick={dismissOnboarding}
                   disabled={dismissingOnboarding}
-                  aria-label="Dismiss getting started"
+                  aria-label={t("dismissGettingStarted")}
                   className="absolute right-3 top-3 rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
                 >
                   <X className="size-4" />
                 </button>
                 <div className="flex items-center gap-2">
                   <Rocket className="size-4 text-emerald-600" />
-                  <h3 className="text-sm font-semibold">Getting started</h3>
+                  <h3 className="text-sm font-semibold">{t("gettingStarted")}</h3>
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  A few quick steps to set up your books. Tackle them in any order.
+                  {t("setupHelp")}
                 </p>
                 <div className="mt-4 grid gap-2 sm:grid-cols-2">
                   {[
                     {
-                      label: "Add a bank account",
-                      desc: "Connect or add the account you bank with",
+                      label: t("addBank"),
+                      desc: t("addBankHelp"),
                       href: "/accounting/banking",
                     },
                     {
-                      label: "Set opening balances",
-                      desc: "Enter what you had when you started",
+                      label: t("opening"),
+                      desc: t("openingHelp"),
                       href: "/accounting/opening-balances",
                     },
                     {
-                      label: "Set up tax",
-                      desc: "Choose the tax rates you charge and pay",
+                      label: t("tax"),
+                      desc: t("taxHelp"),
                       href: "/tax",
                     },
                     {
-                      label: "Create your first invoice",
-                      desc: "Bill a customer and get paid",
+                      label: t("firstInvoice"),
+                      desc: t("firstInvoiceHelp"),
                       href: "/sales",
                     },
                   ].map((step) => (
@@ -558,7 +516,7 @@ export default function DashboardPage() {
                     onClick={dismissOnboarding}
                     disabled={dismissingOnboarding}
                   >
-                    {dismissingOnboarding ? "Saving…" : "Dismiss / All done"}
+                    {dismissingOnboarding ? t("saving") : t("dismiss")}
                   </Button>
                 </div>
               </div>
@@ -570,7 +528,7 @@ export default function DashboardPage() {
                 <div className="flex items-center gap-2">
                   <AlertTriangle className="size-4 text-amber-600" />
                   <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
-                    Budget Alerts
+                    {t("budgetAlerts")}
                   </p>
                 </div>
                 <div className="space-y-1">
@@ -590,7 +548,7 @@ export default function DashboardPage() {
                             : "text-amber-700 dark:text-amber-400"
                         )}
                       >
-                        {alert.pct}% used ({budgetMoney(alert.actual, alert.currencyCode)} / {budgetMoney(alert.budgeted, alert.currencyCode)})
+                        {t("budgetUsed", { percent: String(alert.pct), actual: budgetMoney(alert.actual, alert.currencyCode), budget: budgetMoney(alert.budgeted, alert.currencyCode) })}
                       </span>
                     </div>
                   ))}
@@ -601,36 +559,36 @@ export default function DashboardPage() {
             {/* Section B: Stat Cards */}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
               <StatCard
-                title="Revenue"
+                title={t("revenue")}
                 value={formatMoney(pnl.totalRevenue, pnl.currencyCode)}
                 icon={TrendingUp}
                 sparklineData={sparklines.revenue.length > 1 ? sparklines.revenue : undefined}
               />
               <StatCard
-                title="Expenses"
+                title={t("expenses")}
                 value={formatMoney(pnl.totalExpenses, pnl.currencyCode)}
                 icon={TrendingDown}
                 sparklineData={sparklines.expenses.length > 1 ? sparklines.expenses : undefined}
               />
               <StatCard
-                title="Net Income"
+                title={t("netIncome")}
                 value={formatMoney(pnl.netIncome, pnl.currencyCode)}
                 icon={DollarSign}
                 changeType={pnl.netIncome >= 0 ? "positive" : "negative"}
                 sparklineData={sparklines.netIncome.length > 1 ? sparklines.netIncome : undefined}
               />
               <StatCard
-                title="Receivables"
+                title={t("receivables")}
                 value={formatMoney(receivables.grandTotal, receivables.currencyCode)}
                 icon={ArrowDownLeft}
-                change={`${receivablesCount} outstanding`}
+                change={t("outstandingCount", { count: receivablesCount })}
                 changeType="neutral"
               />
               <StatCard
-                title="Payables"
+                title={t("payables")}
                 value={formatMoney(payables.grandTotal, payables.currencyCode)}
                 icon={ArrowUpRight}
-                change={`${payablesCount} outstanding`}
+                change={t("outstandingCount", { count: payablesCount })}
                 changeType="neutral"
               />
             </div>
@@ -640,12 +598,12 @@ export default function DashboardPage() {
               {/* Revenue vs Expenses */}
               <div className="rounded-lg border bg-card p-5">
                 <h3 className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-                  Revenue vs Expenses
+                  {t("revenueExpenses")}
                 </h3>
                 <div className="mt-4 space-y-3">
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Revenue</span>
+                      <span className="text-muted-foreground">{t("revenue")}</span>
                       <span className="font-mono text-sm tabular-nums font-medium">
                         {formatMoney(pnl.totalRevenue, pnl.currencyCode)}
                       </span>
@@ -659,7 +617,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Expenses</span>
+                      <span className="text-muted-foreground">{t("expenses")}</span>
                       <span className="font-mono text-sm tabular-nums font-medium">
                         {formatMoney(pnl.totalExpenses, pnl.currencyCode)}
                       </span>
@@ -673,7 +631,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex items-center justify-between border-t pt-3">
                     <span className="text-sm text-muted-foreground">
-                      Net Income
+                      {t("netIncome")}
                     </span>
                     <span
                       className={cn(
@@ -690,7 +648,7 @@ export default function DashboardPage() {
                 {topExpenses.length > 0 && (
                   <div className="mt-4 border-t pt-4">
                     <p className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground mb-2">
-                      Top Expenses
+                      {t("topExpenses")}
                     </p>
                     <div className="space-y-2">
                       {topExpenses.map((exp) => (
@@ -714,17 +672,17 @@ export default function DashboardPage() {
               {/* Aging Summary */}
               <div className="rounded-lg border bg-card p-5">
                 <h3 className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-                  Aging Summary
+                  {t("aging")}
                 </h3>
                 <div className="mt-4 grid grid-cols-2 gap-6">
                   <AgingColumn
-                    title="Receivables"
+                    title={t("receivables")}
                     total={receivables.grandTotal}
                     buckets={receivables.buckets}
                     currencyCode={receivables.currencyCode}
                   />
                   <AgingColumn
-                    title="Payables"
+                    title={t("payables")}
                     total={payables.grandTotal}
                     buckets={payables.buckets}
                     currencyCode={payables.currencyCode}
@@ -741,28 +699,28 @@ export default function DashboardPage() {
               <div className="rounded-lg border bg-card p-5">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-                    Financial KPIs
+                    {t("kpis")}
                   </h3>
                   <Gauge className="size-4 text-muted-foreground/50" />
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
                   {ratios.currentRatio !== null && (
-                    <KpiItem label="Current Ratio" value={`${ratios.currentRatio}x`} good={ratios.currentRatio >= 1} />
+                    <KpiItem label={t("currentRatio")} value={`${ratios.currentRatio}x`} good={ratios.currentRatio >= 1} />
                   )}
                   {ratios.quickRatio !== null && (
-                    <KpiItem label="Quick Ratio" value={`${ratios.quickRatio}x`} good={ratios.quickRatio >= 1} />
+                    <KpiItem label={t("quickRatio")} value={`${ratios.quickRatio}x`} good={ratios.quickRatio >= 1} />
                   )}
                   {ratios.grossMargin !== null && (
-                    <KpiItem label="Gross Margin" value={`${ratios.grossMargin}%`} good={ratios.grossMargin > 0} />
+                    <KpiItem label={t("grossMargin")} value={`${ratios.grossMargin}%`} good={ratios.grossMargin > 0} />
                   )}
                   {ratios.netMargin !== null && (
-                    <KpiItem label="Net Margin" value={`${ratios.netMargin}%`} good={ratios.netMargin > 0} />
+                    <KpiItem label={t("netMargin")} value={`${ratios.netMargin}%`} good={ratios.netMargin > 0} />
                   )}
                   {ratios.dso !== null && (
-                    <KpiItem label="DSO" value={`${ratios.dso}d`} good={ratios.dso <= 45} />
+                    <KpiItem label={t("dso")} value={t("days", { count: ratios.dso })} good={ratios.dso <= 45} />
                   )}
                   {ratios.dpo !== null && (
-                    <KpiItem label="DPO" value={`${ratios.dpo}d`} good={ratios.dpo <= 60} />
+                    <KpiItem label={t("dpo")} value={t("days", { count: ratios.dpo })} good={ratios.dpo <= 60} />
                   )}
                 </div>
               </div>
@@ -776,9 +734,9 @@ export default function DashboardPage() {
                     onClick={() => router.push("/sales")}
                     className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-3 text-left transition-colors hover:bg-red-100 dark:hover:bg-red-950/50"
                   >
-                    <p className="text-xs font-medium text-red-800 dark:text-red-300">Overdue Invoices</p>
+                    <p className="text-xs font-medium text-red-800 dark:text-red-300">{t("overdueInvoices")}</p>
                     <p className="text-lg font-bold font-mono tabular-nums text-red-600 mt-0.5">{actionAlerts.overdueInvoices.count}</p>
-                    <p className="text-[11px] text-red-600/70 font-mono tabular-nums">{formatMoney(actionAlerts.overdueInvoices.total, actionAlerts.overdueInvoices.currencyCode)} outstanding</p>
+                    <p className="text-[11px] text-red-600/70 font-mono tabular-nums">{t("outstandingMoney", { amount: formatMoney(actionAlerts.overdueInvoices.total, actionAlerts.overdueInvoices.currencyCode) })}</p>
                   </button>
                 )}
                 {actionAlerts.overdueBills?.count > 0 && (
@@ -786,9 +744,9 @@ export default function DashboardPage() {
                     onClick={() => router.push("/purchases")}
                     className="rounded-lg border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/30 p-3 text-left transition-colors hover:bg-orange-100 dark:hover:bg-orange-950/50"
                   >
-                    <p className="text-xs font-medium text-orange-800 dark:text-orange-300">Overdue Bills</p>
+                    <p className="text-xs font-medium text-orange-800 dark:text-orange-300">{t("overdueBills")}</p>
                     <p className="text-lg font-bold font-mono tabular-nums text-orange-600 mt-0.5">{actionAlerts.overdueBills.count}</p>
-                    <p className="text-[11px] text-orange-600/70 font-mono tabular-nums">{formatMoney(actionAlerts.overdueBills.total, actionAlerts.overdueBills.currencyCode)} to pay</p>
+                    <p className="text-[11px] text-orange-600/70 font-mono tabular-nums">{t("toPayMoney", { amount: formatMoney(actionAlerts.overdueBills.total, actionAlerts.overdueBills.currencyCode) })}</p>
                   </button>
                 )}
                 {actionAlerts.uncategorizedTransactions > 0 && (
@@ -796,9 +754,9 @@ export default function DashboardPage() {
                     onClick={() => router.push("/accounting/banking")}
                     className="rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 p-3 text-left transition-colors hover:bg-blue-100 dark:hover:bg-blue-950/50"
                   >
-                    <p className="text-xs font-medium text-blue-800 dark:text-blue-300">Uncategorized Transactions</p>
+                    <p className="text-xs font-medium text-blue-800 dark:text-blue-300">{t("uncategorized")}</p>
                     <p className="text-lg font-bold font-mono tabular-nums text-blue-600 mt-0.5">{actionAlerts.uncategorizedTransactions}</p>
-                    <p className="text-[11px] text-blue-600/70">Need categorization</p>
+                    <p className="text-[11px] text-blue-600/70">{t("needCategorization")}</p>
                   </button>
                 )}
                 {actionAlerts.accountsNeedingReconciliation?.length > 0 && (
@@ -806,9 +764,9 @@ export default function DashboardPage() {
                     onClick={() => router.push("/accounting/banking")}
                     className="rounded-lg border border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/30 p-3 text-left transition-colors hover:bg-violet-100 dark:hover:bg-violet-950/50"
                   >
-                    <p className="text-xs font-medium text-violet-800 dark:text-violet-300">Needs Reconciliation</p>
+                    <p className="text-xs font-medium text-violet-800 dark:text-violet-300">{t("needsReconciliation")}</p>
                     <p className="text-lg font-bold font-mono tabular-nums text-violet-600 mt-0.5">{actionAlerts.accountsNeedingReconciliation.length}</p>
-                    <p className="text-[11px] text-violet-600/70">bank account{actionAlerts.accountsNeedingReconciliation.length !== 1 ? "s" : ""}</p>
+                    <p className="text-[11px] text-violet-600/70">{t("bankAccounts", { count: actionAlerts.accountsNeedingReconciliation.length })}</p>
                   </button>
                 )}
               </div>
@@ -818,23 +776,23 @@ export default function DashboardPage() {
             <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-[13px] font-semibold">Recent Entries</h2>
+                  <h2 className="text-[13px] font-semibold">{t("recentEntries")}</h2>
                   <Button
                     variant="ghost"
                     size="sm"
                     className="h-7 text-xs text-muted-foreground"
                     onClick={() => router.push("/accounting")}
                   >
-                    View all
+                    {t("viewAll")}
                   </Button>
                 </div>
                 <DataTable
                   columns={columns}
                   data={entries}
                   loading={loading}
-                  emptyMessage="No journal entries yet."
+                  emptyMessage={t("noEntries")}
                   emptyAction={{
-                    label: "Create your first entry",
+                    label: t("firstEntry"),
                     onClick: () => openDrawer("entry"),
                   }}
                   onRowClick={(r) => router.push(`/accounting/${r.id}`)}

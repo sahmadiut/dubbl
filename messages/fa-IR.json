@@ -6571,7 +6571,18 @@
     "concepts": "مفاهیم حسابداری",
     "apiReference": "مرجع API",
     "guides": "راهنماها",
-    "contributing": "مشارکت"
+    "contributing": "مشارکت",
+    "pageTitle": "{title} · مستندات Dubbl",
+    "search": "جستجو",
+    "searchNoResult": "نتیجه‌ای یافت نشد",
+    "toc": "فهرست مطالب",
+    "tocNoHeadings": "عنوانی وجود ندارد",
+    "lastUpdate": "آخرین به‌روزرسانی",
+    "chooseLanguage": "انتخاب زبان",
+    "nextPage": "صفحه بعدی",
+    "previousPage": "صفحه قبلی",
+    "chooseTheme": "انتخاب تم",
+    "editOnGithub": "ویرایش در گیت‌هاب"
   },
   "InventoryItems": {
     "documentTitle": "موجودی · کالاها",
@@ -10864,5 +10875,29 @@
     "fullApiAccess": "دسترسی کامل API",
     "multiCurrency": "چندارزی",
     "pricingHeading": "رایگان شروع کنید، <em>هوشمندانه گسترش دهید</em>"
+  },
+  "PublicMetadata": {
+    "title": "dubbl · حسابداری متن‌باز، ERP و مدیریت کسب‌وکار",
+    "description": "حسابداری دوطرفه رایگان و متن‌باز با صدور فاکتور، صورتحساب خرید، حقوق و دستمزد، موجودی، پروژه‌ها و CRM. روی سرور خود میزبانی کنید یا از فضای ابری ما استفاده کنید. مبتنی بر API، آماده MCP، با مجوز Apache 2.0.",
+    "socialTitle": "dubbl · حسابداری متن‌باز و مدیریت کسب‌وکار",
+    "socialDescription": "حسابداری دوطرفه رایگان و متن‌باز با صدور فاکتور، صورتحساب خرید، حقوق و دستمزد، موجودی، پروژه‌ها و CRM. روی سرور خود میزبانی کنید یا از فضای ابری ما استفاده کنید.",
+    "imageAlt": "dubbl - حسابداری متن‌باز برای تیم‌های امروزی",
+    "keywordOpenSource": "حسابداری متن‌باز",
+    "keywordBookkeeping": "دفترداری دوطرفه",
+    "keywordInvoicing": "نرم‌افزار صدور فاکتور",
+    "keywordPayable": "حساب‌های پرداختنی",
+    "keywordReceivable": "حساب‌های دریافتنی",
+    "keywordLedger": "دفتر کل",
+    "keywordPayroll": "نرم‌افزار حقوق و دستمزد",
+    "keywordInventory": "مدیریت موجودی",
+    "keywordProjects": "مدیریت پروژه",
+    "keywordSelfHosted": "حسابداری با میزبانی شخصی",
+    "keywordApiFirst": "حسابداری مبتنی بر API",
+    "keywordSmallBusiness": "حسابداری کسب‌وکارهای کوچک",
+    "keywordFree": "نرم‌افزار حسابداری رایگان",
+    "privacyTitle": "سیاست حریم خصوصی",
+    "privacyDescription": "نحوه جمع‌آوری، استفاده و حفاظت از داده‌های شخصی شما توسط dubbl (Mindroot Ltd) مطابق با UK GDPR.",
+    "termsTitle": "شرایط استفاده از خدمات",
+    "termsDescription": "شرایط حاکم بر استفاده شما از سرویس میزبانی‌شده dubbl که توسط Mindroot Ltd اداره می‌شود."
   }
 }

@@ -6571,7 +6571,18 @@
     "concepts": "Accounting Concepts",
     "apiReference": "API Reference",
     "guides": "Guides",
-    "contributing": "Contributing"
+    "contributing": "Contributing",
+    "pageTitle": "{title} · Dubbl Docs",
+    "search": "Search",
+    "searchNoResult": "No results found",
+    "toc": "On this page",
+    "tocNoHeadings": "No Headings",
+    "lastUpdate": "Last updated on",
+    "chooseLanguage": "Choose a language",
+    "nextPage": "Next Page",
+    "previousPage": "Previous Page",
+    "chooseTheme": "Theme",
+    "editOnGithub": "Edit on GitHub"
   },
   "InventoryItems": {
     "documentTitle": "Inventory · Products",
@@ -10864,5 +10875,29 @@
     "fullApiAccess": "Full API access",
     "multiCurrency": "Multi-currency",
     "pricingHeading": "Start free, <em>scale smart</em>"
+  },
+  "PublicMetadata": {
+    "title": "dubbl · Open-Source Accounting, ERP & Business Management",
+    "description": "Free, open-source double-entry accounting with invoicing, bills, payroll, inventory, projects, and CRM. Self-host or use our cloud. API-first, MCP-ready, Apache 2.0.",
+    "socialTitle": "dubbl · Open-Source Accounting & Business Management",
+    "socialDescription": "Free, open-source double-entry accounting with invoicing, bills, payroll, inventory, projects, and CRM. Self-host or use our cloud.",
+    "imageAlt": "dubbl - Open-source accounting for modern teams",
+    "keywordOpenSource": "open source accounting",
+    "keywordBookkeeping": "double-entry bookkeeping",
+    "keywordInvoicing": "invoicing software",
+    "keywordPayable": "accounts payable",
+    "keywordReceivable": "accounts receivable",
+    "keywordLedger": "general ledger",
+    "keywordPayroll": "payroll software",
+    "keywordInventory": "inventory management",
+    "keywordProjects": "project management",
+    "keywordSelfHosted": "self-hosted accounting",
+    "keywordApiFirst": "API-first accounting",
+    "keywordSmallBusiness": "small business accounting",
+    "keywordFree": "free accounting software",
+    "privacyTitle": "Privacy Policy",
+    "privacyDescription": "How dubbl (Mindroot Ltd) collects, uses, and protects your personal data under the UK GDPR.",
+    "termsTitle": "Terms of Service",
+    "termsDescription": "Terms governing your use of the dubbl hosted service, operated by Mindroot Ltd."
   }
 }

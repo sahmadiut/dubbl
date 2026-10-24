@@ -5,7 +5,7 @@ import { SessionProvider } from "next-auth/react";
 import { RootProvider } from "fumadocs-ui/provider/next";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/shared/theme-provider";
-import { getMessages, getNow } from "next-intl/server";
+import { getMessages, getNow, getTranslations } from "next-intl/server";
 import { getPresentation } from "@/i18n/server";
 import { PresentationProvider } from "@/i18n/provider";
 import "fumadocs-ui/style.css";
@@ -31,88 +31,91 @@ const playfairDisplay = Playfair_Display({
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://dubbl.dev";
 
-export const metadata: Metadata = {
-  title: {
-    default: "dubbl · Open-Source Accounting, ERP & Business Management",
-    template: "%s · dubbl",
-  },
-  description:
-    "Free, open-source double-entry accounting with invoicing, bills, payroll, inventory, projects, and CRM. Self-host or use our cloud. API-first, MCP-ready, Apache 2.0.",
-  metadataBase: new URL(APP_URL),
-  keywords: [
-    "open source accounting",
-    "double-entry bookkeeping",
-    "invoicing software",
-    "accounts payable",
-    "accounts receivable",
-    "general ledger",
-    "ERP",
-    "payroll software",
-    "inventory management",
-    "project management",
-    "CRM",
-    "self-hosted accounting",
-    "API-first accounting",
-    "small business accounting",
-    "free accounting software",
-  ],
-  authors: [{ name: "dubbl", url: APP_URL }],
-  creator: "dubbl",
-  openGraph: {
-    type: "website",
-    locale: "en_US",
-    url: APP_URL,
-    siteName: "dubbl",
-    title: "dubbl · Open-Source Accounting & Business Management",
+export async function generateMetadata(): Promise<Metadata> {
+  const [presentation, t] = await Promise.all([getPresentation(), getTranslations("PublicMetadata")]);
+  return {
+    title: {
+      default: t("title"),
+      template: "%s · dubbl",
+    },
     description:
-      "Free, open-source double-entry accounting with invoicing, bills, payroll, inventory, projects, and CRM. Self-host or use our cloud.",
-    images: [
-      {
-        url: "/og.jpg",
-        width: 1200,
-        height: 630,
-        alt: "dubbl - Open-source accounting for modern teams",
-      },
+      t("description"),
+    metadataBase: new URL(APP_URL),
+    keywords: [
+      t("keywordOpenSource"),
+      t("keywordBookkeeping"),
+      t("keywordInvoicing"),
+      t("keywordPayable"),
+      t("keywordReceivable"),
+      t("keywordLedger"),
+      "ERP",
+      t("keywordPayroll"),
+      t("keywordInventory"),
+      t("keywordProjects"),
+      "CRM",
+      t("keywordSelfHosted"),
+      t("keywordApiFirst"),
+      t("keywordSmallBusiness"),
+      t("keywordFree"),
     ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "dubbl · Open-Source Accounting & Business Management",
-    description:
-      "Free, open-source double-entry accounting with invoicing, bills, payroll, inventory, projects, and CRM. Self-host or use our cloud.",
-    images: [
-      {
-        url: "/og.jpg",
-        width: 1200,
-        height: 630,
-        alt: "dubbl - Open-source accounting for modern teams",
-      },
-    ],
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
+    authors: [{ name: "dubbl", url: APP_URL }],
+    creator: "dubbl",
+    openGraph: {
+      type: "website",
+      locale: presentation.locale === "fa-IR" ? "fa_IR" : "en_US",
+      url: APP_URL,
+      siteName: "dubbl",
+      title: t("socialTitle"),
+      description:
+        t("socialDescription"),
+      images: [
+        {
+          url: "/og.jpg",
+          width: 1200,
+          height: 630,
+          alt: t("imageAlt"),
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: t("socialTitle"),
+      description:
+        t("socialDescription"),
+      images: [
+        {
+          url: "/og.jpg",
+          width: 1200,
+          height: 630,
+          alt: t("imageAlt"),
+        },
+      ],
+    },
+    robots: {
       index: true,
       follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-video-preview": -1,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+      },
     },
-  },
-  icons: {
-    icon: "/logo.svg",
-    apple: "/web-app-manifest-192x192.png",
-  },
-  manifest: "/manifest.json",
-};
+    icons: {
+      icon: "/logo.svg",
+      apple: "/web-app-manifest-192x192.png",
+    },
+    manifest: "/manifest.json",
+  };
+}
 
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [presentation, messages, now] = await Promise.all([getPresentation(), getMessages(), getNow()]);
+  const [presentation, messages, now, t] = await Promise.all([getPresentation(), getMessages(), getNow(), getTranslations("Docs")]);
   return (
     <html
       lang={presentation.locale}
@@ -133,21 +136,18 @@ export default async function RootLayout({
             <RootProvider
               i18n={{
                 locale: presentation.locale === "fa-IR" ? "fa" : "en",
-                translations:
-                  presentation.locale === "fa-IR"
-                    ? {
-                        search: "جستجو",
-                        searchNoResult: "نتیجه‌ای یافت نشد",
-                        toc: "فهرست مطالب",
-                        tocNoHeadings: "عنوانی وجود ندارد",
-                        lastUpdate: "آخرین به‌روزرسانی",
-                        chooseLanguage: "انتخاب زبان",
-                        nextPage: "صفحه بعدی",
-                        previousPage: "صفحه قبلی",
-                        chooseTheme: "انتخاب تم",
-                        editOnGithub: "ویرایش در گیت‌هاب",
-                      }
-                    : undefined,
+                translations: {
+                  search: t("search"),
+                  searchNoResult: t("searchNoResult"),
+                  toc: t("toc"),
+                  tocNoHeadings: t("tocNoHeadings"),
+                  lastUpdate: t("lastUpdate"),
+                  chooseLanguage: t("chooseLanguage"),
+                  nextPage: t("nextPage"),
+                  previousPage: t("previousPage"),
+                  chooseTheme: t("chooseTheme"),
+                  editOnGithub: t("editOnGithub"),
+                },
               }}
             >
               <SessionProvider>{children}</SessionProvider>

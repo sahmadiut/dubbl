@@ -9,6 +9,7 @@ import { notFound } from "next/navigation";
 import { source } from "@/lib/source";
 import { getMDXComponents } from "@/mdx-components";
 import { getPresentation } from "@/i18n/server";
+import { getTranslations } from "next-intl/server";
 
 export default async function Page(props: {
   params: Promise<{ slug?: string[] }>;
@@ -46,13 +47,13 @@ export async function generateMetadata(props: {
   params: Promise<{ slug?: string[] }>;
 }): Promise<Metadata> {
   const params = await props.params;
-  const { locale } = await getPresentation();
+  const [{ locale }, t] = await Promise.all([getPresentation(), getTranslations("Docs")]);
   const lang = locale === "fa-IR" ? "fa" : "en";
   const page = source.getPage(params.slug, lang);
   if (!page) notFound();
 
   return {
-    title: `${page.data.title} · Dubbl Docs`,
+    title: t("pageTitle", { title: page.data.title }),
     description: page.data.description,
   };
 }

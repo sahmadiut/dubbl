@@ -1,6 +1,7 @@
 import { useTranslations } from "next-intl";
 
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { Shield } from "lucide-react";
 import {
   LegalPageLayout,
@@ -10,11 +11,10 @@ import {
 
 type LegalTranslator = ReturnType<typeof useTranslations<"PublicPricingLegal">>;
 
-export const metadata: Metadata = {
-  title: "Privacy Policy",
-  description:
-    "How dubbl (Mindroot Ltd) collects, uses, and protects your personal data under the UK GDPR.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const metadataT = await getTranslations("PublicMetadata");
+  return { title: metadataT("privacyTitle"), description: metadataT("privacyDescription") };
+}
 
 const getSections = (t: LegalTranslator): LegalSection[] => [
   {

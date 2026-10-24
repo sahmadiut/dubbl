@@ -1,5 +1,11 @@
 # Message catalog foundation
 
+LOC-128 extracts 33 paired documentation chrome/public metadata messages; see
+[ownership, routing contracts and exceptions](DOCS_METADATA_CATALOGS.md).
+Root/legal metadata uses the existing request locale; MDX content remains in
+its bilingual source. LOC-122/009/002 and native Persian/RTL acceptance remain
+independent.
+
 LOC-008 independently accepts the combined operations/reporting slice: 101 route
 components, 56 namespaces and 3,442 paired messages. See
 [combined ownership, residual shared-control audit and exceptions](OPERATIONS_CATALOG_ACCEPTANCE.md).

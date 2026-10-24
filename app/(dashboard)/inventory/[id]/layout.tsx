@@ -1,4 +1,6 @@
 "use client";
+
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { inventoryItemJson, inventoryItemRow, inventoryWriteDownError } from "@/i18n/inventory-item-presentation";
@@ -223,13 +225,13 @@ function InventoryItemWorkspace({ children, id, orgId }: { children: React.React
     try { detail = inventoryDetailMoney(item); }
     catch { moneyError = t("readFailed"); }
   }
-  if (moneyError) return <div className="space-y-3 p-4"><p role="alert">{moneyError}</p><Button onClick={fetchItem}>{t("reloadItem")}</Button></div>;
+  if (moneyError) return <div className="space-y-3 p-4"><p role="alert">{moneyError}</p><Button onClick={fetchItem} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >{t("reloadItem")}</Button></div>;
 
   if (!item || !detail) {
     return (
       <div className="space-y-4 pt-12 text-center">
         <p className="text-sm text-muted-foreground">{t("notFound")}</p>
-        <Button variant="outline" size="sm" onClick={() => router.push("/inventory")}>
+        <Button variant="outline" size="sm" onClick={() => router.push("/inventory")} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
           {t("backToInventory")}</Button>
       </div>
     );
@@ -263,12 +265,12 @@ function InventoryItemWorkspace({ children, id, orgId }: { children: React.React
           onClick={() => router.push("/inventory")}
           className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors mb-6"
         >
-          <ArrowLeft className="size-3.5" />
+          <ArrowLeft className="size-3.5 rtl:rotate-180" />
           {t("backInventory")}</button>
 
         {/* Header */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-5">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <div className={cn(
               "flex size-10 items-center justify-center rounded-xl",
               isLowStock
@@ -283,8 +285,8 @@ function InventoryItemWorkspace({ children, id, orgId }: { children: React.React
               )} />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-lg font-semibold">{item.name}</h1>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-lg font-semibold"><BidiText>{item.name}</BidiText></h1>
                 {isLowStock && (
                   <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300" title={t("lowStockHelp")}>
                     {t("runningLow")}</Badge>
@@ -298,21 +300,21 @@ function InventoryItemWorkspace({ children, id, orgId }: { children: React.React
                 </Badge>
               </div>
               <p className="text-sm text-muted-foreground">
-                {item.code}{item.sku ? ` · ${item.sku}` : ""}{item.category ? ` · ${item.category}` : ""}
+                <IdentifierText>{item.code}</IdentifierText><IdentifierText>{item.sku ? ` · ${item.sku}` : ""}</IdentifierText>{item.category ? ` · ${item.category}` : ""}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Button
               size="sm"
               variant="outline"
               onClick={handleToggleActive}
               title={item.isActive ? t("hideItemHelp") : t("showItemHelp")}
-            >
+             className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
               {item.isActive ? (
-                <><PowerOff className="mr-1.5 size-3.5" />{t("hideItem")}</>
+                <><PowerOff className="me-1.5 size-3.5" />{t("hideItem")}</>
               ) : (
-                <><Power className="mr-1.5 size-3.5" />{t("showItem")}</>
+                <><Power className="me-1.5 size-3.5" />{t("showItem")}</>
               )}
             </Button>
             <Button
@@ -320,16 +322,16 @@ function InventoryItemWorkspace({ children, id, orgId }: { children: React.React
               variant="outline"
               onClick={() => setWriteDownOpen(true)}
               title={t("writeDownHelp")}
-            >
-              <TrendingDown className="mr-1.5 size-3.5" />
+             className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
+              <TrendingDown className="me-1.5 size-3.5" />
               {t("writeDown")}</Button>
             <Button
               size="sm"
               variant="outline"
               onClick={() => setAdjustOpen(true)}
               title={t("adjustHelp")}
-            >
-              <ArrowUpDown className="mr-1.5 size-3.5" />
+             className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
+              <ArrowUpDown className="me-1.5 size-3.5" />
               {t("changeCount")}</Button>
           </div>
         </div>
@@ -347,9 +349,9 @@ function InventoryItemWorkspace({ children, id, orgId }: { children: React.React
               "mt-1.5 text-2xl font-bold font-mono tabular-nums break-words",
               isLowStock && "text-amber-600 dark:text-amber-400"
             )}>
-              {item.quantityOnHand}
+              <BidiText>{item.quantityOnHand}</BidiText>
             </p>
-            <div className="mt-2 flex items-center gap-2">
+            <div className="mt-2 flex items-center gap-2 flex-wrap">
               <div className="h-1.5 flex-1 rounded-full bg-muted overflow-hidden">
                 <motion.div
                   className={cn(
@@ -362,7 +364,7 @@ function InventoryItemWorkspace({ children, id, orgId }: { children: React.React
                 />
               </div>
               <span className="text-[10px] text-muted-foreground tabular-nums">
-                {t("reorderAt", { count: item.reorderPoint })}
+                <BidiText>{t("reorderAt", { count: item.reorderPoint })}</BidiText>
               </span>
             </div>
           </motion.div>
@@ -374,10 +376,10 @@ function InventoryItemWorkspace({ children, id, orgId }: { children: React.React
           >
             <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("valueOfStock")}</p>
             <p className="mt-1.5 text-2xl font-bold font-mono tabular-nums break-words">
-              {formatMoney(detail.priceValue)}
+              <BidiText dir="ltr">{formatMoney(detail.priceValue)}</BidiText>
             </p>
             <p className="mt-1 text-[11px] text-muted-foreground">
-              {t("stockCost", { count: item.quantityOnHand, amount: formatMoney(detail.purchase) })}
+              <BidiText>{t("stockCost", { count: item.quantityOnHand, amount: formatMoney(detail.purchase) })}</BidiText>
             </p>
           </motion.div>
           <motion.div
@@ -388,10 +390,10 @@ function InventoryItemWorkspace({ children, id, orgId }: { children: React.React
           >
             <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("sellingPrice")}</p>
             <p className="mt-1.5 text-2xl font-bold font-mono tabular-nums break-words text-emerald-600 dark:text-emerald-400">
-              {formatMoney(detail.sale)}
+              <BidiText dir="ltr">{formatMoney(detail.sale)}</BidiText>
             </p>
             <p className="mt-1 text-[11px] text-muted-foreground">
-              {t("costAmount", { amount: formatMoney(detail.purchase) })}
+              <BidiText>{t("costAmount", { amount: formatMoney(detail.purchase) })}</BidiText>
             </p>
           </motion.div>
           <motion.div
@@ -405,7 +407,7 @@ function InventoryItemWorkspace({ children, id, orgId }: { children: React.React
               "mt-1.5 text-2xl font-bold font-mono tabular-nums break-words",
               detail.profit > 0n ? "text-emerald-600 dark:text-emerald-400" : detail.profit < 0n ? "text-red-600" : ""
             )}>
-              {detail.margin}
+              <BidiText>{detail.margin}</BidiText>
             </p>
             <p className="mt-1 text-[11px] text-muted-foreground">
               {detail.purchase > 0n ? t("profitPerUnit", { amount: formatMoney(detail.profit) }) : t("noCost")}
@@ -452,34 +454,34 @@ function InventoryItemWorkspace({ children, id, orgId }: { children: React.React
             <div className="space-y-4 px-4">
               <div className="rounded-lg bg-muted p-3">
                 <p className="text-xs text-muted-foreground">{t("unitsNow")}</p>
-                <p className="text-xl font-bold font-mono tabular-nums break-words">{item.quantityOnHand}</p>
+                <p className="text-xl font-bold font-mono tabular-nums break-words"><BidiText>{item.quantityOnHand}</BidiText></p>
               </div>
               <div className="space-y-2">
-                <Label>{t("addRemove")}</Label>
+                <Label htmlFor="inventory-field-1">{t("addRemove")}</Label>
                 <Input
                   type="number"
                   value={adjustment}
                   onChange={(e) => setAdjustment(e.target.value)}
                   placeholder={t("adjustExample")}
-                />
+                 dir="ltr" aria-label={t("addRemove")} id="inventory-field-1" />
                 {adjustment && parseInt(adjustment) !== 0 && (
                   <p className="text-xs text-muted-foreground">
-                    {t("newCount")} <span className="font-mono font-medium">{item.quantityOnHand + parseInt(adjustment)}</span>
+                    {t("newCount")} <span className="font-mono font-medium"><BidiText>{item.quantityOnHand + parseInt(adjustment)}</BidiText></span>
                   </p>
                 )}
               </div>
               <div className="space-y-2">
-                <Label>{t("reasonRequired")}</Label>
+                <Label htmlFor="inventory-field-2">{t("reasonRequired")}</Label>
                 <Input
                   value={adjustReason}
                   onChange={(e) => setAdjustReason(e.target.value)}
                   placeholder={t("reasonExample")}
-                />
+                 dir="auto" aria-label={t("reasonRequired")} id="inventory-field-2" />
               </div>
             </div>
             <SheetFooter>
-              <Button variant="outline" onClick={() => setAdjustOpen(false)}>{t("cancel")}</Button>
-              <Button onClick={handleAdjust} className="bg-emerald-600 hover:bg-emerald-700">
+              <Button variant="outline" onClick={() => setAdjustOpen(false)} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >{t("cancel")}</Button>
+              <Button onClick={handleAdjust} className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]">
                 {t("saveCount")}</Button>
             </SheetFooter>
           </SheetContent>
@@ -501,7 +503,7 @@ function InventoryItemWorkspace({ children, id, orgId }: { children: React.React
               <div className="rounded-lg bg-muted p-3">
                 <p className="text-xs text-muted-foreground">{t("currentBookValue")}</p>
                 <p className="text-xl font-bold font-mono tabular-nums break-words">
-                  {formatMoney(detail.carrying)}
+                  <BidiText dir="ltr">{formatMoney(detail.carrying)}</BidiText>
                 </p>
               </div>
               <div className="space-y-2">
@@ -511,11 +513,11 @@ function InventoryItemWorkspace({ children, id, orgId }: { children: React.React
                   onChange={(event) => setWriteDownAmount(event.target.value)}
                   aria-invalid={!!writeDownError} aria-describedby="inventory-write-off-feedback"
                   disabled={writeDownBusy} placeholder="0.00"
-                />
+                 dir="ltr" aria-label={t("writeDownAmount")} />
                 <p className="text-xs text-muted-foreground">{t("amountHelp")}</p>
                 <div id="inventory-write-off-feedback">
                   {writeDownError && <p role="alert" className="text-sm text-destructive">{writeDownError}</p>}
-                  {writeDownPreview && <p className="text-sm break-words">{t("writeDownPreview", { amount: formatMoney(writeDownPreview.amount), remaining: formatMoney(writeDownPreview.remaining) })}</p>}
+                  {writeDownPreview && <p className="text-sm break-words"><BidiText>{t("writeDownPreview", { amount: formatMoney(writeDownPreview.amount), remaining: formatMoney(writeDownPreview.remaining) })}</BidiText></p>}
                 </div>
               </div>
               <div className="space-y-2">
@@ -525,12 +527,12 @@ function InventoryItemWorkspace({ children, id, orgId }: { children: React.React
                   value={writeDownReason}
                   onChange={(e) => setWriteDownReason(e.target.value)}
                   placeholder={t("writeDownExample")}
-                />
+                 dir="auto" aria-label={t("reasonRequired")} />
               </div>
             </div>
             <SheetFooter>
-              <Button variant="outline" disabled={writeDownBusy} onClick={() => { setWriteDownOpen(false); setWriteDownAmount(""); setWriteDownReason(""); }}>{t("cancel")}</Button>
-              <Button onClick={handleWriteDown} disabled={writeDownBusy || !writeDownPreview || !writeDownReason.trim()} className="bg-emerald-600 hover:bg-emerald-700">
+              <Button variant="outline" disabled={writeDownBusy} onClick={() => { setWriteDownOpen(false); setWriteDownAmount(""); setWriteDownReason(""); }} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >{t("cancel")}</Button>
+              <Button onClick={handleWriteDown} disabled={writeDownBusy || !writeDownPreview || !writeDownReason.trim()} className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]">
                 {t("writeDown")}</Button>
             </SheetFooter>
           </SheetContent>

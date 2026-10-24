@@ -1,4 +1,6 @@
 "use client";
+
+import { BidiText } from "@/components/ui/bidi-text";
 import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 import { currencyLabel } from "@/i18n/currency-labels";
 
@@ -107,10 +109,10 @@ export default function InventoryItemVariantsPage() {
 
   return (
     <>
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4 flex-wrap">
         <h3 className="text-sm font-semibold">{t("variants")}</h3>
-        <Button size="sm" variant="outline" onClick={() => setAddOpen(true)}>
-          <Plus className="mr-1.5 size-3.5" />
+        <Button size="sm" variant="outline" onClick={() => setAddOpen(true)} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
+          <Plus className="me-1.5 size-3.5" />
           {t("addVariant")}
         </Button>
       </div>
@@ -122,18 +124,18 @@ export default function InventoryItemVariantsPage() {
           description={t("emptyVariantsHelp")}
           compact
         >
-          <Button size="sm" onClick={() => setAddOpen(true)} className="bg-emerald-600 hover:bg-emerald-700">
-            <Plus className="mr-1.5 size-3.5" />
+          <Button size="sm" onClick={() => setAddOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]">
+            <Plus className="me-1.5 size-3.5" />
             {t("addVariant")}
           </Button>
         </EmptyState>
       ) : (
         <div className="rounded-xl border bg-card divide-y">
           {variants.map((v) => (
-            <div key={v.id} className="flex items-center gap-4 p-4">
+            <div key={v.id} className="flex items-center gap-4 p-4 flex-wrap">
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium truncate">{v.name}</p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-sm font-medium whitespace-normal [overflow-wrap:anywhere]"><BidiText>{v.name}</BidiText></p>
                   <Badge variant="outline" className={cn(
                     "text-[10px]",
                     v.isActive !== false
@@ -145,20 +147,20 @@ export default function InventoryItemVariantsPage() {
                 </div>
                 <div className="flex items-center gap-3 mt-1 flex-wrap">
                   {v.sku && (
-                    <span className="text-xs text-muted-foreground">{t("skuValue", { value: v.sku })}</span>
+                    <span className="text-xs text-muted-foreground"><BidiText>{t("skuValue", { value: v.sku })}</BidiText></span>
                   )}
                   {v.purchasePrice != null && (
-                    <span className="text-xs text-muted-foreground">{t("costValue", { value: exactPriceDisplay(v.purchasePrice, "USD", unitPresentation) })}</span>
+                    <span className="text-xs text-muted-foreground"><BidiText>{t("costValue", { value: exactPriceDisplay(v.purchasePrice, "USD", unitPresentation) })}</BidiText></span>
                   )}
                   {v.salePrice != null && (
-                    <span className="text-xs text-muted-foreground">{t("saleValue", { value: exactPriceDisplay(v.salePrice, "USD", unitPresentation) })}</span>
+                    <span className="text-xs text-muted-foreground"><BidiText>{t("saleValue", { value: exactPriceDisplay(v.salePrice, "USD", unitPresentation) })}</BidiText></span>
                   )}
                   {v.quantityOnHand != null && (
-                    <span className="text-xs text-muted-foreground">{t("quantityValue", { value: String(v.quantityOnHand) })}</span>
+                    <span className="text-xs text-muted-foreground"><BidiText>{t("quantityValue", { value: String(v.quantityOnHand) })}</BidiText></span>
                   )}
                   {v.options && Object.entries(v.options).map(([key, val]) => (
                     <Badge key={key} variant="secondary" className="text-[10px]">
-                      {key}: {String(val)}
+                      <BidiText>{key}</BidiText>: <BidiText>{String(val)}</BidiText>
                     </Badge>
                   ))}
                 </div>
@@ -175,53 +177,53 @@ export default function InventoryItemVariantsPage() {
           </SheetHeader>
           <div className="space-y-4 px-4">
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("nameRequired")}</Label>
+              <Label className="text-xs" htmlFor="inventory-field-1">{t("nameRequired")}</Label>
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder={t("variantExample")}
-              />
+               dir="auto" aria-label={t("nameRequired")} id="inventory-field-1" />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("sku")}</Label>
+              <Label className="text-xs" htmlFor="inventory-field-2">{t("sku")}</Label>
               <Input
                 value={sku}
                 onChange={(e) => setSku(e.target.value)}
                 placeholder={t("optionalSku")}
-              />
+               dir="ltr" aria-label={t("sku")} id="inventory-field-2" />
             </div>
             <div className="grid gap-4 grid-cols-2">
               <div className="space-y-1.5">
-                <Label className="text-xs">{t("purchasePrice")}</Label>
+                <Label className="text-xs" htmlFor="inventory-field-3">{t("purchasePrice")}</Label>
                 <CurrencyInput
                   prefix={currencyLabel("USD", unitPresentation.locale, "$")}
                   value={purchasePrice}
                   onChange={setPurchasePrice}
-                />
+                 aria-label={t("purchasePrice")} id="inventory-field-3" />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">{t("salePrice")}</Label>
+                <Label className="text-xs" htmlFor="inventory-field-4">{t("salePrice")}</Label>
                 <CurrencyInput
                   prefix={currencyLabel("USD", unitPresentation.locale, "$")}
                   value={salePrice}
                   onChange={setSalePrice}
-                />
+                 aria-label={t("salePrice")} id="inventory-field-4" />
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("quantityOnHand")}</Label>
+              <Label className="text-xs" htmlFor="inventory-field-5">{t("quantityOnHand")}</Label>
               <Input
                 type="number"
                 min={0}
                 value={quantity}
                 onChange={(e) => setQuantity(e.target.value)}
                 placeholder="0"
-              />
+               dir="ltr" aria-label={t("quantityOnHand")} id="inventory-field-5" />
             </div>
           </div>
           <SheetFooter>
-            <Button variant="outline" onClick={() => setAddOpen(false)}>{t("cancel")}</Button>
-            <Button onClick={handleAdd} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700">
+            <Button variant="outline" onClick={() => setAddOpen(false)} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >{t("cancel")}</Button>
+            <Button onClick={handleAdd} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]">
               {t("addVariant")}
             </Button>
           </SheetFooter>

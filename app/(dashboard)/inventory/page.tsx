@@ -1,4 +1,6 @@
 "use client";
+
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { inventoryListJson, inventoryBulkJson, inventoryImportJson, inventoryChartJson } from "@/i18n/inventory-item-presentation";
@@ -408,7 +410,7 @@ export default function InventoryPage() {
           title={t("emptyTitle")}
           description={t("emptyDescription")}
         >
-          <Button onClick={() => openDrawer("inventory")} className="bg-emerald-600 hover:bg-emerald-700">
+          <Button onClick={() => openDrawer("inventory")} className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]">
             {t("newItem")}</Button>
         </EmptyState>
       </ContentReveal>
@@ -420,40 +422,40 @@ export default function InventoryPage() {
       {/* Stats */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-xl border bg-card p-4">
-          <div className="flex items-center gap-2 text-muted-foreground">
+          <div className="flex items-center gap-2 text-muted-foreground flex-wrap">
             <Package className="size-3.5" />
             <span className="text-[11px] font-medium uppercase tracking-wide">{t("totalItems")}</span>
           </div>
-          <p className="mt-2 text-2xl font-bold font-mono tabular-nums truncate">{summary.totalItems}</p>
+          <p className="mt-2 text-2xl font-bold font-mono tabular-nums whitespace-normal [overflow-wrap:anywhere]">{summary.totalItems}</p>
         </div>
         <div className="rounded-xl border bg-card p-4">
-          <div className="flex items-center gap-2 text-muted-foreground">
+          <div className="flex items-center gap-2 text-muted-foreground flex-wrap">
             <DollarSign className="size-3.5" />
             <span className="text-[11px] font-medium uppercase tracking-wide">{t("valueOfStock")}</span>
           </div>
-          <p className="mt-2 text-2xl font-bold font-mono tabular-nums truncate">{formatMoney(BigInt(summary.totalValueMinor))}</p>
+          <p className="mt-2 text-2xl font-bold font-mono tabular-nums whitespace-normal [overflow-wrap:anywhere]"><BidiText dir="ltr">{formatMoney(BigInt(summary.totalValueMinor))}</BidiText></p>
         </div>
         <div
           className="rounded-xl border bg-card p-4 cursor-pointer hover:bg-muted/40 transition-colors"
           onClick={() => router.push("/inventory/alerts")}
         >
-          <div className="flex items-center gap-2 text-muted-foreground">
+          <div className="flex items-center gap-2 text-muted-foreground flex-wrap">
             <AlertTriangle className={cn("size-3.5", summary.lowStockCount > 0 && "text-amber-500")} />
             <span className="text-[11px] font-medium uppercase tracking-wide">{t("runningLow")}</span>
           </div>
           <p className={cn(
-            "mt-2 text-2xl font-bold font-mono tabular-nums truncate",
+            "mt-2 text-2xl font-bold font-mono tabular-nums whitespace-normal [overflow-wrap:anywhere]",
             summary.lowStockCount > 0 && "text-amber-600 dark:text-amber-400"
           )}>
             {summary.lowStockCount}
           </p>
         </div>
         <div className="rounded-xl border bg-card p-4">
-          <div className="flex items-center gap-2 text-muted-foreground">
+          <div className="flex items-center gap-2 text-muted-foreground flex-wrap">
             <TrendingUp className="size-3.5" />
             <span className="text-[11px] font-medium uppercase tracking-wide">{t("avgMargin")}</span>
           </div>
-          <p className="mt-2 text-2xl font-bold font-mono tabular-nums truncate">
+          <p className="mt-2 text-2xl font-bold font-mono tabular-nums whitespace-normal [overflow-wrap:anywhere]">
             {summary.avgMargin > 0 ? `${inventoryAverageMargin(summary.avgMarginExact)}%` : "-"}
           </p>
         </div>
@@ -462,18 +464,19 @@ export default function InventoryPage() {
       {/* Movement Chart */}
       {chartData.length > 0 && (
         <div className="rounded-xl border bg-card p-4">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-3 flex-wrap">
             <p className="text-sm font-medium">{t("stockMovements")}</p>
             <select
               value={chartPeriod}
               onChange={(e) => setChartPeriod(e.target.value)}
               className="rounded-md border bg-background px-2 py-1 text-xs"
-            >
+             dir="auto" aria-label={t("stockMovements")} >
               <option value="30d">{t("days30")}</option>
               <option value="90d">{t("days90")}</option>
               <option value="12m">{t("months12")}</option>
             </select>
           </div>
+          <div dir="ltr" className="min-w-0">
           <ResponsiveContainer width="100%" height={200}>
             <AreaChart data={chartData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
               <defs>
@@ -495,6 +498,7 @@ export default function InventoryPage() {
               <Area type="monotone" dataKey="out" name={t("out")} stroke="#ef4444" fill="url(#outGrad)" strokeWidth={1.5} />
             </AreaChart>
           </ResponsiveContainer>
+          </div>
         </div>
       )}
 
@@ -511,7 +515,7 @@ export default function InventoryPage() {
               transition={{ duration: 0.25, ease: "easeOut" }}
               className="flex items-center gap-2 flex-wrap"
             >
-              <div className="flex items-center gap-2 mr-auto">
+              <div className="flex items-center gap-2 me-auto flex-wrap">
                 <Checkbox
                   checked={isAllSelected ? true : isPartialSelected ? "indeterminate" : false}
                   onCheckedChange={toggleSelectAll}
@@ -530,16 +534,16 @@ export default function InventoryPage() {
                     transition={{ duration: 0.2 }}
                     className="flex items-center gap-2 flex-wrap"
                   >
-                    <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => bulkAction("set_active")} disabled={bulkLoading} title={t("bulkShowHelp")}>
-                      <Power className="size-3 mr-1.5" />{t("show")}</Button>
-                    <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => bulkAction("set_inactive")} disabled={bulkLoading} title={t("bulkHideHelp")}>
-                      <PowerOff className="size-3 mr-1.5" />{t("hide")}</Button>
-                    <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setBulkCategoryOpen(true)} disabled={bulkLoading}>
-                      <Tag className="size-3 mr-1.5" />{t("category")}</Button>
-                    <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setBulkAdjustOpen(true)} disabled={bulkLoading} title={t("bulkAdjustHelp")}>
-                      <ArrowUpDown className="size-3 mr-1.5" />{t("changeCountShort")}</Button>
-                    <Button size="sm" variant="outline" className="h-7 text-xs text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/30" onClick={handleBulkDelete} disabled={bulkLoading}>
-                      <Trash2 className="size-3 mr-1.5" />{t("delete")}</Button>
+                    <Button size="sm" variant="outline" className="h-7 text-xs h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" onClick={() => bulkAction("set_active")} disabled={bulkLoading} title={t("bulkShowHelp")}>
+                      <Power className="size-3 me-1.5" />{t("show")}</Button>
+                    <Button size="sm" variant="outline" className="h-7 text-xs h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" onClick={() => bulkAction("set_inactive")} disabled={bulkLoading} title={t("bulkHideHelp")}>
+                      <PowerOff className="size-3 me-1.5" />{t("hide")}</Button>
+                    <Button size="sm" variant="outline" className="h-7 text-xs h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" onClick={() => setBulkCategoryOpen(true)} disabled={bulkLoading}>
+                      <Tag className="size-3 me-1.5" />{t("category")}</Button>
+                    <Button size="sm" variant="outline" className="h-7 text-xs h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" onClick={() => setBulkAdjustOpen(true)} disabled={bulkLoading} title={t("bulkAdjustHelp")}>
+                      <ArrowUpDown className="size-3 me-1.5" />{t("changeCountShort")}</Button>
+                    <Button size="sm" variant="outline" className="h-7 text-xs text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/30 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" onClick={handleBulkDelete} disabled={bulkLoading}>
+                      <Trash2 className="size-3 me-1.5" />{t("delete")}</Button>
                     {bulkLoading && <Loader2 className="size-3.5 animate-spin text-muted-foreground" />}
                   </motion.div>
                 )}
@@ -548,7 +552,7 @@ export default function InventoryPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 text-xs"
+                className="h-7 text-xs h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
                 onClick={() => { setSelectMode(false); setSelected(new Set()); }}
               >
                 {t("done")}</Button>
@@ -571,14 +575,14 @@ export default function InventoryPage() {
                 </TabsList>
               </Tabs>
 
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5" onClick={() => setSelectMode(true)}>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" onClick={() => setSelectMode(true)}>
                   {t("select")}</Button>
-                <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5" onClick={() => setImportOpen(true)}>
+                <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" onClick={() => setImportOpen(true)}>
                   <Upload className="size-3" />
                   <span className="hidden sm:inline">{t("import")}</span>
                 </Button>
-                <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5" onClick={exportCsv}>
+                <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" onClick={exportCsv}>
                   <Download className="size-3" />
                   <span className="hidden sm:inline">{t("export")}</span>
                 </Button>
@@ -589,20 +593,20 @@ export default function InventoryPage() {
 
         {/* Search, filters, sort - always visible */}
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <div className="relative flex-1 sm:max-w-xs">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+          <div className="relative flex-1 sm:max-w-xs flex-wrap">
+            <Search className="pointer-events-none absolute start-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
               ref={searchRef}
               placeholder={t("searchAll")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 pr-8 h-8 text-sm"
-            />
+              className="ps-9 pe-8 h-8 text-sm"
+             dir="auto" aria-label={t("searchAll")} />
             {search && (
               <button
                 onClick={() => setSearch("")}
                 aria-label={t("clearSearch")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="absolute end-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
                 <X className="size-3.5" />
               </button>
@@ -619,8 +623,8 @@ export default function InventoryPage() {
           </div>
 
           <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortKey)}>
-            <SelectTrigger className="h-8 w-full sm:w-[140px] text-xs">
-              <ArrowUpDown className="size-3 mr-1.5 text-muted-foreground" />
+            <SelectTrigger className="h-8 w-full sm:w-[140px] text-xs data-[size=default]:h-auto data-[size=sm]:h-auto min-h-8 whitespace-normal *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal *:data-[slot=select-value]:text-start *:data-[slot=select-value]:min-w-0" aria-label={t("sortField")} >
+              <ArrowUpDown className="size-3 me-1.5 text-muted-foreground" />
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -638,7 +642,7 @@ export default function InventoryPage() {
 
       {/* Item list */}
       {refetching || pendingSearch ? (
-        <div className="flex items-center justify-center py-20">
+        <div className="flex items-center justify-center py-20 flex-wrap">
           <div className="brand-loader" aria-label={t("loading")}>
             <div className="brand-loader-circle brand-loader-circle-1" />
             <div className="brand-loader-circle brand-loader-circle-2" />
@@ -698,7 +702,7 @@ export default function InventoryPage() {
                 </div>
 
                 {/* Icon + info */}
-                <div className="flex items-center gap-3 flex-1 min-w-0">
+                <div className="flex items-center gap-3 flex-1 min-w-0 flex-wrap">
                   <div className={cn(
                     "flex size-9 shrink-0 items-center justify-center rounded-lg transition-colors duration-200",
                     isLow ? "bg-amber-50 dark:bg-amber-950/40" : item.isActive ? "bg-emerald-50 dark:bg-emerald-950/40" : "bg-muted"
@@ -708,9 +712,9 @@ export default function InventoryPage() {
                       isLow ? "text-amber-600 dark:text-amber-400" : item.isActive ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"
                     )} />
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium truncate">{item.name}</p>
+                  <div className="min-w-0 flex-1 flex-wrap">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-medium whitespace-normal [overflow-wrap:anywhere]"><BidiText>{item.name}</BidiText></p>
                       {isLow && (
                         <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300 text-[10px] px-1.5 py-0" title={t("lowHelp")}>{t("runningLow")}</Badge>
                       )}
@@ -718,9 +722,9 @@ export default function InventoryPage() {
                         <Badge variant="outline" className="text-[10px] px-1.5 py-0" title={t("hiddenHelp")}>{t("hidden")}</Badge>
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {item.code}
-                      {item.sku ? ` · ${item.sku}` : ""}
+                    <p className="text-xs text-muted-foreground whitespace-normal [overflow-wrap:anywhere]">
+                      <IdentifierText>{item.code}</IdentifierText>
+                      <IdentifierText>{item.sku ? ` · ${item.sku}` : ""}</IdentifierText>
                       {item.category ? ` · ${item.category}` : ""}
                     </p>
                   </div>
@@ -729,7 +733,7 @@ export default function InventoryPage() {
                 {/* Stock bar */}
                 <div className="hidden sm:flex flex-col items-end gap-1 w-24">
                   <span className={cn("text-xs font-mono tabular-nums font-medium", isLow ? "text-amber-600 dark:text-amber-400" : "")}>
-                    {item.quantityOnHand}
+                    <BidiText>{item.quantityOnHand}</BidiText>
                   </span>
                   <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
                     <motion.div
@@ -743,13 +747,13 @@ export default function InventoryPage() {
 
                 {/* Prices */}
                 <div className="hidden md:flex flex-col items-end gap-0.5 w-24">
-                  <span className="text-xs font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{formatMoney(BigInt(item.salePriceMinor))}</span>
-                  <span className="text-[11px] font-mono tabular-nums text-muted-foreground">{t("costAmount", { amount: formatMoney(BigInt(item.purchasePriceMinor)) })}</span>
+                  <span className="text-xs font-mono tabular-nums text-emerald-600 dark:text-emerald-400"><BidiText dir="ltr">{formatMoney(BigInt(item.salePriceMinor))}</BidiText></span>
+                  <span className="text-[11px] font-mono tabular-nums text-muted-foreground"><BidiText>{t("costAmount", { amount: formatMoney(BigInt(item.purchasePriceMinor)) })}</BidiText></span>
                 </div>
 
                 {/* Value */}
-                <div className="hidden lg:block text-right w-24">
-                  <p className="text-xs font-mono tabular-nums font-medium">{formatMoney(BigInt(item.quantityOnHand) * BigInt(item.purchasePrice))}</p>
+                <div className="hidden lg:block text-end w-24">
+                  <p className="text-xs font-mono tabular-nums font-medium"><BidiText dir="ltr">{formatMoney(BigInt(item.quantityOnHand) * BigInt(item.purchasePrice))}</BidiText></p>
                   <p className="text-[11px] text-muted-foreground">{t("value")}</p>
                 </div>
 
@@ -757,7 +761,7 @@ export default function InventoryPage() {
                   "shrink-0 overflow-hidden transition-all duration-200 ease-out",
                   selectMode ? "w-0 opacity-0" : "w-4 opacity-100"
                 )}>
-                  <ChevronRight className="size-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />
+                  <ChevronRight className="size-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors rtl:rotate-180" />
                 </div>
               </div>
             );
@@ -766,7 +770,7 @@ export default function InventoryPage() {
           {!hasMore && items.length > 0 && (
             <div className="py-3 text-center">
               <span className="text-[11px] text-muted-foreground">
-                {t("showingAll", { count: items.length })}
+                <BidiText>{t("showingAll", { count: items.length })}</BidiText>
               </span>
             </div>
           )}
@@ -777,7 +781,7 @@ export default function InventoryPage() {
 
       {/* Infinite scroll sentinel */}
       {hasMore && !refetching && (
-        <div ref={sentinelRef} className="flex items-center justify-center py-6">
+        <div ref={sentinelRef} className="flex items-center justify-center py-6 flex-wrap">
           {loadingMore && (
             <Loader2 className="size-5 animate-spin text-muted-foreground" />
           )}
@@ -789,14 +793,14 @@ export default function InventoryPage() {
         <SheetContent>
           <SheetHeader><SheetTitle>{t("setCategory")}</SheetTitle></SheetHeader>
           <div className="space-y-4 px-4">
-            <p className="text-sm text-muted-foreground">{t("bulkCategoryHelp", { count: selectionCount })}</p>
+            <p className="text-sm text-muted-foreground"><BidiText>{t("bulkCategoryHelp", { count: selectionCount })}</BidiText></p>
             <div className="space-y-2">
-              <Label>{t("category")}</Label>
+              <Label htmlFor="inventory-field-1">{t("category")}</Label>
               <Input
                 value={bulkCategory}
                 onChange={(e) => setBulkCategory(e.target.value)}
                 placeholder={t("categoryExample")}
-              />
+               dir="auto" aria-label={t("category")} id="inventory-field-1" />
               {categories.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {categories.map((c) => (
@@ -816,7 +820,7 @@ export default function InventoryPage() {
             </div>
           </div>
           <SheetFooter>
-            <Button variant="outline" onClick={() => setBulkCategoryOpen(false)}>{t("cancel")}</Button>
+            <Button variant="outline" onClick={() => setBulkCategoryOpen(false)} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >{t("cancel")}</Button>
             <Button
               onClick={async () => {
                 if (!await bulkAction("set_category", { category: bulkCategory })) return;
@@ -824,7 +828,7 @@ export default function InventoryPage() {
                 setBulkCategory("");
               }}
               disabled={bulkLoading}
-              className="bg-emerald-600 hover:bg-emerald-700"
+              className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
             >
               {bulkLoading ? t("saving") : t("apply")}
             </Button>
@@ -837,27 +841,27 @@ export default function InventoryPage() {
         <SheetContent>
           <SheetHeader><SheetTitle>{t("changeCount")}</SheetTitle></SheetHeader>
           <div className="space-y-4 px-4">
-            <p className="text-sm text-muted-foreground">{t("bulkAdjustDescription", { count: selectionCount })}</p>
+            <p className="text-sm text-muted-foreground"><BidiText>{t("bulkAdjustDescription", { count: selectionCount })}</BidiText></p>
             <div className="space-y-2">
-              <Label>{t("addRemove")}</Label>
+              <Label htmlFor="inventory-field-2">{t("addRemove")}</Label>
               <Input
                 type="number"
                 value={bulkAdjustment}
                 onChange={(e) => setBulkAdjustment(e.target.value)}
                 placeholder={t("adjustExample")}
-              />
+               dir="ltr" aria-label={t("addRemove")} id="inventory-field-2" />
             </div>
             <div className="space-y-2">
-              <Label>{t("reason")}</Label>
+              <Label htmlFor="inventory-field-3">{t("reason")}</Label>
               <Input
                 value={bulkAdjustReason}
                 onChange={(e) => setBulkAdjustReason(e.target.value)}
                 placeholder={t("reasonExample")}
-              />
+               dir="auto" aria-label={t("reason")} id="inventory-field-3" />
             </div>
           </div>
           <SheetFooter>
-            <Button variant="outline" onClick={() => setBulkAdjustOpen(false)}>{t("cancel")}</Button>
+            <Button variant="outline" onClick={() => setBulkAdjustOpen(false)} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >{t("cancel")}</Button>
             <Button
               onClick={async () => {
                 let adj: number | undefined;
@@ -870,7 +874,7 @@ export default function InventoryPage() {
                 setBulkAdjustReason("");
               }}
               disabled={bulkLoading}
-              className="bg-emerald-600 hover:bg-emerald-700"
+              className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
             >
               {bulkLoading ? t("saving") : t("saveCount")}
             </Button>
@@ -886,7 +890,7 @@ export default function InventoryPage() {
             <p className="text-sm text-muted-foreground">
               {t("importColumns")}</p>
             <div className="space-y-2">
-              <Label>{t("csvFile")}</Label>
+              <Label htmlFor="inventory-field-4">{t("csvFile")}</Label>
               <Input
                 type="file"
                 accept=".csv"
@@ -894,22 +898,22 @@ export default function InventoryPage() {
                   setImportFile(e.target.files?.[0] || null);
                   setImportResult(null);
                 }}
-              />
+               dir="ltr" aria-label={t("csvFile")} id="inventory-field-4" />
             </div>
             {importResult && (
               <div className="rounded-lg border p-3 space-y-2">
                 <p className="text-sm font-medium">{t("importResults")}</p>
-                <div className="flex gap-4 text-sm">
-                  <span className="text-emerald-600">{t("importCreated", { count: importResult.created })}</span>
-                  <span className="text-blue-600">{t("importUpdated", { count: importResult.updated })}</span>
+                <div className="flex gap-4 text-sm flex-wrap">
+                  <span className="text-emerald-600"><BidiText>{t("importCreated", { count: importResult.created })}</BidiText></span>
+                  <span className="text-blue-600"><BidiText>{t("importUpdated", { count: importResult.updated })}</BidiText></span>
                   {importResult.errors.length > 0 && (
-                    <span className="text-red-600">{t("importErrors", { count: importResult.errors.length })}</span>
+                    <span className="text-red-600"><BidiText>{t("importErrors", { count: importResult.errors.length })}</BidiText></span>
                   )}
                 </div>
                 {importResult.errors.length > 0 && (
                   <div className="max-h-32 overflow-y-auto text-xs space-y-1">
                     {importResult.errors.map((err, i) => (
-                      <p key={i} className="text-red-600">{t("importRow", { row: err.row, message: t("rowError") })}</p>
+                      <p key={i} className="text-red-600"><BidiText>{t("importRow", { row: err.row, message: t("rowError") })}</BidiText></p>
                     ))}
                   </div>
                 )}
@@ -917,11 +921,11 @@ export default function InventoryPage() {
             )}
           </div>
           <SheetFooter>
-            <Button variant="outline" onClick={() => setImportOpen(false)}>{t("cancel")}</Button>
+            <Button variant="outline" onClick={() => setImportOpen(false)} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >{t("cancel")}</Button>
             <Button
               onClick={handleImport}
               disabled={!importFile || importLoading}
-              className="bg-emerald-600 hover:bg-emerald-700"
+              className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
             >
               {importLoading ? t("importing") : t("import")}
             </Button>

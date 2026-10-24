@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText } from "@/components/ui/bidi-text";
+
 import { useTranslations } from "next-intl";
 import { inventoryAlertsJson, type ReorderItem } from "@/i18n/inventory-report-presentation";
 import { useState, useEffect } from "react";
@@ -71,32 +73,32 @@ export default function AlertsPage() {
       {/* Stats */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <div className="rounded-xl border bg-card p-4">
-          <div className="flex items-center gap-2 text-muted-foreground">
+          <div className="flex items-center gap-2 text-muted-foreground flex-wrap">
             <AlertTriangle className="size-3.5 text-amber-500" />
             <span className="text-[11px] font-medium uppercase tracking-wide">{t("totalAlerts")}</span>
           </div>
-          <p className="mt-2 text-2xl font-bold font-mono tabular-nums truncate text-amber-600 dark:text-amber-400">
+          <p className="mt-2 text-2xl font-bold font-mono tabular-nums whitespace-normal [overflow-wrap:anywhere] text-amber-600 dark:text-amber-400">
             {lowCount}
           </p>
         </div>
         <div className="rounded-xl border bg-card p-4">
-          <div className="flex items-center gap-2 text-muted-foreground">
+          <div className="flex items-center gap-2 text-muted-foreground flex-wrap">
             <AlertCircle className="size-3.5 text-red-500" />
             <span className="text-[11px] font-medium uppercase tracking-wide">{t("outOfStock")}</span>
           </div>
           <p className={cn(
-            "mt-2 text-2xl font-bold font-mono tabular-nums truncate",
+            "mt-2 text-2xl font-bold font-mono tabular-nums whitespace-normal [overflow-wrap:anywhere]",
             criticalCount > 0 ? "text-red-600 dark:text-red-400" : ""
           )}>
             {criticalCount}
           </p>
         </div>
         <div className="rounded-xl border bg-card p-4">
-          <div className="flex items-center gap-2 text-muted-foreground">
+          <div className="flex items-center gap-2 text-muted-foreground flex-wrap">
             <Package className="size-3.5" />
             <span className="text-[11px] font-medium uppercase tracking-wide">{t("belowReorder")}</span>
           </div>
-          <p className="mt-2 text-2xl font-bold font-mono tabular-nums truncate">
+          <p className="mt-2 text-2xl font-bold font-mono tabular-nums whitespace-normal [overflow-wrap:anywhere]">
             {lowCount - criticalCount}
           </p>
         </div>
@@ -109,7 +111,7 @@ export default function AlertsPage() {
           return (
             <div
               key={item.id}
-              className="group flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors"
+              className="group flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors flex-wrap"
             >
               <div className={cn(
                 "flex size-9 shrink-0 items-center justify-center rounded-lg",
@@ -125,11 +127,11 @@ export default function AlertsPage() {
                 )} />
               </div>
               <div
-                className="flex-1 min-w-0 cursor-pointer"
+                className="flex-1 min-w-0 cursor-pointer flex-wrap"
                 onClick={() => router.push(`/inventory/${item.id}`)}
               >
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium truncate">{item.name}</p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-sm font-medium whitespace-normal [overflow-wrap:anywhere]"><BidiText>{item.name}</BidiText></p>
                   {isCritical && (
                     <Badge variant="outline" className="border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300 text-[10px] px-1.5 py-0">
                       {t("outOfStock")}
@@ -137,28 +139,28 @@ export default function AlertsPage() {
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {t("alertSummary", { code: item.code, sku: item.sku ? ` · ${item.sku}` : "", quantity: item.quantityOnHand, point: item.reorderPoint })}
+                  <BidiText>{t("alertSummary", { code: item.code, sku: item.sku ? ` · ${item.sku}` : "", quantity: item.quantityOnHand, point: item.reorderPoint })}</BidiText>
                 </p>
               </div>
 
               {/* Suggested quantity */}
               <div className="hidden sm:flex flex-col items-end gap-0.5 w-24">
-                <span className="text-xs font-mono tabular-nums font-medium">+{item.suggestedReorderQuantity}</span>
+                <span className="text-xs font-mono tabular-nums font-medium"><BidiText dir="ltr">+{item.suggestedReorderQuantity}</BidiText></span>
                 <span className="text-[11px] text-muted-foreground">{t("suggested")}</span>
               </div>
 
               {/* Supplier + PO action */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 {item.preferredSupplier && (
-                  <span className="hidden md:inline text-xs text-muted-foreground truncate max-w-[120px]">
-                    {item.preferredSupplier.contactName}
+                  <span className="hidden md:inline text-xs text-muted-foreground whitespace-normal [overflow-wrap:anywhere] max-w-[120px]">
+                    <BidiText>{item.preferredSupplier.contactName}</BidiText>
                   </span>
                 )}
                 <Button
                   size="sm"
                   aria-label={t("createPo")}
                   variant="outline"
-                  className="h-7 text-xs gap-1"
+                  className="h-7 text-xs gap-1 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
                   onClick={(e) => {
                     e.stopPropagation();
                     openDrawer("purchaseOrder");

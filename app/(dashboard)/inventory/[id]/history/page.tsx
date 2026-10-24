@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText } from "@/components/ui/bidi-text";
+
 import { inventoryMovementsJson, inventoryMovementKey, type PresentedInventoryMovement } from "@/i18n/inventory-item-presentation";
 import { useTranslations } from "next-intl";
 
@@ -72,34 +74,34 @@ export default function InventoryItemHistoryPage() {
         const typeKey = m.type.replace(/-/g, "_");
         const typeLabel = inventoryMovementKey(typeKey);
         return (
-          <div key={m.id || i} className="flex items-start gap-4 p-4">
+          <div key={m.id || i} className="flex items-start gap-4 p-4 flex-wrap">
             <div className="flex flex-col items-center gap-1 pt-0.5">
               <Badge variant="outline" className={cn("text-[10px] capitalize", Object.hasOwn(movementTypeColors, typeKey) ? movementTypeColors[typeKey] : movementTypeColors.initial)}>
                 {typeLabel ? t(typeLabel) : m.type}
               </Badge>
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className={cn(
                   "text-sm font-mono font-semibold tabular-nums",
                   isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
                 )}>
-                  {isPositive ? "+" : ""}{qty}
+                  <BidiText dir="ltr">{isPositive ? "+" : ""}{qty}</BidiText>
                 </span>
                 {(m.previousQuantity != null && m.newQuantity != null) && (
-                  <span className="text-xs text-muted-foreground font-mono tabular-nums">
-                    {m.previousQuantity} &rarr; {m.newQuantity}
+                  <span dir="ltr" className="text-xs text-muted-foreground font-mono tabular-nums">
+                    <BidiText>{m.previousQuantity}</BidiText> &rarr; <BidiText>{m.newQuantity}</BidiText>
                   </span>
                 )}
               </div>
               {m.reason && (
-                <p className="text-xs text-muted-foreground mt-0.5">{m.reason}</p>
+                <p className="text-xs text-muted-foreground mt-0.5"><BidiText>{m.reason}</BidiText></p>
               )}
               {m.createdBy && (
-                <p className="text-[11px] text-muted-foreground/70 mt-0.5">{t("by", { name: m.createdBy })}</p>
+                <p className="text-[11px] text-muted-foreground/70 mt-0.5"><BidiText>{t("by", { name: m.createdBy })}</BidiText></p>
               )}
             </div>
-            <div className="text-right shrink-0">
+            <div className="text-end shrink-0">
               <p className="text-xs text-muted-foreground">
                 {m.createdAt ? new Date(m.createdAt).toLocaleDateString() : "-"}
               </p>

@@ -279,10 +279,10 @@ test("warehouse filtering retains active/inactive truthiness, address search and
     let previous = -1;
     for (const id of expected) {
       const row = [root, child, historical].find(row => row.id === id)!;
-      const marker = `text-xs text-muted-foreground font-mono">${row.code}</p>`;
+      const marker = `>${row.code}</bdi></p>`;
       const index = html.indexOf(marker);
       assert.ok(index > previous, `${id}/${JSON.stringify(states)}`); previous = index;
     }
-    for (const row of [root, child, historical]) if (!expected.includes(row.id)) assert.ok(!html.includes(`text-xs text-muted-foreground font-mono">${row.code}</p>`));
+    for (const row of [root, child, historical]) if (!expected.includes(row.id)) assert.ok(!html.includes(`>${row.code}</bdi></p>`));
   }
 });

@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText } from "@/components/ui/bidi-text";
+
 import { useTranslations } from "next-intl";
 
 import { assemblyOrdersJson, assemblyUpdatedJson, type AssemblyOrderView } from "@/i18n/inventory-assembly-presentation";
@@ -100,8 +102,8 @@ export default function AssemblyOrdersPage() {
               <div className="p-5 space-y-3">
                 {/* Draft */}
                 <div className="rounded-lg border p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-between mb-2 flex-wrap">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <div className="flex size-6 items-center justify-center rounded-md bg-zinc-100 dark:bg-zinc-800">
                         <ClipboardList className="size-3 text-zinc-500" />
                       </div>
@@ -111,11 +113,11 @@ export default function AssemblyOrdersPage() {
                   </div>
                   <p className="text-[11px] text-muted-foreground">{t("exampleRecipe")}</p>
                 </div>
-                <div className="flex justify-center"><ArrowRight className="size-3.5 text-muted-foreground/30 rotate-90" /></div>
+                <div className="flex justify-center flex-wrap"><ArrowRight className="size-3.5 text-muted-foreground/30 rotate-90 rtl:rotate-180" /></div>
                 {/* In progress */}
                 <div className="rounded-lg border border-blue-200 dark:border-blue-900/50 p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-between mb-2 flex-wrap">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <div className="flex size-6 items-center justify-center rounded-md bg-blue-50 dark:bg-blue-950/40">
                         <Play className="size-3 text-blue-500" />
                       </div>
@@ -125,11 +127,11 @@ export default function AssemblyOrdersPage() {
                   </div>
                   <p className="text-[11px] text-muted-foreground">{t("reserved")}</p>
                 </div>
-                <div className="flex justify-center"><ArrowRight className="size-3.5 text-muted-foreground/30 rotate-90" /></div>
+                <div className="flex justify-center flex-wrap"><ArrowRight className="size-3.5 text-muted-foreground/30 rotate-90 rtl:rotate-180" /></div>
                 {/* Completed */}
                 <div className="rounded-lg border border-dashed border-emerald-200 dark:border-emerald-900/40 p-3 opacity-60">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-between mb-2 flex-wrap">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <div className="flex size-6 items-center justify-center rounded-md bg-emerald-50 dark:bg-emerald-950/40">
                         <CheckCircle2 className="size-3 text-emerald-500" />
                       </div>
@@ -152,33 +154,33 @@ export default function AssemblyOrdersPage() {
                   title: t("createFromBoms"),
                   desc: t("createFromBomsDescription"),
                   icon: ClipboardList,
-                  color: "border-l-blue-400",
+                  color: "border-s-blue-400",
                 },
                 {
                   title: t("trackProgress"),
                   desc: t("trackProgressDescription"),
                   icon: Play,
-                  color: "border-l-amber-400",
+                  color: "border-s-amber-400",
                 },
                 {
                   title: t("autoInventory"),
                   desc: t("autoInventoryDescription"),
                   icon: ArrowRightLeft,
-                  color: "border-l-emerald-400",
+                  color: "border-s-emerald-400",
                 },
                 {
                   title: t("auditTrail"),
                   desc: t("auditTrailDescription"),
                   icon: BarChart3,
-                  color: "border-l-violet-400",
+                  color: "border-s-violet-400",
                 },
               ].map(({ title, desc, icon: Icon, color }) => (
-                <div key={title} className={`rounded-lg border border-l-[3px] ${color} bg-card px-4 py-3`}>
-                  <div className="flex items-center gap-2">
+                <div key={title} className={`rounded-lg border border-s-[3px] ${color} bg-card px-4 py-3`}>
+                  <div className="flex items-center gap-2 flex-wrap">
                     <Icon className="size-3.5 text-muted-foreground" />
                     <p className="text-sm font-medium">{title}</p>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-0.5 ml-[22px]">{desc}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 ms-[22px]">{desc}</p>
                 </div>
               ))}
             </div>
@@ -186,29 +188,29 @@ export default function AssemblyOrdersPage() {
         ) : (
           <div className="space-y-2">
             {orders.map((order) => (
-              <div key={order.id} className="flex items-center justify-between rounded-lg border bg-card p-4">
+              <div key={order.id} className="flex items-center justify-between rounded-lg border bg-card p-4 flex-wrap">
                 <div className="min-w-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="text-sm font-medium">
-                      {t("orderName", { name: order.bom?.assemblyItem?.name || t("unknown"), quantity: order.quantity })}
+                      <BidiText>{t("orderName", { name: order.bom?.assemblyItem?.name || t("unknown"), quantity: order.quantity })}</BidiText>
                     </h3>
                     <Badge variant="outline" className={STATUS_BADGE[order.status]}>
                       {t(order.status === "in_progress" ? "inProgress" : order.status)}
                     </Badge>
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    {t("recipeName", { name: order.bom?.name || t("unknown") })}
+                    <BidiText>{t("recipeName", { name: order.bom?.name || t("unknown") })}</BidiText>
                     {order.completedAt && t("completedDate", { date: new Date(order.completedAt).toLocaleDateString() })}
                   </p>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 flex-wrap">
                   {order.status === "draft" && (
-                    <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => handleStart(order.id)}>
+                    <Button variant="outline" size="sm" className="h-7 text-xs gap-1 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" onClick={() => handleStart(order.id)}>
                       <Play className="size-3" /> {t("start")}
                     </Button>
                   )}
                   {(order.status === "draft" || order.status === "in_progress") && (
-                    <Button size="sm" className="h-7 text-xs gap-1" onClick={() => handleComplete(order)}>
+                    <Button size="sm" className="h-7 text-xs gap-1 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" onClick={() => handleComplete(order)}>
                       <CheckCircle2 className="size-3" /> {t("complete")}
                     </Button>
                   )}

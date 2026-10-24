@@ -1,4 +1,6 @@
 "use client";
+
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 import { formatExactCurrencyDecimal } from "@/i18n/numbers";
 
@@ -288,9 +290,9 @@ export default function WarehousesPage() {
             </div>
             <Button
               onClick={() => openDrawer("warehouse")}
-              className="bg-emerald-600 hover:bg-emerald-700 shrink-0"
+              className="bg-emerald-600 hover:bg-emerald-700 shrink-0 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
             >
-              <Plus className="mr-2 size-4" />
+              <Plus className="me-2 size-4" />
               {t("newWarehouse")}
             </Button>
           </div>
@@ -304,7 +306,7 @@ export default function WarehousesPage() {
                 </p>
               </div>
               <div className="p-5 space-y-4">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
                   <div className="flex size-10 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-950/40">
                     <Warehouse className="size-5 text-emerald-600 dark:text-emerald-400" />
                   </div>
@@ -312,11 +314,11 @@ export default function WarehousesPage() {
                     <p className="text-sm font-medium">{t("mainWarehouse")}</p>
                     <p className="text-xs text-muted-foreground font-mono">WH-001</p>
                   </div>
-                  <Badge variant="outline" className="ml-auto bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800 text-[11px]">
+                  <Badge variant="outline" className="ms-auto bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800 text-[11px]">
                     {t("default")}
                   </Badge>
                 </div>
-                <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                <div className="flex items-start gap-1.5 text-xs text-muted-foreground flex-wrap">
                   <MapPin className="size-3 mt-0.5 shrink-0" />
                   <span>{t("exampleAddress")}</span>
                 </div>
@@ -346,33 +348,33 @@ export default function WarehousesPage() {
                   title: t("trackingTitle"),
                   desc: t("trackingDescription"),
                   icon: Building2,
-                  color: "border-l-emerald-400",
+                  color: "border-s-emerald-400",
                 },
                 {
                   title: t("transfersTitle"),
                   desc: t("transfersDescription"),
                   icon: ArrowRight,
-                  color: "border-l-blue-400",
+                  color: "border-s-blue-400",
                 },
                 {
                   title: t("receivingTitle"),
                   desc: t("receivingDescription"),
                   icon: Star,
-                  color: "border-l-amber-400",
+                  color: "border-s-amber-400",
                 },
                 {
                   title: t("countsTitle"),
                   desc: t("countsDescription"),
                   icon: Package,
-                  color: "border-l-violet-400",
+                  color: "border-s-violet-400",
                 },
               ].map(({ title, desc, icon: Icon, color }) => (
-                <div key={title} className={`rounded-lg border border-l-[3px] ${color} bg-card px-4 py-3`}>
-                  <div className="flex items-center gap-2">
+                <div key={title} className={`rounded-lg border border-s-[3px] ${color} bg-card px-4 py-3`}>
+                  <div className="flex items-center gap-2 flex-wrap">
                     <Icon className="size-3.5 text-muted-foreground" />
                     <p className="text-sm font-medium">{title}</p>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-0.5 ml-[22px]">{desc}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 ms-[22px]">{desc}</p>
                 </div>
               ))}
             </div>
@@ -400,21 +402,21 @@ export default function WarehousesPage() {
           transition={{ duration: 0.3 }}
           className="rounded-xl border bg-card p-5 flex flex-col justify-between gap-4"
         >
-          <div className="flex items-center gap-2 text-muted-foreground">
+          <div className="flex items-center gap-2 text-muted-foreground flex-wrap">
             <Building2 className="size-4" />
             <span className="text-xs font-medium uppercase tracking-wide">{t("overview")}</span>
           </div>
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <p className="text-3xl font-bold font-mono tabular-nums truncate">{totalWarehouses}</p>
+              <p className="text-3xl font-bold font-mono tabular-nums whitespace-normal [overflow-wrap:anywhere]">{totalWarehouses}</p>
               <p className="text-xs text-muted-foreground mt-0.5">{t("total")}</p>
             </div>
             <div>
-              <p className="text-3xl font-bold font-mono tabular-nums truncate text-emerald-600 dark:text-emerald-400">{activeCount}</p>
+              <p className="text-3xl font-bold font-mono tabular-nums whitespace-normal [overflow-wrap:anywhere] text-emerald-600 dark:text-emerald-400">{activeCount}</p>
               <p className="text-xs text-muted-foreground mt-0.5">{t("active")}</p>
             </div>
             <div>
-              <p className="text-3xl font-bold font-mono tabular-nums truncate text-zinc-500">{inactiveCount}</p>
+              <p className="text-3xl font-bold font-mono tabular-nums whitespace-normal [overflow-wrap:anywhere] text-zinc-500">{inactiveCount}</p>
               <p className="text-xs text-muted-foreground mt-0.5">{t("inactive")}</p>
             </div>
           </div>
@@ -434,10 +436,10 @@ export default function WarehousesPage() {
                 />
               )}
             </div>
-            <div className="flex items-center gap-4 text-[11px] text-muted-foreground">
-              <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-emerald-500" />{t("activeCount", { count: activeCount })}</span>
-              <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-zinc-300 dark:bg-zinc-600" />{t("inactiveCount", { count: inactiveCount })}</span>
-              <span className="flex items-center gap-1.5"><MapPin className="size-2.5" />{t("withAddressCount", { count: withAddress })}</span>
+            <div className="flex items-center gap-4 text-[11px] text-muted-foreground flex-wrap">
+              <span className="flex items-center gap-1.5 flex-wrap"><span className="size-2 rounded-full bg-emerald-500" /><BidiText>{t("activeCount", { count: activeCount })}</BidiText></span>
+              <span className="flex items-center gap-1.5 flex-wrap"><span className="size-2 rounded-full bg-zinc-300 dark:bg-zinc-600" /><BidiText>{t("inactiveCount", { count: inactiveCount })}</BidiText></span>
+              <span className="flex items-center gap-1.5 flex-wrap"><MapPin className="size-2.5" /><BidiText>{t("withAddressCount", { count: withAddress })}</BidiText></span>
             </div>
           </div>
         </motion.div>
@@ -454,7 +456,7 @@ export default function WarehousesPage() {
               <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" />
             </div>
             <div className="mt-3">
-              <p className="text-2xl font-bold font-mono tabular-nums truncate text-emerald-600 dark:text-emerald-400">{activeCount}</p>
+              <p className="text-2xl font-bold font-mono tabular-nums whitespace-normal [overflow-wrap:anywhere] text-emerald-600 dark:text-emerald-400">{activeCount}</p>
               <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide mt-0.5">{t("active")}</p>
             </div>
           </motion.div>
@@ -469,7 +471,7 @@ export default function WarehousesPage() {
               <XCircle className="size-4 text-zinc-500" />
             </div>
             <div className="mt-3">
-              <p className="text-2xl font-bold font-mono tabular-nums truncate text-zinc-500">{inactiveCount}</p>
+              <p className="text-2xl font-bold font-mono tabular-nums whitespace-normal [overflow-wrap:anywhere] text-zinc-500">{inactiveCount}</p>
               <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide mt-0.5">{t("inactive")}</p>
             </div>
           </motion.div>
@@ -487,7 +489,7 @@ export default function WarehousesPage() {
             <div className="flex-1 min-w-0">
               <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("defaultWarehouse")}</p>
               {defaultWarehouse ? (
-                <p className="text-sm font-medium truncate mt-0.5">
+                <p className="text-sm font-medium whitespace-normal [overflow-wrap:anywhere] mt-0.5">
                   {defaultWarehouse.name} <span className="text-muted-foreground font-mono text-xs">({defaultWarehouse.code})</span>
                 </p>
               ) : (
@@ -511,7 +513,7 @@ export default function WarehousesPage() {
 
           <Button
             size="sm"
-            className="h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700"
+            className="h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
             onClick={() => openDrawer("warehouse")}
           >
             <Plus className="size-3" />
@@ -521,19 +523,19 @@ export default function WarehousesPage() {
 
         {/* Search + Sort */}
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <div className="relative flex-1 sm:max-w-xs">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+          <div className="relative flex-1 sm:max-w-xs flex-wrap">
+            <Search className="pointer-events-none absolute start-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder={t("search")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 pr-8 h-8 text-sm"
-            />
+              className="ps-9 pe-8 h-8 text-sm"
+             dir="auto" aria-label={t("search")} />
             {search && (
               <button
                 aria-label={t("clearSearch")}
                 onClick={() => setSearch("")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="absolute end-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
                 <X className="size-3.5" />
               </button>
@@ -541,8 +543,8 @@ export default function WarehousesPage() {
           </div>
 
           <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortKey)}>
-            <SelectTrigger className="h-8 w-full sm:w-[150px] text-xs">
-              <ArrowUpDown className="size-3 mr-1.5 text-muted-foreground" />
+            <SelectTrigger className="h-8 w-full sm:w-[150px] text-xs data-[size=default]:h-auto data-[size=sm]:h-auto min-h-8 whitespace-normal *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal *:data-[slot=select-value]:text-start *:data-[slot=select-value]:min-w-0" aria-label={t("sortField")} >
+              <ArrowUpDown className="size-3 me-1.5 text-muted-foreground" />
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -560,7 +562,7 @@ export default function WarehousesPage() {
 
       {/* Warehouse cards */}
       {refetching || pendingSearch ? (
-        <div className="flex items-center justify-center py-20">
+        <div className="flex items-center justify-center py-20 flex-wrap">
           <div className="brand-loader" aria-label={t("loading")}>
             <div className="brand-loader-circle brand-loader-circle-1" />
             <div className="brand-loader-circle brand-loader-circle-2" />
@@ -593,8 +595,8 @@ export default function WarehousesPage() {
                   key={warehouse.id}
                   className="rounded-xl border bg-card p-4 space-y-3"
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex items-start justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-3 min-w-0 flex-wrap">
                       <div
                         className={cn(
                           "flex size-9 shrink-0 items-center justify-center rounded-lg",
@@ -613,11 +615,11 @@ export default function WarehousesPage() {
                         />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">
-                          {warehouse.name}
+                        <p className="text-sm font-medium whitespace-normal [overflow-wrap:anywhere]">
+                          <BidiText>{warehouse.name}</BidiText>
                         </p>
                         <p className="text-xs text-muted-foreground font-mono">
-                          {warehouse.code}
+                          <IdentifierText>{warehouse.code}</IdentifierText>
                         </p>
                       </div>
                     </div>
@@ -640,30 +642,30 @@ export default function WarehousesPage() {
                   </div>
 
                   {warehouse.address && (
-                    <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                    <div className="flex items-start gap-1.5 text-xs text-muted-foreground flex-wrap">
                       <MapPin className="size-3 mt-0.5 shrink-0" />
-                      <span className="line-clamp-2">{warehouse.address}</span>
+                      <BidiText>{warehouse.address}</BidiText>
                     </div>
                   )}
 
-                  <div className="flex items-center gap-1.5 pt-1 border-t">
+                  <div className="flex items-center gap-1.5 pt-1 border-t flex-wrap">
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-7 text-xs"
+                      className="h-7 text-xs h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
                       onClick={() => openEdit(warehouse)}
                     >
-                      <Pencil className="size-3 mr-1" />
+                      <Pencil className="size-3 me-1" />
                       {t("edit")}
                     </Button>
                     {!warehouse.isDefault && (
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-7 text-xs"
+                        className="h-7 text-xs h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
                         onClick={() => handleSetDefault(warehouse)}
                       >
-                        <Star className="size-3 mr-1" />
+                        <Star className="size-3 me-1" />
                         {t("setDefault")}
                       </Button>
                     )}
@@ -671,10 +673,10 @@ export default function WarehousesPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-7 text-xs text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/30"
+                        className="h-7 text-xs text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/30 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
                         onClick={() => handleDelete(warehouse)}
                       >
-                        <Trash2 className="size-3 mr-1" />
+                        <Trash2 className="size-3 me-1" />
                         {t("delete")}
                       </Button>
                     )}
@@ -704,30 +706,30 @@ export default function WarehousesPage() {
           </SheetHeader>
           <form onSubmit={handleSave} className="space-y-4 px-4">
             <div className="space-y-2">
-              <Label>{t("name")}</Label>
+              <Label htmlFor="inventory-field-1">{t("name")}</Label>
               <Input
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
                 placeholder={t("nameExample")}
                 required
-              />
+               dir="auto" aria-label={t("name")} id="inventory-field-1" />
             </div>
             <div className="space-y-2">
-              <Label>{t("code")}</Label>
+              <Label htmlFor="inventory-field-2">{t("code")}</Label>
               <Input
                 value={formCode}
                 onChange={(e) => setFormCode(e.target.value)}
                 placeholder={t("codeExample")}
                 required
-              />
+               dir="ltr" aria-label={t("code")} id="inventory-field-2" />
             </div>
             <div className="space-y-2">
-              <Label>{t("address")}</Label>
+              <Label htmlFor="inventory-field-3">{t("address")}</Label>
               <Input
                 value={formAddress}
                 onChange={(e) => setFormAddress(e.target.value)}
                 placeholder={t("addressExample")}
-              />
+               dir="auto" aria-label={t("address")} id="inventory-field-3" />
             </div>
           </form>
           <SheetFooter>
@@ -737,13 +739,13 @@ export default function WarehousesPage() {
                 setSheetOpen(false);
                 setEditing(null);
               }}
-            >
+             className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
               {t("cancel")}
             </Button>
             <Button
               onClick={handleSave}
               disabled={saving}
-              className="bg-emerald-600 hover:bg-emerald-700"
+              className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
             >
               {saving
                 ? t("saving")

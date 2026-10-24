@@ -1,4 +1,6 @@
 "use client";
+
+import { BidiText } from "@/components/ui/bidi-text";
 import { formatExactCurrencyDecimal } from "@/i18n/numbers";
 import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
@@ -75,7 +77,7 @@ export default function BOMListPage() {
   return (
     <ContentReveal>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap">
           <div>
             <h2 className="text-lg font-semibold">{t("bomTitle")}</h2>
             <p className="text-sm text-muted-foreground">
@@ -94,7 +96,7 @@ export default function BOMListPage() {
                 </p>
               </div>
               <div className="p-5 space-y-4">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
                   <div className="flex size-10 items-center justify-center rounded-lg bg-orange-50 dark:bg-orange-950/40">
                     <Package className="size-5 text-orange-600 dark:text-orange-400" />
                   </div>
@@ -112,10 +114,10 @@ export default function BOMListPage() {
                     { name: t("controller"), qty: "1", cost: (unitPresentation.locale === "en-US" ? "$28.00" : formatExactCurrencyDecimal("28.00", "USD", unitPresentation)) },
                     { name: t("brackets"), qty: "8", cost: (unitPresentation.locale === "en-US" ? "$2.50" : formatExactCurrencyDecimal("2.50", "USD", unitPresentation)) },
                   ].map((c) => (
-                    <div key={c.name} className="flex items-center gap-3 text-sm">
-                      <span className="flex-1 truncate">{c.name}</span>
+                    <div key={c.name} className="flex items-center gap-3 text-sm flex-wrap">
+                      <span className="flex-1 whitespace-normal [overflow-wrap:anywhere] flex-wrap">{c.name}</span>
                       <span className="text-xs text-muted-foreground font-mono tabular-nums">x{c.qty}</span>
-                      <span className="text-xs font-mono tabular-nums w-16 text-right">{c.cost}</span>
+                      <span className="text-xs font-mono tabular-nums w-16 text-end">{c.cost}</span>
                     </div>
                   ))}
                 </div>
@@ -145,33 +147,33 @@ export default function BOMListPage() {
                   title: t("recipes"),
                   desc: t("recipesDescription"),
                   icon: Layers,
-                  color: "border-l-orange-400",
+                  color: "border-s-orange-400",
                 },
                 {
                   title: t("costRollup"),
                   desc: t("costRollupDescription"),
                   icon: Calculator,
-                  color: "border-l-blue-400",
+                  color: "border-s-blue-400",
                 },
                 {
                   title: t("assemblyBenefit"),
                   desc: t("assemblyBenefitDescription"),
                   icon: ListChecks,
-                  color: "border-l-emerald-400",
+                  color: "border-s-emerald-400",
                 },
                 {
                   title: t("wastageTracking"),
                   desc: t("wastageTrackingDescription"),
                   icon: Package,
-                  color: "border-l-violet-400",
+                  color: "border-s-violet-400",
                 },
               ].map(({ title, desc, icon: Icon, color }) => (
-                <div key={title} className={`rounded-lg border border-l-[3px] ${color} bg-card px-4 py-3`}>
-                  <div className="flex items-center gap-2">
+                <div key={title} className={`rounded-lg border border-s-[3px] ${color} bg-card px-4 py-3`}>
+                  <div className="flex items-center gap-2 flex-wrap">
                     <Icon className="size-3.5 text-muted-foreground" />
                     <p className="text-sm font-medium">{title}</p>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-0.5 ml-[22px]">{desc}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 ms-[22px]">{desc}</p>
                 </div>
               ))}
             </div>
@@ -183,18 +185,18 @@ export default function BOMListPage() {
               return (
                 <div
                   key={bom.id}
-                  className="flex items-center justify-between rounded-lg border bg-card p-4 cursor-pointer hover:bg-muted/50 transition-colors"
+                  className="flex items-center justify-between rounded-lg border bg-card p-4 cursor-pointer hover:bg-muted/50 transition-colors flex-wrap"
                   onClick={() => router.push(`/inventory/bom/${bom.id}`)}
                 >
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-medium">{bom.name}</h3>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-sm font-medium"><BidiText>{bom.name}</BidiText></h3>
                       {!bom.isActive && (
                         <Badge variant="outline" className="text-[10px]">{t("inactive")}</Badge>
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {t("bomSummary", { item: bom.assemblyItem?.name || t("unknownItem"), count: bom.components.length, cost: expenseMoneyDisplay(BigInt(bom.costBreakdown.totalCostMinor), bom.currencyCode, unitPresentation) })}
+                      <BidiText>{t("bomSummary", { item: bom.assemblyItem?.name || t("unknownItem"), count: bom.components.length, cost: expenseMoneyDisplay(BigInt(bom.costBreakdown.totalCostMinor), bom.currencyCode, unitPresentation) })}</BidiText>
                     </p>
                   </div>
                   <DropdownMenu>

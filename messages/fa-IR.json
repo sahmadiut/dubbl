@@ -6806,7 +6806,8 @@
     "writeDownPreview": "کاهش ارزش {amount}؛ ارزش دفتری جدید {remaining}",
     "by": "توسط {name}",
     "itemQuantity": "تعداد: {count}",
-    "stockCost": "{count} واحد × {amount}"
+    "stockCost": "{count} واحد × {amount}",
+    "sortField": "مرتب‌سازی بر اساس"
   },
   "InventoryCatalogs": {
     "variantsTitle": "موجودی · گونه‌ها",
@@ -6941,7 +6942,8 @@
     "defaultSet": "«{name}» به‌عنوان پیش‌فرض تعیین شد",
     "deleteTitle": "«{name}» حذف شود؟",
     "deleteDescription": "این انبار برای همیشه حذف می‌شود. این کار قابل بازگشت نیست.",
-    "organizationRequired": "ابتدا یک سازمان انتخاب کنید"
+    "organizationRequired": "ابتدا یک سازمان انتخاب کنید",
+    "sortField": "مرتب‌سازی بر اساس"
   },
   "InventoryMovements": {
     "draft": "پیش‌نویس",
@@ -7111,7 +7113,8 @@
     "countProgress": "{count} از {total} کالا",
     "showingItems": "نمایش {count} از {total} کالا",
     "completedDate": "تکمیل‌شده در {date}",
-    "createdDate": "ایجادشده در {date}"
+    "createdDate": "ایجادشده در {date}",
+    "sortField": "مرتب‌سازی بر اساس"
   },
   "InventoryAssembly": {
     "cancel": "انصراف",

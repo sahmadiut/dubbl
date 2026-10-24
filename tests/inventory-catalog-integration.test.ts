@@ -101,7 +101,7 @@ function composition(pathname: string, states: States = {}, captured: Captured[]
   return { load: loadModule };
 }
 
-test("combined inventory namespace inventory pairs 682 messages with explicit Persian exceptions", () => {
+test("combined inventory namespace inventory pairs 685 messages with explicit Persian exceptions", () => {
   let count = 0;
   for (const namespace of namespaces) {
     assert.deepEqual(Object.keys(en[namespace]), Object.keys(fa[namespace]));
@@ -111,7 +111,7 @@ test("combined inventory namespace inventory pairs 682 messages with explicit Pe
       assert.match(value, /[\u0600-\u06ff]/u, `${namespace}.${key}`);
     }
   }
-  assert.equal(count, 682);
+  assert.equal(count, 685);
 });
 
 test("item workspace composes its real context, details and category picker in both locales", () => {

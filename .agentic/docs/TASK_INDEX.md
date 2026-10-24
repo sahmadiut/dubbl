@@ -620,3 +620,26 @@ Source audit identified independent summary/navigation, banking input, domain/ou
 - [RTL-029](../tasks/RTL-029.md): Adopt bidi across email and document outputs; 8 census sources; RTL-011 child.
 
 All 135 public/shared/output sources have one child owner. Source findings separate credentials/consent, admin, onboarding, public shells, portals/signing, settings/import, framework primitives and output engines. RTL-011 retains independent combined acceptance.
+
+## RTL-014 accounting and tax adoption children
+
+- [RTL-030](../tasks/RTL-030.md): Adopt bidi across ledger accounts; RTL-014 child.
+- [RTL-031](../tasks/RTL-031.md): Adopt bidi across journals and opening balances; RTL-014 child.
+- [RTL-032](../tasks/RTL-032.md): Adopt bidi across budgets loans and accruals; RTL-014 child.
+- [RTL-033](../tasks/RTL-033.md): Adopt bidi across fixed assets and categories; RTL-014 child.
+- [RTL-034](../tasks/RTL-034.md): Adopt bidi across tax rates filings and reports; RTL-014 child.
+
+All 31 original sources are assigned once. Independent account, journal, budget/loan/accrual, asset and tax contracts retain independent RTL-014/010/008/002 acceptance. Child priority remains one.
+
+## RTL-015 sales and purchase adoption children
+
+- [RTL-035](../tasks/RTL-035.md): Adopt bidi across invoices and sales shells; RTL-015 child.
+- [RTL-036](../tasks/RTL-036.md): Adopt bidi across quotes and sales credits; RTL-015 child.
+- [RTL-037](../tasks/RTL-037.md): Adopt bidi across prepayments receipts and sales payments; RTL-015 child.
+- [RTL-038](../tasks/RTL-038.md): Adopt bidi across recurring sales and revenue schedules; RTL-015 child.
+- [RTL-039](../tasks/RTL-039.md): Adopt bidi across bills and purchase shells; RTL-015 child.
+- [RTL-040](../tasks/RTL-040.md): Adopt bidi across expenses and recurring purchasing; RTL-015 child.
+- [RTL-041](../tasks/RTL-041.md): Adopt bidi across purchase debit notes; RTL-015 child.
+- [RTL-042](../tasks/RTL-042.md): Adopt bidi across procurement and landed costs; RTL-015 child.
+
+All 36 original sources are assigned once. Document, allocation, recurrence and procurement contracts retain independent RTL-015/010/008/002 acceptance. Equal child priorities preserve live scheduler order.

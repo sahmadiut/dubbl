@@ -102,7 +102,7 @@ test("supplier page renders translated form and days, contact fallback, preferen
     assert.ok(html.includes(escape(t("leadValue", { value: "14" }))));
     assert.ok(html.includes(escape(t("priceValue", { value: bankMoneyDisplay(supplier.purchasePrice, "USD", resolvePresentation({ user: { language: locale } })) }))));
     assert.ok(html.includes(escape(t("codeValue", { value: caller }))));
-    assert.equal((html.match(/aria-label=/g) || []).length, 3);
+    assert.equal(html.split(`aria-label="${escape(t("unlink"))}"`).length - 1, 3);
     assert.ok(html.includes(`aria-label="${escape(t("unlink"))}"`) && html.includes("contact-a"));
     assert.ok(html.includes(escape(caller)) && !html.includes("<script>"));
     assert.ok(events.includes(t("suppliersTitle")));

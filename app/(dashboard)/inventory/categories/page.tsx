@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText } from "@/components/ui/bidi-text";
+
 import { useTranslations } from "next-intl";
 import { categoryJson } from "@/i18n/inventory-category-presentation";
 import { useState, useEffect, useCallback } from "react";
@@ -138,19 +140,19 @@ export default function CategoriesPage() {
     <ContentReveal className="space-y-6">
       {categories.length === 0 ? (
         <EmptyState icon={Tag} title={t("emptyTitle")} description={t("emptyDescription")}>
-          <Button onClick={() => { setEditCategory(null); setEditOpen(true); }} className="bg-emerald-600 hover:bg-emerald-700">
-            <Plus className="size-3.5 mr-1.5" />{t("newCategory")}
+          <Button onClick={() => { setEditCategory(null); setEditOpen(true); }} className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]">
+            <Plus className="size-3.5 me-1.5" />{t("newCategory")}
           </Button>
         </EmptyState>
       ) : (
         <>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap">
             <div>
-              <p className="text-sm text-muted-foreground">{t("count", { count: flat.length })}</p>
+              <p className="text-sm text-muted-foreground"><BidiText>{t("count", { count: flat.length })}</BidiText></p>
             </div>
             <Button
               size="sm"
-              className="h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700"
+              className="h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
               onClick={() => { setEditCategory(null); setEditOpen(true); }}
             >
               <Plus className="size-3" />
@@ -197,14 +199,14 @@ export default function CategoriesPage() {
                 required
                 defaultValue={editCategory?.name || ""}
                 key={editCategory?.id || "new"}
-              />
+               dir="auto" aria-label={t("nameRequired")} />
             </div>
             <div className="space-y-2">
               <Label>{t("color")}</Label>
               <div className="flex gap-2 flex-wrap">
                 {COLORS.map((c) => (
                   <label key={c} className="cursor-pointer">
-                    <input type="radio" name="color" aria-label={t("colorValue", { color: c })} value={c} className="sr-only peer" defaultChecked={editCategory?.color === c} />
+                    <input type="radio" name="color" aria-label={t("colorValue", { color: c })} value={c} className="sr-only peer" defaultChecked={editCategory?.color === c}  dir="auto" />
                     <div
                       className="size-7 rounded-full border-2 border-transparent peer-checked:border-foreground transition-colors"
                       style={{ backgroundColor: c }}
@@ -221,7 +223,7 @@ export default function CategoriesPage() {
                 className="flex h-9 w-full rounded-md border bg-background px-3 py-1 text-sm"
                 defaultValue={editCategory?.parentId || ""}
                 key={editCategory?.id || "new-p"}
-              >
+               dir="auto" aria-label={t("parentCategory")} >
                 <option value="">{t("root")}</option>
                 {flat
                   .filter((c) => c.id !== editCategory?.id && !c.parentId)
@@ -238,11 +240,11 @@ export default function CategoriesPage() {
                 rows={2}
                 defaultValue={editCategory?.description || ""}
                 key={editCategory?.id || "new-d"}
-              />
+               dir="auto" aria-label={t("description")} />
             </div>
             <SheetFooter>
-              <Button type="button" variant="outline" onClick={() => { setEditOpen(false); setEditCategory(null); }}>{t("cancel")}</Button>
-              <Button type="submit" disabled={saving} className="bg-emerald-600 hover:bg-emerald-700">
+              <Button type="button" variant="outline" onClick={() => { setEditOpen(false); setEditCategory(null); }} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >{t("cancel")}</Button>
+              <Button type="submit" disabled={saving} className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]">
                 {t(saving ? "saving" : editCategory ? "update" : "create")}
               </Button>
             </SheetFooter>
@@ -269,21 +271,21 @@ function CategoryRow({
   const t = useTranslations("InventoryCategories");
   return (
     <div
-      className="group flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors"
-      style={{ paddingLeft: `${16 + depth * 24}px` }}
+      className="group flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors flex-wrap"
+      style={{ paddingInlineStart: `${16 + depth * 24}px` }}
     >
-      {depth > 0 && <ChevronRight className="size-3 text-muted-foreground/40" />}
+      {depth > 0 && <ChevronRight className="size-3 text-muted-foreground/40 rtl:rotate-180" />}
       <div
         className="size-3 rounded-full shrink-0"
         style={{ backgroundColor: category.color || "#94a3b8" }}
       />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate">{category.name}</p>
+        <p className="text-sm font-medium whitespace-normal [overflow-wrap:anywhere]"><BidiText>{category.name}</BidiText></p>
         {category.description && (
-          <p className="text-xs text-muted-foreground truncate">{category.description}</p>
+          <p className="text-xs text-muted-foreground whitespace-normal [overflow-wrap:anywhere]"><BidiText>{category.description}</BidiText></p>
         )}
       </div>
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-wrap">
         <Button
           variant="ghost"
           size="icon"

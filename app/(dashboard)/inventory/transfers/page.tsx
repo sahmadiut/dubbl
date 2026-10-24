@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { useTranslations } from "next-intl";
 
 import { movementTransfersJson, movementItemsJson, movementTransferJson } from "@/i18n/inventory-movement-presentation";
@@ -301,7 +303,7 @@ export default function TransfersPage() {
         <div className="pt-8 pb-12 space-y-8">
           {/* Header */}
           <div className="text-center max-w-lg mx-auto">
-            <div className="flex items-center justify-center gap-2 mb-3">
+            <div className="flex items-center justify-center gap-2 mb-3 flex-wrap">
               <span className="text-xs font-medium text-muted-foreground bg-muted/60 px-2.5 py-1 rounded-full uppercase tracking-wide">{t("stockTransfers")}</span>
             </div>
             <h2 className="text-lg font-semibold tracking-tight">{t("moveLocations")}</h2>
@@ -312,7 +314,7 @@ export default function TransfersPage() {
           <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-0 max-w-2xl mx-auto">
             {/* Source warehouse */}
             <div className="rounded-xl border bg-card p-4 space-y-3">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <div className="flex size-8 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-950/40">
                   <Warehouse className="size-4 text-amber-600 dark:text-amber-400" />
                 </div>
@@ -327,8 +329,8 @@ export default function TransfersPage() {
                   { name: t("exampleSensor"), qty: 85, send: 15 },
                   { name: t("exampleCable"), qty: 200, send: 50 },
                 ].map((item) => (
-                  <div key={item.name} className="flex items-center justify-between rounded-md bg-muted/40 px-2.5 py-1.5">
-                    <span className="text-xs">{item.name}</span>
+                  <div key={item.name} className="flex items-center justify-between rounded-md bg-muted/40 px-2.5 py-1.5 flex-wrap">
+                    <span className="text-xs"><BidiText>{item.name}</BidiText></span>
                     <span className="text-xs font-mono text-red-500 dark:text-red-400">-{item.send}</span>
                   </div>
                 ))}
@@ -339,15 +341,15 @@ export default function TransfersPage() {
             <div className="flex flex-col items-center gap-1 px-3">
               <div className="w-8 h-px bg-border" />
               <div className="flex size-7 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-950">
-                <ArrowRight className="size-3.5 text-blue-600 dark:text-blue-400" />
+                <ArrowRight className="size-3.5 text-blue-600 dark:text-blue-400 rtl:rotate-180" />
               </div>
               <div className="w-8 h-px bg-border" />
-              <span className="text-[10px] text-muted-foreground font-medium">{t("unitCount", { count: 95 })}</span>
+              <span className="text-[10px] text-muted-foreground font-medium"><BidiText>{t("unitCount", { count: 95 })}</BidiText></span>
             </div>
 
             {/* Destination warehouse */}
             <div className="rounded-xl border bg-card p-4 space-y-3">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <div className="flex size-8 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-950/40">
                   <Warehouse className="size-4 text-emerald-600 dark:text-emerald-400" />
                 </div>
@@ -362,8 +364,8 @@ export default function TransfersPage() {
                   { name: t("exampleSensor"), qty: 15 },
                   { name: t("exampleCable"), qty: 50 },
                 ].map((item) => (
-                  <div key={item.name} className="flex items-center justify-between rounded-md bg-muted/40 px-2.5 py-1.5">
-                    <span className="text-xs">{item.name}</span>
+                  <div key={item.name} className="flex items-center justify-between rounded-md bg-muted/40 px-2.5 py-1.5 flex-wrap">
+                    <span className="text-xs"><BidiText>{item.name}</BidiText></span>
                     <span className="text-xs font-mono text-emerald-600 dark:text-emerald-400">+{item.qty}</span>
                   </div>
                 ))}
@@ -372,12 +374,12 @@ export default function TransfersPage() {
           </div>
 
           {/* CTA */}
-          <div className="flex justify-center">
+          <div className="flex justify-center flex-wrap">
             <Button
               onClick={() => openDrawer("transfer")}
-              className="bg-emerald-600 hover:bg-emerald-700"
+              className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
             >
-              <Plus className="mr-2 size-4" />{t("newTransfer")}</Button>
+              <Plus className="me-2 size-4" />{t("newTransfer")}</Button>
           </div>
 
           {/* Status legend - compact horizontal */}
@@ -388,7 +390,7 @@ export default function TransfersPage() {
               { label: t("completed"), color: "bg-emerald-400" },
               { label: t("cancelled"), color: "bg-red-400" },
             ].map(({ label, color }) => (
-              <div key={label} className="flex items-center gap-1.5">
+              <div key={label} className="flex items-center gap-1.5 flex-wrap">
                 <div className={`size-2 rounded-full ${color}`} />
                 <span className="text-[11px] text-muted-foreground">{label}</span>
               </div>
@@ -420,7 +422,7 @@ export default function TransfersPage() {
             transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1], delay: 0.05 + i * 0.05 }}
           >
             <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{stat.label}</p>
-            <p className={cn("mt-2 text-2xl font-bold font-mono tabular-nums truncate", stat.color)}>{stat.value}</p>
+            <p className={cn("mt-2 text-2xl font-bold font-mono tabular-nums whitespace-normal [overflow-wrap:anywhere]", stat.color)}>{stat.value}</p>
           </motion.div>
         ))}
       </div>
@@ -440,7 +442,7 @@ export default function TransfersPage() {
 
           <Button
             size="sm"
-            className="h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700"
+            className="h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
             onClick={() => openDrawer("transfer")}
           >
             <Plus className="size-3" />{t("newTransfer")}</Button>
@@ -448,18 +450,18 @@ export default function TransfersPage() {
 
         {/* Search + Sort */}
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <div className="relative flex-1 sm:max-w-xs">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+          <div className="relative flex-1 sm:max-w-xs flex-wrap">
+            <Search className="pointer-events-none absolute start-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder={t("warehouseSearch")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 pr-8 h-8 text-sm"
-            />
+              className="ps-9 pe-8 h-8 text-sm"
+             dir="auto" aria-label={t("warehouseSearch")} />
             {search && (
               <button
                 aria-label={t("clearSearch")} onClick={() => setSearch("")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="absolute end-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
                 <X className="size-3.5" />
               </button>
@@ -467,8 +469,8 @@ export default function TransfersPage() {
           </div>
 
           <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortKey)}>
-            <SelectTrigger className="h-8 w-full sm:w-[140px] text-xs">
-              <ArrowUpDown className="size-3 mr-1.5 text-muted-foreground" />
+            <SelectTrigger className="h-8 w-full sm:w-[140px] text-xs data-[size=default]:h-auto data-[size=sm]:h-auto min-h-8 whitespace-normal *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal *:data-[slot=select-value]:text-start *:data-[slot=select-value]:min-w-0" aria-label={t("sortField")} >
+              <ArrowUpDown className="size-3 me-1.5 text-muted-foreground" />
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -486,7 +488,7 @@ export default function TransfersPage() {
 
       {/* List */}
       {refetching || pendingSearch ? (
-        <div className="flex items-center justify-center py-20">
+        <div className="flex items-center justify-center py-20 flex-wrap">
           <div className="brand-loader" aria-label={t("loading")}>
             <div className="brand-loader-circle brand-loader-circle-1" />
             <div className="brand-loader-circle brand-loader-circle-2" />
@@ -519,35 +521,35 @@ export default function TransfersPage() {
                 return (
                   <div
                     key={transfer.id}
-                    className="group flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-muted/40 transition-colors"
+                    className="group flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-muted/40 transition-colors flex-wrap"
                     onClick={() => { setActiveTransfer(transfer); setDetailOpen(true); }}
                   >
                     <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-950/40">
                       <ArrowLeftRight className="size-4 text-blue-600 dark:text-blue-400" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium truncate">
-                          {transfer.fromWarehouse.name}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-medium whitespace-normal [overflow-wrap:anywhere]">
+                          <BidiText>{transfer.fromWarehouse.name}</BidiText>
                         </p>
-                        <ArrowRight className="size-3 text-muted-foreground shrink-0" />
-                        <p className="text-sm font-medium truncate">
-                          {transfer.toWarehouse.name}
+                        <ArrowRight className="size-3 text-muted-foreground shrink-0 rtl:rotate-180" />
+                        <p className="text-sm font-medium whitespace-normal [overflow-wrap:anywhere]">
+                          <BidiText>{transfer.toWarehouse.name}</BidiText>
                         </p>
                         <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 shrink-0", STATUS_STYLES[transfer.status])}>
                           {t(STATUS_LABELS[transfer.status])}
                         </Badge>
                       </div>
-                      <div className="flex items-center gap-2 mt-0.5">
+                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                         <p className="text-xs text-muted-foreground">
-                          {t("itemCount", { count: transfer.lines.length })} · {t("unitCount", { count: qty })}
+                          <BidiText>{t("itemCount", { count: transfer.lines.length })}</BidiText> · <BidiText>{t("unitCount", { count: qty })}</BidiText>
                         </p>
                         {transfer.notes && (
-                          <p className="text-xs text-muted-foreground truncate hidden sm:block">· {transfer.notes}</p>
+                          <p className="text-xs text-muted-foreground whitespace-normal [overflow-wrap:anywhere] hidden sm:block">· <BidiText>{transfer.notes}</BidiText></p>
                         )}
                       </div>
                     </div>
-                    <div className="text-right shrink-0 hidden sm:block">
+                    <div className="text-end shrink-0 hidden sm:block">
                       <p className="text-xs text-muted-foreground">
                         {new Date(transfer.createdAt).toLocaleDateString()}
                       </p>
@@ -573,17 +575,17 @@ export default function TransfersPage() {
           {activeTransfer && (
             <div className="space-y-5 px-4">
               {/* Warehouse flow */}
-              <div className="flex items-center gap-3 rounded-lg border bg-muted/30 p-3">
+              <div className="flex items-center gap-3 rounded-lg border bg-muted/30 p-3 flex-wrap">
                 <div className="flex-1 min-w-0">
                   <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{t("from")}</p>
-                  <p className="text-sm font-medium truncate">{activeTransfer.fromWarehouse.name}</p>
-                  <p className="text-[11px] text-muted-foreground">{activeTransfer.fromWarehouse.code}</p>
+                  <p className="text-sm font-medium whitespace-normal [overflow-wrap:anywhere]"><BidiText>{activeTransfer.fromWarehouse.name}</BidiText></p>
+                  <p className="text-[11px] text-muted-foreground"><IdentifierText>{activeTransfer.fromWarehouse.code}</IdentifierText></p>
                 </div>
-                <ArrowRight className="size-4 text-muted-foreground shrink-0" />
-                <div className="flex-1 min-w-0 text-right">
+                <ArrowRight className="size-4 text-muted-foreground shrink-0 rtl:rotate-180" />
+                <div className="flex-1 min-w-0 text-end flex-wrap">
                   <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{t("to")}</p>
-                  <p className="text-sm font-medium truncate">{activeTransfer.toWarehouse.name}</p>
-                  <p className="text-[11px] text-muted-foreground">{activeTransfer.toWarehouse.code}</p>
+                  <p className="text-sm font-medium whitespace-normal [overflow-wrap:anywhere]"><BidiText>{activeTransfer.toWarehouse.name}</BidiText></p>
+                  <p className="text-[11px] text-muted-foreground"><IdentifierText>{activeTransfer.toWarehouse.code}</IdentifierText></p>
                 </div>
               </div>
 
@@ -604,12 +606,12 @@ export default function TransfersPage() {
               {activeTransfer.notes && (
                 <div>
                   <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1">{t("notes")}</p>
-                  <p className="text-sm text-muted-foreground">{activeTransfer.notes}</p>
+                  <p className="text-sm text-muted-foreground"><BidiText>{activeTransfer.notes}</BidiText></p>
                 </div>
               )}
 
               {/* Summary */}
-              <div className="flex gap-4">
+              <div className="flex gap-4 flex-wrap">
                 <div>
                   <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{t("items")}</p>
                   <p className="text-lg font-bold font-mono tabular-nums">{activeTransfer.lines.length}</p>
@@ -625,13 +627,13 @@ export default function TransfersPage() {
                 <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{t("lineItems")}</p>
                 <div className="rounded-lg border divide-y">
                   {activeTransfer.lines.map((line) => (
-                    <div key={line.id} className="flex items-center justify-between px-3 py-2.5">
+                    <div key={line.id} className="flex items-center justify-between px-3 py-2.5 flex-wrap">
                       <div className="min-w-0">
-                        <p className="text-sm truncate">{getItemName(line.inventoryItemId)}</p>
-                        <p className="text-[11px] text-muted-foreground">{getItemCode(line.inventoryItemId)}</p>
+                        <p className="text-sm whitespace-normal [overflow-wrap:anywhere]"><BidiText>{getItemName(line.inventoryItemId)}</BidiText></p>
+                        <p className="text-[11px] text-muted-foreground"><IdentifierText>{getItemCode(line.inventoryItemId)}</IdentifierText></p>
                       </div>
-                      <div className="text-right shrink-0 ml-3">
-                        <span className="text-sm font-mono font-medium tabular-nums">{line.quantity}</span>
+                      <div className="text-end shrink-0 ms-3">
+                        <span className="text-sm font-mono font-medium tabular-nums"><BidiText>{line.quantity}</BidiText></span>
                         {line.receivedQuantity != null && line.receivedQuantity !== line.quantity && (
                           <p className="text-[10px] text-amber-600">{t("received")}{line.receivedQuantity}</p>
                         )}
@@ -643,21 +645,21 @@ export default function TransfersPage() {
 
               {/* Actions */}
               {(activeTransfer.status === "draft" || activeTransfer.status === "in_transit") && (
-                <div className="flex gap-2 pt-2">
+                <div className="flex gap-2 pt-2 flex-wrap">
                   <Button
                     size="sm"
-                    className="bg-emerald-600 hover:bg-emerald-700"
+                    className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
                     onClick={() => handleComplete(activeTransfer)}
                     disabled={completing}
                   >
-                    {completing ? <Loader2 className="size-3.5 animate-spin mr-1.5" /> : <Check className="size-3.5 mr-1.5" />}{t("complete")}</Button>
+                    {completing ? <Loader2 className="size-3.5 animate-spin me-1.5" /> : <Check className="size-3.5 me-1.5" />}{t("complete")}</Button>
                   <Button
                     size="sm"
                     variant="outline"
-                    className="text-red-600"
+                    className="text-red-600 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
                     onClick={() => handleCancel(activeTransfer)}
                   >
-                    <X className="size-3.5 mr-1.5" />{t("cancel")}</Button>
+                    <X className="size-3.5 me-1.5" />{t("cancel")}</Button>
                 </div>
               )}
             </div>

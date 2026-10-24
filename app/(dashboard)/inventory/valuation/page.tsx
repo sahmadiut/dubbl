@@ -1,4 +1,6 @@
 "use client";
+
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { formatExactCurrencyDecimal } from "@/i18n/numbers";
 import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
@@ -208,13 +210,13 @@ export default function InventoryValuationPage() {
       >
         {items.length > 0 && (
           <div className="relative w-full sm:w-64">
-            <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Search className="absolute start-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={t("search")} aria-label={t("search")}
-              className="pl-9 h-9 text-sm"
-            />
+              className="ps-9 h-9 text-sm"
+             dir="auto" />
           </div>
         )}
       </PageHeader>
@@ -228,15 +230,15 @@ export default function InventoryValuationPage() {
           transition={{ duration: 0.3 }}
           className="rounded-xl border bg-card p-5 flex flex-col justify-between gap-4"
         >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-muted-foreground">
+          <div className="flex items-center justify-between flex-wrap">
+            <div className="flex items-center gap-2 text-muted-foreground flex-wrap">
               <BarChart3 className="size-4" />
               <span className="text-xs font-medium uppercase tracking-wide">{t("valuationTitle")}</span>
             </div>
             <Button
               variant="outline"
               size="sm"
-              className="h-7 text-[11px] gap-1.5"
+              className="h-7 text-[11px] gap-1.5 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
               onClick={exportCsv}
               disabled={items.length === 0}
             >
@@ -247,11 +249,11 @@ export default function InventoryValuationPage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-xs text-muted-foreground mb-0.5">{t("purchaseValue")}</p>
-              <p className="text-2xl font-bold font-mono tabular-nums truncate">{formatMoney(BigInt(summary.totalCostMinor))}</p>
+              <p className="text-2xl font-bold font-mono tabular-nums whitespace-normal [overflow-wrap:anywhere]"><BidiText dir="ltr">{formatMoney(BigInt(summary.totalCostMinor))}</BidiText></p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground mb-0.5">{t("saleProjection")}</p>
-              <p className="text-2xl font-bold font-mono tabular-nums truncate text-emerald-600 dark:text-emerald-400">{formatMoney(BigInt(summary.totalValueMinor))}</p>
+              <p className="text-2xl font-bold font-mono tabular-nums whitespace-normal [overflow-wrap:anywhere] text-emerald-600 dark:text-emerald-400"><BidiText dir="ltr">{formatMoney(BigInt(summary.totalValueMinor))}</BidiText></p>
             </div>
           </div>
           {/* Margin bar */}
@@ -269,9 +271,9 @@ export default function InventoryValuationPage() {
                   />
                 )}
               </div>
-              <div className="flex items-center gap-4 text-[11px] text-muted-foreground">
-                <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-emerald-500" />{t("costAmount", { amount: formatMoney(BigInt(summary.totalCostMinor)) })}</span>
-                <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-emerald-300 dark:bg-emerald-700" />{t("profitAmount", { amount: formatMoney(profitAmount) })}</span>
+              <div className="flex items-center gap-4 text-[11px] text-muted-foreground flex-wrap">
+                <span className="flex items-center gap-1.5 flex-wrap"><span className="size-2 rounded-full bg-emerald-500" /><BidiText>{t("costAmount", { amount: formatMoney(BigInt(summary.totalCostMinor)) })}</BidiText></span>
+                <span className="flex items-center gap-1.5 flex-wrap"><span className="size-2 rounded-full bg-emerald-300 dark:bg-emerald-700" /><BidiText>{t("profitAmount", { amount: formatMoney(profitAmount) })}</BidiText></span>
               </div>
             </div>
           )}
@@ -294,7 +296,7 @@ export default function InventoryValuationPage() {
                 <stat.icon className={cn("size-4", stat.color || "text-muted-foreground")} />
               </div>
               <div className="mt-3">
-                <p className={cn("text-2xl font-bold font-mono tabular-nums truncate", stat.color)}>
+                <p className={cn("text-2xl font-bold font-mono tabular-nums whitespace-normal [overflow-wrap:anywhere]", stat.color)}>
                   {stat.value}
                 </p>
                 <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide mt-0.5">
@@ -309,25 +311,25 @@ export default function InventoryValuationPage() {
       {/* Table */}
       {items.length === 0 ? (
         <div className="rounded-xl border bg-card overflow-hidden">
-          <div className="bg-muted/30 px-5 py-3 border-b flex items-center justify-between">
+          <div className="bg-muted/30 px-5 py-3 border-b flex items-center justify-between flex-wrap">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("preview")}</p>
             <Button
               onClick={() => openDrawer("inventory")}
               size="sm"
-              className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700"
+              className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
             >
-              <Plus className="mr-1.5 size-3" />
+              <Plus className="me-1.5 size-3" />
               {t("addItem")}
             </Button>
           </div>
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b text-xs text-muted-foreground">
-                <th className="px-4 py-3 text-left font-medium">{t("item")}</th>
-                <th className="px-4 py-3 text-right font-medium">{t("quantity")}</th>
-                <th className="px-4 py-3 text-right font-medium">{t("cost")}</th>
-                <th className="px-4 py-3 text-right font-medium">{t("retail")}</th>
-                <th className="px-4 py-3 text-right font-medium">{t("margin")}</th>
+                <th className="px-4 py-3 text-start font-medium">{t("item")}</th>
+                <th className="px-4 py-3 text-end font-medium">{t("quantity")}</th>
+                <th className="px-4 py-3 text-end font-medium">{t("cost")}</th>
+                <th className="px-4 py-3 text-end font-medium">{t("retail")}</th>
+                <th className="px-4 py-3 text-end font-medium">{t("margin")}</th>
               </tr>
             </thead>
             <tbody className="text-muted-foreground/40">
@@ -341,10 +343,10 @@ export default function InventoryValuationPage() {
                     <p className="text-sm">{name}</p>
                     <p className="text-[11px] font-mono">{code}</p>
                   </td>
-                  <td className="px-4 py-3 text-right font-mono">{qty}</td>
-                  <td className="px-4 py-3 text-right font-mono">{cost}</td>
-                  <td className="px-4 py-3 text-right font-mono">{retail}</td>
-                  <td className="px-4 py-3 text-right font-mono">{margin}</td>
+                  <td className="px-4 py-3 text-end font-mono">{qty}</td>
+                  <td className="px-4 py-3 text-end font-mono">{cost}</td>
+                  <td className="px-4 py-3 text-end font-mono">{retail}</td>
+                  <td className="px-4 py-3 text-end font-mono">{margin}</td>
                 </tr>
               ))}
             </tbody>
@@ -374,11 +376,11 @@ export default function InventoryValuationPage() {
                     key={col.key}
                     className={cn(
                       "px-4 py-3 text-xs font-medium text-muted-foreground cursor-pointer select-none whitespace-nowrap hover:text-foreground transition-colors",
-                      col.align === "right" ? "text-right" : "text-left"
+                      col.align === "right" ? "text-end" : "text-start"
                     )}
                     onClick={() => handleSort(col.key)}
                   >
-                    <span className="inline-flex items-center gap-1">
+                    <span className="inline-flex items-center gap-1 flex-wrap">
                       {t(col.label)}
                       {sortKey === col.key ? (
                         sortOrder === "asc" ? (
@@ -401,33 +403,33 @@ export default function InventoryValuationPage() {
                   className="border-b last:border-b-0 hover:bg-muted/40 transition-colors"
                 >
                   <td className="px-4 py-3 font-mono text-xs">
-                    {item.code}
+                    <IdentifierText>{item.code}</IdentifierText>
                   </td>
-                  <td className="px-4 py-3 font-medium">{item.name}</td>
+                  <td className="px-4 py-3 font-medium"><BidiText>{item.name}</BidiText></td>
                   <td className="px-4 py-3 text-muted-foreground">
                     {item.category || "-"}
                   </td>
-                  <td className="px-4 py-3 text-right font-mono tabular-nums">
-                    {item.quantityOnHand}
+                  <td className="px-4 py-3 text-end font-mono tabular-nums">
+                    <BidiText>{item.quantityOnHand}</BidiText>
                   </td>
-                  <td className="px-4 py-3 text-right font-mono tabular-nums">
-                    {formatMoney(BigInt(item.unitCostMinor))}
+                  <td className="px-4 py-3 text-end font-mono tabular-nums">
+                    <BidiText dir="ltr">{formatMoney(BigInt(item.unitCostMinor))}</BidiText>
                   </td>
-                  <td className="px-4 py-3 text-right font-mono tabular-nums">
-                    {formatMoney(BigInt(item.totalCostMinor))}
+                  <td className="px-4 py-3 text-end font-mono tabular-nums">
+                    <BidiText dir="ltr">{formatMoney(BigInt(item.totalCostMinor))}</BidiText>
                   </td>
-                  <td className="px-4 py-3 text-right font-mono tabular-nums">
-                    {formatMoney(BigInt(item.carryingValueMinor))}
+                  <td className="px-4 py-3 text-end font-mono tabular-nums">
+                    <BidiText dir="ltr">{formatMoney(BigInt(item.carryingValueMinor))}</BidiText>
                   </td>
-                  <td className="px-4 py-3 text-right font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
-                    {formatMoney(BigInt(item.salePriceMinor))}
+                  <td className="px-4 py-3 text-end font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
+                    <BidiText dir="ltr">{formatMoney(BigInt(item.salePriceMinor))}</BidiText>
                   </td>
-                  <td className="px-4 py-3 text-right font-mono tabular-nums font-medium">
-                    {formatMoney(BigInt(item.totalValueMinor))}
+                  <td className="px-4 py-3 text-end font-mono tabular-nums font-medium">
+                    <BidiText dir="ltr">{formatMoney(BigInt(item.totalValueMinor))}</BidiText>
                   </td>
                   <td
                     className={cn(
-                      "px-4 py-3 text-right font-mono tabular-nums",
+                      "px-4 py-3 text-end font-mono tabular-nums",
                       (BigInt(item.totalCostMinor) > 0n && BigInt(item.marginMinor) > 0n)
                         ? "text-emerald-600 dark:text-emerald-400"
                         : (BigInt(item.totalCostMinor) > 0n && BigInt(item.marginMinor) < 0n)

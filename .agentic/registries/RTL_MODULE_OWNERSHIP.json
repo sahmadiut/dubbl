@@ -1,5 +1,5 @@
 {
-  "scope": "Exhaustive app/components/lib TSX census at RTL-008 split. Ownership is audit responsibility, not a pass. Imported non-TSX output builders belong with their consuming surface; new files require classification. Shared inherited foundation does not constitute dedicated provider work. RTL-010 dashboard ownership subdivided after source audit into RTL-012 through RTL-021; intermediate and root parents retain independent acceptance. RTL-011 public/shared/output ownership subdivided after source audit into RTL-022 through RTL-029; the parent retains independent combined acceptance.",
+  "scope": "Exhaustive app/components/lib TSX census at RTL-008 split. Ownership is audit responsibility, not a pass. Imported non-TSX output builders belong with their consuming surface; new files require classification. Shared inherited foundation does not constitute dedicated provider work. RTL-010 dashboard ownership subdivided after source audit into RTL-012 through RTL-021; intermediate and root parents retain independent acceptance. RTL-011 public/shared/output ownership subdivided after source audit into RTL-022 through RTL-029; the parent retains independent combined acceptance. RTL-014 accounting/tax ownership subdivided after source audit into RTL-030 through RTL-034; the parent retains independent integration acceptance. RTL-015 sales/purchase ownership subdivided after source audit into RTL-035 through RTL-042; parent retains independent integration acceptance.",
   "files": [
     {
       "path": "app/(admin)/admin/email-preview/page.tsx",
@@ -47,35 +47,35 @@
     },
     {
       "path": "app/(dashboard)/accounting/[id]/page.tsx",
-      "owner": "RTL-014"
+      "owner": "RTL-031"
     },
     {
       "path": "app/(dashboard)/accounting/accounts/[id]/layout.tsx",
-      "owner": "RTL-014"
+      "owner": "RTL-030"
     },
     {
       "path": "app/(dashboard)/accounting/accounts/[id]/page.tsx",
-      "owner": "RTL-014"
+      "owner": "RTL-030"
     },
     {
       "path": "app/(dashboard)/accounting/accounts/[id]/settings/page.tsx",
-      "owner": "RTL-014"
+      "owner": "RTL-030"
     },
     {
       "path": "app/(dashboard)/accounting/accounts/page.tsx",
-      "owner": "RTL-014"
+      "owner": "RTL-030"
     },
     {
       "path": "app/(dashboard)/accounting/accruals/[id]/page.tsx",
-      "owner": "RTL-014"
+      "owner": "RTL-032"
     },
     {
       "path": "app/(dashboard)/accounting/accruals/page.tsx",
-      "owner": "RTL-014"
+      "owner": "RTL-032"
     },
     {
       "path": "app/(dashboard)/accounting/asset-categories/page.tsx",
-      "owner": "RTL-014"
+      "owner": "RTL-033"
     },
     {
       "path": "app/(dashboard)/accounting/banking/[id]/(detail)/imports/page.tsx",
@@ -123,59 +123,59 @@
     },
     {
       "path": "app/(dashboard)/accounting/budgets/[id]/layout.tsx",
-      "owner": "RTL-014"
+      "owner": "RTL-032"
     },
     {
       "path": "app/(dashboard)/accounting/budgets/[id]/page.tsx",
-      "owner": "RTL-014"
+      "owner": "RTL-032"
     },
     {
       "path": "app/(dashboard)/accounting/budgets/[id]/settings/page.tsx",
-      "owner": "RTL-014"
+      "owner": "RTL-032"
     },
     {
       "path": "app/(dashboard)/accounting/budgets/page.tsx",
-      "owner": "RTL-014"
+      "owner": "RTL-032"
     },
     {
       "path": "app/(dashboard)/accounting/fixed-assets/[id]/page.tsx",
-      "owner": "RTL-014"
+      "owner": "RTL-033"
     },
     {
       "path": "app/(dashboard)/accounting/fixed-assets/page.tsx",
-      "owner": "RTL-014"
+      "owner": "RTL-033"
     },
     {
       "path": "app/(dashboard)/accounting/layout.tsx",
-      "owner": "RTL-014"
+      "owner": "RTL-031"
     },
     {
       "path": "app/(dashboard)/accounting/loading.tsx",
-      "owner": "RTL-014"
+      "owner": "RTL-031"
     },
     {
       "path": "app/(dashboard)/accounting/loans/[id]/page.tsx",
-      "owner": "RTL-014"
+      "owner": "RTL-032"
     },
     {
       "path": "app/(dashboard)/accounting/loans/page.tsx",
-      "owner": "RTL-014"
+      "owner": "RTL-032"
     },
     {
       "path": "app/(dashboard)/accounting/opening-balances/page.tsx",
-      "owner": "RTL-014"
+      "owner": "RTL-031"
     },
     {
       "path": "app/(dashboard)/accounting/page.tsx",
-      "owner": "RTL-014"
+      "owner": "RTL-031"
     },
     {
       "path": "app/(dashboard)/accounting/recurring-journals/[id]/page.tsx",
-      "owner": "RTL-014"
+      "owner": "RTL-031"
     },
     {
       "path": "app/(dashboard)/accounting/recurring-journals/page.tsx",
-      "owner": "RTL-014"
+      "owner": "RTL-031"
     },
     {
       "path": "app/(dashboard)/contacts/[id]/activity/page.tsx",
@@ -495,75 +495,75 @@
     },
     {
       "path": "app/(dashboard)/purchases/[id]/page.tsx",
-      "owner": "RTL-015"
+      "owner": "RTL-039"
     },
     {
       "path": "app/(dashboard)/purchases/bills/recurring/page.tsx",
-      "owner": "RTL-015"
+      "owner": "RTL-040"
     },
     {
       "path": "app/(dashboard)/purchases/debit-notes/[id]/page.tsx",
-      "owner": "RTL-015"
+      "owner": "RTL-041"
     },
     {
       "path": "app/(dashboard)/purchases/debit-notes/page.tsx",
-      "owner": "RTL-015"
+      "owner": "RTL-041"
     },
     {
       "path": "app/(dashboard)/purchases/expenses/[id]/page.tsx",
-      "owner": "RTL-015"
+      "owner": "RTL-040"
     },
     {
       "path": "app/(dashboard)/purchases/expenses/page.tsx",
-      "owner": "RTL-015"
+      "owner": "RTL-040"
     },
     {
       "path": "app/(dashboard)/purchases/expenses/recurring/page.tsx",
-      "owner": "RTL-015"
+      "owner": "RTL-040"
     },
     {
       "path": "app/(dashboard)/purchases/goods-receipts/[id]/page.tsx",
-      "owner": "RTL-015"
+      "owner": "RTL-042"
     },
     {
       "path": "app/(dashboard)/purchases/goods-receipts/page.tsx",
-      "owner": "RTL-015"
+      "owner": "RTL-042"
     },
     {
       "path": "app/(dashboard)/purchases/landed-costs/[id]/page.tsx",
-      "owner": "RTL-015"
+      "owner": "RTL-042"
     },
     {
       "path": "app/(dashboard)/purchases/landed-costs/page.tsx",
-      "owner": "RTL-015"
+      "owner": "RTL-042"
     },
     {
       "path": "app/(dashboard)/purchases/layout.tsx",
-      "owner": "RTL-015"
+      "owner": "RTL-039"
     },
     {
       "path": "app/(dashboard)/purchases/loading.tsx",
-      "owner": "RTL-015"
+      "owner": "RTL-039"
     },
     {
       "path": "app/(dashboard)/purchases/orders/[id]/page.tsx",
-      "owner": "RTL-015"
+      "owner": "RTL-042"
     },
     {
       "path": "app/(dashboard)/purchases/orders/page.tsx",
-      "owner": "RTL-015"
+      "owner": "RTL-042"
     },
     {
       "path": "app/(dashboard)/purchases/page.tsx",
-      "owner": "RTL-015"
+      "owner": "RTL-039"
     },
     {
       "path": "app/(dashboard)/purchases/requisitions/[id]/page.tsx",
-      "owner": "RTL-015"
+      "owner": "RTL-042"
     },
     {
       "path": "app/(dashboard)/purchases/requisitions/page.tsx",
-      "owner": "RTL-015"
+      "owner": "RTL-042"
     },
     {
       "path": "app/(dashboard)/reports/1099/page.tsx",
@@ -703,75 +703,75 @@
     },
     {
       "path": "app/(dashboard)/sales/[id]/page.tsx",
-      "owner": "RTL-015"
+      "owner": "RTL-035"
     },
     {
       "path": "app/(dashboard)/sales/credit-notes/[id]/page.tsx",
-      "owner": "RTL-015"
+      "owner": "RTL-036"
     },
     {
       "path": "app/(dashboard)/sales/credit-notes/page.tsx",
-      "owner": "RTL-015"
+      "owner": "RTL-036"
     },
     {
       "path": "app/(dashboard)/sales/customer-prepayments/[id]/page.tsx",
-      "owner": "RTL-015"
+      "owner": "RTL-037"
     },
     {
       "path": "app/(dashboard)/sales/customer-prepayments/page.tsx",
-      "owner": "RTL-015"
+      "owner": "RTL-037"
     },
     {
       "path": "app/(dashboard)/sales/layout.tsx",
-      "owner": "RTL-015"
+      "owner": "RTL-035"
     },
     {
       "path": "app/(dashboard)/sales/loading.tsx",
-      "owner": "RTL-015"
+      "owner": "RTL-035"
     },
     {
       "path": "app/(dashboard)/sales/page.tsx",
-      "owner": "RTL-015"
+      "owner": "RTL-035"
     },
     {
       "path": "app/(dashboard)/sales/payments/[id]/page.tsx",
-      "owner": "RTL-015"
+      "owner": "RTL-037"
     },
     {
       "path": "app/(dashboard)/sales/payments/page.tsx",
-      "owner": "RTL-015"
+      "owner": "RTL-037"
     },
     {
       "path": "app/(dashboard)/sales/quotes/[id]/page.tsx",
-      "owner": "RTL-015"
+      "owner": "RTL-036"
     },
     {
       "path": "app/(dashboard)/sales/quotes/page.tsx",
-      "owner": "RTL-015"
+      "owner": "RTL-036"
     },
     {
       "path": "app/(dashboard)/sales/receipts/[id]/page.tsx",
-      "owner": "RTL-015"
+      "owner": "RTL-037"
     },
     {
       "path": "app/(dashboard)/sales/receipts/page.tsx",
-      "owner": "RTL-015"
+      "owner": "RTL-037"
     },
     {
       "path": "app/(dashboard)/sales/recurring/[id]/page.tsx",
-      "owner": "RTL-015"
+      "owner": "RTL-038"
     },
     {
       "path": "app/(dashboard)/sales/recurring/page.tsx",
-      "owner": "RTL-015"
+      "owner": "RTL-038"
     },
     {
       "path": "app/(dashboard)/sales/revenue-schedules/[id]/page.tsx",
-      "owner": "RTL-015"
+      "owner": "RTL-038"
     },
     {
       "path": "app/(dashboard)/sales/revenue-schedules/page.tsx",
-      "owner": "RTL-015"
+      "owner": "RTL-038"
     },
     {
       "path": "app/(dashboard)/settings/advisors/page.tsx",
@@ -867,39 +867,39 @@
     },
     {
       "path": "app/(dashboard)/tax/bas/page.tsx",
-      "owner": "RTL-014"
+      "owner": "RTL-034"
     },
     {
       "path": "app/(dashboard)/tax/currencies/page.tsx",
-      "owner": "RTL-014"
+      "owner": "RTL-034"
     },
     {
       "path": "app/(dashboard)/tax/layout.tsx",
-      "owner": "RTL-014"
+      "owner": "RTL-034"
     },
     {
       "path": "app/(dashboard)/tax/page.tsx",
-      "owner": "RTL-014"
+      "owner": "RTL-034"
     },
     {
       "path": "app/(dashboard)/tax/periods/[id]/page.tsx",
-      "owner": "RTL-014"
+      "owner": "RTL-034"
     },
     {
       "path": "app/(dashboard)/tax/periods/page.tsx",
-      "owner": "RTL-014"
+      "owner": "RTL-034"
     },
     {
       "path": "app/(dashboard)/tax/sales-tax/page.tsx",
-      "owner": "RTL-014"
+      "owner": "RTL-034"
     },
     {
       "path": "app/(dashboard)/tax/schedule-c/page.tsx",
-      "owner": "RTL-014"
+      "owner": "RTL-034"
     },
     {
       "path": "app/(dashboard)/tax/vat-return/page.tsx",
-      "owner": "RTL-014"
+      "owner": "RTL-034"
     },
     {
       "path": "app/(dashboard)/teams/[id]/page.tsx",

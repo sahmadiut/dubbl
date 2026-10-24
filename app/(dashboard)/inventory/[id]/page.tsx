@@ -1,4 +1,6 @@
 "use client";
+
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 import { currencyLabel } from "@/i18n/currency-labels";
 
@@ -246,11 +248,11 @@ export default function InventoryItemDetailsPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label className="text-xs" htmlFor="code">{t("code")}</Label>
-                <Input id="code" name="code" required defaultValue={item.code} />
+                <Input id="code" name="code" required defaultValue={item.code}  dir="ltr" aria-label={t("code")} />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs" htmlFor="name">{t("name")}</Label>
-                <Input id="name" name="name" required defaultValue={item.name} />
+                <Input id="name" name="name" required defaultValue={item.name}  dir="auto" aria-label={t("name")} />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">{t("category")}</Label>
@@ -258,7 +260,7 @@ export default function InventoryItemDetailsPage() {
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs" htmlFor="sku">{t("sku")}</Label>
-                <Input id="sku" name="sku" defaultValue={item.sku || ""} placeholder={t("optional")} />
+                <Input id="sku" name="sku" defaultValue={item.sku || ""} placeholder={t("optional")}  dir="ltr" aria-label={t("sku")} />
               </div>
             </div>
           </div>
@@ -275,7 +277,7 @@ export default function InventoryItemDetailsPage() {
                 prefix={currencyLabel("USD", unitPresentation.locale, "$")}
                 value={invPurchasePrice}
                 onChange={setInvPurchasePrice}
-              />
+               aria-label={t("purchaseCost")} />
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs" htmlFor="salePrice">{t("sellingFor")}</Label>
@@ -284,7 +286,7 @@ export default function InventoryItemDetailsPage() {
                 prefix={currencyLabel("USD", unitPresentation.locale, "$")}
                 value={invSalePrice}
                 onChange={setInvSalePrice}
-              />
+               aria-label={t("sellingFor")} />
             </div>
           </div>
         </Section>
@@ -301,7 +303,7 @@ export default function InventoryItemDetailsPage() {
                 type="number"
                 min={0}
                 defaultValue={item.reorderPoint}
-              />
+               dir="ltr" aria-label={t("alertThreshold")} />
             </div>
           </div>
         </Section>
@@ -315,23 +317,23 @@ export default function InventoryItemDetailsPage() {
             defaultValue={item.description || ""}
             rows={3}
             placeholder={t("itemDescription")}
-          />
+           dir="auto" aria-label={t("itemDescription")} />
         </Section>
 
-        <div className="flex justify-end">
+        <div className="flex justify-end flex-wrap">
           <Button
             type="submit"
             size="sm"
             disabled={saving}
-            className="bg-emerald-600 hover:bg-emerald-700"
+            className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
           >
             {saving ? (
               <>
-                <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+                <Loader2 className="me-1.5 size-3.5 animate-spin" />
                 {t("saving")}</>
             ) : (
               <>
-                <Save className="mr-1.5 size-3.5" />
+                <Save className="me-1.5 size-3.5" />
                 {t("saveChanges")}</>
             )}
           </Button>
@@ -346,16 +348,16 @@ export default function InventoryItemDetailsPage() {
           <Section title={t("stockByLocation")} description={t("stockByLocationHelp")}>
             <div className="rounded-lg border divide-y">
               {warehouseStocks.map((ws) => (
-                <div key={ws.id} className="flex items-center justify-between px-4 py-3">
-                  <div className="flex items-center gap-2">
+                <div key={ws.id} className="flex items-center justify-between px-4 py-3 flex-wrap">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <Warehouse className="size-3.5 text-muted-foreground" />
                     <div>
-                      <p className="text-sm font-medium">{ws.warehouseName}</p>
-                      <p className="text-xs text-muted-foreground">{ws.warehouseCode}</p>
+                      <p className="text-sm font-medium"><BidiText>{ws.warehouseName}</BidiText></p>
+                      <p className="text-xs text-muted-foreground"><IdentifierText>{ws.warehouseCode}</IdentifierText></p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-mono tabular-nums font-medium">{ws.quantity}</p>
+                  <div className="text-end">
+                    <p className="text-sm font-mono tabular-nums font-medium"><BidiText>{ws.quantity}</BidiText></p>
                     <p className="text-[11px] text-muted-foreground">
                       {new Date(ws.updatedAt).toLocaleDateString()}
                     </p>
@@ -376,8 +378,8 @@ export default function InventoryItemDetailsPage() {
             <div className="rounded-lg border bg-white p-3">
               <canvas ref={barcodeRef} />
             </div>
-            <Button type="button" size="sm" variant="outline" onClick={printBarcode}>
-              <Printer className="mr-1.5 size-3.5" />
+            <Button type="button" size="sm" variant="outline" onClick={printBarcode} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
+              <Printer className="me-1.5 size-3.5" />
               {t("printBarcode")}</Button>
           </div>
         </Section>
@@ -393,12 +395,12 @@ export default function InventoryItemDetailsPage() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-md border px-4 py-3">
             <div>
               <p className="text-xs text-muted-foreground">{t("currentBookValue")}</p>
-              <p className="text-lg font-bold font-mono tabular-nums truncate">
-                {formatMoney(currentBookValue)}
+              <p className="text-lg font-bold font-mono tabular-nums whitespace-normal [overflow-wrap:anywhere]">
+                <BidiText dir="ltr">{formatMoney(currentBookValue)}</BidiText>
               </p>
             </div>
-            <Button type="button" size="sm" variant="outline" onClick={openRevalue}>
-              <Scale className="mr-1.5 size-3.5" />
+            <Button type="button" size="sm" variant="outline" onClick={openRevalue} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
+              <Scale className="me-1.5 size-3.5" />
               {t("revalueStock")}</Button>
           </div>
         </Section>
@@ -417,9 +419,9 @@ export default function InventoryItemDetailsPage() {
             size="sm"
             variant="outline"
             onClick={handleDelete}
-            className="border-red-300 text-red-600 hover:bg-red-100 hover:text-red-700 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/40"
+            className="border-red-300 text-red-600 hover:bg-red-100 hover:text-red-700 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/40 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
           >
-            <Trash2 className="mr-1.5 size-3.5" />
+            <Trash2 className="me-1.5 size-3.5" />
             {t("deleteItem")}</Button>
         </div>
       </Section>
@@ -436,30 +438,30 @@ export default function InventoryItemDetailsPage() {
           <div className="space-y-4 px-4">
             <div className="rounded-lg bg-muted p-3">
               <p className="text-xs text-muted-foreground">{t("currentBookValue")}</p>
-              <p className="text-xl font-bold font-mono tabular-nums truncate">
-                {formatMoney(currentBookValue)}
+              <p className="text-xl font-bold font-mono tabular-nums whitespace-normal [overflow-wrap:anywhere]">
+                <BidiText dir="ltr">{formatMoney(currentBookValue)}</BidiText>
               </p>
             </div>
             <div className="space-y-2">
-              <Label>{t("newValue")}</Label>
+              <Label htmlFor="inventory-field-1">{t("newValue")}</Label>
               <CurrencyInput
                 prefix={currencyLabel("USD", unitPresentation.locale, "$")}
                 value={revalueValue}
                 onChange={setRevalueValue}
-              />
+               aria-label={t("newValue")} id="inventory-field-1" />
             </div>
             <div className="space-y-2">
-              <Label>{t("reasonRequired")}</Label>
+              <Label htmlFor="inventory-field-2">{t("reasonRequired")}</Label>
               <Input
                 value={revalueReason}
                 onChange={(e) => setRevalueReason(e.target.value)}
                 placeholder={t("revalueExample")}
-              />
+               dir="auto" aria-label={t("reasonRequired")} id="inventory-field-2" />
             </div>
           </div>
           <SheetFooter>
-            <Button variant="outline" onClick={() => setRevalueOpen(false)}>{t("cancel")}</Button>
-            <Button onClick={handleRevalue} disabled={revalueBusy} className="bg-emerald-600 hover:bg-emerald-700">
+            <Button variant="outline" onClick={() => setRevalueOpen(false)} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >{t("cancel")}</Button>
+            <Button onClick={handleRevalue} disabled={revalueBusy} className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]">
               {t("revalueStock")}</Button>
           </SheetFooter>
         </SheetContent>

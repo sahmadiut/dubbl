@@ -1,4 +1,6 @@
 "use client";
+
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useTranslations } from "next-intl";
@@ -68,15 +70,15 @@ export default function BOMDetailPage() {
     <ContentReveal>
       <div className="space-y-6">
         <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg font-semibold">{bom.name}</h2>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2 className="text-lg font-semibold"><BidiText>{bom.name}</BidiText></h2>
             {!bom.isActive && <Badge variant="outline">{t("inactive")}</Badge>}
           </div>
           {bom.description && (
-            <p className="text-sm text-muted-foreground mt-1">{bom.description}</p>
+            <p className="text-sm text-muted-foreground mt-1"><BidiText>{bom.description}</BidiText></p>
           )}
           <p className="text-xs text-muted-foreground mt-1">
-            {t("produces", { name: bom.assemblyItem?.name || t("unknown"), code: bom.assemblyItem?.code || "" })}
+            <BidiText>{t("produces", { name: bom.assemblyItem?.name || t("unknown"), code: bom.assemblyItem?.code || "" })}</BidiText>
           </p>
         </div>
 
@@ -86,26 +88,26 @@ export default function BOMDetailPage() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div>
               <p className="text-xs text-muted-foreground">{t("components")}</p>
-              <p className="text-sm font-mono font-medium tabular-nums">{expenseMoneyDisplay(BigInt(costBreakdown.componentCostMinor), bom.currencyCode, unitPresentation)}</p>
+              <p className="text-sm font-mono font-medium tabular-nums"><BidiText dir="ltr">{expenseMoneyDisplay(BigInt(costBreakdown.componentCostMinor), bom.currencyCode, unitPresentation)}</BidiText></p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">{t("labor")}</p>
-              <p className="text-sm font-mono font-medium tabular-nums">{expenseMoneyDisplay(BigInt(costBreakdown.laborCostMinor), bom.currencyCode, unitPresentation)}</p>
+              <p className="text-sm font-mono font-medium tabular-nums"><BidiText dir="ltr">{expenseMoneyDisplay(BigInt(costBreakdown.laborCostMinor), bom.currencyCode, unitPresentation)}</BidiText></p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">{t("overhead")}</p>
-              <p className="text-sm font-mono font-medium tabular-nums">{expenseMoneyDisplay(BigInt(costBreakdown.overheadCostMinor), bom.currencyCode, unitPresentation)}</p>
+              <p className="text-sm font-mono font-medium tabular-nums"><BidiText dir="ltr">{expenseMoneyDisplay(BigInt(costBreakdown.overheadCostMinor), bom.currencyCode, unitPresentation)}</BidiText></p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground font-medium">{t("totalCost")}</p>
-              <p className="text-sm font-mono font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">{expenseMoneyDisplay(BigInt(costBreakdown.totalCostMinor), bom.currencyCode, unitPresentation)}</p>
+              <p className="text-sm font-mono font-semibold tabular-nums text-emerald-600 dark:text-emerald-400"><BidiText dir="ltr">{expenseMoneyDisplay(BigInt(costBreakdown.totalCostMinor), bom.currencyCode, unitPresentation)}</BidiText></p>
             </div>
           </div>
         </div>
 
         {/* Components */}
         <div>
-          <h3 className="text-sm font-medium mb-3">{t("componentCount", { count: bom.components.length })}</h3>
+          <h3 className="text-sm font-medium mb-3"><BidiText>{t("componentCount", { count: bom.components.length })}</BidiText></h3>
           {bom.components.length === 0 ? (
             <div className="text-center py-8 text-sm text-muted-foreground">
               {t("noComponents")}
@@ -113,15 +115,15 @@ export default function BOMDetailPage() {
           ) : (
             <div className="space-y-1">
               {bom.components.map((comp) => (
-                <div key={comp.id} className="flex items-center justify-between rounded-lg border bg-card p-3">
+                <div key={comp.id} className="flex items-center justify-between rounded-lg border bg-card p-3 flex-wrap">
                   <div className="min-w-0">
                     <p className="text-sm font-medium">
-                      {comp.componentItem?.name || t("unknown")} ({comp.componentItem?.code})
+                      <BidiText>{comp.componentItem?.name || t("unknown")}</BidiText> (<IdentifierText>{comp.componentItem?.code}</IdentifierText>)
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {t("quantity", { quantity: comp.quantity })}
+                      <BidiText>{t("quantity", { quantity: comp.quantity })}</BidiText>
                       {comp.wastagePercent && !/^0(?:\.0+)?$/.test(comp.wastagePercentExact) && t("wastage", { percent: comp.wastagePercent })}
-                      {comp.componentItem && t("each", { cost: expenseMoneyDisplay(BigInt(comp.componentItem.purchasePriceMinor), bom.currencyCode, unitPresentation) })}
+                      <BidiText>{comp.componentItem && t("each", { cost: expenseMoneyDisplay(BigInt(comp.componentItem.purchasePriceMinor), bom.currencyCode, unitPresentation) })}</BidiText>
                     </p>
                   </div>
                   <Button variant="ghost" size="sm" className="size-7 p-0 text-destructive" aria-label={t("removeComponent")} onClick={() => removeComponent(comp.id)}>

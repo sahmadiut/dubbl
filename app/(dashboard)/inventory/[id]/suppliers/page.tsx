@@ -1,4 +1,6 @@
 "use client";
+
+import { BidiText } from "@/components/ui/bidi-text";
 import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 import { currencyLabel } from "@/i18n/currency-labels";
 
@@ -140,10 +142,10 @@ export default function InventoryItemSuppliersPage() {
 
   return (
     <>
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4 flex-wrap">
         <h3 className="text-sm font-semibold">{t("suppliers")}</h3>
-        <Button size="sm" variant="outline" onClick={() => setLinkOpen(true)}>
-          <Link2 className="mr-1.5 size-3.5" />
+        <Button size="sm" variant="outline" onClick={() => setLinkOpen(true)} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
+          <Link2 className="me-1.5 size-3.5" />
           {t("linkSupplier")}
         </Button>
       </div>
@@ -155,26 +157,26 @@ export default function InventoryItemSuppliersPage() {
           description={t("emptySuppliersHelp")}
           compact
         >
-          <Button size="sm" onClick={() => setLinkOpen(true)} className="bg-emerald-600 hover:bg-emerald-700">
-            <Link2 className="mr-1.5 size-3.5" />
+          <Button size="sm" onClick={() => setLinkOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]">
+            <Link2 className="me-1.5 size-3.5" />
             {t("linkSupplier")}
           </Button>
         </EmptyState>
       ) : (
         <div className="rounded-xl border bg-card divide-y">
           {suppliers.map((s) => (
-            <div key={s.id} className="flex items-center gap-4 p-4">
+            <div key={s.id} className="flex items-center gap-4 p-4 flex-wrap">
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{s.contactName || s.contact?.name || s.contactId}</p>
+                <p className="text-sm font-medium whitespace-normal [overflow-wrap:anywhere]"><BidiText>{s.contactName || s.contact?.name || s.contactId}</BidiText></p>
                 <div className="flex items-center gap-3 mt-1 flex-wrap">
                   {s.supplierCode && (
-                    <span className="text-xs text-muted-foreground">{t("codeValue", { value: s.supplierCode })}</span>
+                    <span className="text-xs text-muted-foreground"><BidiText>{t("codeValue", { value: s.supplierCode })}</BidiText></span>
                   )}
                   {s.leadTimeDays != null && (
-                    <span className="text-xs text-muted-foreground">{t("leadValue", { value: String(s.leadTimeDays) })}</span>
+                    <span className="text-xs text-muted-foreground"><BidiText>{t("leadValue", { value: String(s.leadTimeDays) })}</BidiText></span>
                   )}
                   {s.purchasePrice != null && (
-                    <span className="text-xs text-muted-foreground">{t("priceValue", { value: exactPriceDisplay(s.purchasePrice, "USD", unitPresentation) })}</span>
+                    <span className="text-xs text-muted-foreground"><BidiText>{t("priceValue", { value: exactPriceDisplay(s.purchasePrice, "USD", unitPresentation) })}</BidiText></span>
                   )}
                   {s.isPreferred && (
                     <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 text-[10px]">
@@ -186,7 +188,7 @@ export default function InventoryItemSuppliersPage() {
               <Button
                 size="sm"
                 variant="ghost"
-                className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
+                className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
                 aria-label={t("unlink")}
                 onClick={() => handleUnlink(s.id)}
               >
@@ -213,32 +215,32 @@ export default function InventoryItemSuppliersPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("supplierCode")}</Label>
+              <Label className="text-xs" htmlFor="inventory-field-1">{t("supplierCode")}</Label>
               <Input
                 value={supplierCode}
                 onChange={(e) => setSupplierCode(e.target.value)}
                 placeholder={t("optionalSupplierCode")}
-              />
+               dir="ltr" aria-label={t("supplierCode")} id="inventory-field-1" />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("leadTimeDays")}</Label>
+              <Label className="text-xs" htmlFor="inventory-field-2">{t("leadTimeDays")}</Label>
               <Input
                 type="number"
                 min={0}
                 value={leadDays}
                 onChange={(e) => setLeadDays(e.target.value)}
                 placeholder={t("leadExample")}
-              />
+               dir="ltr" aria-label={t("leadTimeDays")} id="inventory-field-2" />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("purchasePrice")}</Label>
+              <Label className="text-xs" htmlFor="inventory-field-3">{t("purchasePrice")}</Label>
               <CurrencyInput
                 prefix={currencyLabel("USD", unitPresentation.locale, "$")}
                 value={price}
                 onChange={setPrice}
-              />
+               aria-label={t("purchasePrice")} id="inventory-field-3" />
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Checkbox
                 id="supplierPreferred"
                 checked={preferred}
@@ -248,8 +250,8 @@ export default function InventoryItemSuppliersPage() {
             </div>
           </div>
           <SheetFooter>
-            <Button variant="outline" onClick={() => setLinkOpen(false)}>{t("cancel")}</Button>
-            <Button onClick={handleLink} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700">
+            <Button variant="outline" onClick={() => setLinkOpen(false)} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >{t("cancel")}</Button>
+            <Button onClick={handleLink} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]">
               {t("linkSupplier")}
             </Button>
           </SheetFooter>

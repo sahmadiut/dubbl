@@ -6806,7 +6806,8 @@
     "writeDownPreview": "Write off {amount}; new book value {remaining}",
     "by": "by {name}",
     "itemQuantity": "Qty: {count}",
-    "stockCost": "{count} x {amount}"
+    "stockCost": "{count} x {amount}",
+    "sortField": "Sort by"
   },
   "InventoryCatalogs": {
     "variantsTitle": "Inventory · Variants",
@@ -6941,7 +6942,8 @@
     "defaultSet": "\"{name}\" set as default",
     "deleteTitle": "Delete \"{name}\"?",
     "deleteDescription": "This warehouse will be permanently removed. This action cannot be undone.",
-    "organizationRequired": "Select an organization first"
+    "organizationRequired": "Select an organization first",
+    "sortField": "Sort by"
   },
   "InventoryMovements": {
     "draft": "Draft",
@@ -7111,7 +7113,8 @@
     "countProgress": "{count}/{total} items",
     "showingItems": "Showing {count} of {total} items",
     "completedDate": "Completed {date}",
-    "createdDate": "Created {date}"
+    "createdDate": "Created {date}",
+    "sortField": "Sort by"
   },
   "InventoryAssembly": {
     "cancel": "Cancel",

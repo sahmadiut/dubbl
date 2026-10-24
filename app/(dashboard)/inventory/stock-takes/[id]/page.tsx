@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { useTranslations } from "next-intl";
 
 import { movementStockJson, movementStockLine, movementJson, movementAppliedJson } from "@/i18n/inventory-movement-presentation";
@@ -143,7 +145,7 @@ function CounterCell({
   }
 
   return (
-    <div className="flex items-center justify-end">
+    <div dir="ltr" className="flex items-center justify-end">
       {/* Left button: Match (✓) when uncounted, Minus (-) when counting */}
       <button
         className={cn(
@@ -190,7 +192,7 @@ function CounterCell({
                 (e.target as HTMLInputElement).blur();
               }
             }}
-          />
+           dir="ltr" />
         )}
       </div>
 
@@ -520,7 +522,7 @@ export default function StockTakeDetailPage() {
           variant="outline"
           size="sm"
           onClick={() => router.push("/inventory/stock-takes")}
-        >{t("backStock")}</Button>
+         className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >{t("backStock")}</Button>
       </div>
     );
   }
@@ -571,18 +573,18 @@ export default function StockTakeDetailPage() {
         onClick={() => router.push("/inventory/stock-takes")}
         className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors mb-6"
       >
-        <ArrowLeft className="size-3.5" />{t("backStockLink")}</button>
+        <ArrowLeft className="size-3.5 rtl:rotate-180" />{t("backStockLink")}</button>
 
       <ContentReveal className="space-y-6">
         {/* Header */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <div className="flex size-10 items-center justify-center rounded-xl bg-muted">
               <ClipboardList className="size-5 text-muted-foreground" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-lg font-semibold">{stockTake.name}</h1>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-lg font-semibold"><BidiText>{stockTake.name}</BidiText></h1>
                 <Badge
                   variant="outline"
                   className={cn("text-[10px] px-1.5 py-0", statusCfg.className)}
@@ -599,7 +601,7 @@ export default function StockTakeDetailPage() {
                 {stockTake.warehouse && (
                   <>
                     {" · "}
-                    {stockTake.warehouse.name} ({stockTake.warehouse.code})
+                    <BidiText>{stockTake.warehouse.name}</BidiText> (<IdentifierText>{stockTake.warehouse.code}</IdentifierText>)
                   </>
                 )}
                 {stockTake.completedAt && (
@@ -617,28 +619,28 @@ export default function StockTakeDetailPage() {
           </div>
 
           {/* Action buttons */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             {stockTake.status === "draft" && (
               <>
                 <Button
                   size="sm"
                   onClick={handleStartCount}
                   disabled={actionLoading}
-                  className="bg-emerald-600 hover:bg-emerald-700"
+                  className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
                 >
                   {actionLoading ? (
-                    <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+                    <Loader2 className="me-1.5 size-3.5 animate-spin" />
                   ) : (
-                    <Play className="mr-1.5 size-3.5" />
+                    <Play className="me-1.5 size-3.5" />
                   )}{t("startCount")}</Button>
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={handleDelete}
                   disabled={actionLoading}
-                  className="border-red-300 text-red-600 hover:bg-red-100 hover:text-red-700 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/40"
+                  className="border-red-300 text-red-600 hover:bg-red-100 hover:text-red-700 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/40 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
                 >
-                  <Trash2 className="mr-1.5 size-3.5" />{t("delete")}</Button>
+                  <Trash2 className="me-1.5 size-3.5" />{t("delete")}</Button>
               </>
             )}
             {stockTake.status === "in_progress" && (
@@ -647,27 +649,27 @@ export default function StockTakeDetailPage() {
                   size="sm"
                   variant={blindMode ? "default" : "outline"}
                   onClick={() => setBlindMode(!blindMode)}
-                >
-                  <EyeOff className="mr-1.5 size-3.5" />{t("blindCount")}</Button>
+                 className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
+                  <EyeOff className="me-1.5 size-3.5" />{t("blindCount")}</Button>
                 <Button
                   size="sm"
                   onClick={handleApplyAdjustments}
                   disabled={actionLoading}
-                  className="bg-emerald-600 hover:bg-emerald-700"
+                  className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
                 >
                   {actionLoading ? (
-                    <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+                    <Loader2 className="me-1.5 size-3.5 animate-spin" />
                   ) : (
-                    <CheckCircle className="mr-1.5 size-3.5" />
+                    <CheckCircle className="me-1.5 size-3.5" />
                   )}{t("finalizeAdjustment")}</Button>
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={handleCancel}
                   disabled={actionLoading}
-                  className="border-red-300 text-red-600 hover:bg-red-100 hover:text-red-700 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/40"
+                  className="border-red-300 text-red-600 hover:bg-red-100 hover:text-red-700 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/40 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
                 >
-                  <XCircle className="mr-1.5 size-3.5" />{t("cancel")}</Button>
+                  <XCircle className="me-1.5 size-3.5" />{t("cancel")}</Button>
               </>
             )}
           </div>
@@ -676,9 +678,9 @@ export default function StockTakeDetailPage() {
         {/* Progress bar */}
         {stockTake.status !== "draft" && (
           <div className="rounded-xl border bg-card p-4 space-y-2">
-            <div className="flex items-center justify-between text-xs">
+            <div className="flex items-center justify-between text-xs flex-wrap">
               <span className="text-muted-foreground font-medium">{t("countingProgress")}</span>
-              <span className="font-mono font-medium">{t("countProgress", { count: countedLines, total: totalLines })}</span>
+              <span className="font-mono font-medium"><BidiText>{t("countProgress", { count: countedLines, total: totalLines })}</BidiText></span>
             </div>
             <div className="h-2 rounded-full bg-muted overflow-hidden">
               <motion.div
@@ -688,7 +690,7 @@ export default function StockTakeDetailPage() {
                 transition={{ duration: 0.6, ease: EASE_OUT }}
               />
             </div>
-            <div className="flex gap-4 text-xs text-muted-foreground pt-1">
+            <div className="flex gap-4 text-xs text-muted-foreground pt-1 flex-wrap">
               <span>{t("matches")}<span className="font-medium text-emerald-600">{matchCount}</span></span>
               <span>{t("discrepanciesLabel")}<span className="font-medium text-red-600">{discrepancyCount}</span></span>
               <span>{t("uncountedLabel")}<span className="font-medium">{uncountedCount}</span></span>
@@ -722,7 +724,7 @@ export default function StockTakeDetailPage() {
         {stockTake.notes && (
           <div className="rounded-xl border bg-card p-4">
             <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground mb-1">{t("notes")}</p>
-            <p className="text-sm text-foreground">{stockTake.notes}</p>
+            <p className="text-sm text-foreground"><BidiText>{stockTake.notes}</BidiText></p>
           </div>
         )}
 
@@ -742,13 +744,13 @@ export default function StockTakeDetailPage() {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <Tabs value={lineFilter} onValueChange={(v) => setLineFilter(v as LineFilter)}>
                   <TabsList>
-                    <TabsTrigger value="all">{t("all")}<span className="ml-1 text-[10px] font-mono opacity-60">{totalLines}</span>
+                    <TabsTrigger value="all">{t("all")}<span className="ms-1 text-[10px] font-mono opacity-60">{totalLines}</span>
                     </TabsTrigger>
-                    <TabsTrigger value="uncounted">{t("uncounted")}<span className="ml-1 text-[10px] font-mono opacity-60">{uncountedCount}</span>
+                    <TabsTrigger value="uncounted">{t("uncounted")}<span className="ms-1 text-[10px] font-mono opacity-60">{uncountedCount}</span>
                     </TabsTrigger>
-                    <TabsTrigger value="matched">{t("matched")}<span className="ml-1 text-[10px] font-mono opacity-60">{matchCount}</span>
+                    <TabsTrigger value="matched">{t("matched")}<span className="ms-1 text-[10px] font-mono opacity-60">{matchCount}</span>
                     </TabsTrigger>
-                    <TabsTrigger value="discrepancies">{t("discrepancies")}<span className="ml-1 text-[10px] font-mono opacity-60">{discrepancyCount}</span>
+                    <TabsTrigger value="discrepancies">{t("discrepancies")}<span className="ms-1 text-[10px] font-mono opacity-60">{discrepancyCount}</span>
                     </TabsTrigger>
                   </TabsList>
                 </Tabs>
@@ -766,14 +768,14 @@ export default function StockTakeDetailPage() {
                         variant="outline"
                         onClick={handleConfirmAllRemaining}
                         disabled={confirmingAll}
-                        className="h-8 text-xs gap-1.5"
+                        className="h-8 text-xs gap-1.5 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
                       >
                         {confirmingAll ? (
                           <Loader2 className="size-3 animate-spin" />
                         ) : (
                           <ChevronsUp className="size-3" />
                         )}
-                        {t("confirmRemaining", { count: uncountedCount })}
+                        <BidiText>{t("confirmRemaining", { count: uncountedCount })}</BidiText>
                       </Button>
                     </motion.div>
                   )}
@@ -782,19 +784,19 @@ export default function StockTakeDetailPage() {
 
               {/* Search + Sort */}
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                <div className="relative flex-1 sm:max-w-xs">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+                <div className="relative flex-1 sm:max-w-xs flex-wrap">
+                  <Search className="pointer-events-none absolute start-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     placeholder={t("itemSearch")}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9 pr-8 h-8 text-sm"
-                  />
+                    className="ps-9 pe-8 h-8 text-sm"
+                   dir="auto" aria-label={t("itemSearch")} />
                   {searchQuery && (
                     <button
                       aria-label={t("clearSearch")}
                       onClick={() => setSearchQuery("")}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      className="absolute end-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                     >
                       <X className="size-3.5" />
                     </button>
@@ -802,8 +804,8 @@ export default function StockTakeDetailPage() {
                 </div>
 
                 <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortKey)}>
-                  <SelectTrigger className="h-8 w-full sm:w-[150px] text-xs">
-                    <ArrowUpDown className="size-3 mr-1.5 text-muted-foreground" />
+                  <SelectTrigger className="h-8 w-full sm:w-[150px] text-xs data-[size=default]:h-auto data-[size=sm]:h-auto min-h-8 whitespace-normal *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal *:data-[slot=select-value]:text-start *:data-[slot=select-value]:min-w-0" aria-label={t("sortField")} >
+                    <ArrowUpDown className="size-3 me-1.5 text-muted-foreground" />
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -826,7 +828,7 @@ export default function StockTakeDetailPage() {
             </div>
 
             {searchQuery !== debouncedSearch ? (
-              <div className="flex items-center justify-center py-20">
+              <div className="flex items-center justify-center py-20 flex-wrap">
                 <div className="brand-loader" aria-label={t("loading")}>
                   <div className="brand-loader-circle brand-loader-circle-1" />
                   <div className="brand-loader-circle brand-loader-circle-2" />
@@ -846,10 +848,10 @@ export default function StockTakeDetailPage() {
               {/* Table header */}
               <div className="grid grid-cols-[1fr_70px_130px_70px_50px] sm:grid-cols-[1fr_90px_150px_90px_70px] gap-4 px-5 py-2.5 border-b bg-muted/50">
                 <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("item")}</p>
-                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground text-right">{t("expected")}</p>
-                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground text-right">{t("counted")}</p>
-                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground text-right">{t("diff")}</p>
-                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground text-right">{t("status")}</p>
+                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground text-end">{t("expected")}</p>
+                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground text-end">{t("counted")}</p>
+                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground text-end">{t("diff")}</p>
+                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground text-end">{t("status")}</p>
               </div>
 
               {/* Table rows */}
@@ -884,16 +886,16 @@ export default function StockTakeDetailPage() {
                         >
                           {/* Item info */}
                           <div className="min-w-0">
-                            <p className="text-sm font-medium truncate">
-                              {line.inventoryItem.name}
+                            <p className="text-sm font-medium whitespace-normal [overflow-wrap:anywhere]">
+                              <BidiText>{line.inventoryItem.name}</BidiText>
                             </p>
-                            <p className="text-xs text-muted-foreground truncate">
-                              {line.inventoryItem.code}
+                            <p className="text-xs text-muted-foreground whitespace-normal [overflow-wrap:anywhere]">
+                              <IdentifierText>{line.inventoryItem.code}</IdentifierText>
                             </p>
                           </div>
 
                           {/* Expected */}
-                          <p className="text-sm font-mono tabular-nums text-right">
+                          <p className="text-sm font-mono tabular-nums text-end">
                             {blindMode && isEditable ? "***" : line.expectedQuantity}
                           </p>
 
@@ -905,17 +907,17 @@ export default function StockTakeDetailPage() {
                               onUpdate={handleUpdateLine}
                             />
                           ) : (
-                            <p className="text-sm font-mono tabular-nums text-right">
-                              {line.countedQuantity !== null
+                            <p className="text-sm font-mono tabular-nums text-end">
+                              <BidiText>{line.countedQuantity !== null
                                 ? line.countedQuantity
-                                : "-"}
+                                : "-"}</BidiText>
                             </p>
                           )}
 
                           {/* Discrepancy */}
                           <p
                             className={cn(
-                              "text-sm font-mono tabular-nums text-right font-medium transition-colors duration-300",
+                              "text-sm font-mono tabular-nums text-end font-medium transition-colors duration-300",
                               disc === null
                                 ? "text-muted-foreground"
                                 : disc === 0
@@ -925,17 +927,17 @@ export default function StockTakeDetailPage() {
                                     : "text-red-600 dark:text-red-400"
                             )}
                           >
-                            {disc === null
+                            <BidiText dir="ltr">{disc === null
                               ? "-"
                               : disc === 0
                                 ? "0"
                                 : disc > 0
                                   ? `+${disc}`
-                                  : disc}
+                                  : disc}</BidiText>
                           </p>
 
                           {/* Adjusted badge */}
-                          <div className="flex justify-end">
+                          <div className="flex justify-end flex-wrap">
                             <AnimatePresence>
                               {line.adjusted && (
                                 <motion.div
@@ -963,7 +965,7 @@ export default function StockTakeDetailPage() {
             {/* Showing X of Y - only when filtering */}
             {(debouncedSearch || lineFilter !== "all") && (
               <p className="text-xs text-muted-foreground text-center pt-3">
-                {t("showingItems", { count: filteredLines.length, total: totalLines })}
+                <BidiText>{t("showingItems", { count: filteredLines.length, total: totalLines })}</BidiText>
               </p>
             )}
 

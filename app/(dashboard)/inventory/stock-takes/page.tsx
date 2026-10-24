@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText } from "@/components/ui/bidi-text";
+
 import { movementStockListJson } from "@/i18n/inventory-movement-presentation";
 import { useTranslations } from "next-intl";
 
@@ -127,31 +129,31 @@ export default function StockTakesPage() {
   if (stockTakes.length === 0) {
     return (
       <ContentReveal>
-        <div className="flex items-start pt-12 pb-12">
+        <div className="flex items-start pt-12 pb-12 flex-wrap">
           <div className="grid w-full gap-10 lg:grid-cols-2 lg:gap-16 items-center">
             {/* Left: text + CTA */}
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs text-muted-foreground">
+              <div className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs text-muted-foreground flex-wrap">
                 <ClipboardList className="size-3.5 text-emerald-500" />{t("physicalCounts")}</div>
               <h2 className="mt-4 text-lg sm:text-2xl font-semibold tracking-tight">{t("accurateRecords")}</h2>
               <p className="mt-3 text-sm text-muted-foreground leading-relaxed max-w-md">{t("stockEmptyHelp")}</p>
-              <div className="mt-6 flex items-center gap-3">
+              <div className="mt-6 flex items-center gap-3 flex-wrap">
                 <Button
                   onClick={() => openDrawer("stockTake")}
                   size="lg"
-                  className="bg-emerald-600 hover:bg-emerald-700"
+                  className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
                 >
-                  <Plus className="mr-2 size-4" />{t("newStockTake")}</Button>
+                  <Plus className="me-2 size-4" />{t("newStockTake")}</Button>
               </div>
               {/* Mini stats */}
-              <div className="mt-8 flex gap-4 sm:gap-6 text-center">
+              <div className="mt-8 flex gap-4 sm:gap-6 text-center flex-wrap">
                 {[
                   { label: t("counts"), value: "0" },
                   { label: t("itemsCounted"), value: "0" },
                   { label: t("completed"), value: "0" },
                 ].map(({ label, value }) => (
                   <div key={label}>
-                    <p className="text-xl font-bold font-mono tabular-nums truncate text-muted-foreground/40">{value}</p>
+                    <p className="text-xl font-bold font-mono tabular-nums whitespace-normal [overflow-wrap:anywhere] text-muted-foreground/40">{value}</p>
                     <p className="text-[11px] text-muted-foreground mt-0.5">{label}</p>
                   </div>
                 ))}
@@ -163,8 +165,8 @@ export default function StockTakesPage() {
               <div className="space-y-3">
                 {/* Step 1: Draft */}
                 <div className="rounded-xl border bg-card p-4 shadow-sm">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2.5">
+                  <div className="flex items-center justify-between mb-3 flex-wrap">
+                    <div className="flex items-center gap-2.5 flex-wrap">
                       <div className="flex size-7 items-center justify-center rounded-md bg-zinc-100 dark:bg-zinc-800">
                         <FileText className="size-3.5 text-zinc-500" />
                       </div>
@@ -175,7 +177,7 @@ export default function StockTakesPage() {
                     </div>
                     <Badge variant="outline" className="text-[10px] border-zinc-200 bg-zinc-50 text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400">{t("draft")}</Badge>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
                     <div className="h-1.5 flex-1 rounded-full bg-muted" />
                     <div className="h-1.5 flex-1 rounded-full bg-muted" />
                     <div className="h-1.5 flex-1 rounded-full bg-muted" />
@@ -183,50 +185,50 @@ export default function StockTakesPage() {
                 </div>
 
                 {/* Arrow */}
-                <div className="flex justify-center">
-                  <ArrowRight className="size-4 text-muted-foreground/30 rotate-90" />
+                <div className="flex justify-center flex-wrap">
+                  <ArrowRight className="size-4 text-muted-foreground/30 rotate-90 rtl:rotate-180" />
                 </div>
 
                 {/* Step 2: In progress */}
                 <div className="rounded-xl border border-blue-200 dark:border-blue-900/50 bg-card p-4 shadow-sm">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2.5">
+                  <div className="flex items-center justify-between mb-3 flex-wrap">
+                    <div className="flex items-center gap-2.5 flex-wrap">
                       <div className="flex size-7 items-center justify-center rounded-md bg-blue-50 dark:bg-blue-950/40">
                         <Clock className="size-3.5 text-blue-500" />
                       </div>
                       <div>
                         <p className="text-sm font-medium">{t("countingItems")}</p>
-                        <p className="text-[11px] text-muted-foreground">{t("exampleProgress", { count: 12, total: 48 })}</p>
+                        <p className="text-[11px] text-muted-foreground"><BidiText>{t("exampleProgress", { count: 12, total: 48 })}</BidiText></p>
                       </div>
                     </div>
                     <Badge variant="outline" className="text-[10px] border-blue-200 bg-blue-50 text-blue-600 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-400">{t("inProgress")}</Badge>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
                     <div className="h-1.5 flex-1 rounded-full bg-blue-500" />
                     <div className="h-1.5 flex-[3] rounded-full bg-muted" />
                   </div>
                 </div>
 
                 {/* Arrow */}
-                <div className="flex justify-center">
-                  <ArrowRight className="size-4 text-muted-foreground/30 rotate-90" />
+                <div className="flex justify-center flex-wrap">
+                  <ArrowRight className="size-4 text-muted-foreground/30 rotate-90 rtl:rotate-180" />
                 </div>
 
                 {/* Step 3: Completed */}
                 <div className="rounded-xl border border-dashed border-emerald-200 dark:border-emerald-900/40 bg-card/60 p-4 opacity-60">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2.5">
+                  <div className="flex items-center justify-between mb-3 flex-wrap">
+                    <div className="flex items-center gap-2.5 flex-wrap">
                       <div className="flex size-7 items-center justify-center rounded-md bg-emerald-50 dark:bg-emerald-950/40">
                         <CheckCircle2 className="size-3.5 text-emerald-500" />
                       </div>
                       <div>
                         <p className="text-sm font-medium">{t("countComplete")}</p>
-                        <p className="text-[11px] text-muted-foreground">{t("exampleDiscrepancies", { count: 3 })}</p>
+                        <p className="text-[11px] text-muted-foreground"><BidiText>{t("exampleDiscrepancies", { count: 3 })}</BidiText></p>
                       </div>
                     </div>
                     <Badge variant="outline" className="text-[10px] border-emerald-200 bg-emerald-50 text-emerald-600 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-400">{t("completed")}</Badge>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
                     <div className="h-1.5 flex-1 rounded-full bg-emerald-500" />
                   </div>
                 </div>
@@ -245,13 +247,13 @@ export default function StockTakesPage() {
         description={t("stockDescription")}
       >
         <div className="relative w-full sm:w-64">
-          <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute start-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={t("stockSearch")}
-            className="pl-9 h-9 text-sm"
-          />
+            className="ps-9 h-9 text-sm"
+           dir="auto" aria-label={t("stockSearch")} />
         </div>
       </PageHeader>
 
@@ -264,12 +266,12 @@ export default function StockTakesPage() {
           transition={{ duration: 0.3 }}
           className="rounded-xl border bg-card p-5 flex flex-col justify-between gap-4"
         >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-muted-foreground">
+          <div className="flex items-center justify-between flex-wrap">
+            <div className="flex items-center gap-2 text-muted-foreground flex-wrap">
               <ClipboardList className="size-4" />
               <span className="text-xs font-medium uppercase tracking-wide">{t("overview")}</span>
             </div>
-            <span className="text-[11px] text-muted-foreground font-medium">{t("completionRate", { rate: completionRate })}</span>
+            <span className="text-[11px] text-muted-foreground font-medium"><BidiText>{t("completionRate", { rate: completionRate })}</BidiText></span>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -303,10 +305,10 @@ export default function StockTakesPage() {
                 />
               )}
             </div>
-            <div className="flex items-center gap-4 text-[11px] text-muted-foreground">
-              <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-emerald-500" />{t("statusCount", { status: t("completed"), count: completedCount })}</span>
-              <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-blue-500" />{t("statusCount", { status: t("inProgress"), count: inProgressCount })}</span>
-              <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-zinc-300 dark:bg-zinc-600" />{t("statusCount", { status: t("draft"), count: draftCount })}</span>
+            <div className="flex items-center gap-4 text-[11px] text-muted-foreground flex-wrap">
+              <span className="flex items-center gap-1.5 flex-wrap"><span className="size-2 rounded-full bg-emerald-500" /><BidiText>{t("statusCount", { status: t("completed"), count: completedCount })}</BidiText></span>
+              <span className="flex items-center gap-1.5 flex-wrap"><span className="size-2 rounded-full bg-blue-500" /><BidiText>{t("statusCount", { status: t("inProgress"), count: inProgressCount })}</BidiText></span>
+              <span className="flex items-center gap-1.5 flex-wrap"><span className="size-2 rounded-full bg-zinc-300 dark:bg-zinc-600" /><BidiText>{t("statusCount", { status: t("draft"), count: draftCount })}</BidiText></span>
             </div>
           </div>
         </motion.div>
@@ -330,7 +332,7 @@ export default function StockTakesPage() {
                 <stat.icon className={cn("size-4", stat.color)} />
               </div>
               <div className="mt-3">
-                <p className={cn("text-2xl font-bold font-mono tabular-nums truncate", stat.color)}>
+                <p className={cn("text-2xl font-bold font-mono tabular-nums whitespace-normal [overflow-wrap:anywhere]", stat.color)}>
                   {stat.value}
                 </p>
                 <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide mt-0.5">
@@ -345,7 +347,7 @@ export default function StockTakesPage() {
       {/* Filter tabs */}
       <Tabs value={tab} onValueChange={(v) => setTab(v as FilterTab)}>
         <TabsList>
-          <TabsTrigger value="all">{t("allCount", { count: stockTakes.length })}</TabsTrigger>
+          <TabsTrigger value="all"><BidiText>{t("allCount", { count: stockTakes.length })}</BidiText></TabsTrigger>
           <TabsTrigger value="draft">{t("draft")}</TabsTrigger>
           <TabsTrigger value="in_progress">{t("inProgress")}</TabsTrigger>
           <TabsTrigger value="completed">{t("completed")}</TabsTrigger>
@@ -378,14 +380,14 @@ export default function StockTakesPage() {
                   router.push(`/inventory/stock-takes/${st.id}`)
                 }
               >
-                <div className="flex items-center gap-3 flex-1 min-w-0">
+                <div className="flex items-center gap-3 flex-1 min-w-0 flex-wrap">
                   <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted">
                     <ClipboardList className="size-4 text-muted-foreground" />
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium truncate">
-                        {st.name}
+                  <div className="min-w-0 flex-1 flex-wrap">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-medium whitespace-normal [overflow-wrap:anywhere]">
+                        <BidiText>{st.name}</BidiText>
                       </p>
                       <Badge
                         variant="outline"
@@ -396,11 +398,11 @@ export default function StockTakesPage() {
                     </div>
                     <p className="text-xs text-muted-foreground">
                       {new Date(st.createdAt).toLocaleDateString()} ·{" "}
-                      {t("itemCount", { count: st.itemCount })}
+                      <BidiText>{t("itemCount", { count: st.itemCount })}</BidiText>
                     </p>
                   </div>
                 </div>
-                <ChevronRight className="size-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors shrink-0" />
+                <ChevronRight className="size-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors shrink-0 rtl:rotate-180" />
               </motion.div>
             );
           })}

@@ -55,7 +55,7 @@ export function CurrencyInput({
     >
       {prefix && (
         <span className={cn(
-          "select-none text-muted-foreground pl-2.5 font-mono",
+          "select-none text-muted-foreground ps-2.5 font-mono",
           size === "sm" ? "text-xs" : "text-sm",
         )}>
           <bdi>{currencyPrefix(prefix, presentation.locale)}</bdi>

@@ -21,15 +21,15 @@ const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
     const placeholder = suppliedPlaceholder ?? t("search");
     return (
       <div className={cn("relative flex-1 sm:max-w-xs", className)}>
-        <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+        <Search className="pointer-events-none absolute start-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
         <Input
           ref={ref}
           placeholder={placeholder}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="pl-9 pr-8 h-8 text-sm"
+          className="ps-9 pe-8 h-8 text-sm"
         />
-        <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center">
+        <div className="absolute end-2.5 top-1/2 -translate-y-1/2 flex items-center">
           {loading ? (
             <Loader2 className="size-3.5 text-muted-foreground animate-spin" />
           ) : value ? (

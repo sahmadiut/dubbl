@@ -1,0 +1,314 @@
+{
+  "task": "RTL-004",
+  "callers": [
+    {
+      "source": "app/(dashboard)/documents/page.tsx",
+      "instances": 1,
+      "physical_overrides": []
+    },
+    {
+      "source": "app/(dashboard)/inventory/page.tsx",
+      "instances": 3,
+      "physical_overrides": []
+    },
+    {
+      "source": "app/(dashboard)/tax/page.tsx",
+      "instances": 2,
+      "physical_overrides": []
+    },
+    {
+      "source": "app/(dashboard)/teams/page.tsx",
+      "instances": 1,
+      "physical_overrides": []
+    },
+    {
+      "source": "app/(dashboard)/teams/[id]/page.tsx",
+      "instances": 1,
+      "physical_overrides": []
+    },
+    {
+      "source": "app/(dashboard)/tax/currencies/page.tsx",
+      "instances": 2,
+      "physical_overrides": []
+    },
+    {
+      "source": "app/(dashboard)/tax/periods/page.tsx",
+      "instances": 2,
+      "physical_overrides": []
+    },
+    {
+      "source": "app/(dashboard)/tax/periods/[id]/page.tsx",
+      "instances": 1,
+      "physical_overrides": []
+    },
+    {
+      "source": "app/(dashboard)/settings/advisors/page.tsx",
+      "instances": 1,
+      "physical_overrides": []
+    },
+    {
+      "source": "app/(dashboard)/settings/api-keys/page.tsx",
+      "instances": 1,
+      "physical_overrides": []
+    },
+    {
+      "source": "app/(dashboard)/settings/approval-workflows/page.tsx",
+      "instances": 1,
+      "physical_overrides": []
+    },
+    {
+      "source": "app/(dashboard)/settings/bank-rules/page.tsx",
+      "instances": 1,
+      "physical_overrides": []
+    },
+    {
+      "source": "app/(dashboard)/settings/cost-centers/page.tsx",
+      "instances": 2,
+      "physical_overrides": []
+    },
+    {
+      "source": "app/(dashboard)/settings/document-templates/page.tsx",
+      "instances": 1,
+      "physical_overrides": [
+        {
+          "line": 190,
+          "side": "\"right\""
+        }
+      ]
+    },
+    {
+      "source": "app/(dashboard)/settings/members/page.tsx",
+      "instances": 2,
+      "physical_overrides": []
+    },
+    {
+      "source": "app/(dashboard)/settings/pipelines/page.tsx",
+      "instances": 1,
+      "physical_overrides": []
+    },
+    {
+      "source": "app/(dashboard)/settings/reminders/page.tsx",
+      "instances": 1,
+      "physical_overrides": []
+    },
+    {
+      "source": "app/(dashboard)/settings/roles/page.tsx",
+      "instances": 1,
+      "physical_overrides": []
+    },
+    {
+      "source": "app/(dashboard)/settings/tags/page.tsx",
+      "instances": 1,
+      "physical_overrides": []
+    },
+    {
+      "source": "app/(dashboard)/settings/webhooks/page.tsx",
+      "instances": 1,
+      "physical_overrides": []
+    },
+    {
+      "source": "app/(dashboard)/sales/[id]/page.tsx",
+      "instances": 1,
+      "physical_overrides": [
+        {
+          "line": 1197,
+          "side": "\"right\""
+        }
+      ]
+    },
+    {
+      "source": "app/(dashboard)/purchases/landed-costs/page.tsx",
+      "instances": 1,
+      "physical_overrides": []
+    },
+    {
+      "source": "app/(dashboard)/purchases/requisitions/page.tsx",
+      "instances": 1,
+      "physical_overrides": []
+    },
+    {
+      "source": "app/(dashboard)/purchases/requisitions/[id]/page.tsx",
+      "instances": 1,
+      "physical_overrides": []
+    },
+    {
+      "source": "app/(dashboard)/purchases/orders/[id]/page.tsx",
+      "instances": 1,
+      "physical_overrides": []
+    },
+    {
+      "source": "app/(dashboard)/purchases/expenses/recurring/page.tsx",
+      "instances": 1,
+      "physical_overrides": []
+    },
+    {
+      "source": "app/(dashboard)/purchases/expenses/[id]/page.tsx",
+      "instances": 1,
+      "physical_overrides": []
+    },
+    {
+      "source": "app/(dashboard)/purchases/bills/recurring/page.tsx",
+      "instances": 1,
+      "physical_overrides": []
+    },
+    {
+      "source": "app/(dashboard)/projects/[id]/members/page.tsx",
+      "instances": 2,
+      "physical_overrides": []
+    },
+    {
+      "source": "app/(dashboard)/projects/[id]/milestones/page.tsx",
+      "instances": 3,
+      "physical_overrides": []
+    },
+    {
+      "source": "app/(dashboard)/projects/[id]/tasks/page.tsx",
+      "instances": 2,
+      "physical_overrides": []
+    },
+    {
+      "source": "app/(dashboard)/projects/[id]/time/page.tsx",
+      "instances": 1,
+      "physical_overrides": []
+    },
+    {
+      "source": "app/(dashboard)/payroll/compensation/page.tsx",
+      "instances": 2,
+      "physical_overrides": []
+    },
+    {
+      "source": "app/(dashboard)/payroll/settings/page.tsx",
+      "instances": 5,
+      "physical_overrides": []
+    },
+    {
+      "source": "app/(dashboard)/payroll/tax-liabilities/page.tsx",
+      "instances": 1,
+      "physical_overrides": []
+    },
+    {
+      "source": "app/(dashboard)/payroll/time-leave/page.tsx",
+      "instances": 2,
+      "physical_overrides": []
+    },
+    {
+      "source": "app/(dashboard)/inventory/categories/page.tsx",
+      "instances": 1,
+      "physical_overrides": []
+    },
+    {
+      "source": "app/(dashboard)/inventory/transfers/page.tsx",
+      "instances": 1,
+      "physical_overrides": []
+    },
+    {
+      "source": "app/(dashboard)/inventory/warehouses/page.tsx",
+      "instances": 1,
+      "physical_overrides": []
+    },
+    {
+      "source": "app/(dashboard)/inventory/[id]/layout.tsx",
+      "instances": 2,
+      "physical_overrides": []
+    },
+    {
+      "source": "app/(dashboard)/inventory/[id]/page.tsx",
+      "instances": 1,
+      "physical_overrides": []
+    },
+    {
+      "source": "app/(dashboard)/inventory/[id]/suppliers/page.tsx",
+      "instances": 1,
+      "physical_overrides": []
+    },
+    {
+      "source": "app/(dashboard)/inventory/[id]/variants/page.tsx",
+      "instances": 1,
+      "physical_overrides": []
+    },
+    {
+      "source": "app/(dashboard)/accounting/[id]/page.tsx",
+      "instances": 1,
+      "physical_overrides": [
+        {
+          "line": 703,
+          "side": "\"right\""
+        }
+      ]
+    },
+    {
+      "source": "app/(dashboard)/accounting/banking/[id]/_components.tsx",
+      "instances": 8,
+      "physical_overrides": [
+        {
+          "line": 931,
+          "side": "\"right\""
+        },
+        {
+          "line": 1161,
+          "side": "\"right\""
+        },
+        {
+          "line": 1506,
+          "side": "\"right\""
+        },
+        {
+          "line": 1721,
+          "side": "\"right\""
+        },
+        {
+          "line": 1977,
+          "side": "\"right\""
+        },
+        {
+          "line": 2211,
+          "side": "\"right\""
+        },
+        {
+          "line": 2411,
+          "side": "\"right\""
+        }
+      ]
+    },
+    {
+      "source": "app/(dashboard)/accounting/banking/[id]/reconcile/page.tsx",
+      "instances": 1,
+      "physical_overrides": []
+    },
+    {
+      "source": "components/bulk-import-wizard.tsx",
+      "instances": 1,
+      "physical_overrides": []
+    },
+    {
+      "source": "components/dashboard/category-picker.tsx",
+      "instances": 1,
+      "physical_overrides": []
+    },
+    {
+      "source": "components/dashboard/create-drawer.tsx",
+      "instances": 31,
+      "physical_overrides": []
+    },
+    {
+      "source": "components/dashboard/send-document-dialog.tsx",
+      "instances": 1,
+      "physical_overrides": []
+    },
+    {
+      "source": "components/landing/navbar.tsx",
+      "instances": 1,
+      "physical_overrides": [
+        {
+          "line": 109,
+          "side": "\"right\""
+        }
+      ]
+    },
+    {
+      "source": "components/ui/sidebar.tsx",
+      "instances": 1,
+      "physical_overrides": []
+    }
+  ]
+}

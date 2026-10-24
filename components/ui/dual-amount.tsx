@@ -14,8 +14,8 @@ interface DualAmountProps {
   /** amount converted to base currency (minor units), or null if no rate */
   baseAmount?: number | bigint | null;
   className?: string;
-  /** right-align the stacked amounts (for totals in tables) */
-  align?: "left" | "right";
+  /** Logical alignment by default; left/right preserve explicit physical totals. */
+  align?: "start" | "end" | "left" | "right";
 }
 
 /**
@@ -28,7 +28,7 @@ export function DualAmount({
   baseCurrency,
   baseAmount,
   className,
-  align = "left",
+  align = "start",
 }: DualAmountProps) {
   const numbers = useNumberPresentation();
   const units = useCurrencyPresentation();
@@ -42,7 +42,10 @@ export function DualAmount({
     <span
       className={cn(
         "inline-flex flex-col leading-tight",
-        align === "right" && "items-end",
+        align === "start" && "items-start",
+        align === "end" && "items-end",
+        align === "right" && "items-end [&:dir(rtl)]:items-start",
+        align === "left" && "items-start [&:dir(rtl)]:items-end",
         className
       )}
     >

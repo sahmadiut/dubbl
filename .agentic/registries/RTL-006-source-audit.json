@@ -1,0 +1,23 @@
+{
+  "task": "RTL-006",
+  "base": "c80ae3319a8f3e3781ad2b8702635dac310108d3",
+  "normalization": "UTF-8 with LF for hashes",
+  "sources": [
+    {
+      "path": "components/ui/input.tsx",
+      "sha256": "1c5da00882b1ca05bed78e8cb33809dea243733605a5ea45da7422f6a0d04823"
+    },
+    {
+      "path": "components/ui/bidi-text.tsx",
+      "sha256": "acad8ff9f33ef77c4e95efd75302691d59c8aea82ab334204fa7b9d9c20a11ea"
+    },
+    {
+      "path": "components/settings/api-key-fields.tsx",
+      "sha256": "7d88bffb99ba94624cbbcd992a2cd80b461a9f574105180609d9847fdfec41a5"
+    },
+    {
+      "path": "tests/rtl-bidi-controls.test.ts",
+      "sha256": "b3f7fb0523c032048cd6626c5ae6dda786c99e24c173c5f1441ce837f42a1a2a"
+    }
+  ]
+}

@@ -129,7 +129,7 @@ test("activity feed renders real bilingual copy, escaped caller data, type choic
     for (const field of ["wonAt", "lostAt"]) {
       const closed = render(activityPage, { ...loaded, context: { deal: { ...deal, lostReason: null, [field]: deal.createdAt } } }, locale);
       assert.ok(closed.html.includes(escape(t(field === "wonAt" ? "dealWon" : "dealLost"))));
-      if (field === "wonAt") assert.ok(closed.html.includes(escape(payrollMoneyDisplay(deal.valueCents, "KWD"))));
+      if (field === "wonAt") assert.ok(closed.html.includes(escape(payrollMoneyDisplay(deal.valueCents, "KWD", resolvePresentation({ user: { language: locale } })))));
     }
     const empty = render(activityPage, { loading: false, hasMore: false }, locale);
     assert.ok(empty.html.includes(escape(t("noActivity"))));

@@ -1,3 +1,4 @@
+import { resolvePresentation } from "../i18n/locale";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -112,8 +113,8 @@ test("payslips render bilingual detail, statuses, escaped data, maximal cents an
     assert.ok(has(h, "title", t("payslipsDocumentTitle")));
     assert.ok(h.html.includes(escape(t("period", { start: run.payPeriodStart, end: run.payPeriodEnd }))));
     assert.ok(h.html.includes(escape(caller))); assert.ok(!h.html.includes("<script>"));
-    assert.ok(h.html.includes(escape(payrollMoneyDisplay(18014398509481982n, "JPY"))));
-    assert.ok(h.html.includes(escape(payrollMoneyDisplay(Number.MAX_SAFE_INTEGER, "JPY"))));
+    assert.ok(h.html.includes(escape(payrollMoneyDisplay(18014398509481982n, "JPY", resolvePresentation({ user: { language: locale } })))));
+    assert.ok(h.html.includes(escape(payrollMoneyDisplay(Number.MAX_SAFE_INTEGER, "JPY", resolvePresentation({ user: { language: locale } })))));
     for (const status of payslipStatuses) assert.ok(slipView({ rows: [{ ...row, payslip: { ...payslip, status } }] }, locale).html.includes(escape(t(`payslipStatus_${status}`))));
     for (const count of [1, 2]) {
       const h = slipView({ rows: [row, ...Array.from({ length: count }, (_, i) => ({ ...row, payrollItemId: String(i), payslip: null }))] }, locale);
@@ -131,7 +132,7 @@ test("tax list/detail render bilingual statutory labels, metadata, masking and u
     for (const key of ["taxForms", "taxHelp", "generateNec", "generateW2", "taxYear", "formType", "status", "formsCount", "generated", "recipient", "taxId", "keyAmount", "actions"] as const) assert.ok(list.html.includes(escape(t(key))), key);
     for (const key of ["formType", "taxYear", "recipient", "taxId", "formData", "download", ...w2Fields, "metadata_currency", "metadata_employee_email", "metadata_employee_number"] as const) assert.ok(detail.html.includes(escape(t(key))), key);
     assert.ok(has(list, "title", t("taxDocumentTitle"))); assert.ok(has(detail, "title", t("taxDetailDocumentTitle")));
-    for (const h of [list, detail]) { assert.ok(h.html.includes("***-1234")); assert.ok(!h.html.includes("private1234")); assert.ok(h.html.includes(escape(caller))); assert.ok(!h.html.includes("<script>")); assert.ok(h.html.includes(escape(payrollMoneyDisplay(Number.MAX_SAFE_INTEGER)))); }
+    for (const h of [list, detail]) { assert.ok(h.html.includes("***-1234")); assert.ok(!h.html.includes("private1234")); assert.ok(h.html.includes(escape(caller))); assert.ok(!h.html.includes("<script>")); assert.ok(h.html.includes(escape(payrollMoneyDisplay(Number.MAX_SAFE_INTEGER, "USD", resolvePresentation({ user: { language: locale } }))))); }
     assert.ok(detail.html.includes(escape(t("recipientHeading", { name: caller, type: t("recipientType_employee") }))));
     assert.ok(detail.html.includes(escape(t("formHeading", { type: "W-2", year: "2025" }))));
     assert.deepEqual(list.captured.filter(c => c.kind === "SelectItem").map(c => c.props.value), Array.from({ length: 7 }, (_, i) => String(2020 + i)));

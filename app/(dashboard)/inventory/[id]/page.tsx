@@ -1,4 +1,6 @@
 "use client";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
+import { currencyLabel } from "@/i18n/currency-labels";
 
 import { inventoryItemJson, inventoryDeleteJson, inventoryWarehouseJson, inventoryPrintEscape } from "@/i18n/inventory-item-presentation";
 import { useTranslations } from "next-intl";
@@ -26,7 +28,6 @@ import { inventoryDetailMoney } from "@/lib/money/inventory-detail-ui";
 import { catalogPriceMinor, catalogWholeInput } from "@/lib/money/catalog-input";
 import { toMajorDecimal } from "@/lib/money/exact";
 import { bankMoneyDisplay } from "@/lib/money/bank-display";
-const formatMoney = (value: number | bigint) => bankMoneyDisplay(value, "USD");
 import { useConfirm } from "@/lib/hooks/use-confirm";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { setEntityTitle } from "@/lib/hooks/use-entity-title";
@@ -44,6 +45,8 @@ interface WarehouseStockEntry {
 }
 
 export default function InventoryItemDetailsPage() {
+  const unitPresentation = useUnitPresentation();
+  const formatMoney = (value: number | bigint) => bankMoneyDisplay(value, "USD", unitPresentation);
   const t = useTranslations("InventoryItems");
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -269,7 +272,7 @@ export default function InventoryItemDetailsPage() {
               <Label className="text-xs" htmlFor="purchasePrice">{t("purchaseCost")}</Label>
               <CurrencyInput
                 id="purchasePrice"
-                prefix="$"
+                prefix={currencyLabel("USD", unitPresentation.locale, "$")}
                 value={invPurchasePrice}
                 onChange={setInvPurchasePrice}
               />
@@ -278,7 +281,7 @@ export default function InventoryItemDetailsPage() {
               <Label className="text-xs" htmlFor="salePrice">{t("sellingFor")}</Label>
               <CurrencyInput
                 id="salePrice"
-                prefix="$"
+                prefix={currencyLabel("USD", unitPresentation.locale, "$")}
                 value={invSalePrice}
                 onChange={setInvSalePrice}
               />
@@ -440,7 +443,7 @@ export default function InventoryItemDetailsPage() {
             <div className="space-y-2">
               <Label>{t("newValue")}</Label>
               <CurrencyInput
-                prefix="$"
+                prefix={currencyLabel("USD", unitPresentation.locale, "$")}
                 value={revalueValue}
                 onChange={setRevalueValue}
               />

@@ -1,4 +1,6 @@
 "use client";
+import { currencyLabel } from "@/i18n/currency-labels";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useTranslations } from "next-intl";
 import { payrollContractorJson, type Contractor } from "@/i18n/payroll-contractor-presentation";
@@ -52,6 +54,7 @@ function sortContractors(list: Contractor[], sortBy: string, sortOrder: "asc" | 
 }
 
 export default function ContractorsPage() {
+  const unitPresentation = useUnitPresentation();
   const t = useTranslations("PayrollContractors");
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
@@ -394,9 +397,9 @@ export default function ContractorsPage() {
                     <div className="flex items-center gap-3 shrink-0">
                       {c.hourlyRate !== null && (
                         <span className="flex items-center gap-1.5 text-sm font-mono tabular-nums">
-                          {t("hourly", { amount: formatMoney(c.hourlyRate, c.currency || "USD") })}
+                          {t("hourly", { amount: formatMoney(c.hourlyRate, c.currency || "USD", unitPresentation) })}
                           {c.currency && c.currency !== "USD" && (
-                            <code className="rounded bg-muted px-1 py-0.5 text-[10px] font-medium text-muted-foreground">{c.currency}</code>
+                            <code className="rounded bg-muted px-1 py-0.5 text-[10px] font-medium text-muted-foreground">{currencyLabel(c.currency, unitPresentation.locale)}</code>
                           )}
                         </span>
                       )}

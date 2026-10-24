@@ -1,3 +1,5 @@
+import { formatDecimalDraft } from "../i18n/numbers";
+import { resolvePresentation } from "../i18n/locale";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -136,7 +138,7 @@ test("inventory list renders paired filters, sort labels, sheets, chart legends,
     for (const key of ["totalItems", "valueOfStock", "avgMargin", "stockMovements", "searchAll", "setCategory", "changeCount", "importResults", "rowError", "cancel"] as const) assert.ok(html.includes(escape(t(key))), key);
     for (const [key, count] of [["showingAll", 1], ["bulkCategoryHelp", 1], ["bulkAdjustDescription", 1]] as const) assert.ok(html.includes(escape(t(key, { count }))));
     assert.ok(html.includes(escape(caller)) && !html.includes("<script>") && !html.includes("private server prose"));
-    assert.ok(html.includes("$30,000,000.01") && html.includes("$30,000,000.02") && html.includes("$90,000,000.03"));
+    assert.ok(html.includes(bankMoneyDisplay(3000000001n, "USD", resolvePresentation({ user: { language: locale } }))) && html.includes(bankMoneyDisplay(3000000002n, "USD", resolvePresentation({ user: { language: locale } }))) && html.includes(bankMoneyDisplay(9000000003n, "USD", resolvePresentation({ user: { language: locale } }))));
     assert.ok(events.includes(t("documentTitle")));
     assert.deepEqual(captured.filter(c => c.kind === "SelectItem").map(c => c.props.value), ["createdAt", "name", "code", "quantity", "salePrice", "purchasePrice"]);
     assert.deepEqual(captured.filter(c => c.kind === "Area").map(c => [c.props.dataKey, c.props.name]), [["in", t("in")], ["out", t("out")]]);
@@ -169,7 +171,7 @@ test("item details and creation render real fields, required labels, shared foot
     if (saving) assert.ok(html.includes(escape(t(file === details ? "saving" : "creating"))));
     assert.equal(/<button(?=[^>]*type="submit")(?=[^>]*disabled="")/.test(html), saving);
     for (const field of ["code", "name", "description", "sku", "reorderPoint"]) assert.ok(html.includes(`name="${field}"`));
-    if (file === details) assert.ok(html.includes('value="30000000.01"') && html.includes(escape(caller)));
+    if (file === details) assert.ok(html.includes(`value="${formatDecimalDraft("30000000.01", resolvePresentation({ user: { language: locale } }))}"`) && html.includes(escape(caller)));
     else assert.ok(html.includes('name="quantityOnHand"') && html.includes('name="purchasePrice"'));
   }
 });
@@ -179,8 +181,8 @@ test("item workspace renders exact book versus catalog values, navigation, statu
     const t = translator(locale), events: unknown[] = [], Page = loaded(layout, { loading: false, item: { ...item, isActive }, writeDownAmount }, [], events);
     const html = renderWithPresentation(createElement(Page, { id: item.id, orgId: "org-a" }, "child"), locale);
     for (const key of ["details", "history", "suppliers", "variants", "unitsOnHand", "valueOfStock", "writeDown", "changeCount", isActive ? "shown" : "hidden"] as const) assert.ok(html.includes(escape(t(key))), key);
-    assert.ok(html.includes("$60,000,000.02") && html.includes("$90,000,000.03") && html.includes(escape(caller)) && !html.includes("<script>"));
-    if (writeDownAmount === "0.01") assert.ok(html.includes(escape(t("writeDownPreview", { amount: "$0.01", remaining: "$60,000,000.01" }))));
+    assert.ok(html.includes(bankMoneyDisplay(6000000002n, "USD", resolvePresentation({ user: { language: locale } }))) && html.includes(bankMoneyDisplay(9000000003n, "USD", resolvePresentation({ user: { language: locale } }))) && html.includes(escape(caller)) && !html.includes("<script>"));
+    if (writeDownAmount === "0.01") assert.ok(html.includes(escape(t("writeDownPreview", { amount: bankMoneyDisplay(1n, "USD", resolvePresentation({ user: { language: locale } })), remaining: bankMoneyDisplay(6000000001n, "USD", resolvePresentation({ user: { language: locale } })) }))));
     else assert.ok(html.includes(escape(t(writeDownAmount === "0.001" ? "writeDownInvalid" : "writeDownExceeds"))) && html.includes('role="alert"'));
   }
   for (const locale of locales) for (const states of [{ loading: false, readError: translator(locale)("readFailed") }, { loading: false }, { loading: false, item: { ...item, totalValueMinor: "1" } }]) {

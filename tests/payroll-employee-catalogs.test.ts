@@ -1,3 +1,5 @@
+import { formatDecimalDraft } from "../i18n/numbers";
+import { resolvePresentation } from "../i18n/locale";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -101,7 +103,7 @@ test("employee list renders bilingual copy, finite frequencies, exact salary and
     const h = render(page, { loading: false, employees: [{ ...employee, currency }, inactive, { ...employee, id: "employee-c", payFrequency: "biweekly" }] }, locale), t = translator(locale);
     for (const key of ["all", "active", "inactive", "addEmployee", "sortName", "sortNumber", "sortSalary", "sortStartDate", "weekly", "biweekly", "monthly"] as const) assert.ok(h.html.includes(escape(t(key))), key);
     assert.ok(h.html.includes(escape(caller)) && !h.html.includes("<script>"));
-    assert.ok(h.html.includes(escape(payrollMoneyDisplay(employee.salary, currency ?? "USD"))));
+    assert.ok(h.html.includes(escape(payrollMoneyDisplay(employee.salary, currency ?? "USD", resolvePresentation({ user: { language: locale } })))));
     assert.ok(h.html.includes("EMP-001") && h.html.includes("Engineer"));
     assert.deepEqual(h.events, [["title", t("documentTitle")]]);
     assert.deepEqual(h.captured.filter(c => c.kind === "SelectItem").map(c => c.props.value), ["name", "number", "salary", "startDate"]);
@@ -234,7 +236,9 @@ test("employee drawer renders bilingual labels, examples, raw identifiers, curre
     const h = render(drawer, { ...form, saving }, locale), t = translator(locale);
     for (const key of ["newEmployee", "drawerDescription", "personalInfo", "nameRequired", "numberRequired", "email", "position", "compensation", "salaryRequired", "payFrequency", "taxRate", "currency", "details", "bankAccount", "startDateRequired", "nameExample", "positionExample", "accountPlaceholder", "startDatePlaceholder", "weekly", "biweekly", "monthly", saving ? "adding" : "addEmployee"] as const) assert.ok(h.html.includes(escape(t(key))), key);
     assert.ok(h.html.includes(escape(caller)) && !h.html.includes("<script>"));
-    for (const sample of ["EMP-001", "john@example.com", "75000.00", "20.00", "001234", "90071992547409.91", "KWD"]) assert.ok(h.html.includes(sample), sample);
+    for (const sample of ["EMP-001", "john@example.com", "20.00", "001234"]) assert.ok(h.html.includes(sample), sample);
+    for (const value of ["75000.00", "90071992547409.91"]) assert.ok(h.html.includes(formatDecimalDraft(value, resolvePresentation({ user: { language: locale } }))));
+    assert.equal(control(h, "CurrencySelect").value, "KWD");
     assert.deepEqual(h.captured.filter(c => c.kind === "SelectItem").map(c => c.props.value), ["weekly", "biweekly", "monthly"]);
     assert.equal(control(h, "DatePicker").value, "2026-10-20");
     (control(h, "DatePicker").onChange as (v: string) => void)("2026-10-21");

@@ -1,4 +1,6 @@
 "use client";
+import { currencyLabel } from "@/i18n/currency-labels";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { projectMilestoneJson, milestoneAssignmentsJson, milestoneBillingJson, milestoneInvoiceJson, type MilestoneAssignment, type MilestoneBilling } from "@/i18n/project-milestones-presentation";
 import { useTranslations } from "next-intl";
@@ -39,11 +41,12 @@ import { useProject, pct } from "../project-context";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 
 export default function MilestonesPage() {
+  const unitPresentation = useUnitPresentation();
   const t = useTranslations("ProjectMilestones");
   const presentation = usePresentation();
   const formatDateShort = (value: string) => formatDateOnly(value, presentation, { month: "short", day: "numeric" });
   const { project: proj, orgId, projectId, refresh } = useProject();
-  const formatMoney = (amount: number | bigint | string) => projectMoneyDisplay(amount, proj?.currency ?? "USD");
+  const formatMoney = (amount: number | bigint | string) => projectMoneyDisplay(amount, proj?.currency ?? "USD", unitPresentation);
   const [addOpen, setAddOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [title, setTitle] = useState("");
@@ -350,7 +353,7 @@ export default function MilestonesPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>{t("amount")}</Label>
-                  <CurrencyInput prefix={proj?.currency === "USD" ? "$" : proj?.currency} value={amount} onChange={setAmount} />
+                  <CurrencyInput prefix={proj?.currency === "USD" ? currencyLabel("USD", unitPresentation.locale, "$") : proj?.currency} value={amount} onChange={setAmount} />
                 </div>
               </div>
             </div>
@@ -480,7 +483,7 @@ export default function MilestonesPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>{t("amount")}</Label>
-                  <CurrencyInput prefix={proj?.currency === "USD" ? "$" : proj?.currency} value={assignAmount} onChange={setAssignAmount} />
+                  <CurrencyInput prefix={proj?.currency === "USD" ? currencyLabel("USD", unitPresentation.locale, "$") : proj?.currency} value={assignAmount} onChange={setAssignAmount} />
                 </div>
                 <div className="space-y-2">
                   <Label>{t("description")}</Label>

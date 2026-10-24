@@ -1,4 +1,6 @@
 "use client";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
+import { currencyLabel } from "@/i18n/currency-labels";
 
 import { inventorySuppliersJson, inventoryCatalogJson, inventoryCatalogInputError, inventorySupplierRow, type PresentedInventorySupplier } from "@/i18n/inventory-catalog-presentation";
 import { useTranslations } from "next-intl";
@@ -28,6 +30,7 @@ import { useConfirm } from "@/lib/hooks/use-confirm";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 
 export default function InventoryItemSuppliersPage() {
+  const unitPresentation = useUnitPresentation();
   const t = useTranslations("InventoryCatalogs");
   const { id } = useParams<{ id: string }>();
   const [suppliers, setSuppliers] = useState<PresentedInventorySupplier[]>([]);
@@ -171,7 +174,7 @@ export default function InventoryItemSuppliersPage() {
                     <span className="text-xs text-muted-foreground">{t("leadValue", { value: String(s.leadTimeDays) })}</span>
                   )}
                   {s.purchasePrice != null && (
-                    <span className="text-xs text-muted-foreground">{t("priceValue", { value: exactPriceDisplay(s.purchasePrice, "USD") })}</span>
+                    <span className="text-xs text-muted-foreground">{t("priceValue", { value: exactPriceDisplay(s.purchasePrice, "USD", unitPresentation) })}</span>
                   )}
                   {s.isPreferred && (
                     <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 text-[10px]">
@@ -230,7 +233,7 @@ export default function InventoryItemSuppliersPage() {
             <div className="space-y-1.5">
               <Label className="text-xs">{t("purchasePrice")}</Label>
               <CurrencyInput
-                prefix="$"
+                prefix={currencyLabel("USD", unitPresentation.locale, "$")}
                 value={price}
                 onChange={setPrice}
               />

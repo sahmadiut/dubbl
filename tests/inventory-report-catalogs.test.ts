@@ -1,3 +1,6 @@
+import { resolvePresentation } from "../i18n/locale";
+import { currencyLabel } from "../i18n/currency-labels";
+import { formatExactDecimal } from "../i18n/numbers";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -18,6 +21,7 @@ import fa from "../messages/fa-IR.json";
 
 const valuation = "app/(dashboard)/inventory/valuation/page.tsx";
 const alerts = "app/(dashboard)/inventory/alerts/page.tsx";
+const shown = (amount: bigint, currency: string, language: "en-US" | "fa-IR") => `${currencyLabel(currency, language)} ${formatExactDecimal(toMajorDecimal(money(amount, currency)), resolvePresentation({ user: { language } }), false)}`;
 const locales = ["en-US", "fa-IR"] as const;
 const noop = () => {};
 const caller = '<script>caller & "stock"</script>';
@@ -80,13 +84,14 @@ test("valuation examples, all columns, exact money and filtered absence render i
     const html = renderWithPresentation(createElement(Empty), locale);
     for (const key of ["valuationTitle", "valuationDescription", "preview", "sampleWidget", "sampleGadget", "sampleCable", "previewHelp", "addItem"] as const) assert.ok(html.includes(escape(t(key))), key);
     assert.deepEqual(events, [t("valuationDocumentTitle")]);
-    for (const currencyCode of ["USD", "JPY", "KWD"]) {
+    for (const currencyCode of ["USD", "JPY", "KWD", "IRR"]) {
       const Page = loaded(valuation, { loading: false, items: [{ ...item, currencyCode }], summary: { ...summary, currencyCode } });
       const saved = renderWithPresentation(createElement(Page), locale);
+      if (currencyCode === "IRR" && locale === "fa-IR") assert.ok(saved.includes("ریال"));
       assert.ok(saved.includes(escape(caller)) && !saved.includes("<script>"));
-      assert.ok(saved.includes(`${currencyCode} ${toMajorDecimal(money(BigInt(item.carryingValueMinor), currencyCode))}`));
+      assert.ok(saved.includes(shown(BigInt(item.carryingValueMinor), currencyCode, locale)));
       for (const key of ["code", "name", "category", "quantityOnHand", "unitCost", "totalCost", "carryingValue", "salePrice", "totalValue", "marginPercent", "search", "costAmount", "profitAmount"] as const)
-        assert.ok(saved.includes(escape(key === "costAmount" || key === "profitAmount" ? t(key, { amount: `${currencyCode} ${toMajorDecimal(money(key === "costAmount" ? BigInt(item.totalCostMinor) : 3n, currencyCode))}` }) : t(key))), key);
+        assert.ok(saved.includes(escape(key === "costAmount" || key === "profitAmount" ? t(key, { amount: shown(key === "costAmount" ? BigInt(item.totalCostMinor) : 3n, currencyCode, locale) }) : t(key))), key);
     }
     for (const searchQuery of ["CALLER", "code", "no match"]) {
       const Page = loaded(valuation, { loading: false, items: [item], summary, searchQuery });

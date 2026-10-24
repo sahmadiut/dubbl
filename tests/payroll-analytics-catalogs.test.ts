@@ -1,3 +1,4 @@
+import { resolvePresentation } from "../i18n/locale";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -124,8 +125,8 @@ test("analytics production templates render both catalogs, exact cents, plural c
     const a = render(page, loaded, locale);
     assert.ok(has(a, "title", t("analyticsDocumentTitle")));
     for (const key of ["totalRuns", "totalGross", "totalNet", "activeEmployees", "live", "reports", "forecast", "whatIf", "salaryAdjustment", "newHires", "avgHireSalary", "terminations", "runScenario", "currentMonthly", "projectedMonthly", "difference", "perMonth"] as const) assert.ok(a.html.includes(escape(t(key))), key);
-    assert.ok(a.html.includes(escape(payrollMoneyDisplay(3000000000, "KWD"))));
-    assert.ok(a.html.includes(escape(payrollMoneyDisplay(-1, "KWD"))));
+    assert.ok(a.html.includes(escape(payrollMoneyDisplay(3000000000, "KWD", resolvePresentation({ user: { language: locale } })))));
+    assert.ok(a.html.includes(escape(payrollMoneyDisplay(-1, "KWD", resolvePresentation({ user: { language: locale } })))));
     for (const count of [0, 1, 2]) assert.ok(render(page, { ...loaded, whatIf: { ...scenario, current: { ...scenario.current, headcount: count } } }, locale).html.includes(escape(t("employeesCount", { count }))));
     for (const key of ["noAnalytics", "noAnalyticsDescription", "goToRuns"] as const) assert.ok(render(page, { loading: false }, locale).html.includes(escape(t(key))));
     assert.ok(render(page, { ...loaded, projection: [] }, locale).html.includes(escape(t("noForecast"))));
@@ -141,7 +142,7 @@ test("analytics production templates render both catalogs, exact cents, plural c
       for (const key of ["backToReports", "startDate", "endDate"] as const) assert.ok(d.html.includes(escape(t(key))));
       if (kind === "summary") for (const key of summaryFields) assert.ok(d.html.includes(escape(t(key))), key);
       if (kind === "tax-liability" || kind === "labor-cost") { assert.ok(d.html.includes(escape(caller))); assert.ok(!d.html.includes("<script>")); }
-      if (kind === "tax-liability") assert.ok(d.html.includes(escape(payrollMoneyDisplay(Number.MAX_SAFE_INTEGER, "KWD"))));
+      if (kind === "tax-liability") assert.ok(d.html.includes(escape(payrollMoneyDisplay(Number.MAX_SAFE_INTEGER, "KWD", resolvePresentation({ user: { language: locale } })))));
       if (kind === "yoy") assert.ok(d.html.includes("2026-10"));
       const failed = render(detailPage, { loading: false, data: bodies[kind], reportType: kind, moneyError: t("loadFailed") }, locale);
       assert.ok(failed.html.includes('role="alert"')); assert.ok(failed.html.includes(escape(t("startDate"))));

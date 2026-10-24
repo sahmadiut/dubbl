@@ -1,4 +1,5 @@
 "use client";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { payrollShare } from "@/lib/money/payroll-ui";
 
@@ -40,6 +41,7 @@ const anim = (delay: number) => ({
 const getPerPeriodPay = payrollPeriodPreview;
 
 export default function EmployeeDetailPage() {
+  const unitPresentation = useUnitPresentation();
   const t = useTranslations("PayrollEmployeeDetail");
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -312,15 +314,15 @@ export default function EmployeeDetailPage() {
           </p>
           <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate">
             {compensationType === "salary"
-              ? formatMoney(salaryInCents, currency)
+              ? formatMoney(salaryInCents, currency, unitPresentation)
               : compensationType === "hourly"
-                ? formatMoney(payrollCentsPreview(hourlyRate), currency)
+                ? formatMoney(payrollCentsPreview(hourlyRate), currency, unitPresentation)
                 : "-"}
           </p>
         </motion.div>
         <motion.div {...anim(0.05)} className="rounded-xl border bg-card p-4">
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("periodPay")}</p>
-          <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate">{formatMoney(getPerPeriodPay(salaryInCents, payFrequency), currency)}</p>
+          <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate">{formatMoney(getPerPeriodPay(salaryInCents, payFrequency), currency, unitPresentation)}</p>
         </motion.div>
         <motion.div {...anim(0.09)} className="rounded-xl border bg-card p-4">
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("taxRate")}</p>
@@ -496,7 +498,7 @@ export default function EmployeeDetailPage() {
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-sm font-mono tabular-nums">
-                      {d.amount != null ? formatMoney(d.amount, emp.currency ?? "USD") : d.percent != null ? `${d.percent}%` : d.deductionType.defaultAmount != null ? formatMoney(d.deductionType.defaultAmount, emp.currency ?? "USD") : d.deductionType.defaultPercent != null ? `${d.deductionType.defaultPercent}%` : t("noAmount")}
+                      {d.amount != null ? formatMoney(d.amount, emp.currency ?? "USD", unitPresentation) : d.percent != null ? `${d.percent}%` : d.deductionType.defaultAmount != null ? formatMoney(d.deductionType.defaultAmount, emp.currency ?? "USD", unitPresentation) : d.deductionType.defaultPercent != null ? `${d.deductionType.defaultPercent}%` : t("noAmount")}
                     </span>
                     <Badge
                       variant="outline"
@@ -630,15 +632,15 @@ export default function EmployeeDetailPage() {
                   </div>
                   <div className="space-y-1">
                     <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("minSalary")}</p>
-                    <p className="text-sm font-mono tabular-nums">{formatMoney(compensationBand.minSalary, compensationBand.currency)}</p>
+                    <p className="text-sm font-mono tabular-nums">{formatMoney(compensationBand.minSalary, compensationBand.currency, unitPresentation)}</p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("midSalary")}</p>
-                    <p className="text-sm font-mono tabular-nums">{formatMoney(compensationBand.midSalary, compensationBand.currency)}</p>
+                    <p className="text-sm font-mono tabular-nums">{formatMoney(compensationBand.midSalary, compensationBand.currency, unitPresentation)}</p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("maxSalary")}</p>
-                    <p className="text-sm font-mono tabular-nums">{formatMoney(compensationBand.maxSalary, compensationBand.currency)}</p>
+                    <p className="text-sm font-mono tabular-nums">{formatMoney(compensationBand.maxSalary, compensationBand.currency, unitPresentation)}</p>
                   </div>
                 </div>
                 {compensationBand.currency === (emp.currency ?? "USD") && compensationBand.currency === (emp.currency ?? "USD") && compensationBand.maxSalary > compensationBand.minSalary && (

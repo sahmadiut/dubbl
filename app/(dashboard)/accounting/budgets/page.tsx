@@ -1,4 +1,5 @@
 "use client";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useTranslations } from "next-intl";
 import { budgetTypeLabel, budgetPeriodLabel, budgetReadJson, budgetFailureMessage } from "@/i18n/budget-presentation";
@@ -71,6 +72,7 @@ function getCurrentPeriod(periods: PeriodBreakdown[]): PeriodBreakdown | undefin
 }
 
 export default function BudgetsPage() {
+  const unitPresentation = useUnitPresentation();
   const t = useTranslations("Budgets");
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
@@ -291,7 +293,7 @@ export default function BudgetsPage() {
               <span className="text-sm font-semibold">{b.name}</span>
               <span className="block text-xs text-muted-foreground">{loadingReports ? t("loadingAmounts") : t("amountsUnavailable")}</span>
             </button>;
-            const formatMoney = (amount: bigint) => budgetMoney(amount, report.currencyCode);
+            const formatMoney = (amount: bigint) => budgetMoney(amount, report.currencyCode, unitPresentation);
             const total = b.lines?.reduce((s, l) => s + l.total, 0n) ?? 0n;
             const budgeted = report?.totalBudgeted ?? total;
             const actual = report?.totalActual ?? 0n;
@@ -460,7 +462,7 @@ export default function BudgetsPage() {
                       </p>
                     </div>
                     <span className="font-mono text-sm font-medium tabular-nums shrink-0 text-muted-foreground">
-                      {total === undefined ? t("unavailable") : budgetMoney(total, report.currencyCode)}
+                      {total === undefined ? t("unavailable") : budgetMoney(total, report.currencyCode, unitPresentation)}
                     </span>
                     <ChevronRight className="size-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                   </button>

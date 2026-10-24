@@ -1,4 +1,5 @@
 "use client";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { projectInvoiceJson } from "@/i18n/project-presentation";
 import { useProjectPresentation } from "@/i18n/project-overview-presentation";
@@ -30,9 +31,10 @@ import {
 import { projectMoneyDisplay } from "@/lib/money/project-display";
 
 function ProjectLayoutInner({ children }: { children: React.ReactNode }) {
+  const unitPresentation = useUnitPresentation();
   const { t, statusConfig, priorityConfig, formatHours } = useProjectPresentation();
   const { project: proj, loading, loadError, orgId, projectId } = useProject();
-  const formatMoney = (amount: number | bigint | string) => projectMoneyDisplay(amount, proj?.currency ?? "USD");
+  const formatMoney = (amount: number | bigint | string) => projectMoneyDisplay(amount, proj?.currency ?? "USD", unitPresentation);
   const pathname = usePathname();
   const router = useRouter();
 

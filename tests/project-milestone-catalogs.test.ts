@@ -1,3 +1,4 @@
+import { resolvePresentation } from "../i18n/locale";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -19,12 +20,12 @@ test("milestone dialogs and exact totals render in both locales, including persi
     assert.ok(has(h, "title", t("documentTitle")));
     for (const key of ["progress", "totalValue", "completedValue", "invoiced", "createInvoice", "newMilestone", "manageAssignments", "paid", "progressInvoice", "invoiceTotal"]) assert.ok(h.html.includes(esc(t(key as "progress"))), key);
     assert.ok(h.html.includes(esc(caller)) && !h.html.includes("<script>"));
-    assert.ok(h.html.includes(esc(projectMoneyDisplay(BigInt(milestone.amount) * 2n, "KWD"))));
+    assert.ok(h.html.includes(esc(projectMoneyDisplay(BigInt(milestone.amount) * 2n, "KWD", resolvePresentation({ user: { language: locale } })))));
     assert.ok(!h.html.includes(esc(t("markPaid"))));
     assert.ok(renderSlice("milestones", locale, { ...form, assignments: [{ ...assignment, isPaid: false }] }).html.includes(esc(t("markPaid"))));
     assert.ok(renderSlice("milestones", locale, { context: { project: { ...project, milestones: [] } } }).html.includes(esc(t("noMilestones"))));
     const fixed = renderSlice("milestones", locale, { ...form, fixedPercent: "0.1", context: { project: { ...project, billingType: "fixed" } }, uninvoicedData: { billingType: "fixed", fixedPrice: Number.MAX_SAFE_INTEGER, totalInvoiced: 0, remaining: Number.MAX_SAFE_INTEGER, invoicedPercent: 0 } });
-    assert.ok(fixed.html.includes(esc(t("fixedProgress"))) && fixed.html.includes(esc(projectMoneyDisplay(9007199254741n, "KWD"))));
+    assert.ok(fixed.html.includes(esc(t("fixedProgress"))) && fixed.html.includes(esc(projectMoneyDisplay(9007199254741n, "KWD", resolvePresentation({ user: { language: locale } })))));
     const hourly = renderSlice("milestones", locale, { ...form, context: { project: { ...project, billingType: "hourly" } }, uninvoicedData: { billingType: "hourly", timeEntries: [{ ...entry, amount: 29 }] } });
     assert.ok(hourly.html.includes(esc(t("uninvoicedTime"))));
     assert.equal(renderSlice("milestones", locale, { context: { project: null } }).html, "");

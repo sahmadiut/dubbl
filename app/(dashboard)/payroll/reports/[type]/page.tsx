@@ -1,4 +1,5 @@
 "use client";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useTranslations } from "next-intl";
 import { payrollAnalyticsJson, analyticsOrganization, summaryFields } from "@/i18n/payroll-analytics-presentation";
@@ -14,6 +15,7 @@ import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { payrollMoneyDisplay as formatMoney } from "@/lib/money/payroll-display";
 
 export default function ReportDetailPage() {
+  const unitPresentation = useUnitPresentation();
   const t = useTranslations("PayrollAnalytics");
   const { type } = useParams<{ type: string }>();
   const router = useRouter();
@@ -95,15 +97,15 @@ export default function ReportDetailPage() {
             <div key={row.employeeId} className="px-4 py-2.5 flex items-center justify-between">
               <span className="text-sm">{row.employeeName}</span>
               <div className="flex gap-8">
-                <span className="text-sm font-mono tabular-nums w-24 text-right">{formatMoney(row.totalGross, row.currency)}</span>
-                <span className="text-sm font-mono tabular-nums w-24 text-right text-red-600 dark:text-red-400">{formatMoney(row.totalTax, row.currency)}</span>
+                <span className="text-sm font-mono tabular-nums w-24 text-right">{formatMoney(row.totalGross, row.currency, unitPresentation)}</span>
+                <span className="text-sm font-mono tabular-nums w-24 text-right text-red-600 dark:text-red-400">{formatMoney(row.totalTax, row.currency, unitPresentation)}</span>
               </div>
             </div>
           ))}
           {data.totalTax !== undefined && (
             <div className="px-4 py-2.5 flex items-center justify-between font-medium">
               <span className="text-sm">{t("total")}</span>
-              <span className="text-sm font-mono tabular-nums text-red-600 dark:text-red-400">{formatMoney(data.totalTax, data.currency)}</span>
+              <span className="text-sm font-mono tabular-nums text-red-600 dark:text-red-400">{formatMoney(data.totalTax, data.currency, unitPresentation)}</span>
             </div>
           )}
         </div>
@@ -124,8 +126,8 @@ export default function ReportDetailPage() {
               <span className="text-sm">{row.department}</span>
               <div className="flex gap-8">
                 <span className="text-sm font-mono tabular-nums w-16 text-right">{row.employeeCount}</span>
-                <span className="text-sm font-mono tabular-nums w-24 text-right">{formatMoney(row.totalGross, row.currency)}</span>
-                <span className="text-sm font-mono tabular-nums w-24 text-right">{formatMoney(row.totalNet, row.currency)}</span>
+                <span className="text-sm font-mono tabular-nums w-24 text-right">{formatMoney(row.totalGross, row.currency, unitPresentation)}</span>
+                <span className="text-sm font-mono tabular-nums w-24 text-right">{formatMoney(row.totalNet, row.currency, unitPresentation)}</span>
               </div>
             </div>
           ))}
@@ -147,8 +149,8 @@ export default function ReportDetailPage() {
               <span className="text-sm font-mono">{row.month}</span>
               <div className="flex gap-8">
                 <span className="text-sm font-mono tabular-nums w-16 text-right">{row.runCount}</span>
-                <span className="text-sm font-mono tabular-nums w-24 text-right">{formatMoney(row.totalGross, row.currency)}</span>
-                <span className="text-sm font-mono tabular-nums w-24 text-right">{formatMoney(row.totalNet, row.currency)}</span>
+                <span className="text-sm font-mono tabular-nums w-24 text-right">{formatMoney(row.totalGross, row.currency, unitPresentation)}</span>
+                <span className="text-sm font-mono tabular-nums w-24 text-right">{formatMoney(row.totalNet, row.currency, unitPresentation)}</span>
               </div>
             </div>
           ))}
@@ -162,7 +164,7 @@ export default function ReportDetailPage() {
               <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t(key)}</p>
               <p className="mt-1 text-xl font-bold font-mono tabular-nums">
                 {key !== "totalRuns" && key !== "activeEmployees"
-                  ? formatMoney(data.summary[key], data.summary.currency)
+                  ? formatMoney(data.summary[key], data.summary.currency, unitPresentation)
                   : String(data.summary[key])}
               </p>
             </div>

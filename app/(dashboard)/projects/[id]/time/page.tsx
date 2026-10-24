@@ -1,4 +1,5 @@
 "use client";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { projectTimerJson, projectTimeEntryJson, projectTimeDeleteJson } from "@/i18n/project-time-presentation";
 import { useTranslations } from "next-intl";
@@ -59,10 +60,11 @@ import { useProject, type TimeEntryData, type RunningTimerData } from "../projec
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 
 export default function TimePage() {
+  const unitPresentation = useUnitPresentation();
   const t = useTranslations("ProjectTime");
   const { formatHours, formatDateShort, presentation } = useProjectPresentation();
   const { project: proj, orgId, projectId, refresh } = useProject();
-  const formatMoney = (amount: number | bigint | string) => projectMoneyDisplay(amount, proj?.currency ?? "USD");
+  const formatMoney = (amount: number | bigint | string) => projectMoneyDisplay(amount, proj?.currency ?? "USD", unitPresentation);
 
   // Drawer state: "add" for new, entry object for edit
   const [drawerMode, setDrawerMode] = useState<"add" | "edit" | null>(null);

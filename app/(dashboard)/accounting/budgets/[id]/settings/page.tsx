@@ -1,4 +1,6 @@
 "use client";
+import { currencyLabel } from "@/i18n/currency-labels";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useTranslations } from "next-intl";
 import { budgetTypeLabel, budgetPeriodLabel, budgetFailureMessage, requireBudgetResponse } from "@/i18n/budget-presentation";
@@ -68,11 +70,12 @@ function emptyLine(periodType: PeriodType, startDate: string, endDate: string): 
 }
 
 export default function BudgetSettingsPage() {
+  const unitPresentation = useUnitPresentation();
   const t = useTranslations("Budgets");
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { budget, currencyCode, accounts, refetch } = useBudgetContext();
-  const formatMoney = (amount: bigint) => budgetMoney(amount, currencyCode);
+  const formatMoney = (amount: bigint) => budgetMoney(amount, currencyCode, unitPresentation);
   const { confirm, dialog: confirmDialog } = useConfirm();
 
   useDocumentTitle(t("settingsTitle"));
@@ -350,7 +353,7 @@ export default function BudgetSettingsPage() {
                   <div className="flex items-center gap-3">
                     <Label className="text-xs text-muted-foreground shrink-0 w-16">{t("annual")}</Label>
                     <CurrencyInput
-                      prefix={currencyCode === "USD" ? "$" : currencyCode}
+                      prefix={currencyCode === "USD" ? currencyLabel("USD", unitPresentation.locale, "$") : currencyCode}
                       aria-label={t("totalForLine", { number: i + 1 })}
                         aria-invalid={budgetDraftInvalid(annualAmounts[i] ?? budgetDecimal(line.total))}
                         value={annualAmounts[i] ?? budgetDecimal(line.total)}

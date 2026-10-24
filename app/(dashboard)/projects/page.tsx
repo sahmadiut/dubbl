@@ -1,4 +1,5 @@
 "use client";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useTranslations } from "next-intl";
 import { projectListJson, projectStatusKeys, projectPriorityKeys, type ProjectListRow as Project } from "@/i18n/project-presentation";
@@ -44,7 +45,7 @@ function formatHours(t: ProjectTranslator, minutes: number): string {
   return mins > 0 ? t("hoursMinutes", { hours: hrs, minutes: mins }) : t("hours", { hours: hrs });
 }
 
-function projectColumns(t: ProjectTranslator): Column<Project>[] { return [
+function projectColumns(t: ProjectTranslator, unitPresentation: import("@/i18n/numbers").NumberPresentation): Column<Project>[] { return [
   {
     key: "name",
     header: t("project"),
@@ -105,7 +106,7 @@ function projectColumns(t: ProjectTranslator): Column<Project>[] { return [
     className: "w-28 text-right",
     render: (r) => (
       <span className="font-mono text-xs tabular-nums">
-        {r.budget > 0 ? formatMoney(r.budget, r.currency) : "-"}
+        {r.budget > 0 ? formatMoney(r.budget, r.currency, unitPresentation) : "-"}
       </span>
     ),
   },
@@ -114,7 +115,7 @@ function projectColumns(t: ProjectTranslator): Column<Project>[] { return [
     header: t("billed"),
     className: "w-28 text-right",
     render: (r) => (
-      <span className="font-mono text-xs tabular-nums">{formatMoney(r.totalBilled, r.currency)}</span>
+      <span className="font-mono text-xs tabular-nums">{formatMoney(r.totalBilled, r.currency, unitPresentation)}</span>
     ),
   },
   {
@@ -142,8 +143,9 @@ function projectColumns(t: ProjectTranslator): Column<Project>[] { return [
 ]; }
 
 export default function ProjectsPage() {
+  const unitPresentation = useUnitPresentation();
   const t = useTranslations("Projects");
-  const columns = projectColumns(t);
+  const columns = projectColumns(t, unitPresentation);
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
   const [loadError, setLoadError] = useState("");
@@ -219,8 +221,8 @@ export default function ProjectsPage() {
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-2 sm:gap-3 sm:grid-cols-2 lg:grid-cols-5">
             <StatCard title={t("active")} value={activeProjects.length.toString()} icon={FolderKanban} />
-            <StatCard title={t("totalBudget")} value={currencies.size > 1 ? t("multipleCurrencies") : formatMoney(totalBudget, totalCurrency)} icon={DollarSign} />
-            <StatCard title={t("totalBilled")} value={currencies.size > 1 ? t("multipleCurrencies") : formatMoney(totalBilled, totalCurrency)} icon={Target}
+            <StatCard title={t("totalBudget")} value={currencies.size > 1 ? t("multipleCurrencies") : formatMoney(totalBudget, totalCurrency, unitPresentation)} icon={DollarSign} />
+            <StatCard title={t("totalBilled")} value={currencies.size > 1 ? t("multipleCurrencies") : formatMoney(totalBilled, totalCurrency, unitPresentation)} icon={Target}
               change={currencies.size <= 1 && totalBudget > 0 ? t("budgetPercent", { percent: Number((totalBilled * 200n + totalBudget) / (totalBudget * 2n)) }) : undefined}
             />
             <StatCard title={t("hoursLogged")} value={formatHours(t, totalHours)} icon={Clock} />

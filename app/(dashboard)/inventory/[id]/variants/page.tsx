@@ -1,4 +1,6 @@
 "use client";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
+import { currencyLabel } from "@/i18n/currency-labels";
 
 import { inventoryVariantsJson, inventoryCatalogJson, inventoryCatalogInputError, inventoryVariantRow, type PresentedInventoryVariant } from "@/i18n/inventory-catalog-presentation";
 import { useTranslations } from "next-intl";
@@ -26,6 +28,7 @@ import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { cn } from "@/lib/utils";
 
 export default function InventoryItemVariantsPage() {
+  const unitPresentation = useUnitPresentation();
   const t = useTranslations("InventoryCatalogs");
   const { id } = useParams<{ id: string }>();
   const [variants, setVariants] = useState<PresentedInventoryVariant[]>([]);
@@ -145,10 +148,10 @@ export default function InventoryItemVariantsPage() {
                     <span className="text-xs text-muted-foreground">{t("skuValue", { value: v.sku })}</span>
                   )}
                   {v.purchasePrice != null && (
-                    <span className="text-xs text-muted-foreground">{t("costValue", { value: exactPriceDisplay(v.purchasePrice, "USD") })}</span>
+                    <span className="text-xs text-muted-foreground">{t("costValue", { value: exactPriceDisplay(v.purchasePrice, "USD", unitPresentation) })}</span>
                   )}
                   {v.salePrice != null && (
-                    <span className="text-xs text-muted-foreground">{t("saleValue", { value: exactPriceDisplay(v.salePrice, "USD") })}</span>
+                    <span className="text-xs text-muted-foreground">{t("saleValue", { value: exactPriceDisplay(v.salePrice, "USD", unitPresentation) })}</span>
                   )}
                   {v.quantityOnHand != null && (
                     <span className="text-xs text-muted-foreground">{t("quantityValue", { value: String(v.quantityOnHand) })}</span>
@@ -191,7 +194,7 @@ export default function InventoryItemVariantsPage() {
               <div className="space-y-1.5">
                 <Label className="text-xs">{t("purchasePrice")}</Label>
                 <CurrencyInput
-                  prefix="$"
+                  prefix={currencyLabel("USD", unitPresentation.locale, "$")}
                   value={purchasePrice}
                   onChange={setPurchasePrice}
                 />
@@ -199,7 +202,7 @@ export default function InventoryItemVariantsPage() {
               <div className="space-y-1.5">
                 <Label className="text-xs">{t("salePrice")}</Label>
                 <CurrencyInput
-                  prefix="$"
+                  prefix={currencyLabel("USD", unitPresentation.locale, "$")}
                   value={salePrice}
                   onChange={setSalePrice}
                 />

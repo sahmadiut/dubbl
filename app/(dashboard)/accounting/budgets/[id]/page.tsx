@@ -1,4 +1,6 @@
 "use client";
+import { currencyLabel } from "@/i18n/currency-labels";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useTranslations } from "next-intl";
 import { budgetPeriodLabel } from "@/i18n/budget-presentation";
@@ -23,12 +25,13 @@ import {
 } from "recharts";
 
 export default function BudgetOverviewPage() {
+  const unitPresentation = useUnitPresentation();
   const t = useTranslations("Budgets");
   const { budget, currencyCode, comparisons, totalBudgeted, totalActual } = useBudgetContext();
 
   useDocumentTitle(t("detailsTitle"));
 
-  const formatMoney = (amount: bigint) => budgetMoney(amount, currencyCode);
+  const formatMoney = (amount: bigint) => budgetMoney(amount, currencyCode, unitPresentation);
   const grandTotal = budget.lines.reduce((s, l) => s + l.total, 0n);
   const totalVariance = totalBudgeted - totalActual;
   const overallPct = totalBudgeted !== 0n ? budgetPercent(totalActual, totalBudgeted) : 0;
@@ -84,7 +87,7 @@ export default function BudgetOverviewPage() {
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                 <XAxis dataKey="name" tickFormatter={(label: string) => budgetPeriodLabel(t, label)} tick={{ fontSize: 11 }} className="text-muted-foreground" />
-                <YAxis tick={{ fontSize: 11 }} className="text-muted-foreground" tickFormatter={(v) => `${currencyCode} ${v >= 1000 ? t("chartThousands", { value: (v / 1000).toFixed(0) }) : v}`} />
+                <YAxis tick={{ fontSize: 11 }} className="text-muted-foreground" tickFormatter={(v) => `${currencyLabel(currencyCode, unitPresentation.locale)} ${v >= 1000 ? t("chartThousands", { value: (v / 1000).toFixed(0) }) : v}`} />
                 <Tooltip
                   contentStyle={{ fontSize: 12, borderRadius: 8 }}
                   labelFormatter={(label) => budgetPeriodLabel(t, String(label))}
@@ -215,8 +218,9 @@ function ViewLineCard({
   budgetLine?: BudgetLineData;
   periodComparisons: PeriodComparison[];
 }) {
+  const unitPresentation = useUnitPresentation();
   const t = useTranslations("Budgets");
-  const formatMoney = (amount: bigint) => budgetMoney(amount, currencyCode);
+  const formatMoney = (amount: bigint) => budgetMoney(amount, currencyCode, unitPresentation);
   const [expanded, setExpanded] = useState(false);
 
   const periods = periodComparisons.length > 0
@@ -320,8 +324,9 @@ function ViewLineCard({
 }
 
 function PeriodBreakdownTable({ comparisons, currencyCode }: { currencyCode: string; comparisons: { periods: PeriodComparison[] }[] }) {
+  const unitPresentation = useUnitPresentation();
   const t = useTranslations("Budgets");
-  const formatMoney = (amount: bigint) => budgetMoney(amount, currencyCode);
+  const formatMoney = (amount: bigint) => budgetMoney(amount, currencyCode, unitPresentation);
   // Aggregate periods across all accounts
   const periodMap = new Map<string, { label: string; sortOrder: number; budgeted: bigint; actual: bigint }>();
 

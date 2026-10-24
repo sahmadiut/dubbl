@@ -1,4 +1,5 @@
 "use client";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { usePresentation } from "@/i18n/provider";
 import { currencyLabel } from "@/i18n/currency-labels";
@@ -352,6 +353,7 @@ function ContactDrawer({ open, onClose }: { open: boolean; onClose: () => void }
 // Project Drawer
 // ---------------------------------------------------------------------------
 function ProjectDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const unitPresentation = useUnitPresentation();
   const t = useTranslations("Projects");
   const router = useRouter();
   const [saving, setSaving] = useState(false);
@@ -511,17 +513,17 @@ function ProjectDrawer({ open, onClose }: { open: boolean; onClose: () => void }
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="drawer-project-budget">{t("budget")}</Label>
-                  <CurrencyInput id="drawer-project-budget" name="budget" prefix="$" value={projectBudget} onChange={setProjectBudget} />
+                  <CurrencyInput id="drawer-project-budget" name="budget" prefix={currencyLabel("USD", unitPresentation.locale, "$")} value={projectBudget} onChange={setProjectBudget} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="drawer-project-rate">{t("hourlyRate")}</Label>
-                  <CurrencyInput id="drawer-project-rate" name="hourlyRate" prefix="$" value={projectHourlyRate} onChange={setProjectHourlyRate} />
+                  <CurrencyInput id="drawer-project-rate" name="hourlyRate" prefix={currencyLabel("USD", unitPresentation.locale, "$")} value={projectHourlyRate} onChange={setProjectHourlyRate} />
                 </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>{t("fixedPrice")}</Label>
-                  <CurrencyInput name="fixedPrice" prefix="$" value={projectFixedPrice} onChange={setProjectFixedPrice} />
+                  <CurrencyInput name="fixedPrice" prefix={currencyLabel("USD", unitPresentation.locale, "$")} value={projectFixedPrice} onChange={setProjectFixedPrice} />
                 </div>
                 <div className="space-y-2">
                   <Label>{t("estimatedHours")}</Label>
@@ -1114,6 +1116,7 @@ function EntryDrawer({ open, onClose }: { open: boolean; onClose: () => void }) 
 // Inventory Drawer
 // ---------------------------------------------------------------------------
 function InventoryDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const unitPresentation = useUnitPresentation();
   const t = useTranslations("InventoryItems");
   const router = useRouter();
   const [saving, setSaving] = useState(false);
@@ -1200,11 +1203,11 @@ function InventoryDrawer({ open, onClose }: { open: boolean; onClose: () => void
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="drawer-inv-purchase">{t("purchasePrice")}</Label>
-                  <CurrencyInput id="drawer-inv-purchase" name="purchasePrice" prefix="$" value={invPurchasePrice} onChange={setInvPurchasePrice} />
+                  <CurrencyInput id="drawer-inv-purchase" name="purchasePrice" prefix={currencyLabel("USD", unitPresentation.locale, "$")} value={invPurchasePrice} onChange={setInvPurchasePrice} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="drawer-inv-sale">{t("salePrice")}</Label>
-                  <CurrencyInput id="drawer-inv-sale" name="salePrice" prefix="$" value={invSalePrice} onChange={setInvSalePrice} />
+                  <CurrencyInput id="drawer-inv-sale" name="salePrice" prefix={currencyLabel("USD", unitPresentation.locale, "$")} value={invSalePrice} onChange={setInvSalePrice} />
                 </div>
               </div>
             </div>
@@ -2178,6 +2181,7 @@ interface BudgetAccount {
 }
 
 function BudgetDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const unitPresentation = useUnitPresentation();
   const t = useTranslations("Budgets");
   const router = useRouter();
   const [budgetCurrency, setBudgetCurrency] = useState<string | null>(null);
@@ -2418,7 +2422,7 @@ function BudgetDrawer({ open, onClose }: { open: boolean; onClose: () => void })
                     <div className="flex items-center gap-3">
                       <Label className="text-xs text-muted-foreground shrink-0 w-16">{t("annual")}</Label>
                       <CurrencyInput
-                        prefix={budgetCurrency === "USD" ? "$" : budgetCurrency ?? undefined}
+                        prefix={budgetCurrency === "USD" ? currencyLabel("USD", unitPresentation.locale, "$") : budgetCurrency ?? undefined}
                         aria-label={t("totalForLine", { number: i + 1 })}
                         aria-invalid={budgetDraftInvalid(annualAmounts[i] ?? budgetDecimal(line.total))}
                         value={annualAmounts[i] ?? (line.total !== 0n ? budgetDecimal(line.total) : "")}
@@ -2428,7 +2432,7 @@ function BudgetDrawer({ open, onClose }: { open: boolean; onClose: () => void })
                       />
                       {line.total !== 0n && line.periods.length > 0 && (
                         <span className="text-xs text-muted-foreground font-mono tabular-nums shrink-0">
-                          {t("perPeriod", { amount: budgetCurrency ? formatMoney(budgetPerPeriod(line.total, line.periods.length), budgetCurrency) : budgetDecimal(budgetPerPeriod(line.total, line.periods.length)) })}
+                          {t("perPeriod", { amount: budgetCurrency ? formatMoney(budgetPerPeriod(line.total, line.periods.length), budgetCurrency, unitPresentation) : budgetDecimal(budgetPerPeriod(line.total, line.periods.length)) })}
                         </span>
                       )}
                     </div>
@@ -2476,7 +2480,7 @@ function BudgetDrawer({ open, onClose }: { open: boolean; onClose: () => void })
           {grandTotal !== 0n && (
             <div className="flex items-center justify-between border-t px-4 py-2.5 sm:px-6 text-sm">
               <span className="text-muted-foreground">{t("totalBudgetLower")}</span>
-              <span className="font-mono font-semibold tabular-nums">{budgetCurrency ? formatMoney(grandTotal, budgetCurrency) : budgetDecimal(grandTotal)}</span>
+              <span className="font-mono font-semibold tabular-nums">{budgetCurrency ? formatMoney(grandTotal, budgetCurrency, unitPresentation) : budgetDecimal(grandTotal)}</span>
             </div>
           )}
           <DrawerFooter onClose={onClose} saving={saving} label={t("create")} cancelLabel={t("cancel")} creatingLabel={t("creating")} />

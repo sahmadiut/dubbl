@@ -1,4 +1,5 @@
 "use client";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { crmActivitiesJson, type CrmActivity } from "@/i18n/crm-presentation";
 import { useCrmActivityPresentation } from "@/i18n/crm-activity-presentation";
@@ -72,6 +73,7 @@ const EASE = [0.22, 1, 0.36, 1] as const;
 type ActivityItem = CrmActivity;
 
 export default function DealActivityPage() {
+  const unitPresentation = useUnitPresentation();
   const { t, activityLabel, pluralLabel, placeholder, timeAgo, dateLabel, clock, dayKey } = useCrmActivityPresentation();
   const { id: dealId } = useParams<{ id: string }>();
   const {
@@ -244,7 +246,7 @@ export default function DealActivityPage() {
               <p className="text-[13px] font-medium text-emerald-700 dark:text-emerald-300">{t("dealWon")}</p>
               <p className="text-[11px] text-emerald-600/70 dark:text-emerald-400/60">
                 {t("closedOn", { date: dateLabel(deal.wonAt!) })}
-                {deal.valueCents > 0 && <> · {formatMoney(deal.valueCents, deal.currency)}</>}
+                {deal.valueCents > 0 && <> · {formatMoney(deal.valueCents, deal.currency, unitPresentation)}</>}
               </p>
             </div>
           </div>

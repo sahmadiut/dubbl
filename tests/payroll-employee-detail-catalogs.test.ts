@@ -1,3 +1,4 @@
+import { resolvePresentation } from "../i18n/locale";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -102,8 +103,8 @@ test("employee detail renders real bilingual sections, escaped data, exact money
     for (const key of ["back", "personalInfo", "personalHelp", "compensation", "compensationHelp", "details", "detailsHelp", "deductions", "deductionsHelp", "taxConfig", "taxHelp", "leaveBalances", "leaveHelp", "bandTitle", "bandHelp", "danger", "dangerHelp", "save", "delete", "preTax", "vacation"] as const)
       assert.ok(h.html.includes(escape(t(key))), key);
     assert.ok(h.html.includes(escape(caller)) && !h.html.includes("<script>"));
-    if (compensationType === "salary") assert.ok(h.html.includes(escape(payrollMoneyDisplay(detail.salary, "KWD"))));
-    if (compensationType === "hourly") assert.ok(h.html.includes(escape(payrollMoneyDisplay(29, "KWD"))));
+    if (compensationType === "salary") assert.ok(h.html.includes(escape(payrollMoneyDisplay(detail.salary, "KWD", resolvePresentation({ user: { language: locale } })))));
+    if (compensationType === "hourly") assert.ok(h.html.includes(escape(payrollMoneyDisplay(29, "KWD", resolvePresentation({ user: { language: locale } })))));
     assert.ok(h.html.includes(escape(t("hours", { value: "2.5" }))));
     assert.ok(hasEvent(h, "title", t("documentTitle")));
     assert.deepEqual(h.captured.filter(c => c.kind === "SelectItem").map(c => c.props.value), ["salary", "hourly", "milestone", "commission", "weekly", "biweekly", "monthly", "single", "married_joint", "married_separate", "head_of_household"]);
@@ -135,15 +136,15 @@ test("deduction overrides and defaults, leave types and currency-safe bands reta
   for (const locale of locales) {
     const t = translator(locale);
     for (const [patch, expected] of [
-      [{}, payrollMoneyDisplay(29, "USD")],
+      [{}, payrollMoneyDisplay(29, "USD", resolvePresentation({ user: { language: locale } }))],
       [{ amount: null, amountMinor: null, percent: 2.5 }, "2.5%"],
-      [{ amount: null, amountMinor: null, deductionType: { ...deduction.deductionType, defaultAmount: 0, defaultAmountMinor: "0" } }, payrollMoneyDisplay(0, "USD")],
+      [{ amount: null, amountMinor: null, deductionType: { ...deduction.deductionType, defaultAmount: 0, defaultAmountMinor: "0" } }, payrollMoneyDisplay(0, "USD", resolvePresentation({ user: { language: locale } }))],
       [{ amount: null, amountMinor: null, deductionType: { ...deduction.deductionType, category: "post_tax", defaultPercent: 1.25 } }, "1.25%"],
       [{ amount: null, amountMinor: null, isActive: false }, t("noAmount")],
     ] as const) assert.ok(render(page, { ...form, deductions: [{ ...deduction, ...patch }] }, locale).html.includes(escape(expected)));
     for (const leaveType of ["vacation", "sick", "personal", "parental", "bereavement", "unpaid", "other"] as const)
       assert.ok(render(page, { ...form, leaveBalances: [{ ...leave, policy: { ...leave.policy, leaveType } }] }, locale).html.includes(escape(t(leaveType))));
-    assert.ok(render(page, { ...form, compensationBand: { ...band, currency: "JPY" } }, locale).html.includes(escape(payrollMoneyDisplay(band.maxSalary, "JPY"))));
+    assert.ok(render(page, { ...form, compensationBand: { ...band, currency: "JPY" } }, locale).html.includes(escape(payrollMoneyDisplay(band.maxSalary, "JPY", resolvePresentation({ user: { language: locale } })))));
     assert.ok(!render(page, { ...form, compensationBand: { ...band, currency: "JPY" } }, locale).html.includes(escape(t("range"))));
   }
 });

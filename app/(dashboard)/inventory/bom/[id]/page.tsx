@@ -1,4 +1,5 @@
 "use client";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useTranslations } from "next-intl";
 
@@ -15,6 +16,7 @@ import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { expenseMoneyDisplay } from "@/lib/money/expense-display";
 
 export default function BOMDetailPage() {
+  const unitPresentation = useUnitPresentation();
   const t = useTranslations("InventoryAssembly");
   const { id } = useParams<{ id: string }>();
   const [data, setData] = useState<AssemblyBomDetail | null>(null);
@@ -84,19 +86,19 @@ export default function BOMDetailPage() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div>
               <p className="text-xs text-muted-foreground">{t("components")}</p>
-              <p className="text-sm font-mono font-medium tabular-nums">{expenseMoneyDisplay(BigInt(costBreakdown.componentCostMinor), bom.currencyCode)}</p>
+              <p className="text-sm font-mono font-medium tabular-nums">{expenseMoneyDisplay(BigInt(costBreakdown.componentCostMinor), bom.currencyCode, unitPresentation)}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">{t("labor")}</p>
-              <p className="text-sm font-mono font-medium tabular-nums">{expenseMoneyDisplay(BigInt(costBreakdown.laborCostMinor), bom.currencyCode)}</p>
+              <p className="text-sm font-mono font-medium tabular-nums">{expenseMoneyDisplay(BigInt(costBreakdown.laborCostMinor), bom.currencyCode, unitPresentation)}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">{t("overhead")}</p>
-              <p className="text-sm font-mono font-medium tabular-nums">{expenseMoneyDisplay(BigInt(costBreakdown.overheadCostMinor), bom.currencyCode)}</p>
+              <p className="text-sm font-mono font-medium tabular-nums">{expenseMoneyDisplay(BigInt(costBreakdown.overheadCostMinor), bom.currencyCode, unitPresentation)}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground font-medium">{t("totalCost")}</p>
-              <p className="text-sm font-mono font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">{expenseMoneyDisplay(BigInt(costBreakdown.totalCostMinor), bom.currencyCode)}</p>
+              <p className="text-sm font-mono font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">{expenseMoneyDisplay(BigInt(costBreakdown.totalCostMinor), bom.currencyCode, unitPresentation)}</p>
             </div>
           </div>
         </div>
@@ -119,7 +121,7 @@ export default function BOMDetailPage() {
                     <p className="text-xs text-muted-foreground">
                       {t("quantity", { quantity: comp.quantity })}
                       {comp.wastagePercent && !/^0(?:\.0+)?$/.test(comp.wastagePercentExact) && t("wastage", { percent: comp.wastagePercent })}
-                      {comp.componentItem && t("each", { cost: expenseMoneyDisplay(BigInt(comp.componentItem.purchasePriceMinor), bom.currencyCode) })}
+                      {comp.componentItem && t("each", { cost: expenseMoneyDisplay(BigInt(comp.componentItem.purchasePriceMinor), bom.currencyCode, unitPresentation) })}
                     </p>
                   </div>
                   <Button variant="ghost" size="sm" className="size-7 p-0 text-destructive" aria-label={t("removeComponent")} onClick={() => removeComponent(comp.id)}>

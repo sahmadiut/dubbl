@@ -1,4 +1,5 @@
 "use client";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useTranslations } from "next-intl";
 import { budgetTypeLabel, budgetReadJson, budgetFailureMessage } from "@/i18n/budget-presentation";
@@ -105,6 +106,7 @@ const PAGE_TABS = [
 ] as const;
 
 export default function BudgetDetailLayout({ children }: { children: React.ReactNode }) {
+  const unitPresentation = useUnitPresentation();
   const t = useTranslations("Budgets");
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -169,7 +171,7 @@ export default function BudgetDetailLayout({ children }: { children: React.React
     );
   }
 
-  const formatMoney = (amount: bigint) => budgetMoney(amount, currencyCode);
+  const formatMoney = (amount: bigint) => budgetMoney(amount, currencyCode, unitPresentation);
   const grandTotal = budget.lines.reduce((s, l) => s + l.total, 0n);
   const totalVariance = totalBudgeted - totalActual;
   const overallPct = totalBudgeted !== 0n ? budgetPercent(totalActual, totalBudgeted) : 0;

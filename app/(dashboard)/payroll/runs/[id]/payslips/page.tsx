@@ -1,4 +1,5 @@
 "use client";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useTranslations } from "next-intl";
 import { payrollOutputJson, payrollOutputOrganization, type PayrollPayslip } from "@/i18n/payroll-output-presentation";
@@ -39,6 +40,7 @@ interface Row {
 }
 
 export default function RunPayslipsPage() {
+  const unitPresentation = useUnitPresentation();
   const t = useTranslations("PayrollOutputs");
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -176,7 +178,7 @@ export default function RunPayslipsPage() {
                             {t("beforeDeductions")}
                           </p>
                           <p className="text-sm font-mono tabular-nums">
-                            {formatMoney(ps.grossAmount, ps.currency)}
+                            {formatMoney(ps.grossAmount, ps.currency, unitPresentation)}
                           </p>
                         </div>
                         <div className="hidden sm:block text-right">
@@ -184,7 +186,7 @@ export default function RunPayslipsPage() {
                             {t("taxesDeductions")}
                           </p>
                           <p className="text-sm font-mono tabular-nums text-red-600 dark:text-red-400">
-                            {formatMoney(totalDeductions, ps.currency)}
+                            {formatMoney(totalDeductions, ps.currency, unitPresentation)}
                           </p>
                         </div>
                         <div className="text-right">
@@ -192,7 +194,7 @@ export default function RunPayslipsPage() {
                             {t("takeHome")}
                           </p>
                           <p className="text-sm font-mono tabular-nums font-medium">
-                            {formatMoney(ps.netAmount, ps.currency)}
+                            {formatMoney(ps.netAmount, ps.currency, unitPresentation)}
                           </p>
                         </div>
                         <Badge variant="outline" className="text-[10px]">
@@ -223,10 +225,10 @@ export default function RunPayslipsPage() {
                 {isOpen && ps && (
                   <div className="border-t bg-muted/30 px-4 py-4">
                     <div className="grid grid-cols-2 gap-x-8 gap-y-3 sm:grid-cols-4">
-                      <Detail label={t("beforeDeductions")} value={formatMoney(ps.grossAmount, ps.currency)} />
-                      <Detail label={t("taxWithheld")} value={formatMoney(ps.taxAmount, ps.currency)} />
-                      <Detail label={t("otherDeductions")} value={formatMoney(otherDeductions, ps.currency)} />
-                      <Detail label={t("takeHome")} value={formatMoney(ps.netAmount, ps.currency)} emphasize />
+                      <Detail label={t("beforeDeductions")} value={formatMoney(ps.grossAmount, ps.currency, unitPresentation)} />
+                      <Detail label={t("taxWithheld")} value={formatMoney(ps.taxAmount, ps.currency, unitPresentation)} />
+                      <Detail label={t("otherDeductions")} value={formatMoney(otherDeductions, ps.currency, unitPresentation)} />
+                      <Detail label={t("takeHome")} value={formatMoney(ps.netAmount, ps.currency, unitPresentation)} emphasize />
                     </div>
 
                     {ps.deductionsBreakdown && ps.deductionsBreakdown.length > 0 && (
@@ -244,7 +246,7 @@ export default function RunPayslipsPage() {
                                 {d.name || t(`deductionCategory_${d.category}`)}
                               </span>
                               <span className="text-xs font-mono tabular-nums">
-                                {formatMoney(d.amount || 0, ps.currency)}
+                                {formatMoney(d.amount || 0, ps.currency, unitPresentation)}
                               </span>
                             </div>
                           ))}
@@ -257,9 +259,9 @@ export default function RunPayslipsPage() {
                         {t("yearSoFar")}
                       </p>
                       <div className="grid grid-cols-3 gap-x-8 gap-y-2">
-                        <Detail label={t("earned")} value={formatMoney(ps.ytdGross, ps.currency)} small />
-                        <Detail label={t("tax")} value={formatMoney(ps.ytdTax, ps.currency)} small />
-                        <Detail label={t("takeHome")} value={formatMoney(ps.ytdNet, ps.currency)} small />
+                        <Detail label={t("earned")} value={formatMoney(ps.ytdGross, ps.currency, unitPresentation)} small />
+                        <Detail label={t("tax")} value={formatMoney(ps.ytdTax, ps.currency, unitPresentation)} small />
+                        <Detail label={t("takeHome")} value={formatMoney(ps.ytdNet, ps.currency, unitPresentation)} small />
                       </div>
                     </div>
                   </div>

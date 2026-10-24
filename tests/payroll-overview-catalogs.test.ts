@@ -1,3 +1,4 @@
+import { resolvePresentation } from "../i18n/locale";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -96,10 +97,10 @@ test("payroll overview renders every finite run status, period and exact monetar
     for (const key of ["overview", "activeEmployees", "monthlyPayrollCost", "paidThisYear", "unfinished", "recentRuns", "viewAll", "beforeAndTakeHome", "breakdown", "takeHome", "taxesDeductions", "totalBefore", "quickActions", "newRun", "addEmployee", "draft", "processing", "completed", "void", "pendingApproval"] as const)
       assert.ok(view.html.includes(escape(t(key))), key);
     assert.ok(view.html.includes(escape(t("period", { start: run.payPeriodStart, end: run.payPeriodEnd }))));
-    assert.ok(view.html.includes(escape(payrollMoneyDisplay(run.totalNet, currency))));
-    const monthly = payrollGroupedDisplay(employees.filter(e => e.isActive).map(e => ({ amount: e.salary, currency: e.currency })), 12n);
+    assert.ok(view.html.includes(escape(payrollMoneyDisplay(run.totalNet, currency, resolvePresentation({ user: { language: locale } })))));
+    const monthly = payrollGroupedDisplay(employees.filter(e => e.isActive).map(e => ({ amount: e.salary, currency: e.currency })), 12n, resolvePresentation({ user: { language: locale } }));
     assert.ok(view.html.includes(escape(monthly)));
-    assert.ok(view.html.includes(escape(payrollGroupedDisplay([{ amount: run.totalNet, currency }]))));
+    assert.ok(view.html.includes(escape(payrollGroupedDisplay([{ amount: run.totalNet, currency }], 1n, resolvePresentation({ user: { language: locale } })))));
     assert.ok(!view.html.includes("<script>") && !view.html.includes(employee.name)); // Names are not overview output.
     const actions = view.captured.filter(c => typeof c.props.onClick === "function");
     for (const c of actions) (c.props.onClick as () => void)();

@@ -1,4 +1,5 @@
 "use client";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { payrollOverviewJson, type PayrollOverviewEmployee } from "@/i18n/payroll-overview-presentation";
 import { useTranslations } from "next-intl";
@@ -57,6 +58,7 @@ function getInitials(name: string) {
 }
 
 export default function EmployeesPage() {
+  const unitPresentation = useUnitPresentation();
   const t = useTranslations("PayrollEmployees");
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
@@ -364,7 +366,7 @@ export default function EmployeesPage() {
                       <p className="text-xs text-muted-foreground capitalize">{t(emp.payFrequency as "weekly" | "biweekly" | "monthly")}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-mono tabular-nums">{formatMoney(emp.salary, emp.currency ?? "USD")}</p>
+                      <p className="text-sm font-mono tabular-nums">{formatMoney(emp.salary, emp.currency ?? "USD", unitPresentation)}</p>
                     </div>
                     <Badge
                       variant="outline"

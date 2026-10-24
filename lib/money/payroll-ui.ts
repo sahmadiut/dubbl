@@ -78,12 +78,12 @@ export function payrollShare(numerator: bigint, denominator: bigint): string {
 }
 
 /** Overview aggregates group currencies instead of adding unlike units. */
-export function payrollGroupedDisplay(rows: readonly { amount: number; currency: string | null }[], divisor = 1n) {
+export function payrollGroupedDisplay(rows: readonly { amount: number; currency: string | null }[], divisor = 1n, presentation?: import("../../i18n/numbers").NumberPresentation) {
   const groups = new Map<string, bigint>();
   for (const row of rows) {
     const currency = currencyMetadata(row.currency ?? "USD").code;
     groups.set(currency, (groups.get(currency) ?? 0n) + payrollSum([row.amount]));
   }
   return [...groups].sort(([a], [b]) => a.localeCompare(b)).map(([currency, amount]) =>
-    payrollMoneyDisplay(roundRatio(amount, divisor, "half-away-from-zero"), currency)).join(" · ") || "—";
+    payrollMoneyDisplay(roundRatio(amount, divisor, "half-away-from-zero"), currency, presentation)).join(" · ") || "—";
 }

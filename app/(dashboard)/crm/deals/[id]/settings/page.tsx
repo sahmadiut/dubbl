@@ -1,4 +1,5 @@
 "use client";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -13,6 +14,7 @@ import { useCrmDetailPresentation } from "@/i18n/crm-detail-presentation";
 import { crmDealMutationJson, crmDealDeletedJson } from "@/i18n/crm-presentation";
 
 export default function DealSettingsPage() {
+  const unitPresentation = useUnitPresentation();
   const { t, sourceLabel } = useCrmDetailPresentation();
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -128,7 +130,7 @@ export default function DealSettingsPage() {
           <div className="space-y-1.5">
             <Label className="text-xs">{t("value")}</Label>
             <Input
-              value={formatMoney(deal.valueCents, deal.currency)}
+              value={formatMoney(deal.valueCents, deal.currency, unitPresentation)}
               disabled
               className="bg-muted/50 font-mono tabular-nums"
             />

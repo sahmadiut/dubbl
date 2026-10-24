@@ -1,4 +1,5 @@
 "use client";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useTranslations } from "next-intl";
 import { crmAnalyticsJson, crmAnalyticsStageKeys, type CrmAnalytics } from "@/i18n/crm-analytics-presentation";
@@ -15,6 +16,7 @@ import { ErrorState } from "@/components/dashboard/error-state";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 
 export default function CRMAnalyticsPage() {
+  const unitPresentation = useUnitPresentation();
   const t = useTranslations("CrmAnalytics");
   const stages = useTranslations("CrmPipeline");
   const [data, setData] = useState<CrmAnalytics | null>(null);
@@ -66,12 +68,12 @@ export default function CRMAnalyticsPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title={t("pipelineValue")}
-            value={formatMoney(data.totalPipelineValue, data.currency)}
+            value={formatMoney(data.totalPipelineValue, data.currency, unitPresentation)}
             icon={DollarSign}
           />
           <StatCard
             title={t("wonRevenue")}
-            value={formatMoney(data.wonValue, data.currency)}
+            value={formatMoney(data.wonValue, data.currency, unitPresentation)}
             icon={TrendingUp}
             changeType="positive"
           />
@@ -82,7 +84,7 @@ export default function CRMAnalyticsPage() {
           />
           <StatCard
             title={t("averageDealSize")}
-            value={formatMoney(data.avgDealValue, data.currency)}
+            value={formatMoney(data.avgDealValue, data.currency, unitPresentation)}
             icon={BarChart3}
           />
         </div>
@@ -118,7 +120,7 @@ export default function CRMAnalyticsPage() {
                   <span className="text-muted-foreground capitalize">{Object.hasOwn(crmAnalyticsStageKeys, stage) ? stages(crmAnalyticsStageKeys[stage as keyof typeof crmAnalyticsStageKeys]) : stage}</span>
                   <div className="flex items-center gap-3">
                     <span className="text-xs text-muted-foreground">{t("dealCount", { count: info.count })}</span>
-                    <span className="font-mono text-xs font-medium tabular-nums">{formatMoney(info.value, data.currency)}</span>
+                    <span className="font-mono text-xs font-medium tabular-nums">{formatMoney(info.value, data.currency, unitPresentation)}</span>
                   </div>
                 </div>
               ))}

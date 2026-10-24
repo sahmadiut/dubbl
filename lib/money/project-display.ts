@@ -1,11 +1,11 @@
 import { assetCentsInput, assetCentsDecimal } from "./asset-display";
+import type { NumberPresentation } from "../../i18n/numbers";
+import { formatExactCurrencyDecimal } from "../../i18n/numbers";
 export const projectCentsInput = assetCentsInput;
 export const projectCentsDecimal = assetCentsDecimal;
 /** Existing project fields are fixed cents, independently of the saved ISO label. */
-export function projectMoneyDisplay(value: number | bigint | string, currency = "USD") {
-  const [whole, fraction] = assetCentsDecimal(value).split(".");
-  return new Intl.NumberFormat("en-US", { style: "currency", currency, minimumFractionDigits: 2, maximumFractionDigits: 2 })
-    .formatToParts(whole === "-0" ? -0 : BigInt(whole)).map(p => p.type === "fraction" ? fraction : p.value).join("");
+export function projectMoneyDisplay(value: number | bigint | string, currency = "USD", presentation: NumberPresentation = { locale: "en-US", numerals: "latn" }) {
+  return formatExactCurrencyDecimal(assetCentsDecimal(value), currency, presentation);
 }
 export function projectTimeCents(minutes: number, hourlyRate: number) {
   if (!Number.isSafeInteger(minutes) || minutes < 0 || !Number.isSafeInteger(hourlyRate) || hourlyRate < 0) throw new RangeError("Exact project time and cents required");

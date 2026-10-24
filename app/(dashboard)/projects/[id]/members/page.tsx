@@ -1,4 +1,6 @@
 "use client";
+import { currencyLabel } from "@/i18n/currency-labels";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useTranslations } from "next-intl";
 import {
@@ -41,10 +43,11 @@ const roleColors: Record<string, string> = {
 };
 
 export default function MembersPage() {
+  const unitPresentation = useUnitPresentation();
   const t = useTranslations("ProjectMembers");
   const roleLabel = (role: string) => Object.hasOwn(projectRoleKeys, role) ? t(projectRoleKeys[role as keyof typeof projectRoleKeys]) : t("unknownRole");
   const { project: proj, orgId, projectId, refresh } = useProject();
-  const formatMoney = (amount: number | bigint | string) => projectMoneyDisplay(amount, proj?.currency ?? "USD");
+  const formatMoney = (amount: number | bigint | string) => projectMoneyDisplay(amount, proj?.currency ?? "USD", unitPresentation);
   const [addOpen, setAddOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [orgMembers, setOrgMembers] = useState<ProjectOrgMember[]>([]);
@@ -402,7 +405,7 @@ export default function MembersPage() {
               <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("compensation")}</p>
               <div className="space-y-2">
                 <Label>{t("hourlyRate")}</Label>
-                <CurrencyInput prefix={proj?.currency === "USD" ? "$" : proj?.currency} value={hourlyRate} onChange={setHourlyRate} />
+                <CurrencyInput prefix={proj?.currency === "USD" ? currencyLabel("USD", unitPresentation.locale, "$") : proj?.currency} value={hourlyRate} onChange={setHourlyRate} />
                 <p className="text-[11px] text-muted-foreground">{t("hourlyRateHint")}</p>
               </div>
             </div>

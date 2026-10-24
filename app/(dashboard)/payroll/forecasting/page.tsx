@@ -1,4 +1,5 @@
 "use client";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useTranslations } from "next-intl";
 import { payrollAnalyticsJson, analyticsOrganization } from "@/i18n/payroll-analytics-presentation";
@@ -39,6 +40,7 @@ const anim = (delay: number) => ({
 });
 
 export default function ForecastingPage() {
+  const unitPresentation = useUnitPresentation();
   const t = useTranslations("PayrollAnalytics");
   const [projection, setProjection] = useState<Projection[]>([]);
   const [loading, setLoading] = useState(true);
@@ -114,11 +116,11 @@ export default function ForecastingPage() {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <motion.div {...anim(0)} className="rounded-xl border bg-card p-4">
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("yearGross")}</p>
-          <p className="mt-1 text-2xl font-bold font-mono tabular-nums">{formatMoney(totalGross, currency)}</p>
+          <p className="mt-1 text-2xl font-bold font-mono tabular-nums">{formatMoney(totalGross, currency, unitPresentation)}</p>
         </motion.div>
         <motion.div {...anim(0.05)} className="rounded-xl border bg-card p-4">
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("yearNet")}</p>
-          <p className="mt-1 text-2xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{formatMoney(totalNet, currency)}</p>
+          <p className="mt-1 text-2xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{formatMoney(totalNet, currency, unitPresentation)}</p>
         </motion.div>
         <motion.div {...anim(0.1)} className="rounded-xl border bg-card p-4">
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("headcount")}</p>
@@ -140,8 +142,8 @@ export default function ForecastingPage() {
             <div key={p.month} className="px-4 py-2 flex items-center justify-between">
               <span className="text-sm font-mono">{p.month}</span>
               <div className="flex gap-6">
-                <span className="text-sm font-mono tabular-nums w-24 text-right">{formatMoney(p.gross, currency)}</span>
-                <span className="text-sm font-mono tabular-nums w-24 text-right">{formatMoney(p.net, currency)}</span>
+                <span className="text-sm font-mono tabular-nums w-24 text-right">{formatMoney(p.gross, currency, unitPresentation)}</span>
+                <span className="text-sm font-mono tabular-nums w-24 text-right">{formatMoney(p.net, currency, unitPresentation)}</span>
               </div>
             </div>
           ))}
@@ -179,18 +181,18 @@ export default function ForecastingPage() {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="rounded-xl border bg-card p-4">
               <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("currentMonthly")}</p>
-              <p className="mt-1 text-xl font-bold font-mono tabular-nums">{formatMoney(whatIf.current.monthlyGross, whatIf.currency)}</p>
+              <p className="mt-1 text-xl font-bold font-mono tabular-nums">{formatMoney(whatIf.current.monthlyGross, whatIf.currency, unitPresentation)}</p>
               <p className="text-xs text-muted-foreground">{t("employeesCount", { count: whatIf.current.headcount })}</p>
             </div>
             <div className="rounded-xl border bg-card p-4">
               <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("projectedMonthly")}</p>
-              <p className="mt-1 text-xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{formatMoney(whatIf.projected.monthlyGross, whatIf.currency)}</p>
+              <p className="mt-1 text-xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{formatMoney(whatIf.projected.monthlyGross, whatIf.currency, unitPresentation)}</p>
               <p className="text-xs text-muted-foreground">{t("employeesCount", { count: whatIf.projected.headcount })}</p>
             </div>
             <div className="rounded-xl border bg-card p-4">
               <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("difference")}</p>
               <p className={`mt-1 text-xl font-bold font-mono tabular-nums ${whatIf.difference.monthlyGross >= 0 ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"}`}>
-                {whatIf.difference.monthlyGross >= 0 ? "+" : ""}{formatMoney(whatIf.difference.monthlyGross, whatIf.currency)}
+                {whatIf.difference.monthlyGross >= 0 ? "+" : ""}{formatMoney(whatIf.difference.monthlyGross, whatIf.currency, unitPresentation)}
               </p>
               <p className="text-xs text-muted-foreground">{t("perMonth")}</p>
             </div>

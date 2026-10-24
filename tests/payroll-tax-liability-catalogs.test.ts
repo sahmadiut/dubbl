@@ -1,3 +1,4 @@
+import { resolvePresentation } from "../i18n/locale";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -113,8 +114,8 @@ test("tax liability production JSX renders bilingual copy, exact cents, statutor
     assert.ok(has(h, "title", t("documentTitle")));
     for (const key of ["title", "description", "owed", "paid", "outstanding", "whoYouPay", "incomeAgency", "incomeDescription", "payrollAgency", "payrollDescription", "pensionAgency", "pensionDescription", "paidToDate", "paymentsRecorded", "periodCovered", "covers", "level", "reference", "paidOn", "amount", "sheetTitle", "sheetDescription", "payee", "amountPaid", "periodFrom", "periodTo", "notes", "cancel", "referencePlaceholder", "notesPlaceholder"] as const) assert.ok(h.html.includes(escape(t(key))), key);
     assert.ok(h.html.includes(escape(t("periodRange", { start: payment.periodStart, end: payment.periodEnd }))));
-    assert.ok(h.html.includes(escape(t("outstandingNotice", { amount: payrollMoneyDisplay(71, "KWD") }))));
-    assert.ok(h.html.includes(escape(payrollMoneyDisplay(29, "KWD"))));
+    assert.ok(h.html.includes(escape(t("outstandingNotice", { amount: payrollMoneyDisplay(71, "KWD", resolvePresentation({ user: { language: locale } })) }))));
+    assert.ok(h.html.includes(escape(payrollMoneyDisplay(29, "KWD", resolvePresentation({ user: { language: locale } })))));
     assert.ok(h.html.includes(escape(caller))); assert.ok(!h.html.includes("<script>"));
     const options = h.captured.filter(c => c.kind === "SelectItem");
     assert.deepEqual(options.map(c => c.props.value), ["income_tax", "fica", "pension", "federal", "state", "local"]);
@@ -127,8 +128,8 @@ test("tax liability production JSX renders bilingual copy, exact cents, statutor
     assert.ok(render(page, { ...loaded, payments: [] }, locale).html.includes(escape(t("empty"))));
     const max = Number.MAX_SAFE_INTEGER;
     const big = render(page, { ...loaded, payments: [payment, { ...payment, id: "payment-b", amount: max }, { ...payment, id: "payment-c", amount: max }] }, locale);
-    assert.ok(big.html.includes(escape(payrollMoneyDisplay(2n * BigInt(max) + 29n, "KWD"))));
-    assert.ok(!big.html.includes(escape(t("outstandingNotice", { amount: payrollMoneyDisplay(71, "KWD") }))));
+    assert.ok(big.html.includes(escape(payrollMoneyDisplay(2n * BigInt(max) + 29n, "KWD", resolvePresentation({ user: { language: locale } })))));
+    assert.ok(!big.html.includes(escape(t("outstandingNotice", { amount: payrollMoneyDisplay(71, "KWD", resolvePresentation({ user: { language: locale } })) }))));
     const mixed = render(page, { ...loaded, payments: [{ ...payment, currency: "JPY" }] }, locale);
     assert.ok(mixed.html.includes(escape(t("multipleCurrencies")))); assert.ok(mixed.html.includes(escape(t("unavailable"))));
     const pending = render(page, { ...loaded, payments: [{ ...payment, currency: "JPY", status: "pending" }] }, locale);

@@ -1,4 +1,6 @@
 "use client";
+import { usePresentation } from "@/i18n/provider";
+import { currencyLabel } from "@/i18n/currency-labels";
 
 import { payrollRunJson, type PayrollRunEmployee as Employee, type PayrollRunParent as Parent } from "@/i18n/payroll-run-presentation";
 import { useTranslations } from "next-intl";
@@ -15,6 +17,7 @@ import { payrollCentsInput } from "@/lib/money/payroll-input";
 
 export type OffCycleType = "termination" | "bonus-only" | "correction";
 export function OffCycleDialog({ type, onClose, start, end }: { type: OffCycleType | null; onClose: () => void; start: string; end: string }) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("PayrollRuns");
   const labels = { termination: t("finalPay"), "bonus-only": t("bonusOnly"), correction: t("correctCompleted") };
   const router = useRouter();
@@ -84,9 +87,9 @@ export function OffCycleDialog({ type, onClose, start, end }: { type: OffCycleTy
             <div className="space-y-2"><Label htmlFor="payroll-end">{t("periodEnd")}</Label><Input id="payroll-end" type="date" required min={periodStart} value={periodEnd} onChange={e => setPeriodEnd(e.target.value)} /></div></div>}
         <div className="space-y-2"><Label htmlFor="payroll-employee">{t("employee")}</Label><Select value={employeeId} onValueChange={setEmployeeId}>
           <SelectTrigger id="payroll-employee"><SelectValue placeholder={loading ? t("loadingEmployees") : t("selectEmployee")} /></SelectTrigger>
-          <SelectContent>{choices.map(e => <SelectItem key={e.id} value={e.id}>{t("employeeOption", { name: e.name, currency: e.currency ?? t("employeeCurrency") })}</SelectItem>)}</SelectContent></Select></div>
+          <SelectContent>{choices.map(e => <SelectItem key={e.id} value={e.id}>{t("employeeOption", { name: e.name, currency: currencyLabel(e.currency ?? t("employeeCurrency"), unitPresentation.locale) })}</SelectItem>)}</SelectContent></Select></div>
         {type === "termination" ? <Label className="flex items-center gap-2"><input type="checkbox" checked={pto} onChange={e => setPto(e.target.checked)} />{t("pto")}</Label>
-          : <div className="space-y-2"><Label htmlFor="payroll-adjustment">{t(type === "correction" ? "adjustment" : "bonusAmount", { currency })}</Label>
+          : <div className="space-y-2"><Label htmlFor="payroll-adjustment">{t(type === "correction" ? "adjustment" : "bonusAmount", { currency: currencyLabel(currency, unitPresentation.locale) })}</Label>
             <Input id="payroll-adjustment" inputMode="decimal" required value={amount} onChange={e => setAmount(e.target.value)} placeholder={type === "correction" ? t("signedExample") : t("amountExample")} />
             {type === "correction" && <p className="text-xs text-muted-foreground">{t("adjustmentHelp")}</p>}</div>}
         <div className="space-y-2"><Label htmlFor="payroll-notes">{t("notes")}</Label><Input id="payroll-notes" value={notes} onChange={e => setNotes(e.target.value)} /></div>

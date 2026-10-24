@@ -1,4 +1,6 @@
 "use client";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
+import { currencyLabel } from "@/i18n/currency-labels";
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
@@ -27,6 +29,7 @@ import { projectCentsDecimal as centsToDecimal, projectCentsInput, projectHoursI
 import { useProject, PROJECT_COLORS } from "../project-context";
 
 export default function SettingsPage() {
+  const unitPresentation = useUnitPresentation();
   const t = useTranslations("Projects");
   const { project: proj, orgId, projectId, refresh } = useProject();
   const router = useRouter();
@@ -192,9 +195,9 @@ export default function SettingsPage() {
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-1.5"><Label className="text-xs">{t("budget")}</Label><CurrencyInput prefix={proj.currency === "USD" ? "$" : proj.currency} value={projBudget} onChange={setProjBudget} /></div>
-          <div className="space-y-1.5"><Label className="text-xs">{t("hourlyRate")}</Label><CurrencyInput prefix={proj.currency === "USD" ? "$" : proj.currency} value={projHourlyRate} onChange={setProjHourlyRate} /></div>
-          <div className="space-y-1.5"><Label className="text-xs">{t("fixedPrice")}</Label><CurrencyInput prefix={proj.currency === "USD" ? "$" : proj.currency} value={projFixedPrice} onChange={setProjFixedPrice} /></div>
+          <div className="space-y-1.5"><Label className="text-xs">{t("budget")}</Label><CurrencyInput prefix={proj.currency === "USD" ? currencyLabel("USD", unitPresentation.locale, "$") : proj.currency} value={projBudget} onChange={setProjBudget} /></div>
+          <div className="space-y-1.5"><Label className="text-xs">{t("hourlyRate")}</Label><CurrencyInput prefix={proj.currency === "USD" ? currencyLabel("USD", unitPresentation.locale, "$") : proj.currency} value={projHourlyRate} onChange={setProjHourlyRate} /></div>
+          <div className="space-y-1.5"><Label className="text-xs">{t("fixedPrice")}</Label><CurrencyInput prefix={proj.currency === "USD" ? currencyLabel("USD", unitPresentation.locale, "$") : proj.currency} value={projFixedPrice} onChange={setProjFixedPrice} /></div>
         </div>
       </Section>
 

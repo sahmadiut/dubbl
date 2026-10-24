@@ -1,4 +1,5 @@
 "use client";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useMemo, useState } from "react";
 import {
@@ -45,9 +46,10 @@ import Link from "next/link";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 
 export default function ProjectOverviewPage() {
+  const unitPresentation = useUnitPresentation();
   const { t, priorityConfig, taskStatusConfig, formatHours, formatDate, formatDateShort, billingLabel } = useProjectPresentation();
   const { project: proj } = useProject();
-  const formatMoney = (amount: number | bigint | string) => projectMoneyDisplay(amount, proj?.currency ?? "USD");
+  const formatMoney = (amount: number | bigint | string) => projectMoneyDisplay(amount, proj?.currency ?? "USD", unitPresentation);
   useDocumentTitle(t("documentTitle"));
   if (!proj) return null;
 

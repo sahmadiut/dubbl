@@ -1,3 +1,4 @@
+import { resolvePresentation } from "../i18n/locale";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -119,7 +120,7 @@ test("project list renders bilingual headers, exact aggregates, hours, finite en
     assert.ok(has(h, "title", t("documentTitle")));
     for (const key of ["overview", "projects", "newProject", "project", "status", "priority", "time", "budget", "billed", "team", "totalBudget", "totalBilled", "hoursLogged", "teamMembers", "manageDescription"] as const) assert.ok(h.html.includes(escape(t(key))), key);
     assert.ok(h.html.includes(escape(caller)) && !h.html.includes("<script>"));
-    assert.ok(h.html.includes(escape(projectMoneyDisplay(BigInt(Number.MAX_SAFE_INTEGER) * 2n, "KWD"))));
+    assert.ok(h.html.includes(escape(projectMoneyDisplay(BigInt(Number.MAX_SAFE_INTEGER) * 2n, "KWD", resolvePresentation({ user: { language: locale } })))));
     assert.ok(h.html.includes(escape(t("hoursMinutes", { hours: 1, minutes: 35 }))));
     for (const [status, key] of Object.entries(projectStatusKeys)) assert.ok(render(page, { loading: false, projects: [{ ...project, status }] }, locale).html.includes(escape(t(key))));
     for (const [priority, key] of Object.entries(projectPriorityKeys)) assert.ok(render(page, { loading: false, projects: [{ ...project, priority }] }, locale).html.includes(escape(t(key))));

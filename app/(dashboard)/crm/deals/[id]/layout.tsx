@@ -1,4 +1,5 @@
 "use client";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { crmDealDetailJson, crmDealMutationJson, crmActivityCreatedJson, type CrmDealDetail } from "@/i18n/crm-presentation";
 import { useCrmDetailPresentation } from "@/i18n/crm-detail-presentation";
@@ -85,6 +86,7 @@ export function useDealContext() {
 // ---------------------------------------------------------------------------
 
 export default function DealDetailLayout({ children }: { children: React.ReactNode }) {
+  const unitPresentation = useUnitPresentation();
   const { t } = useCrmDetailPresentation();
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -265,7 +267,7 @@ export default function DealDetailLayout({ children }: { children: React.ReactNo
             </div>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
               <span className="font-mono font-semibold tabular-nums text-foreground text-base">
-                {formatMoney(deal.valueCents, deal.currency)}
+                {formatMoney(deal.valueCents, deal.currency, unitPresentation)}
               </span>
               {deal.probability !== null && (
                 <span className="flex items-center gap-1">

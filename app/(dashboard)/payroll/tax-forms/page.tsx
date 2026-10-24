@@ -1,4 +1,5 @@
 "use client";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useTranslations } from "next-intl";
 import { payrollOutputJson, payrollOutputOrganization, type PayrollTaxForm, type PayrollTaxGeneration } from "@/i18n/payroll-output-presentation";
@@ -36,6 +37,7 @@ type TaxGeneration = PayrollTaxGeneration;
 const years = Array.from({ length: 7 }, (_, i) => 2020 + i);
 
 export default function TaxFormsPage() {
+  const unitPresentation = useUnitPresentation();
   const t = useTranslations("PayrollOutputs");
   const statusBadge = (status: PayrollTaxForm["status"]) => {
     switch (status) {
@@ -116,10 +118,10 @@ export default function TaxFormsPage() {
   function getKeyAmount(form: TaxFormItem): string {
     const data = form.formData as Record<string, number>;
     if (form.formType === "1099_nec" && typeof data.box1_nonemployee_compensation === "number") {
-      return formatMoney(data.box1_nonemployee_compensation);
+      return formatMoney(data.box1_nonemployee_compensation, "USD", unitPresentation);
     }
     if (form.formType === "w2" && typeof data.box1_wages === "number") {
-      return formatMoney(data.box1_wages);
+      return formatMoney(data.box1_wages, "USD", unitPresentation);
     }
     return "-";
   }

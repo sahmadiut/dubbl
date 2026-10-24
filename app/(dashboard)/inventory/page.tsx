@@ -1,4 +1,5 @@
 "use client";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { inventoryListJson, inventoryBulkJson, inventoryImportJson, inventoryChartJson } from "@/i18n/inventory-item-presentation";
 import { useTranslations } from "next-intl";
@@ -59,7 +60,6 @@ import {
   SheetFooter,
 } from "@/components/ui/sheet";
 import { bankMoneyDisplay } from "@/lib/money/bank-display";
-const formatMoney = (value: number | bigint) => bankMoneyDisplay(value, "USD");
 
 import { useCreateDrawer } from "@/components/dashboard/create-drawer";
 import { CategoryPicker } from "@/components/dashboard/category-picker";
@@ -101,6 +101,8 @@ const SORT_OPTIONS = [
 const PAGE_SIZE = 30;
 
 export default function InventoryPage() {
+  const unitPresentation = useUnitPresentation();
+  const formatMoney = (value: number | bigint) => bankMoneyDisplay(value, "USD", unitPresentation);
   const t = useTranslations("InventoryItems");
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();

@@ -1,3 +1,4 @@
+import { resolvePresentation } from "../i18n/locale";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -15,7 +16,7 @@ test("time JSX renders translated timer, entries, drawer, charts and exact earne
     for (const key of ["timer", "startTimer", "thisWeek", "totalTime", "earned", "unbilled", "allEntries", "logTime", "addTitle", "addDescription", "date", "duration", "addEntry"]) assert.ok(h.html.includes(esc(t(key as "timer"))), key);
     assert.ok(has(h, "title", t("documentTitle")));
     assert.ok(h.html.includes(esc(caller)) && !h.html.includes("<script>"));
-    assert.ok(h.html.includes(esc(projectMoneyDisplay(projectTimeCents(entry.minutes, entry.hourlyRate), project.currency))));
+    assert.ok(h.html.includes(esc(projectMoneyDisplay(projectTimeCents(entry.minutes, entry.hourlyRate), project.currency, resolvePresentation({ user: { language: locale } })))));
     const opts = h.captured.filter(c => c.kind === "SelectItem").map(c => c.props.value);
     for (const value of ["all", "billable", "non-billable", "invoiced", "none", "true", "false", "task-a"]) assert.ok(opts.includes(value), value);
     const tip = h.captured.find(c => c.kind === "Tooltip")!.props.formatter as (v: number, name: string) => unknown;

@@ -1,4 +1,5 @@
 "use client";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useTranslations } from "next-intl";
 import { payrollAnalyticsJson, analyticsOrganization } from "@/i18n/payroll-analytics-presentation";
@@ -40,6 +41,7 @@ const REPORT_TYPES = [
 ] as const;
 
 export default function ReportsPage() {
+  const unitPresentation = useUnitPresentation();
   const t = useTranslations("PayrollAnalytics");
   const router = useRouter();
   const [summary, setSummary] = useState<Summary | null>(null);
@@ -90,15 +92,15 @@ export default function ReportsPage() {
           </motion.div>
           <motion.div {...anim(0.05)} className="rounded-xl border bg-card p-4">
             <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("totalGross")}</p>
-            <p className="mt-1 text-2xl font-bold font-mono tabular-nums">{formatMoney(summary.totalGross, summary.currency)}</p>
+            <p className="mt-1 text-2xl font-bold font-mono tabular-nums">{formatMoney(summary.totalGross, summary.currency, unitPresentation)}</p>
           </motion.div>
           <motion.div {...anim(0.1)} className="rounded-xl border bg-card p-4">
             <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("totalNet")}</p>
-            <p className="mt-1 text-2xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{formatMoney(summary.totalNet, summary.currency)}</p>
+            <p className="mt-1 text-2xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{formatMoney(summary.totalNet, summary.currency, unitPresentation)}</p>
           </motion.div>
           <motion.div {...anim(0.15)} className="rounded-xl border bg-card p-4">
             <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("avgCostPerRun")}</p>
-            <p className="mt-1 text-2xl font-bold font-mono tabular-nums">{formatMoney(summary.avgCostPerRun, summary.currency)}</p>
+            <p className="mt-1 text-2xl font-bold font-mono tabular-nums">{formatMoney(summary.avgCostPerRun, summary.currency, unitPresentation)}</p>
           </motion.div>
         </div>
       )}

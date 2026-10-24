@@ -1,3 +1,4 @@
+import { resolvePresentation } from "../i18n/locale";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -118,8 +119,8 @@ test("run detail renders bilingual copy, finite enums, exact cents, escaped data
     assert.ok(has(h, "title", t("documentTitle")));
     assert.ok(h.html.includes(escape(t("period", { start: run.payPeriodStart, end: run.payPeriodEnd }))));
     assert.ok(h.html.includes(escape(caller))); assert.ok(!h.html.includes("<script>"));
-    assert.ok(h.html.includes(escape(payrollMoneyDisplay(item.grossAmount, "JPY"))));
-    assert.ok(h.html.includes(escape(payrollMoneyDisplay(18014398509481982n, "JPY"))));
+    assert.ok(h.html.includes(escape(payrollMoneyDisplay(item.grossAmount, "JPY", resolvePresentation({ user: { language: locale } })))));
+    assert.ok(h.html.includes(escape(payrollMoneyDisplay(18014398509481982n, "JPY", resolvePresentation({ user: { language: locale } })))));
     assert.deepEqual(h.captured.filter(c => c.kind === "SelectItem").map(c => c.props.value), [item.employeeId, "performance", "signing", "holiday", "referral", "retention", "other"]);
     for (const status of ["draft", "processing", "completed", "pending_approval", "void"] as const) assert.ok(view({ run: { ...run, status } }, locale).html.includes(escape(t(`status_${status}`))));
     for (const approvalStatus of payrollApprovalStatuses) assert.ok(view({ run: { ...run, approvalStatus } }, locale).html.includes(escape(t(`approval_${approvalStatus}`))));

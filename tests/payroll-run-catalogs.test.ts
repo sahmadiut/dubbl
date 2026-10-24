@@ -1,3 +1,4 @@
+import { resolvePresentation } from "../i18n/locale";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -109,7 +110,7 @@ test("payroll run list, states, badges, sort/filter controls and new dialog rend
     const runs = ["draft", "processing", "completed", "pending_approval", "void"].map((status, i) => ({ ...run, id: String(i), status, runType: ["regular", "termination", "bonus_only", "correction", "off_cycle"][i] }));
     const h = render(page, { loading: false, runs, search: "" }, locale);
     for (const key of ["all", "draft", "processing", "completed", "pendingApproval", "void", "regular", "termination", "bonus", "correction", "offCycle", "date", "gross", "net", "deductions", "newRun", "oneOff", "fixPast"] as const) assert.ok(h.html.includes(escape(t(key))), key);
-    assert.ok(h.html.includes(escape(payrollMoneyDisplay(run.totalGross, "KWD"))));
+    assert.ok(h.html.includes(escape(payrollMoneyDisplay(run.totalGross, "KWD", resolvePresentation({ user: { language: locale } })))));
     assert.ok(h.html.includes(escape(t("period", { start: run.payPeriodStart, end: run.payPeriodEnd }))));
     assert.ok(has(h, "title", t("documentTitle")));
     assert.deepEqual(h.captured.filter(c => c.kind === "SelectItem").map(c => c.props.value), ["date", "gross", "net"]);

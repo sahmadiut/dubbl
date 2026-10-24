@@ -1,4 +1,6 @@
 "use client";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
+import { currencyLabel } from "@/i18n/currency-labels";
 
 import { payrollMoneyDisplay } from "@/lib/money/payroll-display";
 import { useTranslations } from "next-intl";
@@ -47,6 +49,7 @@ const anim = (delay: number) => ({
 });
 
 export default function PayrollSettingsPage() {
+  const unitPresentation = useUnitPresentation();
   const t = useTranslations("PayrollSettings");
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [loading, setLoading] = useState(true);
@@ -437,7 +440,7 @@ export default function PayrollSettingsPage() {
                         <p className="text-sm font-medium">{dt.name}</p>
                         <div className="flex items-center gap-2 mt-0.5">
                           <Badge variant="outline" className="text-[10px]">{t(settingsLabelKey(dt.category))}</Badge>
-                          {dt.defaultAmount != null && <span className="text-xs text-muted-foreground">${payrollCentsDecimal(dt.defaultAmount)}</span>}
+                          {dt.defaultAmount != null && <span className="text-xs text-muted-foreground">{unitPresentation.locale === "en-US" ? "$" + payrollCentsDecimal(dt.defaultAmount) : payrollMoneyDisplay(dt.defaultAmount, "USD", unitPresentation)}</span>}
                           {dt.defaultPercent != null && <span className="text-xs text-muted-foreground">{dt.defaultPercent}%</span>}
                         </div>
                       </div>
@@ -597,7 +600,7 @@ export default function PayrollSettingsPage() {
                       <div>
                         <p className="text-sm font-medium">{band.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          {t("bandSummary", { level: band.level ?? "—", min: payrollMoneyDisplay(band.minSalary, band.currency), mid: payrollMoneyDisplay(band.midSalary, band.currency), max: payrollMoneyDisplay(band.maxSalary, band.currency) })}
+                          {t("bandSummary", { level: band.level ?? "—", min: payrollMoneyDisplay(band.minSalary, band.currency, unitPresentation), mid: payrollMoneyDisplay(band.midSalary, band.currency, unitPresentation), max: payrollMoneyDisplay(band.maxSalary, band.currency, unitPresentation) })}
                         </p>
                       </div>
                       <Button size="icon" variant="ghost" className="size-7" aria-label={t("deleteBandTitle")} onClick={() => handleDeleteBand(band.id)}>
@@ -661,7 +664,7 @@ export default function PayrollSettingsPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>{t("defaultAmount")}</Label>
-                  <CurrencyInput prefix="$" value={newDeduction.defaultAmount} onChange={(v) => setNewDeduction({ ...newDeduction, defaultAmount: v })} />
+                  <CurrencyInput prefix={currencyLabel("USD", unitPresentation.locale, "$")} value={newDeduction.defaultAmount} onChange={(v) => setNewDeduction({ ...newDeduction, defaultAmount: v })} />
                 </div>
                 <div className="space-y-2">
                   <Label>{t("defaultPercent")}</Label>
@@ -715,11 +718,11 @@ export default function PayrollSettingsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>{t("minIncome")}</Label>
-                  <CurrencyInput prefix="$" value={newBracket.minIncome} onChange={(v) => setNewBracket({ ...newBracket, minIncome: v })} />
+                  <CurrencyInput prefix={currencyLabel("USD", unitPresentation.locale, "$")} value={newBracket.minIncome} onChange={(v) => setNewBracket({ ...newBracket, minIncome: v })} />
                 </div>
                 <div className="space-y-2">
                   <Label>{t("maxIncome")}</Label>
-                  <CurrencyInput prefix="$" value={newBracket.maxIncome} onChange={(v) => setNewBracket({ ...newBracket, maxIncome: v })} placeholder={t("unlimited")} />
+                  <CurrencyInput prefix={currencyLabel("USD", unitPresentation.locale, "$")} value={newBracket.maxIncome} onChange={(v) => setNewBracket({ ...newBracket, maxIncome: v })} placeholder={t("unlimited")} />
                 </div>
               </div>
             </div>
@@ -882,15 +885,15 @@ export default function PayrollSettingsPage() {
               <div className="grid gap-4 sm:grid-cols-3">
                 <div className="space-y-2">
                   <Label>{t("minSalary")}</Label>
-                  <CurrencyInput prefix="$" value={newBand.minSalary} onChange={(v) => setNewBand({ ...newBand, minSalary: v })} />
+                  <CurrencyInput prefix={currencyLabel("USD", unitPresentation.locale, "$")} value={newBand.minSalary} onChange={(v) => setNewBand({ ...newBand, minSalary: v })} />
                 </div>
                 <div className="space-y-2">
                   <Label>{t("midSalary")}</Label>
-                  <CurrencyInput prefix="$" value={newBand.midSalary} onChange={(v) => setNewBand({ ...newBand, midSalary: v })} />
+                  <CurrencyInput prefix={currencyLabel("USD", unitPresentation.locale, "$")} value={newBand.midSalary} onChange={(v) => setNewBand({ ...newBand, midSalary: v })} />
                 </div>
                 <div className="space-y-2">
                   <Label>{t("maxSalary")}</Label>
-                  <CurrencyInput prefix="$" value={newBand.maxSalary} onChange={(v) => setNewBand({ ...newBand, maxSalary: v })} />
+                  <CurrencyInput prefix={currencyLabel("USD", unitPresentation.locale, "$")} value={newBand.maxSalary} onChange={(v) => setNewBand({ ...newBand, maxSalary: v })} />
                 </div>
               </div>
             </div>

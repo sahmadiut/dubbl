@@ -1,4 +1,5 @@
 "use client";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { payrollGroupedDisplay, payrollShare } from "@/lib/money/payroll-ui";
 
@@ -31,6 +32,7 @@ const anim = (delay: number) => ({
 });
 
 export default function PayrollPage() {
+  const unitPresentation = useUnitPresentation();
   const t = useTranslations("PayrollOverview");
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
@@ -68,10 +70,10 @@ export default function PayrollPage() {
   if (moneyError) return <p role="alert">{t(moneyError)}</p>;
 
   const activeEmployees = employees.filter((e) => e.isActive);
-  const monthlyCost = payrollGroupedDisplay(activeEmployees.map(e => ({ amount: e.salary, currency: e.currency })), 12n);
+  const monthlyCost = payrollGroupedDisplay(activeEmployees.map(e => ({ amount: e.salary, currency: e.currency })), 12n, unitPresentation);
   const completedRuns = runs.filter((r) => r.status === "completed");
   const lastRun = runs.length > 0 ? runs[0] : null;
-  const ytdPaid = payrollGroupedDisplay(completedRuns.map(r => ({ amount: r.totalNet, currency: r.baseCurrency })));
+  const ytdPaid = payrollGroupedDisplay(completedRuns.map(r => ({ amount: r.totalNet, currency: r.baseCurrency })), 1n, unitPresentation);
   const draftRuns = runs.filter((r) => r.status === "draft");
   const hasData = employees.length > 0 || runs.length > 0;
   const recentRuns = runs.slice(0, 5);
@@ -310,7 +312,7 @@ export default function PayrollPage() {
                   <div className="text-right shrink-0">
                     <p className="text-xs text-muted-foreground">{t("beforeAndTakeHome")}</p>
                     <p className="text-sm font-mono tabular-nums">
-                      {formatMoney(run.totalGross, run.baseCurrency ?? "USD")} / {formatMoney(run.totalNet, run.baseCurrency ?? "USD")}
+                      {formatMoney(run.totalGross, run.baseCurrency ?? "USD", unitPresentation)} / {formatMoney(run.totalNet, run.baseCurrency ?? "USD", unitPresentation)}
                     </p>
                   </div>
                 </button>
@@ -351,7 +353,7 @@ export default function PayrollPage() {
                         <span className="text-muted-foreground">{t("takeHome")}</span>
                       </div>
                       <span className="font-mono tabular-nums font-medium">
-                        {formatMoney(breakdownRun.totalNet, breakdownRun.baseCurrency ?? "USD")}
+                        {formatMoney(breakdownRun.totalNet, breakdownRun.baseCurrency ?? "USD", unitPresentation)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
@@ -360,14 +362,14 @@ export default function PayrollPage() {
                         <span className="text-muted-foreground">{t("taxesDeductions")}</span>
                       </div>
                       <span className="font-mono tabular-nums font-medium">
-                        {formatMoney(breakdownRun.totalDeductions, breakdownRun.baseCurrency ?? "USD")}
+                        {formatMoney(breakdownRun.totalDeductions, breakdownRun.baseCurrency ?? "USD", unitPresentation)}
                       </span>
                     </div>
                     <div className="h-px bg-border" />
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground font-medium">{t("totalBefore")}</span>
                       <span className="font-mono tabular-nums font-semibold">
-                        {formatMoney(breakdownRun.totalGross, breakdownRun.baseCurrency ?? "USD")}
+                        {formatMoney(breakdownRun.totalGross, breakdownRun.baseCurrency ?? "USD", unitPresentation)}
                       </span>
                     </div>
                   </div>

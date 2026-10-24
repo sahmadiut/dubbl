@@ -1,4 +1,6 @@
 "use client";
+import { currencyLabel } from "@/i18n/currency-labels";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useTranslations } from "next-intl";
 import { payrollContractorJson, type ContractorDetail } from "@/i18n/payroll-contractor-presentation";
@@ -29,6 +31,7 @@ const statusColors: Record<string, string> = {
 };
 
 export default function ContractorDetailPage() {
+  const unitPresentation = useUnitPresentation();
   const t = useTranslations("PayrollContractors");
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -195,7 +198,7 @@ export default function ContractorDetailPage() {
           <div className="flex items-center gap-2">
             <h1 className="text-lg font-semibold">{contractor.name}</h1>
             {contractor.currency && contractor.currency !== "USD" && (
-              <code className="rounded bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">{contractor.currency}</code>
+              <code className="rounded bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">{currencyLabel(contractor.currency, unitPresentation.locale)}</code>
             )}
           </div>
           <p className="text-sm text-muted-foreground">{contractor.company || contractor.email || "-"}</p>
@@ -271,7 +274,7 @@ export default function ContractorDetailPage() {
                 {(contractor.payments || []).map((p) => (
                   <div key={p.id} className="flex items-center justify-between px-4 py-2.5">
                     <div>
-                      <p className="text-sm font-medium font-mono tabular-nums">{formatMoney(p.amount, p.currency || contractor.currency || "USD")}</p>
+                      <p className="text-sm font-medium font-mono tabular-nums">{formatMoney(p.amount, p.currency || contractor.currency || "USD", unitPresentation)}</p>
                       <p className="text-xs text-muted-foreground">{p.description || p.invoiceNumber || "-"}</p>
                     </div>
                     <div className="flex items-center gap-2">

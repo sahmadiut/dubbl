@@ -1,3 +1,4 @@
+import { resolvePresentation } from "../i18n/locale";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -113,8 +114,8 @@ test("self-service production template renders bilingual copy, escaped data, exa
     assert.ok(has(h, "title", t("documentTitle")));
     for (const key of ["employeeNumber", "position", "ptoBalance", "payslips", "profileTitle", "profileDescription", "email", "bankAccount", "save", "payslipsTitle", "payslipsDescription", "leaveTitle", "leaveDescription", "timesheetsTitle", "timesheetsDescription"] as const) assert.ok(h.html.includes(escape(t(key))), key);
     assert.ok(h.html.includes(escape(caller))); assert.ok(!h.html.includes("<script>"));
-    assert.ok(h.html.includes(escape(payrollMoneyDisplay(Number.MAX_SAFE_INTEGER, "KWD"))));
-    assert.ok(h.html.includes(escape(t("netAmount", { amount: payrollMoneyDisplay(29, "KWD") }))));
+    assert.ok(h.html.includes(escape(payrollMoneyDisplay(Number.MAX_SAFE_INTEGER, "KWD", resolvePresentation({ user: { language: locale } })))));
+    assert.ok(h.html.includes(escape(t("netAmount", { amount: payrollMoneyDisplay(29, "KWD", resolvePresentation({ user: { language: locale } })) }))));
     assert.ok(h.html.includes(escape(t("period", { start: "2026-09-01", end: "2026-09-30" }))));
     for (const [key, hours] of [["hours", "7.5"], ["hoursAvailable", "7.5"], ["hoursUsed", "0.25"]] as const) assert.ok(h.html.includes(escape(t(key, { hours }))));
     for (const status of selfSheetStatuses) assert.ok(render(page, { ...loaded, timesheets: [{ ...sheet, status }] }, locale).html.includes(escape(t(`status_${status}`))));
@@ -132,7 +133,7 @@ test("self-service production template renders bilingual copy, escaped data, exa
     }
     assert.doesNotThrow(() => render(page, { ...loaded, profile: { ...profile, position: null }, payslips: [{ ...slip, payrollRun: null }], leaveBalances: [{ ...balance, policy: null }] }, locale));
     const many = render(page, { ...loaded, payslips: Array.from({ length: 12 }, (_, i) => ({ ...slip, id: `slip-${i}` })), timesheets: Array.from({ length: 8 }, (_, i) => ({ ...sheet, id: `sheet-${i}` })) }, locale);
-    assert.equal(many.html.split(escape(t("netAmount", { amount: payrollMoneyDisplay(29, "KWD") }))).length - 1, 10);
+    assert.equal(many.html.split(escape(t("netAmount", { amount: payrollMoneyDisplay(29, "KWD", resolvePresentation({ user: { language: locale } })) }))).length - 1, 10);
     assert.equal(many.html.split(escape(t("status_draft"))).length - 1, 5);
   }
   for (const value of Object.values(fa.PayrollSelfService)) assert.match(value, /[\u0600-\u06ff]/);

@@ -1,4 +1,5 @@
 "use client";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useTranslations } from "next-intl";
 import {
@@ -28,6 +29,7 @@ const anim = (delay: number) => ({
 });
 
 export default function SelfServicePage() {
+  const unitPresentation = useUnitPresentation();
   const t = useTranslations("PayrollSelfService");
   const [profile, setProfile] = useState<Profile | null>(null);
   const [payslips, setPayslips] = useState<Payslip[]>([]);
@@ -165,8 +167,8 @@ export default function SelfServicePage() {
                     <p className="text-xs text-muted-foreground">{new Date(ps.generatedAt).toLocaleDateString()}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-mono tabular-nums">{formatMoney(ps.grossAmount, ps.currency)}</p>
-                    <p className="text-xs text-muted-foreground font-mono">{t("netAmount", { amount: formatMoney(ps.netAmount, ps.currency) })}</p>
+                    <p className="text-sm font-mono tabular-nums">{formatMoney(ps.grossAmount, ps.currency, unitPresentation)}</p>
+                    <p className="text-xs text-muted-foreground font-mono">{t("netAmount", { amount: formatMoney(ps.netAmount, ps.currency, unitPresentation) })}</p>
                   </div>
                 </div>
               ))}

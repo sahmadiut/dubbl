@@ -1,4 +1,5 @@
 "use client";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useTranslations } from "next-intl";
 import { payrollCompensationJson, compensationOrganization } from "@/i18n/payroll-compensation-presentation";
@@ -21,6 +22,7 @@ const statusColors: Record<string, string> = {
 };
 
 export default function ReviewDetailPage() {
+  const unitPresentation = useUnitPresentation();
   const t = useTranslations("PayrollCompensation");
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -93,15 +95,15 @@ export default function ReviewDetailPage() {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="rounded-xl border bg-card p-4">
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("currentTotal")}</p>
-          <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate">{formatMoney(totalCurrent, review.currency)}</p>
+          <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate">{formatMoney(totalCurrent, review.currency, unitPresentation)}</p>
         </div>
         <div className="rounded-xl border bg-card p-4">
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("proposedTotal")}</p>
-          <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate text-emerald-600 dark:text-emerald-400">{formatMoney(totalProposed, review.currency)}</p>
+          <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate text-emerald-600 dark:text-emerald-400">{formatMoney(totalProposed, review.currency, unitPresentation)}</p>
         </div>
         <div className="rounded-xl border bg-card p-4">
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("totalIncrease")}</p>
-          <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate">{formatMoney(review.totals.difference, review.currency)}</p>
+          <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate">{formatMoney(review.totals.difference, review.currency, unitPresentation)}</p>
         </div>
       </div>
 
@@ -121,11 +123,11 @@ export default function ReviewDetailPage() {
                 <div className="flex items-center gap-4 shrink-0">
                   <div className="text-right">
                     <p className="text-xs text-muted-foreground">{t("current")}</p>
-                    <p className="text-sm font-mono tabular-nums">{formatMoney(e.currentSalary, review.currency)}</p>
+                    <p className="text-sm font-mono tabular-nums">{formatMoney(e.currentSalary, review.currency, unitPresentation)}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-xs text-muted-foreground">{t("proposed")}</p>
-                    <p className="text-sm font-mono tabular-nums font-medium text-emerald-600 dark:text-emerald-400">{formatMoney(e.proposedSalary, review.currency)}</p>
+                    <p className="text-sm font-mono tabular-nums font-medium text-emerald-600 dark:text-emerald-400">{formatMoney(e.proposedSalary, review.currency, unitPresentation)}</p>
                   </div>
                   {e.adjustmentPercent !== null && (
                     <Badge variant="outline" className="text-[10px]">{t("adjustment", { percent: e.adjustmentPercent.toFixed(1) })}</Badge>

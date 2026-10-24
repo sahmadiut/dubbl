@@ -1,4 +1,5 @@
 "use client";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useTranslations } from "next-intl";
 import { payrollCompensationJson, compensationOrganization } from "@/i18n/payroll-compensation-presentation";
@@ -84,6 +85,7 @@ const REVIEW_SORT_OPTIONS = [
 ] as const;
 
 export default function CompensationPage() {
+  const unitPresentation = useUnitPresentation();
   const t = useTranslations("PayrollCompensation");
   const requestVersion = useRef(0);
   const cancelReads = useCallback(() => { requestVersion.current++; }, []);
@@ -449,7 +451,7 @@ export default function CompensationPage() {
             <span className="text-[11px] font-medium uppercase tracking-wide">{t("avgWidth")}</span>
           </div>
           <p className="mt-2 text-2xl font-bold font-mono tabular-nums truncate">
-            {mixedBands ? t("multipleCurrencies") : formatMoney(avgBandWidth, bandCurrency)}
+            {mixedBands ? t("multipleCurrencies") : formatMoney(avgBandWidth, bandCurrency, unitPresentation)}
           </p>
         </motion.div>
 
@@ -519,10 +521,10 @@ export default function CompensationPage() {
                   <div>
                     <p className="text-sm font-medium">{b.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {b.level ? `${b.level} · ` : ""}{formatMoney(b.minSalary, b.currency)} - {formatMoney(b.maxSalary, b.currency)}
+                      {b.level ? `${b.level} · ` : ""}{formatMoney(b.minSalary, b.currency, unitPresentation)} - {formatMoney(b.maxSalary, b.currency, unitPresentation)}
                     </p>
                   </div>
-                  <p className="text-sm font-mono tabular-nums text-muted-foreground">{t("midAmount", { amount: formatMoney(b.midSalary, b.currency) })}</p>
+                  <p className="text-sm font-mono tabular-nums text-muted-foreground">{t("midAmount", { amount: formatMoney(b.midSalary, b.currency, unitPresentation) })}</p>
                 </div>
               ))}
             </div>
@@ -602,7 +604,7 @@ export default function CompensationPage() {
                     <p className="text-xs text-muted-foreground">{t("effective", { date: r.effectiveDate })}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    {r.totalBudget !== null && <span className="text-sm font-mono tabular-nums">{formatMoney(r.totalBudget, r.currency)}</span>}
+                    {r.totalBudget !== null && <span className="text-sm font-mono tabular-nums">{formatMoney(r.totalBudget, r.currency, unitPresentation)}</span>}
                     <Badge variant="outline" className={cn("text-[10px]", statusColors[r.status] || "")}>
                       {t(`status_${r.status}`)}
                     </Badge>

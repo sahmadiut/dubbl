@@ -1,3 +1,4 @@
+import { resolvePresentation } from "../i18n/locale";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -134,7 +135,7 @@ test("production settings JSX renders paired sections, drawers, enums, exact cen
     assert.ok(h.html.includes(escape(t("shiftSummary", { start: "22:00", end: "06:00", type: t("night") }))));
     assert.ok(h.html.includes(escape(t("leaveSummary", { type: t("sick"), hours: "7.5", method: t("monthly") }))));
     assert.ok(h.html.includes(escape(t("steps", { count: 1 }))));
-    assert.ok(h.html.includes(escape(payrollMoneyDisplay(Number.MAX_SAFE_INTEGER, "KWD"))));
+    assert.ok(h.html.includes(escape(payrollMoneyDisplay(Number.MAX_SAFE_INTEGER, "KWD", resolvePresentation({ user: { language: locale } })))));
     assert.ok(h.html.includes(escape(caller))); assert.ok(!h.html.includes("<script>"));
     assert.ok(h.html.includes('href="/payroll/self-service"'));
     const options = h.captured.filter(c => c.kind === "SelectItem");

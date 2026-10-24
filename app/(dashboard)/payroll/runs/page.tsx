@@ -1,4 +1,5 @@
 "use client";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { payrollRunJson, type PayrollRun } from "@/i18n/payroll-run-presentation";
 import { useTranslations } from "next-intl";
@@ -72,6 +73,7 @@ const runTypeColors: Record<string, string> = {
 };
 
 export default function PayrollRunsPage() {
+  const unitPresentation = useUnitPresentation();
   const t = useTranslations("PayrollRuns");
   const shared = useTranslations("SharedUI");
   const SORT_OPTIONS: { value: SortKey; label: string }[] = [
@@ -501,15 +503,15 @@ export default function PayrollRunsPage() {
                   <div className="flex items-center gap-4 shrink-0">
                     <div className="hidden sm:block text-right">
                       <p className="text-xs text-muted-foreground">{t("gross")}</p>
-                      <p className="text-sm font-mono tabular-nums">{formatMoney(run.totalGross, run.baseCurrency ?? "USD")}</p>
+                      <p className="text-sm font-mono tabular-nums">{formatMoney(run.totalGross, run.baseCurrency ?? "USD", unitPresentation)}</p>
                     </div>
                     <div className="hidden sm:block text-right">
                       <p className="text-xs text-muted-foreground">{t("deductions")}</p>
-                      <p className="text-sm font-mono tabular-nums text-red-600 dark:text-red-400">{formatMoney(run.totalDeductions, run.baseCurrency ?? "USD")}</p>
+                      <p className="text-sm font-mono tabular-nums text-red-600 dark:text-red-400">{formatMoney(run.totalDeductions, run.baseCurrency ?? "USD", unitPresentation)}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-xs text-muted-foreground">{t("net")}</p>
-                      <p className="text-sm font-mono tabular-nums font-medium">{formatMoney(run.totalNet, run.baseCurrency ?? "USD")}</p>
+                      <p className="text-sm font-mono tabular-nums font-medium">{formatMoney(run.totalNet, run.baseCurrency ?? "USD", unitPresentation)}</p>
                     </div>
                   </div>
                 </button>

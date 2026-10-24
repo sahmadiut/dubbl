@@ -250,3 +250,114 @@ existing port-3000 server was observed, but browser
 inventory was empty and IAB returned unavailable; no mounted-browser pass is
 claimed. Native terminology, RTL, broader page adoption and IRR financial
 qualification remain separate.
+
+
+## LOC-131 inventory, projects, CRM, budgets and payroll
+
+All ordinary currency displays found in these assigned families now receive active
+PresentationProvider locale/numerals. Shared payroll/project/budget display helpers
+accept explicit presentation and retain English defaults for unadopted callers.
+Fixed-two cents are converted to canonical exact decimals before formatting; IRR,
+JPY and KWD labels never reinterpret those saved units. Signed subunits, bigint
+aggregates and low digits remain exact. Payroll grouped displays still separate
+unlike currencies before applying the existing exact rounding policy.
+
+Adopted files (actual caller inventory):
+
+- `app/(dashboard)/accounting/budgets/[id]/layout.tsx`
+- `app/(dashboard)/accounting/budgets/[id]/page.tsx`
+- `app/(dashboard)/accounting/budgets/[id]/settings/page.tsx`
+- `app/(dashboard)/accounting/budgets/page.tsx`
+- `app/(dashboard)/crm/analytics/page.tsx`
+- `app/(dashboard)/crm/deals/[id]/activity/page.tsx`
+- `app/(dashboard)/crm/deals/[id]/layout.tsx`
+- `app/(dashboard)/crm/deals/[id]/page.tsx`
+- `app/(dashboard)/crm/deals/[id]/settings/page.tsx`
+- `app/(dashboard)/crm/page.tsx`
+- `app/(dashboard)/inventory/[id]/layout.tsx`
+- `app/(dashboard)/inventory/[id]/page.tsx`
+- `app/(dashboard)/inventory/[id]/suppliers/page.tsx`
+- `app/(dashboard)/inventory/[id]/variants/page.tsx`
+- `app/(dashboard)/inventory/bom/[id]/page.tsx`
+- `app/(dashboard)/inventory/bom/page.tsx`
+- `app/(dashboard)/inventory/page.tsx`
+- `app/(dashboard)/inventory/valuation/page.tsx`
+- `app/(dashboard)/inventory/warehouses/page.tsx`
+- `app/(dashboard)/payroll/analytics/page.tsx`
+- `app/(dashboard)/payroll/compensation/page.tsx`
+- `app/(dashboard)/payroll/compensation/reviews/[id]/page.tsx`
+- `app/(dashboard)/payroll/contractors/[id]/page.tsx`
+- `app/(dashboard)/payroll/contractors/page.tsx`
+- `app/(dashboard)/payroll/employees/[id]/page.tsx`
+- `app/(dashboard)/payroll/employees/page.tsx`
+- `app/(dashboard)/payroll/forecasting/page.tsx`
+- `app/(dashboard)/payroll/page.tsx`
+- `app/(dashboard)/payroll/reports/[type]/page.tsx`
+- `app/(dashboard)/payroll/reports/page.tsx`
+- `app/(dashboard)/payroll/runs/[id]/page.tsx`
+- `app/(dashboard)/payroll/runs/[id]/payslips/page.tsx`
+- `app/(dashboard)/payroll/runs/off-cycle-dialog.tsx`
+- `app/(dashboard)/payroll/runs/page.tsx`
+- `app/(dashboard)/payroll/self-service/page.tsx`
+- `app/(dashboard)/payroll/settings/page.tsx`
+- `app/(dashboard)/payroll/tax-forms/[id]/page.tsx`
+- `app/(dashboard)/payroll/tax-forms/page.tsx`
+- `app/(dashboard)/payroll/tax-liabilities/page.tsx`
+- `app/(dashboard)/projects/[id]/layout.tsx`
+- `app/(dashboard)/projects/[id]/members/page.tsx`
+- `app/(dashboard)/projects/[id]/milestones/page.tsx`
+- `app/(dashboard)/projects/[id]/page.tsx`
+- `app/(dashboard)/projects/[id]/settings/page.tsx`
+- `app/(dashboard)/projects/[id]/time/page.tsx`
+- `app/(dashboard)/projects/page.tsx`
+- `components/dashboard/create-drawer.tsx`
+- `lib/money/payroll-display.ts`
+- `lib/money/payroll-ui.ts`
+- `lib/money/project-display.ts`
+
+Inventory covers list/detail/workspace prices, suppliers/variants, valuation/BOM
+costs and empty-state samples, including the warehouse sample. Its historical
+USD master/catalog fields retain their units; org/report currency metadata is
+used only where already explicit. Valuation keeps its prior ungrouped ISO-style
+English display, localizing its unit and digits only for the active presentation.
+Projects cover list columns, detail/layout, hourly rates/time, billing/milestones,
+members/settings and shared creation inputs. CRM covers pipeline, statistics and
+all deal detail/activity/settings views. Budgets cover list, shell, overview,
+settings/drawer summaries, exact chart tooltips and axis units. Payroll covers
+overview grouped amounts, employee/contractor lists/details, run/detail/bonuses,
+off-cycle choice and amount labels, compensation/reviews, analytics/forecast,
+liabilities/reports, settings, self-service and website payslip/tax-form previews.
+Visible currency badges and authored USD sample/input prefixes localize; selected
+codes, raw identifiers and field values remain canonical.
+
+Explicit exceptions and inspected unchanged surfaces:
+
+- Canonical ISO state/queries, option values, request/response/DB/MCP fields,
+  grouping keys and conditional bank/currency eligibility remain machine data.
+  No API operation/schema/migration or MCP registration changed; existing MCP
+  tools continue returning canonical amounts/codes for these same operations.
+- Payroll/projects/budgets remain fixed-two cents, including IRR. Existing
+  inventory catalog/master default-USD and BOM/report metadata scales are not
+  migrated or rescaled. Number-only rates/percentages/hours/quantity text remain
+  under their existing numeric contracts.
+- Inventory CSV/JSON download columns, barcode print output, payroll JSON/CSV/PDF
+  downloads, statutory tax identifiers and issued document snapshots remain
+  existing output contracts. Website previews localize; output-client/server
+  formatters were not changed. Export data continues carrying ISO codes.
+- Inventory movements/counts/alerts/assembly/category/transfer/stock-take pages
+  without ordinary unit displays, project task/note/context surfaces and payroll
+  leave/timesheet/time-only surfaces were inspected and require no label edit.
+  The inventory item picker has no ordinary monetary unit display.
+- Public/report/settings remainder stays LOC-132; parent whole-website audit
+  LOC-115 remains independent. Dashboard was separately done in LOC-133.
+- Stripe functionality/files remain untouched under DEC-008. No IRR financial
+  gate or ledger qualification was enabled.
+
+Actual provider/next-intl component tests assert literal Persian ریال in CRM
+analytics plus canonical IRR org-scoped queries, signed fixed-two compensation,
+project detail, inventory valuation and budget cards/axis/exact tooltip. Shared
+helper tests cover both locales and numeral systems, zero/signed subunits and
+large exact low digits. Existing callbacks still prove canonical cents/ISO/date
+payloads. Persian terminology beyond owner-specified IRR remains provisional;
+no native linguistic, mounted browser/RTL or production financial acceptance is
+claimed. No server/build/database operation was run.

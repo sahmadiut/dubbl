@@ -1,4 +1,6 @@
 "use client";
+import { formatExactCurrencyDecimal } from "@/i18n/numbers";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useTranslations } from "next-intl";
 import { crmPipelinesJson, crmDealsJson, crmPipelineCreatedJson, crmSourceKeys } from "@/i18n/crm-presentation";
@@ -112,6 +114,7 @@ const DEFAULT_STAGES = [
 const PAGE_SIZE = 24;
 
 export default function CRMPage() {
+  const unitPresentation = useUnitPresentation();
   const t = useTranslations("CrmPipeline");
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
@@ -361,9 +364,9 @@ export default function CRMPage() {
                 </div>
                 <div className="space-y-2">
                   {[
-                    { title: t("sampleTitle1"), contact: t("sampleContact1"), value: "$48,000", prob: "75%", stage: DEFAULT_STAGES[2] },
-                    { title: t("sampleTitle2"), contact: t("sampleContact2"), value: "$24,500", prob: "60%", stage: DEFAULT_STAGES[1] },
-                    { title: t("sampleTitle3"), contact: t("sampleContact3"), value: "$120,000", prob: "30%", stage: DEFAULT_STAGES[0] },
+                    { title: t("sampleTitle1"), contact: t("sampleContact1"), value: (unitPresentation.locale === "en-US" ? "$48,000" : formatExactCurrencyDecimal("48000", "USD", unitPresentation)), prob: "75%", stage: DEFAULT_STAGES[2] },
+                    { title: t("sampleTitle2"), contact: t("sampleContact2"), value: (unitPresentation.locale === "en-US" ? "$24,500" : formatExactCurrencyDecimal("24500", "USD", unitPresentation)), prob: "60%", stage: DEFAULT_STAGES[1] },
+                    { title: t("sampleTitle3"), contact: t("sampleContact3"), value: (unitPresentation.locale === "en-US" ? "$120,000" : formatExactCurrencyDecimal("120000", "USD", unitPresentation)), prob: "30%", stage: DEFAULT_STAGES[0] },
                   ].map((deal) => (
                     <div key={deal.title} className="flex items-center gap-3 rounded-lg border p-3">
                       <div className="size-2 rounded-full shrink-0" style={{ backgroundColor: deal.stage.color }} />
@@ -419,7 +422,7 @@ export default function CRMPage() {
         title={t("salesPipeline")}
         description={
           summary
-            ? t("summary", { count: summary.totalDeals, value: formatMoney(summary.activeValue, summary.currency) })
+            ? t("summary", { count: summary.totalDeals, value: formatMoney(summary.activeValue, summary.currency, unitPresentation) })
             : undefined
         }
       >
@@ -446,7 +449,7 @@ export default function CRMPage() {
               <span className="font-mono tabular-nums">{t("activeCount", { count: summary.activeCount })}</span>
               {summary.wonCount > 0 && (
                 <span className="font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
-                  {t("wonSummary", { count: summary.wonCount, value: formatMoney(summary.wonValue, summary.currency) })}
+                  {t("wonSummary", { count: summary.wonCount, value: formatMoney(summary.wonValue, summary.currency, unitPresentation) })}
                 </span>
               )}
             </div>
@@ -476,7 +479,7 @@ export default function CRMPage() {
                 )}
               >
                 <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: stage.color }} />
-                {t("stageSummary", { stage: stage.name, count: stage.count, value: formatMoney(stage.value, summary?.currency) })}
+                {t("stageSummary", { stage: stage.name, count: stage.count, value: formatMoney(stage.value, summary?.currency, unitPresentation) })}
               </button>
             ))}
           </div>
@@ -641,7 +644,7 @@ export default function CRMPage() {
 
                   <div className="flex items-center justify-between">
                     <span className="text-lg font-bold font-mono tabular-nums tracking-tight">
-                      {formatMoney(deal.valueCents, deal.currency)}
+                      {formatMoney(deal.valueCents, deal.currency, unitPresentation)}
                     </span>
                     {deal.probability !== null && (
                       <div className="flex items-center gap-1.5">

@@ -1,3 +1,4 @@
+import { resolvePresentation } from "../i18n/locale";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -90,12 +91,31 @@ async function withIO(fetcher: typeof fetch, run: () => Promise<void>, org: stri
 }
 let reloads = 0;
 
+test("IRR analytics renders literal Persian rial while retaining the ISO selector and query", async () => {
+  const rial = { ...analytics, currency: "IRR" };
+  for (const locale of locales) {
+    const h = render({ loading: false, data: rial, currency: "IRR" }, locale);
+    assert.ok(h.html.includes(locale === "fa-IR" ? "ریال" : "IRR"));
+    assert.ok(h.html.includes(escape(payrollMoneyDisplay(max, "IRR", resolvePresentation({ user: { language: locale } })))));
+    assert.equal(h.captured.find(c => c.kind === "CurrencySelect")!.props.value, "IRR");
+    await withIO(async (url, init) => {
+      assert.equal(url, "/api/v1/crm/analytics?currency=IRR");
+      assert.equal((init?.headers as Record<string, string>)["x-organization-id"], "org-a");
+      return Response.json(rial);
+    }, async () => {
+      const loading = render({ currency: "IRR" }, locale);
+      loading.effects[0](); await flush();
+      assert.deepEqual(loading.events.find(e => e[0] === "data" && e[1] !== null)?.[1], rial);
+    });
+  }
+});
+
 test("analytics production JSX renders bilingual statistics, exact fixed cents, stage labels and escaped custom IDs", () => {
   for (const locale of locales) {
     const t = translator(locale), h = render({ loading: false, data: analytics, currency: "KWD" }, locale);
     assert.ok(has(h, "title", t("documentTitle")));
     for (const key of ["title", "description", "currency", "allCurrencies", "pipelineValue", "wonRevenue", "conversionRate", "averageDealSize", "dealSummary", "totalDeals", "open", "won", "lost", "stageDistribution"] as const) assert.ok(h.html.includes(escape(t(key))), key);
-    assert.ok(h.html.includes(escape(payrollMoneyDisplay(max, "KWD"))));
+    assert.ok(h.html.includes(escape(payrollMoneyDisplay(max, "KWD", resolvePresentation({ user: { language: locale } })))));
     assert.ok(h.html.includes(escape(t("percent", { value: 50 }))));
     assert.ok(h.html.includes(escape(t("dealCount", { count: 1 }))));
     assert.ok(h.html.includes(escape(caller)) && !h.html.includes("<script>"));

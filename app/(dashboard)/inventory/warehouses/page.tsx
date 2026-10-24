@@ -1,4 +1,6 @@
 "use client";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
+import { formatExactCurrencyDecimal } from "@/i18n/numbers";
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslations } from "next-intl";
@@ -65,6 +67,7 @@ const SORT_OPTIONS: { value: SortKey; label: "name" | "code" | "defaultFirst" }[
 ];
 
 export default function WarehousesPage() {
+  const unitPresentation = useUnitPresentation();
   const t = useTranslations("Warehouses");
   const fetchIdRef = useRef(0);
   const { open: openDrawer } = useCreateDrawer();
@@ -321,7 +324,7 @@ export default function WarehousesPage() {
                 <div className="grid grid-cols-3 gap-3 text-center">
                   {[
                     { label: t("items"), value: "248" },
-                    { label: t("value"), value: "$12,400" },
+                    { label: t("value"), value: (unitPresentation.locale === "en-US" ? "$12,400" : formatExactCurrencyDecimal("12400", "USD", unitPresentation)) },
                     { label: t("utilization"), value: "73%" },
                   ].map(({ label, value }) => (
                     <div key={label} className="rounded-lg bg-muted/50 px-2 py-2">

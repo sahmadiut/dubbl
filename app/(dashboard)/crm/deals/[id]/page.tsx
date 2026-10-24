@@ -1,4 +1,5 @@
 "use client";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useRouter } from "next/navigation";
 import { useParams } from "next/navigation";
@@ -36,6 +37,7 @@ const ACTIVITY_COLORS: Record<string, string> = {
 };
 
 export default function DealOverviewPage() {
+  const unitPresentation = useUnitPresentation();
   const { t, sourceLabel, activityLabel, formatDate, formatTime, timeAgo } = useCrmDetailPresentation();
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -171,7 +173,7 @@ export default function DealOverviewPage() {
                 <DollarSign className="size-4 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div>
-                <p className="text-sm font-bold font-mono tabular-nums">{formatMoney(deal.valueCents, deal.currency)}</p>
+                <p className="text-sm font-bold font-mono tabular-nums">{formatMoney(deal.valueCents, deal.currency, unitPresentation)}</p>
                 <p className="text-[10px] text-muted-foreground">{t("dealValue")}</p>
               </div>
             </div>
@@ -184,7 +186,7 @@ export default function DealOverviewPage() {
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-bold tabular-nums">{deal.probability}%</p>
                     <p className="text-[10px] text-muted-foreground font-mono tabular-nums">
-                      {formatMoney(((BigInt(deal.valueCents) * BigInt(deal.probability) * 2n + 100n) / 200n), deal.currency)}
+                      {formatMoney(((BigInt(deal.valueCents) * BigInt(deal.probability) * 2n + 100n) / 200n), deal.currency, unitPresentation)}
                     </p>
                   </div>
                   <div className="h-1.5 rounded-full bg-muted overflow-hidden mt-1">

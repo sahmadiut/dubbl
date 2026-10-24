@@ -1,3 +1,4 @@
+import { resolvePresentation } from "../i18n/locale";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -88,7 +89,7 @@ test("overview renders paired copy, finite enums, caller text and exact bigint r
     assert.ok(h.html.includes(esc(caller)) && !h.html.includes("<script>"));
     const amount = (95n * BigInt(Number.MAX_SAFE_INTEGER) + 30n) / 60n;
     assert.ok(amount > BigInt(Number.MAX_SAFE_INTEGER));
-    assert.ok(h.html.includes(esc(projectMoneyDisplay(amount, "KWD"))));
+    assert.ok(h.html.includes(esc(projectMoneyDisplay(amount, "KWD", resolvePresentation({ user: { language: locale } })))));
     const pie = h.captured.find(c => c.kind === "Pie")!.props.data as { name: string; value: number }[];
     assert.deepEqual(pie.map(v => v.name), ["done", "inProgress", "inReview", "todo", "backlog", "cancelled"].map(key => t(key as "done")));
     assert.deepEqual(pie.map(v => v.value), [1, 1, 1, 1, 1, 1]);
@@ -224,4 +225,14 @@ test("authored overview/layout copy is extracted; paired Persian strings contain
   }
   assert.deepEqual(Object.keys(en.ProjectOverview).sort(), Object.keys(fa.ProjectOverview).sort());
   for (const value of Object.values(fa.ProjectOverview)) assert.match(value, /[\u0600-\u06ff]/);
+});
+
+
+test("actual project overview localizes IRR while retaining fixed-two saved project cents", () => {
+  for (const locale of locales) {
+    const h = render("page.tsx", locale, { context: { project: { ...project, currency: "IRR" } } });
+    assert.ok(h.html.includes(locale === "fa-IR" ? "\u0631\u06cc\u0627\u0644" : "IRR"));
+    assert.ok(h.html.includes(esc(projectMoneyDisplay(project.budget, "IRR", resolvePresentation({ user: { language: locale } })))));
+    assert.equal(project.currency, "KWD");
+  }
 });

@@ -1,4 +1,5 @@
 "use client";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useTranslations } from "next-intl";
 import { payrollOutputJson, payrollOutputOrganization, w2Fields, taxMetadata, type PayrollTaxForm } from "@/i18n/payroll-output-presentation";
@@ -19,6 +20,7 @@ type TaxFormDetail = PayrollTaxForm;
 
 
 export default function TaxFormDetailPage() {
+  const unitPresentation = useUnitPresentation();
   const t = useTranslations("PayrollOutputs");
   const statusBadge = (status: PayrollTaxForm["status"]) => {
     switch (status) {
@@ -173,7 +175,7 @@ export default function TaxFormDetailPage() {
               </span>
               <span className="text-sm font-mono font-bold tabular-nums">
                 {typeof data.box1_nonemployee_compensation === "number"
-                  ? formatMoney(data.box1_nonemployee_compensation)
+                  ? formatMoney(data.box1_nonemployee_compensation, "USD", unitPresentation)
                   : "-"}
               </span>
             </div>
@@ -188,7 +190,7 @@ export default function TaxFormDetailPage() {
                 <span className="text-sm text-muted-foreground">{t(key)}</span>
                 <span className="text-sm font-mono font-bold tabular-nums">
                   {typeof data[key] === "number"
-                    ? formatMoney(data[key] as number)
+                    ? formatMoney(data[key] as number, "USD", unitPresentation)
                     : "-"}
                 </span>
               </div>

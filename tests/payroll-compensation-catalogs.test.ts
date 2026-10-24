@@ -1,3 +1,4 @@
+import { resolvePresentation } from "../i18n/locale";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -86,6 +87,18 @@ const entry = { id: "entry-a", ...money("currentSalary", 29), ...money("proposed
 const detail = { ...review, entries: [entry], totals: { ...money("currentSalary", 29), ...money("proposedSalary", 28), ...money("difference", -1) } };
 const bodies = { bands: { data: [band] }, reviews: { data: [review], currency: "KWD" }, band: { band }, review: { review }, detail: { review: detail } };
 const loaded = { loading: false, bands: [band], reviews: [review] };
+
+test("actual compensation review uses literal rial without changing fixed-two signed cents", () => {
+  for (const locale of locales) {
+    const h = render(detailPage, { loading: false, review: { ...detail, currency: "IRR" } }, locale);
+    assert.ok(h.html.includes(locale === "fa-IR" ? "ریال" : "IRR"));
+    const p = resolvePresentation({ user: { language: locale } });
+    assert.ok(h.html.includes(escape(payrollMoneyDisplay(-1, "IRR", p))));
+    assert.ok(h.html.includes(escape(caller)) && !h.html.includes("<script>"));
+    const empty = render(page, { ...loaded, bands: [{ ...band, currency: "IRR", minSalary: 0, midSalary: 0, maxSalary: 0 }] }, locale);
+    assert.ok(empty.html.includes(escape(payrollMoneyDisplay(0, "IRR", p))));
+  }
+});
 const newBand = { name: caller, level: "L3", minSalary: "0.29", midSalary: "30000000.00", maxSalary: "90071992547409.91", currency: "KWD" };
 const newReview = { name: caller, effectiveDate: "2026-10-21", totalBudget: "0.29", currency: "KWD" };
 const has = (h: Harness, key: string, value: unknown) => h.events.some(v => JSON.stringify(v) === JSON.stringify([key, value]));
@@ -114,7 +127,7 @@ test("compensation production JSX renders both catalogs, exact cents, escaped da
     assert.ok(has(h, "title", t("documentTitle")));
     for (const key of ["totalBands", "activeReviews", "avgWidth", "totalEntries", "bandsTitle", "reviewsTitle", "bandSheetTitle", "reviewSheetTitle", "searchBands", "searchReviews", "namePlaceholder", "levelPlaceholder", "reviewPlaceholder", "optional", "minSalary", "midSalary", "maxSalary"] as const) assert.ok(h.html.includes(escape(t(key))), key);
     assert.ok(h.html.includes(escape(caller))); assert.ok(!h.html.includes("<script>"));
-    assert.ok(h.html.includes(escape(payrollMoneyDisplay(Number.MAX_SAFE_INTEGER, "KWD"))));
+    assert.ok(h.html.includes(escape(payrollMoneyDisplay(Number.MAX_SAFE_INTEGER, "KWD", resolvePresentation({ user: { language: locale } })))));
     assert.ok(h.html.includes(escape(t("effective", { date: "2026-10-21" }))));
     const sorts = h.captured.filter(c => c.kind === "SelectItem");
     assert.deepEqual(sorts.map(c => c.props.value), ["name:asc", "name:desc", "min:asc", "max:desc", "date:desc", "date:asc", "name:asc", "budget:desc", "budget:asc"]);
@@ -126,7 +139,7 @@ test("compensation production JSX renders both catalogs, exact cents, escaped da
     const d = render(detailPage, { loading: false, review: detail }, locale);
     assert.ok(has(d, "title", t("detailDocumentTitle")));
     for (const key of ["currentTotal", "proposedTotal", "totalIncrease", "current", "proposed", "backToCompensation"] as const) assert.ok(d.html.includes(escape(t(key))), key);
-    assert.ok(d.html.includes(escape(payrollMoneyDisplay(-1, "KWD"))));
+    assert.ok(d.html.includes(escape(payrollMoneyDisplay(-1, "KWD", resolvePresentation({ user: { language: locale } })))));
     assert.ok(d.html.includes(escape(t("adjustment", { percent: "-0.3" }))));
     assert.ok(d.html.includes(escape(caller))); assert.ok(!d.html.includes("<script>"));
     const empty = render(page, { loading: false }, locale);

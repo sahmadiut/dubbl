@@ -1,3 +1,4 @@
+import { resolvePresentation } from "../i18n/locale";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -122,7 +123,7 @@ test("CRM pipeline renders bilingual list, counts, exact cents, caller data and 
     assert.ok(has(h, "title", t("documentTitle")));
     for (const key of ["salesPipeline", "newDeal", "currency", "stageDistribution", "search", "coldOutreach"] as const) assert.ok(h.html.includes(escape(t(key))), key);
     assert.ok(h.html.includes(escape(caller)) && !h.html.includes("<script>"));
-    assert.ok(h.html.includes(escape(payrollMoneyDisplay(deal.valueCents, "KWD"))));
+    assert.ok(h.html.includes(escape(payrollMoneyDisplay(deal.valueCents, "KWD", resolvePresentation({ user: { language: locale } })))));
     assert.ok(h.html.includes(escape(t("dealCount", { count: 1 }))));
     for (const value of ["cold_outreach", "won", "probability"]) assert.ok(h.captured.some(c => c.kind === "SelectItem" && c.props.value === value));
     const card = h.captured.find(c => c.kind === "button" && c.props.className?.toString().includes("w-full rounded-xl"))!;

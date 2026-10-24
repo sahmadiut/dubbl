@@ -1,4 +1,5 @@
 "use client";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useTranslations } from "next-intl";
 import { payrollTaxPaymentJson, taxPaymentOrganization, type TaxPayment } from "@/i18n/payroll-tax-liability-presentation";
@@ -68,6 +69,7 @@ function monthStartISO() {
 }
 
 export default function TaxLiabilitiesPage() {
+  const unitPresentation = useUnitPresentation();
   const t = useTranslations("PayrollTaxLiabilities");
   useDocumentTitle(t("documentTitle"));
   const orgId = taxPaymentOrganization();
@@ -279,12 +281,12 @@ export default function TaxLiabilitiesPage() {
         className: "w-28 text-right",
         render: (r) => (
           <span className="font-mono text-sm tabular-nums">
-            {formatMoney(r.amount, r.currency || "USD")}
+            {formatMoney(r.amount, r.currency || "USD", unitPresentation)}
           </span>
         ),
       },
     ],
-    [t],
+    [t, unitPresentation],
   );
 
   if (initialLoad) return <BrandLoader />;
@@ -314,17 +316,17 @@ export default function TaxLiabilitiesPage() {
       <div className="grid gap-3 sm:grid-cols-3">
         <StatCard
           title={t("owed")}
-          value={totalsError ? t("unavailable") : formatMoney(accruedTax, reportCurrency)}
+          value={totalsError ? t("unavailable") : formatMoney(accruedTax, reportCurrency, unitPresentation)}
           icon={Receipt}
         />
         <StatCard
           title={t("paid")}
-          value={totalsError ? t("unavailable") : formatMoney(totalPaid, reportCurrency)}
+          value={totalsError ? t("unavailable") : formatMoney(totalPaid, reportCurrency, unitPresentation)}
           icon={CheckCircle2}
         />
         <StatCard
           title={t("outstanding")}
-          value={totalsError ? t("unavailable") : formatMoney(outstanding, reportCurrency)}
+          value={totalsError ? t("unavailable") : formatMoney(outstanding, reportCurrency, unitPresentation)}
           icon={Wallet}
         />
       </div>
@@ -355,7 +357,7 @@ export default function TaxLiabilitiesPage() {
                   <div className="text-xs text-muted-foreground">
                     {t("paidToDate")}
                     <span className="ml-1.5 font-mono tabular-nums text-foreground">
-                      {totalsError ? t("unavailable") : formatMoney(paid, reportCurrency)}
+                      {totalsError ? t("unavailable") : formatMoney(paid, reportCurrency, unitPresentation)}
                     </span>
                   </div>
                   <Button
@@ -374,7 +376,7 @@ export default function TaxLiabilitiesPage() {
           <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
             <AlertCircle className="mt-0.5 size-3.5 shrink-0" />
             <span>
-              {t("outstandingNotice", { amount: formatMoney(outstanding, reportCurrency) })}
+              {t("outstandingNotice", { amount: formatMoney(outstanding, reportCurrency, unitPresentation) })}
             </span>
           </div>
         )}

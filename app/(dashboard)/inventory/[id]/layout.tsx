@@ -1,4 +1,5 @@
 "use client";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { inventoryItemJson, inventoryItemRow, inventoryWriteDownError } from "@/i18n/inventory-item-presentation";
 import { useTranslations } from "next-intl";
@@ -25,7 +26,6 @@ import { ContentReveal } from "@/components/ui/content-reveal";
 import { catalogWholeInput } from "@/lib/money/catalog-input";
 import { inventoryDetailMoney, inventoryWriteDown } from "@/lib/money/inventory-detail-ui";
 import { bankMoneyDisplay } from "@/lib/money/bank-display";
-const formatMoney = (value: number | bigint) => bankMoneyDisplay(value, "USD");
 import { setEntityTitle } from "@/lib/hooks/use-entity-title";
 import { cn } from "@/lib/utils";
 
@@ -79,6 +79,8 @@ export default function InventoryItemLayout({ children }: { children: React.Reac
 }
 
 function InventoryItemWorkspace({ children, id, orgId }: { children: React.ReactNode; id: string; orgId: string | null }) {
+  const unitPresentation = useUnitPresentation();
+  const formatMoney = (value: number | bigint) => bankMoneyDisplay(value, "USD", unitPresentation);
   const t = useTranslations("InventoryItems");
   const router = useRouter();
   const pathname = usePathname();

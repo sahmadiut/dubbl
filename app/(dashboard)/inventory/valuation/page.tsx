@@ -1,4 +1,6 @@
 "use client";
+import { formatExactCurrencyDecimal } from "@/i18n/numbers";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useTranslations } from "next-intl";
 import { inventoryValuationJson, type ValuationItem, type ValuationSummary } from "@/i18n/inventory-report-presentation";
@@ -25,6 +27,8 @@ import { ContentReveal } from "@/components/ui/content-reveal";
 import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { cn } from "@/lib/utils";
 import { inventoryPercent, inventoryShare, inventoryValuationMarginCompare } from "@/lib/money/inventory-ui";
+import { currencyLabel } from "@/i18n/currency-labels";
+import { formatExactDecimal } from "@/i18n/numbers";
 import { money, toMajorDecimal } from "@/lib/money/exact";
 import { motion } from "motion/react";
 
@@ -54,6 +58,7 @@ const COLUMNS: { key: SortKey; label: SortKey; align?: "right" }[] = [
 ];
 
 export default function InventoryValuationPage() {
+  const unitPresentation = useUnitPresentation();
   const t = useTranslations("InventoryReports");
   const { open: openDrawer } = useCreateDrawer();
   const [items, setItems] = useState<ValuationItem[]>([]);
@@ -180,7 +185,7 @@ export default function InventoryValuationPage() {
   if (loading) return <BrandLoader />;
   if (readError) return <p role="alert">{t("valuationReadFailed")}</p>;
 
-  const formatMoney = (amount: number | bigint) => `${summary.currencyCode} ${toMajorDecimal(money(BigInt(amount), summary.currencyCode))}`;
+  const formatMoney = (amount: number | bigint) => `${currencyLabel(summary.currencyCode, unitPresentation.locale)} ${formatExactDecimal(toMajorDecimal(money(BigInt(amount), summary.currencyCode)), unitPresentation, false)}`;
   const profitAmount = BigInt(summary.totalValueMinor) - BigInt(summary.totalCostMinor);
 
   const stats = [
@@ -327,9 +332,9 @@ export default function InventoryValuationPage() {
             </thead>
             <tbody className="text-muted-foreground/40">
               {[
-                { name: t("sampleWidget"), code: "WDG-001", qty: 120, cost: "$4.50", retail: "$9.99", margin: "55%" },
-                { name: t("sampleGadget"), code: "GDG-042", qty: 45, cost: "$22.00", retail: "$39.99", margin: "45%" },
-                { name: t("sampleCable"), code: "CBL-100", qty: 300, cost: "$1.20", retail: "$4.99", margin: "76%" },
+                { name: t("sampleWidget"), code: "WDG-001", qty: 120, cost: (unitPresentation.locale === "en-US" ? "$4.50" : formatExactCurrencyDecimal("4.50", "USD", unitPresentation)), retail: (unitPresentation.locale === "en-US" ? "$9.99" : formatExactCurrencyDecimal("9.99", "USD", unitPresentation)), margin: "55%" },
+                { name: t("sampleGadget"), code: "GDG-042", qty: 45, cost: (unitPresentation.locale === "en-US" ? "$22.00" : formatExactCurrencyDecimal("22.00", "USD", unitPresentation)), retail: (unitPresentation.locale === "en-US" ? "$39.99" : formatExactCurrencyDecimal("39.99", "USD", unitPresentation)), margin: "45%" },
+                { name: t("sampleCable"), code: "CBL-100", qty: 300, cost: (unitPresentation.locale === "en-US" ? "$1.20" : formatExactCurrencyDecimal("1.20", "USD", unitPresentation)), retail: (unitPresentation.locale === "en-US" ? "$4.99" : formatExactCurrencyDecimal("4.99", "USD", unitPresentation)), margin: "76%" },
               ].map(({ name, code, qty, cost, retail, margin }) => (
                 <tr key={code} className="border-b last:border-0">
                   <td className="px-4 py-3">

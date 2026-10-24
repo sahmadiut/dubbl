@@ -1,4 +1,6 @@
 "use client";
+import { formatExactCurrencyDecimal } from "@/i18n/numbers";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useTranslations } from "next-intl";
 
@@ -22,6 +24,7 @@ import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { expenseMoneyDisplay } from "@/lib/money/expense-display";
 
 export default function BOMListPage() {
+  const unitPresentation = useUnitPresentation();
   const t = useTranslations("InventoryAssembly");
   const router = useRouter();
   const { confirm, dialog: confirmDialog } = useConfirm();
@@ -104,10 +107,10 @@ export default function BOMListPage() {
                 <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">{t("components")}</p>
                 <div className="space-y-1.5">
                   {[
-                    { name: t("steel"), qty: "4", cost: "$12.00" },
-                    { name: t("motor"), qty: "1", cost: "$45.00" },
-                    { name: t("controller"), qty: "1", cost: "$28.00" },
-                    { name: t("brackets"), qty: "8", cost: "$2.50" },
+                    { name: t("steel"), qty: "4", cost: (unitPresentation.locale === "en-US" ? "$12.00" : formatExactCurrencyDecimal("12.00", "USD", unitPresentation)) },
+                    { name: t("motor"), qty: "1", cost: (unitPresentation.locale === "en-US" ? "$45.00" : formatExactCurrencyDecimal("45.00", "USD", unitPresentation)) },
+                    { name: t("controller"), qty: "1", cost: (unitPresentation.locale === "en-US" ? "$28.00" : formatExactCurrencyDecimal("28.00", "USD", unitPresentation)) },
+                    { name: t("brackets"), qty: "8", cost: (unitPresentation.locale === "en-US" ? "$2.50" : formatExactCurrencyDecimal("2.50", "USD", unitPresentation)) },
                   ].map((c) => (
                     <div key={c.name} className="flex items-center gap-3 text-sm">
                       <span className="flex-1 truncate">{c.name}</span>
@@ -119,9 +122,9 @@ export default function BOMListPage() {
                 <div className="h-px bg-border" />
                 <div className="grid grid-cols-3 gap-3 text-center">
                   {[
-                    { label: t("materials"), value: "$141.00" },
-                    { label: t("labor"), value: "$35.00" },
-                    { label: t("total"), value: "$176.00" },
+                    { label: t("materials"), value: (unitPresentation.locale === "en-US" ? "$141.00" : formatExactCurrencyDecimal("141.00", "USD", unitPresentation)) },
+                    { label: t("labor"), value: (unitPresentation.locale === "en-US" ? "$35.00" : formatExactCurrencyDecimal("35.00", "USD", unitPresentation)) },
+                    { label: t("total"), value: (unitPresentation.locale === "en-US" ? "$176.00" : formatExactCurrencyDecimal("176.00", "USD", unitPresentation)) },
                   ].map(({ label, value }) => (
                     <div key={label} className="rounded-lg bg-muted/50 px-2 py-2">
                       <p className="text-sm font-bold font-mono tabular-nums">{value}</p>
@@ -191,7 +194,7 @@ export default function BOMListPage() {
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {t("bomSummary", { item: bom.assemblyItem?.name || t("unknownItem"), count: bom.components.length, cost: expenseMoneyDisplay(BigInt(bom.costBreakdown.totalCostMinor), bom.currencyCode) })}
+                      {t("bomSummary", { item: bom.assemblyItem?.name || t("unknownItem"), count: bom.components.length, cost: expenseMoneyDisplay(BigInt(bom.costBreakdown.totalCostMinor), bom.currencyCode, unitPresentation) })}
                     </p>
                   </div>
                   <DropdownMenu>

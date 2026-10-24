@@ -1,3 +1,4 @@
+import { resolvePresentation } from "../i18n/locale";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -85,7 +86,7 @@ test("variant page renders both locales, exact prices, active states, nullable h
     const Page = loaded(variants, { variants: [variant, { ...variant, id: "inactive", isActive: false }, { ...variant, id: "nullable", purchasePrice: null, salePrice: null, quantityOnHand: null, options: null, isActive: null }], loading: false, saving, addOpen: true }, [], events);
     const html = renderWithPresentation(createElement(Page), locale);
     for (const key of ["variants", "addVariant", "active", "inactive", "nameRequired", "variantExample", "sku", "optionalSku", "purchasePrice", "salePrice", "quantityOnHand", "cancel"] as const) assert.ok(html.includes(escape(t(key))), key);
-    for (const [key, value] of [["costValue", bankMoneyDisplay(variant.purchasePrice, "USD")], ["saleValue", bankMoneyDisplay(variant.salePrice, "USD")], ["quantityValue", "-3"], ["skuValue", caller]] as const) assert.ok(html.includes(escape(t(key, { value }))));
+    for (const [key, value] of [["costValue", bankMoneyDisplay(variant.purchasePrice, "USD", resolvePresentation({ user: { language: locale } }))], ["saleValue", bankMoneyDisplay(variant.salePrice, "USD", resolvePresentation({ user: { language: locale } }))], ["quantityValue", "-3"], ["skuValue", caller]] as const) assert.ok(html.includes(escape(t(key, { value }))));
     assert.ok(html.includes(escape(caller)) && !html.includes("<script>"));
     assert.equal(/<button(?=[^>]*disabled="")/.test(html), saving);
     assert.ok(events.includes(t("variantsTitle")));
@@ -99,7 +100,7 @@ test("supplier page renders translated form and days, contact fallback, preferen
     const html = renderWithPresentation(createElement(Page), locale);
     for (const key of ["suppliers", "linkSupplier", "preferred", "supplierRequired", "selectSupplier", "supplierCode", "optionalSupplierCode", "leadTimeDays", "leadExample", "purchasePrice", "preferredSupplier", "cancel"] as const) assert.ok(html.includes(escape(t(key))), key);
     assert.ok(html.includes(escape(t("leadValue", { value: "14" }))));
-    assert.ok(html.includes(escape(t("priceValue", { value: bankMoneyDisplay(supplier.purchasePrice, "USD") }))));
+    assert.ok(html.includes(escape(t("priceValue", { value: bankMoneyDisplay(supplier.purchasePrice, "USD", resolvePresentation({ user: { language: locale } })) }))));
     assert.ok(html.includes(escape(t("codeValue", { value: caller }))));
     assert.equal((html.match(/aria-label=/g) || []).length, 3);
     assert.ok(html.includes(`aria-label="${escape(t("unlink"))}"`) && html.includes("contact-a"));

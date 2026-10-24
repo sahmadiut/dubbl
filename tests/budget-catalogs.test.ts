@@ -1,3 +1,4 @@
+import { currencyLabel } from "../i18n/currency-labels";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -92,6 +93,20 @@ function callback(path: string, name: string, scope: Record<string, unknown>) {
   return new Function(...Object.keys(scope), `${code}; return run;`)(...Object.values(scope));
 }
 
+test("actual IRR budget cards and exact chart tooltip retain fixed-two cents and localize the axis unit", () => {
+  for (const locale of locales) {
+    const charts: Record<string, Record<string, unknown>> = {};
+    const Page = loaded(overview, [], [], { ...context, currencyCode: "IRR" }, charts);
+    const html = renderWithPresentation(createElement(Page), locale);
+    assert.ok(html.includes(locale === "fa-IR" ? "ریال" : "IRR"));
+    assert.ok(html.includes(escape(money.budgetMoney(amount, "IRR", resolvePresentation({ user: { language: locale } })))));
+    const axis = charts.YAxis.tickFormatter as (value: number) => string;
+    assert.ok(axis(1234).includes(locale === "fa-IR" ? "ریال" : "IRR"));
+    const tooltip = charts.Tooltip.formatter as (...args: unknown[]) => string[];
+    assert.deepEqual(tooltip(0, "", { dataKey: "actual", payload: { actualExact: -1n } }), [money.budgetMoney(-1n, "IRR", resolvePresentation({ user: { language: locale } }))]);
+  }
+});
+
 test("budget list, detail shell, overview, settings and drawer render bilingual production content and exact amounts", () => {
   for (const locale of locales) {
     const t = translator(locale);
@@ -112,7 +127,7 @@ test("budget list, detail shell, overview, settings and drawer render bilingual 
         assert.ok(html.includes(escape(caller)), path);
         assert.ok(!html.includes("<script>"));
       }
-      if ([overview,drawer,layout].includes(path)) assert.ok(html.includes(money.budgetMoney(amount, "USD")), path);
+      if ([overview,drawer,layout].includes(path)) assert.ok(html.includes(money.budgetMoney(amount, "USD", resolvePresentation({ user: { language: locale } }))), path);
       if (path === settings) assert.ok(html.includes(formatDecimalDraft(money.budgetDecimal(amount), resolvePresentation({ user: { language: locale } }))), path);
       if ([settings,drawer].includes(path)) {
         assert.ok(html.includes('data-option="monthly"'));
@@ -133,8 +148,8 @@ test("display labels and translated chart names preserve canonical period keys a
     const Page=loaded(overview, [], [], context, charts);
     renderWithPresentation(createElement(Page),locale);
     const formatter=charts.Tooltip.formatter as (...args: unknown[]) => unknown;
-    assert.deepEqual(formatter(0,t("budgeted"),{ dataKey:"budgeted",payload:{budgetedExact:amount,actualExact:2n}}),[money.budgetMoney(amount,"USD")]);
-    assert.deepEqual(formatter(0,t("actual"),{ dataKey:"actual",payload:{budgetedExact:amount,actualExact:2n}}),[money.budgetMoney(2n,"USD")]);
+    assert.deepEqual(formatter(0,t("budgeted"),{ dataKey:"budgeted",payload:{budgetedExact:amount,actualExact:2n}}),[money.budgetMoney(amount,"USD", resolvePresentation({ user: { language: locale } }))]);
+    assert.deepEqual(formatter(0,t("actual"),{ dataKey:"actual",payload:{budgetedExact:amount,actualExact:2n}}),[money.budgetMoney(2n,"USD", resolvePresentation({ user: { language: locale } }))]);
     const data=charts.AreaChart.data as {name:string}[];
     assert.equal(data[0].name,"Jan 2026");
     for(const label of ["Full Period","Week 1","Q4 2026","Jan 2026","Jan 2, 2026"]) {
@@ -143,7 +158,7 @@ test("display labels and translated chart names preserve canonical period keys a
     }
     assert.equal(budgetPresentation.budgetPeriodLabel(t,caller),caller);
     assert.equal(budgetPresentation.budgetTypeLabel(t,"future_type"),"future_type");
-    assert.equal((charts.YAxis.tickFormatter as (value:number)=>string)(2000), `USD ${t("chartThousands",{value:"2"})}`);
+    assert.equal((charts.YAxis.tickFormatter as (value:number)=>string)(2000), `${currencyLabel("USD", locale)} ${t("chartThousands",{value:"2"})}`);
   }
 });
 

@@ -1,4 +1,6 @@
 "use client";
+import { currencyLabel } from "@/i18n/currency-labels";
+import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { payrollSum } from "@/lib/money/payroll-ui";
 
@@ -57,6 +59,7 @@ const anim = (delay: number) => ({
 });
 
 export default function PayrollRunDetailPage() {
+  const unitPresentation = useUnitPresentation();
   const t = useTranslations("PayrollRunDetail");
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -414,15 +417,15 @@ export default function PayrollRunDetailPage() {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <motion.div {...anim(0)} className="rounded-xl border bg-card p-4">
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("gross")}</p>
-          <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate">{formatMoney(run.totalGross, run.baseCurrency ?? "USD")}</p>
+          <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate">{formatMoney(run.totalGross, run.baseCurrency ?? "USD", unitPresentation)}</p>
         </motion.div>
         <motion.div {...anim(0.05)} className="rounded-xl border bg-card p-4">
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("deductions")}</p>
-          <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate text-red-600 dark:text-red-400">{formatMoney(run.totalDeductions, run.baseCurrency ?? "USD")}</p>
+          <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate text-red-600 dark:text-red-400">{formatMoney(run.totalDeductions, run.baseCurrency ?? "USD", unitPresentation)}</p>
         </motion.div>
         <motion.div {...anim(0.09)} className="rounded-xl border bg-card p-4">
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("net")}</p>
-          <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate text-emerald-600 dark:text-emerald-400">{formatMoney(run.totalNet, run.baseCurrency ?? "USD")}</p>
+          <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate text-emerald-600 dark:text-emerald-400">{formatMoney(run.totalNet, run.baseCurrency ?? "USD", unitPresentation)}</p>
         </motion.div>
       </div>
 
@@ -440,7 +443,7 @@ export default function PayrollRunDetailPage() {
             <div className="min-w-0">
               <p className="text-sm font-medium">{t("viewEntry")}</p>
               <p className="text-xs text-muted-foreground truncate">
-                {t("entrySummary", { gross: formatMoney(run.totalGross, run.baseCurrency ?? "USD"), deductions: formatMoney(run.totalDeductions, run.baseCurrency ?? "USD"), net: formatMoney(run.totalNet, run.baseCurrency ?? "USD") })}
+                {t("entrySummary", { gross: formatMoney(run.totalGross, run.baseCurrency ?? "USD", unitPresentation), deductions: formatMoney(run.totalDeductions, run.baseCurrency ?? "USD", unitPresentation), net: formatMoney(run.totalNet, run.baseCurrency ?? "USD", unitPresentation) })}
               </p>
             </div>
           </div>
@@ -515,7 +518,7 @@ export default function PayrollRunDetailPage() {
                 <div className="flex items-center gap-4 shrink-0">
                   {item.currency && item.currency !== "USD" && (
                     <Badge variant="outline" className="text-[9px] h-4 font-mono shrink-0">
-                      {item.currency}
+                      {currencyLabel(item.currency, unitPresentation.locale)}
                       {item.fxRate && item.fxRate !== 1 && (
                         <span className="ml-0.5 text-muted-foreground">@ {item.rateExact}</span>
                       )}
@@ -523,19 +526,19 @@ export default function PayrollRunDetailPage() {
                   )}
                   <div className="hidden sm:block text-right">
                     <p className="text-xs text-muted-foreground">{t("beforeDeductions")}</p>
-                    <p className="text-sm font-mono tabular-nums">{formatMoney(item.grossAmount, item.currency ?? "USD")}</p>
+                    <p className="text-sm font-mono tabular-nums">{formatMoney(item.grossAmount, item.currency ?? "USD", unitPresentation)}</p>
                   </div>
                   <div className="hidden sm:block text-right">
                     <p className="text-xs text-muted-foreground">{t("tax")}</p>
-                    <p className="text-sm font-mono tabular-nums">{formatMoney(item.taxAmount, item.currency ?? "USD")}</p>
+                    <p className="text-sm font-mono tabular-nums">{formatMoney(item.taxAmount, item.currency ?? "USD", unitPresentation)}</p>
                   </div>
                   <div className="hidden sm:block text-right">
                     <p className="text-xs text-muted-foreground">{t("otherDeductions")}</p>
-                    <p className="text-sm font-mono tabular-nums">{formatMoney(payrollSum([item.preTaxDeductions ?? 0, item.postTaxDeductions ?? 0]), item.currency ?? "USD")}</p>
+                    <p className="text-sm font-mono tabular-nums">{formatMoney(payrollSum([item.preTaxDeductions ?? 0, item.postTaxDeductions ?? 0]), item.currency ?? "USD", unitPresentation)}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-xs text-muted-foreground">{t("takeHome")}</p>
-                    <p className="text-sm font-mono tabular-nums font-medium">{formatMoney(item.netAmount, item.currency ?? "USD")}</p>
+                    <p className="text-sm font-mono tabular-nums font-medium">{formatMoney(item.netAmount, item.currency ?? "USD", unitPresentation)}</p>
                   </div>
                 </div>
               </div>
@@ -661,7 +664,7 @@ export default function PayrollRunDetailPage() {
                   </div>
                 </div>
                 <p className="text-sm font-mono tabular-nums font-medium shrink-0">
-                  {formatMoney(bonus.amount, bonus.employee?.currency ?? "USD")}
+                  {formatMoney(bonus.amount, bonus.employee?.currency ?? "USD", unitPresentation)}
                 </p>
               </div>
             ))}

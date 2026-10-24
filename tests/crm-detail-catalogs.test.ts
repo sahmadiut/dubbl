@@ -104,10 +104,10 @@ test("CRM detail, overview and settings render bilingual copy with escaped calle
     for (const [h, keys] of [[shell, ["overview", "activity", "settings", "markWon", "markLost", "backToPipeline"]], [page, ["dealInformation", "contact", "assignedTo", "expectedClose", "recentActivity", "keyMetrics", "weightedValue", "pipelineStage", "system", "call"]], [form, ["general", "generalDescription", "dealTitle", "expectedCloseDate", "notesDescription", "dangerZone", "deleteWarning", "saveChanges"]]] as const) {
       for (const key of keys) assert.ok(h.html.includes(escape(t(key))), key);
       assert.ok(h.html.includes(escape(caller)) && !h.html.includes("<script>"));
-      assert.ok(h.html.includes(escape(payrollMoneyDisplay(deal.valueCents, "KWD"))));
+      assert.ok(h.html.includes(escape(payrollMoneyDisplay(deal.valueCents, "KWD", resolvePresentation({ user: { language: locale } })))));
     }
     const weighted = (BigInt(deal.valueCents) * 33n * 2n + 100n) / 200n;
-    assert.ok(page.html.includes(escape(payrollMoneyDisplay(weighted, "KWD"))));
+    assert.ok(page.html.includes(escape(payrollMoneyDisplay(weighted, "KWD", resolvePresentation({ user: { language: locale } })))));
     assert.ok(page.html.includes(escape(t("viewAll", { count: 1 }))));
     assert.ok(page.html.includes(escape(t("minutesAgo", { count: 2 }))));
     assert.ok(form.html.includes("2024-02-29") && form.html.includes('name="probability"'));

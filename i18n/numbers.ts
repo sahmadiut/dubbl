@@ -1,6 +1,7 @@
 import type { Presentation } from "./locale";
 import { currencyMetadata, money, toMajorDecimal } from "../lib/money/exact";
 import { normalizeLocalizedDecimal, type DecimalSeparators } from "../lib/money/localized";
+import { currencyPartsText } from "./currency-labels";
 
 export type NumberPresentation = Pick<Presentation, "locale" | "numerals">;
 
@@ -34,7 +35,8 @@ function formatDecimal(value: string, presentation: NumberPresentation, currency
     useGrouping, minimumFractionDigits: fraction === undefined ? 0 : 1,
     maximumFractionDigits: fraction === undefined ? 0 : 1,
   }).formatToParts(value.startsWith("-") && whole === 0n ? -0 : whole);
-  return parts.map(part => part.type === "fraction" ? localizeDigits(fraction!, presentation) : part.value).join("");
+  const exactParts = parts.map(part => part.type === "fraction" ? { ...part, value: localizeDigits(fraction!, presentation) } : part);
+  return currency ? currencyPartsText(exactParts, currency, presentation.locale) : exactParts.map(part => part.value).join("");
 }
 
 export function formatExactDecimal(value: string, presentation: NumberPresentation, useGrouping = true) {

@@ -4,6 +4,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import { usePresentation } from "@/i18n/provider";
 import { decimalSeparatorsFor, formatDecimalDraft, normalizeDecimalDraft } from "@/i18n/numbers";
+import { currencyPrefix } from "@/i18n/currency-labels";
 
 interface CurrencyInputProps {
   value: string | number;
@@ -57,7 +58,7 @@ export function CurrencyInput({
           "select-none text-muted-foreground pl-2.5 font-mono",
           size === "sm" ? "text-xs" : "text-sm",
         )}>
-          {prefix}
+          <bdi>{currencyPrefix(prefix, presentation.locale)}</bdi>
         </span>
       )}
       {name && <input type="hidden" name={name} value={value} />}

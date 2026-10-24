@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { useCurrencyPresentation } from "@/i18n/use-currency";
 
 import { useState, useEffect } from "react";
 import { Check, ChevronsUpDown } from "lucide-react";
@@ -46,7 +47,7 @@ interface CurrencySelectProps {
   /** Unavailable for this selection only; reference currencies remain visible. */
   disabledCodes?: readonly string[];
   "aria-describedby"?: string;
-  /** Compact mode shows just the code, no name */
+  /** Compact mode shows the localized unit (ISO code in English). */
   compact?: boolean;
 }
 
@@ -60,6 +61,7 @@ export function CurrencySelect({
   compact,
 }: CurrencySelectProps) {
   const t = useTranslations("SharedUI");
+  const units = useCurrencyPresentation();
   const [open, setOpen] = useState(false);
   const [currencies, setCurrencies] = useState<Currency[]>(currencyCache ?? []);
 
@@ -77,6 +79,7 @@ export function CurrencySelect({
           variant="outline"
           role="combobox"
           aria-expanded={open}
+          aria-label={value ? units.label(value, selected?.name) : t("currency")}
           aria-describedby={describedBy}
           disabled={disabled}
           className={cn(
@@ -88,9 +91,12 @@ export function CurrencySelect({
         >
           {value ? (
             compact ? (
-              <span className="font-mono text-xs">{value}</span>
+              <bdi className={units.isPersian ? "truncate text-xs" : "font-mono text-xs"}>{units.label(value)}</bdi>
             ) : (
-              <span className="flex items-center gap-2 truncate">
+              units.isPersian ? <span className="flex items-center gap-2 truncate">
+                <bdi className="truncate">{units.label(value)}</bdi>
+                <bdi className="font-mono text-xs text-muted-foreground">{value}</bdi>
+              </span> : <span className="flex items-center gap-2 truncate">
                 <span className="font-mono text-xs text-muted-foreground">
                   {value}
                 </span>
@@ -115,7 +121,7 @@ export function CurrencySelect({
               {currencies.map((c) => (
                 <CommandItem
                   key={c.code}
-                  value={`${c.code} ${c.name}`}
+                  value={`${c.code} ${c.name} ${units.label(c.code)}`}
                   disabled={disabledCodes.includes(c.code)}
                   onSelect={() => {
                     if (disabledCodes.includes(c.code)) return;
@@ -136,7 +142,7 @@ export function CurrencySelect({
                     <span className="w-8 shrink-0 text-center text-muted-foreground">
                       {c.symbol && c.symbol !== c.code ? c.symbol : ""}
                     </span>
-                    <span className="truncate">{c.name}</span>
+                    <bdi className="truncate">{units.label(c.code, c.name)}</bdi>
                   </span>
                 </CommandItem>
               ))}

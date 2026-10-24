@@ -114,7 +114,7 @@ export default function TransactionsPage() {
       className: "w-28 text-right",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums">
-          {coreDebitDisplay([r])}
+          {coreDebitDisplay([r], unitPresentation)}
         </span>
       ),
     },
@@ -153,7 +153,7 @@ export default function TransactionsPage() {
   const posted = entries.filter((e) => e.status === "posted");
   const drafts = entries.filter((e) => e.status === "draft");
   const voids = entries.filter((e) => e.status === "void");
-  const totalPosted = coreDebitDisplay(posted);
+  const totalPosted = coreDebitDisplay(posted, unitPresentation);
 
   const filtered = useMemo(() => {
     let result = entries;

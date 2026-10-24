@@ -1,3 +1,4 @@
+import { currencyFixture } from "./helpers/localized-fixtures";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -79,7 +80,7 @@ test("landed cost list, creation and detail render bilingual copy and exact save
     assert.ok(html.includes(`aria-label="${escape(t("delete"))}"`));
     assert.ok(html.includes(`aria-label="${escape(t("removeComponent", { number: 2 }))}"`));
     for (const method of ["by_value", "by_quantity"]) assert.ok(html.includes(`data-option="${method}"`));
-    assert.ok(html.includes("USD 90071992547409.91") && html.includes(escape(caller)) && !html.includes("<script>"));
+    assert.ok(html.includes(`${currencyFixture("USD", locale)} 90071992547409.91`) && html.includes(escape(caller)) && !html.includes("<script>"));
     const Empty = loaded(list, { loading: false, readError: true });
     const empty = renderWithPresentation(createElement(Empty), locale);
     assert.ok(empty.includes(escape(t("empty"))) && empty.includes(escape(t("readFailed"))));
@@ -89,7 +90,7 @@ test("landed cost list, creation and detail render bilingual copy and exact save
       const Page = loaded(detail, { loading: false, item: { ...raw, status } });
       const result = renderWithPresentation(createElement(Page), locale);
       for (const key of ["totalCost", "components", "method", "costComponents", "componentDescription", "amount", "account"] as const) assert.ok(result.includes(escape(t(key))), key);
-      assert.ok(result.includes(escape(landedCostStatusLabel(t, status))) && result.includes("USD 12.50") && result.includes(escape(caller)));
+      assert.ok(result.includes(escape(landedCostStatusLabel(t, status))) && result.includes(`${currencyFixture("USD", locale)} 12.50`) && result.includes(escape(caller)));
       assert.ok(result.includes(escape(t("poReference", { number: "PO-0042" }))) && result.includes(escape(t("billReference", { number: "B-0042" }))));
       if (status === "allocated") for (const key of ["results", "poLineId", "componentId", "basis", "allocatedAmount"] as const) assert.ok(result.includes(escape(t(key))), key);
     }

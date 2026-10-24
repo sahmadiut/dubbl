@@ -1,3 +1,5 @@
+import { currencyFixture, displayNumberFixture } from "./helpers/localized-fixtures";
+import { resolvePresentation } from "../i18n/locale";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -99,7 +101,7 @@ test("requisition list renders bilingual pipeline, filters, creation fields, sta
     assert.ok(renderWithPresentation(createElement(Unfiltered), locale).includes(escape(t("startDate"))));
     assert.ok(html.includes(escape(t("allCount", { count: 1 }))));
     for (const value of ["created:desc", "created:asc", "total:desc", "total:asc", "number:desc", "number:asc"]) assert.ok(html.includes(`data-option="${value}"`));
-    assert.ok(html.includes("90,071,992,547,409.91") && html.includes(escape(caller)) && !html.includes("<script>"));
+    assert.ok(html.includes(displayNumberFixture("90,071,992,547,409.91", locale)) && html.includes(escape(caller)) && !html.includes("<script>"));
     const Failed = loaded(list, { loading: false, readError: "readFailed" });
     assert.ok(renderWithPresentation(createElement(Failed), locale).includes(escape(t("readFailed"))));
     const PageFailure = loaded(list, { loading: false, items: [saved], totalCount: 1, readError: "readFailed" });
@@ -121,7 +123,7 @@ test("requisition detail renders each lifecycle, rejection form, dates and share
       for (const key of visible[status]) assert.ok(html.includes(escape(t(key))), key);
       assert.ok(html.includes(escape(t("supplierName", { name: caller }))));
       assert.ok(html.includes(escape(t("requested", { date: raw.requestDate }))) && html.includes(escape(t("requiredDate", { date: raw.requiredDate }))));
-      assert.ok(html.includes("90,071,992,547,409.91") && html.includes("1.25") && html.includes(escape(caller)) && !html.includes("<script>"));
+      assert.ok(html.includes(displayNumberFixture("90,071,992,547,409.91", locale)) && html.includes("1.25") && html.includes(escape(caller)) && !html.includes("<script>"));
       if (status === "converted") assert.ok(html.includes('href="/purchases/orders/po-a"'));
     }
     for (const [states, key] of [[{ loading: true }, "loading"], [{ loading: false }, "notFound"], [{ readError: "detailReadFailed" }, "detailReadFailed"]] as const) {
@@ -137,7 +139,7 @@ test("line editor renders translated accessible labels, no-tax preview and safe 
     const t = translator(locale), lines = [{ ...emptyRequisitionLine(), description: caller, quantity: "1.5", unitPrice }];
     const html = renderWithPresentation(createElement(RequisitionLineEditor, { lines, onChange: noop, currencyCode }), locale);
     for (const key of ["lineDescription", "lineQuantity", "linePrice"] as const) assert.ok(html.includes(`aria-label="${escape(t(key, { line: 1 }))}"`));
-    assert.ok(html.includes(escape(t("unitPrice", { currency: currencyCode }))) && html.includes(escape(t("previewTotal", { amount: money.procurementMoney(expected, currencyCode) }))));
+    assert.ok(html.includes(escape(t("unitPrice", { currency: currencyFixture(currencyCode, locale) }))) && html.includes(escape(t("previewTotal", { amount: money.procurementMoney(expected, currencyCode, resolvePresentation({ user: { language: locale } })) }))));
     assert.ok(html.includes(escape(t("noTax"))) && html.includes(escape(caller)));
     const invalid = renderWithPresentation(createElement(RequisitionLineEditor, { lines: [{ ...lines[0], unitPrice: "secret-invalid-price" }], onChange: noop, currencyCode }), locale);
     assert.ok(invalid.includes(escape(t("checkLines"))) && invalid.includes('role="alert"'));

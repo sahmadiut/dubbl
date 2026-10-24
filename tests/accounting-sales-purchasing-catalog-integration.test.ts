@@ -1,3 +1,4 @@
+import { currencyFixture } from "./helpers/localized-fixtures";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import { createElement, type ReactNode } from "react";
@@ -145,7 +146,7 @@ test("shared invalid amount alerts follow the domain locale and detail routes re
     const html = renderWithPresentation(within(Layout, path, createElement(InvoiceAmountInput, { currency: "KWD", value: "invalid", onChange: noop })), locale);
     assert.ok(!html.includes("<nav"), path);
     assert.ok(html.includes('role="alert"') && html.includes('aria-invalid="true"'));
-    assert.ok(html.includes(escape(messages.DocumentForms.invalidAmount.replace("{currency}", "KWD"))));
+    assert.ok(html.includes(escape(messages.DocumentForms.invalidAmount.replace("{currency}", currencyFixture("KWD", locale)))));
     assert.ok(html.includes('value="invalid"'), "raw entry remains available for correction");
     const tax = renderWithPresentation(within(TaxLayout, "/tax/periods/period-a", createElement(TaxSettlementPreview, { currency: "KWD", amount: "invalid" })), locale);
     assert.ok(!tax.includes("<nav") && tax.includes('role="alert"'));

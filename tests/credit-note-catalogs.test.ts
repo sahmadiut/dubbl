@@ -1,3 +1,5 @@
+import { currencyFixture, displayNumberFixture } from "./helpers/localized-fixtures";
+import { resolvePresentation } from "../i18n/locale";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -128,7 +130,7 @@ test("credit note list renders bilingual empty guidance, controls, status displa
     const html = renderWithPresentation(createElement(Page), locale);
     for (const key of ["totalIssued", "applied", "remaining", "number", "customer", "date", "status", "total", "all", "draftHeading", "sentHeading", "usedHeading", "usedHint", "cancelledHeading", "search", "from", "to", "startDate", "endDate", "sortBy", "newest", "oldest", "highest", "lowest", "numberDesc", "numberAsc"] as const) assert.ok(html.includes(escape(t(key))), key);
     assert.ok(html.includes(escape(t("showing", { loaded: 2, total: 2 }))));
-    assert.ok(html.includes("90,071,992,547,409.91") && html.includes("9,007,199,254,740.991"));
+    assert.ok(html.includes(displayNumberFixture("90,071,992,547,409.91", locale)) && html.includes(displayNumberFixture("9,007,199,254,740.991", locale)));
     assert.ok(html.includes(escape(caller)) && !html.includes("<script>"));
     const Failed = loaded(list, { loaded: { context, rows: [], total: 0, page: 1, error: t("readFailed") } });
     assert.ok(renderWithPresentation(createElement(Failed), locale).includes(escape(t("readFailed"))));
@@ -165,13 +167,13 @@ test("credit detail renders owned actions, application dialog, validation and es
       assert.ok(html.includes(escape(t("issued", { date: raw.issueDate }))));
       assert.ok(html.includes(escape(creditNoteStatusLabel(t, status))));
       assert.ok(html.includes(escape(caller)) && !html.includes("<script>"));
-      assert.ok(html.includes(">1.25</span>") && html.includes("90,071,992,547,409.91"));
+      assert.ok(html.includes(">1.25</span>") && html.includes(displayNumberFixture("90,071,992,547,409.91", locale)));
       if (status === "draft") assert.ok(html.includes(escape(t("send"))));
       if (status !== "void") assert.ok(html.includes(escape(t("voidAction"))) && html.includes(escape(t("voidHint"))));
       if (status === "sent") {
         for (const key of ["applyHint", "applyAction", "applyTitle", "invoice", "selectInvoice", "reduceInvoice"] as const) assert.ok(html.includes(escape(t(key))), key);
-        assert.ok(html.includes(escape(t("invoiceOption", { number: caller, name: caller, amount: money.creditNoteUiMoney(selectedInvoice.amountDue, "USD") }))));
-        assert.ok(html.includes(escape(t("remainingCredit", { amount: money.creditNoteUiMoney(saved.amountRemaining, "USD") }))));
+        assert.ok(html.includes(escape(t("invoiceOption", { number: caller, name: caller, amount: money.creditNoteUiMoney(selectedInvoice.amountDue, "USD", resolvePresentation({ user: { language: locale } })) }))));
+        assert.ok(html.includes(escape(t("remainingCredit", { amount: money.creditNoteUiMoney(saved.amountRemaining, "USD", resolvePresentation({ user: { language: locale } })) }))));
       }
     }
     const Invalid = loaded(detail, { loading: false, cn: saved, applyOpen: true, applyInvoiceId: "invoice-a", applyAmount: "90071992547409.92", invoiceLoaded: { context: invoiceContext, rows: [selectedInvoice], error: null } });
@@ -179,7 +181,7 @@ test("credit detail renders owned actions, application dialog, validation and es
     assert.ok(invalid.includes(escape(t("invalidAmount"))) && invalid.includes("disabled"));
     const NoInvoices = loaded(detail, { loading: false, cn: { ...saved, contact: null }, applyOpen: true, invoiceLoaded: { context: invoiceContext, rows: [], error: t("invoiceReadFailed") } });
     const noInvoices = renderWithPresentation(createElement(NoInvoices, { orgId: "org-a", id: raw.id }), locale);
-    assert.ok(noInvoices.includes(escape(t("noInvoices", { currency: "USD" }))) && noInvoices.includes(escape(t("invoiceReadFailed"))));
+    assert.ok(noInvoices.includes(escape(t("noInvoices", { currency: currencyFixture("USD", locale) }))) && noInvoices.includes(escape(t("invoiceReadFailed"))));
     assert.ok(noInvoices.includes(escape(t("recipient", { name: t("unknown") }))));
     for (const loading of [false, true]) {
       const Page = loaded(detail, { loading, cn: null });
@@ -188,8 +190,8 @@ test("credit detail renders owned actions, application dialog, validation and es
     for (const currencyCode of ["USD", "JPY", "KWD"]) {
       const credit = { ...saved, currencyCode, subtotal: 1250n, taxTotal: 0n, total: 1250n };
       const html = renderWithPresentation(createElement(CreditNoteMoneyDetails, { credit }), locale);
-      for (const [key, amount] of [["subtotalAmount", 1250n], ["taxAmount", 0n], ["totalAmount", 1250n]] as const) assert.ok(html.includes(escape(t(key, { amount: money.creditNoteUiMoney(amount, currencyCode) }))));
-      assert.ok(html.includes(escape(t("price", { currency: currencyCode }))));
+      for (const [key, amount] of [["subtotalAmount", 1250n], ["taxAmount", 0n], ["totalAmount", 1250n]] as const) assert.ok(html.includes(escape(t(key, { amount: money.creditNoteUiMoney(amount, currencyCode, resolvePresentation({ user: { language: locale } })) }))));
+      assert.ok(html.includes(escape(t("price", { currency: currencyFixture(currencyCode, locale) }))));
     }
   }
 });

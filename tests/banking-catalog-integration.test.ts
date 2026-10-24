@@ -1,3 +1,4 @@
+import { resolvePresentation } from "../i18n/locale";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync, readdirSync } from "node:fs";
@@ -81,11 +82,11 @@ test("combined banking layout/pages share real context, catalogs, canonical fiel
       for (const label of [messages.BankWorkspace.overview, messages.BankWorkspace.transactions, messages.BankWorkspace.imports, messages.BankWorkspace.settings]) contains(html, label);
       contains(html, account.accountName);
       contains(html, messages.BankAccounts.checking);
-      contains(html, bankUiMoney(amount, "KWD"));
+      contains(html, bankUiMoney(amount, "KWD", resolvePresentation({ user: { language: locale } })));
       assert.ok(!html.includes("<script>") && !html.includes("<b>Caller"));
       if (page === "" || page === "transactions") {
         contains(html, transaction.description);
-        contains(html, bankUiMoney(-amount, "KWD"));
+        contains(html, bankUiMoney(-amount, "KWD", resolvePresentation({ user: { language: locale } })));
       }
       if (page === "" || page === "imports") contains(html, statement.fileName);
       if (page === "settings") {

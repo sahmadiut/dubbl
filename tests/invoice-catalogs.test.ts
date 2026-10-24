@@ -1,3 +1,5 @@
+import { currencyFixture, displayNumberFixture } from "./helpers/localized-fixtures";
+import { resolvePresentation } from "../i18n/locale";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -124,7 +126,7 @@ test("invoice list renders real bilingual empty, filtered, selected, summary and
     for (const key of ["outstanding", "overdue", "totalInvoices", "aging", "recentPayments", "viewAll", "all", "draftTab", "partialTab", "sentTab", "paidTab", "search", "startDate", "endDate", "newest", "dueSoonest", "highestBalance", "number", "customer", "date", "due", "status", "balance", "sendReminder", "markSent", "clear", "selectAll"] as const) assert.ok(html.includes(escape(t(key))), key);
     assert.ok(html.includes(escape(t("selectInvoice", { number: raw.invoiceNumber }))));
     assert.ok(html.includes(escape(t("showing", { shown: 1, count: 1 }))) && html.includes(escape(t("selected", { count: 1 }))));
-    assert.ok(html.includes("90,071,992,547,409.91") && html.includes("90,071,992,547,409.90"));
+    assert.ok(html.includes(displayNumberFixture("90,071,992,547,409.91", locale)) && html.includes(displayNumberFixture("90,071,992,547,409.90", locale)));
     assert.ok(html.includes(escape(caller)) && !html.includes("<script>"));
     for (const code of ["created:desc", "created:asc", "due:asc", "due:desc", "total:desc", "total:asc", "amountDue:desc", "number:desc", "number:asc"]) assert.ok(html.includes(`data-option="${code}"`));
     const Filtered = loaded(list, { initialLoad: false, invoices: [saved], search: "missing" });
@@ -143,8 +145,8 @@ test("invoice detail renders lifecycle dialogs, snapshots, credits, warnings and
       const html = renderWithPresentation(createElement(Page), locale);
       for (const key of ["back", "downloadPdf", "duplicate", "depositInvoice", "billTo", "invoice", "issued", "description", "qty", "price", "noTax", "subtotal", "total", "attachments", "attachmentDescription", "addFile", "paymentStatus", "details", "reference", "notes", "dates", "paymentHistory", "bankTransfer", "complianceTitle", "dismiss"] as const) assert.ok(html.includes(escape(t(key))), `${status}: ${key}`);
       assert.ok(html.includes(escape(t("remindersSent", { count: 2 }))));
-      assert.ok(html.includes(escape(t("compliance1"))) && html.includes(escape(t("inCurrency", { currency: "KWD" }))));
-      assert.ok(html.includes("90,071,992,547,409.91") && html.includes("1.250"));
+      assert.ok(html.includes(escape(t("compliance1"))) && html.includes(escape(t("inCurrency", { currency: currencyFixture("KWD", locale) }))));
+      assert.ok(html.includes(displayNumberFixture("90,071,992,547,409.91", locale)) && html.includes(displayNumberFixture("1.250", locale)));
       assert.ok(html.includes(escape(caller)) && !html.includes("<script>"));
       if (status === "sent") for (const key of ["recordPayment", "paymentDate", "bankTransfer", "cash", "check", "card", "other", "interestTitle", "interestDescription", "customAmount", "writeOff", "badDebt", "availableCredit", "creditDescription", "prepayment"] as const) assert.ok(html.includes(escape(t(key))), key);
       if (status === "draft") assert.ok(html.includes(escape(t("submit"))) && html.includes(escape(t("send"))));
@@ -199,7 +201,7 @@ test("production payment and credit callbacks preserve canonical amounts/org sco
       if (mode === "network") throw new Error("secret server prose");
       return mode === "malformed" && operation === "pay" ? Response.json({ invoice: { ...raw, totalMinor: "01" } }) : Response.json({ invoice: raw, error: "secret server prose" }, { status: mode === "denied" ? 403 : 200 });
     };
-    const run = callback(detail, operation === "pay" ? "handlePay" : "handleApplyCredit", { ...money, t, orgId: "org-a", id: raw.id, inv, payAmount: mode === "invalid" ? "1e2" : amount, payDate: "2026-10-18", payMethod: "bank_transfer", payBankAccountId: "", setPayLoading: (v: unknown) => busy.push(v), setApplyingCreditId: (v: unknown) => busy.push(v), setPayOpen: (v: unknown) => cleared.push(v), setPayAmount: (v: unknown) => cleared.push(v), refetchInvoice: async () => {}, formatMoney: money.invoiceUiMoney, toast: { error: (v: string) => errors.push(v), success: (v: string) => success.push(v) }, fetch });
+    const run = callback(detail, operation === "pay" ? "handlePay" : "handleApplyCredit", { ...money, t, unitPresentation: resolvePresentation({ user: { language: locale } }), orgId: "org-a", id: raw.id, inv, payAmount: mode === "invalid" ? "1e2" : amount, payDate: "2026-10-18", payMethod: "bank_transfer", payBankAccountId: "", setPayLoading: (v: unknown) => busy.push(v), setApplyingCreditId: (v: unknown) => busy.push(v), setPayOpen: (v: unknown) => cleared.push(v), setPayAmount: (v: unknown) => cleared.push(v), refetchInvoice: async () => {}, formatMoney: money.invoiceUiMoney, toast: { error: (v: string) => errors.push(v), success: (v: string) => success.push(v) }, fetch });
     await run(selectedCredit);
     const failed = mode === "denied" || mode === "network" || mode === "invalid" || mode === "malformed" && operation === "pay";
     assert.equal(success.length, failed ? 0 : 1); assert.equal(errors.length, failed ? 1 : 0);

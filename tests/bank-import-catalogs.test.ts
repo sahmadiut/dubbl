@@ -1,3 +1,4 @@
+import { resolvePresentation } from "../i18n/locale";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -84,7 +85,7 @@ test("real import sheet translates preview/warnings/format options and preserves
   for (const locale of locales) {
     const { imports: t } = translators(locale), Sheet = loaded(shared).ImportSheet;
     const html = renderWithPresentation(createElement(Sheet, sheetProps), locale);
-    includes(html, [t("hint"), t("uploadFile"), t("dropHint"), t("browseHint"), t("pasteContent"), t("contentPlaceholder"), t("format"), t("autoDetect"), t("rows"), t("duplicates"), t("periodLabel"), t("period", { start: imp.statementStartDate, end: imp.statementEndDate }), t("noQifTransactions"), t("unknownWarning"), t("date"), t("description"), t("amount"), t("cancel"), t("preview"), t("import"), "123", "CAMT.053", "BAI2", "<b>Caller تراکنش</b>", bankUiMoney(4000000000000001n, "USD"), content]);
+    includes(html, [t("hint"), t("uploadFile"), t("dropHint"), t("browseHint"), t("pasteContent"), t("contentPlaceholder"), t("format"), t("autoDetect"), t("rows"), t("duplicates"), t("periodLabel"), t("period", { start: imp.statementStartDate, end: imp.statementEndDate }), t("noQifTransactions"), t("unknownWarning"), t("date"), t("description"), t("amount"), t("cancel"), t("preview"), t("import"), "123", "CAMT.053", "BAI2", "<b>Caller تراکنش</b>", bankUiMoney(4000000000000001n, "USD", resolvePresentation({ user: { language: locale } })), content]);
     assert.ok(!html.includes("secret warning") && !html.includes("<script>") && !html.includes("<b>Caller"));
     assert.ok(html.includes('accept=".csv,.tsv,.qif,.ofx,.qfx,.qbo,.xml,.txt,.bai,.bai2"'));
     assert.equal(preview.transactions[0].amount, 4000000000000001n);

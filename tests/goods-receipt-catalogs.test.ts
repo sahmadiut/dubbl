@@ -1,3 +1,5 @@
+import { resolvePresentation } from "../i18n/locale";
+import { displayNumberFixture } from "./helpers/localized-fixtures";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -87,7 +89,7 @@ test("goods receipt production list translates guidance, columns, states and plu
     const empty = renderWithPresentation(createElement(Empty), locale);
     for (const key of ["title", "description", "goOrders", "howReceiving", "orderPlaced", "goodsReceived", "stockOnHand", "updated", "howRecord", "openOrder", "openOrderHint", "markArrived", "markArrivedHint", "stockUpdates", "stockUpdatesHint", "billLater", "billLaterHint"] as const) assert.ok(empty.includes(escape(t(key))), key);
     assert.deepEqual(titles, [t("documentTitle")]);
-    assert.ok(empty.includes('href="/purchases/orders"') && empty.includes("PO-0042") && empty.includes("$1,200.00"));
+    assert.ok(empty.includes('href="/purchases/orders"') && empty.includes("PO-0042") && empty.includes(locale === "fa-IR" ? "‎دلار ۱٬۲۰۰٫۰۰" : "$1,200.00"));
     const rows = [saved, { ...saved, id: "b", receiptNumber: "GRN-B" },
       { ...saved, id: "c", currencyCode: "KWD", total: 1n, status: "void" },
       { ...saved, id: "d", currencyCode: "KWD", total: 1n, status: "future_code" }];
@@ -95,8 +97,8 @@ test("goods receipt production list translates guidance, columns, states and plu
     const html = renderWithPresentation(createElement(Page), locale);
     for (const key of ["sampleValue", "receipts", "sampleHint", "all", "receivedTab", "billedTab", "cancelledTab", "billedHint", "receivedFrom", "purchaseOrder", "search", "from", "to", "startDate", "endDate", "number", "supplier", "date", "status", "valueReceived", "receivedStatus", "cancelledStatus"] as const) assert.ok(html.includes(escape(t(key))), key);
     assert.ok(html.includes(escape(t("showing", { loaded: 4, total: 4 }))));
-    assert.ok(html.includes(escape(procurementOverviewText(rows))));
-    assert.ok(html.includes("180,143,985,094,819.82") && html.includes("0.001"));
+    assert.ok(html.includes(escape(procurementOverviewText(rows, undefined, resolvePresentation({ user: { language: locale } })))));
+    assert.ok(html.includes(displayNumberFixture("180,143,985,094,819.82", locale)) && html.includes(displayNumberFixture("0.001", locale)));
     assert.ok(html.includes(escape(caller)) && !html.includes("<script>") && html.includes("future_code"));
     for (const [changes, key] of [[{ 11: "missing" }, "noMatches"], [{ 0: t("readFailed") }, "readFailed"]] as const) {
       const State = loaded(listPath, "GoodsReceiptsContent", listState(rows, changes));
@@ -123,10 +125,10 @@ test("goods receipt detail renders translated status/actions/lines, escaped call
     for (const key of ["back", "openOrderTooltip", "createBillTooltip", "createBill", "journalTooltip", "viewJournal", "receivedStatus", "valueReceived", "itemsReceived", "notes"] as const) assert.ok(html.includes(escape(t(key))), key);
     for (const message of [t("fromSupplier", { name: caller }), t("viewOrder", { number: caller }), t("receivedDate", { date: raw.date }), t("orderNumber", { number: caller }), t("itemCount", { count: 1 })]) assert.ok(html.includes(escape(message)));
     for (const href of ["/purchases/goods-receipts", "/purchases/orders/order-a", "/accounting/journal-a"]) assert.ok(html.includes(`href="${href}"`));
-    assert.ok(html.includes(escape(procurementMoney(saved.total, "USD"))) && !html.includes("<script>"));
+    assert.ok(html.includes(escape(procurementMoney(saved.total, "USD", resolvePresentation({ user: { language: locale } })))) && !html.includes("<script>"));
     const pd = createTranslator({ locale, messages: locale === "en-US" ? en : fa, namespace: "ProcurementDetails" });
     for (const key of ["item", "quantity", "unitCost", "amount", "location"] as const) assert.ok(html.includes(escape(pd(key))), key);
-    assert.ok(html.includes(escape(pd("totalValue", { amount: procurementMoney(saved.total, "USD") }))));
+    assert.ok(html.includes(escape(pd("totalValue", { amount: procurementMoney(saved.total, "USD", resolvePresentation({ user: { language: locale } })) }))));
     const Cancelled = loaded(detailPath, "GoodsReceiptDetailContent", [{ ...saved, status: "void", contact: null, purchaseOrder: null }, false, null, false]);
     const cancelled = renderWithPresentation(createElement(Cancelled), locale);
     assert.ok(cancelled.includes(escape(t("cancelledStatus"))) && cancelled.includes(escape(t("fromSupplier", { name: t("unknown") }))));
@@ -141,7 +143,7 @@ test("goods receipt detail renders translated status/actions/lines, escaped call
       lines: [{ id: "line-b", description: caller, quantity: 125, quantityReceived: 25, quantityBilled: 100, unitPrice: 1000n, amount: 1250n, account: { code: "1000", name: caller } }] };
     const orderHtml = renderWithPresentation(createElement(Details.ProcurementMoneyDetails, { document: order }), locale);
     for (const key of ["unitPrice", "received", "billedReserved"] as const) assert.ok(orderHtml.includes(escape(pd(key))), key);
-    for (const [key, amount] of [["subtotal", 1250n], ["tax", 1n], ["total", 1251n]] as const) assert.ok(orderHtml.includes(escape(pd(key, { amount: procurementMoney(amount, "USD") }))));
+    for (const [key, amount] of [["subtotal", 1250n], ["tax", 1n], ["total", 1251n]] as const) assert.ok(orderHtml.includes(escape(pd(key, { amount: procurementMoney(amount, "USD", resolvePresentation({ user: { language: locale } })) }))));
     assert.ok(orderHtml.includes("1.25") && orderHtml.includes("0.25") && !orderHtml.includes("<script>"));
   }
 });

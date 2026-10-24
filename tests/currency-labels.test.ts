@@ -37,7 +37,7 @@ test("all supported currencies have static Persian names, with owner IRR and saf
     assert.equal(currencyLabel(code, "en-US"), code);
   }
   assert.equal(currencyLabel("IRR", "fa-IR", "Iranian Rial"), "ریال");
-  assert.equal(currencyLabel("USD", "fa-IR"), "دلار آمریکا");
+  assert.equal(currencyLabel("USD", "fa-IR"), "دلار");
   assert.equal(currencyLabel("USD", "en-US", "Saved reference"), "Saved reference");
   for (const code of ["ZZZ", "toString", "__proto__", "<script>&", "irr", ""]) {
     assert.equal(currencyLabel(code, "fa-IR"), code);
@@ -61,7 +61,7 @@ test("exact currency names depend on language alone and preserve all numeric par
   assert.equal(formatExactMoney(-1n, "USD", presentations[0]), "-$0.01");
   assert.equal(formatExactMoney(MAX_MINOR, "USD", presentations[0]), "$92,233,720,368,547,758.07");
   const parts: Intl.NumberFormatPart[] = [{ type: "currency", value: "$" }, { type: "integer", value: "9007199254740993" }, { type: "decimal", value: "." }, { type: "fraction", value: "01" }];
-  assert.equal(currencyPartsText(parts, "USD", "fa-IR"), "دلار آمریکا\u00a09007199254740993.01");
+  assert.equal(currencyPartsText(parts, "USD", "fa-IR"), "دلار\u00a09007199254740993.01");
   assert.equal(currencyPartsText(parts, "USD", "en-US"), "$9007199254740993.01");
   assert.equal(parts[0].value, "$");
 });

@@ -1,3 +1,4 @@
+import { resolvePresentation } from "../i18n/locale";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -102,8 +103,8 @@ test("bank-account list renders translated onboarding, exact currency groups, ty
     const Page = loaded(list, [rows, false, "", true]).default;
     const html = renderWithPresentation(createElement(Page), locale);
     for (const key of ["checkingGroup", "savingsGroup", "inactive", "listHint", "moveMoney", "positiveBalances", "negativeBalances"] as const) assert.ok(html.includes(t(key)), key);
-    assert.ok(html.includes(bankUiMoney(4000000000000002n, "USD")));
-    assert.ok(html.includes(bankUiMoney(-1250n, "EUR")));
+    assert.ok(html.includes(bankUiMoney(4000000000000002n, "USD", resolvePresentation({ user: { language: locale } }))));
+    assert.ok(html.includes(bankUiMoney(-1250n, "EUR", resolvePresentation({ user: { language: locale } }))));
     assert.ok(html.includes(t("activeCount", { count: 2 })));
     assert.ok(html.includes(t("currencyCount", { count: 2 })));
     assert.ok(html.includes("&lt;script&gt;حساب&lt;/script&gt;"));
@@ -112,7 +113,7 @@ test("bank-account list renders translated onboarding, exact currency groups, ty
     const Hidden = loaded(list, [rows, false, "", false]).default;
     const hidden = renderWithPresentation(createElement(Hidden), locale);
     assert.ok(hidden.includes(t("show")) && hidden.includes("********"));
-    assert.ok(!hidden.includes(bankUiMoney(4000000000000002n, "USD")));
+    assert.ok(!hidden.includes(bankUiMoney(4000000000000002n, "USD", resolvePresentation({ user: { language: locale } }))));
   }
 });
 

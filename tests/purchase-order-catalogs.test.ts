@@ -1,3 +1,5 @@
+import { resolvePresentation } from "../i18n/locale";
+import { displayNumberFixture } from "./helpers/localized-fixtures";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -119,7 +121,7 @@ test("purchase order list renders bilingual empty/list/filter/error states with 
     for (const key of ["title", "description", "number", "supplier", "date", "delivery", "status", "total", "draft", "loadedValue", "loadedActive", "loadedReceived", "orders", "loadedScope", "search", "from", "to", "endDate", "sortBy", "newest", "oldest", "highest", "lowest", "numberAsc", "numberDesc", "clearDates", "countsFailed", "readFailed"] as const) assert.ok(html.includes(escape(t(key))), key);
     assert.ok(html.includes(escape(t("allCount", { count: 1 }))));
     for (const value of ["created:desc", "created:asc", "total:desc", "total:asc", "number:asc", "number:desc"]) assert.ok(html.includes(`data-option="${value}"`));
-    assert.ok(html.includes("90,071,992,547,409.91") && html.includes(escape(caller)) && !html.includes("<script>"));
+    assert.ok(html.includes(displayNumberFixture("90,071,992,547,409.91", locale)) && html.includes(escape(caller)) && !html.includes("<script>"));
     const Filtered = loaded(list, { loading: false, pos: [saved], totalCount: 1, search: "missing" });
     assert.ok(renderWithPresentation(createElement(Filtered), locale).includes(escape(t("noMatches"))));
     const Failed = loaded(list, { loading: false, readError: "private error" });
@@ -138,13 +140,13 @@ test("purchase order detail and edit/create drawers render bilingual lifecycle a
       if (status === "draft") for (const key of ["edit", "send", "delete"] as const) assert.ok(html.includes(escape(t(key))), key);
       if (["sent", "partial"].includes(status)) assert.ok(html.includes(escape(t("receive"))));
       if (["sent", "partial", "received"].includes(status)) assert.ok(html.includes(escape(t("convert"))));
-      assert.ok(html.includes("90,071,992,547,409.91") && html.includes("1.25") && html.includes(escape(caller)) && !html.includes("<script>"));
+      assert.ok(html.includes(displayNumberFixture("90,071,992,547,409.91", locale)) && html.includes("1.25") && html.includes(escape(caller)) && !html.includes("<script>"));
     }
     const Edit = loaded(detail, { contactId: raw.contactId, lines: editLines }, "EditPODrawer");
     const edit = renderWithPresentation(createElement(Edit, { open: true, onClose: noop, onSaved: noop, po: saved }), locale);
     for (const key of ["editTitle", "editDescription", "orderDetails", "requiredSupplier", "issueDate", "deliveryDate", "lineItems", "addLine", "editPolicy", "saveChanges", "cancel", "notes"] as const) assert.ok(edit.includes(escape(t(key))), key);
     for (const key of ["lineDescription", "lineQuantity", "linePrice"] as const) assert.ok(edit.includes(`aria-label="${escape(t(key, { line: 1 }))}"`));
-    assert.ok(edit.includes(escape(t("previewTotal", { amount: money.procurementMoney(1563n, "USD") }))));
+    assert.ok(edit.includes(escape(t("previewTotal", { amount: money.procurementMoney(1563n, "USD", resolvePresentation({ user: { language: locale } })) }))));
     const Invalid = loaded(detail, { lines: [{ ...editLines[0], unitPrice: "private-invalid" }] }, "EditPODrawer");
     const invalid = renderWithPresentation(createElement(Invalid, { open: true, onClose: noop, onSaved: noop, po: saved }), locale);
     assert.ok(invalid.includes(escape(t("checkLines"))) && !invalid.includes("Invalid saved"));

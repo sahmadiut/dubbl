@@ -1,3 +1,5 @@
+import { resolvePresentation } from "../i18n/locale";
+import { displayNumberFixture } from "./helpers/localized-fixtures";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -131,7 +133,7 @@ test("one checked employee composes payroll overview, employee list and self-ser
       assert.ok(html.includes(escaped(label)), route);
       if (route !== "page.tsx") {
         assert.ok(html.includes(escaped(caller)) && !html.includes("<script>"), route);
-        assert.ok(html.includes(escaped(payrollMoneyDisplay(checked.salary, checked.currency ?? "USD"))), route);
+        assert.ok(html.includes(escaped(payrollMoneyDisplay(checked.salary, checked.currency ?? "USD", resolvePresentation({ user: { language: locale } })))), route);
       }
       assert.ok(!html.includes("MISSING_MESSAGE"));
       if (route !== "self-service/page.tsx") assert.ok(html.includes('href="/payroll/settings"'));
@@ -146,7 +148,7 @@ test("both creation drawers share translated chrome and preserve high and low ce
     const Drawer = load(drawer)[name];
     const html = renderWithPresentation(createElement(Drawer, { open: true, onClose: noop }), locale);
     assert.ok(html.includes(escaped(caller)) && !html.includes("<script>"));
-    assert.ok(html.includes(`value="${name === "EmployeeDrawer" ? "90071992547409.91" : "0.29"}"`));
+    assert.ok(html.includes(`value="${displayNumberFixture(name === "EmployeeDrawer" ? "90071992547409.91" : "0.29", locale)}"`));
     assert.ok(html.includes(escaped(messages.DocumentForms.cancel)));
     assert.equal(/<button(?=[^>]*type="submit")(?=[^>]*disabled="")/.test(html), saving);
     assert.ok(!html.includes("MISSING_MESSAGE"));
@@ -161,7 +163,7 @@ test("payroll layout retains canonical navigation while a failed employee read h
     const html = renderWithPresentation(createElement(Layout, null, createElement(Page)), locale);
     for (const route of ["", "/employees", "/runs", "/tax-liabilities", "/time-leave", "/contractors", "/compensation", "/analytics", "/settings"]) assert.ok(html.includes(`href="/payroll${route}"`));
     assert.ok(html.includes('role="alert"') && html.includes(escaped(messages.PayrollEmployees.readFailed)));
-    assert.ok(!html.includes(escaped(caller)) && !html.includes("90071992547409.91"));
+    assert.ok(!html.includes(escaped(caller)) && !html.includes(displayNumberFixture("90071992547409.91", locale)));
   }
 });
 

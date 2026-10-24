@@ -1,3 +1,5 @@
+import { currencyFixture, displayNumberFixture } from "./helpers/localized-fixtures";
+import { resolvePresentation } from "../i18n/locale";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -118,7 +120,7 @@ test("expense list renders bilingual lifecycle, filters, exact mixed-currency to
     const html = renderWithPresentation(createElement(Page), locale);
     for (const key of ["title", "description", "newExpense", "multipleCurrencies", "search", "newest", "submittedBy", "amount", "paid"] as const) assert.ok(html.includes(escape(t(key))), key);
     assert.ok(html.includes(escape(caller)) && !html.includes("<script>"));
-    assert.ok(html.includes(escape(money.expenseUiMoney(1250n, "JPY"))) && html.includes("12.50"));
+    assert.ok(html.includes(escape(money.expenseUiMoney(1250n, "JPY", resolvePresentation({ user: { language: locale } })))) && html.includes(displayNumberFixture("12.50", locale)));
     for (const key of ["countsFailed", "readFailed", "moreFailed"] as const) {
       const Failed = loaded(list, "ExpensesWorkspace", { loading: false, claimsError: key });
       assert.ok(renderWithPresentation(createElement(Failed), locale).includes(escape(t(key))));
@@ -133,7 +135,7 @@ test("expense details and edit drawer render all workflow states, timeline, mile
     const html = renderWithPresentation(createElement(Page), locale);
     assert.ok(html.includes(escape(caller)) && !html.includes("<script>"));
     for (const key of ["totalAmount", "currency", "receipt", "category"] as const) assert.ok(html.includes(escape(t(key))), key);
-    assert.ok(html.includes(escape(t("mileageDetail", { distance: "3.00", rate: "$0.67" }))));
+    assert.ok(html.includes(escape(t("mileageDetail", { distance: "3.00", rate: locale === "fa-IR" ? "‎دلار ۰٫۶۷" : "$0.67" }))));
     assert.ok(html.includes(status === "constructor" ? status : escape(presentation.expenseStatusLabel(t, status))));
   }
   for (const locale of locales) for (const currencyCode of ["USD", "JPY", "KWD", "IRR"]) {
@@ -141,8 +143,8 @@ test("expense details and edit drawer render all workflow states, timeline, mile
     const Edit = loaded(detail, "EditExpenseDrawer", {}, [], noop, { open: true, claim: current, onClose: noop, onSaved: noop });
     const html = renderWithPresentation(createElement(Edit), locale);
     for (const key of ["editClaim", "editDescription", "claimInfo", "saveChanges", "cancel", "expenseItems"] as const) assert.ok(html.includes(escape(t(key))), key);
-    assert.ok(html.includes(escape(t("editCurrency", { currency: currencyCode }))));
-    assert.ok(html.includes(escape(money.expenseUiMoney(1250n, currencyCode))));
+    assert.ok(html.includes(escape(t("editCurrency", { currency: currencyFixture(currencyCode, locale) }))));
+    assert.ok(html.includes(escape(money.expenseUiMoney(1250n, currencyCode, resolvePresentation({ user: { language: locale } })))));
     assert.ok(html.includes(escape(t("itemAmount", { number: 1 }))));
   }
 });
@@ -153,14 +155,14 @@ test("expense creation and recurring drawers translate amount guidance, preview 
     const Create = loaded(create, "ExpenseDrawer", { settings: { currencyCode: "USD", rate: "0.67" }, items: [{ ...editItem, isMileage: true, distanceMiles: "3", mileageRate: "0.005" }] }, [], noop, { open: true, onClose: noop });
     const html = renderWithPresentation(createElement(Create), locale);
     for (const key of ["newClaim", "newDescription", "mileageClaim", "distanceRequired", "rateRequired", "createClaim", "cancel"] as const) assert.ok(html.includes(escape(t(key))), key);
-    assert.ok(html.includes("$0.02") && html.includes(escape(t("itemRate", { number: 1 }))));
+    assert.ok(html.includes(locale === "fa-IR" ? "‎دلار ۰٫۰۲" : "$0.02") && html.includes(escape(t("itemRate", { number: 1 }))));
     const Failed = loaded(create, "ExpenseDrawer", { settingsError: "taxesFailed" }, [], noop, { open: true, onClose: noop });
     assert.ok(renderWithPresentation(createElement(Failed), locale).includes(escape(t("taxesFailed"))));
     const captured: ReactElement[] = [], events: unknown[] = [];
     const Recurring = loaded(recurring, "RecurringExpensesWorkspace", { loading: false, drawerOpen: true, ...header, lines: [recurringLine] }, events, tree => captured.push(tree));
     const recurringHtml = renderWithPresentation(createElement(Recurring), locale);
     for (const key of ["recurringTitle", "recurringDescription", "recurringScale", "monthly", "fixedTwo", "createRecurring"] as const) assert.ok(recurringHtml.includes(escape(t(key))), key);
-    assert.ok(recurringHtml.includes("$0.01"));
+    assert.ok(recurringHtml.includes(locale === "fa-IR" ? "‎دلار ۰٫۰۱" : "$0.01"));
     const elements = nodes(captured[0]);
     assert.deepEqual(elements.filter(n => n.type === Select.SelectItem).map(n => n.props.value), ["weekly", "fortnightly", "monthly", "quarterly", "semi_annual", "annual"]);
     const select = elements.find(n => n.type === Select.Select)!;

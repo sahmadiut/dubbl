@@ -5,6 +5,7 @@ import { createRequire } from "node:module";
 import { resolve } from "node:path";
 import * as React from "react";
 import ts from "typescript";
+import { renderWithPresentation } from "./helpers/presentation";
 
 const noop = () => {};
 
@@ -29,10 +30,15 @@ test("functional currency picker blocks disabled IRR callbacks without changing 
   }
   for (const disabledCodes of [["IRR"], []]) {
     const selected: string[] = [];
-    const tree = elements(compiled.exports.CurrencySelect({ value: "USD", onValueChange: (code: string) => selected.push(code), disabledCodes, "aria-describedby": "policy-help" }));
+    let tree: React.ReactElement<Record<string, unknown>>[] = [];
+    function Probe() {
+      tree = elements(compiled.exports.CurrencySelect({ value: "USD", onValueChange: (code: string) => selected.push(code), disabledCodes, "aria-describedby": "policy-help" }));
+      return null;
+    }
+    renderWithPresentation(React.createElement(Probe));
     assert.equal(tree.find(node => node.props.role === "combobox")?.props["aria-describedby"], "policy-help");
     for (const code of ["IRR", "USD"]) {
-      const item = tree.find(node => node.props.value === `${code} ${code}`);
+      const item = tree.find(node => typeof node.props.value === "string" && node.props.value.startsWith(`${code} `));
       assert.ok(item);
       assert.equal(item.props.disabled, disabledCodes.includes(code));
       (item.props.onSelect as () => void)();

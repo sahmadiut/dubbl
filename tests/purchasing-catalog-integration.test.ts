@@ -1,3 +1,4 @@
+import { displayNumberFixture } from "./helpers/localized-fixtures";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -100,10 +101,10 @@ test("purchasing drawers compose with localized shared controls and exact curren
       assert.ok(html.includes(escaped(caller)) && !html.includes("<script>"), name);
       assert.ok(!html.includes("MISSING_MESSAGE"), name);
       if (name === "ExpenseDrawer") {
-        assert.ok(html.includes(`value="${price}"`), `${name}: exact input`);
+        assert.ok(html.includes(`value="${displayNumberFixture(price, locale)}"`), `${name}: exact input`);
         const [whole, fraction] = price.split(".");
         const display = `${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}${fraction ? `.${fraction}` : ""}`;
-        assert.ok(html.includes(display), `${name}: exact total ${display}`);
+        assert.ok(html.includes(displayNumberFixture(display, locale)), `${name}: exact total ${display}`);
       } else {
         for (const key of ["description", "quantity", "amount", "subtotal", "total", "addLine"] as const) assert.ok(html.includes(escaped(messages.DocumentForms[key])), `${name}: ${key}`);
         assert.ok(html.includes(`>${price}</span>`), `${name}: exact preview in ${currency}`);

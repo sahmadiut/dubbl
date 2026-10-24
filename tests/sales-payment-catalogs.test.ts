@@ -1,3 +1,5 @@
+import { resolvePresentation } from "../i18n/locale";
+import { displayNumberFixture } from "./helpers/localized-fixtures";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -90,8 +92,8 @@ test("production payment list renders translated empty, loading, error, filters,
     const html = renderWithPresentation(createElement(Page, { orgId: "org-a" }), locale);
     for (const key of ["sampleHint", "totalReceived", "average", "search", "allMethods", "bankTransfer", "cash", "check", "card", "other", "from", "to", "startDate", "endDate", "sort", "newest", "oldest", "highest", "lowest", "numberDesc", "numberAsc", "number", "customer", "date", "method", "reference", "amount", "allocations"] as const) assert.ok(html.includes(escape(t(key))), key);
     for (const value of ["all", "bank_transfer", "cash", "check", "card", "other", "date:desc", "date:asc", "amount:desc", "amount:asc", "number:desc", "number:asc"]) assert.ok(html.includes(`data-option="${value}"`));
-    assert.ok(html.includes(escape(paymentUiSummary(rows).total)));
-    assert.ok(html.includes("90,071,992,547,409.92") && html.includes("0.001"));
+    assert.ok(html.includes(escape(paymentUiSummary(rows, resolvePresentation({ user: { language: locale } })).total)));
+    assert.ok(html.includes(displayNumberFixture("90,071,992,547,409.92", locale)) && html.includes(displayNumberFixture("0.001", locale)));
     for (const count of [1, 2]) assert.ok(html.includes(escape(t("invoiceCount", { count }))));
     assert.ok(html.includes(escape(caller)) && !html.includes("<script>"));
     assert.ok(html.includes("__proto__"));
@@ -114,9 +116,9 @@ test("production detail renders exact signed allocations, historical warning, sa
     const html = renderWithPresentation(createElement(Page, { id: raw.id, orgId: "org-a" }), locale);
     assert.deepEqual(titles, [t("paymentTitle", { number: raw.paymentNumber })]);
     for (const key of ["back", "paymentAmount", "allocated", "unallocated", "coveredInvoices", "notes", "bankTransferDetail", "creditNote"] as const) assert.ok(html.includes(escape(t(key))), key);
-    for (const message of [t("fromCustomer", { name: caller }), t("referenceValue", { reference: caller }), t("intoAccount", { name: caller }), t("received", { date: raw.date }), t("historicalBalance", { amount: paymentUiMoney(saved.unallocated, "USD") })]) assert.ok(html.includes(escape(message)));
+    for (const message of [t("fromCustomer", { name: caller }), t("referenceValue", { reference: caller }), t("intoAccount", { name: caller }), t("received", { date: raw.date }), t("historicalBalance", { amount: paymentUiMoney(saved.unallocated, "USD", resolvePresentation({ user: { language: locale } })) })]) assert.ok(html.includes(escape(message)));
     assert.ok(html.includes('href="/sales/invoices/invoice-a"') && html.includes("INV-A"));
-    assert.ok(html.includes("-$0.01") && html.includes("future_document") && !html.includes("<script>"));
+    assert.ok(html.includes(locale === "fa-IR" ? "‎−‎دلار ۰٫۰۱" : "-$0.01") && html.includes("future_document") && !html.includes("<script>"));
     const Unlinked = loaded(detailPath, "PaymentDetail", [{ ...saved, allocations: [], contact: null }, false, {}, ""]);
     const unlinked = renderWithPresentation(createElement(Unlinked, { id: raw.id, orgId: "org-a" }), locale);
     assert.ok(unlinked.includes(escape(t("noAllocations"))) && unlinked.includes(escape(t("fromCustomer", { name: t("unknown") }))));

@@ -41,7 +41,10 @@ function fixtures(nodes: MessageFormatElement[]) {
 test("LOC-002 executes every actual catalog leaf with real ICU, rich tags and adversarial caller text", () => {
   assert.deepEqual(validateCatalogs({ "en-US": en, "fa-IR": fa }), []);
   const keys = [...flattenCatalog(en).keys()].sort();
-  assert.equal(keys.length, 10587, "Reconcile newly added or removed production keys with whole-catalog ownership");
+  // Since the last whole-catalog acceptance: AccountNames +101,
+  // OnboardingOptions +7, Loans +6 and Accounts +1. Every leaf below still
+  // executes against real ICU/rich text rather than only checking this count.
+  assert.equal(keys.length, 10702, "Reconcile newly added or removed production keys with whole-catalog ownership");
   assert.deepEqual([...flattenCatalog(fa).keys()].sort(), keys);
   for (const locale of ["fa-IR", "en-US", "fa-IR"] as const) {
     const messages = locale === "fa-IR" ? fa : en;

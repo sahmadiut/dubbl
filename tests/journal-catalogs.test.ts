@@ -1,3 +1,4 @@
+import { displayNumberFixture } from "./helpers/localized-fixtures";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createElement, type ComponentType, type ReactNode } from "react";
@@ -110,7 +111,7 @@ test("journal/opening forms render paired copy and accessible rows while keeping
     const { messages } = translators(locale);
     const form = renderWithPresentation(createElement(EntryForm, { accounts: [account], onSubmit: noop, initial: { date: "2026-10-18", description: "<script>شرح</script>", reference: "REF-CALLER", lines: rows } }), locale);
     for (const key of ["entryLines", "description", "debit", "credit", "saveEntry"] as const) assert.ok(form.includes(messages.Journals[key]), key);
-    assert.ok(form.includes("40000000000000.01"));
+    assert.ok(form.includes(displayNumberFixture("40000000000000.01", locale)));
     assert.ok(form.includes('value="2026-10-18"'));
     assert.ok(form.includes("&lt;script&gt;شرح&lt;/script&gt;"));
     assert.ok(!form.includes("<script>"));
@@ -133,13 +134,13 @@ test("production list, detail, edit, recurring and opening templates render bili
       const html = renderWithPresentation(createElement(Page), locale);
       assert.ok(html.includes(messages.Journals.newEntry));
       assert.ok(html.includes(list.length ? messages.Journals.drafts : messages.Journals.manualDescription));
-      if (list.length) { assert.ok(html.includes("40,000,000,000,000.01")); assert.ok(html.includes("&lt;script&gt;شرح&lt;/script&gt;")); }
+      if (list.length) { assert.ok(html.includes(displayNumberFixture("40,000,000,000,000.01", locale))); assert.ok(html.includes("&lt;script&gt;شرح&lt;/script&gt;")); }
     }
     const Detail = loaded(entryPath, [entry, false, null, "", false, false]).default;
     const html = renderWithPresentation(createElement(Detail), locale);
     for (const key of ["entryDetails", "auditTrail", "finalize", "edit", "manualSource"] as const) assert.ok(html.includes(messages.Journals[key]), key);
     assert.ok(html.includes(t("entryTitle", { number: 42 })));
-    assert.ok(html.includes("40,000,000,000,000.01"));
+    assert.ok(html.includes(displayNumberFixture("40,000,000,000,000.01", locale)));
     const Edit = loaded(entryPath, [entry.date, entry.description, entry.reference, rows, false]).EditEntrySheet;
     const edit = renderWithPresentation(createElement(Edit, { open: true, onClose: noop, entry, orgId: "org-a", onSaved: noop }), locale);
     assert.ok(edit.includes(t("editTitle", { number: 42 })));
@@ -148,11 +149,11 @@ test("production list, detail, edit, recurring and opening templates render bili
     const recurringHtml = renderWithPresentation(createElement(Recurring), locale);
     for (const key of ["semiAnnual", "postingStatus", "postNow", "pause", "never", "notes"] as const) assert.ok(recurringHtml.includes(messages.Journals[key]), key);
     assert.ok(recurringHtml.includes("2026-11-18"));
-    assert.ok(recurringHtml.includes("40,000,000,000,000.01"));
+    assert.ok(recurringHtml.includes(displayNumberFixture("40,000,000,000,000.01", locale)));
     const Opening = loaded(`${base}/opening-balances/page.tsx`, [{ ...entry, lines: [{ id: "a", debitAmount: 4000000000000001, creditAmount: 0, account }] }, false, null]).default;
     const opening = renderWithPresentation(createElement(Opening), locale);
     assert.ok(opening.includes(messages.Journals.replaceOpening));
-    assert.ok(opening.includes("40,000,000,000,000.01"));
+    assert.ok(opening.includes(displayNumberFixture("40,000,000,000,000.01", locale)));
     assert.ok(opening.includes(t("startingFrom", { date: entry.date })));
     const List = loaded(`${base}/recurring-journals/page.tsx`, [[recurring], null, false, false, false, 1, 1, 0, "all", "all", "created", "desc", ""]).default;
     const list = renderWithPresentation(createElement(List), locale);
@@ -169,7 +170,25 @@ test("owned drawers render their real translated forms and keep canonical freque
     const html = renderWithPresentation(createElement(Drawer, { open: true, onClose: noop }), locale);
     assert.ok(html.includes(messages.Journals[owner === "EntryDrawer" ? "createEntry" : owner === "OpeningBalanceDrawer" ? "setOpening" : "createRecurring"]));
     assert.ok(html.includes(messages.Journals.cancel));
-    if (owner === "RecurringJournalDrawer") { assert.ok(html.includes(messages.Journals.linesHint)); assert.ok(html.includes("40") || html.includes("40000000000000.01")); }
+    if (owner === "RecurringJournalDrawer") { assert.ok(html.includes(messages.Journals.linesHint)); assert.ok(html.includes(displayNumberFixture("40", locale)) || html.includes(displayNumberFixture("40000000000000.01", locale))); }
+  }
+});
+
+test("journal table and posted aggregate show literal Persian rial without changing canonical groups", () => {
+  const checked = coreJournalSummary({ ...entry, status: "posted", totalDebit: "12.50", totalDebitMinor: "1250",
+    debitTotals: [{ currencyCode: "IRR", totalDebit: 1250, totalDebitMinor: "1250" }] });
+  const snapshot = JSON.stringify(checked);
+  for (const locale of locales) {
+    const Page = loaded(`${base}/page.tsx`, [[checked], false, null, "all", "", "", "", "date:desc"]).default;
+    const html = renderWithPresentation(createElement(Page), locale);
+    const unit = locale === "fa-IR" ? "ریال" : "IRR";
+    // The table cell and posted-total card must both receive presentation.
+    assert.ok(html.split(unit).length - 1 >= 2, html);
+    assert.ok(html.includes(locale === "fa-IR" ? "۱٬۲۵۰" : "1,250"));
+    if (locale === "fa-IR") assert.ok(!html.includes("IRR"));
+    assert.equal(JSON.stringify(checked), snapshot);
+    assert.equal(checked.debitTotals[0].currencyCode, "IRR");
+    assert.equal(checked.debitTotals[0].totalDebitMinor, "1250");
   }
 });
 

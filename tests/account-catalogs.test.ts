@@ -1,3 +1,4 @@
+import { currencyFixture, displayNumberFixture } from "./helpers/localized-fixtures";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createElement, type ComponentType, type ReactNode } from "react";
@@ -109,7 +110,7 @@ test("loaded chart, empty examples and errors render from the real page in both 
       const html = renderWithPresentation(createElement(Page), locale);
       assert.ok(html.includes(messages.Accounts.chartOfAccounts));
       assert.ok(html.includes(messages.Accounts.newAccount));
-      if (rows.length) { assert.ok(html.includes("&lt;script&gt;حساب&lt;/script&gt;")); assert.ok(html.includes("EUR")); assert.ok(html.includes(messages.Accounts.chartDescription + " ")); }
+      if (rows.length) { assert.ok(html.includes("&lt;script&gt;حساب&lt;/script&gt;")); assert.ok(html.includes(currencyFixture("EUR", locale))); assert.ok(html.includes(messages.Accounts.chartDescription + " ")); }
       else { assert.ok(html.includes(messages.Accounts.example1000)); assert.ok(html.includes(messages.Accounts.example5300)); }
       assert.ok(!html.includes("<script>"));
     }
@@ -199,7 +200,7 @@ test("account drawer renders translated fields, canonical type/currency values a
     for (const key of ["newAccountTitle", "createDescription", "codeRequired", "nameRequired", "cancel"] as const) assert.ok(html.includes(messages.Accounts[key]), key);
     assert.ok(html.includes(saving ? messages.Accounts.creating : messages.Accounts.createAccount));
     assert.ok(html.includes('name="code"') && html.includes('placeholder="1000"'));
-    assert.ok(html.includes("EUR"));
+    assert.ok(html.includes(currencyFixture("EUR", locale)));
     assert.ok(readFileSync(drawer, "utf8").includes('<Select name="type" defaultValue="asset">'));
     assert.equal(/<button(?=[^>]*type="submit")(?=[^>]*disabled="")[^>]*>/.test(html), saving);
   }
@@ -224,15 +225,15 @@ test("loaded ledger and account header retain currency provenance, canonical dat
     const Header = loaded(`${base}/[id]/layout.tsx`, [sample, false, null]).default;
     const header = renderWithPresentation(createElement(Header, null, "Caller content"), locale);
     assert.ok(header.includes(messages.Accounts.totalDebits));
-    assert.ok(header.includes("USD") && header.includes("EUR"));
-    assert.ok(header.includes("12.50"));
+    assert.ok(header.includes(currencyFixture("USD", locale)) && header.includes(currencyFixture("EUR", locale)));
+    assert.ok(header.includes(displayNumberFixture("12.50", locale)));
     assert.ok(header.includes("&lt;script&gt;حساب&lt;/script&gt;"));
     const Ledger = loaded(`${base}/[id]/page.tsx`, [[row], false, null, 1, "", "", "", "date:desc", "all", false, 0, 1, false, false]).default;
     const ledger = renderWithPresentation(createElement(Ledger), locale);
     for (const key of ["transactions", "date", "description", "debit", "credit", "balance"] as const) assert.ok(ledger.includes(messages.Accounts[key]), key);
     assert.ok(ledger.includes("2026-10-18"));
     assert.ok(ledger.includes('href="/accounting/entry-a"'));
-    assert.ok(ledger.includes("12.50"));
+    assert.ok(ledger.includes(displayNumberFixture("12.50", locale)));
     assert.ok(ledger.includes("&lt;script&gt;description&lt;/script&gt;"));
     assert.ok(!ledger.includes("<script>"));
   }

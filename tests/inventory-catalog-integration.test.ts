@@ -1,3 +1,4 @@
+import { displayNumberFixture } from "./helpers/localized-fixtures";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -126,8 +127,8 @@ test("item workspace composes its real context, details and category picker in b
     const html = renderWithPresentation(createElement(Layout, null, createElement(Workspace, null, createElement(Details))), locale);
     for (const key of ["details", "history", "suppliers", "variants"] as const) assert.ok(html.includes(escaped(messages.InventoryItems[key])), key);
     assert.ok(html.includes(escaped(caller)) && !html.includes("<script>"));
-    assert.ok(html.includes('value="40000000000000.01"') && html.includes('value="40000000000000.03"'));
-    assert.ok(html.includes("40,000,000,000,000.01"));
+    assert.ok(html.includes(`value="${displayNumberFixture("40000000000000.01", locale)}"`) && html.includes(`value="${displayNumberFixture("40000000000000.03", locale)}"`));
+    assert.ok(html.includes(displayNumberFixture("40,000,000,000,000.01", locale)));
     assert.ok(!html.includes("MISSING_MESSAGE") && !html.includes('href="/inventory/valuation"'));
   }
 });
@@ -161,7 +162,7 @@ test("item creation composes category picker and localized footer without losing
     const html = renderWithPresentation(createElement(Inventory, { open: true, onClose: noop }), locale);
     assert.ok(html.includes(escaped(messages.InventoryItems[saving ? "creating" : "createItem"])));
     assert.ok(html.includes(escaped(messages.InventoryCategories.selectCategory)));
-    assert.ok(html.includes('value="40000000000000.01"') && html.includes('value="40000000000000.03"'), html.match(/value="[^"]*"/g)?.join(", "));
+    assert.ok(html.includes(`value="${displayNumberFixture("40000000000000.01", locale)}"`) && html.includes(`value="${displayNumberFixture("40000000000000.03", locale)}"`), html.match(/value="[^"]*"/g)?.join(", "));
     assert.equal(/<button(?=[^>]*type="submit")(?=[^>]*disabled="")/.test(html), saving);
   }
 });

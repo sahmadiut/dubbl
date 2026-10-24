@@ -1,3 +1,4 @@
+import { resolvePresentation } from "../i18n/locale";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -136,7 +137,7 @@ test("all six contact pages compose with the real shell/context, bilingual catal
         assert.equal(c.captured.find(v => v.kind === "CurrencyInput")!.props.value, contactCreditDecimal(9007199254740991n, currency));
         assert.equal(c.captured.find(v => v.kind === "CurrencySelect")!.props.value, currency);
       }
-      if (tab === "activity" || tab === "statement") contains(html, displayMoney(9007199254740991n, currency));
+      if (tab === "activity" || tab === "statement") contains(html, displayMoney(9007199254740991n, currency, resolvePresentation({ user: { language: locale } })));
       if (tab === "activity") contains(html, m.ContactActivity.typeInvoice); // actual layout configuration
       if (tab === "bookkeeping") assert.deepEqual(c.captured.filter(v => v.kind === "SelectItem").map(v => v.props.value), ["none", "revenue-a", "none", "expense-a", "none", "tax-a"]);
       if (tab === "people") contains(html, m.ContactPeople.primary);

@@ -1,3 +1,4 @@
+import { currencyFixture, displayNumberFixture } from "./helpers/localized-fixtures";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -91,7 +92,7 @@ test("shared line controls render bilingual fields, exact currency scales and ex
       const html = renderWithPresentation(createElement(LineItemsEditor, { lines: [{ ...row, quantity: "1", taxRateId: "", unitPrice }], onChange: noop, currencyCode: currency, priceFractionDigits: 18 }), locale);
       for (const key of ["description", "quantity", "amount", "itemDescription", "account", "addLine", "subtotal", "tax", "total"] as const) assert.ok(html.includes(escaped(t(key))), key);
       for (const key of ["priceLine", "quantityLine", "removeLine"] as const) assert.ok(html.includes(`aria-label="${escaped(t(key, { number: 1 }))}"`));
-      assert.ok(html.includes(escaped(t("priceCurrency", { currency }))) && html.includes(`${expected}</span>`));
+      assert.ok(html.includes(escaped(t("priceCurrency", { currency: currencyFixture(currency, locale) }))) && html.includes(`${expected}</span>`));
       assert.ok(html.includes(escaped(caller)) && !html.includes("<script>"));
       assert.match(html, /inputMode="decimal"/);
     }
@@ -107,7 +108,7 @@ test("shared line controls render bilingual fields, exact currency scales and ex
       assert.ok(html.includes('data-option="33333333-3333-4333-8333-333333333333"') && html.includes('data-option="none"'));
       assert.ok(html.includes(escaped(caller)) && !html.includes("<script>"));
       if (kind === "bill") assert.ok(html.includes(escaped(t("amountDue"))));
-      if (kind === "recurringBill") for (const text of [t("priceFixedScale"), t("recurringBillScale", { currency: "USD" })]) assert.ok(html.includes(escaped(text)));
+      if (kind === "recurringBill") for (const text of [t("priceFixedScale"), t("recurringBillScale", { currency: currencyFixture("USD", locale) })]) assert.ok(html.includes(escaped(text)));
     }
     for (const rate of [{ rate: 2000, kind: "standard" }, { rate: 2000, kind: "standard", recoverablePercent: 0 }, { rate: 0, kind: "exempt" }, { rate: 2000, kind: "no_vat" }, { rate: 2000, kind: "sales_tax_us" }]) {
       const Editor = controlled(editorPath, "LineItemsEditor", [{ ...rate, id: "33333333-3333-4333-8333-333333333333", name: caller }]);
@@ -165,7 +166,7 @@ test("preview failures use localized reviewed messages and suppress invalid tota
     for (const [currencyCode, unitPrice, key] of [[null, "1", "invoiceCurrencyError"], ["USD", "1x", "priceError"], ["USD", "90071992547409.92", "rangeError"], ["NOT_A_CURRENCY", "1", "amountError"]] as const) {
       const html = renderWithPresentation(createElement(LineItemsEditor, { lines: [{ ...row, taxRateId: "", unitPrice }], onChange: noop, currencyCode }), locale);
       assert.ok(html.includes('role="alert"') && html.includes(escaped(t(key))));
-      assert.ok(!html.includes(">0.00</span>") && !html.includes("Unsupported currency:"));
+      assert.ok(!html.includes(displayNumberFixture(">0.00</span>", locale)) && !html.includes("Unsupported currency:"));
     }
     const missing = renderWithPresentation(createElement(LineItemsEditor, { lines: [row], onChange: noop, currencyCode: "USD", documentKind: "bill" }), locale);
     assert.ok(missing.includes(escaped(t("reloadTaxError"))));
@@ -183,11 +184,11 @@ test("amount input and shared footer preserve custom labels, validation, callbac
     const t = translate(locale);
     for (const [currency, invalid, valid] of [["USD", "0.001", "12.50"], ["JPY", "0.1", "1250"], ["KWD", "0.0001", "1.251"]]) {
       const html = renderWithPresentation(createElement(InvoiceAmountInput, { currency, value: invalid, onChange: noop }), locale);
-      assert.ok(html.includes(escaped(t("invalidAmount", { currency }))) && html.includes(escaped(t("amountCurrency", { currency }))));
+      assert.ok(html.includes(escaped(t("invalidAmount", { currency: currencyFixture(currency, locale) }))) && html.includes(escaped(t("amountCurrency", { currency: currencyFixture(currency, locale) }))));
       assert.match(html, /aria-invalid="true"/);
       for (const value of ["", valid]) assert.ok(!renderWithPresentation(createElement(InvoiceAmountInput, { currency, value, onChange: noop }), locale).includes('role="alert"'));
       const custom = renderWithPresentation(createElement(InvoiceAmountInput, { currency, value: invalid, onChange: noop, label: caller, invalidMessage: caller, placeholder: "123.456" }), locale);
-      assert.ok(custom.includes(escaped(caller)) && custom.includes('placeholder="123.456"') && !custom.includes("<script>"));
+      assert.ok(custom.includes(escaped(caller)) && custom.includes(`placeholder="${displayNumberFixture("123.456", locale)}"`) && !custom.includes("<script>"));
     }
     let amount = "", closed = 0;
     const input = capture(InvoiceAmountInput, { currency: "USD", value: "", onChange: (value: string) => { amount = value; } }, locale);

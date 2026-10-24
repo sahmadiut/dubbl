@@ -1,3 +1,5 @@
+import { currencyFixture, displayNumberFixture } from "./helpers/localized-fixtures";
+import { resolvePresentation } from "../i18n/locale";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -119,7 +121,7 @@ test("prepayment list renders bilingual guidance, controls, source search, count
     const html = renderWithPresentation(createElement(Page, { orgId: "org-a" }), locale);
     for (const key of ["receivedLoaded", "availableLoaded", "date", "customer", "source", "status", "original", "remaining", "all", "available", "used", "cancelled", "availableHint", "usedHint", "search", "from", "to", "startDate", "endDate", "sortBy", "newest", "oldest", "highest", "lowest", "mostRemaining", "leastRemaining"] as const) assert.ok(html.includes(escape(t(key))), key);
     assert.ok(html.includes(escape(t("showing", { loaded: 2, total: 2 }))));
-    assert.ok(html.includes("90,071,992,547,409.91") && html.includes("9,007,199,254,740.991"));
+    assert.ok(html.includes(displayNumberFixture("90,071,992,547,409.91", locale)) && html.includes(displayNumberFixture("9,007,199,254,740.991", locale)));
     assert.ok(html.includes(escape(caller)) && !html.includes("<script>"));
     const Filtered = loaded(list, { initialLoad: false, credits: rows, search: "missing" });
     const filtered = renderWithPresentation(createElement(Filtered, { orgId: "org-a" }), locale);
@@ -155,13 +157,13 @@ test("prepayment detail renders translated dialog, exact balances and validation
     const Page = loaded(detail, { loading: false, cc: saved, applyOpen: true, invoices: [invoice], applyInvoiceId: invoice.id, applyAmount: "12.50" });
     const html = renderWithPresentation(createElement(Page, { orgId: "org-a", id: raw.id }), locale);
     for (const key of ["prepayment", "back", "applyHint", "applyAction", "applyTitle", "invoice", "selectInvoice", "amount", "applySubmit", "original", "usedSoFar", "availableToUse", "notes"] as const) assert.ok(html.includes(escape(t(key))), key);
-    for (const text of [t("recipient", { name: caller }), t("received", { date: raw.date }), t("invoiceOption", { number: caller, name: caller, amount: money.customerPrepaymentMoney(invoice.amountDue, "USD") }), t("availableCredit", { amount: money.customerPrepaymentMoney(saved.amountRemaining, "USD") })]) assert.ok(html.includes(escape(text)), text);
+    for (const text of [t("recipient", { name: caller }), t("received", { date: raw.date }), t("invoiceOption", { number: caller, name: caller, amount: money.customerPrepaymentMoney(invoice.amountDue, "USD", resolvePresentation({ user: { language: locale } })) }), t("availableCredit", { amount: money.customerPrepaymentMoney(saved.amountRemaining, "USD", resolvePresentation({ user: { language: locale } })) })]) assert.ok(html.includes(escape(text)), text);
     assert.ok(html.includes(escape(caller)) && !html.includes("<script>"));
     const Invalid = loaded(detail, { loading: false, cc: saved, applyOpen: true, invoices: [invoice], applyInvoiceId: invoice.id, applyAmount: "90071992547409.92" });
     assert.ok(renderWithPresentation(createElement(Invalid, { orgId: "org-a", id: raw.id }), locale).includes(escape(t("invalidAmount"))));
     const None = loaded(detail, { loading: false, cc: { ...saved, contact: null }, applyOpen: true, invoiceError: "invoiceReadFailed" });
     const none = renderWithPresentation(createElement(None, { orgId: "org-a", id: raw.id }), locale);
-    for (const text of [t("recipient", { name: t("unknown") }), t("noInvoices", { currency: "USD" }), t("invoiceReadFailed")]) assert.ok(none.includes(escape(text)));
+    for (const text of [t("recipient", { name: t("unknown") }), t("noInvoices", { currency: currencyFixture("USD", locale) }), t("invoiceReadFailed")]) assert.ok(none.includes(escape(text)));
     for (const [states, key] of [[{ loading: true }, "loading"], [{ loading: false }, "notFound"], [{ loading: false, readError: "readFailed" }, "readFailed"], [{ loading: false, readError: "updatedReadFailed" }, "updatedReadFailed"]] as const) {
       const State = loaded(detail, states);
       assert.ok(renderWithPresentation(createElement(State, { orgId: "org-a", id: raw.id }), locale).includes(escape(t(key))));
@@ -169,7 +171,7 @@ test("prepayment detail renders translated dialog, exact balances and validation
     for (const currencyCode of ["USD", "JPY", "KWD", "IRR"]) {
       const credit = { ...saved, currencyCode, originalAmount: 1250n, amountRemaining: 1249n };
       const cards = renderWithPresentation(createElement(CustomerPrepaymentMoneyDetails, { credit }), locale);
-      for (const amount of [1250n, 1249n, 1n]) assert.ok(cards.includes(escape(money.customerPrepaymentMoney(amount, currencyCode))));
+      for (const amount of [1250n, 1249n, 1n]) assert.ok(cards.includes(escape(money.customerPrepaymentMoney(amount, currencyCode, resolvePresentation({ user: { language: locale } })))));
     }
   }
 });
@@ -180,7 +182,7 @@ test("prepayment drawer renders owned bilingual controls, currency recovery and 
     const Drawer = loaded(drawer, { contactId: raw.contactId, date: "", amount: "1.250", selectedCurrency: "KWD", bankAccounts: [{ id: "bank-a", accountName: caller, currencyCode: "KWD" }, { id: "bank-b", accountName: "wrong currency bank", currencyCode: "USD" }] });
     const html = renderWithPresentation(createElement(Drawer, { orgId: "org-a", open: true, onClose: noop }), locale);
     for (const key of ["newPrepayment", "drawerDescription", "details", "customerRequired", "date", "dateReceived", "amount", "type", "prepayment", "overpayment", "currency", "payment", "paidInto", "chooseBank", "bankHint", "notes", "notesPlaceholder", "recordAction"] as const) assert.ok(html.includes(escape(t(key))), key);
-    assert.ok(html.includes(escape(t("receivedAmount", { amount: money.customerPrepaymentMoney(1250n, "KWD") }))));
+    assert.ok(html.includes(escape(t("receivedAmount", { amount: money.customerPrepaymentMoney(1250n, "KWD", resolvePresentation({ user: { language: locale } })) }))));
     assert.ok(html.includes(escape(caller)) && !html.includes("wrong currency bank"));
     const Failed = loaded(drawer, { contactId: raw.contactId, date: "", currencyContext: { orgId: "org-a", contactId: raw.contactId, error: "currencyReadFailed" } });
     const failed = renderWithPresentation(createElement(Failed, { orgId: "org-a", open: true, onClose: noop }), locale);

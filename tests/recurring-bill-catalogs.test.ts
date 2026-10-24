@@ -1,3 +1,5 @@
+import { currencyFixture } from "./helpers/localized-fixtures";
+import { resolvePresentation } from "../i18n/locale";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -101,7 +103,7 @@ test("recurring bill workspace renders bilingual guidance, states, exact currenc
     const Page = loaded({ loading: false, templates: rows });
     const html = renderWithPresentation(createElement(Page), locale);
     for (const key of ["monthly", "semiAnnual", "fortnightly", "active", "paused", "completed"] as const) assert.ok(html.includes(escape(t(key))), key);
-    for (const [amount, currency] of [[9007199254740991n, "USD"], [1n, "KWD"], [1250n, "JPY"]] as const) assert.ok(html.includes(escape(invoiceUiMoney(amount, currency))));
+    for (const [amount, currency] of [[9007199254740991n, "USD"], [1n, "KWD"], [1250n, "JPY"]] as const) assert.ok(html.includes(escape(invoiceUiMoney(amount, currency, resolvePresentation({ user: { language: locale } })))));
     assert.ok(html.includes(escape(caller)) && !html.includes("<script>") && html.includes("__proto__") && html.includes("constructor"));
     assert.ok(html.includes(raw.nextRunDate));
     const Loading = loaded();
@@ -121,7 +123,7 @@ test("recurring bill drawer uses real fixed-two preview and localized frequency 
     const html = renderWithPresentation(createElement(Drawer), locale);
     for (const key of ["newBill", "namePlaceholder", "supplierPlaceholder", "reference", "referencePlaceholder", "startDate", "endDate", "maxOccurrences", "unlimited", "create", "monthly"] as const) assert.ok(html.includes(escape(t(key))), key);
     const forms = createTranslator({ locale, messages: locale === "en-US" ? en : fa, namespace: "DocumentForms" });
-    assert.ok(html.includes(escape(forms("recurringBillScale", { currency: currencyCode }))));
+    assert.ok(html.includes(escape(forms("recurringBillScale", { currency: currencyFixture(currencyCode, locale) }))));
     assert.ok(html.includes(escape(forms("priceFixedScale"))) && html.includes(escape(caller)) && !html.includes("<script>"));
     const expected = { USD: "12.50", JPY: "1250", KWD: "1.250", IRR: "1250" }[currencyCode];
     assert.ok(html.includes(`${expected}</span>`), currencyCode);

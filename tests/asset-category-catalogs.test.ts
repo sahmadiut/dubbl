@@ -1,3 +1,4 @@
+import { resolvePresentation } from "../i18n/locale";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -76,7 +77,7 @@ test("asset-category production page renders bilingual empty/table/create/edit s
     const html = renderWithPresentation(createElement(Page), locale);
     for (const key of ["name", "method", "lifespan", "residual", "status", "active", "inactive", "editTitle", "dialogDescription", "nameExample", "convention", "lifeMonths", "lifeHint", "residualHint", "rate", "rateHint", "books", "assetAccount", "expenseAccount", "accumulatedAccount", "cwipAccount", "cwipHint", "available", "availableHint", "cancel", "save", "saveFailed"] as const) assert.ok(html.includes(t(key).replaceAll("&", "&amp;").replaceAll("'", "&#x27;")), key);
     assert.ok(html.includes(t("months", { count: 36 })));
-    assert.ok(html.includes(assetMoneyDisplay(category.defaultResidualValue)));
+    assert.ok(html.includes(assetMoneyDisplay(category.defaultResidualValue, resolvePresentation({ user: { language: locale } }))));
     assert.ok(html.includes("&lt;script&gt;دسته&lt;/script&gt;") && !html.includes("<script>"));
     assert.ok(html.includes(t("editAction", { name: category.name }).replaceAll("<", "&lt;").replaceAll(">", "&gt;")));
     assert.ok(html.includes('data-value="declining_balance"') && html.includes('data-value="mid_quarter"'));

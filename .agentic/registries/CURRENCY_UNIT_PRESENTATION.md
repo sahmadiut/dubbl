@@ -361,3 +361,19 @@ large exact low digits. Existing callbacks still prove canonical cents/ISO/date
 payloads. Persian terminology beyond owner-specified IRR remains provisional;
 no native linguistic, mounted browser/RTL or production financial acceptance is
 claimed. No server/build/database operation was run.
+
+## LOC-134 CI regression reconciliation
+
+The previous-push CI audit found two missed callers in the otherwise adopted
+`app/(dashboard)/accounting/page.tsx`: the journal table amount and posted-total
+card still used the grouped debit formatter's default English presentation.
+Both now receive the active presentation. The actual-page regression asserts
+literal Persian `ریال` in both locations, exact IRR `۱٬۲۵۰`, and unchanged
+canonical `IRR`/`1250` groups. English behavior and currency separation remain.
+
+CI fixtures now distinguish localized visible units/numerals from canonical
+inputs, quantities, identifiers and outputs. Landed-cost displays retain their
+documented ASCII decimal body while localizing only the unit. The whole-catalog
+inventory includes the 115 previously added account/onboarding/loan leaves and
+continues executing every production key. This repair does not accept LOC-132
+or parent LOC-115 and does not claim hosted/build/native/RTL/browser completion.

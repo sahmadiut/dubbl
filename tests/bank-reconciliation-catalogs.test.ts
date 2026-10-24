@@ -1,3 +1,5 @@
+import { currencyFixture } from "./helpers/localized-fixtures";
+import { resolvePresentation } from "../i18n/locale";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -73,7 +75,7 @@ test("real reconciliation page renders translated checks, selection, sheet, hist
     const { t } = translators(locale);
     const Page = loaded(page, [bank, [tx, { ...tx, id: "tx-b", journalEntryId: null }], [rec, { ...rec, id: "rec-b", status: "completed" }], report, false, "", new Set([tx.id]), true, form, true, false]).default;
     const html = renderWithPresentation(createElement(Page), locale);
-    includes(html, [t("title", { account: bank.accountName }), t("hint"), t("finish"), t("finishAllTitle"), t("accountBalance"), t("itemCount", { count: 1 }), t("markSelected", { count: 1 }), t("notInBooks", { count: 1 }), t("categorizeHint", { count: 1 }), t("addBooksFirst"), t("pastChecks"), t("range", { start: rec.startDate, end: rec.endDate }), t("completed"), t("inProgress"), t("statementPeriod"), t("openingBalance", { currency: "USD" }), t("closingBalance", { currency: "USD" }), t("starting"), bankUiMoney(tx.amount, "USD"), tx.description]);
+    includes(html, [t("title", { account: bank.accountName }), t("hint"), t("finish"), t("finishAllTitle"), t("accountBalance"), t("itemCount", { count: 1 }), t("markSelected", { count: 1 }), t("notInBooks", { count: 1 }), t("categorizeHint", { count: 1 }), t("addBooksFirst"), t("pastChecks"), t("range", { start: rec.startDate, end: rec.endDate }), t("completed"), t("inProgress"), t("statementPeriod"), t("openingBalance", { currency: currencyFixture("USD", locale) }), t("closingBalance", { currency: currencyFixture("USD", locale) }), t("starting"), bankUiMoney(tx.amount, "USD", resolvePresentation({ user: { language: locale } })), tx.description]);
     assert.ok(!html.includes("<script>") && !html.includes("<b>Caller"));
     assert.ok(html.includes('aria-label="' + escaped(t("back")) + '"'));
     const Empty = loaded(page, [bank, [], [], null, false]).default;
@@ -89,7 +91,7 @@ test("real report renders positive/negative differences, adjustment preview, emp
     for (const sign of [1n, -1n]) {
       const Report = loaded(shared, [true, "Caller note", true]).ReconciliationReport;
       const html = renderWithPresentation(createElement(Report, { ...props, data: { ...report, difference: sign * tx.amount } }), locale);
-      includes(html, [t("statementBalance"), t("booksBalance"), t("difference"), t(sign > 0n ? "statementMore" : "booksMore"), t("writeOff"), t("adjustTitle"), t("adjustHint"), t("adjustAmount"), t(sign > 0n ? "incomeHint" : "expenseHint"), t("description"), t("descriptionPlaceholder"), t("saving"), t("noUnmatched"), bankUiMoney(sign * tx.amount, "USD"), tx.description]);
+      includes(html, [t("statementBalance"), t("booksBalance"), t("difference"), t(sign > 0n ? "statementMore" : "booksMore"), t("writeOff"), t("adjustTitle"), t("adjustHint"), t("adjustAmount"), t(sign > 0n ? "incomeHint" : "expenseHint"), t("description"), t("descriptionPlaceholder"), t("saving"), t("noUnmatched"), bankUiMoney(sign * tx.amount, "USD", resolvePresentation({ user: { language: locale } })), tx.description]);
       assert.ok(!html.includes("<script>"));
     }
     for (const [patch, key] of [

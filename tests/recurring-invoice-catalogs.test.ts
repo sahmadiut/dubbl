@@ -1,3 +1,5 @@
+import { currencyFixture, displayNumberFixture } from "./helpers/localized-fixtures";
+import { resolvePresentation } from "../i18n/locale";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -114,7 +116,7 @@ test("recurring list renders bilingual guidance, filters, finite labels, ICU cou
     const html = renderWithPresentation(createElement(Page), locale);
     for (const key of ["activeTemplates", "totalGenerated", "upcoming", "all", "active", "paused", "completed", "newRecurring", "search", "allFrequencies", "sortBy", "newest", "oldest", "nameAsc", "nameDesc", "nextSoonest", "name", "customer", "frequency", "status", "nextRun", "startDate", "occurrences"] as const) assert.ok(html.includes(escape(t(key))), key);
     assert.ok(html.includes(escape(t("showing", { loaded: 1, total: 1 }))));
-    assert.ok(html.includes("90,071,992,547,409.91"));
+    assert.ok(html.includes(displayNumberFixture("90,071,992,547,409.91", locale)));
     assert.ok(html.includes(escape(caller)) && !html.includes("<script>"));
     const Filtered = loaded(list, { initialLoad: false, templates: [raw], search: "missing" });
     const filtered = renderWithPresentation(createElement(Filtered), locale);
@@ -132,7 +134,7 @@ test("recurring detail, money table and drawer render both catalogs with safe ca
     const Page = loaded(detail, { loading: false, loaded: { context: `org-a:${raw.id}`, template: saved } });
     const html = renderWithPresentation(createElement(Page), locale);
     for (const key of ["back", "pause", "delete", "active", "occurrences", "nextRun", "frequency", "notes", "lineDescription", "quantity", "grossAmount", "grossTotal", "grossHint"] as const) assert.ok(html.includes(escape(t(key))), key);
-    for (const text of [t("contact", { name: caller }), t("schedule", { frequency: t("monthly"), start: raw.startDate, end: t("noEndDate") }), t("nextRunHint", { date: raw.nextRunDate }), t("discount", { percent: "12.5" }), t("unitPrice", { currency: "USD" })]) assert.ok(html.includes(escape(text)), text);
+    for (const text of [t("contact", { name: caller }), t("schedule", { frequency: t("monthly"), start: raw.startDate, end: t("noEndDate") }), t("nextRunHint", { date: raw.nextRunDate }), t("discount", { percent: "12.5" }), t("unitPrice", { currency: currencyFixture("USD", locale) })]) assert.ok(html.includes(escape(text)), text);
     assert.ok(html.includes(escape(caller)) && !html.includes("<script>"));
     const Resume = loaded(detail, { loading: false, loaded: { context: `org-a:${raw.id}`, template: { ...saved, status: "paused", nextRunDate: null } } });
     const resume = renderWithPresentation(createElement(Resume), locale);
@@ -147,7 +149,7 @@ test("recurring detail, money table and drawer render both catalogs with safe ca
     for (const currencyCode of ["USD", "JPY", "KWD", "IRR"]) {
       const lines = money.recurringInvoiceUiDocument({ ...raw, currencyCode }).lines;
       const table = renderWithPresentation(createElement(RecurringInvoiceMoneyDetails, { currencyCode, lines }), locale);
-      assert.ok(table.includes(escape(money.recurringInvoiceUiMoney(9007199254740991n, currencyCode))));
+      assert.ok(table.includes(escape(money.recurringInvoiceUiMoney(9007199254740991n, currencyCode, resolvePresentation({ user: { language: locale } })))));
     }
   }
 });

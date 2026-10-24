@@ -1,5 +1,6 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
 import { useTranslations } from "next-intl";
 import { salesPaymentMethodLabel, salesPaymentDocumentLabel } from "@/i18n/sales-payment-presentation";
 import { useState, useEffect, useCallback } from "react";
@@ -53,6 +54,7 @@ export default function PaymentDetailPage() {
   return <PaymentDetail key={`${orgId}:${id}`} id={id} orgId={orgId} />;
 }
 function PaymentDetail({ id, orgId }: { id: string; orgId: string | null }) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("SalesPayments");
   const [pmt, setPmt] = useState<PaymentDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -128,24 +130,24 @@ function PaymentDetail({ id, orgId }: { id: string; orgId: string | null }) {
             <Banknote className="size-3.5 text-emerald-600" />
             <p className="text-xs text-muted-foreground">{t("paymentAmount")}</p>
           </div>
-          <p className="text-xl font-bold font-mono break-all mt-1">{formatMoney(pmt.amount, cur)}</p>
+          <p className="text-xl font-bold font-mono break-all mt-1">{formatMoney(pmt.amount, cur, unitPresentation)}</p>
         </div>
         <div className="rounded-lg border p-4">
           <p className="text-xs text-muted-foreground">{t("allocated")}</p>
-          <p className="text-xl font-bold font-mono break-all text-emerald-600 mt-1">{formatMoney(allocatedTotal, cur)}</p>
+          <p className="text-xl font-bold font-mono break-all text-emerald-600 mt-1">{formatMoney(allocatedTotal, cur, unitPresentation)}</p>
         </div>
         <div className="rounded-lg border p-4">
           <div className="flex items-center gap-2">
             <Wallet className="size-3.5 text-amber-600" />
             <p className="text-xs text-muted-foreground">{t("unallocated")}</p>
           </div>
-          <p className="text-xl font-bold font-mono break-all text-amber-600 mt-1">{formatMoney(unallocated, cur)}</p>
+          <p className="text-xl font-bold font-mono break-all text-amber-600 mt-1">{formatMoney(unallocated, cur, unitPresentation)}</p>
         </div>
       </div>
 
       {unallocated > 0n && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
-          {t("historicalBalance", { amount: formatMoney(unallocated, cur) })}
+          {t("historicalBalance", { amount: formatMoney(unallocated, cur, unitPresentation) })}
         </div>
       )}
 
@@ -180,7 +182,7 @@ function PaymentDetail({ id, orgId }: { id: string; orgId: string | null }) {
                     )}
                   </div>
                   <span className="font-mono text-sm tabular-nums break-all font-medium text-emerald-600">
-                    {formatMoney(a.amount, cur)}
+                    {formatMoney(a.amount, cur, unitPresentation)}
                   </span>
                 </li>
               );

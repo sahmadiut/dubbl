@@ -1,3 +1,4 @@
+import { resolvePresentation } from "../i18n/locale";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -111,8 +112,8 @@ test("revenue list renders bilingual guidance, finite labels, exact totals, filt
     const html = renderWithPresentation(createElement(Page), locale);
     for (const key of ["scheduled", "recognized", "remaining", "all", "activeTab", "completedTab", "cancelledTab", "activeHint", "completedHint", "search", "period", "spreadHeading", "status", "total", "straightLine", "active"] as const) assert.ok(html.includes(escape(t(key))), key);
     assert.ok(html.includes(escape(t("showing", { loaded: 2, total: 2 }))));
-    assert.ok(html.includes(escape(assetMoneyDisplay(BigInt(raw.totalAmount) * 2n))));
-    assert.ok(html.includes(escape(assetMoneyDisplay(raw.totalAmount - raw.recognizedAmount))));
+    assert.ok(html.includes(escape(assetMoneyDisplay(BigInt(raw.totalAmount) * 2n, resolvePresentation({ user: { language: locale } })))));
+    assert.ok(html.includes(escape(assetMoneyDisplay(raw.totalAmount - raw.recognizedAmount, resolvePresentation({ user: { language: locale } })))));
     const Filtered = loaded(list, { initialLoad: false, schedules: [raw], search: "missing" });
     const filtered = renderWithPresentation(createElement(Filtered), locale);
     assert.ok(filtered.includes(escape(t("noMatches"))) && filtered.includes(escape(t("clearFilters"))));
@@ -175,7 +176,7 @@ test("revenue creation preserves exact decimal, method, dates and retry identity
     const t = translator(locale), errors: string[] = [], successes: string[] = [], routes: string[] = [], busy: boolean[] = [];
     const retryRef = { current: null as null | { fingerprint: string; key: string } };
     let requests = 0, closed = 0;
-    const run = callback(drawer, "handleSubmit", { t, invoiceId: mode === "invoice" ? "" : "invoice-a", totalAmount: "90071992547409.91", startDate: raw.startDate, endDate: raw.endDate, method: "milestone", retryRef, localStorage: { getItem: () => mode === "org" ? null : "org-a" }, setSaving: (v: boolean) => busy.push(v), onClose: () => closed++, router: { push: (v: string) => routes.push(v) }, toast: { error: (v: string) => errors.push(v), success: (v: string) => successes.push(v) }, fetch: async (url: string, init: RequestInit) => {
+    const run = callback(drawer, "handleSubmit", { unitPresentation: resolvePresentation({ user: { language: locale } }), t, invoiceId: mode === "invoice" ? "" : "invoice-a", totalAmount: "90071992547409.91", startDate: raw.startDate, endDate: raw.endDate, method: "milestone", retryRef, localStorage: { getItem: () => mode === "org" ? null : "org-a" }, setSaving: (v: boolean) => busy.push(v), onClose: () => closed++, router: { push: (v: string) => routes.push(v) }, toast: { error: (v: string) => errors.push(v), success: (v: string) => successes.push(v) }, fetch: async (url: string, init: RequestInit) => {
       requests++; assert.equal(url, "/api/v1/revenue-schedules"); assert.equal(init.method, "POST"); assert.equal((init.headers as Record<string, string>)["x-organization-id"], "org-a");
       const body = JSON.parse(String(init.body)); assert.match(body.idempotencyKey, /^[\da-f-]{36}$/);
       assert.deepEqual(body, { invoiceId: "invoice-a", totalAmountExact: "90071992547409.91", idempotencyKey: retryRef.current?.key, startDate: raw.startDate, endDate: raw.endDate, method: "milestone" });
@@ -198,7 +199,7 @@ test("recognition keeps next-entry targeting, canonical request and localized fa
   for (const locale of locales) for (const mode of ["success", "denied", "network", "org", "noEntry"]) {
     const t = translator(locale), errors: string[] = [], successes: string[] = [], busy: boolean[] = [];
     let requests = 0, reads = 0;
-    await callback(detail, "handleRecognize", { t, orgId: mode === "org" ? null : "org-a", id: raw.id, rs: mode === "noEntry" ? { ...raw, entries: [] } : raw, setRecognizing: (v: boolean) => busy.push(v), refetch: async () => reads++, toast: { error: (v: string) => errors.push(v), success: (v: string) => successes.push(v) }, fetch: async (url: string, init: RequestInit) => {
+    await callback(detail, "handleRecognize", { unitPresentation: resolvePresentation({ user: { language: locale } }), t, orgId: mode === "org" ? null : "org-a", id: raw.id, rs: mode === "noEntry" ? { ...raw, entries: [] } : raw, setRecognizing: (v: boolean) => busy.push(v), refetch: async () => reads++, toast: { error: (v: string) => errors.push(v), success: (v: string) => successes.push(v) }, fetch: async (url: string, init: RequestInit) => {
       requests++; assert.equal(url, `/api/v1/revenue-schedules/${raw.id}/recognize`); assert.equal(init.method, "POST"); assert.equal((init.headers as Record<string, string>)["x-organization-id"], "org-a"); assert.deepEqual(JSON.parse(String(init.body)), { entryId: "entry-b" });
       if (mode === "network") throw new Error("private prose"); return new Response("private HTML", { status: mode === "denied" ? 403 : 200 });
     } })();
@@ -213,7 +214,7 @@ test("cancellation preserves confirmation cancellation, DELETE and localized out
   for (const locale of locales) for (const mode of ["success", "denied", "network", "cancel"]) {
     const t = translator(locale), errors: string[] = [], successes: string[] = [];
     let requests = 0, reads = 0;
-    await callback(detail, "handleCancel", { t, orgId: "org-a", id: raw.id, refetch: async () => reads++, toast: { error: (v: string) => errors.push(v), success: (v: string) => successes.push(v) }, confirm: async (options: { title: string; description: string; confirmLabel: string; cancelLabel: string; destructive: boolean; onConfirm: () => Promise<void> }) => {
+    await callback(detail, "handleCancel", { unitPresentation: resolvePresentation({ user: { language: locale } }), t, orgId: "org-a", id: raw.id, refetch: async () => reads++, toast: { error: (v: string) => errors.push(v), success: (v: string) => successes.push(v) }, confirm: async (options: { title: string; description: string; confirmLabel: string; cancelLabel: string; destructive: boolean; onConfirm: () => Promise<void> }) => {
       assert.equal(options.title, t("cancelTitle")); assert.equal(options.description, t("cancelDescription")); assert.equal(options.confirmLabel, t("cancelSchedule")); assert.equal(options.cancelLabel, t("cancel")); assert.equal(options.destructive, true);
       if (mode !== "cancel") await options.onConfirm();
     }, fetch: async (url: string, init: RequestInit) => {

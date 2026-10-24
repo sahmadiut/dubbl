@@ -1,3 +1,6 @@
+import { currencyLabel } from "../i18n/currency-labels";
+import { resolvePresentation } from "../i18n/locale";
+import { formatExactDecimal as localizedExactDecimal } from "../i18n/numbers";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -125,9 +128,9 @@ test("bill production list translates empty/populated/filter states and keeps ex
     const Page = loaded(list, { loading: false, loadedOrg: "org-a", bills, allBills: bills, countsData, dateFrom: "2026-10-01" });
     const html = renderWithPresentation(createElement(Page), locale);
     for (const key of ["title", "description", "outstanding", "paid", "overdue", "number", "supplier", "date", "due", "status", "total", "balance", "clearDates", "search", "endDate", "newest", "oldest", "dueSoonest", "dueLatest", "highestAmount", "lowestAmount", "highestBalance", "numberDesc", "numberAsc", "current", "daysOneThirty", "daysThirtySixty", "daysSixtyPlus"] as const) assert.ok(html.includes(escape(t(key))), key);
-    assert.ok(html.includes(escape(t("aging", { currency: "USD" }))));
+    assert.ok(html.includes(escape(t("aging", { currency: currencyLabel("USD", locale) }))));
     assert.ok(html.includes(escape(t("allTab", { count: 2 }))) && html.includes(escape(t("receivedTab", { count: 1 }))));
-    assert.ok(html.includes("90,071,992,547,409.90") && html.includes("0.001"));
+    assert.ok(html.includes(localizedNumber("90,071,992,547,409.90", locale)) && html.includes(localizedNumber("0.001", locale)));
     assert.ok(html.includes(escape(caller)) && !html.includes("<script>") && html.includes("future_code"));
     for (const code of ["created:desc", "created:asc", "due:asc", "due:desc", "total:desc", "total:asc", "amountDue:desc", "number:desc", "number:asc"]) assert.ok(html.includes(`data-option="${code}"`));
     const Filtered = loaded(list, { loading: false, loadedOrg: "org-a", search: "missing" });
@@ -146,12 +149,12 @@ test("bill production detail renders lifecycle dialogs, delivery links, escaped 
       const html = renderWithPresentation(createElement(Page), locale);
       for (const key of ["statement", "statementHint", "from", "bill", "issued", "due", "lineDescription", "quantity", "price", "subtotal", "total", "paymentStatus", "paid", "details", "lastRejection", "notes", "orderMatch", "orderMatchHint", "matched", "supplierDocuments", "attachLabel"] as const) assert.ok(html.includes(escape(t(key))), `${status}: ${key}`);
       assert.ok(html.includes(escape(billStatusLabel(status, t))) && html.includes(escape(caller)) && !html.includes("<script>"));
-      assert.ok(html.includes('href="/contacts/supplier-a/statement"') && html.includes("90,071,992,547,409.91"));
+      assert.ok(html.includes('href="/contacts/supplier-a/statement"') && html.includes(localizedNumber("90,071,992,547,409.91", locale)));
       if (status === "pending_approval") for (const key of ["approve", "reject", "rejectTitle", "rejectDescription", "reason", "reasonPlaceholder", "rejectBill"] as const) assert.ok(html.includes(escape(t(key))), key);
       if (status === "draft") assert.ok(html.includes(escape(t("addToBooks"))));
       if (["received", "partial", "overdue"].includes(status)) {
         assert.ok(html.includes(escape(t("recordPayment"))) && html.includes(escape(t("paymentTooHigh"))));
-        assert.match(html, /aria-label="[^"]*USD[^"]*"/);
+        assert.match(html, new RegExp(`aria-label="[^"]*${currencyLabel("USD", locale)}[^"]*"`));
         assert.match(html, /<button(?=[^>]*disabled="")[^>]*>/);
       }
     }
@@ -162,7 +165,7 @@ test("bill production detail renders lifecycle dialogs, delivery links, escaped 
     const Base = loaded(detail, { loading: false, loadedContext: "org-a:bill-a", b: { ...saved, notes: null, contact: null, lines: [{ ...saved.lines[0], goodsReceiptLineId: "receipt-a" }, { ...saved.lines[0], id: "line-b", goodsReceiptLineId: null }] }, base: { baseCurrency: "KWD", amounts: { total: 1n, amountDue: null } } });
     const baseHtml = renderWithPresentation(createElement(Base), locale);
     for (const key of ["unknownSupplier", "noNotes", "notOnOrder"] as const) assert.ok(baseHtml.includes(escape(t(key))), key);
-    assert.ok(baseHtml.includes(escape(t("inCurrency", { currency: "KWD" }))) && baseHtml.includes("0.001"));
+    assert.ok(baseHtml.includes(escape(t("inCurrency", { currency: currencyLabel("KWD", locale) }))) && baseHtml.includes(localizedNumber("0.001", locale)));
   }
 });
 
@@ -188,7 +191,7 @@ test("bill payment and lifecycle callbacks preserve org scope, canonical payload
     const route = routes[name as keyof typeof routes];
     const successKeys = { receive: "receivedSuccess", approve: "approvedSuccess", reject: "rejectedSuccess", pay: "paymentSuccess", void: "cancelledSuccess", credit: "creditSuccess" } as const;
     const failKeys = { receive: "receiveFailed", approve: "approveFailed", reject: "rejectFailed", pay: "paymentFailed", void: "cancelFailed", credit: "creditFailed" } as const;
-    const scope = { t, orgId: "org-a", id: raw.id, b: saved, loadedContext: "org-a:bill-a", context: "org-a:bill-a", paying: false,
+    const scope = { unitPresentation: resolvePresentation({ user: { language: locale } }), t, orgId: "org-a", id: raw.id, b: saved, loadedContext: "org-a:bill-a", context: "org-a:bill-a", paying: false,
       payAmount: "90071992547409.90", payDate: "2026-10-19", rejectReason: "  دلیل  ",
       billUiPaymentAmount: money.billUiPaymentAmount, billUiSupplierCreditLines: money.billUiSupplierCreditLines,
       toast: { success: (v: string) => messages.push(v), error: (v: string) => messages.push(v) },
@@ -222,7 +225,7 @@ test("bill creation callbacks preserve exact line/approval/duplicate semantics a
   for (const locale of locales) for (const mode of ["success", "approval", "duplicate", "hardDuplicate", "html", "network", "shape", "invalidLines"]) {
     const t = translator(locale), messages: string[] = [], busy: boolean[] = [], duplicates: unknown[] = [], pushes: string[] = [];
     const lines = [{ description: caller, quantity: "1", unitPrice: mode === "invalidLines" ? "1x" : "90071992547409.91", accountId: "00000000-0000-4000-8000-000000000001", taxRateId: "" }];
-    await callback(drawer, "submitBill", { t, contactId: "supplier-a", orgId: "org-a", currencyCode: "USD", validLines: true,
+    await callback(drawer, "submitBill", { unitPresentation: resolvePresentation({ user: { language: locale } }), t, contactId: "supplier-a", orgId: "org-a", currencyCode: "USD", validLines: true,
       lines, billLineInputs, issueDate: "2026-10-18", dueDate: "2026-10-19", billNumber: " BILL-A ", reference: caller, notes: caller, forApproval: mode === "approval",
       setSaving: (v: boolean) => busy.push(v), setDuplicateBillNumber: (v: unknown) => duplicates.push(v), onClose: noop,
       toast: { success: (v: string) => messages.push(v), error: (v: string) => messages.push(v) }, router: { push: (v: string) => pushes.push(v) },
@@ -246,7 +249,7 @@ test("bill creation callbacks preserve exact line/approval/duplicate semantics a
 test("bill currency and detail read effects localize invalid JSON/money/network and abort stale state", async () => {
   for (const locale of locales) for (const mode of ["success", "status", "html", "network", "alias", "stale"]) {
     const t = translator(locale), errors: string[] = [], writes: unknown[] = [];
-    const scope = { t, orgId: "org-a", id: raw.id, context: "org-a:bill-a", billUiDocument: money.billUiDocument, billUiBase: money.billUiBase,
+    const scope = { unitPresentation: resolvePresentation({ user: { language: locale } }), t, orgId: "org-a", id: raw.id, context: "org-a:bill-a", billUiDocument: money.billUiDocument, billUiBase: money.billUiBase,
       setLoading: noop, setB: (v: unknown) => { if (v !== null) writes.push(v); }, setBase: noop, setMoneyError: (v: string) => { if (v) errors.push(v); }, setPayOpen: noop, setPayAmount: noop, setLoadedContext: noop,
       fetch: async (url: string, init: RequestInit) => {
         assert.equal(url, "/api/v1/bills/bill-a"); assert.equal((init.headers as Record<string, string>)["x-organization-id"], "org-a");
@@ -261,7 +264,7 @@ test("bill currency and detail read effects localize invalid JSON/money/network 
     assert.deepEqual(errors, ["success", "stale"].includes(mode) ? [] : [t("detailFailed")]);
     cleanup();
     const contexts: unknown[] = [];
-    const currencyCleanup = callback(drawer, "effect", { t, open: true, orgId: "org-a", contactId: "supplier-a", billEditorCurrency,
+    const currencyCleanup = callback(drawer, "effect", { unitPresentation: resolvePresentation({ user: { language: locale } }), t, open: true, orgId: "org-a", contactId: "supplier-a", billEditorCurrency,
       setCurrencyContext: (v: unknown) => contexts.push(v),
       fetch: async (url: string) => {
         if (mode === "network") throw new Error("private");
@@ -279,7 +282,7 @@ test("bill list reads, pagination, overview and filters preserve machine values 
   for (const locale of locales) for (const mode of ["success", "status", "html", "network", "alias", "stale"]) for (const kind of ["list", "more", "overview"]) {
     const t = translator(locale), errors: string[] = [], writes: unknown[] = [], generation = { current: 1 };
     const buildParams = (page: number) => new URLSearchParams({ status: "received", sortBy: "amountDue", sortOrder: "asc", from: "2026-10-01", to: "2026-10-31", search: caller, page: String(page), limit: "50" });
-    const scope = { t, orgId: "org-a", page: 1, loading: false, loadingMore: false, refetching: false, moneyError: "", hasMore: true,
+    const scope = { unitPresentation: resolvePresentation({ user: { language: locale } }), t, orgId: "org-a", page: 1, loading: false, loadingMore: false, refetching: false, moneyError: "", hasMore: true,
       requestGeneration: generation, buildParams, billUiList: money.billUiList, billUiCounts: money.billUiCounts, billUiAging: money.billUiAging, devDelay: async () => {},
       setCountsData: (v: unknown) => { if (v) writes.push(v); }, setAllBills: (v: unknown[]) => { if (v.length) writes.push(v); },
       setBills: (v: unknown) => { if (typeof v === "function") writes.push(v([])); else if (Array.isArray(v) && v.length) writes.push(v); },
@@ -325,3 +328,5 @@ test("bill catalog source inventory has no authored English JSX/attributes and f
   }
   for (const value of Object.values(fa.SupplierBills)) assert.match(value, /[\u0600-\u06ff]/);
 });
+
+function localizedNumber(value: string, locale: "en-US" | "fa-IR") { return localizedExactDecimal(value.replaceAll(",", ""), resolvePresentation({ user: { language: locale } })); }

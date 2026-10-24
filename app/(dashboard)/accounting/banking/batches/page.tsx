@@ -1,5 +1,7 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
+import { currencyLabel } from "@/i18n/currency-labels";
 import { useTranslations } from "next-intl";
 import { bankPaymentStatus, paymentFailure, requirePaymentResponse } from "@/i18n/bank-payment-presentation";
 
@@ -72,6 +74,7 @@ export default function PaymentBatchesPage() {
   return <PaymentBatchesList key={orgId} orgId={orgId} />;
 }
 function PaymentBatchesList({ orgId }: { orgId: string | null }) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("BankPayments");
   const errors = useTranslations("BankAccountErrors");
   const router = useRouter();
@@ -265,7 +268,7 @@ function PaymentBatchesList({ orgId }: { orgId: string | null }) {
               </div>
               <div className="flex items-center gap-3 shrink-0">
                 <p className="font-mono text-sm font-semibold tabular-nums break-all">
-                  {formatMoney(batch.totalAmount, batch.currencyCode)}
+                  {formatMoney(batch.totalAmount, batch.currencyCode, unitPresentation)}
                 </p>
                 <ChevronRight className="size-4 text-muted-foreground/0 transition-all group-hover:text-muted-foreground group-hover:translate-x-0.5" />
               </div>
@@ -343,7 +346,7 @@ function PaymentBatchesList({ orgId }: { orgId: string | null }) {
                           </p>
                         </div>
                         <p className="text-xs font-mono tabular-nums text-muted-foreground">
-                          {formatMoney(b.amountDue, b.currencyCode)}
+                          {formatMoney(b.amountDue, b.currencyCode, unitPresentation)}
                         </p>
                       </button>
                       {isSelected && selectedItem && (
@@ -351,7 +354,7 @@ function PaymentBatchesList({ orgId }: { orgId: string | null }) {
                           <Input
                             type="text"
                             inputMode="decimal"
-                            aria-label={t("paymentBillAmount", { bill: b.billNumber, currency: b.currencyCode })}
+                            aria-label={t("paymentBillAmount", { bill: b.billNumber, currency: currencyLabel(b.currencyCode, unitPresentation.locale) })}
                             value={selectedItem.amount}
                             onChange={(e) =>
                               updateBillAmount(b.id, e.target.value)
@@ -371,7 +374,7 @@ function PaymentBatchesList({ orgId }: { orgId: string | null }) {
               <div className="flex items-center justify-between pt-2 border-t">
                 <p className="text-xs text-muted-foreground">{t("total")}</p>
                 <p className="text-sm font-mono font-semibold tabular-nums">
-                  {preview ? formatMoney(preview.total, preview.currencyCode) : t("unavailable")}
+                  {preview ? formatMoney(preview.total, preview.currencyCode, unitPresentation) : t("unavailable")}
                 </p>
               </div>
             )}

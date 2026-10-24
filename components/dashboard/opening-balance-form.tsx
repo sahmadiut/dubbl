@@ -1,4 +1,6 @@
 "use client";
+import { usePresentation } from "@/i18n/provider";
+import { currencyLabel } from "@/i18n/currency-labels";
 import { useTranslations } from "next-intl";
 import { journalPreviewMessage } from "@/i18n/journal-presentation";
 
@@ -21,6 +23,7 @@ type Props = {
 };
 
 export function OpeningBalanceForm({ accounts, saving, onCancel, onSubmit, initialRows }: Props) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("Journals");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [rows, setRows] = useState<OpeningBalanceRow[]>(initialRows ?? [
@@ -73,8 +76,8 @@ export function OpeningBalanceForm({ accounts, saving, onCancel, onSubmit, initi
                     ))}
                   </SelectContent>
                 </Select>
-                <CurrencyInput aria-label={t("debitLine", { number: i + 1 })} aria-invalid={!!preview.error} size="sm" value={row.debit} onChange={(v) => updateRow(i, "debit", v)} />
-                <CurrencyInput aria-label={t("creditLine", { number: i + 1 })} aria-invalid={!!preview.error} size="sm" value={row.credit} onChange={(v) => updateRow(i, "credit", v)} />
+                <CurrencyInput prefix={currencyLabel("USD", unitPresentation.locale, "$")} aria-label={t("debitLine", { number: i + 1 })} aria-invalid={!!preview.error} size="sm" value={row.debit} onChange={(v) => updateRow(i, "debit", v)} />
+                <CurrencyInput prefix={currencyLabel("USD", unitPresentation.locale, "$")} aria-label={t("creditLine", { number: i + 1 })} aria-invalid={!!preview.error} size="sm" value={row.credit} onChange={(v) => updateRow(i, "credit", v)} />
                 <Button
                   type="button"
                   variant="ghost"

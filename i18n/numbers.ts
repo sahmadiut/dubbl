@@ -43,6 +43,11 @@ export function formatExactDecimal(value: string, presentation: NumberPresentati
   return formatDecimal(value, presentation, undefined, useGrouping);
 }
 
+/** Explicit legacy decimal scale: display its unit without reinterpreting stored minor units. */
+export function formatExactCurrencyDecimal(value: string, currency: string, presentation: NumberPresentation) {
+  return formatDecimal(value, presentation, currencyMetadata(currency).code);
+}
+
 /** Integer minor units with explicit ISO currency scale; never reinterpret saved units. */
 export function formatExactMoney(amountMinor: bigint, currency: string, presentation: NumberPresentation) {
   const code = currencyMetadata(currency).code;

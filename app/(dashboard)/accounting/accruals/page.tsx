@@ -1,5 +1,7 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
+import type { NumberPresentation } from "@/i18n/numbers";
 import { useTranslations } from "next-intl";
 import { accrualJson, accrualFailureMessage, accrualStatusLabel } from "@/i18n/accrual-presentation";
 
@@ -45,7 +47,7 @@ const statusColors: Record<string, string> = {
   cancelled: "border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300",
 };
 
-function buildColumns(t: ReturnType<typeof useTranslations<"Accruals">>): Column<AccrualSchedule>[] {
+function buildColumns(t: ReturnType<typeof useTranslations<"Accruals">>, unitPresentation: NumberPresentation = { locale: "en-US", numerals: "latn" }): Column<AccrualSchedule>[] {
   return [
     {
       key: "description",
@@ -61,7 +63,7 @@ function buildColumns(t: ReturnType<typeof useTranslations<"Accruals">>): Column
       className: "w-28 text-right",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums">
-          {formatMoney(r.totalAmount)}
+          {formatMoney(r.totalAmount, unitPresentation)}
         </span>
       ),
     },
@@ -94,6 +96,7 @@ function buildColumns(t: ReturnType<typeof useTranslations<"Accruals">>): Column
 }
 
 export default function AccrualsPage() {
+  const unitPresentation = usePresentation();
   const t = useTranslations("Accruals");
   const [error, setError] = useState("");
   const router = useRouter();
@@ -114,7 +117,7 @@ export default function AccrualsPage() {
   const PAGE_SIZE = 50;
   const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
 
-  const columns = useMemo(() => buildColumns(t), [t]);
+  const columns = useMemo(() => buildColumns(t, unitPresentation), [t, unitPresentation]);
 
   const buildParams = useCallback((p: number) => {
     const params = new URLSearchParams();
@@ -251,7 +254,7 @@ export default function AccrualsPage() {
                       <p className="text-[11px] text-muted-foreground">{t("insurance")}</p>
                     </div>
                   </div>
-                  <span className="font-mono text-sm font-medium">{formatMoney(120000)}</span>
+                  <span className="font-mono text-sm font-medium">{formatMoney(120000, unitPresentation)}</span>
                 </div>
                 <div className="flex items-center justify-between px-3 sm:px-5 py-3.5 bg-teal-50/30 dark:bg-teal-950/10">
                   <div className="flex items-center gap-3">
@@ -263,14 +266,14 @@ export default function AccrualsPage() {
                       <p className="text-[11px] text-muted-foreground">{t("littleEachMonth")}</p>
                     </div>
                   </div>
-                  <span className="font-mono text-sm font-medium text-teal-600 dark:text-teal-400">{t("monthlyExample", { amount: formatMoney(10000) })}</span>
+                  <span className="font-mono text-sm font-medium text-teal-600 dark:text-teal-400">{t("monthlyExample", { amount: formatMoney(10000, unitPresentation) })}</span>
                 </div>
                 <div className="flex items-center justify-between px-3 sm:px-5 py-3.5">
                   <div className="flex items-center gap-3">
                     <div className="size-7" />
                     <p className="text-sm font-semibold">{t("fairShare")}</p>
                   </div>
-                  <span className="font-mono text-sm font-bold">{formatMoney(10000)}</span>
+                  <span className="font-mono text-sm font-bold">{formatMoney(10000, unitPresentation)}</span>
                 </div>
               </div>
             </div>
@@ -317,7 +320,7 @@ export default function AccrualsPage() {
       {error && <p role="alert">{error}</p>}
       {/* Top: Stats */}
       <div className="grid gap-3 sm:grid-cols-3">
-        <StatCard title={t("scheduled")} value={formatMoney(totalScheduled)} icon={CalendarRange} />
+        <StatCard title={t("scheduled")} value={formatMoney(totalScheduled, unitPresentation)} icon={CalendarRange} />
         <StatCard title={t("runningTab")} value={runningCount.toString()} icon={CalendarClock} />
       </div>
 

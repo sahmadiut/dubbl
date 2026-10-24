@@ -1,4 +1,6 @@
 "use client";
+import { usePresentation } from "@/i18n/provider";
+import type { NumberPresentation } from "@/i18n/numbers";
 import { useTranslations } from "next-intl";
 import { expenseStatusLabel, expenseSortLabel, type ExpenseTranslator, type ExpenseErrorKey } from "@/i18n/expense-presentation";
 
@@ -51,7 +53,7 @@ const statusColors: Record<string, string> = {
   paid: "border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-800 dark:bg-purple-950 dark:text-purple-300",
 };
 
-function buildColumns(t: ExpenseTranslator): Column<ExpenseClaim>[] {
+function buildColumns(t: ExpenseTranslator, unitPresentation: NumberPresentation = { locale: "en-US", numerals: "latn" }): Column<ExpenseClaim>[] {
   return [
     {
       key: "title",
@@ -96,7 +98,7 @@ function buildColumns(t: ExpenseTranslator): Column<ExpenseClaim>[] {
       className: "w-28 text-right",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums">
-          {expenseUiMoney(expenseUiMinor(r, "totalAmount"), r.currencyCode)}
+          {expenseUiMoney(expenseUiMinor(r, "totalAmount"), r.currencyCode, unitPresentation)}
         </span>
       ),
     },
@@ -109,6 +111,7 @@ export default function ExpensesPage() {
 }
 
 function ExpensesWorkspace() {
+  const unitPresentation = usePresentation();
   const t = useTranslations("Expenses");
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
@@ -135,7 +138,7 @@ function ExpensesWorkspace() {
 
   useDocumentTitle(t("documentTitle"));
 
-  const columns = useMemo(() => buildColumns(t), [t]);
+  const columns = useMemo(() => buildColumns(t, unitPresentation), [t, unitPresentation]);
 
   const buildParams = useCallback((pg: number) => {
     const params = new URLSearchParams();
@@ -261,7 +264,7 @@ function ExpensesWorkspace() {
     return c;
   }, [countsData]);
 
-  const summaryDisplay = (buckets: Parameters<typeof expenseSummaryDisplay>[0]) => new Set(buckets.map(row => row.currencyCode)).size > 1 ? t("multipleCurrencies") : expenseSummaryDisplay(buckets);
+  const summaryDisplay = (buckets: Parameters<typeof expenseSummaryDisplay>[0]) => new Set(buckets.map(row => row.currencyCode)).size > 1 ? t("multipleCurrencies") : expenseSummaryDisplay(buckets, unitPresentation);
 
   const totalAmount = countsData ? summaryDisplay(Object.values(countsData.counts)) : "\u2014";
   const pending = countsData?.counts.submitted;

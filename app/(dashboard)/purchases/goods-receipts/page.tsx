@@ -1,5 +1,8 @@
 "use client";
 
+import { bankMoneyDisplay as exampleMoney } from "@/lib/money/bank-display";
+import { usePresentation } from "@/i18n/provider";
+import type { NumberPresentation } from "@/i18n/numbers";
 import { useTranslations } from "next-intl";
 import { goodsReceiptStatusLabel } from "@/i18n/goods-receipt-presentation";
 
@@ -35,7 +38,7 @@ const statusColors: Record<string, string> = {
   void: "border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300",
 };
 
-function buildColumns(t: ReturnType<typeof useTranslations<"GoodsReceipts">>): Column<GoodsReceipt>[] {
+function buildColumns(t: ReturnType<typeof useTranslations<"GoodsReceipts">>, unitPresentation: NumberPresentation = { locale: "en-US", numerals: "latn" }): Column<GoodsReceipt>[] {
   return [
     {
       key: "number",
@@ -76,7 +79,7 @@ function buildColumns(t: ReturnType<typeof useTranslations<"GoodsReceipts">>): C
       className: "w-32 text-right",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums break-all">
-          {procurementMoney(r.total, r.currencyCode)}
+          {procurementMoney(r.total, r.currencyCode, unitPresentation)}
         </span>
       ),
     },
@@ -89,6 +92,7 @@ export default function GoodsReceiptsPage() {
 }
 
 function GoodsReceiptsContent() {
+  const unitPresentation = usePresentation();
   const t = useTranslations("GoodsReceipts");
   const router = useRouter();
   const [readError, setReadError] = useState<string | null>(null);
@@ -114,7 +118,7 @@ function GoodsReceiptsContent() {
   const PAGE_SIZE = 50;
   const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
 
-  const columns = useMemo(() => buildColumns(t), [t]);
+  const columns = useMemo(() => buildColumns(t, unitPresentation), [t, unitPresentation]);
 
   const buildParams = useCallback((p: number) => {
     const params = new URLSearchParams();
@@ -130,7 +134,6 @@ function GoodsReceiptsContent() {
     let cancelled = false;
     const controller = new AbortController();
     generation.current += 1;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset pagination for the new status read
     setLoadingMore(false);
     setRefetching(true);
     setPage(1);
@@ -213,11 +216,10 @@ function GoodsReceiptsContent() {
 
   // Bump searchKey when debounced search changes to trigger ContentReveal
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSearchKey((k) => k + 1);
   }, [debouncedSearch]);
 
-  const totalValue = procurementOverviewText(filteredReceipts);
+  const totalValue = procurementOverviewText(filteredReceipts, undefined, unitPresentation);
 
   if (initialLoad) return <BrandLoader />;
   if (readError) return <p role="alert" className="text-sm text-red-600">{readError}</p>;
@@ -259,7 +261,7 @@ function GoodsReceiptsContent() {
                       <p className="text-[11px] text-muted-foreground">PO-0042</p>
                     </div>
                   </div>
-                  <span className="font-mono text-sm font-medium">$1,200.00</span>
+                  <span className="font-mono text-sm font-medium">{exampleMoney(120000n, "USD", unitPresentation)}</span>
                 </div>
                 <div className="flex items-center justify-between px-3 sm:px-5 py-3.5 bg-emerald-50/30 dark:bg-emerald-950/10">
                   <div className="flex items-center gap-3">
@@ -271,7 +273,7 @@ function GoodsReceiptsContent() {
                       <p className="text-[11px] text-muted-foreground">GRN-0001</p>
                     </div>
                   </div>
-                  <span className="font-mono text-sm font-medium text-emerald-600 dark:text-emerald-400">+$1,200.00</span>
+                  <span className="font-mono text-sm font-medium text-emerald-600 dark:text-emerald-400">{"+" + exampleMoney(120000n, "USD", unitPresentation)}</span>
                 </div>
                 <div className="flex items-center justify-between px-3 sm:px-5 py-3.5">
                   <div className="flex items-center gap-3">

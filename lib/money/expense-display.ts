@@ -1,15 +1,13 @@
-import { currencyMetadata, money, toMajorDecimal } from "./exact";
+import type { NumberPresentation } from "../../i18n/numbers";
+import { bankMoneyDisplay } from "./bank-display";
 
-/** Exact English presentation for adopted expense amounts; locale expansion remains separate. */
-export function expenseMoneyDisplay(amount: bigint, currency: string) {
+/** Exact presentation retaining the nonnegative expense contract. */
+export function expenseMoneyDisplay(amount: bigint, currency: string, presentation: NumberPresentation = { locale: "en-US", numerals: "latn" }) {
   if (amount < 0n) throw new RangeError("Expense amount must be nonnegative");
-  const { code, minorUnits } = currencyMetadata(currency), scale = 10n ** BigInt(minorUnits);
-  const decimal = toMajorDecimal(money(amount, code)), fraction = decimal.split(".")[1];
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: code, minimumFractionDigits: minorUnits, maximumFractionDigits: minorUnits })
-    .formatToParts(amount / scale).map(part => part.type === "fraction" ? fraction : part.value).join("");
+  return bankMoneyDisplay(amount, currency, presentation);
 }
-export function expenseSummaryDisplay(buckets: { amountMinor: string; currencyCode: string }[]) {
+export function expenseSummaryDisplay(buckets: { amountMinor: string; currencyCode: string }[], presentation: NumberPresentation = { locale: "en-US", numerals: "latn" }) {
   if (!buckets.length) return "0";
   if (new Set(buckets.map(row => row.currencyCode)).size !== 1) return "Multiple currencies";
-  return expenseMoneyDisplay(buckets.reduce((sum, row) => sum + BigInt(row.amountMinor), 0n), buckets[0].currencyCode);
+  return expenseMoneyDisplay(buckets.reduce((sum, row) => sum + BigInt(row.amountMinor), 0n), buckets[0].currencyCode, presentation);
 }

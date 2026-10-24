@@ -1,4 +1,6 @@
 "use client";
+import { usePresentation } from "@/i18n/provider";
+import { currencyLabel } from "@/i18n/currency-labels";
 import { useTranslations } from "next-intl";
 import { journalPreviewMessage } from "@/i18n/journal-presentation";
 
@@ -52,6 +54,7 @@ interface EntryFormProps {
 }
 
 export function EntryForm({ accounts, onSubmit, loading, initial, onCancel, submitLabel }: EntryFormProps) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("Journals");
   const [date, setDate] = useState(initial?.date || new Date().toISOString().split("T")[0]);
   const [description, setDescription] = useState(initial?.description || "");
@@ -169,13 +172,13 @@ export function EntryForm({ accounts, onSubmit, loading, initial, onCancel, subm
                 onChange={(e) => updateLine(i, "description", e.target.value)}
                 placeholder={t("lineMemo")}
               />
-              <CurrencyInput
+              <CurrencyInput prefix={currencyLabel("USD", unitPresentation.locale, "$")}
                 size="sm"
                 aria-label={t("debitLine", { number: i + 1 })}
                 value={line.debit}
                 onChange={(v) => updateLine(i, "debit", v)}
               />
-              <CurrencyInput
+              <CurrencyInput prefix={currencyLabel("USD", unitPresentation.locale, "$")}
                 size="sm"
                 aria-label={t("creditLine", { number: i + 1 })}
                 value={line.credit}

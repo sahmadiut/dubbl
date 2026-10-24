@@ -1,5 +1,7 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
+import type { NumberPresentation } from "@/i18n/numbers";
 import { useTranslations } from "next-intl";
 import { invoiceStatusLabel, type InvoiceTranslate } from "@/i18n/invoice-presentation";
 
@@ -82,7 +84,7 @@ function getOverdueInfo(t: InvoiceTranslate, dueDate: string, status: string) {
 function buildColumns(
   t: InvoiceTranslate,
   selectedIds: Set<string>,
-  toggleOne: (id: string) => void
+  toggleOne: (id: string) => void, unitPresentation: NumberPresentation = { locale: "en-US", numerals: "latn" }
 ): Column<Invoice>[] {
   return [
     {
@@ -155,7 +157,7 @@ function buildColumns(
       sortKey: "total",
       className: "w-28 text-right",
       render: (r) => (
-        <span className="font-mono text-sm tabular-nums">{formatMoney(r.total, r.currencyCode)}</span>
+        <span className="font-mono text-sm tabular-nums">{formatMoney(r.total, r.currencyCode, unitPresentation)}</span>
       ),
     },
     {
@@ -171,7 +173,7 @@ function buildColumns(
             : "";
         return (
           <span className={`font-mono text-sm tabular-nums ${color}`}>
-            {formatMoney(r.amountDue, r.currencyCode)}
+            {formatMoney(r.amountDue, r.currencyCode, unitPresentation)}
           </span>
         );
       },
@@ -180,6 +182,7 @@ function buildColumns(
 }
 
 export default function InvoicesPage() {
+  const unitPresentation = usePresentation();
   const t = useTranslations("SalesInvoices");
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
@@ -224,8 +227,8 @@ export default function InvoicesPage() {
   }, []);
 
   const columns = useMemo(
-    () => buildColumns(t, selectedIds, toggleOne),
-    [t, selectedIds, toggleOne]
+    () => buildColumns(t, selectedIds, toggleOne, unitPresentation),
+    [t, selectedIds, toggleOne, unitPresentation]
   );
 
   const buildParams = useCallback((p: number) => {
@@ -512,9 +515,9 @@ export default function InvoicesPage() {
           {/* Preview stat cards (empty) */}
           <div className="w-full max-w-lg grid grid-cols-1 sm:grid-cols-3 gap-3 opacity-40">
             {[
-              { label: t("outstanding"), value: summary?.currencyCode ? formatMoney(0n, summary.currencyCode) : "\u2014" },
-              { label: t("overdue"), value: summary?.currencyCode ? formatMoney(0n, summary.currencyCode) : "\u2014" },
-              { label: t("paidMonth"), value: summary?.currencyCode ? formatMoney(0n, summary.currencyCode) : "\u2014" },
+              { label: t("outstanding"), value: summary?.currencyCode ? formatMoney(0n, summary.currencyCode, unitPresentation) : "\u2014" },
+              { label: t("overdue"), value: summary?.currencyCode ? formatMoney(0n, summary.currencyCode, unitPresentation) : "\u2014" },
+              { label: t("paidMonth"), value: summary?.currencyCode ? formatMoney(0n, summary.currencyCode, unitPresentation) : "\u2014" },
             ].map(({ label, value }) => (
               <div key={label} className="rounded-lg border border-dashed p-3 text-center">
                 <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
@@ -531,8 +534,8 @@ export default function InvoicesPage() {
     <ContentReveal className="space-y-6">
       {/* Top: Stats */}
       <div className="grid gap-3 sm:grid-cols-3">
-        <StatCard title={t("outstanding")} value={summary?.currencyCode ? formatMoney(outstanding, summary.currencyCode) : "\u2014"} icon={FileText} />
-        <StatCard title={t("overdue")} value={summary?.currencyCode ? formatMoney(overdue, summary.currencyCode) : "\u2014"} icon={FileText} changeType="negative" />
+        <StatCard title={t("outstanding")} value={summary?.currencyCode ? formatMoney(outstanding, summary.currencyCode, unitPresentation) : "\u2014"} icon={FileText} />
+        <StatCard title={t("overdue")} value={summary?.currencyCode ? formatMoney(overdue, summary.currencyCode, unitPresentation) : "\u2014"} icon={FileText} changeType="negative" />
         <StatCard title={t("totalInvoices")} value={invoiceCount.toString()} icon={FileText} />
       </div>
 
@@ -568,7 +571,7 @@ export default function InvoicesPage() {
                     <span className="text-muted-foreground">{label}</span>
                   </div>
                   <span className="font-mono tabular-nums">
-                    {aging[key]?.count || 0} · {summary?.currencyCode ? formatMoney(aging[key]?.amount || 0n, summary.currencyCode) : "\u2014"}
+                    {aging[key]?.count || 0} · {summary?.currencyCode ? formatMoney(aging[key]?.amount || 0n, summary.currencyCode, unitPresentation) : "\u2014"}
                   </span>
                 </div>
               ))}
@@ -596,7 +599,7 @@ export default function InvoicesPage() {
                     <span className="text-[11px] text-muted-foreground hidden sm:inline">{p.date}</span>
                   </div>
                   <span className="text-xs font-mono font-medium text-emerald-600 shrink-0 ml-2">
-                    {formatMoney(p.amount, p.currencyCode)}
+                    {formatMoney(p.amount, p.currencyCode, unitPresentation)}
                   </span>
                 </div>
               ))}

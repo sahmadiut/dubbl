@@ -1,3 +1,6 @@
+import { currencyLabel } from "../i18n/currency-labels";
+import { resolvePresentation } from "../i18n/locale";
+import { formatExactDecimal as localizedExactDecimal } from "../i18n/numbers";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -121,7 +124,7 @@ test("cash sale list renders bilingual guidance, filters, statuses, failures and
     const html = renderWithPresentation(createElement(Page), locale);
     for (const key of ["collected", "cashSalesCount", "number", "customer", "date", "status", "total", "all", "draftHeading", "paidHeading", "cancelledHeading", "search", "from", "to", "startDate", "endDate", "sortBy", "newest", "oldest", "highest", "lowest", "numberDesc", "numberAsc"] as const) assert.ok(html.includes(escape(t(key))), key);
     assert.ok(html.includes(escape(t("showing", { loaded: 3, total: 3 }))));
-    assert.ok(html.includes("90,071,992,547,409.92") && html.includes("9,007,199,254,740.991"));
+    assert.ok(html.includes(localizedNumber("90,071,992,547,409.92", locale)) && html.includes(localizedNumber("9,007,199,254,740.991", locale)));
     assert.ok(html.includes(escape(caller)) && !html.includes("<script>"));
     const Filtered = loaded(list, { initialLoad: false, statusFilter: "void", loaded: { context: "org-a:void:created:desc::", receipts: [], total: 0, error: null } });
     assert.ok(renderWithPresentation(createElement(Filtered), locale).includes(escape(t("noMatches"))));
@@ -150,7 +153,7 @@ test("receipt detail renders translated loading, missing, recipient, status and 
       assert.ok(html.includes(escape(t("soldTo", { name: caller }))));
       assert.ok(html.includes(escape(t("referenceValue", { reference: caller }))));
       assert.ok(html.includes(escape(caller)) && !html.includes("<script>"));
-      assert.ok(html.includes(">1.25</span>") && html.includes("90,071,992,547,409.91"));
+      assert.ok(html.includes(">1.25</span>") && html.includes(localizedNumber("90,071,992,547,409.91", locale)));
     }
     const MissingData = loaded(detail, { loading: false, sr: { ...saved, contact: null, bankAccount: null } });
     const html = renderWithPresentation(createElement(MissingData, { orgId: "org-a", id: raw.id }), locale);
@@ -162,8 +165,8 @@ test("receipt detail renders translated loading, missing, recipient, status and 
     for (const currencyCode of ["USD", "JPY", "KWD"]) {
       const receipt = { ...saved, currencyCode, subtotal: 1250n, taxTotal: 0n, total: 1250n };
       const html = renderWithPresentation(createElement(SalesReceiptMoneyDetails, { receipt }), locale);
-      for (const [key, amount] of [["subtotalAmount", 1250n], ["taxAmount", 0n], ["totalAmount", 1250n]] as const) assert.ok(html.includes(escape(t(key, { amount: money.salesReceiptUiMoney(amount, currencyCode) }))));
-      assert.ok(html.includes(escape(t("price", { currency: currencyCode }))));
+      for (const [key, amount] of [["subtotalAmount", 1250n], ["taxAmount", 0n], ["totalAmount", 1250n]] as const) assert.ok(html.includes(escape(t(key, { amount: money.salesReceiptUiMoney(amount, currencyCode, resolvePresentation({ user: { language: locale } })) }))));
+      assert.ok(html.includes(escape(t("price", { currency: currencyLabel(currencyCode, locale) }))));
     }
   }
 });
@@ -184,7 +187,7 @@ test("receipt creation preserves headers, exact decimal lines, currency and null
     const t = translator(locale), errors: string[] = [], successes: string[] = [], routes: string[] = [], busy: boolean[] = [];
     let requests = 0, closed = 0;
     const lines = [{ description: caller, quantity: "1.25", unitPrice: mode === "parser" ? "bad" : "12.500", accountId: "", taxRateId: "" }];
-    const run = callback(drawer, "handleSubmit", { ...money, t, orgId: "org-a", contactId: mode === "customer" ? "" : "customer-a", bankAccountId: mode === "account" ? "" : "bank-a", validLines: mode !== "invalidLines", lines, date: raw.date, currencyCode: mode === "currency" ? null : "KWD", reference: caller, notes: "", setSaving: (v: boolean) => busy.push(v), onClose: () => closed++, router: { push: (v: string) => routes.push(v) }, toast: { error: (v: string) => errors.push(v), success: (v: string) => successes.push(v) }, fetch: async (url: string, init: RequestInit) => {
+    const run = callback(drawer, "handleSubmit", { unitPresentation: resolvePresentation({ user: { language: locale } }), ...money, t, orgId: "org-a", contactId: mode === "customer" ? "" : "customer-a", bankAccountId: mode === "account" ? "" : "bank-a", validLines: mode !== "invalidLines", lines, date: raw.date, currencyCode: mode === "currency" ? null : "KWD", reference: caller, notes: "", setSaving: (v: boolean) => busy.push(v), onClose: () => closed++, router: { push: (v: string) => routes.push(v) }, toast: { error: (v: string) => errors.push(v), success: (v: string) => successes.push(v) }, fetch: async (url: string, init: RequestInit) => {
       requests++; assert.equal(url, "/api/v1/sales-receipts"); assert.equal(init.method, "POST");
       assert.equal((init.headers as Record<string, string>)["x-organization-id"], "org-a");
       assert.deepEqual(JSON.parse(String(init.body)), { contactId: "customer-a", date: raw.date, currencyCode: "KWD", reference: caller, notes: null, bankAccountId: "bank-a", lines: money.salesReceiptEditorLines(lines) });
@@ -207,7 +210,7 @@ test("receipt list and detail reads reject failed HTTP, malformed JSON/shapes an
   for (const locale of locales) for (const path of [list, detail]) for (const mode of ["success", "denied", "network", "json", "shape", "alias", "cancelled"]) {
     const t = translator(locale), values: unknown[] = [], errors: unknown[] = [], busy: unknown[] = [], context = "org-a:paid:created:desc::";
     const row = { ...raw, totalMinor: mode === "alias" ? "01" : raw.totalMinor }, generation = { current: 0 };
-    const cleanup = callback(path, "effect", { ...money, t, orgId: "org-a", id: raw.id, context, generation, buildParams: () => new URLSearchParams("status=paid&page=1&limit=50"), setLoaded: (v: unknown) => values.push(v), setSr: (v: unknown) => values.push(v), setError: (v: unknown) => errors.push(v), setLoading: (v: unknown) => busy.push(v), setRefetching: noop, setLoadingMore: noop, setPage: noop, setInitialLoad: noop, setFetchKey: noop, devDelay: async () => {}, fetch: async (url: string, init: RequestInit) => {
+    const cleanup = callback(path, "effect", { unitPresentation: resolvePresentation({ user: { language: locale } }), ...money, t, orgId: "org-a", id: raw.id, context, generation, buildParams: () => new URLSearchParams("status=paid&page=1&limit=50"), setLoaded: (v: unknown) => values.push(v), setSr: (v: unknown) => values.push(v), setError: (v: unknown) => errors.push(v), setLoading: (v: unknown) => busy.push(v), setRefetching: noop, setLoadingMore: noop, setPage: noop, setInitialLoad: noop, setFetchKey: noop, devDelay: async () => {}, fetch: async (url: string, init: RequestInit) => {
       assert.equal((init.headers as Record<string, string>)["x-organization-id"], "org-a"); assert.equal(init.body, undefined);
       assert.equal(url, path === list ? "/api/v1/sales-receipts?status=paid&page=1&limit=50" : `/api/v1/sales-receipts/${raw.id}`);
       if (mode === "network") throw new Error("secret");
@@ -229,7 +232,7 @@ test("receipt pagination preserves prior rows, canonical query and stale generat
   for (const locale of locales) for (const mode of ["success", "denied", "network", "json", "alias", "stale"]) {
     const t = translator(locale), context = "receipt-context", generation = { current: 1 }, pages: number[] = [], busy: boolean[] = [];
     let state = { context, receipts: [saved], total: 2, error: null as string | null };
-    callback(list, "loadMore", { ...money, t, orgId: "org-a", page: 1, loadingMore: false, waitingForContext: false, context, generation, buildParams: params, setLoadingMore: (v: boolean) => busy.push(v), setPage: (v: number) => pages.push(v), setLoaded: (fn: (v: typeof state) => typeof state) => { state = fn(state); }, fetch: async (url: string, init: RequestInit) => {
+    callback(list, "loadMore", { unitPresentation: resolvePresentation({ user: { language: locale } }), ...money, t, orgId: "org-a", page: 1, loadingMore: false, waitingForContext: false, context, generation, buildParams: params, setLoadingMore: (v: boolean) => busy.push(v), setPage: (v: number) => pages.push(v), setLoaded: (fn: (v: typeof state) => typeof state) => { state = fn(state); }, fetch: async (url: string, init: RequestInit) => {
       assert.equal(url, `/api/v1/sales-receipts?${params(2)}`); assert.equal((init.headers as Record<string, string>)["x-organization-id"], "org-a");
       if (mode === "stale") generation.current++;
       if (mode === "network") throw new Error("secret");
@@ -246,7 +249,7 @@ test("receipt pagination preserves prior rows, canonical query and stale generat
 test("receipt currency fallback loads canonical customer/org values, translates failure and suppresses cancelled results", async () => {
   for (const locale of locales) for (const mode of ["success", "denied", "network", "json", "shape", "currency", "cancelled"]) {
     const t = translator(locale), values: unknown[] = [];
-    const cleanup = callback(drawer, "effect", { ...money, t, open: true, orgId: "org-a", contactId: "customer/a", setCurrencyContext: (v: unknown) => values.push(v), fetch: async (url: string, init: RequestInit) => {
+    const cleanup = callback(drawer, "effect", { unitPresentation: resolvePresentation({ user: { language: locale } }), ...money, t, open: true, orgId: "org-a", contactId: "customer/a", setCurrencyContext: (v: unknown) => values.push(v), fetch: async (url: string, init: RequestInit) => {
       assert.equal((init.headers as Record<string, string>)["x-organization-id"], "org-a");
       assert.ok(["/api/v1/contacts/customer%2Fa", "/api/v1/organization"].includes(url));
       if (mode === "network") throw new Error("secret");
@@ -279,7 +282,7 @@ test("attachment callbacks preserve org requests, retain reads on failure and re
     const t = createTranslator({ locale, messages: locale === "en-US" ? en : fa, namespace: "ReceiptAttachments" }), errors: string[] = [], opened: unknown[][] = [];
     const doc = { id: "doc-a", fileName: caller, mimeType: "application/pdf" }, busy: boolean[] = [];
     let docs = [doc];
-    const run = callback(attachments, operation, { t, orgId: "org-a", entityId: "receipt-a", entityType: "sales_receipt", docs, setDocs: (v: typeof docs | ((v: typeof docs) => typeof docs)) => { docs = typeof v === "function" ? v(docs) : v; }, setLoading: (v: boolean) => busy.push(v), toast: { error: (v: string) => errors.push(v) }, window: { open: (...args: unknown[]) => opened.push(args) }, fetch: async (url: string, init: RequestInit) => {
+    const run = callback(attachments, operation, { unitPresentation: resolvePresentation({ user: { language: locale } }), t, orgId: "org-a", entityId: "receipt-a", entityType: "sales_receipt", docs, setDocs: (v: typeof docs | ((v: typeof docs) => typeof docs)) => { docs = typeof v === "function" ? v(docs) : v; }, setLoading: (v: boolean) => busy.push(v), toast: { error: (v: string) => errors.push(v) }, window: { open: (...args: unknown[]) => opened.push(args) }, fetch: async (url: string, init: RequestInit) => {
       assert.equal((init.headers as Record<string, string>)["x-organization-id"], "org-a");
       assert.equal(init.method, operation === "remove" ? "DELETE" : undefined);
       assert.equal(url, operation === "load" ? "/api/v1/documents?entityType=sales_receipt&entityId=receipt-a&limit=50" : `/api/v1/documents/doc-a${operation === "view" ? "/download" : ""}`);
@@ -308,3 +311,5 @@ test("owned receipt templates contain no unextracted authored JSX or display att
     visit(ast); assert.deepEqual(problems, [], path);
   }
 });
+
+function localizedNumber(value: string, locale: "en-US" | "fa-IR") { return localizedExactDecimal(value.replaceAll(",", ""), resolvePresentation({ user: { language: locale } })); }

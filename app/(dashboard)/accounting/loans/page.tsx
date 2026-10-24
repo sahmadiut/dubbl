@@ -1,5 +1,8 @@
 "use client";
 
+import { bankMoneyDisplay as exampleMoney } from "@/lib/money/bank-display";
+import { usePresentation } from "@/i18n/provider";
+import type { NumberPresentation } from "@/i18n/numbers";
 import { useTranslations } from "next-intl";
 import { loanJson, loanFailureMessage, loanStatusLabel } from "@/i18n/loan-presentation";
 
@@ -38,7 +41,7 @@ const statusColors: Record<string, string> = {
 };
 
 
-function buildColumns(t: ReturnType<typeof useTranslations<"Loans">>): Column<Loan>[] {
+function buildColumns(t: ReturnType<typeof useTranslations<"Loans">>, unitPresentation: NumberPresentation = { locale: "en-US", numerals: "latn" }): Column<Loan>[] {
   return [
     {
       key: "name",
@@ -53,7 +56,7 @@ function buildColumns(t: ReturnType<typeof useTranslations<"Loans">>): Column<Lo
       className: "w-36 text-right",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums">
-          {formatMoney(r.principalAmount)}
+          {formatMoney(r.principalAmount, unitPresentation)}
         </span>
       ),
     },
@@ -73,7 +76,7 @@ function buildColumns(t: ReturnType<typeof useTranslations<"Loans">>): Column<Lo
       className: "w-36 text-right",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums">
-          {formatMoney(r.monthlyPayment)}
+          {formatMoney(r.monthlyPayment, unitPresentation)}
         </span>
       ),
     },
@@ -91,6 +94,7 @@ function buildColumns(t: ReturnType<typeof useTranslations<"Loans">>): Column<Lo
 }
 
 export default function LoansPage() {
+  const unitPresentation = usePresentation();
   const t = useTranslations("Loans");
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
@@ -111,7 +115,7 @@ export default function LoansPage() {
   const PAGE_SIZE = 50;
   const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
 
-  const columns = useMemo(() => buildColumns(t), [t]);
+  const columns = useMemo(() => buildColumns(t, unitPresentation), [t, unitPresentation]);
 
   const buildParams = useCallback((p: number) => {
     const params = new URLSearchParams();
@@ -247,7 +251,7 @@ export default function LoansPage() {
                       <p className="text-[11px] text-muted-foreground">{t("equipment")}</p>
                     </div>
                   </div>
-                  <span className="font-mono text-sm font-medium">$10,000.00</span>
+                  <span className="font-mono text-sm font-medium">{exampleMoney(1000000n, "USD", unitPresentation)}</span>
                 </div>
                 <div className="flex items-center justify-between px-3 sm:px-5 py-3.5 bg-emerald-50/30 dark:bg-emerald-950/10">
                   <div className="flex items-center gap-3">
@@ -259,14 +263,14 @@ export default function LoansPage() {
                       <p className="text-[11px] text-muted-foreground">{t("split")}</p>
                     </div>
                   </div>
-                  <span className="font-mono text-sm font-medium text-emerald-600 dark:text-emerald-400">-$880.00</span>
+                  <span className="font-mono text-sm font-medium text-emerald-600 dark:text-emerald-400">{exampleMoney(-88000n, "USD", unitPresentation)}</span>
                 </div>
                 <div className="flex items-center justify-between px-3 sm:px-5 py-3.5">
                   <div className="flex items-center gap-3">
                     <div className="size-7" />
                     <p className="text-sm font-semibold">{t("paidOverTime")}</p>
                   </div>
-                  <span className="font-mono text-sm font-bold">$0.00</span>
+                  <span className="font-mono text-sm font-bold">{exampleMoney(0n, "USD", unitPresentation)}</span>
                 </div>
               </div>
             </div>
@@ -312,8 +316,8 @@ export default function LoansPage() {
     <ContentReveal className="space-y-6">
       {/* Top: Stats */}
       <div className="grid gap-3 sm:grid-cols-3">
-        <StatCard title={t("currentlyBorrowed")} value={formatMoney(totalBorrowed)} icon={Landmark} />
-        <StatCard title={t("monthlyPayments")} value={formatMoney(totalMonthly)} icon={Wallet} />
+        <StatCard title={t("currentlyBorrowed")} value={formatMoney(totalBorrowed, unitPresentation)} icon={Landmark} />
+        <StatCard title={t("monthlyPayments")} value={formatMoney(totalMonthly, unitPresentation)} icon={Wallet} />
         <StatCard title={t("loans")} value={totalCount.toString()} icon={Landmark} />
       </div>
 

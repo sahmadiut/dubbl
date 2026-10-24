@@ -1,3 +1,4 @@
+import type { NumberPresentation } from "../../i18n/numbers";
 import { documentLineInputs, type DocumentEditorLine } from "./document-editor";
 import { currencyMetadata } from "./exact";
 import { invoiceUiRow, invoiceUiMoney } from "./invoice-ui";
@@ -29,13 +30,13 @@ export function quoteUiDocument<T extends Record<string, unknown> & { currencyCo
 }
 
 /** Group sample list totals by saved currency; never add different currencies. */
-export function quoteUiSummary(rows: readonly { status: string; total: bigint; currencyCode: string }[], status: string) {
+export function quoteUiSummary(rows: readonly { status: string; total: bigint; currencyCode: string }[], status: string, presentation: NumberPresentation = { locale: "en-US", numerals: "latn" }) {
   const groups = new Map<string, bigint>();
   for (const row of rows) if (row.status === status) {
     currencyMetadata(row.currencyCode);
     groups.set(row.currencyCode, (groups.get(row.currencyCode) ?? 0n) + row.total);
   }
-  return [...groups].sort(([a], [b]) => a.localeCompare(b)).map(([code, amount]) => invoiceUiMoney(amount, code)).join(" · ") || "—";
+  return [...groups].sort(([a], [b]) => a.localeCompare(b)).map(([code, amount]) => invoiceUiMoney(amount, code, presentation)).join(" · ") || "—";
 }
 
 export const quoteUiMoney = invoiceUiMoney;

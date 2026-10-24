@@ -1,5 +1,7 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
+import type { NumberPresentation } from "@/i18n/numbers";
 import { useTranslations } from "next-intl";
 import { salesPaymentMethodLabel, type SalesPaymentTranslate } from "@/i18n/sales-payment-presentation";
 import { useState, useEffect, useMemo, useCallback } from "react";
@@ -47,7 +49,7 @@ const methodColors: Record<string, string> = {
   other: "",
 };
 
-function buildColumns(t: SalesPaymentTranslate): Column<Payment>[] {
+function buildColumns(t: SalesPaymentTranslate, unitPresentation: NumberPresentation = { locale: "en-US", numerals: "latn" }): Column<Payment>[] {
   return [
     {
       key: "number",
@@ -91,7 +93,7 @@ function buildColumns(t: SalesPaymentTranslate): Column<Payment>[] {
       className: "w-28 text-right",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums break-all font-medium text-emerald-600">
-          {formatMoney(r.amount, r.currencyCode)}
+          {formatMoney(r.amount, r.currencyCode, unitPresentation)}
         </span>
       ),
     },
@@ -117,6 +119,7 @@ export default function PaymentsPage() {
 }
 
 function PaymentsList({ orgId }: { orgId: string | null }) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("SalesPayments");
   const router = useRouter();
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -133,7 +136,7 @@ function PaymentsList({ orgId }: { orgId: string | null }) {
   const [sortBy, setSortBy] = useState("date");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
-  const columns = useMemo(() => buildColumns(t), [t]);
+  const columns = useMemo(() => buildColumns(t, unitPresentation), [t, unitPresentation]);
 
   useEffect(() => {
     if (!orgId) return;
@@ -209,7 +212,7 @@ function PaymentsList({ orgId }: { orgId: string | null }) {
     setFilterKey((k) => k + 1);
   }, [debouncedSearch, methodFilter, dateFrom, dateTo]);
 
-  const summary = paymentUiSummary(filtered);
+  const summary = paymentUiSummary(filtered, unitPresentation);
   const hasFilters = search || methodFilter !== "all" || dateFrom || dateTo;
 
   if (loading) return <BrandLoader />;

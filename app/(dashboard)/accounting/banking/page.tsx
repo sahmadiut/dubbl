@@ -1,4 +1,6 @@
 "use client";
+import { usePresentation } from "@/i18n/provider";
+import { currencyLabel } from "@/i18n/currency-labels";
 import { useTranslations } from "next-intl";
 import { bankAccountTypeLabel, bankAccountGroupLabel, requireBankAccountResponse, bankAccountFailureMessage } from "@/i18n/bank-account-presentation";
 
@@ -70,6 +72,7 @@ const ACCOUNT_TYPE_ICONS: Record<BankAccountType, React.ElementType> = {
 };
 
 export default function BankingPage() {
+  const unitPresentation = usePresentation();
   const t = useTranslations("BankAccounts");
   const errors = useTranslations("BankAccountErrors");
   const router = useRouter();
@@ -197,7 +200,7 @@ export default function BankingPage() {
     );
   }
 
-  const displayGroups = (rows: BankAccount[], direction?: "positive" | "negative") => bankUiGroups(rows, direction).map(([code, value]) => formatMoney(value, code)).join(" · ") || "—";
+  const displayGroups = (rows: BankAccount[], direction?: "positive" | "negative") => bankUiGroups(rows, direction).map(([code, value]) => formatMoney(value, code, unitPresentation)).join(" · ") || "—";
   const currencies = [...new Set(accounts.map(a => a.currencyCode))];
 
   // Group accounts by type
@@ -392,9 +395,9 @@ export default function BankingPage() {
                                 ? "text-red-600 dark:text-red-400"
                                 : "text-muted-foreground"
                           )}>
-                            {showBalances ? formatMoney(account.balance, account.currencyCode) : "****"}
+                            {showBalances ? formatMoney(account.balance, account.currencyCode, unitPresentation) : "****"}
                           </p>
-                          <p className="text-[10px] text-muted-foreground font-medium mt-0.5">{account.currencyCode}</p>
+                          <p className="text-[10px] text-muted-foreground font-medium mt-0.5">{currencyLabel(account.currencyCode, unitPresentation.locale)}</p>
                         </div>
 
                         {/* Actions */}

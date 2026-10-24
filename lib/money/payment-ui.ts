@@ -1,3 +1,4 @@
+import type { NumberPresentation } from "../../i18n/numbers";
 import { currencyMetadata, roundRatio } from "./exact";
 import { invoiceUiMinor, invoiceUiRow, invoiceUiAmount, invoiceUiMoney, invoiceUiDecimal } from "./invoice-ui";
 
@@ -18,7 +19,7 @@ export function paymentUiRow<T extends Record<string, unknown> & { currencyCode:
 }
 
 /** Loaded filtered sample only; currency groups never imply FX conversion. */
-export function paymentUiSummary(rows: readonly { amount: bigint; currencyCode: string }[]) {
+export function paymentUiSummary(rows: readonly { amount: bigint; currencyCode: string }[], presentation: NumberPresentation = { locale: "en-US", numerals: "latn" }) {
   const groups = new Map<string, { amount: bigint; count: bigint }>();
   for (const row of rows) {
     currencyMetadata(row.currencyCode);
@@ -27,9 +28,9 @@ export function paymentUiSummary(rows: readonly { amount: bigint; currencyCode: 
   }
   const sorted = [...groups].sort(([a], [b]) => a.localeCompare(b));
   return {
-    total: sorted.map(([code, group]) => paymentUiMoney(group.amount, code)).join(" · ") || "—",
+    total: sorted.map(([code, group]) => paymentUiMoney(group.amount, code, presentation)).join(" · ") || "—",
     // Preserve Math.round's signed tie rule using an exact floor(x + 1/2).
-    average: sorted.map(([code, group]) => paymentUiMoney(roundRatio(2n * group.amount + group.count, 2n * group.count, "floor"), code)).join(" · ") || "—",
+    average: sorted.map(([code, group]) => paymentUiMoney(roundRatio(2n * group.amount + group.count, 2n * group.count, "floor"), code, presentation)).join(" · ") || "—",
   };
 }
 

@@ -1,5 +1,8 @@
 "use client";
 
+import { bankMoneyDisplay as exampleMoney } from "@/lib/money/bank-display";
+import { usePresentation } from "@/i18n/provider";
+import type { NumberPresentation } from "@/i18n/numbers";
 import { fixedAssetJson, fixedAssetFailureMessage, fixedAssetStatusLabel, fixedAssetMethodLabel } from "@/i18n/fixed-asset-presentation";
 import { useTranslations } from "next-intl";
 
@@ -83,7 +86,7 @@ function DepreciationBar({
   );
 }
 
-function buildColumns(t: ReturnType<typeof useTranslations<"FixedAssets">>): Column<FixedAsset>[] {
+function buildColumns(t: ReturnType<typeof useTranslations<"FixedAssets">>, unitPresentation: NumberPresentation = { locale: "en-US", numerals: "latn" }): Column<FixedAsset>[] {
   return [
     {
       key: "assetNumber",
@@ -126,7 +129,7 @@ function buildColumns(t: ReturnType<typeof useTranslations<"FixedAssets">>): Col
       className: "w-28 text-right",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums">
-          {formatMoney(r.purchasePrice)}
+          {formatMoney(r.purchasePrice, unitPresentation)}
         </span>
       ),
     },
@@ -148,7 +151,7 @@ function buildColumns(t: ReturnType<typeof useTranslations<"FixedAssets">>): Col
                 {pct}%
               </span>
               <span className="font-mono tabular-nums text-red-500">
-                -{formatMoney(r.accumulatedDepreciation)}
+                -{formatMoney(r.accumulatedDepreciation, unitPresentation)}
               </span>
             </div>
             <DepreciationBar cost={r.purchasePrice} nbv={r.netBookValue} />
@@ -162,7 +165,7 @@ function buildColumns(t: ReturnType<typeof useTranslations<"FixedAssets">>): Col
       className: "w-28 text-right",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums">
-          {formatMoney(r.netBookValue)}
+          {formatMoney(r.netBookValue, unitPresentation)}
         </span>
       ),
     },
@@ -180,6 +183,7 @@ function buildColumns(t: ReturnType<typeof useTranslations<"FixedAssets">>): Col
 }
 
 export default function FixedAssetsPage() {
+  const unitPresentation = usePresentation();
   const t = useTranslations("FixedAssets");
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
@@ -196,7 +200,7 @@ export default function FixedAssetsPage() {
 
   useDocumentTitle(t("documentTitle"));
 
-  const columns = useMemo(() => buildColumns(t), [t]);
+  const columns = useMemo(() => buildColumns(t, unitPresentation), [t, unitPresentation]);
 
   // Fetch all assets (for counts) on mount
   useEffect(() => {
@@ -400,9 +404,9 @@ export default function FixedAssetsPage() {
           {/* Preview stat cards (empty) */}
           <div className="w-full max-w-lg grid grid-cols-1 sm:grid-cols-3 gap-3 opacity-40">
             {[
-              { label: t("totalCost"), value: "$0.00" },
-              { label: t("currentValue"), value: "$0.00" },
-              { label: t("usedValue"), value: "$0.00" },
+              { label: t("totalCost"), value: exampleMoney(0n, "USD", unitPresentation) },
+              { label: t("currentValue"), value: exampleMoney(0n, "USD", unitPresentation) },
+              { label: t("usedValue"), value: exampleMoney(0n, "USD", unitPresentation) },
             ].map(({ label, value }) => (
               <div
                 key={label}
@@ -433,7 +437,7 @@ export default function FixedAssetsPage() {
                 {t("totalCost")}
               </p>
               <p className="mt-1 font-mono text-lg font-semibold tabular-nums">
-                {formatMoney(totalCost)}
+                {formatMoney(totalCost, unitPresentation)}
               </p>
             </div>
             <div>
@@ -441,7 +445,7 @@ export default function FixedAssetsPage() {
                 {t("currentValue")}
               </p>
               <p className="mt-1 font-mono text-lg font-semibold tabular-nums">
-                {formatMoney(totalNBV)}
+                {formatMoney(totalNBV, unitPresentation)}
                 <span className="ml-1.5 text-xs font-normal text-muted-foreground">
                   {nbvPct}%
                 </span>
@@ -452,7 +456,7 @@ export default function FixedAssetsPage() {
                 {t("usedValue")}
               </p>
               <p className="mt-1 font-mono text-lg font-semibold tabular-nums text-red-500">
-                -{formatMoney(totalAccDep)}
+                -{formatMoney(totalAccDep, unitPresentation)}
               </p>
             </div>
             <div>
@@ -515,7 +519,7 @@ export default function FixedAssetsPage() {
               <div className="flex items-center gap-1.5">
                 <span className="inline-block size-2 rounded-full bg-emerald-500" />
                 <span className="text-muted-foreground">
-                  {t("currentSummary", { amount: formatMoney(totalNBV) })}
+                  {t("currentSummary", { amount: formatMoney(totalNBV, unitPresentation) })}
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
@@ -526,7 +530,7 @@ export default function FixedAssetsPage() {
                   )}
                 />
                 <span className="text-muted-foreground">
-                  {t("usedSummary", { amount: formatMoney(totalAccDep) })}
+                  {t("usedSummary", { amount: formatMoney(totalAccDep, unitPresentation) })}
                 </span>
               </div>
             </div>

@@ -1,3 +1,4 @@
+import type { NumberPresentation } from "../../i18n/numbers";
 import { documentLineInputs, invoiceEditorCurrency, type DocumentEditorLine } from "./document-editor";
 import { currencyMetadata } from "./exact";
 import { invoiceUiRow, invoiceUiMoney } from "./invoice-ui";
@@ -31,13 +32,13 @@ export function salesReceiptUiDocument<T extends Record<string, unknown> & { cur
 }
 
 /** Only posted paid receipts are collected; group the loaded matching sample by currency. */
-export function salesReceiptUiCollected(rows: readonly { status: string; total: bigint; currencyCode: string }[]) {
+export function salesReceiptUiCollected(rows: readonly { status: string; total: bigint; currencyCode: string }[], presentation: NumberPresentation = { locale: "en-US", numerals: "latn" }) {
   const groups = new Map<string, bigint>();
   for (const row of rows) if (row.status === "paid") {
     currencyMetadata(row.currencyCode);
     groups.set(row.currencyCode, (groups.get(row.currencyCode) ?? 0n) + row.total);
   }
-  return [...groups].sort(([a], [b]) => a.localeCompare(b)).map(([code, amount]) => invoiceUiMoney(amount, code)).join(" · ") || "—";
+  return [...groups].sort(([a], [b]) => a.localeCompare(b)).map(([code, amount]) => invoiceUiMoney(amount, code, presentation)).join(" · ") || "—";
 }
 
 export const salesReceiptUiMoney = invoiceUiMoney;

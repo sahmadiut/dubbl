@@ -1,4 +1,6 @@
 "use client";
+import { usePresentation } from "@/i18n/provider";
+import { currencyLabel } from "@/i18n/currency-labels";
 import { bankUiAccount, bankUiTransaction, bankUiReport, bankUiReconciliation, bankUiBalance } from "@/lib/money/bank-ui";
 
 import { useTranslations } from "next-intl";
@@ -75,6 +77,7 @@ interface Reconciliation {
 }
 
 export default function ReconcilePage() {
+  const unitPresentation = usePresentation();
   const t = useTranslations("BankReconciliation");
   const errors = useTranslations("BankAccountErrors");
   const { id } = useParams<{ id: string }>();
@@ -303,7 +306,7 @@ export default function ReconcilePage() {
 
   if (loading) return <BrandLoader />;
   if (!account) return <p role="alert">{t("unavailable")}</p>;
-  const formatBankAmount = (amount: number | bigint) => bankMoneyDisplay(amount, account.currencyCode);
+  const formatBankAmount = (amount: number | bigint) => bankMoneyDisplay(amount, account.currencyCode, unitPresentation);
 
   return (
     <ContentReveal className="space-y-6">
@@ -629,7 +632,7 @@ export default function ReconcilePage() {
               </p>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="statement-opening">{t("openingBalance", { currency: account.currencyCode })}</Label>
+                  <Label htmlFor="statement-opening">{t("openingBalance", { currency: currencyLabel(account.currencyCode, unitPresentation.locale) })}</Label>
                   <Input
                     inputMode="decimal"
                     id="statement-opening"
@@ -641,7 +644,7 @@ export default function ReconcilePage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="statement-closing">{t("closingBalance", { currency: account.currencyCode })}</Label>
+                  <Label htmlFor="statement-closing">{t("closingBalance", { currency: currencyLabel(account.currencyCode, unitPresentation.locale) })}</Label>
                   <Input
                     inputMode="decimal"
                     id="statement-closing"

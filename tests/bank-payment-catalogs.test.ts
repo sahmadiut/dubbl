@@ -1,3 +1,5 @@
+import { currencyLabel } from "../i18n/currency-labels";
+import { resolvePresentation } from "../i18n/locale";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -96,8 +98,8 @@ test("scheduled template renders groups/statuses, exact money, populated form, p
     const rows = ["pending", "processing", "completed", "failed", "cancelled"].map(status => ({ ...item, id: status, status }));
     const Page = loaded(scheduled, "ScheduledPaymentsList", [rows, "", false, "all", true, false, false, [bill], bill.id, "40000000000000.01", item.scheduledDate, "Caller notes"]);
     const html = renderWithPresentation(createElement(Page, { orgId: "org-a" }), locale);
-    includes(html, [t("scheduledHeading"), t("scheduledHint"), t("processDue"), t("schedule"), t("scheduledDate"), t("notesOptional"), ...rows.map(row => bankPaymentStatus(t, row.status)), bill.contact!.name, item.notes, paymentUiMoney(amount, "USD"), t("paymentPreview", { amount: paymentUiMoney(amount, "USD") })]);
-    assert.ok(html.includes('aria-label="' + escaped(t("paymentAmount", { currency: "USD" })) + '"'));
+    includes(html, [t("scheduledHeading"), t("scheduledHint"), t("processDue"), t("schedule"), t("scheduledDate"), t("notesOptional"), ...rows.map(row => bankPaymentStatus(t, row.status)), bill.contact!.name, item.notes, paymentUiMoney(amount, "USD", resolvePresentation({ user: { language: locale } })), t("paymentPreview", { amount: paymentUiMoney(amount, "USD", resolvePresentation({ user: { language: locale } })) })]);
+    assert.ok(html.includes('aria-label="' + escaped(t("paymentAmount", { currency: currencyLabel("USD", locale) })) + '"'));
     assert.ok(html.includes('value="2026-10-18"'));
     assert.ok(!html.includes("<script>") && !html.includes("<b>Caller"));
     const Empty = loaded(scheduled, "ScheduledPaymentsList", [[], t("scheduledUnavailable"), false]);
@@ -111,15 +113,15 @@ test("batch list/detail and transfer drawer render translated actions, selection
     const selection = [{ billId: bill.id, contactId: bill.contactId, currencyCode: "USD", amount: "40000000000000.01" }];
     const List = loaded(batches, "PaymentBatchesList", [[batch], "", false, true, false, "Caller batch", [bill], selection]);
     const html = renderWithPresentation(createElement(List, { orgId: "org-a" }), locale);
-    includes(html, [t("batchesHeading"), t("createBatchTitle"), t("selectBills", { count: 1 }), t("total"), t("paymentCount", { count: 1 }), t("draft"), batch.name, bill.billNumber, paymentUiMoney(amount, "USD")]);
+    includes(html, [t("batchesHeading"), t("createBatchTitle"), t("selectBills", { count: 1 }), t("total"), t("paymentCount", { count: 1 }), t("draft"), batch.name, bill.billNumber, paymentUiMoney(amount, "USD", resolvePresentation({ user: { language: locale } }))]);
     assert.ok(html.includes('aria-pressed="true"'));
-    includes(html, [t("paymentBillAmount", { bill: bill.billNumber, currency: "USD" })]);
+    includes(html, [t("paymentBillAmount", { bill: bill.billNumber, currency: currencyLabel("USD", locale) })]);
     const Invalid = loaded(batches, "PaymentBatchesList", [[], "", false, true, false, "Caller batch", [bill], [{ ...selection[0], currencyCode: "EUR" }]]);
     includes(renderWithPresentation(createElement(Invalid, { orgId: "org-a" }), locale), [t("sameCurrencyBills"), t("unavailable"), t("noBatches")]);
     for (const status of ["draft", "completed"] as const) {
       const Details = loaded(detail, "BatchDetails", [{ ...batch, status, completedAt: status === "completed" ? batch.createdAt : null }, "", false, false, true, false, [remittance], false]);
       const rendered = renderWithPresentation(createElement(Details, { id: batch.id, orgId: "org-a" }), locale);
-      includes(rendered, [t("backBatches"), t("totalAmount"), t("items", { count: 1 }), t(status), t("remittance"), t("remittanceHint"), t("noEmail"), t("emailSuppliers"), paymentUiMoney(amount, "USD"), "REF-ASCII"]);
+      includes(rendered, [t("backBatches"), t("totalAmount"), t("items", { count: 1 }), t(status), t("remittance"), t("remittanceHint"), t("noEmail"), t("emailSuppliers"), paymentUiMoney(amount, "USD", resolvePresentation({ user: { language: locale } })), "REF-ASCII"]);
       includes(rendered, [t(status === "draft" ? "submitBatch" : "viewRemittance")]);
       if (status === "draft") includes(rendered, [t("removeItem")]);
       assert.ok(!rendered.includes("<script>"));
@@ -127,8 +129,8 @@ test("batch list/detail and transfer drawer render translated actions, selection
     for (const saving of [false, true]) {
       const Drawer = loaded(drawer, "BankTransferDrawer", [saving, bankAccounts, "from", "to", "40000000000000.01", "2026-10-18", "Caller memo"]);
       const rendered = renderWithPresentation(createElement(Drawer, { open: true, onClose: noop }), locale);
-      includes(rendered, [t("transferTitle"), t("transferHint"), t("from"), t("to"), t("memo"), t("cancel"), t(saving ? "creating" : "recordTransfer"), t("transferPreview", { amount: bankUiMoney(amount, "USD") })]);
-      assert.ok(rendered.includes('aria-label="' + escaped(t("transferAmount", { currency: "USD" })) + '"'));
+      includes(rendered, [t("transferTitle"), t("transferHint"), t("from"), t("to"), t("memo"), t("cancel"), t(saving ? "creating" : "recordTransfer"), t("transferPreview", { amount: bankUiMoney(amount, "USD", resolvePresentation({ user: { language: locale } })) })]);
+      assert.ok(rendered.includes('aria-label="' + escaped(t("transferAmount", { currency: currencyLabel("USD", locale) })) + '"'));
     }
   }
 });
@@ -164,7 +166,7 @@ test("schedule create/cancel/process callbacks keep exact payloads, dates, org h
     let closed = false, reset = false, refreshed = 0, saving = false;
     const requests: [string, RequestInit][] = [];
     let mode = "success";
-    const scope = { t, errors, requirePaymentResponse, paymentFailure, paymentUiBillAmount, orgId: "org-a", selectedBillId: bill.id, scheduledDate: item.scheduledDate, amount: paymentUiDecimal(amount, currencyCode), bills: [selected], notes: "Caller note", toast: msg.toast,
+    const scope = { unitPresentation: resolvePresentation({ user: { language: locale } }), t, errors, requirePaymentResponse, paymentFailure, paymentUiBillAmount, orgId: "org-a", selectedBillId: bill.id, scheduledDate: item.scheduledDate, amount: paymentUiDecimal(amount, currencyCode), bills: [selected], notes: "Caller note", toast: msg.toast,
       setSaving: (v: boolean) => { saving = v; }, setShowDialog: (v: boolean) => { closed = !v; }, resetForm: () => { reset = true; }, fetchItems: () => { refreshed++; }, setProcessing: noop,
       fetch: async (url: string, init: RequestInit) => { requests.push([url, init]); if (mode === "network") throw new Error("SECRET"); return mode === "denied" ? Response.json({ error: "Only pending scheduled payments can be updated" }, { status: 400 }) : Response.json({ processed: 1, failed: 2 }); } };
     await callback(scheduled, "ScheduledPaymentsList", "handleSchedule", scope)();
@@ -198,7 +200,7 @@ test("batch create/submit/remove callbacks preserve exact single-currency items 
     const preview = paymentUiBatchInput([{ billId: bill.id, contactId: bill.contactId, currencyCode: "USD", amount: "40000000000000.01" }], [bill]);
     const requests: [string, RequestInit][] = [];
     let activeOrg = "org-a", allow = true, confirmation: Record<string, unknown> = {}, refresh = 0, closed = false, busy = false, deny = false;
-    const scope = { t, errors, requirePaymentResponse, paymentFailure, formatMoney: paymentUiMoney, toast: msg.toast, orgId: "org-a", batch, batchName: "Caller name", preview,
+    const scope = { unitPresentation: resolvePresentation({ user: { language: locale } }), t, errors, requirePaymentResponse, paymentFailure, formatMoney: paymentUiMoney, toast: msg.toast, orgId: "org-a", batch, batchName: "Caller name", preview,
       localStorage: { getItem: () => activeOrg }, confirm: async (v: Record<string, unknown>) => { confirmation = v; return allow; }, setSubmitting: (v: boolean) => { busy = v; }, setSaving: (v: boolean) => { busy = v; }, setShowDialog: (v: boolean) => { closed = !v; }, fetchBatch: () => { refresh++; }, fetchBatches: () => { refresh++; },
       fetch: async (url: string, init: RequestInit) => { requests.push([url, init]); return deny ? Response.json({ error: "Only draft batches can be submitted" }, { status: 400 }) : Response.json({ processed: 1, total: 1 }); } };
     await callback(batches, "PaymentBatchesList", "handleCreateBatch", scope)();
@@ -206,7 +208,7 @@ test("batch create/submit/remove callbacks preserve exact single-currency items 
     assert.ok(closed && !busy); assert.equal(msg.success[0], t("batchCreated"));
     await callback(detail, "BatchDetails", "handleSubmit", scope)();
     assert.equal(confirmation.title, t("submitTitle"));
-    assert.equal(confirmation.description, t("submitConfirm", { count: 1, amount: paymentUiMoney(amount, "USD") }));
+    assert.equal(confirmation.description, t("submitConfirm", { count: 1, amount: paymentUiMoney(amount, "USD", resolvePresentation({ user: { language: locale } })) }));
     assert.equal(requests.at(-1)![0], `/api/v1/payment-batches/${batch.id}/submit`);
     assert.equal(msg.success.at(-1), t("batchSubmitted", { processed: 1, total: 1 }));
     assert.ok(!busy);
@@ -229,7 +231,7 @@ test("remittance callbacks validate totals, keep endpoints/body, mask failures a
     let sent = 2, skipped = 1;
     const wire = { ...remittance, totalPaid: Number(amount), totalPaidMinor: amount.toString(), lines: remittance.lines.map(line => ({ ...line, amountPaid: Number(amount), amountPaidMinor: amount.toString(), billTotal: Number(amount), billTotalMinor: amount.toString() })) };
     const requests: [string, RequestInit][] = [];
-    const scope = { t, errors, requirePaymentResponse, paymentFailure, paymentUiRemittance, orgId: "org-a", batch, toast: msg.toast,
+    const scope = { unitPresentation: resolvePresentation({ user: { language: locale } }), t, errors, requirePaymentResponse, paymentFailure, paymentUiRemittance, orgId: "org-a", batch, toast: msg.toast,
       setRemittanceOpen: (v: boolean) => { open = v; }, setRemittanceGroups: (v: unknown) => { groups = v; }, setRemittanceLoading: (v: boolean) => { busy = v; }, setSending: (v: boolean) => { busy = v; },
       fetch: async (url: string, init: RequestInit) => { requests.push([url, init]); if (mode === "network") throw new Error("SECRET"); if (mode === "html") return new Response("<html>SECRET</html>", { status: 500 }); return Response.json(init.method === "POST" ? { sent: Array(sent).fill("supplier"), skipped: Array(skipped).fill("supplier") } : { remittances: [{ ...wire, totalPaidMinor: mode === "corrupt" ? "1" : amount.toString() }] }); } };
     await callback(detail, "BatchDetails", "handleOpenRemittance", scope)();
@@ -255,7 +257,7 @@ test("bank-transfer callback preserves canonical amounts/dates/memo/navigation a
     const { t, errors } = translators(locale), msg = messages();
     const requests: [string, RequestInit][] = [], pushes: string[] = [];
     let closed = false, busy = false, mode = "success";
-    const scope = { t, errors, requirePaymentResponse, paymentFailure, bankUiTransfer, toast: msg.toast, fromBankAccountId: "from", toBankAccountId: "to", bankAccounts: bankAccounts.map(b => ({ ...b, currencyCode })), amount: paymentUiDecimal(amount, currencyCode), date: "2026-10-18", memo: "  Caller memo  ",
+    const scope = { unitPresentation: resolvePresentation({ user: { language: locale } }), t, errors, requirePaymentResponse, paymentFailure, bankUiTransfer, toast: msg.toast, fromBankAccountId: "from", toBankAccountId: "to", bankAccounts: bankAccounts.map(b => ({ ...b, currencyCode })), amount: paymentUiDecimal(amount, currencyCode), date: "2026-10-18", memo: "  Caller memo  ",
       localStorage: { getItem: () => "org-a" }, setSaving: (v: boolean) => { busy = v; }, onClose: () => { closed = true; }, router: { push: (v: string) => pushes.push(v) },
       fetch: async (url: string, init: RequestInit) => { requests.push([url, init]); return mode === "success" ? Response.json({ journalEntryId: "entry-a" }) : new Response("<html>SECRET</html>", { status: 500 }); } };
     const submit = (patch = {}) => callback(drawer, "BankTransferDrawer", "handleSubmit", { ...scope, ...patch })({ preventDefault: noop });

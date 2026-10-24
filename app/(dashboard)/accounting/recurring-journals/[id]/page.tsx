@@ -1,4 +1,5 @@
 "use client";
+import { usePresentation } from "@/i18n/provider";
 import { useTranslations } from "next-intl";
 import { requireJournalResponse, journalFailureMessage } from "@/i18n/journal-presentation";
 
@@ -54,6 +55,7 @@ const statusColors: Record<string, string> = {
 // Plain-language status labels (end users aren't accountants).
 
 export default function RecurringJournalDetailPage() {
+  const unitPresentation = usePresentation();
   const t = useTranslations("Journals");
   const errors = useTranslations("JournalErrors");
   const frequencyLabels: Record<string, string> = {
@@ -186,8 +188,8 @@ export default function RecurringJournalDetailPage() {
   try {
     totalDebit = rj.lines.reduce((s, l) => s + journalStoredMinor(l.debitAmountMinor), 0n);
     totalCredit = rj.lines.reduce((s, l) => s + journalStoredMinor(l.creditAmountMinor), 0n);
-    journalMoney(totalDebit, rj.currencyCode);
-    journalMoney(totalCredit, rj.currencyCode);
+    journalMoney(totalDebit, rj.currencyCode, unitPresentation);
+    journalMoney(totalCredit, rj.currencyCode, unitPresentation);
   } catch {
     return <p role="alert" className="text-sm text-destructive">{t("loadFailed")}</p>;
   }
@@ -251,7 +253,7 @@ export default function RecurringJournalDetailPage() {
         </div>
         <div className="rounded-lg border p-4">
           <p className="text-xs text-muted-foreground">{t("eachEntry")}</p>
-          <p className="text-sm font-bold font-mono mt-1">{journalMoney(totalDebit, rj.currencyCode)}</p>
+          <p className="text-sm font-bold font-mono mt-1">{journalMoney(totalDebit, rj.currencyCode, unitPresentation)}</p>
         </div>
       </div>
 
@@ -267,13 +269,13 @@ export default function RecurringJournalDetailPage() {
           <div key={line.id} className="grid min-w-[500px] grid-cols-[1fr_140px_120px_120px] gap-2 border-b px-4 py-2 last:border-b-0">
             <p className="text-sm">{line.description}</p>
             <span className="text-sm font-mono text-muted-foreground truncate">{line.accountId || "-"}</span>
-            <span className="text-right text-sm font-mono">{journalStoredMinor(line.debitAmountMinor) > 0n ? journalMoney(journalStoredMinor(line.debitAmountMinor), rj.currencyCode) : "-"}</span>
-            <span className="text-right text-sm font-mono">{journalStoredMinor(line.creditAmountMinor) > 0n ? journalMoney(journalStoredMinor(line.creditAmountMinor), rj.currencyCode) : "-"}</span>
+            <span className="text-right text-sm font-mono">{journalStoredMinor(line.debitAmountMinor) > 0n ? journalMoney(journalStoredMinor(line.debitAmountMinor), rj.currencyCode, unitPresentation) : "-"}</span>
+            <span className="text-right text-sm font-mono">{journalStoredMinor(line.creditAmountMinor) > 0n ? journalMoney(journalStoredMinor(line.creditAmountMinor), rj.currencyCode, unitPresentation) : "-"}</span>
           </div>
         ))}
         <div className="border-t bg-muted/30 px-4 py-2 text-right flex flex-wrap justify-end gap-x-4 gap-y-1">
-          <span className="text-sm font-medium">{t("totalIn", { amount: journalMoney(totalDebit, rj.currencyCode) })}</span>
-          <span className="text-sm font-medium">{t("totalOut", { amount: journalMoney(totalCredit, rj.currencyCode) })}</span>
+          <span className="text-sm font-medium">{t("totalIn", { amount: journalMoney(totalDebit, rj.currencyCode, unitPresentation) })}</span>
+          <span className="text-sm font-medium">{t("totalOut", { amount: journalMoney(totalCredit, rj.currencyCode, unitPresentation) })}</span>
         </div>
       </div>
 

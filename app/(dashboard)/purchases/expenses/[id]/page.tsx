@@ -1,4 +1,6 @@
 "use client";
+import { usePresentation } from "@/i18n/provider";
+import { currencyLabel } from "@/i18n/currency-labels";
 import { useTranslations } from "next-intl";
 import { expenseStatusLabel, expenseInputError, type ExpenseErrorKey } from "@/i18n/expense-presentation";
 
@@ -258,6 +260,7 @@ function EditExpenseDrawer({
   claim: ExpenseDetail;
   onSaved: () => void;
 }) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("Expenses");
   const [saving, setSaving] = useState(false);
   const [editTitle, setEditTitle] = useState(claim.title);
@@ -286,7 +289,7 @@ function EditExpenseDrawer({
   }
 
   const preview = expenseEditorPreview(editItems, claim.currencyCode);
-  const editTotal = preview.error ? "—" : expenseUiMoney(preview.total, claim.currencyCode);
+  const editTotal = preview.error ? "—" : expenseUiMoney(preview.total, claim.currencyCode, unitPresentation);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -347,7 +350,7 @@ function EditExpenseDrawer({
           <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
             <div className="space-y-4">
               <SectionLabel>{t("claimInfo")}</SectionLabel>
-              <p className="text-sm text-muted-foreground">{t("editCurrency", { currency: claim.currencyCode })}</p>
+              <p className="text-sm text-muted-foreground">{t("editCurrency", { currency: currencyLabel(claim.currencyCode, unitPresentation.locale) })}</p>
               {preview.error && <p role="alert" className="text-sm text-destructive">{t(expenseInputError(preview.error))}</p>}
               <div className="space-y-2">
                 <Label>{t("titleRequired")}</Label>
@@ -444,6 +447,7 @@ export default function ExpenseDetailPage() {
 }
 
 function ExpenseDetailWorkspace({ id }: { id: string }) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("Expenses");
   const router = useRouter();
   const { confirm, dialog: confirmDialog } = useConfirm();
@@ -605,7 +609,7 @@ function ExpenseDetailWorkspace({ id }: { id: string }) {
                   <div className="space-y-4">
                     <div className="rounded-lg border bg-muted/50 px-4 py-3">
                       <p className="text-xs text-muted-foreground">{t("totalAmount")}</p>
-                      <p className="text-xl font-bold font-mono">{expenseUiMoney(expenseUiMinor(claim, "totalAmount"), claim.currencyCode)}</p>
+                      <p className="text-xl font-bold font-mono">{expenseUiMoney(expenseUiMinor(claim, "totalAmount"), claim.currencyCode, unitPresentation)}</p>
                     </div>
                     <div className="space-y-2">
                       <Label>{t("paymentDate")}</Label>
@@ -660,7 +664,7 @@ function ExpenseDetailWorkspace({ id }: { id: string }) {
         <div className="grid gap-4 grid-cols-2 sm:grid-cols-3">
           <div className="rounded-lg border bg-card p-4">
             <p className="text-xs text-muted-foreground">{t("totalAmount")}</p>
-            <p className="mt-1 text-xl font-bold font-mono tabular-nums">{expenseUiMoney(expenseUiMinor(claim, "totalAmount"), claim.currencyCode)}</p>
+            <p className="mt-1 text-xl font-bold font-mono tabular-nums">{expenseUiMoney(expenseUiMinor(claim, "totalAmount"), claim.currencyCode, unitPresentation)}</p>
           </div>
           <div className="rounded-lg border bg-card p-4">
             <p className="text-xs text-muted-foreground">{t("items")}</p>
@@ -668,7 +672,7 @@ function ExpenseDetailWorkspace({ id }: { id: string }) {
           </div>
           <div className="rounded-lg border bg-card p-4">
             <p className="text-xs text-muted-foreground">{t("currency")}</p>
-            <p className="mt-1 text-xl font-bold">{claim.currencyCode}</p>
+            <p className="mt-1 text-xl font-bold">{currencyLabel(claim.currencyCode, unitPresentation.locale)}</p>
           </div>
         </div>
 
@@ -687,7 +691,7 @@ function ExpenseDetailWorkspace({ id }: { id: string }) {
                 <span className="text-sm tabular-nums">{item.date}</span>
                 <div>
                   <p className="text-sm font-medium">{item.description}</p>
-                  {item.isMileage && item.distanceMiles !== null && item.mileageRate !== null && <p className="text-xs text-muted-foreground">{t("mileageDetail", { distance: expenseDistanceText(item.distanceMiles), rate: expenseUiMoney(expenseUiMinor(item, "mileageRate"), claim.currencyCode) })}</p>}
+                  {item.isMileage && item.distanceMiles !== null && item.mileageRate !== null && <p className="text-xs text-muted-foreground">{t("mileageDetail", { distance: expenseDistanceText(item.distanceMiles), rate: expenseUiMoney(expenseUiMinor(item, "mileageRate"), claim.currencyCode, unitPresentation) })}</p>}
                   {item.account && (
                     <p className="text-xs text-muted-foreground">{item.account.code} · {item.account.name}</p>
                   )}
@@ -701,7 +705,7 @@ function ExpenseDetailWorkspace({ id }: { id: string }) {
                   )}
                 </span>
                 <span className="text-right text-sm font-mono font-medium tabular-nums">
-                  {expenseUiMoney(expenseUiMinor(item, "amount"), claim.currencyCode)}
+                  {expenseUiMoney(expenseUiMinor(item, "amount"), claim.currencyCode, unitPresentation)}
                 </span>
               </div>
             ))}
@@ -712,7 +716,7 @@ function ExpenseDetailWorkspace({ id }: { id: string }) {
               <span />
               <span className="text-sm font-semibold">{t("total")}</span>
               <span className="text-right text-sm font-mono font-bold tabular-nums">
-                {expenseUiMoney(expenseUiMinor(claim, "totalAmount"), claim.currencyCode)}
+                {expenseUiMoney(expenseUiMinor(claim, "totalAmount"), claim.currencyCode, unitPresentation)}
               </span>
             </div>
           </div>

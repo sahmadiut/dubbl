@@ -1,5 +1,6 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
 import { useState, useEffect, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { useParams } from "next/navigation";
@@ -22,6 +23,7 @@ import { statementTypeKey } from "@/lib/i18n/contact-financial-presentation";
 import { useContactContext, getOrgId } from "../layout";
 
 export default function ContactStatementPage() {
+  const unitPresentation = usePresentation();
   const t = useTranslations("ContactStatement");
   const { id } = useParams<{ id: string }>();
   const { contact } = useContactContext();
@@ -33,7 +35,7 @@ export default function ContactStatementPage() {
   const [statementCurrency, setStatementCurrency] = useState("");
   const [sendingStatement, setSendingStatement] = useState(false);
 
-  const formatMoney = (amount: bigint) => displayMoney(amount, statementData!.currencyCode);
+  const formatMoney = (amount: bigint) => displayMoney(amount, statementData!.currencyCode, unitPresentation);
 
   const fetchStatement = useCallback(async (signal: AbortSignal) => {
     const orgId = getOrgId();

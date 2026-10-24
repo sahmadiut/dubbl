@@ -1,5 +1,7 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
+import { currencyLabel } from "@/i18n/currency-labels";
 import { crmPipelinesJson, crmDealCreatedJson } from "@/i18n/crm-presentation";
 import { projectMutationJson } from "@/i18n/project-presentation";
 import { payrollContractorJson } from "@/i18n/payroll-contractor-presentation";
@@ -1377,6 +1379,7 @@ interface BankAccountOption {
 }
 
 function SalesReceiptDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("SalesReceipts");
   const router = useRouter();
   const [saving, setSaving] = useState(false);
@@ -1529,7 +1532,7 @@ function SalesReceiptDrawer({ open, onClose }: { open: boolean; onClose: () => v
                   <SelectContent>
                     {bankAccounts.map((acc) => (
                       <SelectItem key={acc.id} value={acc.id}>
-                        {acc.accountName} · {acc.currencyCode}
+                        {acc.accountName} · {currencyLabel(acc.currencyCode, unitPresentation.locale)}
                       </SelectItem>
                     ))}
                     {bankAccounts.length === 0 && (
@@ -1722,6 +1725,7 @@ interface ExpenseTaxRateOption {
 }
 
 function ExpenseDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("Expenses");
   const router = useRouter();
   const [saving, setSaving] = useState(false);
@@ -1806,7 +1810,7 @@ function ExpenseDrawer({ open, onClose }: { open: boolean; onClose: () => void }
           <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
             <div className="space-y-4">
               <SectionLabel>{t("claimInfo")}</SectionLabel>
-              <p className="text-sm text-muted-foreground">{t("createCurrency", { currency: settings?.currencyCode || t("loading") })}</p>
+              <p className="text-sm text-muted-foreground">{t("createCurrency", { currency: currencyLabel(settings?.currencyCode || t("loading"), unitPresentation.locale) })}</p>
               {(settingsError || preview.error) && <p role="alert" className="text-sm text-destructive">{settingsError ? t(settingsError) : t(expenseInputError(preview.error))}</p>}
               <div className="space-y-2">
                 <Label>{t("titleRequired")}</Label>
@@ -1882,7 +1886,7 @@ function ExpenseDrawer({ open, onClose }: { open: boolean; onClose: () => void }
                     {item.isMileage && (
                       <div className="flex items-center justify-between rounded-md bg-muted/40 px-3 py-2 text-sm">
                         <span className="text-muted-foreground">{t("computedAmount")}</span>
-                        <span className="font-mono font-medium tabular-nums">{!preview.error && settings ? expenseUiMoney(preview.amounts[index], settings.currencyCode) : "\u2014"}</span>
+                        <span className="font-mono font-medium tabular-nums">{!preview.error && settings ? expenseUiMoney(preview.amounts[index], settings.currencyCode, unitPresentation) : "\u2014"}</span>
                       </div>
                     )}
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -1921,7 +1925,7 @@ function ExpenseDrawer({ open, onClose }: { open: boolean; onClose: () => void }
 
             <div className="flex items-center justify-between rounded-lg border bg-muted/50 px-4 py-3">
               <span className="text-sm font-medium">{t("total")}</span>
-              <span className="text-lg font-bold font-mono tabular-nums">{!preview.error && settings ? expenseUiMoney(preview.total, settings.currencyCode) : "\u2014"}</span>
+              <span className="text-lg font-bold font-mono tabular-nums">{!preview.error && settings ? expenseUiMoney(preview.total, settings.currencyCode, unitPresentation) : "\u2014"}</span>
             </div>
           </div>
           <DrawerFooter onClose={onClose} saving={saving} label={t("createClaim")} cancelLabel={t("cancel")} creatingLabel={t("creating")} />
@@ -1942,6 +1946,7 @@ interface FixedAssetAccount {
 }
 
 function FixedAssetDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("FixedAssets");
   const router = useRouter();
   const [saving, setSaving] = useState(false);
@@ -2060,7 +2065,7 @@ function FixedAssetDrawer({ open, onClose }: { open: boolean; onClose: () => voi
                 </div>
                 <div className="space-y-2">
                   <Label>{t("priceRequired")}</Label>
-                  <CurrencyInput prefix="$" value={purchasePrice} onChange={setPurchasePrice} placeholder="10000.00" />
+                  <CurrencyInput prefix={currencyLabel("USD", unitPresentation.locale, "$")} value={purchasePrice} onChange={setPurchasePrice} placeholder="10000.00" />
                 </div>
               </div>
             </div>
@@ -2072,7 +2077,7 @@ function FixedAssetDrawer({ open, onClose }: { open: boolean; onClose: () => voi
               <div className="grid gap-4 sm:grid-cols-3">
                 <div className="space-y-2">
                   <Label>{t("residual")}</Label>
-                  <CurrencyInput prefix="$" value={residualValue} onChange={setResidualValue} placeholder="500.00" />
+                  <CurrencyInput prefix={currencyLabel("USD", unitPresentation.locale, "$")} value={residualValue} onChange={setResidualValue} placeholder="500.00" />
                 </div>
                 <div className="space-y-2">
                   <Label>{t("lifeMonths")}</Label>
@@ -3629,6 +3634,7 @@ function TransferDrawer({ open, onClose }: { open: boolean; onClose: () => void 
 // Bank Transfer Drawer (move money between the org's own bank/cash accounts)
 // ---------------------------------------------------------------------------
 function BankTransferDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("BankPayments");
   const errors = useTranslations("BankAccountErrors");
   const router = useRouter();
@@ -3695,7 +3701,7 @@ function BankTransferDrawer({ open, onClose }: { open: boolean; onClose: () => v
 
   let preview: string | null = null;
   let previewError = "";
-  try { if (fromCurrency) preview = bankUiMoney(BigInt(bankUiTransfer(amount, bankAccounts.find(b => b.id === fromBankAccountId), bankAccounts.find(b => b.id === toBankAccountId)).amountMinor), fromCurrency); }
+  try { if (fromCurrency) preview = bankUiMoney(BigInt(bankUiTransfer(amount, bankAccounts.find(b => b.id === fromBankAccountId), bankAccounts.find(b => b.id === toBankAccountId)).amountMinor), fromCurrency, unitPresentation); }
   catch (error) { previewError = paymentFailure(error, t, t("invalidTransfer")); }
 
   return (
@@ -3721,7 +3727,7 @@ function BankTransferDrawer({ open, onClose }: { open: boolean; onClose: () => v
                   <SelectContent>
                     {bankAccounts.map((b) => (
                       <SelectItem key={b.id} value={b.id} disabled={b.id === toBankAccountId}>
-                        {b.accountName} ({b.currencyCode})
+                        {b.accountName} ({currencyLabel(b.currencyCode, unitPresentation.locale)})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -3734,7 +3740,7 @@ function BankTransferDrawer({ open, onClose }: { open: boolean; onClose: () => v
                   <SelectContent>
                     {bankAccounts.map((b) => (
                       <SelectItem key={b.id} value={b.id} disabled={b.id === fromBankAccountId || (!!fromCurrency && b.currencyCode !== fromCurrency)}>
-                        {b.accountName} ({b.currencyCode})
+                        {b.accountName} ({currencyLabel(b.currencyCode, unitPresentation.locale)})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -3749,9 +3755,9 @@ function BankTransferDrawer({ open, onClose }: { open: boolean; onClose: () => v
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>{t("amountRequired")}</Label>
-                  <CurrencyInput prefix={fromCurrency || ""} fractionDigits={fromCurrency ? currencyMetadata(fromCurrency).minorUnits : 2} aria-label={t("transferAmount", { currency: fromCurrency || t("selectBank") })} value={amount} onChange={setAmount} placeholder="0.00" />
+                  <CurrencyInput prefix={fromCurrency || ""} fractionDigits={fromCurrency ? currencyMetadata(fromCurrency).minorUnits : 2} aria-label={t("transferAmount", { currency: currencyLabel(fromCurrency || t("selectBank"), unitPresentation.locale) })} value={amount} onChange={setAmount} placeholder="0.00" />
                   {fromCurrency && (
-                    <p className="text-[11px] text-muted-foreground">{t("transferCurrency", { currency: fromCurrency, preview: preview ? t("transferPreview", { amount: preview }) : previewError })}</p>
+                    <p className="text-[11px] text-muted-foreground">{t("transferCurrency", { currency: currencyLabel(fromCurrency, unitPresentation.locale), preview: preview ? t("transferPreview", { amount: preview }) : previewError })}</p>
                   )}
                 </div>
                 <div className="space-y-2">
@@ -4225,6 +4231,7 @@ function CustomerCreditDrawer({ open, onClose }: { open: boolean; onClose: () =>
 }
 
 function CustomerCreditForm({ open, onClose, orgId }: { open: boolean; onClose: () => void; orgId: string | null }) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("CustomerPrepayments");
   const router = useRouter();
   const [saving, setSaving] = useState(false);
@@ -4339,7 +4346,7 @@ function CustomerCreditForm({ open, onClose, orgId }: { open: boolean; onClose: 
                   <Label>{t("amount")}</Label>
                   {currencyCode ? <InvoiceAmountInput currency={currencyCode} value={amount} onChange={setAmount} /> :
                     <p className="text-sm text-muted-foreground">{t("selectCurrencyHint")}</p>}
-                  {exactAmount && currencyCode && <p className="text-xs text-muted-foreground">{t("receivedAmount", { amount: customerPrepaymentMoney(BigInt(exactAmount.amountMinor), currencyCode) })}</p>}
+                  {exactAmount && currencyCode && <p className="text-xs text-muted-foreground">{t("receivedAmount", { amount: customerPrepaymentMoney(BigInt(exactAmount.amountMinor), currencyCode, unitPresentation) })}</p>}
                 </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
@@ -4374,7 +4381,7 @@ function CustomerCreditForm({ open, onClose, orgId }: { open: boolean; onClose: 
                   <SelectContent>
                     {matchingBanks.map((acc) => (
                       <SelectItem key={acc.id} value={acc.id}>
-                        {acc.accountName} · {acc.currencyCode}
+                        {acc.accountName} · {currencyLabel(acc.currencyCode, unitPresentation.locale)}
                       </SelectItem>
                     ))}
                     {matchingBanks.length === 0 && (
@@ -4408,6 +4415,7 @@ function CustomerCreditForm({ open, onClose, orgId }: { open: boolean; onClose: 
 // Loan Drawer
 // ---------------------------------------------------------------------------
 function LoanDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("Loans");
   const router = useRouter();
   const [saving, setSaving] = useState(false);
@@ -4511,7 +4519,7 @@ function LoanDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="drawer-loan-principal">{t("amount")}</Label>
-                  <CurrencyInput id="drawer-loan-principal" prefix="$" value={principalAmount} onChange={setPrincipalAmount} />
+                  <CurrencyInput id="drawer-loan-principal" prefix={currencyLabel("USD", unitPresentation.locale, "$")} value={principalAmount} onChange={setPrincipalAmount} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="drawer-loan-rate">{t("ratePercent")}</Label>
@@ -4543,7 +4551,7 @@ function LoanDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
                   <SelectContent>
                     {bankAccounts.map((acc) => (
                       <SelectItem key={acc.id} value={acc.id}>
-                        {acc.accountName} · {acc.currencyCode}
+                        {acc.accountName} · {currencyLabel(acc.currencyCode, unitPresentation.locale)}
                       </SelectItem>
                     ))}
                     {bankAccounts.length === 0 && (
@@ -4560,7 +4568,7 @@ function LoanDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
 
             <div className="space-y-4">
               <SectionLabel>{t("accounts")}</SectionLabel>
-              {baseCurrency && <p className="text-xs text-muted-foreground">{t("accountCurrencyHint", { currency: baseCurrency })}</p>}
+              {baseCurrency && <p className="text-xs text-muted-foreground">{t("accountCurrencyHint", { currency: currencyLabel(baseCurrency, unitPresentation.locale) })}</p>}
               <div className="space-y-2">
                 <Label>{t("principalAccount")}</Label>
                 {baseCurrency && <AccountPicker key={`principal-${baseCurrency}`} value={principalAccountId} onChange={setPrincipalAccountId} typeFilter={["liability"]} currencyFilter={baseCurrency} activeOnly allowCreate placeholder={t("chooseLiability")} />}
@@ -4642,6 +4650,7 @@ function OpeningBalanceDrawer({ open, onClose }: { open: boolean; onClose: () =>
 // Accrual Schedule Drawer
 // ---------------------------------------------------------------------------
 function AccrualScheduleDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("Accruals");
   const router = useRouter();
   const [saving, setSaving] = useState(false);
@@ -4723,7 +4732,7 @@ function AccrualScheduleDrawer({ open, onClose }: { open: boolean; onClose: () =
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="drawer-accrual-amount">{t("totalAmount")}</Label>
-                  <CurrencyInput id="drawer-accrual-amount" prefix="$" value={totalAmount} onChange={setTotalAmount} />
+                  <CurrencyInput id="drawer-accrual-amount" prefix={currencyLabel("USD", unitPresentation.locale, "$")} value={totalAmount} onChange={setTotalAmount} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="drawer-accrual-periods">{t("periodCount")}</Label>
@@ -4774,6 +4783,7 @@ interface InvoiceOption {
 }
 
 function RevenueScheduleDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("RevenueSchedules");
   const [invoiceError, setInvoiceError] = useState(false);
   const router = useRouter();
@@ -4884,7 +4894,7 @@ function RevenueScheduleDrawer({ open, onClose }: { open: boolean; onClose: () =
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="drawer-revsched-amount">{t("totalAmount")}</Label>
-                  <CurrencyInput id="drawer-revsched-amount" prefix="$" value={totalAmount} onChange={setTotalAmount} />
+                  <CurrencyInput id="drawer-revsched-amount" prefix={currencyLabel("USD", unitPresentation.locale, "$")} value={totalAmount} onChange={setTotalAmount} />
                 </div>
                 <div className="space-y-2">
                   <Label>{t("method")}</Label>
@@ -4928,6 +4938,7 @@ interface RecurringJournalRow {
 }
 
 function RecurringJournalDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("Journals");
   const errors = useTranslations("JournalErrors");
   const router = useRouter();
@@ -5105,8 +5116,8 @@ function RecurringJournalDrawer({ open, onClose }: { open: boolean; onClose: () 
                       onChange={(e) => updateRow(i, "description", e.target.value)}
                       placeholder={t("lineMemo")}
                     />
-                    <CurrencyInput size="sm" aria-label={t("debitLine", { number: i + 1 })} value={row.debit} onChange={(v) => updateRow(i, "debit", v)} />
-                    <CurrencyInput size="sm" aria-label={t("creditLine", { number: i + 1 })} value={row.credit} onChange={(v) => updateRow(i, "credit", v)} />
+                    <CurrencyInput prefix={currencyLabel("USD", unitPresentation.locale, "$")} size="sm" aria-label={t("debitLine", { number: i + 1 })} value={row.debit} onChange={(v) => updateRow(i, "debit", v)} />
+                    <CurrencyInput prefix={currencyLabel("USD", unitPresentation.locale, "$")} size="sm" aria-label={t("creditLine", { number: i + 1 })} value={row.credit} onChange={(v) => updateRow(i, "credit", v)} />
                     <Button
                       type="button"
                       variant="ghost"

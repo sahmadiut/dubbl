@@ -1,5 +1,8 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
+import type { NumberPresentation } from "@/i18n/numbers";
+import { currencyLabel } from "@/i18n/currency-labels";
 import { useTranslations } from "next-intl";
 import { landedCostStatusLabel, landedCostMethodLabel } from "@/i18n/landed-cost-presentation";
 import { useState, useEffect, useCallback } from "react";
@@ -52,9 +55,10 @@ interface LandedCost {
   bill?: { billNumber: string } | null;
 }
 
-const formatMoney = (amount: number, currency: string) => `${currency} ${toMajorDecimal(money(BigInt(amount), currency))}`;
+const formatMoney = (amount: number, currency: string, presentation: NumberPresentation) => `${currencyLabel(currency, presentation.locale)} ${toMajorDecimal(money(BigInt(amount), currency))}`;
 
 export default function LandedCostsPage() {
+  const unitPresentation = usePresentation();
   const router = useRouter();
   const t = useTranslations("LandedCosts");
   const [readError, setReadError] = useState(false);
@@ -286,7 +290,7 @@ export default function LandedCostsPage() {
                     {landedCostMethodLabel(t, item.allocationMethod)}
                   </TableCell>
                   <TableCell className="text-right font-mono text-sm tabular-nums">
-                    {formatMoney(item.totalCostAmount, item.currencyCode)}
+                    {formatMoney(item.totalCostAmount, item.currencyCode, unitPresentation)}
                   </TableCell>
                   <TableCell>
                     <Badge

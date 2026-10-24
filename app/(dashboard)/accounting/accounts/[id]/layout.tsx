@@ -1,5 +1,7 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
+import { currencyLabel } from "@/i18n/currency-labels";
 import { useTranslations } from "next-intl";
 import { accountDisplayName } from "@/i18n/account-names";
 import { requireAccountResponse, accountFailureMessage, accountTypeLabel } from "@/i18n/account-presentation";
@@ -85,6 +87,7 @@ const PAGE_TABS = [
 ] as const;
 
 export default function AccountDetailLayout({ children }: { children: React.ReactNode }) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("Accounts");
   const names = useTranslations("AccountNames");
   const errors = useTranslations("AccountErrors");
@@ -155,8 +158,8 @@ export default function AccountDetailLayout({ children }: { children: React.Reac
                 <Badge variant="outline" className={typeConfig?.badgeClass || ""}>
                   {accountTypeLabel(t, account.type)}
                 </Badge>
-                <Badge variant="outline" className="text-[10px]">{t("glCurrency", { currency: cur })}</Badge>
-                {account.currencyCode !== cur && <Badge variant="outline" className="text-[10px]">{t("accountCurrency", { currency: account.currencyCode ?? cur })}</Badge>}
+                <Badge variant="outline" className="text-[10px]">{t("glCurrency", { currency: currencyLabel(cur, unitPresentation.locale) })}</Badge>
+                {account.currencyCode !== cur && <Badge variant="outline" className="text-[10px]">{t("accountCurrency", { currency: currencyLabel(account.currencyCode ?? cur, unitPresentation.locale) })}</Badge>}
                 {account.isActive === false && (
                   <Badge variant="outline" className="text-muted-foreground">{t("inactive")}</Badge>
                 )}
@@ -175,7 +178,7 @@ export default function AccountDetailLayout({ children }: { children: React.Reac
           <div>
             <p className="text-[11px] text-muted-foreground">{t("balance")}</p>
             <p className="mt-0.5 font-mono text-xl font-semibold tabular-nums">
-              {journalMoney(bal, cur)}
+              {journalMoney(bal, cur, unitPresentation)}
             </p>
           </div>
           <div>
@@ -184,7 +187,7 @@ export default function AccountDetailLayout({ children }: { children: React.Reac
               {t("totalDebits")}
             </p>
             <p className="mt-0.5 font-mono text-lg font-semibold tabular-nums text-emerald-600">
-              {totalDebits > 0n ? journalMoney(totalDebits, cur) : "-"}
+              {totalDebits > 0n ? journalMoney(totalDebits, cur, unitPresentation) : "-"}
             </p>
           </div>
           <div>
@@ -193,7 +196,7 @@ export default function AccountDetailLayout({ children }: { children: React.Reac
               {t("totalCredits")}
             </p>
             <p className="mt-0.5 font-mono text-lg font-semibold tabular-nums text-red-600">
-              {totalCredits > 0n ? journalMoney(totalCredits, cur) : "-"}
+              {totalCredits > 0n ? journalMoney(totalCredits, cur, unitPresentation) : "-"}
             </p>
           </div>
           <div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
 import { useTranslations } from "next-intl";
 import { loanJson, loanFailureMessage, loanStatusLabel } from "@/i18n/loan-presentation";
 
@@ -45,6 +46,7 @@ const statusColors: Record<string, string> = {
 
 
 export default function LoanDetailPage() {
+  const unitPresentation = usePresentation();
   const t = useTranslations("Loans");
   const { id } = useParams<{ id: string }>();
   const { confirm, dialog: confirmDialog } = useConfirm();
@@ -83,7 +85,7 @@ export default function LoanDetailPage() {
     if (!orgId || !nextEntry) return;
     await confirm({
       title: t("postTitle"),
-      description: t("postDescription", { period: nextEntry.periodNumber, total: formatMoney(nextEntry.totalPayment), principal: formatMoney(nextEntry.principalAmount), interest: formatMoney(nextEntry.interestAmount) }),
+      description: t("postDescription", { period: nextEntry.periodNumber, total: formatMoney(nextEntry.totalPayment, unitPresentation), principal: formatMoney(nextEntry.principalAmount, unitPresentation), interest: formatMoney(nextEntry.interestAmount, unitPresentation) }),
       confirmLabel: t("record"),
       onConfirm: async () => {
         setPosting(true);
@@ -141,7 +143,7 @@ export default function LoanDetailPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-lg border p-4">
           <p className="text-xs text-muted-foreground">{t("borrowed")}</p>
-          <p className="text-xl font-bold font-mono">{formatMoney(ln.principalAmount)}</p>
+          <p className="text-xl font-bold font-mono">{formatMoney(ln.principalAmount, unitPresentation)}</p>
         </div>
         <div className="rounded-lg border p-4">
           <p className="text-xs text-muted-foreground">{t("rate")}</p>
@@ -153,7 +155,7 @@ export default function LoanDetailPage() {
         </div>
         <div className="rounded-lg border p-4">
           <p className="text-xs text-muted-foreground">{t("monthly")}</p>
-          <p className="text-xl font-bold font-mono text-emerald-600">{formatMoney(ln.monthlyPayment)}</p>
+          <p className="text-xl font-bold font-mono text-emerald-600">{formatMoney(ln.monthlyPayment, unitPresentation)}</p>
         </div>
       </div>
 
@@ -176,10 +178,10 @@ export default function LoanDetailPage() {
           >
             <span className="text-sm font-mono">{entry.periodNumber}</span>
             <span className="text-sm">{entry.date || "-"}</span>
-            <span className="text-right text-sm font-mono">{formatMoney(entry.principalAmount)}</span>
-            <span className="text-right text-sm font-mono">{formatMoney(entry.interestAmount)}</span>
-            <span className="text-right text-sm font-mono font-medium">{formatMoney(entry.totalPayment)}</span>
-            <span className="text-right text-sm font-mono">{formatMoney(entry.remainingBalance)}</span>
+            <span className="text-right text-sm font-mono">{formatMoney(entry.principalAmount, unitPresentation)}</span>
+            <span className="text-right text-sm font-mono">{formatMoney(entry.interestAmount, unitPresentation)}</span>
+            <span className="text-right text-sm font-mono font-medium">{formatMoney(entry.totalPayment, unitPresentation)}</span>
+            <span className="text-right text-sm font-mono">{formatMoney(entry.remainingBalance, unitPresentation)}</span>
             <span className="text-right text-sm">
               {entry.posted ? (
                 <span className="inline-flex items-center gap-1 text-emerald-600">

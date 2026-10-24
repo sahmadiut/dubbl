@@ -1,3 +1,5 @@
+import type { NumberPresentation } from "../../i18n/numbers";
+import { formatExactCurrencyDecimal } from "../../i18n/numbers";
 import { parseMajor } from "./exact";
 
 /** Asset masters retain their historical fixed two-decimal cents input contract. */
@@ -22,10 +24,8 @@ export function assetCentsDecimal(value: number | bigint | string) {
   const amount = BigInt(value), abs = amount < 0n ? -amount : amount;
   return `${amount < 0n ? "-" : ""}${abs / 100n}.${(abs % 100n).toString().padStart(2, "0")}`;
 }
-export function assetMoneyDisplay(value: number | bigint | string) {
-  const decimal = assetCentsDecimal(value), [whole, fraction] = decimal.split(".");
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 })
-    .formatToParts(whole === "-0" ? -0 : BigInt(whole)).map(p => p.type === "fraction" ? fraction : p.value).join("");
+export function assetMoneyDisplay(value: number | bigint | string, presentation: NumberPresentation = { locale: "en-US", numerals: "latn" }) {
+  return formatExactCurrencyDecimal(assetCentsDecimal(value), "USD", presentation);
 }
 /** Presentation percentage only; bigint sums stay exact before conversion. */
 export function assetPercent(part: number | bigint, total: number | bigint) {

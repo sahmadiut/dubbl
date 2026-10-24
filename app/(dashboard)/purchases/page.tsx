@@ -1,5 +1,8 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
+import type { NumberPresentation } from "@/i18n/numbers";
+import { currencyLabel } from "@/i18n/currency-labels";
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { useTranslations } from "next-intl";
@@ -85,7 +88,7 @@ function getDueInfo(dueDate: string, status: string, t: BillTranslator) {
   };
 }
 
-function buildColumns(t: BillTranslator): Column<Bill>[] {
+function buildColumns(t: BillTranslator, unitPresentation: NumberPresentation = { locale: "en-US", numerals: "latn" }): Column<Bill>[] {
   return [
     {
       key: "number",
@@ -144,7 +147,7 @@ function buildColumns(t: BillTranslator): Column<Bill>[] {
       className: "w-28 text-right",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums">
-          {formatMoney(r.total, r.currencyCode)}
+          {formatMoney(r.total, r.currencyCode, unitPresentation)}
         </span>
       ),
     },
@@ -158,7 +161,7 @@ function buildColumns(t: BillTranslator): Column<Bill>[] {
           r.amountDue > 0n && r.status !== "draft" ? "text-amber-600" : "";
         return (
           <span className={`font-mono text-sm tabular-nums ${color}`}>
-            {formatMoney(r.amountDue, r.currencyCode)}
+            {formatMoney(r.amountDue, r.currencyCode, unitPresentation)}
           </span>
         );
       },
@@ -167,6 +170,7 @@ function buildColumns(t: BillTranslator): Column<Bill>[] {
 }
 
 export default function BillsPage() {
+  const unitPresentation = usePresentation();
   const t = useTranslations("SupplierBills");
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
@@ -196,7 +200,7 @@ export default function BillsPage() {
   useDocumentTitle(t("documentTitle"));
 
   const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
-  const columns = useMemo(() => buildColumns(t), [t]);
+  const columns = useMemo(() => buildColumns(t, unitPresentation), [t, unitPresentation]);
 
   // Build params (shared between page 1 fetch and loadMore)
   const buildParams = useCallback((pg: number) => {
@@ -500,7 +504,7 @@ export default function BillsPage() {
         {/* Aging bar + legend */}
         {agingGroups.map(({ currencyCode, buckets: aging, total: agingTotal }) => (
           <div key={currencyCode} className="border-t px-5 py-4 sm:px-6">
-            <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground mb-3">{t("aging", { currency: currencyCode })}</p>
+            <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground mb-3">{t("aging", { currency: currencyLabel(currencyCode, unitPresentation.locale) })}</p>
             <div className="h-2.5 w-full rounded-full overflow-hidden flex mb-3">
               {([
                 { key: "current" as const, color: "bg-emerald-500" },
@@ -526,7 +530,7 @@ export default function BillsPage() {
                     {label}
                   </div>
                   <p className="text-xs font-mono font-medium tabular-nums">
-                    {formatMoney(aging[key].amount, currencyCode)}
+                    {formatMoney(aging[key].amount, currencyCode, unitPresentation)}
                     <span className="text-muted-foreground font-normal ml-1.5">({aging[key].count})</span>
                   </p>
                 </div>
@@ -563,7 +567,7 @@ export default function BillsPage() {
                     </div>
                     <div className="text-right shrink-0">
                       <p className="text-xs font-mono font-semibold tabular-nums">
-                        {formatMoney(b.amountDue, b.currencyCode)}
+                        {formatMoney(b.amountDue, b.currencyCode, unitPresentation)}
                       </p>
                       <p className="text-[11px] text-amber-600 dark:text-amber-400">
                         {days === 0 ? t("today") : days === 1 ? t("tomorrow") : t("days", { count: days })}

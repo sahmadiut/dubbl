@@ -1,4 +1,6 @@
 "use client";
+import { usePresentation } from "@/i18n/provider";
+import { currencyLabel } from "@/i18n/currency-labels";
 import { useTranslations } from "next-intl";
 import { documentPreviewMessage, type DocumentFormTranslate } from "@/i18n/document-form-presentation";
 
@@ -73,6 +75,7 @@ function reclaimHint(t: DocumentFormTranslate, rate: TaxRateOption): string {
 }
 
 export function LineItemsEditor({ lines, onChange, accountTypeFilter, taxContext, currencyCode, roundPriceFirst = false, priceFractionDigits = 2, onValidityChange, documentKind = "invoice" }: LineItemsEditorProps) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("DocumentForms");
   const [taxRates, setTaxRates] = useState<TaxRateOption[]>([]);
 
@@ -118,13 +121,13 @@ export function LineItemsEditor({ lines, onChange, accountTypeFilter, taxContext
 
   return (
     <div className="space-y-3">
-      {documentKind === "recurringBill" && <p className="text-xs text-muted-foreground">{t("recurringBillScale", { currency: currencyCode ?? "" })}</p>}
+      {documentKind === "recurringBill" && <p className="text-xs text-muted-foreground">{t("recurringBillScale", { currency: currencyLabel(currencyCode ?? "", unitPresentation.locale) })}</p>}
       {preview.error && <p role="alert" className="text-xs text-red-600">{documentPreviewMessage(t, preview.error)}</p>}
       <div className="overflow-x-auto rounded-lg border">
         <div className="grid min-w-[620px] grid-cols-[1fr_80px_100px_120px_40px] gap-2 border-b bg-muted/50 px-3 py-2 text-xs font-medium text-muted-foreground">
           <span>{t("description")}</span>
           <span className="text-right">{t("quantity")}</span>
-          <span className="text-right">{documentKind === "recurringBill" ? t("priceFixedScale") : currencyCode ? t("priceCurrency", { currency: currencyCode }) : t("price")}</span>
+          <span className="text-right">{documentKind === "recurringBill" ? t("priceFixedScale") : currencyCode ? t("priceCurrency", { currency: currencyLabel(currencyCode, unitPresentation.locale) }) : t("price")}</span>
           <span className="text-right">{t("amount")}</span>
           <span />
         </div>

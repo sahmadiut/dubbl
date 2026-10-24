@@ -1,5 +1,8 @@
 "use client";
 
+import { bankMoneyDisplay as exampleMoney } from "@/lib/money/bank-display";
+import { usePresentation } from "@/i18n/provider";
+import type { NumberPresentation } from "@/i18n/numbers";
 import { useTranslations } from "next-intl";
 import { creditNoteStatusLabel, type CreditNoteTranslate } from "@/i18n/credit-note-presentation";
 
@@ -56,7 +59,7 @@ const statusColors: Record<string, string> = {
   void: "border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300",
 };
 
-function buildColumns(t: CreditNoteTranslate): Column<CreditNote>[] {
+function buildColumns(t: CreditNoteTranslate, unitPresentation: NumberPresentation = { locale: "en-US", numerals: "latn" }): Column<CreditNote>[] {
   return [
     {
       key: "number",
@@ -98,7 +101,7 @@ function buildColumns(t: CreditNoteTranslate): Column<CreditNote>[] {
       className: "w-28 text-right",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums break-all">
-          {creditNoteUiMoney(r.total, r.currencyCode)}
+          {creditNoteUiMoney(r.total, r.currencyCode, unitPresentation)}
         </span>
       ),
     },
@@ -109,7 +112,7 @@ function buildColumns(t: CreditNoteTranslate): Column<CreditNote>[] {
       className: "w-28 text-right",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums break-all">
-          {creditNoteUiMoney(r.amountRemaining, r.currencyCode)}
+          {creditNoteUiMoney(r.amountRemaining, r.currencyCode, unitPresentation)}
         </span>
       ),
     },
@@ -117,6 +120,7 @@ function buildColumns(t: CreditNoteTranslate): Column<CreditNote>[] {
 }
 
 export default function CreditNotesPage() {
+  const unitPresentation = usePresentation();
   const t = useTranslations("CreditNotes");
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
@@ -138,7 +142,7 @@ export default function CreditNotesPage() {
   const PAGE_SIZE = 50;
   const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
 
-  const columns = useMemo(() => buildColumns(t), [t]);
+  const columns = useMemo(() => buildColumns(t, unitPresentation), [t, unitPresentation]);
 
   const buildParams = useCallback((p: number) => {
     const params = new URLSearchParams();
@@ -262,12 +266,11 @@ export default function CreditNotesPage() {
 
   // Bump searchKey when debounced search changes to trigger ContentReveal
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSearchKey((k) => k + 1);
   }, [debouncedSearch]);
 
   const summaryMoney = (field: "totalAmount" | "totalApplied" | "totalRemaining") =>
-    summary?.currencyCode ? creditNoteUiMoney(summary[field], summary.currencyCode) : "—";
+    summary?.currencyCode ? creditNoteUiMoney(summary[field], summary.currencyCode, unitPresentation) : "—";
 
   if (initialLoad) return <BrandLoader />;
   if (listError) return <p role="alert" className="text-sm text-destructive">{listError}</p>;
@@ -310,7 +313,7 @@ export default function CreditNotesPage() {
                       <p className="text-[11px] text-muted-foreground">INV-0042</p>
                     </div>
                   </div>
-                  <span className="font-mono text-sm font-medium">$1,200.00</span>
+                  <span className="font-mono text-sm font-medium">{exampleMoney(120000n, "USD", unitPresentation)}</span>
                 </div>
                 <div className="flex items-center justify-between px-3 sm:px-5 py-3.5 bg-teal-50/30 dark:bg-teal-950/10">
                   <div className="flex items-center gap-3">
@@ -322,14 +325,14 @@ export default function CreditNotesPage() {
                       <p className="text-[11px] text-muted-foreground">CN-0001</p>
                     </div>
                   </div>
-                  <span className="font-mono text-sm font-medium text-teal-600 dark:text-teal-400">-$200.00</span>
+                  <span className="font-mono text-sm font-medium text-teal-600 dark:text-teal-400">{exampleMoney(-20000n, "USD", unitPresentation)}</span>
                 </div>
                 <div className="flex items-center justify-between px-3 sm:px-5 py-3.5">
                   <div className="flex items-center gap-3">
                     <div className="size-7" />
                     <p className="text-sm font-semibold">{t("newBalance")}</p>
                   </div>
-                  <span className="font-mono text-sm font-bold">$1,000.00</span>
+                  <span className="font-mono text-sm font-bold">{exampleMoney(100000n, "USD", unitPresentation)}</span>
                 </div>
               </div>
             </div>

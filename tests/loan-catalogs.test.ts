@@ -1,3 +1,6 @@
+import { currencyLabel } from "../i18n/currency-labels";
+import { resolvePresentation } from "../i18n/locale";
+import { bankMoneyDisplay as localizedBankMoney } from "../lib/money/bank-display";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -11,8 +14,9 @@ import ts from "typescript";
 import * as DataTable from "../components/dashboard/data-table";
 import * as DatePicker from "../components/ui/date-picker";
 import * as BrandLoader from "../components/dashboard/brand-loader";
-import * as AccountPicker from "../components/dashboard/account-picker";
-import { loanJson, loanFailureMessage, LoanRequestError, loanStatusLabel } from "../i18n/loan-presentation";
+import { currencyMetadata } from "../lib/money/exact";
+import { formatDecimalDraft } from "../i18n/numbers";
+import { loanRepaymentBanks, loanJson, loanFailureMessage, LoanRequestError, loanStatusLabel } from "../i18n/loan-presentation";
 import { assetCentsInput, assetLifeInput, assetMoneyDisplay, assetRateInput } from "../lib/money/asset-display";
 import { renderWithPresentation } from "./helpers/presentation";
 import en from "../messages/en-US.json";
@@ -26,7 +30,7 @@ const noop = () => {};
 const caller = '<script>وام & equipment</script>';
 const loan = { id: 'loan-a', name: caller, principalAmount: 4000000000000001, principalAmountMinor: '4000000000000001', interestRate: 500, termMonths: 36, startDate: '2026-10-18', monthlyPayment: 29, monthlyPaymentMinor: '29', status: 'active' };
 const entry = { id: 'entry-a', periodNumber: 1, date: '2026-10-18', principalAmount: 20, principalAmountMinor: '20', interestAmount: 9, interestAmountMinor: '9', totalPayment: 29, totalPaymentMinor: '29', remainingBalance: 3999999999999981, remainingBalanceMinor: '3999999999999981', posted: false };
-const bank = { id: 'bank-a', accountName: caller, currencyCode: 'USD' };
+const bank = { id: 'bank-a', accountName: caller, currencyCode: 'USD', isActive: true, accountType: 'checking', deletedAt: null };
 function translator(locale: typeof locales[number]) { return createTranslator({ locale, messages: locale === "en-US" ? en : fa, namespace: "Loans" }); }
 function escape(value: string) { return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#x27;"); }
 
@@ -67,7 +71,7 @@ function loaded(path: string, states: unknown[], titles: string[] = []) {
     if (id.endsWith("/data-table")) return DataTable;
     if (id.endsWith("/date-picker")) return DatePicker;
     if (id.endsWith("/brand-loader")) return BrandLoader;
-    if (id.endsWith("/account-picker")) return AccountPicker;
+    if (id.endsWith("/account-picker")) return { AccountPicker: ({ placeholder, currencyFilter }: { placeholder: string; currencyFilter: string }) => createElement("button", { "data-currency-filter": currencyFilter }, placeholder) };
     if (id.endsWith("/ui/sheet")) return Object.fromEntries(["Sheet", "SheetContent", "SheetHeader", "SheetTitle", "SheetDescription"].map(key => [key, inline]));
     if (id.endsWith("/ui/dialog")) return Object.fromEntries(["Dialog", "DialogContent", "DialogHeader", "DialogTitle", "DialogDescription"].map(key => [key, inline]));
     if (id.endsWith("/ui/dropdown-menu")) return Object.fromEntries(["DropdownMenu", "DropdownMenuContent", "DropdownMenuItem", "DropdownMenuSeparator", "DropdownMenuTrigger"].map(key => [key, inline]));
@@ -93,7 +97,7 @@ function callback(path: string, name: string, scope: Record<string, unknown>, ef
 }
 
 function listStates(rows: unknown[], search = "") { return [rows, null, false, false, false, 1, rows.length, 0, "all", search, 0]; }
-function drawerStates(banks: unknown[] = [bank]) { return [false, caller, "40000000000000.01", "5", "36", "2026-10-18", "bank-a", banks, "liability-a", "expense-a"]; }
+function drawerStates(banks: unknown[] = [bank]) { return [false, caller, "40000000000000.01", "5", "36", "2026-10-18", "bank-a", banks, "liability-a", "expense-a", "USD"]; }
 
 test("loan list renders bilingual empty, table, search and error states with exact bigint aggregates", () => {
   for (const locale of locales) {
@@ -106,7 +110,7 @@ test("loan list renders bilingual empty, table, search and error states with exa
     const Page = loaded(list, listStates(rows, "equipment"));
     const html = renderWithPresentation(createElement(Page), locale);
     for (const key of ["currentlyBorrowed", "monthlyPayments", "borrowed", "rate", "monthly", "status", "name", "activeTab", "paidOffTab", "defaultedTab", "all", "search", "clear", "new"] as const) assert.ok(html.includes(escape(t(key))), key);
-    assert.ok(html.includes(assetMoneyDisplay(BigInt(loan.principalAmount) * 3n)) && html.includes("$0.87"));
+    assert.ok(html.includes(assetMoneyDisplay(BigInt(loan.principalAmount) * 3n, resolvePresentation({ user: { language: locale } }))) && html.includes(localizedAmount("$0.87", locale)));
     assert.ok(html.includes("future_status") && html.includes(escape(caller)) && !html.includes("<script>"));
     assert.ok(html.includes(escape(t("showing", { shown: 5, count: 5 }))));
     const Missing = loaded(list, listStates(rows, "absent"));
@@ -125,7 +129,7 @@ test("loan detail renders payment previews, schedules, statuses and missing/load
       const html = renderWithPresentation(createElement(Page), locale);
       for (const key of ["loan", "back", "borrowed", "rate", "length", "monthly", "date", "principal", "interest", "payment", "remaining", "posted"] as const) assert.ok(html.includes(escape(t(key))), key);
       assert.ok(html.includes(escape(t("started", { date: loan.startDate }))) && html.includes(escape(t("months", { count: 36 }))));
-      assert.ok(html.includes(escape(loanStatusLabel(t, status))) && html.includes("$0.29") && html.includes(assetMoneyDisplay(loan.principalAmount)));
+      assert.ok(html.includes(escape(loanStatusLabel(t, status))) && html.includes(localizedAmount("$0.29", locale)) && html.includes(assetMoneyDisplay(loan.principalAmount, resolvePresentation({ user: { language: locale } }))));
       assert.ok(html.includes(escape(caller)) && !html.includes("<script>"));
       if (status === "active") assert.ok(html.includes(escape(t("recordMonth"))) && html.includes(escape(t("recordHint"))));
       else assert.ok(!html.includes(escape(t("recordMonth"))));
@@ -145,10 +149,10 @@ test("loan drawer renders localized fields while preserving account filters, mac
       const Drawer = loaded(drawer, drawerStates(banks));
       const html = renderWithPresentation(createElement(Drawer, { open: true, onClose: noop }), locale);
       for (const key of ["new", "drawerDescription", "details", "nameRequired", "nameExample", "amount", "ratePercent", "rateExample", "term", "termExample", "startDate", "landed", "paidInto", "chooseBank", "accounts", "principalAccount", "chooseLiability", "liabilityHint", "interestAccount", "chooseExpense", "expenseHint", "create"] as const) assert.ok(html.includes(escape(t(key))), key);
-      assert.ok(html.includes('id="drawer-loan-principal"') && html.includes('value="40000000000000.01"'));
+      assert.ok(html.includes('id="drawer-loan-principal"') && html.includes(`value="${formatDecimalDraft("40000000000000.01", resolvePresentation({ user: { language: locale } }))}"`));
       assert.ok(html.includes(escape(caller)) && !html.includes("<script>"));
       if (!banks.length) assert.ok(html.includes(escape(t("noBanks"))));
-      else assert.ok(html.includes('data-option="bank-a"') && html.includes("USD"));
+      else { assert.ok(html.includes('data-option="bank-a"')); assert.ok(html.includes(currencyLabel("USD", locale))); }
     }
   }
 });
@@ -156,8 +160,8 @@ test("loan drawer renders localized fields while preserving account filters, mac
 test("actual loan creation callback preserves exact request, localized exits, saving state and navigation", async () => {
   for (const locale of locales) for (const mode of ["success", "forbidden", "network", "html", "shape", "alias"]) {
     const t = translator(locale), messages: string[] = [], flags: boolean[] = [], destinations: string[] = []; let closed = 0;
-    const run = callback(drawer, "handleSubmit", {
-      t, loanJson, loanFailureMessage, assetCentsInput, assetRateInput, assetLifeInput, name: caller, principalAmount: "40000000000000.01", interestPercent: "5.25", termMonths: "36", startDate: "2026-10-18", bankAccountId: "", principalAccountId: "liability-a", interestAccountId: "expense-a",
+    const run = callback(drawer, "handleSubmit", { unitPresentation: resolvePresentation({ user: { language: locale } }),
+      t, baseCurrency: "USD", loanJson, loanFailureMessage, assetCentsInput, assetRateInput, assetLifeInput, name: caller, principalAmount: "40000000000000.01", interestPercent: "5.25", termMonths: "36", startDate: "2026-10-18", bankAccountId: "", principalAccountId: "liability-a", interestAccountId: "expense-a",
       localStorage: { getItem: () => "org-a" }, setSaving: (v: boolean) => flags.push(v), onClose: () => { closed++; }, router: { push: (v: string) => destinations.push(v) },
       toast: { success: (v: string) => messages.push(v), error: (v: string) => messages.push(v) },
       fetch: async (url: string, init: RequestInit) => {
@@ -179,23 +183,23 @@ test("actual loan input validation localizes errors and never sends invalid valu
     const t = translator(locale);
     for (const [changes, key] of [ [{ name: "" }, "nameMissing"], [{ principalAccountId: "" }, "principalMissing"], [{ interestAccountId: "" }, "interestMissing"], [{ principalAmount: "1.234" }, "amountInvalid"], [{ principalAmount: "90071992547409.92" }, "amountRange"], [{ termMonths: "0" }, "termInvalid"], [{ interestPercent: "1000.01" }, "rateInvalid"] ] as const) {
       const messages: string[] = [], flags: boolean[] = [];
-      await callback(drawer, "handleSubmit", { t, loanJson, loanFailureMessage, assetCentsInput, assetRateInput, assetLifeInput, name: "Loan", principalAmount: "1", interestPercent: "0", termMonths: "36", startDate: "2026-10-18", bankAccountId: "bank-a", principalAccountId: "liability-a", interestAccountId: "expense-a", localStorage: { getItem: () => "org-a" }, setSaving: (v: boolean) => flags.push(v), toast: { error: (v: string) => messages.push(v) }, fetch: () => assert.fail("Invalid input submitted"), ...(changes as Record<string, unknown>) })({ preventDefault: noop });
+      await callback(drawer, "handleSubmit", { unitPresentation: resolvePresentation({ user: { language: locale } }), t, baseCurrency: "USD", loanJson, loanFailureMessage, assetCentsInput, assetRateInput, assetLifeInput, name: "Loan", principalAmount: "1", interestPercent: "0", termMonths: "36", startDate: "2026-10-18", bankAccountId: "bank-a", principalAccountId: "liability-a", interestAccountId: "expense-a", localStorage: { getItem: () => "org-a" }, setSaving: (v: boolean) => flags.push(v), toast: { error: (v: string) => messages.push(v) }, fetch: () => assert.fail("Invalid input submitted"), ...(changes as Record<string, unknown>) })({ preventDefault: noop });
       assert.deepEqual(messages, [t(key)]); assert.notEqual(flags.at(-1), true);
     }
   }
   const flags: boolean[] = [];
-  await callback(drawer, "handleSubmit", { name: "Loan", principalAccountId: "a", interestAccountId: "b", localStorage: { getItem: () => null }, setSaving: (v: boolean) => flags.push(v), fetch: () => assert.fail("No org submitted") })({ preventDefault: noop });
+  await callback(drawer, "handleSubmit", { name: "Loan", baseCurrency: "USD", principalAccountId: "a", interestAccountId: "b", localStorage: { getItem: () => null }, setSaving: (v: boolean) => flags.push(v), fetch: () => assert.fail("No org submitted") })({ preventDefault: noop });
   assert.deepEqual(flags, [true, false]);
 });
 
 test("actual payment confirmation and callback preserve exact previews, request, failures and cancellation", async () => {
   for (const locale of locales) for (const mode of ["success", "forbidden", "network", "html", "shape", "alias", "cancel"]) {
     const t = translator(locale), messages: string[] = [], flags: boolean[] = []; let reloads = 0, requests = 0;
-    await callback(detail, "handlePostPayment", {
+    await callback(detail, "handlePostPayment", { unitPresentation: resolvePresentation({ user: { language: locale } }),
       t, orgId: "org-a", id: loan.id, nextEntry: entry, formatMoney: assetMoneyDisplay, loanJson, loanFailureMessage,
       confirm: async (config: { title: string; description: string; confirmLabel: string; onConfirm: () => Promise<void> }) => {
         assert.equal(config.title, t("postTitle")); assert.equal(config.confirmLabel, t("record"));
-        assert.equal(config.description, t("postDescription", { period: 1, total: "$0.29", principal: "$0.20", interest: "$0.09" }));
+        assert.equal(config.description, t("postDescription", { period: 1, total: localizedAmount("$0.29", locale), principal: localizedAmount("$0.20", locale), interest: localizedAmount("$0.09", locale) }));
         if (mode !== "cancel") await config.onConfirm();
       },
       setPosting: (v: boolean) => flags.push(v), load: () => { reloads++; }, toast: { success: (v: string) => messages.push(v), error: (v: string) => messages.push(v) },
@@ -215,13 +219,14 @@ test("actual list/detail/bank reads adopt validated data, localize failures and 
   for (const locale of locales) for (const kind of ["list", "detail", "banks", "more"] as const) for (const mode of ["success", "forbidden", "network", "shape", "alias", "cancel"]) {
     if (mode === "cancel" && (kind === "detail" || kind === "more")) continue;
     const t = translator(locale), messages: string[] = [], adopted: unknown[] = [], flags: boolean[] = [];
-    const scope = {
-      t, loanJson, loanFailureMessage, orgId: "org-a", id: loan.id, open: true, page: 1, loadingMore: false,
+    const scope = { unitPresentation: resolvePresentation({ user: { language: locale } }),
+      t, currencyMetadata, loanRepaymentBanks, setBaseCurrency: noop, loanJson, loanFailureMessage, orgId: "org-a", id: loan.id, open: true, page: 1, loadingMore: false,
       localStorage: { getItem: () => "org-a" }, buildParams: (page: number) => `page=${page}&limit=50`, devDelay: async () => {},
       setLoans: (value: unknown) => adopted.push(typeof value === "function" ? value([]) : value), setLn: (value: unknown) => adopted.push(value), setSchedule: (value: unknown) => adopted.push(value), setBankAccounts: (value: unknown) => adopted.push(value),
       setReadError: (value: string) => messages.push(value), toast: { error: (value: string) => messages.push(value) },
       setRefetching: (value: boolean) => flags.push(value), setInitialLoad: (value: boolean) => flags.push(value), setLoading: (value: boolean) => flags.push(value), setLoadingMore: (value: boolean) => flags.push(value), setPage: noop, setTotalCount: noop, setFetchKey: noop,
       fetch: async (url: string, init: RequestInit) => {
+        if (kind === "banks" && url === "/api/v1/organization") return Response.json({ organization: { defaultCurrency: "USD" } });
         assert.equal(url, kind === "banks" ? "/api/v1/bank-accounts" : kind === "detail" ? "/api/v1/loans/loan-a" : `/api/v1/loans?page=${kind === "more" ? 2 : 1}&limit=50`);
         assert.equal((init.headers as Record<string, string>)["x-organization-id"], "org-a");
         if (mode === "network") throw new Error("private network prose");
@@ -270,3 +275,5 @@ test("loan copy audit permits only documented technical/display exceptions and P
   }
   for (const value of Object.values(fa.Loans)) assert.match(value, /[\u0600-\u06ff]/);
 });
+
+function localizedAmount(value: string, locale: "en-US" | "fa-IR") { return (value.startsWith("+") ? "+" : "") + localizedBankMoney(BigInt(value.replace(/[$,+.]/g, "")), "USD", resolvePresentation({ user: { language: locale } })); }

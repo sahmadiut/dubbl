@@ -1,5 +1,7 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
+import { currencyLabel } from "@/i18n/currency-labels";
 import { useTranslations } from "next-intl";
 import { bankPaymentStatus, paymentFailure, requirePaymentResponse } from "@/i18n/bank-payment-presentation";
 
@@ -102,6 +104,7 @@ export default function ScheduledPaymentsPage() {
   return <ScheduledPaymentsList key={orgId} orgId={orgId} />;
 }
 function ScheduledPaymentsList({ orgId }: { orgId: string | null }) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("BankPayments");
   const errors = useTranslations("BankAccountErrors");
   const [items, setItems] = useState<ScheduledPaymentItem[]>([]);
@@ -453,7 +456,7 @@ function ScheduledPaymentsList({ orgId }: { orgId: string | null }) {
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
                     <p className="font-mono text-sm font-semibold tabular-nums break-all">
-                      {formatMoney(item.amount, item.currencyCode)}
+                      {formatMoney(item.amount, item.currencyCode, unitPresentation)}
                     </p>
                     {item.status === "pending" && (
                       <Button
@@ -495,7 +498,7 @@ function ScheduledPaymentsList({ orgId }: { orgId: string | null }) {
                   {bills.map((b) => (
                     <SelectItem key={b.id} value={b.id}>
                       {b.billNumber} - {b.contact?.name || t("unknown")} (
-                      {t("amountDue", { amount: formatMoney(b.amountDue, b.currencyCode) })})
+                      {t("amountDue", { amount: formatMoney(b.amountDue, b.currencyCode, unitPresentation) })})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -506,7 +509,7 @@ function ScheduledPaymentsList({ orgId }: { orgId: string | null }) {
               <Input
                 type="text"
                 inputMode="decimal"
-                aria-label={t("paymentAmount", { currency: selectedBill?.currencyCode || t("selectBill") })}
+                aria-label={t("paymentAmount", { currency: currencyLabel(selectedBill?.currencyCode || t("selectBill"), unitPresentation.locale) })}
                 aria-invalid={!!amount && !preview}
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}

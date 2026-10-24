@@ -1,5 +1,6 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
 import { useTranslations } from "next-intl";
 import { requireAccountResponse, accountFailureMessage } from "@/i18n/account-presentation";
 
@@ -32,6 +33,7 @@ interface LedgerEntry extends LedgerMoney {
 }
 
 export default function AccountLedgerPage() {
+  const unitPresentation = usePresentation();
   const t = useTranslations("Accounts");
   const errors = useTranslations("AccountErrors");
   const ledgerColumns: Column<LedgerEntry>[] = [
@@ -65,7 +67,7 @@ export default function AccountLedgerPage() {
       className: "w-28 text-right",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums">
-          {r.debitAmountMinor !== "0" ? journalMoney(coreStoredMinor(r.debitAmount, r.debitAmountMinor), r.amountCurrencyCode) : ""}
+          {r.debitAmountMinor !== "0" ? journalMoney(coreStoredMinor(r.debitAmount, r.debitAmountMinor), r.amountCurrencyCode, unitPresentation) : ""}
         </span>
       ),
     },
@@ -75,7 +77,7 @@ export default function AccountLedgerPage() {
       className: "w-28 text-right",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums">
-          {r.creditAmountMinor !== "0" ? journalMoney(coreStoredMinor(r.creditAmount, r.creditAmountMinor), r.amountCurrencyCode) : ""}
+          {r.creditAmountMinor !== "0" ? journalMoney(coreStoredMinor(r.creditAmount, r.creditAmountMinor), r.amountCurrencyCode, unitPresentation) : ""}
         </span>
       ),
     },
@@ -85,7 +87,7 @@ export default function AccountLedgerPage() {
       className: "w-28 text-right",
       render: (r) => (
         <span className="font-mono text-sm font-medium tabular-nums">
-          {journalMoney(coreStoredMinor(r.balance, r.balanceMinor), r.amountCurrencyCode)}
+          {journalMoney(coreStoredMinor(r.balance, r.balanceMinor), r.amountCurrencyCode, unitPresentation)}
         </span>
       ),
     },

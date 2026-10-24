@@ -1,3 +1,4 @@
+import type { NumberPresentation } from "../../i18n/numbers";
 import { invoiceEditorCurrency } from "./document-editor";
 import { invoiceUiCredit, invoiceUiAmount, invoiceUiMoney, invoiceUiDecimal } from "./invoice-ui";
 import { creditNoteUiInvoice, creditNoteUiInvoiceEligible, creditNoteUiApplication } from "./credit-note-ui";
@@ -19,7 +20,7 @@ export function customerPrepaymentRow<T extends Record<string, unknown> & { curr
 }
 
 /** These are the loaded filtered sample, excluding cancelled credits; never infer FX. */
-export function customerPrepaymentSummary(rows: readonly { currencyCode: string; status: string; originalAmount: bigint; amountRemaining: bigint }[]) {
+export function customerPrepaymentSummary(rows: readonly { currencyCode: string; status: string; originalAmount: bigint; amountRemaining: bigint }[], presentation: NumberPresentation = { locale: "en-US", numerals: "latn" }) {
   const groups = new Map<string, { received: bigint; remaining: bigint }>();
   for (const row of rows) if (row.status !== "void") {
     const group = groups.get(row.currencyCode) ?? { received: 0n, remaining: 0n };
@@ -29,7 +30,7 @@ export function customerPrepaymentSummary(rows: readonly { currencyCode: string;
   }
   const sorted = [...groups].sort(([a], [b]) => a.localeCompare(b));
   return {
-    received: sorted.map(([code, group]) => customerPrepaymentMoney(group.received, code)).join(" · ") || "—",
-    remaining: sorted.map(([code, group]) => customerPrepaymentMoney(group.remaining, code)).join(" · ") || "—",
+    received: sorted.map(([code, group]) => customerPrepaymentMoney(group.received, code, presentation)).join(" · ") || "—",
+    remaining: sorted.map(([code, group]) => customerPrepaymentMoney(group.remaining, code, presentation)).join(" · ") || "—",
   };
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
 import { useTranslations } from "next-intl";
 import { goodsReceiptStatusLabel } from "@/i18n/goods-receipt-presentation";
 
@@ -53,6 +54,7 @@ export default function GoodsReceiptDetailPage() {
 }
 
 function GoodsReceiptDetailContent() {
+  const unitPresentation = usePresentation();
   const t = useTranslations("GoodsReceipts");
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -163,7 +165,7 @@ function GoodsReceiptDetailContent() {
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="rounded-lg border p-4">
           <p className="text-xs text-muted-foreground">{t("valueReceived")}</p>
-          <p className="text-xl font-bold font-mono break-all">{procurementMoney(totalValue, gr.currencyCode)}</p>
+          <p className="text-xl font-bold font-mono break-all">{procurementMoney(totalValue, gr.currencyCode, unitPresentation)}</p>
         </div>
         <div className="rounded-lg border p-4">
           <div className="flex items-center gap-2">

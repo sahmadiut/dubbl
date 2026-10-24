@@ -1,4 +1,5 @@
 "use client";
+import { usePresentation } from "@/i18n/provider";
 import { useTranslations } from "next-intl";
 import { journalPreviewMessage, type JournalTranslate, requireJournalResponse, journalFailureMessage } from "@/i18n/journal-presentation";
 
@@ -99,6 +100,7 @@ function formatTimestamp(ts: string, t: JournalTranslate) {
 }
 
 export default function EntryDetailPage() {
+  const unitPresentation = usePresentation();
   const t = useTranslations("Journals");
   const errors = useTranslations("JournalErrors");
   const sourceTypeLabels: Record<string, string> = {
@@ -472,14 +474,14 @@ export default function EntryDetailPage() {
                       </td>
                       <td className="px-6 py-3 text-right font-mono tabular-nums">
                         {debit > 0n ? (
-                          <span className="font-medium">{journalMoney(debit, line.amountCurrencyCode)}</span>
+                          <span className="font-medium">{journalMoney(debit, line.amountCurrencyCode, unitPresentation)}</span>
                         ) : (
                           <span className="text-muted-foreground/30">-</span>
                         )}
                       </td>
                       <td className="px-6 py-3 text-right font-mono tabular-nums">
                         {credit > 0n ? (
-                          <span className="font-medium">{journalMoney(credit, line.amountCurrencyCode)}</span>
+                          <span className="font-medium">{journalMoney(credit, line.amountCurrencyCode, unitPresentation)}</span>
                         ) : (
                           <span className="text-muted-foreground/30">-</span>
                         )}
@@ -498,13 +500,13 @@ export default function EntryDetailPage() {
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">{t("totalDebits")}</span>
                   <span className="font-mono tabular-nums font-semibold">
-                    {journalSideDisplay(savedLines, "debitAmountMinor")}
+                    {journalSideDisplay(savedLines, "debitAmountMinor", unitPresentation)}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">{t("totalCredits")}</span>
                   <span className="font-mono tabular-nums font-semibold">
-                    {journalSideDisplay(savedLines, "creditAmountMinor")}
+                    {journalSideDisplay(savedLines, "creditAmountMinor", unitPresentation)}
                   </span>
                 </div>
                 <div className="h-px bg-border my-1" />
@@ -516,7 +518,7 @@ export default function EntryDetailPage() {
                       ? "text-emerald-600 dark:text-emerald-400"
                       : "text-red-600 dark:text-red-400"
                   )}>
-                    {journalSideDisplay(savedLines, "difference")}
+                    {journalSideDisplay(savedLines, "difference", unitPresentation)}
                   </span>
                 </div>
               </div>
@@ -628,6 +630,7 @@ function EditEntrySheet({
   orgId: string | null;
   onSaved: () => void;
 }) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("Journals");
   const errors = useTranslations("JournalErrors");
   const [date, setDate] = useState(entry.date);
@@ -769,12 +772,12 @@ function EditEntrySheet({
 
           {preview.error && <p role="alert" className="text-xs text-red-600">{journalPreviewMessage(t, preview.error)}</p>}
           <div className="rounded-lg border bg-muted/30 p-3 text-sm">
-            <div className="flex justify-between"><span className="text-muted-foreground">{t("totalDebitsLower")}</span><span className="font-mono tabular-nums">{journalSideDisplay(preview.lines, "debitAmountMinor")}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">{t("totalCreditsLower")}</span><span className="font-mono tabular-nums">{journalSideDisplay(preview.lines, "creditAmountMinor")}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">{t("totalDebitsLower")}</span><span className="font-mono tabular-nums">{journalSideDisplay(preview.lines, "debitAmountMinor", unitPresentation)}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">{t("totalCreditsLower")}</span><span className="font-mono tabular-nums">{journalSideDisplay(preview.lines, "creditAmountMinor", unitPresentation)}</span></div>
             <div className="mt-1 flex justify-between border-t pt-1">
               <span className="text-muted-foreground">{t("difference")}</span>
               <span className={cn("font-mono tabular-nums font-semibold", balanced ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400")}>
-                {journalSideDisplay(preview.lines, "difference")}
+                {journalSideDisplay(preview.lines, "difference", unitPresentation)}
               </span>
             </div>
           </div>

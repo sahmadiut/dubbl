@@ -1,5 +1,8 @@
 "use client";
 
+import { bankMoneyDisplay as exampleMoney } from "@/lib/money/bank-display";
+import { usePresentation } from "@/i18n/provider";
+import type { NumberPresentation } from "@/i18n/numbers";
 import { useTranslations } from "next-intl";
 import { salesReceiptStatusLabel, type SalesReceiptTranslate } from "@/i18n/sales-receipt-presentation";
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
@@ -51,7 +54,7 @@ const statusColors: Record<string, string> = {
 };
 
 // Finite display labels; filter and transport codes stay canonical.
-function buildColumns(t: SalesReceiptTranslate): Column<SalesReceipt>[] {
+function buildColumns(t: SalesReceiptTranslate, unitPresentation: NumberPresentation = { locale: "en-US", numerals: "latn" }): Column<SalesReceipt>[] {
   return [
     {
       key: "number",
@@ -93,7 +96,7 @@ function buildColumns(t: SalesReceiptTranslate): Column<SalesReceipt>[] {
       className: "w-28 text-right",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums">
-          {salesReceiptUiMoney(r.total, r.currencyCode)}
+          {salesReceiptUiMoney(r.total, r.currencyCode, unitPresentation)}
         </span>
       ),
     },
@@ -101,6 +104,7 @@ function buildColumns(t: SalesReceiptTranslate): Column<SalesReceipt>[] {
 }
 
 export default function SalesReceiptsPage() {
+  const unitPresentation = usePresentation();
   const t = useTranslations("SalesReceipts");
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
@@ -130,7 +134,7 @@ export default function SalesReceiptsPage() {
   const totalCount = loaded?.context === context ? loaded.total : 0;
   const error = loaded?.context === context ? loaded.error : null;
   const waitingForContext = !!orgId && loaded?.context !== context;
-  const columns = useMemo(() => buildColumns(t), [t]);
+  const columns = useMemo(() => buildColumns(t, unitPresentation), [t, unitPresentation]);
 
   const buildParams = useCallback((p: number) => {
     const params = new URLSearchParams();
@@ -149,7 +153,6 @@ export default function SalesReceiptsPage() {
     const controller = new AbortController();
     const current = ++generation.current;
     if (!orgId) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setRefetching(true); setLoadingMore(false); setPage(1);
     fetch(`/api/v1/sales-receipts?${buildParams(1)}`, {
       headers: { "x-organization-id": orgId }, signal: controller.signal,
@@ -227,11 +230,10 @@ export default function SalesReceiptsPage() {
 
   // Bump searchKey when debounced search changes to trigger ContentReveal
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSearchKey((k) => k + 1);
   }, [debouncedSearch]);
 
-  const totalCollected = useMemo(() => salesReceiptUiCollected(filteredReceipts), [filteredReceipts]);
+  const totalCollected = useMemo(() => salesReceiptUiCollected(filteredReceipts, unitPresentation), [filteredReceipts, unitPresentation]);
 
   if (initialLoad || waitingForContext) return <BrandLoader />;
 
@@ -273,7 +275,7 @@ export default function SalesReceiptsPage() {
                       <p className="text-[11px] text-muted-foreground">SR-0001</p>
                     </div>
                   </div>
-                  <span className="font-mono text-sm font-medium">$45.00</span>
+                  <span className="font-mono text-sm font-medium">{exampleMoney(4500n, "USD", unitPresentation)}</span>
                 </div>
                 <div className="flex items-center justify-between px-3 sm:px-5 py-3.5 bg-emerald-50/30 dark:bg-emerald-950/10">
                   <div className="flex items-center gap-3">
@@ -285,14 +287,14 @@ export default function SalesReceiptsPage() {
                       <p className="text-[11px] text-muted-foreground">{t("cashDrawer")}</p>
                     </div>
                   </div>
-                  <span className="font-mono text-sm font-medium text-emerald-600 dark:text-emerald-400">+$45.00</span>
+                  <span className="font-mono text-sm font-medium text-emerald-600 dark:text-emerald-400">{"+" + exampleMoney(4500n, "USD", unitPresentation)}</span>
                 </div>
                 <div className="flex items-center justify-between px-3 sm:px-5 py-3.5">
                   <div className="flex items-center gap-3">
                     <div className="size-7" />
                     <p className="text-sm font-semibold">{t("nothingOwed")}</p>
                   </div>
-                  <span className="font-mono text-sm font-bold">$0.00</span>
+                  <span className="font-mono text-sm font-bold">{exampleMoney(0n, "USD", unitPresentation)}</span>
                 </div>
               </div>
             </div>

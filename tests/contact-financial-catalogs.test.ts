@@ -1,3 +1,4 @@
+import { resolvePresentation } from "../i18n/locale";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -114,7 +115,7 @@ test("activity renders translated filters, empty/loading states, every type/stat
     const List = loaded(activity, { activityItems: items, activityStartDate: "2026-01-01", activityLoadingMore: true }, [], events);
     const list = renderWithPresentation(createElement(List), locale);
     for (const status of statuses) assert.ok(list.includes(escape(t(activityStatusKey(status)))));
-    for (const item of items) assert.ok(list.includes(escape(money.displayMoney(item.amount, item.currencyCode)))) ;
+    for (const item of items) assert.ok(list.includes(escape(money.displayMoney(item.amount, item.currencyCode, resolvePresentation({ user: { language: locale } }))))) ;
     assert.ok(list.includes(escape(caller)) && !list.includes("<script>"));
     for (const type of types) {
       const config = loadedLayout().activityTypeConfig[type];
@@ -140,7 +141,7 @@ test("statement translates summaries, types, empty/loading/busy states and prese
     const Populated = loaded(statement, { statementData: { ...data, transactions: types.map(type => ({ type, date: "2026-10-19", documentNumber: caller, description: caller, debit: 1n, credit: 0n, balance: data.openingBalance })) }, sendingStatement: true });
     const populated = renderWithPresentation(createElement(Populated), locale);
     for (const type of types) assert.ok(populated.includes(escape(t(statementTypeKey(type)))));
-    assert.ok(populated.includes(escape(money.displayMoney(data.openingBalance, currencyCode))) && populated.includes(escape(caller)) && !populated.includes("<script>"));
+    assert.ok(populated.includes(escape(money.displayMoney(data.openingBalance, currencyCode, resolvePresentation({ user: { language: locale } })))) && populated.includes(escape(caller)) && !populated.includes("<script>"));
     const Loading = loaded(statement, { statementLoading: true });
     assert.ok(renderWithPresentation(createElement(Loading), locale).includes(`aria-label="${escape(t("loading"))}"`));
   }
@@ -150,7 +151,7 @@ test("bookkeeping update preserves payload and exact credit aliases; failures st
   for (const locale of locales) for (const mode of ["success", "status", "json", "alias", "network", "no-org"]) {
     const t = translator(locale, "ContactBookkeeping"), events: unknown[] = [];
     const setters = Object.fromEntries(["setContact", "setFormType", "setFormRevenueAccountId", "setFormExpenseAccountId", "setFormTaxRateId", "setSaving"].map(k => [k, (v: unknown) => events.push([k, v])]));
-    await callback(bookkeeping, "handleSubmit", { ...money, ...context, ...setters, t, id: "contact-a", getOrgId: () => mode === "no-org" ? null : "org-a",
+    await callback(bookkeeping, "handleSubmit", { unitPresentation: resolvePresentation({ user: { language: locale } }), ...money, ...context, ...setters, t, id: "contact-a", getOrgId: () => mode === "no-org" ? null : "org-a",
       toast: { success: (s: string) => events.push(s), error: (s: string) => events.push(s) },
       fetch: async (url: string, init: RequestInit) => {
         assert.equal(url, "/api/v1/contacts/contact-a"); assert.equal(init.method, "PATCH");
@@ -172,7 +173,7 @@ test("bookkeeping update preserves payload and exact credit aliases; failures st
 test("bookkeeping reference reads validate status/envelopes/rows before adoption", async () => {
   for (const locale of locales) for (const mode of ["success", "status", "json", "shape", "row", "network", "no-org"]) {
     const t = translator(locale, "ContactBookkeeping"), events: unknown[] = [];
-    callback(bookkeeping, "fetchReferenceData", { t, getOrgId: () => mode === "no-org" ? null : "org-a",
+    callback(bookkeeping, "fetchReferenceData", { unitPresentation: resolvePresentation({ user: { language: locale } }), t, getOrgId: () => mode === "no-org" ? null : "org-a",
       setAccounts: (v: unknown) => events.push(v), setTaxRates: (v: unknown) => events.push(v), toast: { error: (s: string) => events.push(s) },
       fetch: async (url: string, init: RequestInit) => {
         assert.deepEqual(init, { headers: { "x-organization-id": "org-a" } });
@@ -191,7 +192,7 @@ test("activity fetch preserves canonical filters/cursor, validates exact aliases
   for (const locale of locales) for (const more of [false, true]) for (const mode of ["success", "status", "json", "alias", "network", "no-org"]) {
     const t = translator(locale, "ContactActivity"), events: unknown[] = [];
     const row = { id: "doc-a", type: "invoice", number: caller, status: "draft", date: "2026-10-19", createdAt: "2026-10-19T00:00:00Z", amount: 9007199254740991, amountMinor: mode === "alias" ? "1" : "9007199254740991", currencyCode: "KWD" };
-    callback(activity, "fetchActivity", { ...money, t, id: "contact-a", activityStartDate: "2026-01-01", activityEndDate: "2026-10-19", activityTypeFilter: "credit_note", getOrgId: () => mode === "no-org" ? null : "org-a",
+    callback(activity, "fetchActivity", { unitPresentation: resolvePresentation({ user: { language: locale } }), ...money, t, id: "contact-a", activityStartDate: "2026-01-01", activityEndDate: "2026-10-19", activityTypeFilter: "credit_note", getOrgId: () => mode === "no-org" ? null : "org-a",
       ...Object.fromEntries(["setActivityLoading", "setActivityLoadingMore", "setActivityHasMore", "setActivityCursor"].map(k => [k, (v: unknown) => events.push([k, v])])),
       setActivityItems: (v: unknown) => events.push(["items", typeof v === "function" ? v([{ id: "previous" }]) : v]), toast: { error: (s: string) => events.push(s) },
       fetch: async (url: string, init: RequestInit) => {
@@ -216,7 +217,7 @@ test("statement fetch validates money and preserves currency filters, abort beha
   for (const locale of locales) for (const mode of ["success", "status", "json", "alias", "network", "abort", "no-org"]) {
     const t = translator(locale, "ContactStatement"), events: unknown[] = [], controller = new AbortController();
     const data = { contact: { id: "contact-a", name: caller, email: null, type: "both" }, startDate: "2026-01-01", endDate: "2026-10-19", currencyCode: "JPY", transactions: [], openingBalance: 9007199254740991, openingBalanceMinor: mode === "alias" ? "1" : "9007199254740991", closingBalance: 9007199254740991, closingBalanceMinor: "9007199254740991", totalDebit: 0, totalDebitMinor: "0", totalCredit: 0, totalCreditMinor: "0" };
-    await callback(statement, "fetchStatement", { ...money, t, id: "contact-a", statementStartDate: data.startDate, statementEndDate: data.endDate, statementCurrency: "JPY", getOrgId: () => mode === "no-org" ? null : "org-a",
+    await callback(statement, "fetchStatement", { unitPresentation: resolvePresentation({ user: { language: locale } }), ...money, t, id: "contact-a", statementStartDate: data.startDate, statementEndDate: data.endDate, statementCurrency: "JPY", getOrgId: () => mode === "no-org" ? null : "org-a",
       setStatementLoading: (v: unknown) => events.push(["loading", v]), setStatementData: (v: unknown) => events.push(["data", v]), toast: { error: (s: string) => events.push(s) },
       fetch: async (url: string, init: RequestInit) => {
         const parsed = new URL(url, "https://local.test"); assert.equal(parsed.pathname, "/api/v1/contacts/contact-a/statement");
@@ -234,7 +235,7 @@ test("statement fetch validates money and preserves currency filters, abort beha
 test("statement PDF/email handlers preserve scoped URLs/payloads and hide arbitrary errors", async () => {
   for (const locale of locales) for (const filtered of [false, true]) for (const mode of ["success", "status", "json", "network", "no-org"]) {
     const t = translator(locale, "ContactStatement"), events: unknown[] = [];
-    const scope = { t, id: "contact-a", statementStartDate: filtered ? "2026-01-01" : "", statementEndDate: filtered ? "2026-10-19" : "", statementCurrency: filtered ? "KWD" : "", getOrgId: () => mode === "no-org" ? null : "org-a" };
+    const scope = { unitPresentation: resolvePresentation({ user: { language: locale } }), t, id: "contact-a", statementStartDate: filtered ? "2026-01-01" : "", statementEndDate: filtered ? "2026-10-19" : "", statementCurrency: filtered ? "KWD" : "", getOrgId: () => mode === "no-org" ? null : "org-a" };
     callback(statement, "handleDownloadPdf", { ...scope, window: { open: (url: string, target: string) => {
       const parsed = new URL(url, "https://local.test"); assert.equal(parsed.pathname, "/api/v1/contacts/contact-a/statement/pdf"); assert.equal(target, "_blank");
       assert.deepEqual(Object.fromEntries(parsed.searchParams), { orgId: "org-a", ...(filtered ? { startDate: "2026-01-01", endDate: "2026-10-19", currencyCode: "KWD" } : {}) });

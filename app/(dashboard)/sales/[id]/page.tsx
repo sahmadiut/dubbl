@@ -1,5 +1,7 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
+import { currencyLabel } from "@/i18n/currency-labels";
 import { useTranslations } from "next-intl";
 import { invoiceStatusLabel, invoiceMethodLabel, invoiceCreditLabel, invoiceComplianceLabel, type InvoiceTranslate } from "@/i18n/invoice-presentation";
 
@@ -165,6 +167,7 @@ function getOverdueInfo(t: InvoiceTranslate, dueDate: string, status: string) {
 }
 
 export default function InvoiceDetailPage() {
+  const unitPresentation = usePresentation();
   const t = useTranslations("SalesInvoices");
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -363,7 +366,7 @@ export default function InvoiceDetailPage() {
         body: JSON.stringify({ invoiceId: id, ...input }),
       });
       if (res.ok) {
-        toast.success(t("appliedCredit", { amount: formatMoney(amount, inv.currencyCode) }));
+        toast.success(t("appliedCredit", { amount: formatMoney(amount, inv.currencyCode, unitPresentation) }));
         await refetchInvoice();
       } else {
         toast.error(t("creditFailed"));
@@ -771,8 +774,8 @@ export default function InvoiceDetailPage() {
                     <div className="space-y-2">
                       <Label>{t("amount")}</Label>
                       <InvoiceAmountInput
-                        label={t("amountLabel", { currency: inv.currencyCode })}
-                        invalidMessage={t("amountInvalid", { currency: inv.currencyCode })}
+                        label={t("amountLabel", { currency: currencyLabel(inv.currencyCode, unitPresentation.locale) })}
+                        invalidMessage={t("amountInvalid", { currency: currencyLabel(inv.currencyCode, unitPresentation.locale) })}
                         currency={inv.currencyCode}
                         value={payAmount}
                         onChange={setPayAmount}
@@ -841,8 +844,8 @@ export default function InvoiceDetailPage() {
                     <div className="space-y-2">
                       <Label>{t("customAmount")}</Label>
                       <InvoiceAmountInput
-                        label={t("amountLabel", { currency: inv.currencyCode })}
-                        invalidMessage={t("amountInvalid", { currency: inv.currencyCode })}
+                        label={t("amountLabel", { currency: currencyLabel(inv.currencyCode, unitPresentation.locale) })}
+                        invalidMessage={t("amountInvalid", { currency: currencyLabel(inv.currencyCode, unitPresentation.locale) })}
                         currency={inv.currencyCode}
                         value={interestAmount}
                         onChange={setInterestAmount}
@@ -970,20 +973,20 @@ export default function InvoiceDetailPage() {
                       )}
                     </td>
                     <td className="px-4 py-3 text-right font-mono tabular-nums">{line.quantity / 100}</td>
-                    <td className="px-4 py-3 text-right font-mono tabular-nums text-muted-foreground">{formatMoney(line.unitPrice, inv.currencyCode)}</td>
+                    <td className="px-4 py-3 text-right font-mono tabular-nums text-muted-foreground">{formatMoney(line.unitPrice, inv.currencyCode, unitPresentation)}</td>
                     <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
                       {line.taxRate ? (
                         <div>
                           <span className="font-mono">{(line.taxRate.rate / 100).toFixed(2)}%</span>
                           {line.taxAmount > 0 && (
-                            <p className="text-[11px] font-mono">{formatMoney(line.taxAmount, inv.currencyCode)}</p>
+                            <p className="text-[11px] font-mono">{formatMoney(line.taxAmount, inv.currencyCode, unitPresentation)}</p>
                           )}
                         </div>
                       ) : (
                         <span className="text-xs">{t("noTax")}</span>
                       )}
                     </td>
-                    <td className="px-6 py-3 text-right font-mono tabular-nums font-medium">{formatMoney(line.amount, inv.currencyCode)}</td>
+                    <td className="px-6 py-3 text-right font-mono tabular-nums font-medium">{formatMoney(line.amount, inv.currencyCode, unitPresentation)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -996,27 +999,27 @@ export default function InvoiceDetailPage() {
               <div className="w-full max-w-xs space-y-1.5">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">{t("subtotal")}</span>
-                  <span className="font-mono tabular-nums">{formatMoney(inv.subtotal, inv.currencyCode)}</span>
+                  <span className="font-mono tabular-nums">{formatMoney(inv.subtotal, inv.currencyCode, unitPresentation)}</span>
                 </div>
                 {inv.taxTotal > 0 && (
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">{t("tax")}</span>
-                    <span className="font-mono tabular-nums">{formatMoney(inv.taxTotal, inv.currencyCode)}</span>
+                    <span className="font-mono tabular-nums">{formatMoney(inv.taxTotal, inv.currencyCode, unitPresentation)}</span>
                   </div>
                 )}
                 <div className="h-px bg-border my-1" />
                 <div className="flex justify-between text-sm font-semibold">
                   <span>{t("total")}</span>
-                  <span className="font-mono tabular-nums">{formatMoney(inv.total, inv.currencyCode)}</span>
+                  <span className="font-mono tabular-nums">{formatMoney(inv.total, inv.currencyCode, unitPresentation)}</span>
                 </div>
                 {base && base.baseCurrency !== inv.currencyCode && (
                   <>
                     <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>{t("inCurrency", { currency: base.baseCurrency })}</span>
+                      <span>{t("inCurrency", { currency: currencyLabel(base.baseCurrency, unitPresentation.locale) })}</span>
                       <span className="font-mono tabular-nums">
                         {base.amounts.total == null
                           ? "—"
-                          : `≈ ${formatMoney(base.amounts.total, base.baseCurrency)}`}
+                          : `≈ ${formatMoney(base.amounts.total, base.baseCurrency, unitPresentation)}`}
                       </span>
                     </div>
                     <RateNote
@@ -1072,7 +1075,7 @@ export default function InvoiceDetailPage() {
               </div>
               <div>
                 <p className="text-[11px] text-muted-foreground">{t("paidTab")}</p>
-                <p className="text-sm font-mono font-semibold tabular-nums text-emerald-600 mt-0.5">{formatMoney(inv.amountPaid, inv.currencyCode)}</p>
+                <p className="text-sm font-mono font-semibold tabular-nums text-emerald-600 mt-0.5">{formatMoney(inv.amountPaid, inv.currencyCode, unitPresentation)}</p>
               </div>
               <div>
                 <p className="text-[11px] text-muted-foreground">{t("due")}</p>
@@ -1137,7 +1140,7 @@ export default function InvoiceDetailPage() {
                         </div>
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-mono font-semibold">{formatMoney(c.amountRemaining, c.currencyCode)}</span>
+                            <span className="text-sm font-mono font-semibold">{formatMoney(c.amountRemaining, c.currencyCode, unitPresentation)}</span>
                             <Badge variant="outline" className="text-[10px] px-1.5 py-0">{invoiceCreditLabel(t, c.sourceType)}</Badge>
                           </div>
                           <p className="text-xs text-muted-foreground mt-0.5">{formatDate(c.date)}{c.notes ? ` · ${c.notes}` : ""}</p>
@@ -1149,9 +1152,9 @@ export default function InvoiceDetailPage() {
                         disabled={c.currencyCode !== inv.currencyCode || applyAmount <= 0n}
                         onClick={() => handleApplyCredit(c)}
                         loading={applyingCreditId === c.id}
-                        title={t("applyHint", { amount: formatMoney(applyAmount, c.currencyCode) })}
+                        title={t("applyHint", { amount: formatMoney(applyAmount, c.currencyCode, unitPresentation) })}
                       >
-                        {t("apply", { amount: formatMoney(applyAmount, c.currencyCode) })}
+                        {t("apply", { amount: formatMoney(applyAmount, c.currencyCode, unitPresentation) })}
                       </Button>
                     </div>
                   );
@@ -1276,7 +1279,7 @@ export default function InvoiceDetailPage() {
                       <p className="text-xs text-muted-foreground mt-0.5">{formatDate(p.date)}</p>
                     </div>
                   </div>
-                  <span className="text-sm font-mono font-semibold text-emerald-600 shrink-0">{formatMoney(p.amount, p.currencyCode)}</span>
+                  <span className="text-sm font-mono font-semibold text-emerald-600 shrink-0">{formatMoney(p.amount, p.currencyCode, unitPresentation)}</span>
                 </div>
               ))}
             </div>

@@ -1,5 +1,7 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
+import type { NumberPresentation } from "@/i18n/numbers";
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { requisitionStatusLabel, type RequisitionTranslate } from "@/i18n/requisition-presentation";
@@ -70,7 +72,7 @@ const statusColors: Record<string, string> = {
     "border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-800 dark:bg-purple-950 dark:text-purple-300",
 };
 
-function buildColumns(t: RequisitionTranslate): Column<Requisition>[] {
+function buildColumns(t: RequisitionTranslate, unitPresentation: NumberPresentation = { locale: "en-US", numerals: "latn" }): Column<Requisition>[] {
   return [
     {
       key: "number",
@@ -114,7 +116,7 @@ function buildColumns(t: RequisitionTranslate): Column<Requisition>[] {
       className: "w-28 text-right",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums break-all">
-          {procurementMoney(r.total, r.currencyCode)}
+          {procurementMoney(r.total, r.currencyCode, unitPresentation)}
         </span>
       ),
     },
@@ -127,6 +129,7 @@ export default function RequisitionsPage() {
 }
 
 function RequisitionsContent() {
+  const unitPresentation = usePresentation();
   const t = useTranslations("Requisitions");
   const router = useRouter();
   const [readError, setReadError] = useState<"readFailed" | null>(null);
@@ -168,7 +171,7 @@ function RequisitionsContent() {
 
   useDocumentTitle(t("documentTitle"));
 
-  const columns = useMemo(() => buildColumns(t), [t]);
+  const columns = useMemo(() => buildColumns(t, unitPresentation), [t, unitPresentation]);
 
   const buildParams = useCallback(
     (pg: number) => {

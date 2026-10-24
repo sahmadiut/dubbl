@@ -1,5 +1,7 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
+import { currencyLabel } from "@/i18n/currency-labels";
 import { useTranslations } from "next-intl";
 import { bankWorkspaceFailure, type WorkspaceTranslate } from "@/i18n/bank-workspace-presentation";
 import { requireBankAccountResponse } from "@/i18n/bank-account-presentation";
@@ -117,6 +119,7 @@ function getActiveTab(pathname: string): string {
 // ---------------------------------------------------------------------------
 
 export default function BankAccountDetailLayout({ children }: { children: React.ReactNode }) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("BankWorkspace");
   const accountLabels = useTranslations("BankAccounts");
   const errors = useTranslations("BankAccountErrors");
@@ -478,7 +481,7 @@ export default function BankAccountDetailLayout({ children }: { children: React.
               <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
                 <h1 className="text-base sm:text-lg font-semibold tracking-tight">{account.accountName}</h1>
                 <Badge variant="outline">{bankAccountTypeLabel(accountLabels, account.accountType)}</Badge>
-                <Badge variant="outline" className="text-[10px]">{account.currencyCode}</Badge>
+                <Badge variant="outline" className="text-[10px]">{currencyLabel(account.currencyCode, unitPresentation.locale)}</Badge>
               </div>
               <p className="text-sm text-muted-foreground mt-0.5">
                 {[account.bankName, account.countryCode, account.accountNumber ? `····${account.accountNumber.slice(-4)}` : null]
@@ -501,15 +504,15 @@ export default function BankAccountDetailLayout({ children }: { children: React.
         <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-4 mb-8">
           <div>
             <p className="text-[11px] text-muted-foreground">{t("balance")}</p>
-            <p className="mt-0.5 font-mono text-xl font-semibold tabular-nums">{formatMoney(account.balance, cur)}</p>
+            <p className="mt-0.5 font-mono text-xl font-semibold tabular-nums">{formatMoney(account.balance, cur, unitPresentation)}</p>
           </div>
           <div>
             <p className="text-[11px] text-muted-foreground flex items-center gap-1"><ArrowDownRight className="size-3 text-emerald-500" />{t("moneyIn")}</p>
-            <p className="mt-0.5 font-mono text-lg font-semibold tabular-nums text-emerald-600">{formatMoney(summary.credits, cur)}</p>
+            <p className="mt-0.5 font-mono text-lg font-semibold tabular-nums text-emerald-600">{formatMoney(summary.credits, cur, unitPresentation)}</p>
           </div>
           <div>
             <p className="text-[11px] text-muted-foreground flex items-center gap-1"><ArrowUpRight className="size-3 text-red-500" />{t("moneyOut")}</p>
-            <p className="mt-0.5 font-mono text-lg font-semibold tabular-nums text-red-600">{formatMoney(summary.debits, cur)}</p>
+            <p className="mt-0.5 font-mono text-lg font-semibold tabular-nums text-red-600">{formatMoney(summary.debits, cur, unitPresentation)}</p>
           </div>
           <div>
             <p className="text-[11px] text-muted-foreground">{t("done")}</p>

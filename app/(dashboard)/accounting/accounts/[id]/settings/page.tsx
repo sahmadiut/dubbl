@@ -1,5 +1,7 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
+import { currencyLabel } from "@/i18n/currency-labels";
 import { useTranslations } from "next-intl";
 import { accountDisplayName } from "@/i18n/account-names";
 import { requireAccountResponse, accountFailureMessage, accountTypeLabel } from "@/i18n/account-presentation";
@@ -24,6 +26,7 @@ import { useDocumentTitle } from "@/lib/hooks/use-document-title";
 import { useAccountContext } from "../layout";
 
 export default function AccountSettingsPage() {
+  const unitPresentation = usePresentation();
   const t = useTranslations("Accounts");
   const names = useTranslations("AccountNames");
   const errors = useTranslations("AccountErrors");
@@ -216,7 +219,7 @@ export default function AccountSettingsPage() {
             </div>
             <div>
               <p className="text-[11px] text-muted-foreground">{t("currency")}</p>
-              <p className="text-sm mt-0.5">{cur === "IRR" ? t("rial") : cur}</p>
+              <p className="text-sm mt-0.5">{currencyLabel(cur, unitPresentation.locale)}</p>
             </div>
           </div>
         </div>

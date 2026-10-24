@@ -1,5 +1,6 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { useParams, useRouter } from "next/navigation";
@@ -23,6 +24,7 @@ import { activityStatusKey } from "@/lib/i18n/contact-financial-presentation";
 import type { ActivityItem } from "../layout";
 
 export default function ContactActivityPage() {
+  const unitPresentation = usePresentation();
   const t = useTranslations("ContactActivity");
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -210,7 +212,7 @@ export default function ContactActivityPage() {
                       </div>
                       <span className="text-sm font-medium tabular-nums">
                         {item.type === "credit_note" ? "-" : ""}
-                        {formatMoney(item.amount, item.currencyCode)}
+                        {formatMoney(item.amount, item.currencyCode, unitPresentation)}
                       </span>
                     </button>
                   );

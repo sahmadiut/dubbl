@@ -1,5 +1,7 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
+import { currencyLabel } from "@/i18n/currency-labels";
 import { requireReconciliationResponse, reconciliationFailure } from "@/i18n/bank-reconciliation-presentation";
 import { useTranslations } from "next-intl";
 import { bankWorkspaceFailure, bankMatchReason, type WorkspaceTranslate } from "@/i18n/bank-workspace-presentation";
@@ -83,10 +85,11 @@ import {
 function BankMatchPreview({ text, currencyCode, transaction, document }: {
   text: string; currencyCode: string; transaction: Transaction | null; document: OpenBill | OpenInvoice | undefined;
 }) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("BankWorkspace");
   if (!transaction || !document) return null;
   let message: string;
-  try { message = t("paymentPreview", { amount: formatMoney(BigInt(bankUiMatchAmount(text, currencyCode, transaction, document).amountMinor), currencyCode) }); }
+  try { message = t("paymentPreview", { amount: formatMoney(BigInt(bankUiMatchAmount(text, currencyCode, transaction, document).amountMinor), currencyCode, unitPresentation) }); }
   catch (error) { message = bankWorkspaceFailure(error, t, t("validPayment")); }
   return <p role="status" className="text-xs text-muted-foreground">{message}</p>;
 }
@@ -360,6 +363,7 @@ export function TransactionRow({
   selected?: boolean;
   onSelectChange?: (id: string, checked: boolean) => void;
 }) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("BankWorkspace");
   const isCredit = tx.amount > 0;
   const selectable = !!onSelectChange && tx.status === "unreconciled";
@@ -532,7 +536,7 @@ export function TransactionRow({
           "font-mono text-sm font-medium tabular-nums w-24 text-right",
           isCredit ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
         )}>
-          {isCredit ? "+" : ""}{formatMoney(tx.amount, cur)}
+          {isCredit ? "+" : ""}{formatMoney(tx.amount, cur, unitPresentation)}
         </span>
       </div>
 
@@ -550,7 +554,7 @@ export function TransactionRow({
                 "mt-1 font-mono text-xs tabular-nums",
                 isCredit ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
               )}>
-                {tx.date} · {isCredit ? "+" : ""}{formatMoney(tx.amount, cur)}
+                {tx.date} · {isCredit ? "+" : ""}{formatMoney(tx.amount, cur, unitPresentation)}
               </p>
             </div>
             <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
@@ -588,7 +592,7 @@ export function TransactionRow({
                 "mt-1 font-mono text-xs tabular-nums",
                 isCredit ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
               )}>
-                {tx.date} · {isCredit ? "+" : ""}{formatMoney(tx.amount, cur)}
+                {tx.date} · {isCredit ? "+" : ""}{formatMoney(tx.amount, cur, unitPresentation)}
               </p>
             </div>
             <p className="text-xs text-muted-foreground">
@@ -675,6 +679,7 @@ export function ImportSheet({
   onImport: () => void;
   currencyCode: string;
 }) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("BankImports");
   const formatLabels = bankImportFormatLabels(t);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -817,7 +822,7 @@ export function ImportSheet({
                         <span className="text-xs text-muted-foreground">{tx.date}</span>
                         <p className="text-xs font-medium truncate">{tx.description}</p>
                         <span className={cn("text-right font-mono text-xs tabular-nums", tx.amount < 0 ? "text-red-600" : "text-emerald-600")}>
-                          {formatMoney(tx.amount, currencyCode)}
+                          {formatMoney(tx.amount, currencyCode, unitPresentation)}
                         </span>
                       </div>
                     ))}
@@ -864,6 +869,7 @@ export function MatchToBillSheet({
   orgId: string | null;
   onMatched: () => void;
 }) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("BankWorkspace");
   const errors = useTranslations("BankAccountErrors");
   const [selectedBill, setSelectedBill] = useState<string | null>(null);
@@ -937,7 +943,7 @@ export function MatchToBillSheet({
               <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
                 <span>{transaction.date}</span>
                 <span className="font-mono font-semibold text-red-600 dark:text-red-400">
-                  {formatMoney(transaction.amount, currencyCode)}
+                  {formatMoney(transaction.amount, currencyCode, unitPresentation)}
                 </span>
               </div>
             </div>
@@ -971,7 +977,7 @@ export function MatchToBillSheet({
                         <p className="text-[10px] text-muted-foreground mt-0.5">{s.reasons.map(reason => bankMatchReason(t, reason)).join(t("listSeparator"))}</p>
                       </div>
                       <span className="font-mono text-sm font-medium tabular-nums shrink-0 ml-3">
-                        {formatMoney(b.amountDue, currencyCode)}
+                        {formatMoney(b.amountDue, currencyCode, unitPresentation)}
                       </span>
                     </button>
                   );
@@ -1017,8 +1023,8 @@ export function MatchToBillSheet({
                       <p className="text-xs text-muted-foreground mt-0.5">{b.contactName} · {t("dueOn", { date: b.dueDate })}</p>
                     </div>
                     <div className="text-right shrink-0 ml-3">
-                      <span className="font-mono text-sm font-medium tabular-nums">{formatMoney(b.amountDue, currencyCode)}</span>
-                      <p className="text-[10px] text-muted-foreground">{t("ofTotal", { amount: formatMoney(b.total, currencyCode) })}</p>
+                      <span className="font-mono text-sm font-medium tabular-nums">{formatMoney(b.amountDue, currencyCode, unitPresentation)}</span>
+                      <p className="text-[10px] text-muted-foreground">{t("ofTotal", { amount: formatMoney(b.total, currencyCode, unitPresentation) })}</p>
                     </div>
                   </button>
                 ))}
@@ -1031,11 +1037,11 @@ export function MatchToBillSheet({
               <div className="flex items-center justify-between">
                 <Label className="text-xs">{t("paymentAmount")}</Label>
                 <span className="text-[10px] text-muted-foreground">
-                  {t("billDue", { amount: formatMoney(selected.amountDue, currencyCode) })}
+                  {t("billDue", { amount: formatMoney(selected.amountDue, currencyCode, unitPresentation) })}
                 </span>
               </div>
               <CurrencyInput
-                prefix={currencyCode} fractionDigits={currencyMetadata(currencyCode).minorUnits} aria-label={t("amountInCurrency", { currency: currencyCode })}
+                prefix={currencyCode} fractionDigits={currencyMetadata(currencyCode).minorUnits} aria-label={t("amountInCurrency", { currency: currencyLabel(currencyCode, unitPresentation.locale) })}
                 value={payAmount}
                 onChange={setPayAmount}
               />
@@ -1075,6 +1081,7 @@ export function CreateExpenseSheet({
   orgId: string | null;
   onCreated: () => void;
 }) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("BankWorkspace");
   const errors = useTranslations("BankAccountErrors");
   const messages = t;
@@ -1166,7 +1173,7 @@ export function CreateExpenseSheet({
               <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
                 <span>{transaction.date}</span>
                 <span className="font-mono font-semibold text-red-600 dark:text-red-400">
-                  {formatMoney(transaction.amount, currencyCode)}
+                  {formatMoney(transaction.amount, currencyCode, unitPresentation)}
                 </span>
               </div>
             </div>
@@ -1194,7 +1201,7 @@ export function CreateExpenseSheet({
 
             <div className="space-y-1.5">
               <Label className="text-xs">{t("amount")}</Label>
-              <CurrencyInput prefix={currencyCode} fractionDigits={currencyMetadata(currencyCode).minorUnits} aria-label={t("amountInCurrency", { currency: currencyCode })} value={itemAmount} onChange={setItemAmount} />
+              <CurrencyInput prefix={currencyCode} fractionDigits={currencyMetadata(currencyCode).minorUnits} aria-label={t("amountInCurrency", { currency: currencyLabel(currencyCode, unitPresentation.locale) })} value={itemAmount} onChange={setItemAmount} />
             </div>
 
             <div className="space-y-1.5">
@@ -1315,6 +1322,7 @@ export function CategorizeSheet({
   /** Hand off to the "split one line across accounts" flow (e.g. loan repayment). */
   onSwitchToSplit?: (transaction: Transaction) => void;
 }) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("BankWorkspace");
   const errors = useTranslations("BankAccountErrors");
   const messages = t;
@@ -1513,7 +1521,7 @@ export function CategorizeSheet({
               <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
                 <span>{transaction.date}</span>
                 <span className={cn("font-mono font-semibold", isCredit ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400")}>
-                  {isCredit ? "+" : ""}{formatMoney(transaction.amount, currencyCode)}
+                  {isCredit ? "+" : ""}{formatMoney(transaction.amount, currencyCode, unitPresentation)}
                 </span>
               </div>
             </div>
@@ -1573,16 +1581,16 @@ export function CategorizeSheet({
             </Select>
             {taxPreview && (
               <div className="rounded-lg border bg-muted/20 p-2.5 text-[11px] text-muted-foreground">
-                <div className="flex justify-between"><span>{t("net")}</span><span className="font-mono tabular-nums">{formatMoney(taxPreview.net, currencyCode)}</span></div>
+                <div className="flex justify-between"><span>{t("net")}</span><span className="font-mono tabular-nums">{formatMoney(taxPreview.net, currencyCode, unitPresentation)}</span></div>
                 {isCredit ? (
-                  <div className="flex justify-between"><span>{t("outputTax")}</span><span className="font-mono tabular-nums">{formatMoney(taxPreview.tax, currencyCode)}</span></div>
+                  <div className="flex justify-between"><span>{t("outputTax")}</span><span className="font-mono tabular-nums">{formatMoney(taxPreview.tax, currencyCode, unitPresentation)}</span></div>
                 ) : (
                   <>
                     {taxPreview.recoverable > 0 && (
-                      <div className="flex justify-between"><span>{t("inputTax")}</span><span className="font-mono tabular-nums">{formatMoney(taxPreview.recoverable, currencyCode)}</span></div>
+                      <div className="flex justify-between"><span>{t("inputTax")}</span><span className="font-mono tabular-nums">{formatMoney(taxPreview.recoverable, currencyCode, unitPresentation)}</span></div>
                     )}
                     {taxPreview.absorbed > 0 && (
-                      <div className="flex justify-between"><span>{t("absorbedTax")}</span><span className="font-mono tabular-nums">{formatMoney(taxPreview.absorbed, currencyCode)}</span></div>
+                      <div className="flex justify-between"><span>{t("absorbedTax")}</span><span className="font-mono tabular-nums">{formatMoney(taxPreview.absorbed, currencyCode, unitPresentation)}</span></div>
                     )}
                   </>
                 )}
@@ -1655,6 +1663,7 @@ export function MatchToInvoiceSheet({
   orgId: string | null;
   onMatched: () => void;
 }) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("BankWorkspace");
   const errors = useTranslations("BankAccountErrors");
   const [selectedInvoice, setSelectedInvoice] = useState<string | null>(null);
@@ -1724,7 +1733,7 @@ export function MatchToInvoiceSheet({
               <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
                 <span>{transaction.date}</span>
                 <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">
-                  {formatMoney(transaction.amount, currencyCode)}
+                  {formatMoney(transaction.amount, currencyCode, unitPresentation)}
                 </span>
               </div>
             </div>
@@ -1758,7 +1767,7 @@ export function MatchToInvoiceSheet({
                         <p className="text-[10px] text-muted-foreground mt-0.5">{s.reasons.map(reason => bankMatchReason(t, reason)).join(t("listSeparator"))}</p>
                       </div>
                       <span className="font-mono text-sm font-medium tabular-nums shrink-0 ml-3">
-                        {formatMoney(inv.amountDue, currencyCode)}
+                        {formatMoney(inv.amountDue, currencyCode, unitPresentation)}
                       </span>
                     </button>
                   );
@@ -1804,8 +1813,8 @@ export function MatchToInvoiceSheet({
                       <p className="text-xs text-muted-foreground mt-0.5">{inv.contactName} · {t("dueOn", { date: inv.dueDate })}</p>
                     </div>
                     <div className="text-right shrink-0 ml-3">
-                      <span className="font-mono text-sm font-medium tabular-nums">{formatMoney(inv.amountDue, currencyCode)}</span>
-                      <p className="text-[10px] text-muted-foreground">{t("ofTotal", { amount: formatMoney(inv.total, currencyCode) })}</p>
+                      <span className="font-mono text-sm font-medium tabular-nums">{formatMoney(inv.amountDue, currencyCode, unitPresentation)}</span>
+                      <p className="text-[10px] text-muted-foreground">{t("ofTotal", { amount: formatMoney(inv.total, currencyCode, unitPresentation) })}</p>
                     </div>
                   </button>
                 ))}
@@ -1818,10 +1827,10 @@ export function MatchToInvoiceSheet({
               <div className="flex items-center justify-between">
                 <Label className="text-xs">{t("amountReceived")}</Label>
                 <span className="text-[10px] text-muted-foreground">
-                  {t("invoiceDue", { amount: formatMoney(selected.amountDue, currencyCode) })}
+                  {t("invoiceDue", { amount: formatMoney(selected.amountDue, currencyCode, unitPresentation) })}
                 </span>
               </div>
-              <CurrencyInput prefix={currencyCode} fractionDigits={currencyMetadata(currencyCode).minorUnits} aria-label={t("amountInCurrency", { currency: currencyCode })} value={payAmount} onChange={setPayAmount} />
+              <CurrencyInput prefix={currencyCode} fractionDigits={currencyMetadata(currencyCode).minorUnits} aria-label={t("amountInCurrency", { currency: currencyLabel(currencyCode, unitPresentation.locale) })} value={payAmount} onChange={setPayAmount} />
               <BankMatchPreview text={payAmount} currencyCode={currencyCode} transaction={transaction} document={selected} />
             </div>
           )}
@@ -1894,6 +1903,7 @@ export function MatchSheet({
   orgId: string | null;
   onMatched: () => void;
 }) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("BankWorkspace");
   const errors = useTranslations("BankAccountErrors");
   // A unified selection: either an existing record, or an open document.
@@ -1980,7 +1990,7 @@ export function MatchSheet({
               <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
                 <span>{transaction.date}</span>
                 <span className={cn("font-mono font-semibold", isCredit ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400")}>
-                  {isCredit ? "+" : ""}{formatMoney(transaction.amount, currencyCode)}
+                  {isCredit ? "+" : ""}{formatMoney(transaction.amount, currencyCode, unitPresentation)}
                 </span>
               </div>
             </div>
@@ -2020,7 +2030,7 @@ export function MatchSheet({
                             <p className="text-[10px] text-muted-foreground mt-0.5">{m.candidate.date} · {m.reasons.map(reason => bankMatchReason(t, reason)).join(t("listSeparator"))}</p>
                           </div>
                           <span className="font-mono text-sm font-medium tabular-nums shrink-0 ml-3">
-                            {formatMoney(m.candidate.amount, currencyCode)}
+                            {formatMoney(m.candidate.amount, currencyCode, unitPresentation)}
                           </span>
                         </button>
                       );
@@ -2078,8 +2088,8 @@ export function MatchSheet({
                             <p className="text-xs text-muted-foreground mt-0.5">{d.contactName} · {t("dueOn", { date: d.dueDate })}</p>
                           </div>
                           <div className="text-right shrink-0 ml-3">
-                            <span className="font-mono text-sm font-medium tabular-nums">{formatMoney(d.amountDue, currencyCode)}</span>
-                            <p className="text-[10px] text-muted-foreground">{t("ofTotal", { amount: formatMoney(d.total, currencyCode) })}</p>
+                            <span className="font-mono text-sm font-medium tabular-nums">{formatMoney(d.amountDue, currencyCode, unitPresentation)}</span>
+                            <p className="text-[10px] text-muted-foreground">{t("ofTotal", { amount: formatMoney(d.total, currencyCode, unitPresentation) })}</p>
                           </div>
                         </button>
                       );
@@ -2091,7 +2101,7 @@ export function MatchSheet({
               {needsAmount && (
                 <div className="space-y-2 rounded-lg border p-3">
                   <Label className="text-xs">{isCredit ? t("amountReceived") : t("paymentAmount")}</Label>
-                  <CurrencyInput prefix={currencyCode} fractionDigits={currencyMetadata(currencyCode).minorUnits} aria-label={t("amountInCurrency", { currency: currencyCode })} value={payAmount} onChange={setPayAmount} />
+                  <CurrencyInput prefix={currencyCode} fractionDigits={currencyMetadata(currencyCode).minorUnits} aria-label={t("amountInCurrency", { currency: currencyLabel(currencyCode, unitPresentation.locale) })} value={payAmount} onChange={setPayAmount} />
                   <BankMatchPreview text={payAmount} currencyCode={currencyCode} transaction={transaction} document={selection?.doc} />
                 </div>
               )}
@@ -2132,6 +2142,7 @@ export function TransferSheet({
   orgId: string | null;
   onTransferred: () => void;
 }) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("BankWorkspace");
   const errors = useTranslations("BankAccountErrors");
   const [targetId, setTargetId] = useState("");
@@ -2213,7 +2224,7 @@ export function TransferSheet({
               <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
                 <span>{transaction.date}</span>
                 <span className={cn("font-mono font-semibold", isCredit ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400")}>
-                  {isCredit ? "+" : ""}{formatMoney(transaction.amount, currencyCode)}
+                  {isCredit ? "+" : ""}{formatMoney(transaction.amount, currencyCode, unitPresentation)}
                 </span>
               </div>
             </div>
@@ -2269,7 +2280,7 @@ export function TransferSheet({
                         <p className="text-[10px] text-muted-foreground mt-0.5">{c.date}</p>
                       </div>
                       <span className="font-mono text-xs font-medium tabular-nums shrink-0 ml-3">
-                        {formatMoney(c.amount, currencyCode)}
+                        {formatMoney(c.amount, currencyCode, unitPresentation)}
                       </span>
                     </button>
                   ))}
@@ -2326,6 +2337,7 @@ export function SplitAccountSheet({
   orgId: string | null;
   onSplit: () => void;
 }) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("BankWorkspace");
   const errors = useTranslations("BankAccountErrors");
   const messages = t;
@@ -2412,7 +2424,7 @@ export function SplitAccountSheet({
               <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
                 <span>{transaction.date}</span>
                 <span className={cn("font-mono font-semibold", isCredit ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400")}>
-                  {isCredit ? "+" : ""}{formatMoney(transaction.amount, currencyCode)}
+                  {isCredit ? "+" : ""}{formatMoney(transaction.amount, currencyCode, unitPresentation)}
                 </span>
               </div>
             </div>
@@ -2440,7 +2452,7 @@ export function SplitAccountSheet({
                 <div className="grid grid-cols-2 gap-2.5">
                   <div className="space-y-1.5">
                     <Label className="text-xs">{t("amount")}</Label>
-                    <CurrencyInput prefix={currencyCode} fractionDigits={currencyMetadata(currencyCode).minorUnits} aria-label={t("amountInCurrency", { currency: currencyCode })} value={row.amount} onChange={(v) => updateRow(row.key, { amount: v })} />
+                    <CurrencyInput prefix={currencyCode} fractionDigits={currencyMetadata(currencyCode).minorUnits} aria-label={t("amountInCurrency", { currency: currencyLabel(currencyCode, unitPresentation.locale) })} value={row.amount} onChange={(v) => updateRow(row.key, { amount: v })} />
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">{t("tax")}</Label>
@@ -2473,12 +2485,12 @@ export function SplitAccountSheet({
           )}>
             <div>
               <p className="text-xs text-muted-foreground">{t("allocated")}</p>
-              <p className="font-mono font-medium tabular-nums">{t("allocatedOf", { amount: splitPreview.valid ? formatMoney(allocatedCents, currencyCode) : t("enterValidAmounts"), total: formatMoney(totalCents, currencyCode) })}</p>
+              <p className="font-mono font-medium tabular-nums">{t("allocatedOf", { amount: splitPreview.valid ? formatMoney(allocatedCents, currencyCode, unitPresentation) : t("enterValidAmounts"), total: formatMoney(totalCents, currencyCode, unitPresentation) })}</p>
             </div>
             <div className="text-right">
               <p className="text-xs text-muted-foreground">{remainingCents >= 0 ? t("remaining") : t("overBy")}</p>
               <p className={cn("font-mono font-medium tabular-nums", balanced ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400")}>
-                {splitPreview.valid ? formatMoney(bankUiAbs(remainingCents), currencyCode) : t("unavailable")}
+                {splitPreview.valid ? formatMoney(bankUiAbs(remainingCents), currencyCode, unitPresentation) : t("unavailable")}
               </p>
             </div>
           </div>
@@ -2523,6 +2535,7 @@ export function CashCodingGrid({
   orgId: string | null;
   onDone: () => void;
 }) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("BankWorkspace");
   const errors = useTranslations("BankAccountErrors");
   // Only lines that still need coding (no journal entry yet, not excluded).
@@ -2660,7 +2673,7 @@ export function CashCodingGrid({
                   "font-mono text-xs font-medium tabular-nums",
                   isCredit ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
                 )}>
-                  {isCredit ? "+" : ""}{formatMoney(tx.amount, currencyCode)}
+                  {isCredit ? "+" : ""}{formatMoney(tx.amount, currencyCode, unitPresentation)}
                 </span>
                 <AccountPicker value={r.account} onChange={(v) => updateRow(tx.id, { account: v })} placeholder={t("categoryPlaceholder")} />
                 <Select value={r.taxRateId} onValueChange={(v) => updateRow(tx.id, { taxRateId: v })}>
@@ -2728,6 +2741,7 @@ export function ReconciliationReport({
   bankAccountId: string;
   onChanged: () => void;
 }) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("BankReconciliation");
   const errors = useTranslations("BankAccountErrors");
   const [adjustOpen, setAdjustOpen] = useState(false);
@@ -2770,12 +2784,12 @@ export function ReconciliationReport({
         <div className="grid grid-cols-1 divide-y sm:grid-cols-3 sm:divide-x sm:divide-y-0">
           <div className="p-4">
             <p className="text-[11px] text-muted-foreground uppercase tracking-wide">{t("statementBalance")}</p>
-            <p className="mt-1 text-xl font-semibold font-mono tabular-nums">{bankMoneyDisplay(data.statementEndBalance, currencyCode)}</p>
+            <p className="mt-1 text-xl font-semibold font-mono tabular-nums">{bankMoneyDisplay(data.statementEndBalance, currencyCode, unitPresentation)}</p>
           </div>
           <div className="p-4">
             <p className="text-[11px] text-muted-foreground uppercase tracking-wide">{t("booksBalance")}</p>
             <p className="mt-1 text-xl font-semibold font-mono tabular-nums">
-              {data.glBalance == null ? "—" : bankMoneyDisplay(data.glBalance, data.glCurrencyCode)}
+              {data.glBalance == null ? "—" : bankMoneyDisplay(data.glBalance, data.glCurrencyCode, unitPresentation)}
             </p>
           </div>
           <div className="p-4">
@@ -2784,7 +2798,7 @@ export function ReconciliationReport({
               "mt-1 text-xl font-semibold font-mono tabular-nums",
               diff == null ? "text-muted-foreground" : balanced ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"
             )}>
-              {diff == null ? "—" : bankMoneyDisplay(diff, currencyCode)}
+              {diff == null ? "—" : bankMoneyDisplay(diff, currencyCode, unitPresentation)}
             </p>
           </div>
         </div>
@@ -2822,7 +2836,7 @@ export function ReconciliationReport({
           <div className="flex items-center justify-between border-b px-3 py-2">
             <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("matchedToStatement")}</span>
             <span className="text-xs font-mono tabular-nums text-muted-foreground">
-              {data.reconciled.count} · {bankMoneyDisplay(data.reconciled.total, currencyCode)}
+              {data.reconciled.count} · {bankMoneyDisplay(data.reconciled.total, currencyCode, unitPresentation)}
             </span>
           </div>
           <RecLineList transactions={data.reconciled.transactions} currencyCode={currencyCode} empty={t("noMatched")} />
@@ -2831,7 +2845,7 @@ export function ReconciliationReport({
           <div className="flex items-center justify-between border-b px-3 py-2">
             <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("notMatched")}</span>
             <span className="text-xs font-mono tabular-nums text-muted-foreground">
-              {data.unreconciled.count} · {bankMoneyDisplay(data.unreconciled.total, currencyCode)}
+              {data.unreconciled.count} · {bankMoneyDisplay(data.unreconciled.total, currencyCode, unitPresentation)}
             </span>
           </div>
           <RecLineList transactions={data.unreconciled.transactions} currencyCode={currencyCode} empty={t("noUnmatched")} />
@@ -2854,7 +2868,7 @@ export function ReconciliationReport({
                   "font-mono font-semibold tabular-nums",
                   diff != null && diff > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
                 )}>
-                  {diff != null ? bankMoneyDisplay(diff, currencyCode) : "—"}
+                  {diff != null ? bankMoneyDisplay(diff, currencyCode, unitPresentation) : "—"}
                 </span>
               </div>
               <p className="mt-1.5 text-[11px] text-muted-foreground">
@@ -2889,6 +2903,7 @@ function RecLineList({
   currencyCode: string;
   empty: string;
 }) {
+  const unitPresentation = usePresentation();
   if (transactions.length === 0) {
     return <p className="px-3 py-6 text-center text-xs text-muted-foreground">{empty}</p>;
   }
@@ -2906,7 +2921,7 @@ function RecLineList({
               "font-mono text-xs font-medium tabular-nums shrink-0",
               isCredit ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
             )}>
-              {isCredit ? "+" : ""}{bankMoneyDisplay(tx.amount, currencyCode)}
+              {isCredit ? "+" : ""}{bankMoneyDisplay(tx.amount, currencyCode, unitPresentation)}
             </span>
           </div>
         );

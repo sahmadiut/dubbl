@@ -1,3 +1,4 @@
+import { bankMoneyDisplay as localizedBankMoney } from "../lib/money/bank-display";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -111,7 +112,7 @@ test("accrual pages and drawer render real bilingual content, exact amounts, esc
       for(const key of keys) assert.ok(html.includes(escape(t(key))),`${path} ${locale} ${key}`);
       assert.ok(!html.includes("<script>"));
       if (path !== list || states[1] !== cases[0][1][1]) assert.ok(html.includes(escape(caller)),path);
-      if (path === detail || path === list && states[1] !== cases[0][1][1]) assert.ok(html.includes(assetMoneyDisplay(schedule.totalAmount)),path);
+      if (path === detail || path === list && states[1] !== cases[0][1][1]) assert.ok(html.includes(assetMoneyDisplay(schedule.totalAmount, resolvePresentation({ user: { language: locale } }))),path);
       if (path === drawer) {
         assert.ok(html.includes(`value="${formatDecimalDraft("40000000000000.01", resolvePresentation({ user: { language: locale } }))}"`));
         assert.ok(html.includes('drawer-accrual-amount'));
@@ -125,15 +126,15 @@ test("accrual pages and drawer render real bilingual content, exact amounts, esc
     const Filtered=loaded(list,listStates([schedule],"no match"));
     assert.ok(renderWithPresentation(createElement(Filtered),locale).includes(escape(t("noMatches"))));
     const Large=loaded(list,listStates(Array.from({length:4},(_,i)=>({...schedule,id:String(i)}))));
-    assert.ok(renderWithPresentation(createElement(Large),locale).includes(assetMoneyDisplay(16000000000000004n)));
+    assert.ok(renderWithPresentation(createElement(Large),locale).includes(assetMoneyDisplay(16000000000000004n, resolvePresentation({ user: { language: locale } }))));
     const Saving=loaded(drawer,[true,caller,"1.00","retry-a","2026-01-01","2026-01-31","1","a","b"]);
     assert.ok(renderWithPresentation(createElement(Saving,{open:true,onClose:noop}),locale).includes(escape(t("creating"))));
     assert.equal(presentation.accrualStatusLabel(t,"future_status"),"future_status");
     for(const count of [0,1,2]) {
       assert.ok(t("showing",{shown:count,count}).length>0);
-      assert.ok(t("summary",{amount:"$1.00",count}).includes("$1.00"));
+      assert.ok(t("summary",{amount:localizedAmount("$1.00", locale),count}).includes(localizedAmount("$1.00", locale)));
     }
-    if(locale==="en-US") { assert.equal(t("summary",{amount:"$1.00",count:1}),"$1.00 over 1 month"); assert.equal(t("showing",{shown:2,count:2}),"Showing 2 of 2 accruals"); }
+    if(locale==="en-US") { assert.equal(t("summary",{amount:localizedAmount("$1.00", locale),count:1}),"$1.00 over 1 month"); assert.equal(t("showing",{shown:2,count:2}),"Showing 2 of 2 accruals"); }
   }
 });
 
@@ -159,7 +160,7 @@ test("production accrual creation keeps exact decimal, dates, retry and org payl
   for(const locale of locales) {
     const t=translator(locale), errors:string[]=[], successes:string[]=[], redirects:string[]=[], saving:boolean[]=[], calls:{url:string;init:RequestInit}[]=[];
     let status=200, invalid=false, org:string|null="org-a", closed=0;
-    const scope={...presentation,accrualUiInput,accrualUiPeriods,t,description:caller,totalAmount:"40000000000000.01",periods:"1",startDate:schedule.startDate,endDate:schedule.endDate,accountId:"account-a",reverseAccountId:"account-b",retryKey:"retry-a",
+    const scope={ unitPresentation: resolvePresentation({ user: { language: locale } }),...presentation,accrualUiInput,accrualUiPeriods,t,description:caller,totalAmount:"40000000000000.01",periods:"1",startDate:schedule.startDate,endDate:schedule.endDate,accountId:"account-a",reverseAccountId:"account-b",retryKey:"retry-a",
       localStorage:{getItem:()=>org},setSaving:(v:boolean)=>saving.push(v),toast:{error:(m:string)=>errors.push(m),success:(m:string)=>successes.push(m)},onClose:()=>closed++,router:{push:(url:string)=>redirects.push(url)},
       fetch:async(url:string,init:RequestInit)=>{calls.push({url,init});return Response.json(status===200&&!invalid?{schedule}:{error:caller},{status});}};
     const run=callback(drawer,"handleSubmit",scope);
@@ -187,7 +188,7 @@ test("production accrual posting and cancellation retain failure/retry state and
     for(const name of ["handlePostNext","handleCancel"]) {
       const calls:{url:string;init:RequestInit}[]=[],errors:string[]=[],successes:string[]=[],posting:boolean[]=[];
       let options:Record<string,unknown>={}, refresh=0, status=500, malformed=false;
-      const run=callback(detail,name,{...presentation,t,orgId:"org-a",id:schedule.id,acc:schedule,setPosting:(v:boolean)=>posting.push(v),refetch:async()=>refresh++,confirm:async(opts:Record<string,unknown>)=>{options=opts;},toast:{error:(m:string)=>errors.push(m),success:(m:string)=>successes.push(m)},fetch:async(url:string,init:RequestInit)=>{calls.push({url,init});return Response.json(status!==200||malformed?{error:caller}:name==="handlePostNext"?{entry}:{success:true},{status});}});
+      const run=callback(detail,name,{ unitPresentation: resolvePresentation({ user: { language: locale } }),...presentation,t,orgId:"org-a",id:schedule.id,acc:schedule,setPosting:(v:boolean)=>posting.push(v),refetch:async()=>refresh++,confirm:async(opts:Record<string,unknown>)=>{options=opts;},toast:{error:(m:string)=>errors.push(m),success:(m:string)=>successes.push(m)},fetch:async(url:string,init:RequestInit)=>{calls.push({url,init});return Response.json(status!==200||malformed?{error:caller}:name==="handlePostNext"?{entry}:{success:true},{status});}});
       await run();
       const perform=name==="handleCancel"?options.onConfirm as ()=>Promise<void>:run;
       if(name==="handleCancel") {
@@ -210,7 +211,7 @@ test("production accrual reads preserve saved state on failure and list paging k
   for(const locale of locales) {
     const t=translator(locale), errors:string[]=[], saved:unknown[]=[], loading:boolean[]=[], pages:number[]=[],calls:string[]=[];
     let valid=false;
-    const scope={...presentation,t,id:schedule.id,orgId:"org-a",setError:(m:string)=>errors.push(m),setAcc:(v:unknown)=>saved.push(v),setSchedules:(v:unknown)=>saved.push(v),setTotalCount:noop,setInitialLoad:(v:boolean)=>loading.push(v),setLoading:(v:boolean)=>loading.push(v),setRefetching:noop,setPage:(v:number)=>pages.push(v),setFetchKey:noop,setLoadingMore:noop,devDelay:noop,page:1,loadingMore:false,buildParams:(p:number)=>new URLSearchParams({status:"active",page:String(p),limit:"50"}),fetch:async(url:string)=>{calls.push(url);return Response.json(valid?(url.includes("?")?{data:[schedule],pagination:{total:1}}:{schedule}):{error:caller},{status:valid?200:500});}};
+    const scope={ unitPresentation: resolvePresentation({ user: { language: locale } }),...presentation,t,id:schedule.id,orgId:"org-a",setError:(m:string)=>errors.push(m),setAcc:(v:unknown)=>saved.push(v),setSchedules:(v:unknown)=>saved.push(v),setTotalCount:noop,setInitialLoad:(v:boolean)=>loading.push(v),setLoading:(v:boolean)=>loading.push(v),setRefetching:noop,setPage:(v:number)=>pages.push(v),setFetchKey:noop,setLoadingMore:noop,devDelay:noop,page:1,loadingMore:false,buildParams:(p:number)=>new URLSearchParams({status:"active",page:String(p),limit:"50"}),fetch:async(url:string)=>{calls.push(url);return Response.json(valid?(url.includes("?")?{data:[schedule],pagination:{total:1}}:{schedule}):{error:caller},{status:valid?200:500});}};
     const read=callback(detail,"refetch",scope);await read();assert.equal(errors.at(-1),t("detailLoadFailed"));assert.deepEqual(saved,[]);assert.deepEqual(loading,[false]);
     valid=true;await read();assert.deepEqual(saved,[schedule]);assert.equal(errors.at(-1),"");
     valid=false;saved.length=0;
@@ -233,3 +234,5 @@ test("all authored accrual JSX copy uses catalogs and Persian messages retain Pe
   }
   for(const [key,value] of Object.entries(fa.Accruals)) { assert.ok(/[\u0600-\u06ff]/.test(value),key);assert.ok(!/\?{2,}|\ufffd/.test(value),key); }
 });
+
+function localizedAmount(value: string, locale: "en-US" | "fa-IR") { return (value.startsWith("+") ? "+" : "") + localizedBankMoney(BigInt(value.replace(/[$,+.]/g, "")), "USD", resolvePresentation({ user: { language: locale } })); }

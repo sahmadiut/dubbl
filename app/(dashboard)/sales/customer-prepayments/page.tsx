@@ -1,5 +1,8 @@
 "use client";
 
+import { bankMoneyDisplay as exampleMoney } from "@/lib/money/bank-display";
+import { usePresentation } from "@/i18n/provider";
+import type { NumberPresentation } from "@/i18n/numbers";
 import { useTranslations } from "next-intl";
 import { customerPrepaymentStatusLabel, customerPrepaymentSourceLabel, type CustomerPrepaymentTranslate } from "@/i18n/customer-prepayment-presentation";
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
@@ -47,7 +50,7 @@ const statusColors: Record<string, string> = {
   void: "border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300",
 };
 
-function buildColumns(t: CustomerPrepaymentTranslate): Column<CustomerCredit>[] {
+function buildColumns(t: CustomerPrepaymentTranslate, unitPresentation: NumberPresentation = { locale: "en-US", numerals: "latn" }): Column<CustomerCredit>[] {
   return [
     {
       key: "date",
@@ -90,7 +93,7 @@ function buildColumns(t: CustomerPrepaymentTranslate): Column<CustomerCredit>[] 
       className: "w-28 text-right",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums break-all">
-          {formatMoney(r.originalAmount, r.currencyCode)}
+          {formatMoney(r.originalAmount, r.currencyCode, unitPresentation)}
         </span>
       ),
     },
@@ -101,7 +104,7 @@ function buildColumns(t: CustomerPrepaymentTranslate): Column<CustomerCredit>[] 
       className: "w-28 text-right",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums break-all">
-          {formatMoney(r.amountRemaining, r.currencyCode)}
+          {formatMoney(r.amountRemaining, r.currencyCode, unitPresentation)}
         </span>
       ),
     },
@@ -114,6 +117,7 @@ export default function CustomerPrepaymentsPage() {
 }
 
 function CustomerPrepaymentsList({ orgId }: { orgId: string | null }) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("CustomerPrepayments");
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
@@ -139,7 +143,7 @@ function CustomerPrepaymentsList({ orgId }: { orgId: string | null }) {
 
   const PAGE_SIZE = 50;
 
-  const columns = useMemo(() => buildColumns(t), [t]);
+  const columns = useMemo(() => buildColumns(t, unitPresentation), [t, unitPresentation]);
 
   const buildParams = useCallback((p: number) => {
     const params = new URLSearchParams();
@@ -159,7 +163,6 @@ function CustomerPrepaymentsList({ orgId }: { orgId: string | null }) {
     let cancelled = false;
     generation.current += 1;
     const controller = new AbortController();
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setRefetching(true);
     setPage(1);
     setReadError("");
@@ -249,11 +252,10 @@ function CustomerPrepaymentsList({ orgId }: { orgId: string | null }) {
 
   // Bump searchKey when debounced search changes to trigger ContentReveal
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSearchKey((k) => k + 1);
   }, [debouncedSearch]);
 
-  const totals = useMemo(() => customerPrepaymentSummary(credits), [credits]);
+  const totals = useMemo(() => customerPrepaymentSummary(credits, unitPresentation), [credits, unitPresentation]);
 
   if (initialLoad) return <BrandLoader />;
 
@@ -295,7 +297,7 @@ function CustomerPrepaymentsList({ orgId }: { orgId: string | null }) {
                       <p className="text-[11px] text-muted-foreground">{t("creditOnAccount")}</p>
                     </div>
                   </div>
-                  <span className="font-mono text-sm font-medium text-emerald-600 dark:text-emerald-400">+$500.00</span>
+                  <span className="font-mono text-sm font-medium text-emerald-600 dark:text-emerald-400">{"+" + exampleMoney(50000n, "USD", unitPresentation)}</span>
                 </div>
                 <div className="flex items-center justify-between px-3 sm:px-5 py-3.5 bg-blue-50/30 dark:bg-blue-950/10">
                   <div className="flex items-center gap-3">
@@ -307,14 +309,14 @@ function CustomerPrepaymentsList({ orgId }: { orgId: string | null }) {
                       <p className="text-[11px] text-muted-foreground">INV-0042</p>
                     </div>
                   </div>
-                  <span className="font-mono text-sm font-medium">-$300.00</span>
+                  <span className="font-mono text-sm font-medium">{exampleMoney(-30000n, "USD", unitPresentation)}</span>
                 </div>
                 <div className="flex items-center justify-between px-3 sm:px-5 py-3.5">
                   <div className="flex items-center gap-3">
                     <div className="size-7" />
                     <p className="text-sm font-semibold">{t("creditLeft")}</p>
                   </div>
-                  <span className="font-mono text-sm font-bold">$200.00</span>
+                  <span className="font-mono text-sm font-bold">{exampleMoney(20000n, "USD", unitPresentation)}</span>
                 </div>
               </div>
             </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
 import { useTranslations } from "next-intl";
 import { accrualJson, accrualFailureMessage, accrualStatusLabel } from "@/i18n/accrual-presentation";
 
@@ -42,6 +43,7 @@ const statusColors: Record<string, string> = {
 };
 
 export default function AccrualDetailPage() {
+  const unitPresentation = usePresentation();
   const t = useTranslations("Accruals");
   const [error, setError] = useState("");
   const { id } = useParams<{ id: string }>();
@@ -128,7 +130,7 @@ export default function AccrualDetailPage() {
   return (
     <div className="space-y-6">
       {error && <p role="alert">{error}</p>}
-      <PageHeader title={acc.description} description={t("summary", { amount: formatMoney(acc.totalAmount), count: acc.periods })}>
+      <PageHeader title={acc.description} description={t("summary", { amount: formatMoney(acc.totalAmount, unitPresentation), count: acc.periods })}>
         <Button variant="outline" size="sm" asChild>
           <Link href="/accounting/accruals"><ArrowLeft className="mr-2 size-4" />{t("back")}</Link>
         </Button>
@@ -162,7 +164,7 @@ export default function AccrualDetailPage() {
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-lg border p-4">
           <p className="text-xs text-muted-foreground">{t("total")}</p>
-          <p className="text-xl font-bold font-mono">{formatMoney(acc.totalAmount)}</p>
+          <p className="text-xl font-bold font-mono">{formatMoney(acc.totalAmount, unitPresentation)}</p>
         </div>
         <div className="rounded-lg border p-4">
           <p className="text-xs text-muted-foreground">{t("months")}</p>
@@ -183,7 +185,7 @@ export default function AccrualDetailPage() {
         {entries.map((entry) => (
           <div key={entry.id} className="grid min-w-[420px] grid-cols-[1fr_140px_120px] gap-2 border-b px-4 py-2.5 last:border-b-0 items-center">
             <span className="text-sm">{entry.periodDate}</span>
-            <span className="text-right text-sm font-mono font-medium">{formatMoney(entry.amount)}</span>
+            <span className="text-right text-sm font-mono font-medium">{formatMoney(entry.amount, unitPresentation)}</span>
             <span className="text-right">
               {entry.posted ? (
                 <span className="inline-flex items-center gap-1 text-xs text-emerald-600">
@@ -196,7 +198,7 @@ export default function AccrualDetailPage() {
           </div>
         ))}
         <div className="border-t bg-muted/30 px-4 py-2 text-right">
-          <span className="text-sm font-bold">{t("totalAmountSummary", { amount: formatMoney(acc.totalAmount) })}</span>
+          <span className="text-sm font-bold">{t("totalAmountSummary", { amount: formatMoney(acc.totalAmount, unitPresentation) })}</span>
         </div>
       </div>
 

@@ -1,3 +1,4 @@
+import type { NumberPresentation } from "../../i18n/numbers";
 import { currencyMetadata, parseMajor, money, toMajorDecimal } from "./exact";
 import { bankMoneyDisplay } from "./bank-display";
 
@@ -29,8 +30,8 @@ export function journalStoredMinor(value: number | string) {
 export function journalDecimal(amount: bigint, currency = "USD") {
   return toMajorDecimal(money(amount, currency));
 }
-export function journalMoney(amount: bigint, currency = "USD") {
-  return bankMoneyDisplay(amount, currency);
+export function journalMoney(amount: bigint, currency = "USD", presentation: NumberPresentation = { locale: "en-US", numerals: "latn" }) {
+  return bankMoneyDisplay(amount, currency, presentation);
 }
 
 export type JournalEditorRow = {
@@ -61,12 +62,12 @@ export function journalEditorPreview(rows: readonly JournalEditorRow[], { oneSid
 }
 
 /** Keep different saved currencies separate; no implicit FX in a display total. */
-export function journalSideDisplay(lines: readonly { currencyCode?: string; debitAmountMinor: string; creditAmountMinor: string }[], side: "debitAmountMinor" | "creditAmountMinor" | "difference") {
+export function journalSideDisplay(lines: readonly { currencyCode?: string; debitAmountMinor: string; creditAmountMinor: string }[], side: "debitAmountMinor" | "creditAmountMinor" | "difference", presentation: NumberPresentation = { locale: "en-US", numerals: "latn" }) {
   const totals = new Map<string, bigint>();
   for (const line of lines) {
     const code = line.currencyCode ?? "USD";
     const amount = side === "difference" ? journalStoredMinor(line.debitAmountMinor) - journalStoredMinor(line.creditAmountMinor) : journalStoredMinor(line[side]);
     totals.set(code, (totals.get(code) ?? 0n) + amount);
   }
-  return [...totals].map(([code, amount]) => journalMoney(side === "difference" && amount < 0n ? -amount : amount, code)).join(" · ") || journalMoney(0n);
+  return [...totals].map(([code, amount]) => journalMoney(side === "difference" && amount < 0n ? -amount : amount, code, presentation)).join(" · ") || journalMoney(0n, undefined, presentation);
 }

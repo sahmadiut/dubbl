@@ -1,5 +1,7 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
+import { currencyLabel } from "@/i18n/currency-labels";
 import { useTranslations } from "next-intl";
 import { customerPrepaymentStatusLabel, customerPrepaymentSourceLabel } from "@/i18n/customer-prepayment-presentation";
 import { useState, useEffect } from "react";
@@ -71,6 +73,7 @@ export default function CustomerPrepaymentDetailPage() {
 }
 
 function CustomerPrepaymentDetail({ id, orgId }: { id: string; orgId: string | null }) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("CustomerPrepayments");
   const [cc, setCc] = useState<CustomerCreditDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -198,12 +201,12 @@ function CustomerPrepaymentDetail({ id, orgId }: { id: string; orgId: string | n
                     <SelectContent>
                       {invoices.map((inv) => (
                         <SelectItem key={inv.id} value={inv.id}>
-                          {t("invoiceOption", { number: inv.invoiceNumber, name: inv.contact?.name || t("unknown"), amount: formatMoney(inv.amountDue, inv.currencyCode) })}
+                          {t("invoiceOption", { number: inv.invoiceNumber, name: inv.contact?.name || t("unknown"), amount: formatMoney(inv.amountDue, inv.currencyCode, unitPresentation) })}
                         </SelectItem>
                       ))}
                       {invoices.length === 0 && (
                         <div className="px-2 py-4 text-center text-sm text-muted-foreground">
-                          {t("noInvoices", { currency: cc.currencyCode })}
+                          {t("noInvoices", { currency: currencyLabel(cc.currencyCode, unitPresentation.locale) })}
                         </div>
                       )}
                     </SelectContent>
@@ -218,7 +221,7 @@ function CustomerPrepaymentDetail({ id, orgId }: { id: string; orgId: string | n
                     placeholder={customerPrepaymentDecimal(cc.amountRemaining, cc.currencyCode)}
                   />
                   <p className="text-xs text-muted-foreground">
-                    {t("availableCredit", { amount: formatMoney(cc.amountRemaining, cc.currencyCode) })}
+                    {t("availableCredit", { amount: formatMoney(cc.amountRemaining, cc.currencyCode, unitPresentation) })}
                   </p>
                 </div>
                 {invoiceError && <p role="alert" className="text-sm text-destructive">{t("invoiceReadFailed")}</p>}

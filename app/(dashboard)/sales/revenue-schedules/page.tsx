@@ -1,5 +1,8 @@
 "use client";
 
+import { bankMoneyDisplay as exampleMoney } from "@/lib/money/bank-display";
+import { usePresentation } from "@/i18n/provider";
+import type { NumberPresentation } from "@/i18n/numbers";
 import { useTranslations } from "next-intl";
 import { revenueMethodLabel, revenueStatusLabel, revenueScheduleValid, type RevenueScheduleTranslate, type RevenueReadError } from "@/i18n/revenue-schedule-presentation";
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
@@ -42,7 +45,7 @@ const statusColors: Record<string, string> = {
   cancelled: "border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300",
 };
 
-function buildColumns(t: RevenueScheduleTranslate): Column<RevenueSchedule>[] {
+function buildColumns(t: RevenueScheduleTranslate, unitPresentation: NumberPresentation = { locale: "en-US", numerals: "latn" }): Column<RevenueSchedule>[] {
   return [
     {
       key: "period",
@@ -79,7 +82,7 @@ function buildColumns(t: RevenueScheduleTranslate): Column<RevenueSchedule>[] {
       className: "w-28 text-right",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums">
-          {formatMoney(r.totalAmount)}
+          {formatMoney(r.totalAmount, unitPresentation)}
         </span>
       ),
     },
@@ -89,7 +92,7 @@ function buildColumns(t: RevenueScheduleTranslate): Column<RevenueSchedule>[] {
       className: "w-32 text-right",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums text-emerald-600">
-          {formatMoney(r.recognizedAmount)}
+          {formatMoney(r.recognizedAmount, unitPresentation)}
         </span>
       ),
     },
@@ -99,7 +102,7 @@ function buildColumns(t: RevenueScheduleTranslate): Column<RevenueSchedule>[] {
       className: "w-32 text-right",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums text-amber-600">
-          {formatMoney(r.totalAmount - r.recognizedAmount)}
+          {formatMoney(r.totalAmount - r.recognizedAmount, unitPresentation)}
         </span>
       ),
     },
@@ -107,6 +110,7 @@ function buildColumns(t: RevenueScheduleTranslate): Column<RevenueSchedule>[] {
 }
 
 export default function RevenueSchedulesPage() {
+  const unitPresentation = usePresentation();
   const t = useTranslations("RevenueSchedules");
   const [error, setError] = useState<RevenueReadError | null>(null);
   const router = useRouter();
@@ -127,7 +131,7 @@ export default function RevenueSchedulesPage() {
   const PAGE_SIZE = 50;
   const orgId = typeof window !== "undefined" ? localStorage.getItem("activeOrgId") : null;
 
-  const columns = useMemo(() => buildColumns(t), [t]);
+  const columns = useMemo(() => buildColumns(t, unitPresentation), [t, unitPresentation]);
 
   const buildParams = useCallback((p: number) => {
     const params = new URLSearchParams();
@@ -276,7 +280,7 @@ export default function RevenueSchedulesPage() {
                       <p className="text-[11px] text-muted-foreground">{t("exampleInvoice")}</p>
                     </div>
                   </div>
-                  <span className="font-mono text-sm font-medium">$1,200.00</span>
+                  <span className="font-mono text-sm font-medium">{exampleMoney(120000n, "USD", unitPresentation)}</span>
                 </div>
                 <div className="flex items-center justify-between px-3 sm:px-5 py-3.5 bg-emerald-50/30 dark:bg-emerald-950/10">
                   <div className="flex items-center gap-3">
@@ -288,14 +292,14 @@ export default function RevenueSchedulesPage() {
                       <p className="text-[11px] text-muted-foreground">{t("spreadEvenly")}</p>
                     </div>
                   </div>
-                  <span className="font-mono text-sm font-medium text-emerald-600 dark:text-emerald-400">+$100.00</span>
+                  <span className="font-mono text-sm font-medium text-emerald-600 dark:text-emerald-400">{"+" + exampleMoney(10000n, "USD", unitPresentation)}</span>
                 </div>
                 <div className="flex items-center justify-between px-3 sm:px-5 py-3.5">
                   <div className="flex items-center gap-3">
                     <div className="size-7" />
                     <p className="text-sm font-semibold">{t("afterYear")}</p>
                   </div>
-                  <span className="font-mono text-sm font-bold">$1,200.00</span>
+                  <span className="font-mono text-sm font-bold">{exampleMoney(120000n, "USD", unitPresentation)}</span>
                 </div>
               </div>
             </div>
@@ -342,9 +346,9 @@ export default function RevenueSchedulesPage() {
       {error && <p role="alert" className="text-sm text-destructive">{t(error)}</p>}
       {/* Top: Stats */}
       <div className="grid gap-3 sm:grid-cols-3">
-        <StatCard title={t("scheduled")} value={formatMoney(totalScheduled)} icon={CalendarClock} />
-        <StatCard title={t("recognized")} value={formatMoney(totalRecognized)} icon={TrendingUp} />
-        <StatCard title={t("remaining")} value={formatMoney(totalRemaining)} icon={CalendarClock} />
+        <StatCard title={t("scheduled")} value={formatMoney(totalScheduled, unitPresentation)} icon={CalendarClock} />
+        <StatCard title={t("recognized")} value={formatMoney(totalRecognized, unitPresentation)} icon={TrendingUp} />
+        <StatCard title={t("remaining")} value={formatMoney(totalRemaining, unitPresentation)} icon={CalendarClock} />
       </div>
 
       <div className="h-px bg-border" />

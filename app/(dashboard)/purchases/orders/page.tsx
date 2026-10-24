@@ -1,5 +1,7 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
+import type { NumberPresentation } from "@/i18n/numbers";
 import { useTranslations } from "next-intl";
 import { purchaseOrderStatusLabel, type PurchaseOrderTranslate } from "@/i18n/purchase-order-presentation";
 
@@ -62,7 +64,7 @@ const statusColors: Record<string, string> = {
 
 
 
-function buildColumns(t: PurchaseOrderTranslate): Column<PO>[] {
+function buildColumns(t: PurchaseOrderTranslate, unitPresentation: NumberPresentation = { locale: "en-US", numerals: "latn" }): Column<PO>[] {
   return [
     {
       key: "number",
@@ -108,7 +110,7 @@ function buildColumns(t: PurchaseOrderTranslate): Column<PO>[] {
       className: "w-28 text-right",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums break-all">
-          {procurementMoney(r.total, r.currencyCode)}
+          {procurementMoney(r.total, r.currencyCode, unitPresentation)}
         </span>
       ),
     },
@@ -121,6 +123,7 @@ export default function PurchaseOrdersPage() {
 }
 
 function PurchaseOrdersContent() {
+  const unitPresentation = usePresentation();
   const t = useTranslations("PurchaseOrders");
   const router = useRouter();
   const [readError, setReadError] = useState<string | null>(null);
@@ -149,7 +152,7 @@ function PurchaseOrdersContent() {
 
   useDocumentTitle(t("documentTitle"));
 
-  const columns = useMemo(() => buildColumns(t), [t]);
+  const columns = useMemo(() => buildColumns(t, unitPresentation), [t, unitPresentation]);
 
   const buildParams = useCallback((pg: number) => {
     const params = new URLSearchParams();
@@ -283,9 +286,9 @@ function PurchaseOrdersContent() {
 
   const filteredPos = useMemo(() => procurementFilter(pos, row => row.poNumber, row => row.issueDate,
     { search: debouncedSearch, from: dateFrom, to: dateTo, sortBy, sortOrder }), [pos, debouncedSearch, dateFrom, dateTo, sortBy, sortOrder]);
-  const totalValue = procurementOverviewText(filteredPos);
-  const activeValue = procurementOverviewText(filteredPos, ["sent", "partial"]);
-  const receivedValue = procurementOverviewText(filteredPos, ["received"]);
+  const totalValue = procurementOverviewText(filteredPos, undefined, unitPresentation);
+  const activeValue = procurementOverviewText(filteredPos, ["sent", "partial"], unitPresentation);
+  const receivedValue = procurementOverviewText(filteredPos, ["received"], unitPresentation);
 
   if (loading) return <BrandLoader />;
   if (readError && pos.length === 0) return <p role="alert" className="text-sm text-red-600">{t("readFailed")}</p>;

@@ -1,5 +1,6 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { requisitionStatusLabel } from "@/i18n/requisition-presentation";
@@ -76,6 +77,7 @@ export default function RequisitionDetailPage() {
 }
 
 function RequisitionDetailContent() {
+  const unitPresentation = usePresentation();
   const t = useTranslations("Requisitions");
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -361,7 +363,7 @@ function RequisitionDetailContent() {
       {/* Total */}
       <div className="rounded-lg border p-4">
         <p className="text-xl font-bold font-mono break-all">
-          {procurementMoney(req.total, req.currencyCode)}
+          {procurementMoney(req.total, req.currencyCode, unitPresentation)}
         </p>
       </div>
 

@@ -1,4 +1,5 @@
 "use client";
+import { usePresentation } from "@/i18n/provider";
 import { useTranslations } from "next-intl";
 import { expenseStatusLabel, expenseFrequencyLabel, expenseInputError, type ExpenseErrorKey } from "@/i18n/expense-presentation";
 
@@ -74,6 +75,7 @@ export default function RecurringExpensesPage() {
 }
 
 function RecurringExpensesWorkspace() {
+  const unitPresentation = usePresentation();
   const t = useTranslations("Expenses");
   const [templates, setTemplates] = useState<RecurringTemplate[]>([]);
   const [error, setError] = useState<ExpenseErrorKey | null>(null);
@@ -368,7 +370,7 @@ function RecurringExpensesWorkspace() {
               ))}
             </div>
 
-            <p className="text-sm font-mono">{t("totalValue", { amount: preview.error ? "\u2014" : expenseUiMoney(preview.total, currencyCode) })}</p>
+            <p className="text-sm font-mono">{t("totalValue", { amount: preview.error ? "\u2014" : expenseUiMoney(preview.total, currencyCode, unitPresentation) })}</p>
             <Button
               className="w-full bg-emerald-600 hover:bg-emerald-700"
               onClick={handleSubmit}

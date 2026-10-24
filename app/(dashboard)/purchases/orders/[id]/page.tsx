@@ -1,5 +1,7 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
+import { currencyLabel } from "@/i18n/currency-labels";
 import { useTranslations } from "next-intl";
 import { purchaseOrderStatusLabel } from "@/i18n/purchase-order-presentation";
 
@@ -143,6 +145,7 @@ function EditPODrawer({
   po: PODetail;
   onSaved: () => void;
 }) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("PurchaseOrders");
   const [saving, setSaving] = useState(false);
   const [contactId, setContactId] = useState("");
@@ -287,7 +290,7 @@ function EditPODrawer({
                         <Input type="number" step="any" aria-label={t("lineQuantity", { line: index + 1 })} value={line.quantity} onChange={(e) => updateLine(index, { quantity: e.target.value })} />
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-xs">{t("unitPrice", { currency: po.currencyCode })}</Label>
+                        <Label className="text-xs">{t("unitPrice", { currency: currencyLabel(po.currencyCode, unitPresentation.locale) })}</Label>
                         <Input inputMode="decimal" aria-label={t("linePrice", { line: index + 1 })} value={line.unitPrice} onChange={(e) => updateLine(index, { unitPrice: e.target.value })} />
                       </div>
                       <div className="space-y-2">
@@ -303,7 +306,7 @@ function EditPODrawer({
             <div className="h-px bg-border" />
 
             <p className="text-sm">{t("editPolicy")}</p>
-            {preview.error ? <p role="alert" className="text-sm text-red-600">{t("checkLines")}</p> : <p className="text-right font-mono break-all">{t("previewTotal", { amount: procurementMoney(preview.total, po.currencyCode) })}</p>}
+            {preview.error ? <p role="alert" className="text-sm text-red-600">{t("checkLines")}</p> : <p className="text-right font-mono break-all">{t("previewTotal", { amount: procurementMoney(preview.total, po.currencyCode, unitPresentation) })}</p>}
             <div className="space-y-4">
               <SectionLabel>{t("notes")}</SectionLabel>
               <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("internalNotes")} rows={3} />
@@ -327,6 +330,7 @@ export default function PODetailPage() {
 }
 
 function PODetailContent() {
+  const unitPresentation = usePresentation();
   const t = useTranslations("PurchaseOrders");
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -543,7 +547,7 @@ function PODetailContent() {
         <div className="grid gap-4 grid-cols-2 sm:grid-cols-3">
           <div className="rounded-lg border bg-card p-4">
             <p className="text-xs text-muted-foreground">{t("total")}</p>
-            <p className="mt-1 text-xl font-bold font-mono tabular-nums break-all">{procurementMoney(po.total, po.currencyCode)}</p>
+            <p className="mt-1 text-xl font-bold font-mono tabular-nums break-all">{procurementMoney(po.total, po.currencyCode, unitPresentation)}</p>
           </div>
           <div className="rounded-lg border bg-card p-4">
             <p className="text-xs text-muted-foreground">{t("items")}</p>

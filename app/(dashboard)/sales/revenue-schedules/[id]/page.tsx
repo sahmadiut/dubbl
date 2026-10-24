@@ -1,5 +1,6 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
 import { useTranslations } from "next-intl";
 import { revenueMethodLabel, revenueStatusLabel, revenueScheduleValid, type RevenueReadError } from "@/i18n/revenue-schedule-presentation";
 import { useState, useEffect } from "react";
@@ -41,6 +42,7 @@ const statusColors: Record<string, string> = {
 };
 
 export default function RevenueScheduleDetailPage() {
+  const unitPresentation = usePresentation();
   const t = useTranslations("RevenueSchedules");
   const [error, setError] = useState<RevenueReadError | null>(null);
   const { id } = useParams<{ id: string }>();
@@ -176,15 +178,15 @@ export default function RevenueScheduleDetailPage() {
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-lg border p-4">
           <p className="text-xs text-muted-foreground">{t("total")}</p>
-          <p className="text-xl font-bold font-mono">{formatMoney(rs.totalAmount)}</p>
+          <p className="text-xl font-bold font-mono">{formatMoney(rs.totalAmount, unitPresentation)}</p>
         </div>
         <div className="rounded-lg border p-4">
           <p className="text-xs text-muted-foreground">{t("recognized")}</p>
-          <p className="text-xl font-bold font-mono text-emerald-600">{formatMoney(rs.recognizedAmount)}</p>
+          <p className="text-xl font-bold font-mono text-emerald-600">{formatMoney(rs.recognizedAmount, unitPresentation)}</p>
         </div>
         <div className="rounded-lg border p-4">
           <p className="text-xs text-muted-foreground">{t("remaining")}</p>
-          <p className="text-xl font-bold font-mono text-amber-600">{formatMoney(remaining)}</p>
+          <p className="text-xl font-bold font-mono text-amber-600">{formatMoney(remaining, unitPresentation)}</p>
         </div>
       </div>
 
@@ -197,7 +199,7 @@ export default function RevenueScheduleDetailPage() {
         {sortedEntries.map((entry) => (
           <div key={entry.id} className="grid min-w-[400px] grid-cols-[1fr_140px_120px] gap-2 border-b px-4 py-2 last:border-b-0 items-center">
             <span className="text-sm">{entry.periodDate}</span>
-            <span className="text-right text-sm font-mono font-medium">{formatMoney(entry.amount)}</span>
+            <span className="text-right text-sm font-mono font-medium">{formatMoney(entry.amount, unitPresentation)}</span>
             <span className="text-right text-sm">
               {entry.recognized ? (
                 <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">

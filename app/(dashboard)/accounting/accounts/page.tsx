@@ -1,5 +1,7 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
+import { currencyLabel } from "@/i18n/currency-labels";
 import { useTranslations } from "next-intl";
 import { accountDisplayName } from "@/i18n/account-names";
 import { requireAccountResponse, accountFailureMessage, accountTypeLabel } from "@/i18n/account-presentation";
@@ -45,6 +47,7 @@ const TYPE_META: Record<string, { dot: string; bg: string; text: string; border:
 const ALL_TYPES = ["asset", "liability", "equity", "revenue", "expense"] as const;
 
 export default function AccountsPage() {
+  const unitPresentation = usePresentation();
   const t = useTranslations("Accounts");
   const names = useTranslations("AccountNames");
   const errors = useTranslations("AccountErrors");
@@ -351,7 +354,7 @@ export default function AccountsPage() {
                           <p className="text-xs text-muted-foreground truncate">{account.description}</p>
                         )}
                       </div>
-                      <span className="text-xs text-muted-foreground shrink-0">{account.currencyCode === "IRR" ? t("rial") : account.currencyCode}</span>
+                      <span className="text-xs text-muted-foreground shrink-0">{currencyLabel(account.currencyCode, unitPresentation.locale)}</span>
                       {!account.isActive && (
                         <span className="text-[10px] uppercase tracking-wider text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{t("inactive")}</span>
                       )}

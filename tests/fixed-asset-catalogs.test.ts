@@ -1,3 +1,6 @@
+import { resolvePresentation } from "../i18n/locale";
+import { formatDecimalDraft, formatExactDecimal as localizedExactDecimal } from "../i18n/numbers";
+import { bankMoneyDisplay as localizedBankMoney } from "../lib/money/bank-display";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -103,7 +106,7 @@ test("fixed asset production list renders bilingual empty/table/search/error sta
     const Page = loaded(list, listStates(rows, "FA-001"));
     const html = renderWithPresentation(createElement(Page), locale);
     for (const key of ["assetNumber", "name", "purchased", "methodHint", "purchasePrice", "usedValue", "currentValue", "status", "runHint", "run", "search", "clear", "active", "disposed", "fullyDepreciated", "all"] as const) assert.ok(html.includes(escape(t(key))), key);
-    assert.ok(html.includes(assetMoneyDisplay(BigInt(asset.purchasePrice) * 3n)) && html.includes("future_method") && html.includes("future_status"));
+    assert.ok(html.includes(assetMoneyDisplay(BigInt(asset.purchasePrice) * 3n, resolvePresentation({ user: { language: locale } }))) && html.includes("future_method") && html.includes("future_status"));
     assert.ok(html.includes(escape(caller)) && !html.includes("<script>"));
     assert.ok(html.includes(escape(t("showingMatching", { count: 3, query: "FA-001" }))));
     const Missing = loaded(list, listStates(rows, "absent"));
@@ -122,10 +125,10 @@ test("fixed asset detail renders all lifecycle dialogs, history, status and call
       const html = renderWithPresentation(createElement(Page), locale);
       for (const key of ["back", "dispose", "disposeDescription", "disposalAmount", "disposalZero", "disposalDate", "revalue", "revalueDescription", "higherValue", "revalueNotes", "saveHigher", "impair", "impairDescription", "lowerValue", "impairNotes", "saveLower", "capitalize", "capitalizeDescription", "inServiceDate", "addConstructionCost", "costDescription", "amount", "sourceAccount", "sourceHint", "purposeExample", "addCost", "books", "booksDescription", "assetAccountHint", "expenseAccountHint", "accumulatedAccountHint", "depreciationHistory", "constructionCosts", "valueHistory", "writtenDown", "notSet"] as const) assert.ok(html.includes(escape(t(key))), key);
       assert.ok(html.includes(escape(t("lifeSummary", { method: t("straightLine"), count: 60 }))));
-      assert.ok(html.includes(escape(t("currentAmount", { amount: assetMoneyDisplay(asset.netBookValue) }))));
-      assert.ok(html.includes(escape(t("totalAmount", { amount: "$0.29" }))));
+      assert.ok(html.includes(escape(t("currentAmount", { amount: assetMoneyDisplay(asset.netBookValue, resolvePresentation({ user: { language: locale } })) }))));
+      assert.ok(html.includes(escape(t("totalAmount", { amount: localizedAmount("$0.29", locale) }))));
       assert.ok(html.includes(escape(caller)) && !html.includes("<script>"));
-      assert.ok(html.includes("40,000,000,000,000.01") && html.includes("$0.29"));
+      assert.ok(html.includes(localizedNumber("40,000,000,000,000.01", locale)) && html.includes(localizedAmount("$0.29", locale)));
       if (row.status === "disposed") assert.ok(html.includes(escape(t("disposalDetails"))) && html.includes(escape(t("unavailable"))));
       if (row.status === "active") for (const key of ["depreciateHint", "revalueHint", "impairHint", "undoHint", "disposeHint", "deleteHint"] as const) assert.ok(html.includes(escape(t(key))), key);
     }
@@ -146,7 +149,7 @@ test("fixed asset creation drawer translates all fields and choices while keepin
     const html = renderWithPresentation(createElement(Drawer, { open: true, onClose: noop }), locale);
     for (const key of ["newTitle", "newDescription", "assetInfo", "nameRequired", "numberRequired", "nameExample", "description", "descriptionExample", "purchase", "purchaseDateRequired", "priceRequired", "depreciation", "residual", "lifeMonths", "method", "straightLine", "decliningBalance", "accounts", "assetAccount", "expenseAccount", "accumulatedAccount", "selectAccount", "cancel", "creating"] as const) assert.ok(html.includes(escape(t(key))), key);
     assert.ok(html.includes('data-value="declining_balance"') && html.includes('data-option="straight_line"'));
-    assert.ok(html.includes('value="40000000000000.01"') && html.includes('placeholder="FA-001"') && html.includes('placeholder="10000.00"'));
+    assert.ok(html.includes(`value="${formatDecimalDraft("40000000000000.01", resolvePresentation({ user: { language: locale } }))}"`) && html.includes('placeholder="FA-001"') && html.includes(`placeholder="${formatDecimalDraft("10000.00", resolvePresentation({ user: { language: locale } }))}"`));
     assert.ok(html.includes(escape(caller)) && !html.includes("<script>"));
     assert.match(html, /<button(?=[^>]*disabled="")[^>]*>/);
   }
@@ -172,7 +175,7 @@ test("asset request presentation rejects unknown prose, malformed response shape
 test("actual asset list/detail/account loaders localize failures and reject stale work before adopting state", async () => {
   for (const locale of locales) for (const kind of ["counts", "filtered", "detail", "accounts"]) for (const mode of ["success", "forbidden", "network", "html", "alias", "shape", "stale"]) {
     const t = translator(locale), writes: unknown[] = [], messages: unknown[] = [], busy: boolean[] = [];
-    const scope = { t, fixedAssetJson, fixedAssetFailureMessage, orgId: "org-a", id: asset.id, statusFilter: "disposed", open: true,
+    const scope = { unitPresentation: resolvePresentation({ user: { language: locale } }), t, fixedAssetJson, fixedAssetFailureMessage, orgId: "org-a", id: asset.id, statusFilter: "disposed", open: true,
       localStorage: { getItem: () => "org-a" }, devDelay: async () => {},
       setAssets: (v: unknown) => writes.push(v), setAllAssets: (v: unknown) => writes.push(v), setAsset: (v: unknown) => writes.push(v), setAccounts: (v: unknown) => writes.push(v), setCwipCosts: (v: unknown) => writes.push(v),
       setReadError: (v: unknown) => messages.push(v), toast: { error: (v: unknown) => messages.push(v) },
@@ -208,7 +211,7 @@ test("production lifecycle callbacks preserve exact payloads, confirmations, org
   ] as const;
   for (const locale of locales) for (const [name, endpoint, payload, success, fallback] of operations) for (const mode of ["success", "forbidden", "network", "html", "alias"]) {
     const t = translator(locale), messages: string[] = [], closed: unknown[] = [], flags: boolean[] = []; let reloads = 0;
-    const run = callback(detail, name, { t, orgId: "org-a", id: asset.id, asset, fixedAssetJson, fixedAssetFailureMessage, FixedAssetRequestError, assetCentsInput,
+    const run = callback(detail, name, { unitPresentation: resolvePresentation({ user: { language: locale } }), t, orgId: "org-a", id: asset.id, asset, fixedAssetJson, fixedAssetFailureMessage, FixedAssetRequestError, assetCentsInput,
       revalueAmount: "40000000000000.01", revalueDate: "2026-10-18", revalueNotes: caller, impairAmount: "0.29", impairDate: "2026-10-18", impairNotes: "", capitalizeDate: "2026-10-18", costAmount: "0.29", costDate: "2026-10-18", costDescription: caller, costSourceAccountId: account.id, disposeAmount: "0.29", disposeDate: "2026-10-18",
       confirm: async (config: Record<string, unknown>) => { assert.equal(config.title, t("undoTitle")); assert.equal(config.confirmLabel, t("undoConfirm")); return true; },
       toast: { success: (v: string) => messages.push(v), error: (v: string) => messages.push(v) }, setBusy: (v: boolean) => flags.push(v),
@@ -233,7 +236,7 @@ test("production lifecycle callbacks preserve exact payloads, confirmations, org
 test("actual creation, batch depreciation and deletion callbacks localize all exits and preserve requests", async () => {
   for (const locale of locales) for (const kind of ["create", "batch", "delete"]) for (const mode of ["success", "forbidden", "network", "html", "shape"]) {
     const t = translator(locale), messages: string[] = [], flags: boolean[] = [], destinations: string[] = []; let closed = 0, reloaded = 0;
-    const run = callback(kind === "create" ? drawer : kind === "batch" ? list : detail, kind === "create" ? "handleSubmit" : kind === "batch" ? "handleRunDepreciation" : "handleDelete", {
+    const run = callback(kind === "create" ? drawer : kind === "batch" ? list : detail, kind === "create" ? "handleSubmit" : kind === "batch" ? "handleRunDepreciation" : "handleDelete", { unitPresentation: resolvePresentation({ user: { language: locale } }),
       t, fixedAssetJson, fixedAssetFailureMessage, assetCentsInput, assetLifeInput, name: caller, description: "", assetNumber: "FA-001", purchaseDate: "2026-10-18", purchasePrice: "40000000000000.01", residualValue: "", usefulLifeMonths: "60", depreciationMethod: "declining_balance", assetAccountId: account.id, depreciationAccountId: "", accumulatedDepAccountId: "",
       orgId: "org-a", id: asset.id, localStorage: { getItem: () => "org-a" }, setSaving: (v: boolean) => flags.push(v), setRunningDepreciation: (v: boolean) => flags.push(v),
       onClose: () => { closed++; }, router: { push: (v: string) => destinations.push(v) }, window: { location: { reload: () => { reloaded++; } } },
@@ -270,12 +273,12 @@ test("actual validation and cancelled confirmations do not submit or close dialo
       ["handleSubmit", { name: "" }, "requiredFields"],
     ] as const) {
       const messages: string[] = [];
-      const run = callback(name === "handleSubmit" ? drawer : detail, name, { t, orgId: "org-a", fixedAssetFailureMessage, FixedAssetRequestError, assetCentsInput, assetLifeInput,
+      const run = callback(name === "handleSubmit" ? drawer : detail, name, { unitPresentation: resolvePresentation({ user: { language: locale } }), t, orgId: "org-a", fixedAssetFailureMessage, FixedAssetRequestError, assetCentsInput, assetLifeInput,
         localStorage: { getItem: () => "org-a" }, name: "asset", assetNumber: "FA-001", purchaseDate: "2026-10-18", purchasePrice: "1", description: "", residualValue: "", depreciationMethod: "straight_line", assetAccountId: "", depreciationAccountId: "", accumulatedDepAccountId: "", setSaving: noop,
         toast: { error: (value: string) => messages.push(value) }, fetch: () => assert.fail("Invalid inputs must not submit"), ...changes });
       await run({ preventDefault: noop }); assert.deepEqual(messages, [t(key)]);
     }
-    for (const name of ["handleDelete", "handleUndoDepreciation"]) await callback(detail, name, { t, orgId: "org-a", confirm: async () => false, fetch: () => assert.fail("Cancelled confirmation must not submit") })();
+    for (const name of ["handleDelete", "handleUndoDepreciation"]) await callback(detail, name, { unitPresentation: resolvePresentation({ user: { language: locale } }), t, orgId: "org-a", confirm: async () => false, fetch: () => assert.fail("Cancelled confirmation must not submit") })();
     for (const name of ["handleDepreciate", "handleUndoDepreciation", "handleRevalue", "handleImpair", "handleCapitalize", "handleAddCost", "handleDispose", "handleDelete"]) await callback(detail, name, { orgId: null, fetch: () => assert.fail("No org must not submit") })();
   }
 });
@@ -296,3 +299,7 @@ test("owned copy has no unexplained display literals and every Persian catalog v
   for (const value of Object.values(fa.FixedAssets)) assert.match(value, /[\u0600-\u06ff]/);
   assert.equal(assetPercent(29, 100), 29);
 });
+
+function localizedAmount(value: string, locale: "en-US" | "fa-IR") { return (value.startsWith("+") ? "+" : "") + localizedBankMoney(BigInt(value.replace(/[$,+.]/g, "")), "USD", resolvePresentation({ user: { language: locale } })); }
+
+function localizedNumber(value: string, locale: "en-US" | "fa-IR") { return localizedExactDecimal(value.replaceAll(",", ""), resolvePresentation({ user: { language: locale } })); }

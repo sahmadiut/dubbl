@@ -1,3 +1,4 @@
+import type { NumberPresentation } from "../../i18n/numbers";
 import { currencyMetadata, roundRatio } from "./exact";
 import { invoiceUiMinor, invoiceUiRow, invoiceUiMoney, invoiceUiDecimal } from "./invoice-ui";
 import { documentLineInputs, type DocumentEditorLine } from "./document-editor";
@@ -106,8 +107,8 @@ export function procurementOverview(rows: readonly { currencyCode: string; statu
   return [...groups].sort(([a], [b]) => a.localeCompare(b)).map(([currencyCode, amount]) => ({ currencyCode, amount }));
 }
 
-export function procurementOverviewText(rows: readonly { currencyCode: string; status: string; total: bigint }[], statuses?: readonly string[]) {
-  return procurementOverview(rows, statuses).map(group => invoiceUiMoney(group.amount, group.currencyCode)).join(" · ") || "—";
+export function procurementOverviewText(rows: readonly { currencyCode: string; status: string; total: bigint }[], statuses?: readonly string[], presentation: NumberPresentation = { locale: "en-US", numerals: "latn" }) {
+  return procurementOverview(rows, statuses).map(group => invoiceUiMoney(group.amount, group.currencyCode, presentation)).join(" · ") || "—";
 }
 
 /** The list services accept status/page only; other controls inspect the loaded sample. */

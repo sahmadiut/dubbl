@@ -1,5 +1,8 @@
 "use client";
 
+import { currencyLabel } from "@/i18n/currency-labels";
+import { usePresentation } from "@/i18n/provider";
+import type { NumberPresentation } from "@/i18n/numbers";
 import { useFormatter, useTranslations } from "next-intl";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useDebounce } from "@/lib/hooks/use-debounce";
@@ -61,7 +64,7 @@ const typeBadgeClass: Record<Contact["type"], string> = {
 
 type ContactTranslator = ReturnType<typeof useTranslations<"Contacts">>;
 
-function buildColumns(t: ContactTranslator, onDelete: (c: Contact) => void, onOpen: (c: Contact) => void, onCreateLead: (c: Contact) => void): Column<Contact>[] {
+function buildColumns(t: ContactTranslator, onDelete: (c: Contact) => void, onOpen: (c: Contact) => void, onCreateLead: (c: Contact) => void, unitPresentation: NumberPresentation = { locale: "en-US", numerals: "latn" }): Column<Contact>[] {
   return [
     {
       key: "name",
@@ -113,7 +116,7 @@ function buildColumns(t: ContactTranslator, onDelete: (c: Contact) => void, onOp
       render: (r) => (
         <span className="text-sm tabular-nums text-muted-foreground">
           {r.creditLimit != null
-            ? formatMoney(r.creditLimit, r.currencyCode || "USD")
+            ? formatMoney(r.creditLimit, r.currencyCode || "USD", unitPresentation)
             : t("noLimit")}
         </span>
       ),
@@ -126,7 +129,7 @@ function buildColumns(t: ContactTranslator, onDelete: (c: Contact) => void, onOp
         <span className="text-sm tabular-nums">
           {r.owesYou && r.owesYou > 0 ? (
             <span className="font-medium text-emerald-600 dark:text-emerald-400">
-              {formatMoney(r.owesYou, r.currencyCode || "USD")}
+              {formatMoney(r.owesYou, r.currencyCode || "USD", unitPresentation)}
             </span>
           ) : (
             <span className="text-muted-foreground">-</span>
@@ -142,7 +145,7 @@ function buildColumns(t: ContactTranslator, onDelete: (c: Contact) => void, onOp
         <span className="text-sm tabular-nums">
           {r.youOwe && r.youOwe > 0 ? (
             <span className="font-medium text-orange-600 dark:text-orange-400">
-              {formatMoney(r.youOwe, r.currencyCode || "USD")}
+              {formatMoney(r.youOwe, r.currencyCode || "USD", unitPresentation)}
             </span>
           ) : (
             <span className="text-muted-foreground">-</span>
@@ -158,7 +161,7 @@ function buildColumns(t: ContactTranslator, onDelete: (c: Contact) => void, onOp
         <span className="text-sm tabular-nums">
           {r.overdue && r.overdue > 0 ? (
             <span className="font-semibold text-red-600 dark:text-red-400">
-              {formatMoney(r.overdue, r.currencyCode || "USD")}
+              {formatMoney(r.overdue, r.currencyCode || "USD", unitPresentation)}
             </span>
           ) : (
             <span className="text-muted-foreground">-</span>
@@ -202,7 +205,7 @@ function buildColumns(t: ContactTranslator, onDelete: (c: Contact) => void, onOp
       className: "w-24 text-center",
       render: (r) => (
         <span className="text-xs font-medium text-muted-foreground">
-          {r.currencyCode || "-"}
+          {r.currencyCode ? currencyLabel(r.currencyCode, unitPresentation.locale) : "-"}
         </span>
       ),
     },
@@ -262,6 +265,7 @@ function buildColumns(t: ContactTranslator, onDelete: (c: Contact) => void, onOp
 }
 
 export default function ContactsPage() {
+  const unitPresentation = usePresentation();
   const t = useTranslations("Contacts");
   const format = useFormatter();
   const router = useRouter();
@@ -425,7 +429,7 @@ export default function ContactsPage() {
     t,
     handleDelete,
     (c) => router.push(`/contacts/${c.id}`),
-    (c) => openDrawer("deal", { contactId: c.id, contactName: c.name }),
+    (c) => openDrawer("deal", { contactId: c.id, contactName: c.name }), unitPresentation
   );
 
   const customers = contacts.filter(

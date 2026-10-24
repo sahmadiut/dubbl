@@ -1,5 +1,7 @@
 "use client";
 
+import { bankMoneyDisplay as exampleMoney } from "@/lib/money/bank-display";
+import { usePresentation } from "@/i18n/provider";
 import { useTranslations } from "next-intl";
 import { quoteStatusLabel } from "@/i18n/quote-presentation";
 
@@ -44,6 +46,7 @@ const statusColors: Record<string, string> = {
 };
 
 export default function QuotesPage() {
+  const unitPresentation = usePresentation();
   const t = useTranslations("SalesQuotes");
   const columns: Column<Quote>[] = [
     {
@@ -87,7 +90,7 @@ export default function QuotesPage() {
       className: "w-28 text-right",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums">
-          {quoteUiMoney(r.total, r.currencyCode)}
+          {quoteUiMoney(r.total, r.currencyCode, unitPresentation)}
         </span>
       ),
     },
@@ -126,8 +129,8 @@ export default function QuotesPage() {
     return () => controller.abort();
   }, [statusFilter, orgId, context, t]);
 
-  const sent = quoteUiSummary(quotes, "sent");
-  const accepted = quoteUiSummary(quotes, "accepted");
+  const sent = quoteUiSummary(quotes, "sent", unitPresentation);
+  const accepted = quoteUiSummary(quotes, "accepted", unitPresentation);
 
   if (loading) {
     return <BrandLoader />;
@@ -189,16 +192,16 @@ export default function QuotesPage() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-xs">
                     <span className="text-muted-foreground">{t("sampleWebsite")}</span>
-                    <span className="font-mono text-muted-foreground">$2,400.00</span>
+                    <span className="font-mono text-muted-foreground">{exampleMoney(240000n, "USD", unitPresentation)}</span>
                   </div>
                   <div className="flex justify-between text-xs">
                     <span className="text-muted-foreground">{t("sampleSeo")}</span>
-                    <span className="font-mono text-muted-foreground">$800.00</span>
+                    <span className="font-mono text-muted-foreground">{exampleMoney(80000n, "USD", unitPresentation)}</span>
                   </div>
                   <div className="h-px bg-border my-1" />
                   <div className="flex justify-between text-xs font-medium">
                     <span>{t("total")}</span>
-                    <span className="font-mono">$3,200.00</span>
+                    <span className="font-mono">{exampleMoney(320000n, "USD", unitPresentation)}</span>
                   </div>
                 </div>
               </div>

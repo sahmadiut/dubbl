@@ -1,3 +1,7 @@
+"use client";
+
+import { usePresentation } from "@/i18n/provider";
+import { currencyLabel } from "@/i18n/currency-labels";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -33,13 +37,14 @@ export function RateNote({
   status: RateInfo | null | undefined;
   className?: string;
 }) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("SharedUI");
   if (!status || !baseCurrency || baseCurrency === currency) return null;
 
   if (status.missing) {
     return (
       <span className={cn("inline-flex flex-wrap items-center gap-1 text-xs text-amber-600", className)}>
-        {t("missingRate", { currency, baseCurrency })}{" "}
+        {t("missingRate", { currency: currencyLabel(currency, unitPresentation.locale), baseCurrency: currencyLabel(baseCurrency, unitPresentation.locale) })}{" "}
         <Link href="/tax/currencies" className="font-medium underline underline-offset-2">
           {t("setACustomRate")}
         </Link>
@@ -53,7 +58,7 @@ export function RateNote({
     <span className={cn("inline-flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground", className)}>
       {status.rate != null && (
         <span className="tabular-nums">
-          1 {currency} ≈ {formatRate(status.rate)} {baseCurrency}
+          1 {currencyLabel(currency, unitPresentation.locale)} ≈ {formatRate(status.rate)} {currencyLabel(baseCurrency, unitPresentation.locale)}
         </span>
       )}
       <span>·</span>

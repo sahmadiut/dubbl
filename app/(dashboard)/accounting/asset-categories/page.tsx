@@ -1,5 +1,6 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
 import { useTranslations } from "next-intl";
 import { ASSET_CATEGORY_METHODS, ASSET_CATEGORY_CONVENTIONS, assetCategoryMethodLabel, assetCategoryJson, assetCategoryFailureMessage } from "@/i18n/asset-category-presentation";
 
@@ -98,6 +99,7 @@ function categoryToForm(c: AssetCategory): FormState {
 }
 
 export default function AssetCategoriesPage() {
+  const unitPresentation = usePresentation();
   const t = useTranslations("AssetCategories");
   const errors = useTranslations("AssetCategoryErrors");
   useDocumentTitle(t("documentTitle"));
@@ -233,7 +235,7 @@ export default function AssetCategoriesPage() {
       className: "w-32 text-right",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums">
-          {r.defaultResidualValue ? formatMoney(r.defaultResidualValue) : "—"}
+          {r.defaultResidualValue ? formatMoney(r.defaultResidualValue, unitPresentation) : "—"}
         </span>
       ),
     },

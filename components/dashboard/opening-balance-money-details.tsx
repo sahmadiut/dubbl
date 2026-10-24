@@ -1,16 +1,20 @@
+"use client";
+
+import { usePresentation } from "@/i18n/provider";
 import { useTranslations } from "next-intl";
 
 import { journalMoney } from "@/lib/money/journal-display";
 import { openingBalanceSaved, OPENING_BALANCE_CURRENCY, type OpeningBalanceSavedLine } from "@/lib/money/opening-balance-ui";
 
 export function OpeningBalanceMoneyDetails({ lines }: { lines: OpeningBalanceSavedLine[] }) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("Journals");
   let saved;
   let debitTotal, creditTotal;
   try {
     saved = openingBalanceSaved(lines);
-    debitTotal = journalMoney(saved.totalDebit, OPENING_BALANCE_CURRENCY);
-    creditTotal = journalMoney(saved.totalCredit, OPENING_BALANCE_CURRENCY);
+    debitTotal = journalMoney(saved.totalDebit, OPENING_BALANCE_CURRENCY, unitPresentation);
+    creditTotal = journalMoney(saved.totalCredit, OPENING_BALANCE_CURRENCY, unitPresentation);
   }
   catch { return <p role="alert" className="text-sm text-red-600">{t("invalidOpening")}</p>; }
   return (
@@ -26,10 +30,10 @@ export function OpeningBalanceMoneyDetails({ lines }: { lines: OpeningBalanceSav
             {line.account ? `${line.account.code} · ${line.account.name}` : t("unknownAccount")}
           </p>
           <span className="text-right text-sm font-mono">
-            {line.debit > 0n ? journalMoney(line.debit, OPENING_BALANCE_CURRENCY) : "—"}
+            {line.debit > 0n ? journalMoney(line.debit, OPENING_BALANCE_CURRENCY, unitPresentation) : "—"}
           </span>
           <span className="text-right text-sm font-mono">
-            {line.credit > 0n ? journalMoney(line.credit, OPENING_BALANCE_CURRENCY) : "—"}
+            {line.credit > 0n ? journalMoney(line.credit, OPENING_BALANCE_CURRENCY, unitPresentation) : "—"}
           </span>
         </div>
       ))}

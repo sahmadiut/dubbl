@@ -1,5 +1,7 @@
 "use client";
 
+import { bankMoneyDisplay as exampleMoney } from "@/lib/money/bank-display";
+import { usePresentation } from "@/i18n/provider";
 import { useTranslations } from "next-intl";
 import { recurringInvoiceFrequencyLabel, recurringInvoiceStatusLabel, type RecurringInvoiceTranslate, type RecurringInvoiceReadError } from "@/i18n/recurring-invoice-presentation";
 
@@ -119,6 +121,7 @@ export default function RecurringInvoicesPage() {
 }
 
 function RecurringInvoicesContent() {
+  const unitPresentation = usePresentation();
   const t = useTranslations("RecurringInvoices");
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
@@ -174,7 +177,6 @@ function RecurringInvoicesContent() {
     let cancelled = false;
     const controller = new AbortController();
     ++generation.current;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setRefetching(true);
     setPage(1);
     setLoadingMore(false);
@@ -307,7 +309,6 @@ function RecurringInvoicesContent() {
 
   // Bump searchKey when debounced search changes to trigger ContentReveal
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSearchKey((k) => k + 1);
   }, [debouncedSearch]);
 
@@ -411,7 +412,7 @@ function RecurringInvoicesContent() {
                     </div>
                     <div>
                       <p className="text-muted-foreground">{t("amount")}</p>
-                      <p className="font-medium font-mono mt-0.5">$299.00</p>
+                      <p className="font-medium font-mono mt-0.5">{exampleMoney(29900n, "USD", unitPresentation)}</p>
                     </div>
                     <div>
                       <p className="text-muted-foreground">{t("nextInvoice")}</p>
@@ -465,7 +466,7 @@ function RecurringInvoicesContent() {
                       <p className="text-xs text-muted-foreground truncate">{u.contactName}</p>
                     )}
                   </div>
-                  <p className="text-sm font-mono font-semibold tabular-nums shrink-0 ml-2">{recurringInvoiceUiMoney(u.lineTotal, u.currencyCode)}</p>
+                  <p className="text-sm font-mono font-semibold tabular-nums shrink-0 ml-2">{recurringInvoiceUiMoney(u.lineTotal, u.currencyCode, unitPresentation)}</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   {u.dates.map((d) => (

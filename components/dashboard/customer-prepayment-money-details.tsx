@@ -1,11 +1,13 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
 import { useTranslations } from "next-intl";
 import { customerPrepaymentMoney } from "@/lib/money/customer-prepayment-ui";
 
 export function CustomerPrepaymentMoneyDetails({ credit }: { credit: {
   currencyCode: string; originalAmount: bigint; amountRemaining: bigint;
 } }) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("CustomerPrepayments");
   return <div className="grid gap-4 sm:grid-cols-3">
     {([
@@ -14,7 +16,7 @@ export function CustomerPrepaymentMoneyDetails({ credit }: { credit: {
       [t("availableToUse"), credit.amountRemaining, "text-amber-600"],
     ] as const).map(([label, amount, color]) => <div key={label} className="rounded-lg border p-4">
       <p className="text-xs text-muted-foreground">{label}</p>
-      <p className={`text-xl font-bold font-mono break-all ${color}`}>{customerPrepaymentMoney(amount, credit.currencyCode)}</p>
+      <p className={`text-xl font-bold font-mono break-all ${color}`}>{customerPrepaymentMoney(amount, credit.currencyCode, unitPresentation)}</p>
     </div>)}
   </div>;
 }

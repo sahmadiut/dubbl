@@ -1,5 +1,7 @@
 "use client";
 
+import { currencyLabel } from "@/i18n/currency-labels";
+import { usePresentation } from "@/i18n/provider";
 import { fixedAssetJson, fixedAssetFailureMessage, FixedAssetRequestError, fixedAssetStatusLabel, fixedAssetMethodLabel } from "@/i18n/fixed-asset-presentation";
 import { useTranslations } from "next-intl";
 
@@ -102,6 +104,7 @@ const statusColors: Record<string, string> = {
 
 // Plain-language status labels: end users aren't accountants.
 export default function FixedAssetDetailPage() {
+  const unitPresentation = usePresentation();
   const t = useTranslations("FixedAssets");
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -557,7 +560,7 @@ export default function FixedAssetDetailPage() {
             <div className="space-y-2">
               <Label>{t("disposalAmount")}</Label>
               <CurrencyInput
-                prefix="$"
+                prefix={currencyLabel("USD", unitPresentation.locale, "$")}
                 value={disposeAmount}
                 onChange={setDisposeAmount}
               />
@@ -596,12 +599,12 @@ export default function FixedAssetDetailPage() {
             <div className="space-y-2">
               <Label>{t("higherValue")}</Label>
               <CurrencyInput
-                prefix="$"
+                prefix={currencyLabel("USD", unitPresentation.locale, "$")}
                 value={revalueAmount}
                 onChange={setRevalueAmount}
               />
               <p className="text-xs text-muted-foreground">
-                {t("currentAmount", { amount: formatMoney(asset.netBookValue) })}
+                {t("currentAmount", { amount: formatMoney(asset.netBookValue, unitPresentation) })}
               </p>
             </div>
             <div className="space-y-2">
@@ -644,12 +647,12 @@ export default function FixedAssetDetailPage() {
             <div className="space-y-2">
               <Label>{t("lowerValue")}</Label>
               <CurrencyInput
-                prefix="$"
+                prefix={currencyLabel("USD", unitPresentation.locale, "$")}
                 value={impairAmount}
                 onChange={setImpairAmount}
               />
               <p className="text-xs text-muted-foreground">
-                {t("currentAmount", { amount: formatMoney(asset.netBookValue) })}
+                {t("currentAmount", { amount: formatMoney(asset.netBookValue, unitPresentation) })}
               </p>
             </div>
             <div className="space-y-2">
@@ -721,7 +724,7 @@ export default function FixedAssetDetailPage() {
             <div className="space-y-2">
               <Label>{t("amount")}</Label>
               <CurrencyInput
-                prefix="$"
+                prefix={currencyLabel("USD", unitPresentation.locale, "$")}
                 value={costAmount}
                 onChange={setCostAmount}
               />
@@ -780,7 +783,7 @@ export default function FixedAssetDetailPage() {
         <div className="rounded-lg border p-4">
           <p className="text-xs text-muted-foreground">{t("purchasePrice")}</p>
           <p className="text-xl font-bold font-mono">
-            {formatMoney(asset.purchasePrice)}
+            {formatMoney(asset.purchasePrice, unitPresentation)}
           </p>
         </div>
         <div className="rounded-lg border p-4">
@@ -788,14 +791,14 @@ export default function FixedAssetDetailPage() {
             {t("usedSoFar")}
           </p>
           <p className="text-xl font-bold font-mono text-amber-600">
-            {formatMoney(asset.accumulatedDepreciation)}
+            {formatMoney(asset.accumulatedDepreciation, unitPresentation)}
           </p>
           <p className="text-xs text-muted-foreground mt-1">{depPercent}%</p>
         </div>
         <div className="rounded-lg border p-4">
           <p className="text-xs text-muted-foreground">{t("currentValue")}</p>
           <p className="text-xl font-bold font-mono text-emerald-600">
-            {formatMoney(asset.netBookValue)}
+            {formatMoney(asset.netBookValue, unitPresentation)}
           </p>
         </div>
         <div className="rounded-lg border p-4">
@@ -803,7 +806,7 @@ export default function FixedAssetDetailPage() {
             {t("residualValue")}
           </p>
           <p className="text-xl font-bold font-mono">
-            {formatMoney(asset.residualValue)}
+            {formatMoney(asset.residualValue, unitPresentation)}
           </p>
         </div>
       </div>
@@ -863,7 +866,7 @@ export default function FixedAssetDetailPage() {
               <p className="text-xs text-muted-foreground">{t("disposalAmount")}</p>
               <p className="font-mono">
                 {asset.disposalAmount !== null
-                  ? formatMoney(asset.disposalAmount)
+                  ? formatMoney(asset.disposalAmount, unitPresentation)
                   : t("unavailable")}
               </p>
             </div>
@@ -894,7 +897,7 @@ export default function FixedAssetDetailPage() {
               >
                 <span className="text-sm">{entry.date}</span>
                 <span className="text-right text-sm font-mono">
-                  {formatMoney(entry.amount)}
+                  {formatMoney(entry.amount, unitPresentation)}
                 </span>
                 <span className="text-right text-sm text-muted-foreground">
                   {entry.journalEntry
@@ -916,7 +919,7 @@ export default function FixedAssetDetailPage() {
             <h3 className="text-sm font-semibold">{t("constructionCosts")}</h3>
             {cwipCosts.length > 0 && (
               <span className="text-sm font-mono text-muted-foreground">
-                {t("totalAmount", { amount: formatMoney(cwipCosts.reduce((s, c) => s + BigInt(c.amount), 0n)) })}
+                {t("totalAmount", { amount: formatMoney(cwipCosts.reduce((s, c) => s + BigInt(c.amount), 0n), unitPresentation) })}
               </span>
             )}
           </div>
@@ -942,7 +945,7 @@ export default function FixedAssetDetailPage() {
                     {cost.description || "-"}
                   </span>
                   <span className="text-right text-sm font-mono">
-                    {formatMoney(cost.amount)}
+                    {formatMoney(cost.amount, unitPresentation)}
                   </span>
                   <span className="text-right text-sm text-muted-foreground">
                     {cost.journalEntry
@@ -998,7 +1001,7 @@ export default function FixedAssetDetailPage() {
                   )}
                 </span>
                 <span className="text-right text-sm font-mono">
-                  {formatMoney(rev.revaluedAmount)}
+                  {formatMoney(rev.revaluedAmount, unitPresentation)}
                 </span>
                 <span
                   className={`text-right text-sm font-mono ${
@@ -1008,7 +1011,7 @@ export default function FixedAssetDetailPage() {
                   }`}
                 >
                   {rev.changeAmount < 0 ? "-" : "+"}
-                  {formatMoney(BigInt(rev.changeAmount) < 0n ? -BigInt(rev.changeAmount) : BigInt(rev.changeAmount))}
+                  {formatMoney(BigInt(rev.changeAmount) < 0n ? -BigInt(rev.changeAmount) : BigInt(rev.changeAmount), unitPresentation)}
                 </span>
                 <span className="text-right text-sm text-muted-foreground">
                   {rev.journalEntry

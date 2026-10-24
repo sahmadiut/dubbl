@@ -1,5 +1,7 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
+import { currencyLabel } from "@/i18n/currency-labels";
 import { useTranslations } from "next-intl";
 import { recurringBillFrequencyLabel, recurringBillStatusLabel, recurringBillInputError, type RecurringBillError } from "@/i18n/recurring-bill-presentation";
 import { useState, useEffect, useCallback } from "react";
@@ -70,6 +72,7 @@ export default function RecurringBillsPage() {
 }
 
 function RecurringBillsWorkspace({ orgId }: { orgId: string }) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("RecurringBills");
   const [templates, setTemplates] = useState<RecurringTemplate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -236,8 +239,8 @@ function RecurringBillsWorkspace({ orgId }: { orgId: string }) {
                       {recurringBillStatusLabel(t, template.status)}
                     </Badge>
                   </TableCell>
-                  <TableCell>{template.currencyCode}</TableCell>
-                  <TableCell className="text-right font-mono break-words">{invoiceUiMoney(template.lines.reduce((sum, line) => sum + line.grossMinor, 0n), template.currencyCode)}</TableCell>
+                  <TableCell>{currencyLabel(template.currencyCode, unitPresentation.locale)}</TableCell>
+                  <TableCell className="text-right font-mono break-words">{invoiceUiMoney(template.lines.reduce((sum, line) => sum + line.grossMinor, 0n), template.currencyCode, unitPresentation)}</TableCell>
                 </TableRow>
               ))
             )}

@@ -1,3 +1,6 @@
+"use client";
+
+import { usePresentation } from "@/i18n/provider";
 import { useTranslations } from "next-intl";
 import { procurementMoney, procurementQuantityText } from "@/lib/money/procurement-ui";
 
@@ -7,8 +10,9 @@ type Line = { id: string; description: string; quantity?: number; quantityReceiv
 export function ProcurementMoneyDetails({ document, receipt = false }: {
   document: { currencyCode: string; total: bigint; subtotal?: bigint; taxTotal?: bigint; lines: Line[] }; receipt?: boolean;
 }) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("ProcurementDetails");
-  const format = (amount: bigint) => procurementMoney(amount, document.currencyCode);
+  const format = (amount: bigint) => procurementMoney(amount, document.currencyCode, unitPresentation);
   return <div className="rounded-lg border overflow-x-auto">
     <div className="grid min-w-[760px] grid-cols-[1fr_80px_110px_120px_110px_110px] gap-2 border-b bg-muted/50 px-4 py-2 text-xs font-medium text-muted-foreground">
       <span>{t("item")}</span><span className="text-right">{t("quantity")}</span><span className="text-right">{t(receipt ? "unitCost" : "unitPrice")}</span>

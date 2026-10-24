@@ -1,5 +1,6 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
 import { useTranslations } from "next-intl";
 import { bankPaymentStatus, paymentFailure, requirePaymentResponse } from "@/i18n/bank-payment-presentation";
 
@@ -99,6 +100,7 @@ export default function BatchDetailPage() {
   return <BatchDetails key={`${orgId}:${id}`} id={id} orgId={orgId} />;
 }
 function BatchDetails({ id, orgId }: { id: string; orgId: string | null }) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("BankPayments");
   const errors = useTranslations("BankAccountErrors");
   const router = useRouter();
@@ -135,7 +137,7 @@ function BatchDetails({ id, orgId }: { id: string; orgId: string | null }) {
 
     const confirmed = await confirm({
       title: t("submitTitle"),
-      description: t("submitConfirm", { count: batch.paymentCount, amount: formatMoney(batch.totalAmount, batch.currencyCode) }),
+      description: t("submitConfirm", { count: batch.paymentCount, amount: formatMoney(batch.totalAmount, batch.currencyCode, unitPresentation) }),
       confirmLabel: t("submitBatch"),
       destructive: false,
     });
@@ -352,7 +354,7 @@ function BatchDetails({ id, orgId }: { id: string; orgId: string | null }) {
         <div className="rounded-lg border p-3">
           <p className="text-[11px] text-muted-foreground">{t("totalAmount")}</p>
           <p className="mt-0.5 font-mono text-sm font-semibold tabular-nums break-all">
-            {formatMoney(batch.totalAmount, batch.currencyCode)}
+            {formatMoney(batch.totalAmount, batch.currencyCode, unitPresentation)}
           </p>
         </div>
         <div className="rounded-lg border p-3">
@@ -430,7 +432,7 @@ function BatchDetails({ id, orgId }: { id: string; orgId: string | null }) {
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
                   <p className="font-mono text-sm font-semibold tabular-nums break-all">
-                    {formatMoney(item.amount, item.currencyCode)}
+                    {formatMoney(item.amount, item.currencyCode, unitPresentation)}
                   </p>
                   {batch.status === "draft" && (
                     <Button
@@ -486,7 +488,7 @@ function BatchDetails({ id, orgId }: { id: string; orgId: string | null }) {
                       )}
                     </div>
                     <p className="font-mono text-sm font-semibold tabular-nums break-all shrink-0">
-                      {formatMoney(group.totalPaid, group.currencyCode)}
+                      {formatMoney(group.totalPaid, group.currencyCode, unitPresentation)}
                     </p>
                   </div>
                   <div className="divide-y divide-border">
@@ -509,7 +511,7 @@ function BatchDetails({ id, orgId }: { id: string; orgId: string | null }) {
                           </p>
                         </div>
                         <p className="font-mono text-xs tabular-nums break-all">
-                          {formatMoney(line.amountPaid, line.currencyCode)}
+                          {formatMoney(line.amountPaid, line.currencyCode, unitPresentation)}
                         </p>
                       </div>
                     ))}

@@ -1,5 +1,7 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
+import { currencyLabel } from "@/i18n/currency-labels";
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -62,6 +64,7 @@ const statusConfig: Record<string, { class: string }> = {
 // Plain-language status labels (end users aren't accountants).
 // "received" here means the bill has been approved and added to your books.
 export default function BillDetailPage() {
+  const unitPresentation = usePresentation();
   const t = useTranslations("SupplierBills");
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -420,8 +423,8 @@ export default function BillDetailPage() {
                       )}
                     </td>
                     <td className="px-4 py-3 text-right font-mono tabular-nums">{line.quantity / 100}</td>
-                    <td className="px-4 py-3 text-right font-mono tabular-nums text-muted-foreground">{formatMoney(line.unitPrice, b.currencyCode)}</td>
-                    <td className="px-4 py-3 text-right font-mono tabular-nums font-medium sm:pr-6">{formatMoney(line.amount, b.currencyCode)}</td>
+                    <td className="px-4 py-3 text-right font-mono tabular-nums text-muted-foreground">{formatMoney(line.unitPrice, b.currencyCode, unitPresentation)}</td>
+                    <td className="px-4 py-3 text-right font-mono tabular-nums font-medium sm:pr-6">{formatMoney(line.amount, b.currencyCode, unitPresentation)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -434,27 +437,27 @@ export default function BillDetailPage() {
               <div className="w-full max-w-xs space-y-1.5">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">{t("subtotal")}</span>
-                  <span className="font-mono tabular-nums">{formatMoney(b.subtotal, b.currencyCode)}</span>
+                  <span className="font-mono tabular-nums">{formatMoney(b.subtotal, b.currencyCode, unitPresentation)}</span>
                 </div>
                 {b.taxTotal > 0n && (
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">{t("tax")}</span>
-                    <span className="font-mono tabular-nums">{formatMoney(b.taxTotal, b.currencyCode)}</span>
+                    <span className="font-mono tabular-nums">{formatMoney(b.taxTotal, b.currencyCode, unitPresentation)}</span>
                   </div>
                 )}
                 <div className="h-px bg-border my-1" />
                 <div className="flex justify-between text-sm font-semibold">
                   <span>{t("total")}</span>
-                  <span className="font-mono tabular-nums">{formatMoney(b.total, b.currencyCode)}</span>
+                  <span className="font-mono tabular-nums">{formatMoney(b.total, b.currencyCode, unitPresentation)}</span>
                 </div>
                 {base && base.baseCurrency !== b.currencyCode && (
                   <>
                     <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>{t("inCurrency", { currency: base.baseCurrency })}</span>
+                      <span>{t("inCurrency", { currency: currencyLabel(base.baseCurrency, unitPresentation.locale) })}</span>
                       <span className="font-mono tabular-nums">
                         {base.amounts.total == null
                           ? "—"
-                          : `≈ ${formatMoney(base.amounts.total, base.baseCurrency)}`}
+                          : `≈ ${formatMoney(base.amounts.total, base.baseCurrency, unitPresentation)}`}
                       </span>
                     </div>
                     <RateNote
@@ -496,7 +499,7 @@ export default function BillDetailPage() {
               </div>
               <div>
                 <p className="text-[11px] text-muted-foreground">{t("paid")}</p>
-                <p className="text-sm font-mono font-semibold tabular-nums text-emerald-600 mt-0.5">{formatMoney(b.amountPaid, b.currencyCode)}</p>
+                <p className="text-sm font-mono font-semibold tabular-nums text-emerald-600 mt-0.5">{formatMoney(b.amountPaid, b.currencyCode, unitPresentation)}</p>
               </div>
               <div>
                 <p className="text-[11px] text-muted-foreground">{t("due")}</p>
@@ -562,7 +565,7 @@ export default function BillDetailPage() {
                   <div className="min-w-0">
                     <p className="text-sm truncate">{line.description}</p>
                     <p className="text-xs text-muted-foreground">
-                      {line.quantity / 100} × {formatMoney(line.unitPrice, b.currencyCode)}
+                      {line.quantity / 100} × {formatMoney(line.unitPrice, b.currencyCode, unitPresentation)}
                     </p>
                   </div>
                   {line.goodsReceiptLineId ? (

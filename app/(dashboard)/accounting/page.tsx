@@ -1,4 +1,6 @@
 "use client";
+import { bankMoneyDisplay as exampleMoney } from "@/lib/money/bank-display";
+import { usePresentation } from "@/i18n/provider";
 import { useTranslations } from "next-intl";
 import { requireJournalResponse, journalFailureMessage } from "@/i18n/journal-presentation";
 
@@ -58,6 +60,7 @@ const statusColors: Record<string, string> = {
 };
 
 export default function TransactionsPage() {
+  const unitPresentation = usePresentation();
   const t = useTranslations("Journals");
   const errors = useTranslations("JournalErrors");
   const statusLabels: Record<string, string> = {
@@ -201,7 +204,6 @@ export default function TransactionsPage() {
 
   const [contentKey, setContentKey] = useState(0);
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setContentKey((k) => k + 1);
   }, [debouncedSearch, statusFilter, sortBy]);
 
@@ -293,7 +295,7 @@ export default function TransactionsPage() {
           {/* Preview stat cards (empty) */}
           <div className="w-full max-w-lg grid grid-cols-1 sm:grid-cols-3 gap-3 opacity-40">
             {[
-              { label: t("totalPosted"), value: "$0.00" },
+              { label: t("totalPosted"), value: exampleMoney(0n, "USD", unitPresentation) },
               { label: t("posted"), value: "0" },
               { label: t("drafts"), value: "0" },
             ].map(({ label, value }) => (

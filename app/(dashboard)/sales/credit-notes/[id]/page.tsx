@@ -1,5 +1,7 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
+import { currencyLabel } from "@/i18n/currency-labels";
 import { useTranslations } from "next-intl";
 import { creditNoteStatusLabel } from "@/i18n/credit-note-presentation";
 
@@ -87,6 +89,7 @@ export default function CreditNoteDetailPage() {
 }
 
 function CreditNoteDetail({ id, orgId }: { id: string; orgId: string | null }) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("CreditNotes");
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [cn, setCn] = useState<CreditNoteDetail | null>(null);
@@ -246,12 +249,12 @@ function CreditNoteDetail({ id, orgId }: { id: string; orgId: string | null }) {
                     <SelectContent>
                       {invoices.map((inv) => (
                         <SelectItem key={inv.id} value={inv.id}>
-                          {t("invoiceOption", { number: inv.invoiceNumber, name: inv.contact?.name || t("unknown"), amount: creditNoteUiMoney(inv.amountDue, inv.currencyCode) })}
+                          {t("invoiceOption", { number: inv.invoiceNumber, name: inv.contact?.name || t("unknown"), amount: creditNoteUiMoney(inv.amountDue, inv.currencyCode, unitPresentation) })}
                         </SelectItem>
                       ))}
                       {invoices.length === 0 && (
                         <div className="px-2 py-4 text-center text-sm text-muted-foreground">
-                          {t("noInvoices", { currency: cn.currencyCode })}
+                          {t("noInvoices", { currency: currencyLabel(cn.currencyCode, unitPresentation.locale) })}
                         </div>
                       )}
                     </SelectContent>
@@ -266,7 +269,7 @@ function CreditNoteDetail({ id, orgId }: { id: string; orgId: string | null }) {
                     placeholder={invoiceUiDecimal(cn.amountRemaining, cn.currencyCode)}
                   />
                   <p className="text-xs text-muted-foreground">
-                    {t("remainingCredit", { amount: creditNoteUiMoney(cn.amountRemaining, cn.currencyCode) })}
+                    {t("remainingCredit", { amount: creditNoteUiMoney(cn.amountRemaining, cn.currencyCode, unitPresentation) })}
                   </p>
                 </div>
                 {invoiceError && <p role="alert" className="text-xs text-destructive">{invoiceError}</p>}

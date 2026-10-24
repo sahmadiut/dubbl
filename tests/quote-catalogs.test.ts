@@ -1,3 +1,6 @@
+import { currencyLabel } from "../i18n/currency-labels";
+import { resolvePresentation } from "../i18n/locale";
+import { formatExactDecimal as localizedExactDecimal } from "../i18n/numbers";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -116,7 +119,7 @@ test("quote list renders bilingual empty, filtered, failure and exact grouped mo
     const Page = loaded(list, { loaded: { context: "org-a:all", quotes: [saved, { ...saved, id: "q2", currencyCode: "KWD" }], error: null } });
     const html = renderWithPresentation(createElement(Page), locale);
     for (const key of ["overview", "overviewDescription", "totalQuotes", "quotes", "listDescription", "number", "customer", "date", "expires", "status", "total", "all", "draftHeading", "sentHeading", "acceptedHeading"] as const) assert.ok(html.includes(escape(t(key))), key);
-    assert.ok(html.includes("90,071,992,547,409.91") && html.includes("9,007,199,254,740.991"));
+    assert.ok(html.includes(localizedNumber("90,071,992,547,409.91", locale)) && html.includes(localizedNumber("9,007,199,254,740.991", locale)));
     assert.ok(html.includes(escape(caller)) && !html.includes("<script>"));
     const Filtered = loaded(list, { statusFilter: "sent", loaded: { context: "org-a:sent", quotes: [], error: null } });
     assert.ok(renderWithPresentation(createElement(Filtered), locale).includes(escape(t("noQuotes"))));
@@ -136,14 +139,14 @@ test("quote detail and money details render translated lifecycle labels, escaped
       assert.ok(html.includes(escape(t("recipient", { name: caller }))));
       assert.ok(html.includes(escape(t("dates", { issueDate: raw.issueDate, expiryDate: raw.expiryDate }))));
       assert.ok(html.includes(escape(caller)) && !html.includes("<script>"));
-      assert.ok(html.includes(">1.25</span>") && html.includes("90,071,992,547,409.91"));
+      assert.ok(html.includes(">1.25</span>") && html.includes(localizedNumber("90,071,992,547,409.91", locale)));
       for (const key of status === "draft" ? ["send"] as const : status === "sent" ? ["accept", "decline"] as const : status === "accepted" ? ["createInvoice", "convertHint"] as const : []) assert.ok(html.includes(escape(t(key))));
     }
     for (const currencyCode of ["USD", "JPY", "KWD"]) {
       const quote = { ...saved, currencyCode, subtotal: 1250n, taxTotal: 0n, total: 1250n };
       const html = renderWithPresentation(createElement(QuoteMoneyDetails, { quote }), locale);
-      for (const [key, amount] of [["subtotalAmount", 1250n], ["taxAmount", 0n], ["totalAmount", 1250n]] as const) assert.ok(html.includes(escape(t(key, { amount: money.quoteUiMoney(amount, currencyCode) }))));
-      assert.ok(html.includes(escape(t("price", { currency: currencyCode }))));
+      for (const [key, amount] of [["subtotalAmount", 1250n], ["taxAmount", 0n], ["totalAmount", 1250n]] as const) assert.ok(html.includes(escape(t(key, { amount: money.quoteUiMoney(amount, currencyCode, resolvePresentation({ user: { language: locale } })) }))));
+      assert.ok(html.includes(escape(t("price", { currency: currencyLabel(currencyCode, locale) }))));
     }
     for (const code of ["future", "__proto__", "constructor"]) assert.equal(quoteStatusLabel(t, code), code);
   }
@@ -166,7 +169,7 @@ test("quote creation callbacks preserve exact decimal lines and headers and tran
     const t = translator(locale), errors: string[] = [], successes: string[] = [], routes: string[] = [], busy: boolean[] = [];
     let requests = 0;
     const lines = [{ description: caller, quantity: "1.25", unitPrice: "90071992547409.91", accountId: "00000000-0000-4000-8000-000000000001", taxRateId: "" }];
-    const run = callback(drawer, "handleSubmit", { ...money, t, orgId: "org-a", contactId: mode === "customer" ? "" : "customer-a", validLines: mode !== "invalidLines", lines, issueDate: raw.issueDate, expiryDate: raw.expiryDate, currencyCode: "USD", reference: caller, notes: "", setSaving: (v: boolean) => busy.push(v), onClose: noop, router: { push: (v: string) => routes.push(v) }, toast: { error: (v: string) => errors.push(v), success: (v: string) => successes.push(v) }, fetch: async (url: string, init: RequestInit) => {
+    const run = callback(drawer, "handleSubmit", { unitPresentation: resolvePresentation({ user: { language: locale } }), ...money, t, orgId: "org-a", contactId: mode === "customer" ? "" : "customer-a", validLines: mode !== "invalidLines", lines, issueDate: raw.issueDate, expiryDate: raw.expiryDate, currencyCode: "USD", reference: caller, notes: "", setSaving: (v: boolean) => busy.push(v), onClose: noop, router: { push: (v: string) => routes.push(v) }, toast: { error: (v: string) => errors.push(v), success: (v: string) => successes.push(v) }, fetch: async (url: string, init: RequestInit) => {
       requests++; assert.equal(url, "/api/v1/quotes"); assert.equal(init.method, "POST");
       assert.equal((init.headers as Record<string, string>)["x-organization-id"], "org-a");
       assert.deepEqual(JSON.parse(String(init.body)), { contactId: "customer-a", issueDate: raw.issueDate, expiryDate: raw.expiryDate, currencyCode: "USD", reference: caller, notes: null, lines: money.quoteEditorLines(lines) });
@@ -186,7 +189,7 @@ test("quote lifecycle and conversion callbacks preserve org scope and suppress s
   for (const locale of locales) for (const operation of ["accept", "decline", "convert"]) for (const mode of ["success", "denied", "network", "json", "shape", "stale"]) {
     const t = translator(locale), errors: string[] = [], successes: string[] = [], routes: string[] = []; let refreshed = 0;
     const converting = operation === "convert", context = "org-a:quote-a";
-    const run = callback(detail, converting ? "handleConvert" : "action", { t, orgId: "org-a", id: raw.id, context, currentContext: { current: mode === "stale" ? "org-b:quote-a" : context }, refreshQuote: async () => { refreshed++; }, router: { push: (v: string) => routes.push(v) }, toast: { error: (v: string) => errors.push(v), success: (v: string) => successes.push(v) }, fetch: async (url: string, init: RequestInit) => {
+    const run = callback(detail, converting ? "handleConvert" : "action", { unitPresentation: resolvePresentation({ user: { language: locale } }), t, orgId: "org-a", id: raw.id, context, currentContext: { current: mode === "stale" ? "org-b:quote-a" : context }, refreshQuote: async () => { refreshed++; }, router: { push: (v: string) => routes.push(v) }, toast: { error: (v: string) => errors.push(v), success: (v: string) => successes.push(v) }, fetch: async (url: string, init: RequestInit) => {
       assert.equal(url, `/api/v1/quotes/${raw.id}/${operation}`); assert.equal(init.method, "POST"); assert.equal(init.body, undefined); assert.equal((init.headers as Record<string, string>)["x-organization-id"], "org-a");
       if (mode === "network") throw new Error("secret");
       if (mode === "json") return new Response("private HTML");
@@ -204,7 +207,7 @@ test("quote read effects and refresh retain canonical money and reject bad HTTP,
   for (const locale of locales) for (const path of [list, detail]) for (const mode of ["success", "denied", "json", "shape", "alias", "cancelled"]) {
     const t = translator(locale), values: unknown[] = [], errors: unknown[] = [], busy: unknown[] = [], context = path === list ? "org-a:sent" : "org-a:quote-a";
     const row = { ...raw, totalMinor: mode === "alias" ? "01" : raw.totalMinor };
-    const scope = { ...money, t, orgId: "org-a", id: raw.id, context, currentContext: { current: context }, statusFilter: "sent", setLoaded: (v: unknown) => values.push(v), setError: (v: unknown) => errors.push(v), setLoading: (v: unknown) => busy.push(v), setOrgName: noop, setSendDialogOpen: noop, fetch: async (url: string, init: RequestInit) => {
+    const scope = { unitPresentation: resolvePresentation({ user: { language: locale } }), ...money, t, orgId: "org-a", id: raw.id, context, currentContext: { current: context }, statusFilter: "sent", setLoaded: (v: unknown) => values.push(v), setError: (v: unknown) => errors.push(v), setLoading: (v: unknown) => busy.push(v), setOrgName: noop, setSendDialogOpen: noop, fetch: async (url: string, init: RequestInit) => {
       assert.equal((init.headers as Record<string, string>)["x-organization-id"], "org-a"); assert.equal(init.body, undefined);
       if (url === "/api/v1/organization") return Response.json({ organization: { name: caller } });
       assert.equal(url, path === list ? "/api/v1/quotes?status=sent" : `/api/v1/quotes/${raw.id}`);
@@ -239,3 +242,5 @@ test("owned quote templates contain no unextracted authored JSX or display attri
     visit(ast); assert.deepEqual(problems, [], path);
   }
 });
+
+function localizedNumber(value: string, locale: "en-US" | "fa-IR") { return localizedExactDecimal(value.replaceAll(",", ""), resolvePresentation({ user: { language: locale } })); }

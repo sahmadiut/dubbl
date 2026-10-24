@@ -1,5 +1,8 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
+import type { NumberPresentation } from "@/i18n/numbers";
+import { currencyLabel } from "@/i18n/currency-labels";
 import { useTranslations } from "next-intl";
 import { landedCostStatusLabel, landedCostMethodLabel } from "@/i18n/landed-cost-presentation";
 import { useState, useEffect, useCallback } from "react";
@@ -50,9 +53,10 @@ interface LandedCostDetail {
   lineAllocations: LineAllocation[];
 }
 
-const formatMoney = (amount: number, currency: string) => `${currency} ${toMajorDecimal(money(BigInt(amount), currency))}`;
+const formatMoney = (amount: number, currency: string, presentation: NumberPresentation) => `${currencyLabel(currency, presentation.locale)} ${toMajorDecimal(money(BigInt(amount), currency))}`;
 
 export default function LandedCostDetailPage() {
+  const unitPresentation = usePresentation();
   const { id } = useParams<{ id: string }>();
   const t = useTranslations("LandedCosts");
   const [readError, setReadError] = useState(false);
@@ -152,7 +156,7 @@ export default function LandedCostDetailPage() {
               </Badge>
             </div>
             <p className="text-sm text-muted-foreground mt-0.5">
-              {t("summary", { method: landedCostMethodLabel(t, item.allocationMethod), amount: formatMoney(item.totalCostAmount, item.currencyCode) })}
+              {t("summary", { method: landedCostMethodLabel(t, item.allocationMethod), amount: formatMoney(item.totalCostAmount, item.currencyCode, unitPresentation) })}
             </p>
           </div>
         </div>
@@ -183,7 +187,7 @@ export default function LandedCostDetailPage() {
         <div className="rounded-lg border bg-card p-4">
           <p className="text-xs text-muted-foreground">{t("totalCost")}</p>
           <p className="mt-1 text-xl font-bold font-mono tabular-nums">
-            {formatMoney(item.totalCostAmount, item.currencyCode)}
+            {formatMoney(item.totalCostAmount, item.currencyCode, unitPresentation)}
           </p>
         </div>
         <div className="rounded-lg border bg-card p-4">
@@ -219,7 +223,7 @@ export default function LandedCostDetailPage() {
                     {comp.description}
                   </TableCell>
                   <TableCell className="text-right font-mono text-sm tabular-nums">
-                    {formatMoney(comp.amount, item.currencyCode)}
+                    {formatMoney(comp.amount, item.currencyCode, unitPresentation)}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {comp.accountId || "-"}
@@ -260,7 +264,7 @@ export default function LandedCostDetailPage() {
                       {la.allocationBasis}
                     </TableCell>
                     <TableCell className="text-right font-mono text-sm tabular-nums">
-                      {formatMoney(la.allocatedAmount, item.currencyCode)}
+                      {formatMoney(la.allocatedAmount, item.currencyCode, unitPresentation)}
                     </TableCell>
                   </TableRow>
                 ))}

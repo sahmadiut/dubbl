@@ -1,3 +1,4 @@
+import { resolvePresentation } from "../i18n/locale";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -115,7 +116,7 @@ test("contact list renders translated empty, populated, filter, busy and exact-m
     const html = renderWithPresentation(createElement(Page), locale);
     for (const key of ["title", "description", "duplicates", "duplicatesHint", "all", "name", "type", "phone", "paymentTerms", "creditLimit", "owesYou", "youOwe", "overdue", "tax", "currency", "created", "both", "taxHint", "vendorHint", "noTax", "actions", "search", "from", "to", "endDate", "sortBy", "newest", "oldest", "nameAsc", "nameDesc", "shortest", "longest", "clearDates", "open", "opportunity", "opportunityHint", "delete"] as const) assert.ok(html.includes(escape(t(key))), key);
     for (const key of ["contactCount", "customerCount", "supplierCount", "noTaxCount"] as const) assert.ok(html.includes(escape(t(key, { count: 1 }))));
-    for (const amount of [saved.creditLimit!, saved.owesYou, saved.youOwe, saved.overdue]) assert.ok(html.includes(escape(money.displayMoney(amount, "USD"))));
+    for (const amount of [saved.creditLimit!, saved.owesYou, saved.youOwe, saved.overdue]) assert.ok(html.includes(escape(money.displayMoney(amount, "USD", resolvePresentation({ user: { language: locale } })))));
     assert.ok(html.includes(escape(caller)) && !html.includes("<script>"));
     assert.ok(html.includes("contact@example.test") && html.includes("+98-123") && html.includes("1099"));
     assert.deepEqual(captured.filter(c => c.kind === "SelectItem").map(c => c.props.value), ["created:desc", "created:asc", "name:asc", "name:desc", "terms:asc", "terms:desc"]);
@@ -167,7 +168,7 @@ test("contact creation preserves request defaults, optional nulls, navigation an
   for (const locale of locales) for (const mode of ["success", "optional", "zero-terms", "status", "html", "shape", "network", "no-org"]) {
     const t = translator(locale), events: unknown[] = [];
     const form = new Map(Object.entries(mode === "optional" ? { name: caller } : { name: caller, email: "c@example.test", phone: "+98-123", taxNumber: "T-123", type: "both", paymentTermsDays: mode === "zero-terms" ? "0" : "45", notes: caller }));
-    await callback(drawer, "handleSubmit", { t, FormData: class { get(key: string) { return form.get(key) ?? null; } },
+    await callback(drawer, "handleSubmit", { unitPresentation: resolvePresentation({ user: { language: locale } }), t, FormData: class { get(key: string) { return form.get(key) ?? null; } },
       localStorage: { getItem: () => mode === "no-org" ? null : "org-a" }, setSaving: (v: boolean) => events.push(v), onClose: () => events.push("close"), router: { push: (v: string) => events.push(v) },
       toast: { success: (v: string) => events.push(v), error: (v: string) => events.push(v) },
       fetch: async (url: string, init: RequestInit) => {
@@ -186,7 +187,7 @@ test("delete confirmation preserves cancellation, scoped DELETE, rows on failure
   for (const locale of locales) for (const mode of ["success", "cancel", "status", "network", "no-org"]) {
     const t = translator(locale), events: unknown[] = [];
     let rows = [saved], total = 4;
-    const run = callback(list, "handleDelete", { t, localStorage: { getItem: () => mode === "no-org" ? null : "org-a" },
+    const run = callback(list, "handleDelete", { unitPresentation: resolvePresentation({ user: { language: locale } }), t, localStorage: { getItem: () => mode === "no-org" ? null : "org-a" },
       confirm: async (options: { title: string; description: string; confirmLabel: string; cancelLabel: string; destructive: boolean; onConfirm: () => Promise<void> }) => {
         assert.equal(options.title, t("deleteTitle", { name: caller })); assert.equal(options.description, t("deleteDescription"));
         assert.equal(options.confirmLabel, t("delete")); assert.equal(options.cancelLabel, t("cancel")); assert.equal(options.destructive, true);
@@ -208,7 +209,7 @@ test("list and pagination callbacks preserve filter codes, exact alias validatio
   for (const locale of locales) for (const next of [false, true]) for (const mode of ["success", "status", "html", "shape", "alias", "network", "no-org", "cancel"]) {
     const t = translator(locale), events: unknown[] = [];
     let rows: unknown[] = next ? [saved] : [], page = 1;
-    const scope = { t, loading: true, loadingMore: false, hasMore: true, page, debouncedSearch: caller, typeFilter: "both", sortBy: "name", sortOrder: "asc", dateFrom: "2026-01-01", dateTo: "2026-10-19",
+    const scope = { unitPresentation: resolvePresentation({ user: { language: locale } }), t, loading: true, loadingMore: false, hasMore: true, page, debouncedSearch: caller, typeFilter: "both", sortBy: "name", sortOrder: "asc", dateFrom: "2026-01-01", dateTo: "2026-10-19",
       localStorage: { getItem: () => mode === "no-org" ? null : "org-a" }, displayJson: money.displayJson, contactListUi: money.contactListUi, devDelay: async () => {},
       setContacts: (value: unknown[] | ((v: unknown[]) => unknown[])) => { rows = typeof value === "function" ? value(rows) : value; },
       setPage: (v: number) => { page = v; }, setHasMore: noop, setRefetching: noop, setLoading: noop, setLoadingMore: noop, setFetchKey: noop, setTotal: noop,
@@ -235,7 +236,7 @@ test("list and pagination callbacks preserve filter codes, exact alias validatio
 test("picker read effect preserves filter/limit/cache and handles HTTP, envelope, JSON and network errors", async () => {
   for (const locale of locales) for (const mode of ["success", "status", "html", "shape", "network", "no-org", "closed", "cached"]) {
     const t = translator(locale), events: unknown[] = [], fetchedRef = { current: mode === "cached" };
-    callback(picker, "effect", { t, open: mode !== "closed", type: "supplier", fetchedRef, localStorage: { getItem: () => mode === "no-org" ? null : "org-a" },
+    callback(picker, "effect", { unitPresentation: resolvePresentation({ user: { language: locale } }), t, open: mode !== "closed", type: "supplier", fetchedRef, localStorage: { getItem: () => mode === "no-org" ? null : "org-a" },
       setContacts: (v: unknown) => events.push(v), setLoading: (v: boolean) => events.push(v), toast: { error: (v: string) => events.push(v) },
       fetch: async (url: string, init: RequestInit) => {
         assert.equal(url, "/api/v1/contacts?limit=200&type=supplier"); assert.deepEqual(init.headers, { "x-organization-id": "org-a" });

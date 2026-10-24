@@ -1,3 +1,5 @@
+import { useTranslations } from "next-intl";
+
 import { Calendar, type LucideIcon } from "lucide-react";
 import { Container } from "@/components/shared/container";
 import { LegalToc } from "@/components/legal/legal-toc";
@@ -23,6 +25,7 @@ export function LegalPageLayout({
   lastUpdated,
   sections,
 }: LegalPageLayoutProps) {
+  const t = useTranslations("PublicPricingLegal");
   const tocItems = sections.map((s) => ({ id: s.id, title: s.title }));
 
   return (
@@ -43,7 +46,7 @@ export function LegalPageLayout({
           </p>
           <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
             <Calendar className="size-4" />
-            <span>Last updated: {lastUpdated}</span>
+            <span>{t("lastUpdated", {date: lastUpdated})}</span>
           </div>
         </Container>
       </section>

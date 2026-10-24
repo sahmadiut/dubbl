@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useEffect, useState } from "react";
 import { ChevronDown, List } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -10,6 +12,7 @@ interface TocItem {
 }
 
 export function LegalToc({ items }: { items: TocItem[] }) {
+  const t = useTranslations("PublicPricingLegal");
   const [activeId, setActiveId] = useState<string>("");
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -50,8 +53,7 @@ export function LegalToc({ items }: { items: TocItem[] }) {
       <nav className="hidden lg:block">
         <div className="sticky top-24">
           <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            On this page
-          </p>
+            {t("onThisPage")}</p>
           <ul className="space-y-0.5 border-l border-border">
             {items.map((item) => (
               <li key={item.id}>
@@ -80,8 +82,7 @@ export function LegalToc({ items }: { items: TocItem[] }) {
         >
           <span className="flex items-center gap-2">
             <List className="size-4 text-muted-foreground" />
-            Table of Contents
-          </span>
+            {t("tableOfContents")}</span>
           <ChevronDown
             className={cn(
               "size-4 text-muted-foreground transition-transform",

@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -19,66 +21,68 @@ import { Container } from "@/components/shared/container";
 import { cn } from "@/lib/utils";
 import { PLAN_LIMITS, PLAN_PRICES, STORAGE_PLANS } from "@/lib/plans";
 
+type LegalTranslator = ReturnType<typeof useTranslations<"PublicPricingLegal">>;
+
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
-function fmt(v: number): string {
-  if (v === Infinity) return "Unlimited";
+function fmt(t: LegalTranslator, v: number): string {
+  if (v === Infinity) return t("unlimited");
   return v.toLocaleString();
 }
 
-function fmtStorage(mb: number): string {
-  if (mb === Infinity) return "Unlimited";
+function fmtStorage(t: LegalTranslator, mb: number): string {
+  if (mb === Infinity) return t("unlimited");
   if (mb >= 1024) return `${mb / 1024} GB`;
   return `${mb} MB`;
 }
 
-function fmtAudit(days: number): string {
-  if (days === Infinity) return "Unlimited";
-  if (days >= 365) return `${Math.floor(days / 365)} year`;
-  return `${days} days`;
+function fmtAudit(t: LegalTranslator, days: number): string {
+  if (days === Infinity) return t("unlimited");
+  if (days >= 365) return t("auditYear", {count: Math.floor(days / 365)});
+  return t("auditDays", {count: days});
 }
 
 /* ------------------------------------------------------------------ */
 /*  Data                                                               */
 /* ------------------------------------------------------------------ */
 
-const storagePlansMeta = [
-  { key: "free" as const, name: "Free", description: "Included with every org", example: "Documents, receipts, and invoice attachments" },
-  { key: "starter" as const, name: "Starter", description: "For growing teams", example: "Bulk document uploads, years of receipts" },
-  { key: "growth" as const, name: "Growth", description: "For established businesses", example: "Large file archives with full attachment history" },
-  { key: "scale" as const, name: "Scale", description: "For large organizations", example: "Enterprise-grade document archival" },
+const getStoragePlansMeta = (t: LegalTranslator) => [
+  { key: "free" as const, name: t("free"), description: t("includedWithEveryOrg"), example: t("documentsReceiptsAndInvoiceAttachments") },
+  { key: "starter" as const, name: t("starter"), description: t("forGrowingTeams"), example: t("bulkDocumentUploadsYearsOfReceipts") },
+  { key: "growth" as const, name: t("growth"), description: t("forEstablishedBusinesses"), example: t("largeFileArchivesWithFullAttachmentHistory") },
+  { key: "scale" as const, name: t("scale"), description: t("forLargeOrganizations"), example: t("enterpriseGradeDocumentArchival") },
 ];
 
-const comparisonRows = [
-  { label: "Team members", free: fmt(PLAN_LIMITS.free.members), pro: fmt(PLAN_LIMITS.pro.members) },
-  { label: "Journal entries / month", free: fmt(PLAN_LIMITS.free.entriesPerMonth), pro: fmt(PLAN_LIMITS.pro.entriesPerMonth) },
-  { label: "Contacts", free: fmt(PLAN_LIMITS.free.contacts), pro: fmt(PLAN_LIMITS.pro.contacts) },
-  { label: "Invoices / month", free: fmt(PLAN_LIMITS.free.invoicesPerMonth), pro: fmt(PLAN_LIMITS.pro.invoicesPerMonth) },
-  { label: "Bank accounts", free: fmt(PLAN_LIMITS.free.bankAccounts), pro: fmt(PLAN_LIMITS.pro.bankAccounts) },
-  { label: "Projects", free: fmt(PLAN_LIMITS.free.projects), pro: fmt(PLAN_LIMITS.pro.projects) },
-  { label: "Storage (included)", free: fmtStorage(PLAN_LIMITS.free.storageMb), pro: fmtStorage(PLAN_LIMITS.pro.storageMb) },
-  { label: "Emails / month", free: fmt(PLAN_LIMITS.free.emailsPerMonth), pro: fmt(PLAN_LIMITS.pro.emailsPerMonth) },
-  { label: "Audit log retention", free: fmtAudit(PLAN_LIMITS.free.auditLogDays), pro: fmtAudit(PLAN_LIMITS.pro.auditLogDays) },
+const getComparisonRows = (t: LegalTranslator) => [
+  { label: t("teamMembers"), free: fmt(t, PLAN_LIMITS.free.members), pro: fmt(t, PLAN_LIMITS.pro.members) },
+  { label: t("journalEntriesMonth"), free: fmt(t, PLAN_LIMITS.free.entriesPerMonth), pro: fmt(t, PLAN_LIMITS.pro.entriesPerMonth) },
+  { label: t("contacts"), free: fmt(t, PLAN_LIMITS.free.contacts), pro: fmt(t, PLAN_LIMITS.pro.contacts) },
+  { label: t("invoicesMonth"), free: fmt(t, PLAN_LIMITS.free.invoicesPerMonth), pro: fmt(t, PLAN_LIMITS.pro.invoicesPerMonth) },
+  { label: t("bankAccounts"), free: fmt(t, PLAN_LIMITS.free.bankAccounts), pro: fmt(t, PLAN_LIMITS.pro.bankAccounts) },
+  { label: t("projects"), free: fmt(t, PLAN_LIMITS.free.projects), pro: fmt(t, PLAN_LIMITS.pro.projects) },
+  { label: t("storageIncluded"), free: fmtStorage(t, PLAN_LIMITS.free.storageMb), pro: fmtStorage(t, PLAN_LIMITS.pro.storageMb) },
+  { label: t("emailsMonth"), free: fmt(t, PLAN_LIMITS.free.emailsPerMonth), pro: fmt(t, PLAN_LIMITS.pro.emailsPerMonth) },
+  { label: t("auditLogRetention"), free: fmtAudit(t, PLAN_LIMITS.free.auditLogDays), pro: fmtAudit(t, PLAN_LIMITS.pro.auditLogDays) },
 ];
 
-const featureRows: { label: string; free: boolean; pro: boolean }[] = [
-  { label: "Double-entry bookkeeping", free: true, pro: true },
-  { label: "Trial balance & general ledger", free: true, pro: true },
-  { label: "Balance sheet & income statement", free: false, pro: true },
-  { label: "Profit & loss report", free: false, pro: true },
-  { label: "Cash flow statement", free: false, pro: true },
-  { label: "Aged receivables & payables", free: false, pro: true },
-  { label: "Account transaction reports", free: false, pro: true },
-  { label: "API access", free: PLAN_LIMITS.free.apiAccess, pro: PLAN_LIMITS.pro.apiAccess },
-  { label: "CRM & sales pipeline", free: true, pro: true },
-  { label: "Invoicing & billing", free: true, pro: true },
-  { label: "Bank reconciliation", free: true, pro: true },
-  { label: "Multi-currency support", free: false, pro: true },
-  { label: "Community support", free: true, pro: true },
-  { label: "Email support", free: false, pro: true },
-  { label: "Priority support", free: false, pro: true },
+const getFeatureRows = (t: LegalTranslator): { label: string; free: boolean; pro: boolean }[] => [
+  { label: t("doubleEntryBookkeeping"), free: true, pro: true },
+  { label: t("trialBalanceGeneralLedger"), free: true, pro: true },
+  { label: t("balanceSheetIncomeStatement"), free: false, pro: true },
+  { label: t("profitLossReport"), free: false, pro: true },
+  { label: t("cashFlowStatement"), free: false, pro: true },
+  { label: t("agedReceivablesPayables"), free: false, pro: true },
+  { label: t("accountTransactionReports"), free: false, pro: true },
+  { label: t("aPIAccess"), free: PLAN_LIMITS.free.apiAccess, pro: PLAN_LIMITS.pro.apiAccess },
+  { label: t("cRMSalesPipeline"), free: true, pro: true },
+  { label: t("invoicingBilling"), free: true, pro: true },
+  { label: t("bankReconciliation"), free: true, pro: true },
+  { label: t("multiCurrencySupport"), free: false, pro: true },
+  { label: t("communitySupport"), free: true, pro: true },
+  { label: t("emailSupport"), free: false, pro: true },
+  { label: t("prioritySupport"), free: false, pro: true },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -119,6 +123,9 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 /* ------------------------------------------------------------------ */
 
 export default function PricingPage() {
+  const t = useTranslations("PublicPricingLegal");
+  const comparisonRows = getComparisonRows(t);
+  const featureRows = getFeatureRows(t);
   const [interval, setInterval] = useState<"monthly" | "annual">("annual");
   const price = (plan: keyof typeof PLAN_PRICES) =>
     interval === "annual" ? PLAN_PRICES[plan].annual : PLAN_PRICES[plan].monthly;
@@ -136,19 +143,13 @@ export default function PricingPage() {
           <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-1.5 dark:border-emerald-800 dark:bg-emerald-950">
             <div className="size-1.5 rounded-full bg-emerald-500" />
             <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400">
-              Transparent pricing
-            </span>
+              {t("transparentPricing")}</span>
           </div>
           <h1 className="font-[family-name:var(--font-display)] text-5xl font-semibold leading-[1.1] tracking-tight sm:text-6xl lg:text-7xl">
-            Start free,{" "}
-            <span className="italic bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-400 bg-clip-text text-transparent dark:from-emerald-400 dark:via-emerald-300 dark:to-teal-300">
-              scale smart
-            </span>
+            {t.rich("pricingHeading", {em: (chunks) => <span className="italic bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-400 bg-clip-text text-transparent dark:from-emerald-400 dark:via-emerald-300 dark:to-teal-300">{chunks}</span>})}
           </h1>
           <p className="mx-auto mt-5 max-w-lg text-lg leading-relaxed text-muted-foreground">
-            Two simple plans. Storage add-ons when you need them. Self-host for
-            free with zero limits.
-          </p>
+            {t("twoSimplePlansStorageAddOnsWhenYou")}</p>
 
           <div className="relative mt-8 grid grid-cols-2 rounded-full border bg-muted/50 p-1 w-fit mx-auto">
             <motion.div
@@ -159,22 +160,22 @@ export default function PricingPage() {
             />
             <button
               onClick={() => setInterval("monthly")}
+              aria-pressed={interval === "monthly"}
               className={cn(
                 "relative z-10 rounded-full px-5 py-2 text-sm font-medium transition-colors",
                 interval === "monthly" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
               )}
             >
-              Monthly
-            </button>
+              {t("monthly")}</button>
             <button
               onClick={() => setInterval("annual")}
+              aria-pressed={interval === "annual"}
               className={cn(
                 "relative z-10 rounded-full px-5 py-2 text-sm font-medium transition-colors",
                 interval === "annual" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
               )}
             >
-              Annual
-              <span className="ml-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-semibold">Save 17%</span>
+              {t("annual")}<span className="ml-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-semibold">{t("save17")}</span>
             </button>
           </div>
         </motion.div>
@@ -186,7 +187,7 @@ export default function PricingPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.15 }}
         >
-          <SectionLabel>Team plans</SectionLabel>
+          <SectionLabel>{t("teamPlans")}</SectionLabel>
 
           <div className="mt-8 grid gap-6 lg:grid-cols-2">
             {/* Free */}
@@ -197,8 +198,8 @@ export default function PricingPage() {
                     <Sparkles className="size-5 text-muted-foreground" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold">Free</h3>
-                    <p className="text-xs text-muted-foreground">For individuals</p>
+                    <h3 className="text-lg font-semibold">{t("free")}</h3>
+                    <p className="text-xs text-muted-foreground">{t("forIndividuals")}</p>
                   </div>
                 </div>
 
@@ -206,28 +207,27 @@ export default function PricingPage() {
                   <span className="font-mono text-6xl font-bold tracking-tighter text-foreground">
                     $0
                   </span>
-                  <span className="text-sm text-muted-foreground">forever</span>
+                  <span className="text-sm text-muted-foreground">{t("forever")}</span>
                 </div>
 
                 <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-                  Everything you need for personal bookkeeping. No credit card, no time limit.
-                </p>
+                  {t("everythingYouNeedForPersonalBookkeepingNoCredit")}</p>
 
                 <div className="mt-8 flex-1">
                   <div className="grid gap-2.5 sm:grid-cols-2">
                     {[
-                      `${fmt(PLAN_LIMITS.free.members)} member (owner)`,
-                      `${fmt(PLAN_LIMITS.free.entriesPerMonth)} entries/mo`,
-                      `${fmt(PLAN_LIMITS.free.contacts)} contacts`,
-                      `${fmt(PLAN_LIMITS.free.invoicesPerMonth)} invoices/mo`,
-                      `${fmt(PLAN_LIMITS.free.bankAccounts)} bank account`,
-                      `${fmt(PLAN_LIMITS.free.projects)} projects`,
-                      `${fmt(PLAN_LIMITS.free.emailsPerMonth)} emails/mo`,
-                      "Single currency",
-                      "Trial balance & GL",
-                      fmtStorage(PLAN_LIMITS.free.storageMb) + " storage",
-                      `${fmtAudit(PLAN_LIMITS.free.auditLogDays)} audit log`,
-                      "Community support",
+                      t("memberOwner", {count: fmt(t, PLAN_LIMITS.free.members)}),
+                      t("entriesPerMonth", {count: fmt(t, PLAN_LIMITS.free.entriesPerMonth)}),
+                      t("contactsCount", {count: fmt(t, PLAN_LIMITS.free.contacts)}),
+                      t("invoicesPerMonth", {count: fmt(t, PLAN_LIMITS.free.invoicesPerMonth)}),
+                      t("bankAccountCount", {count: fmt(t, PLAN_LIMITS.free.bankAccounts)}),
+                      t("projectsCount", {count: fmt(t, PLAN_LIMITS.free.projects)}),
+                      t("emailsPerMonth", {count: fmt(t, PLAN_LIMITS.free.emailsPerMonth)}),
+                      t("singleCurrency"),
+                      t("trialBalanceGl"),
+                      t("storageAmount", {amount: fmtStorage(t, PLAN_LIMITS.free.storageMb)}),
+                      t("auditLog", {duration: fmtAudit(t, PLAN_LIMITS.free.auditLogDays)}),
+                      t("communitySupport"),
                     ].map((f) => (
                       <div key={f} className="flex items-center gap-2 text-[13px]">
                         <Check className="size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
@@ -239,7 +239,7 @@ export default function PricingPage() {
 
                 <div className="mt-10">
                   <Button variant="outline" className="w-full h-12 text-sm font-medium" asChild>
-                    <a href="/sign-up">Get Started Free</a>
+                    <a href="/sign-up">{t("getStartedFree")}</a>
                   </Button>
                 </div>
               </div>
@@ -252,8 +252,7 @@ export default function PricingPage() {
                 <div className="flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 dark:border-emerald-800 dark:bg-emerald-950">
                   <div className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
-                    Popular
-                  </span>
+                    {t("popular")}</span>
                 </div>
               </div>
 
@@ -263,8 +262,8 @@ export default function PricingPage() {
                     <Zap className="size-5 text-emerald-600 dark:text-emerald-400" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold">Pro</h3>
-                    <p className="text-xs text-muted-foreground">For teams</p>
+                    <h3 className="text-lg font-semibold">{t("pro")}</h3>
+                    <p className="text-xs text-muted-foreground">{t("forTeams")}</p>
                   </div>
                 </div>
 
@@ -281,7 +280,7 @@ export default function PricingPage() {
                       ${price("pro")}
                     </motion.span>
                   </AnimatePresence>
-                  <span className="text-sm text-muted-foreground">/seat/mo</span>
+                  <span className="text-sm text-muted-foreground">{t("seatMo")}</span>
                   {interval === "annual" && (
                     <motion.span
                       initial={{ opacity: 0 }}
@@ -301,30 +300,29 @@ export default function PricingPage() {
                     transition={{ duration: 0.15 }}
                     className="mt-1 text-xs text-muted-foreground/70"
                   >
-                    {interval === "annual" ? `Billed as $${price("pro") * 12}/seat/year` : "Billed monthly per seat"}
+                    {interval === "annual" ? t("billedAnnual", {amount: price("pro") * 12}) : t("billedMonthly")}
                   </motion.p>
                 </AnimatePresence>
 
                 <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-                  Advanced reports, API access, multi-currency, and team collaboration.
-                </p>
+                  {t("advancedReportsAPIAccessMultiCurrencyAndTeam")}</p>
 
                 <div className="mt-8 flex-1">
                   <div className="grid gap-2.5 sm:grid-cols-2">
                     {[
-                      `Up to ${fmt(PLAN_LIMITS.pro.members)} members`,
-                      "Unlimited entries",
-                      "Unlimited contacts",
-                      "Unlimited invoices",
-                      "Unlimited bank accounts",
-                      `${fmt(PLAN_LIMITS.pro.projects)} projects`,
-                      `${fmt(PLAN_LIMITS.pro.emailsPerMonth)} emails/mo`,
-                      "All standard reports",
-                      fmtStorage(PLAN_LIMITS.pro.storageMb) + " storage",
-                      `${fmtAudit(PLAN_LIMITS.pro.auditLogDays)} audit log`,
-                      "Full API access",
-                      "Multi-currency",
-                      "Priority support",
+                      t("upToMembers", {count: fmt(t, PLAN_LIMITS.pro.members)}),
+                      t("unlimitedEntries"),
+                      t("unlimitedContacts"),
+                      t("unlimitedInvoices"),
+                      t("unlimitedBankAccounts"),
+                      t("projectsCount", {count: fmt(t, PLAN_LIMITS.pro.projects)}),
+                      t("emailsPerMonth", {count: fmt(t, PLAN_LIMITS.pro.emailsPerMonth)}),
+                      t("allStandardReports"),
+                      t("storageAmount", {amount: fmtStorage(t, PLAN_LIMITS.pro.storageMb)}),
+                      t("auditLog", {duration: fmtAudit(t, PLAN_LIMITS.pro.auditLogDays)}),
+                      t("fullApiAccess"),
+                      t("multiCurrency"),
+                      t("prioritySupport"),
                     ].map((f) => (
                       <div key={f} className="flex items-center gap-2 text-[13px]">
                         <Check className="size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
@@ -340,8 +338,7 @@ export default function PricingPage() {
                     asChild
                   >
                     <a href="/sign-up?plan=pro">
-                      Start Free Trial
-                      <ArrowRight className="ml-1.5 size-4" />
+                      {t("startFreeTrial")}<ArrowRight className="ml-1.5 size-4" />
                     </a>
                   </Button>
                 </div>
@@ -357,25 +354,21 @@ export default function PricingPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.25 }}
         >
-          <SectionLabel>Storage &amp; Emails</SectionLabel>
+          <SectionLabel>{t("storageEmails")}</SectionLabel>
 
           <div className="mt-4 mx-auto max-w-2xl text-center">
             <h2 className="font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight sm:text-4xl">
-              Add storage as you grow
-            </h2>
+              {t("addStorageAsYouGrow")}</h2>
             <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
-              File storage for documents, receipts, and attachments. Customer
-              emails for invoices and reminders. Unlimited transactions and
-              records. Upgrade independently from your team plan.
-            </p>
+              {t("fileStorageForDocumentsReceiptsAndAttachmentsCustomer")}</p>
           </div>
 
           <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {storagePlansMeta.map((meta, i) => {
+            {getStoragePlansMeta(t).map((meta, i) => {
               const plan = STORAGE_PLANS[meta.key];
               const currentPrice = interval === "annual" ? plan.annual : plan.monthly;
-              const files = fmtStorage(plan.filesMb);
-              const emails = `${plan.emailsPerMonth.toLocaleString()}/mo`;
+              const files = fmtStorage(t, plan.filesMb);
+              const emails = t("emailCountPerMonth", {count: plan.emailsPerMonth.toLocaleString()});
 
               return (
                 <motion.div
@@ -390,8 +383,7 @@ export default function PricingPage() {
                       <h3 className="font-semibold">{meta.name}</h3>
                       {i === 0 && (
                         <span className="rounded-full bg-muted px-2.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-                          Included
-                        </span>
+                          {t("included")}</span>
                       )}
                     </div>
 
@@ -412,7 +404,7 @@ export default function PricingPage() {
                               ${currentPrice}
                             </motion.span>
                           </AnimatePresence>
-                          <span className="text-xs text-muted-foreground">/mo</span>
+                          <span className="text-xs text-muted-foreground">{t("mo")}</span>
                           {interval === "annual" && plan.monthly > 0 && (
                             <motion.span
                               initial={{ opacity: 0 }}
@@ -433,14 +425,14 @@ export default function PricingPage() {
                       <div className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2">
                         <div className="flex items-center gap-2">
                           <FileBox className="size-3.5 text-emerald-600 dark:text-emerald-400" />
-                          <span className="text-xs text-muted-foreground">Files</span>
+                          <span className="text-xs text-muted-foreground">{t("files")}</span>
                         </div>
                         <span className="font-mono text-sm font-semibold tabular-nums">{files}</span>
                       </div>
                       <div className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2">
                         <div className="flex items-center gap-2">
                           <Mail className="size-3.5 text-emerald-600 dark:text-emerald-400" />
-                          <span className="text-xs text-muted-foreground">Emails</span>
+                          <span className="text-xs text-muted-foreground">{t("emails")}</span>
                         </div>
                         <span className="font-mono text-sm font-semibold tabular-nums">{emails}</span>
                       </div>
@@ -453,8 +445,7 @@ export default function PricingPage() {
                     <div className="mt-6">
                       {i === 0 ? (
                         <Button variant="outline" size="sm" className="w-full text-xs" disabled>
-                          Included
-                        </Button>
+                          {t("included")}</Button>
                       ) : (
                         <Button
                           variant="outline"
@@ -462,7 +453,7 @@ export default function PricingPage() {
                           className="w-full text-xs group-hover:border-emerald-500/40 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors"
                           asChild
                         >
-                          <a href="/sign-up">Add {meta.name}</a>
+                          <a href="/sign-up">{t("addStorage", {name: meta.name})}</a>
                         </Button>
                       )}
                     </div>
@@ -486,17 +477,12 @@ export default function PricingPage() {
                 <div className="flex items-center gap-2 mb-3">
                   <Github className="size-5 text-emerald-600 dark:text-emerald-400" />
                   <span className="text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-                    Open Source
-                  </span>
+                    {t("openSource")}</span>
                 </div>
                 <h3 className="text-xl font-semibold text-foreground">
-                  Self-host with zero limits
-                </h3>
+                  {t("selfHostWithZeroLimits")}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                  dubbl is Apache 2.0 licensed. Self-hosted instances unlock
-                  every feature with no user caps and no telemetry. Cloud plans
-                  fund development.
-                </p>
+                  {t("dubblIsApache20LicensedSelfHosted")}</p>
               </div>
               <Button
                 variant="outline"
@@ -508,8 +494,7 @@ export default function PricingPage() {
                   rel="noopener noreferrer"
                 >
                   <Github className="mr-2 size-4" />
-                  View on GitHub
-                </a>
+                  {t("viewOnGitHub")}</a>
               </Button>
             </div>
           </div>
@@ -522,12 +507,11 @@ export default function PricingPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
         >
-          <SectionLabel>Compare</SectionLabel>
+          <SectionLabel>{t("compare")}</SectionLabel>
 
           <div className="mt-4 mx-auto max-w-2xl text-center mb-12">
             <h2 className="font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight sm:text-4xl">
-              Every detail, side by side
-            </h2>
+              {t("everyDetailSideBySide")}</h2>
           </div>
 
           <div className="overflow-hidden rounded-2xl border border-border bg-card">
@@ -535,19 +519,16 @@ export default function PricingPage() {
               <thead>
                 <tr className="border-b border-border bg-muted/30">
                   <th className="py-4 pl-6 pr-4 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground w-[55%]">
-                    Feature
-                  </th>
+                    {t("feature")}</th>
                   <th className="py-4 text-center w-[22.5%]">
-                    <span className="text-sm font-semibold text-foreground">Free</span>
+                    <span className="text-sm font-semibold text-foreground">{t("free")}</span>
                   </th>
                   <th className="py-4 pr-6 text-center w-[22.5%]">
                     <div className="inline-flex items-center gap-1.5">
                       <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-                        Pro
-                      </span>
+                        {t("pro")}</span>
                       <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400">
-                        ${price("pro")}/seat
-                      </span>
+                        ${price("pro")}{t("seat")}</span>
                     </div>
                   </th>
                 </tr>
@@ -559,8 +540,7 @@ export default function PricingPage() {
                     colSpan={3}
                     className="px-6 pb-1 pt-6 text-[10px] font-bold uppercase tracking-[0.15em] text-emerald-600 dark:text-emerald-400"
                   >
-                    Limits
-                  </td>
+                    {t("limits")}</td>
                 </tr>
                 {comparisonRows.map((row, i) => (
                   <tr
@@ -586,8 +566,7 @@ export default function PricingPage() {
                     colSpan={3}
                     className="px-6 pb-1 pt-6 text-[10px] font-bold uppercase tracking-[0.15em] text-emerald-600 dark:text-emerald-400"
                   >
-                    Features &amp; Support
-                  </td>
+                    {t("featuresSupport")}</td>
                 </tr>
                 {featureRows.map((row, i) => (
                   <tr
@@ -618,39 +597,38 @@ export default function PricingPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.45 }}
         >
-          <SectionLabel>FAQ</SectionLabel>
+          <SectionLabel>{t("fAQ")}</SectionLabel>
 
           <div className="mt-4 mx-auto max-w-2xl text-center mb-12">
             <h2 className="font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight sm:text-4xl">
-              Common questions
-            </h2>
+              {t("commonQuestions")}</h2>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {[
               {
-                q: "Can I switch plans?",
-                a: "Yes. Upgrade or downgrade at any time. Upgrades are prorated, downgrades take effect at the end of your billing period.",
+                q: t("canISwitchPlans"),
+                a: t("yesUpgradeOrDowngradeAtAnyTimeUpgrades"),
               },
               {
-                q: "What if I exceed limits?",
-                a: "We won't cut you off. You'll get a notification and a grace period to upgrade or reduce usage.",
+                q: t("whatIfIExceedLimits"),
+                a: t("weWonTCutYouOffYouLl"),
               },
               {
-                q: "Annual billing?",
-                a: "Yes. Pay for 10 months, get 12. Switch to annual in your billing settings at any time.",
+                q: t("annualBilling"),
+                a: t("yesPayFor10MonthsGet12Switch"),
               },
               {
-                q: "Is self-hosting really free?",
-                a: "Yes. Apache 2.0 licensed. No feature limits, no user caps, no telemetry. Ever.",
+                q: t("isSelfHostingReallyFree"),
+                a: t("yesApache20LicensedNoFeatureLimits"),
               },
               {
-                q: "Can I add storage separately?",
-                a: "Yes. Storage add-ons are independent. You can use the Free team plan with any storage tier.",
+                q: t("canIAddStorageSeparately"),
+                a: t("yesStorageAddOnsAreIndependentYouCan"),
               },
               {
-                q: "How does seat pricing work?",
-                a: "Every member counts as a seat. Pro is $12/seat/month or $10/seat/month billed annually.",
+                q: t("howDoesSeatPricingWork"),
+                a: t("everyMemberCountsAsASeatProIs"),
               },
             ].map((faq, i) => (
               <motion.div
@@ -693,29 +671,23 @@ export default function PricingPage() {
 
             <div className="relative">
               <h2 className="text-3xl font-bold tracking-tight text-white md:text-4xl lg:text-5xl">
-                Start managing your business today
-              </h2>
+                {t("startManagingYourBusinessToday")}</h2>
               <p className="mx-auto mt-4 max-w-xl text-lg text-white/60">
-                Self-host in minutes, extend via API and MCP, and own your
-                data. Forever free.
-              </p>
+                {t("selfHostInMinutesExtendViaAPIAnd")}</p>
               <p className="mt-6 text-sm text-white/40">
-                Open source &middot; Self-hostable &middot; Free forever
-              </p>
+                {t("openSourceSelfHostableFreeForever")}</p>
               <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
                 <Link
                   href="/sign-up"
                   className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-white px-8 text-sm font-medium text-emerald-700 transition-colors hover:bg-white/90"
                 >
-                  Get Started
-                  <ArrowRight className="size-4" />
+                  {t("getStarted")}<ArrowRight className="size-4" />
                 </Link>
                 <Link
                   href="/contact"
                   className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-white/20 px-8 text-sm font-medium text-white transition-colors hover:bg-white/5"
                 >
-                  Contact Sales
-                </Link>
+                  {t("contactSales")}</Link>
               </div>
             </div>
           </div>

@@ -1,5 +1,12 @@
 export const SUPPORTED_LOCALES = ["en-US", "fa-IR"] as const;
 export type AppLocale = (typeof SUPPORTED_LOCALES)[number];
+export type ReadingDirection = "ltr" | "rtl";
+
+// Structural direction follows language, never an independent numeral/calendar
+// preference. Keep the server document and client primitive providers aligned.
+export function localeDirection(locale: AppLocale): ReadingDirection {
+  return locale === "fa-IR" ? "rtl" : "ltr";
+}
 export const LOCALE_COOKIE = "DUBBL_LOCALE";
 export const ORGANIZATION_COOKIE = "DUBBL_ORGANIZATION";
 

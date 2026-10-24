@@ -575,3 +575,10 @@ LOC-103 owns directory/shared primitives; later slices depend on that foundation
 ## Currency-name adoption follow-up
 
 - [LOC-133](../tasks/LOC-133.md): Fix the owner-reported dashboard IRR label; bounded LOC-132 child with independent completed shared-helper prerequisites.
+
+## RTL-001 bounded implementation
+
+- [RTL-003](../tasks/RTL-003.md): Propagate document and Radix direction from active language.
+- [RTL-004](../tasks/RTL-004.md): Convert shared primitive layout and directional behavior.
+- [RTL-005](../tasks/RTL-005.md): Convert shared shells and navigation to logical direction.
+- RTL-001 retains independent combined bilingual layout/behavior/focus/icon acceptance; no child alone qualifies the parent.

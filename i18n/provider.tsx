@@ -2,7 +2,8 @@
 
 import { createContext, useContext } from "react";
 import { NextIntlClientProvider, type AbstractIntlMessages } from "next-intl";
-import type { Presentation } from "./locale";
+import { Direction } from "radix-ui";
+import { localeDirection, type Presentation } from "./locale";
 
 const PresentationContext = createContext<Presentation | null>(null);
 export function PresentationProvider({ presentation, messages, now, children }: {
@@ -12,9 +13,11 @@ export function PresentationProvider({ presentation, messages, now, children }: 
   children?: React.ReactNode;
 }) {
   return <PresentationContext.Provider value={presentation}>
-    <NextIntlClientProvider locale={presentation.locale} timeZone={presentation.timeZone} messages={messages} now={now}>
-      {children}
-    </NextIntlClientProvider>
+    <Direction.Provider dir={localeDirection(presentation.locale)}>
+      <NextIntlClientProvider locale={presentation.locale} timeZone={presentation.timeZone} messages={messages} now={now}>
+        {children}
+      </NextIntlClientProvider>
+    </Direction.Provider>
   </PresentationContext.Provider>;
 }
 export function usePresentation() {

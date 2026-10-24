@@ -437,3 +437,13 @@ LOC-103 owns directory/shared primitives; later slices depend on that foundation
 - [LOC-126](../tasks/LOC-126.md): Extract landing feature and help catalogs; LOC-122 child.
 - [LOC-127](../tasks/LOC-127.md): Extract public pricing and legal catalogs; LOC-122 child.
 - [LOC-128](../tasks/LOC-128.md): Extract documentation chrome and public metadata catalogs; LOC-122 child.
+
+## RTL root and shared-layout implementation
+
+The RTL UI/UX and accessibility sections map to RTL-001's bounded children:
+[RTL-003](../tasks/RTL-003.md) root/Radix propagation,
+[RTL-004](../tasks/RTL-004.md) shared primitive logical layout/behavior, and
+[RTL-005](../tasks/RTL-005.md) shell/navigation/sidebar conversion.
+RTL-001 retains independent combined bilingual layout, focus and icon acceptance;
+RTL-002 retains forms/tables/typography/mixed identifiers. DEC-005 and DEC-008
+remain applicable, including screenshot-free review and frozen provider surfaces.

@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/components/shared/theme-provider";
 import { getMessages, getNow, getTranslations } from "next-intl/server";
 import { getPresentation } from "@/i18n/server";
 import { PresentationProvider } from "@/i18n/provider";
+import { localeDirection } from "@/i18n/locale";
 import "fumadocs-ui/style.css";
 import "./globals.css";
 
@@ -116,9 +117,11 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const [presentation, messages, now, t] = await Promise.all([getPresentation(), getMessages(), getNow(), getTranslations("Docs")]);
+  const direction = localeDirection(presentation.locale);
   return (
     <html
       lang={presentation.locale}
+      dir={direction}
       className={`${vazirmatn.variable} ${geistMono.variable} ${playfairDisplay.variable} scroll-smooth`}
       // Turbopack can retain its Arial fallback despite adjustFontFallback: false.
       // Keep only Geist Mono here; globals.css supplies the selected site font.
@@ -134,6 +137,7 @@ export default async function RootLayout({
         <PresentationProvider presentation={presentation} messages={messages} now={now}>
           <ThemeProvider>
             <RootProvider
+              dir={direction}
               i18n={{
                 locale: presentation.locale === "fa-IR" ? "fa" : "en",
                 translations: {
@@ -152,7 +156,7 @@ export default async function RootLayout({
             >
               <SessionProvider>{children}</SessionProvider>
             </RootProvider>
-            <Toaster richColors position="bottom-right" style={{ fontFamily: "inherit" }} />
+            <Toaster richColors dir={direction} position={direction === "rtl" ? "bottom-left" : "bottom-right"} style={{ fontFamily: "inherit" }} />
           </ThemeProvider>
         </PresentationProvider>
       </body>

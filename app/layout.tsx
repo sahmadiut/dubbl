@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { CSSProperties } from "react";
-import { Geist_Mono, Playfair_Display, Vazirmatn } from "next/font/google";
+import { Geist_Mono, Playfair_Display } from "next/font/google";
+import localFont from "next/font/local";
 import { SessionProvider } from "next-auth/react";
 import { RootProvider } from "fumadocs-ui/provider/next";
 import { Toaster } from "sonner";
@@ -12,10 +13,13 @@ import { localeDirection } from "@/i18n/locale";
 import "fumadocs-ui/style.css";
 import "./globals.css";
 
-const vazirmatn = Vazirmatn({
+const vazirmatn = localFont({
+  src: "../public/fonts/vazirmatn/Vazirmatn-Variable.woff2",
   variable: "--font-vazirmatn",
-  subsets: ["arabic", "latin"],
+  weight: "100 900",
+  style: "normal",
   display: "swap",
+  fallback: ["Arial", "sans-serif"],
 });
 
 const geistMono = Geist_Mono({

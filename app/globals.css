@@ -156,6 +156,8 @@ svg.lucide-arrow-left:dir(rtl) {
   }
   body {
     @apply bg-background text-foreground text-sm antialiased;
+    /* Equal-width digits in either numeral preference; text/values stay intact. */
+    font-variant-numeric: tabular-nums;
     /* Fumadocs utilities also read this variable directly. */
     --font-mono: var(--font-geist-mono), var(--font-site), monospace;
     --default-mono-font-family: var(--font-mono);

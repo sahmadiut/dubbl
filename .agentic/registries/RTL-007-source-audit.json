@@ -1,0 +1,103 @@
+{
+  "task": "RTL-007",
+  "baseline": "47e039646c5b45c95cd08090220463b4391e82f4",
+  "font": {
+    "version": "33.003",
+    "upstreamCommit": "f68f7bc5dd1d046bd6a5a2bda355bd6d430e807a",
+    "fontSha256": "4e3fa217d38fdafc1fea4414ceb58ca5e662cf0ab5fa735a8c8c20e8b42cad92",
+    "noticeSha256": "17e355067c8284f47743a1ee3b1ef7ff684ff0601eda357f9353b10b3016ab31"
+  },
+  "ownedSources": [
+    {
+      "path": "app/layout.tsx",
+      "sha256": "1a5e8370ad70736c71330d3b535b559dc06db0c8884087cb5ac49d7adb01e1cd"
+    },
+    {
+      "path": "app/globals.css",
+      "sha256": "a93f71d6b41d30508428c50a1eff59f2301c9976cab531acd25432530104517c"
+    },
+    {
+      "path": "tests/rtl-root-direction.test.ts",
+      "sha256": "3684bbfcceb5505d7754eb1c74b82cb5b627278179a9fa3023926c35402644a3"
+    },
+    {
+      "path": "tests/rtl-typography.test.ts",
+      "sha256": "d70cef2606a31bd76e4312e458366bc212c7eb0271b632d32e6ad3ba21c2440b"
+    },
+    {
+      "path": "public/fonts/vazirmatn/Vazirmatn-Variable.woff2",
+      "sha256": "4e3fa217d38fdafc1fea4414ceb58ca5e662cf0ab5fa735a8c8c20e8b42cad92"
+    },
+    {
+      "path": "public/fonts/vazirmatn/OFL.txt",
+      "sha256": "17e355067c8284f47743a1ee3b1ef7ff684ff0601eda357f9353b10b3016ab31"
+    },
+    {
+      "path": "public/fonts/vazirmatn/README.md",
+      "sha256": "5d655f2702ffb085ce7a8990bd267707f3b84aa0d2621c8f51b1b109eb3a1576"
+    },
+    {
+      "path": "public/fonts/vazirmatn/.gitattributes",
+      "sha256": "92cd0f805ee5eac07a47ca4e3da32fbdbdaa663f1a2f23147152c3f11b43c1a6"
+    }
+  ],
+  "preservedBaselineBlobs": [
+    {
+      "path": "public/fonts/Abar-VF.ttf",
+      "gitBlob": "a59452348172d7dcb1e08cc1bf85430068192e88"
+    },
+    {
+      "path": "public/fonts/FilimoDemoVariableVF.woff2",
+      "gitBlob": "6e58e0537fd69e325a24988992a0442958c683ee"
+    },
+    {
+      "path": "public/fonts/Estedad-VF.woff2",
+      "gitBlob": "62aa89252e52237896f03a6c96644e73d2af7466"
+    },
+    {
+      "path": "public/fonts/IRANSansX-VF.woff",
+      "gitBlob": "f1c51f96c095ea663acc4000c1af8e212fe54015"
+    },
+    {
+      "path": "public/fonts/Digikala-VF.woff2",
+      "gitBlob": "5b756ac98b1bbb0ec43b3bc9fc86c15c152d3f48"
+    },
+    {
+      "path": "LICENSE",
+      "gitBlob": "ecb5a61bf04651a96d87985a40c299416057875e"
+    },
+    {
+      "path": "THIRD_PARTY_NOTICES.md",
+      "gitBlob": "d545237e73ef1b484d91fba228cb7dd4ad6e1b38"
+    },
+    {
+      "path": "i18n/locale.ts",
+      "gitBlob": "9089632338065fa2676c0aa449e3ed1278c0a32b"
+    },
+    {
+      "path": "i18n/numbers.ts",
+      "gitBlob": "fd2677c99a10821db9c2010d7819a43d5b23a9a2"
+    },
+    {
+      "path": "components/settings/billing-content.tsx",
+      "gitBlob": "bc7098d3c04f5f672a386ff8790728d6e1ad84c9"
+    },
+    {
+      "path": "app/(landing)/pricing/page.tsx",
+      "gitBlob": "024f7f007633c65b86896f0419a351454c8867f5"
+    },
+    {
+      "path": "app/pay/[token]/page.tsx",
+      "gitBlob": "04383d9b46849b076008b810ad33b54e42994c4d"
+    },
+    {
+      "path": "components/landing/feature-sections.tsx",
+      "gitBlob": "053e664b11a38a8f1ca3fc64344b1d3ba8796f7f"
+    }
+  ],
+  "qualificationLimits": [
+    "No mounted browser or computed fallback font check",
+    "Default-instance fontkit shaping; weight axis metadata/CSS verified, not mounted variation rendering",
+    "No native, module/output, mobile/zoom/text-spacing or PDF qualification"
+  ]
+}

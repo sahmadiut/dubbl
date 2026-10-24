@@ -110,8 +110,10 @@ function rootLayout(presentation: Presentation) {
   } }).outputText;
   const load = (id: string): unknown => {
     if (id.endsWith(".css")) return {};
-    if (id === "next/font/google") return Object.fromEntries(["Geist_Mono", "Playfair_Display", "Vazirmatn"].map(name =>
+    if (id === "next/font/google") return Object.fromEntries(["Geist_Mono", "Playfair_Display"].map(name =>
       [name, () => ({ variable: `font-${name}`, className: `font-${name}`, style: { fontFamily: name } })]));
+    if (id === "next/font/local") return { default: () => ({ variable: "font-Vazirmatn", className: "font-Vazirmatn",
+      style: { fontFamily: "Vazirmatn" } }) };
     if (id === "next-auth/react") return { SessionProvider: passthrough };
     if (id === "@/components/shared/theme-provider") return { ThemeProvider: passthrough };
     if (id === "@/i18n/server") return { getPresentation: async () => presentation };

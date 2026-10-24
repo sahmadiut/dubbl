@@ -202,7 +202,7 @@ test("actual admin shell keeps links/permission and semantic order while using l
     const html = renderWithPresentation(routed(h(AdminNavigation, { allowed: true }, "Caller body"), "/admin"), locale);
     assert.ok(html.includes("border-e bg-sidebar"));
     assert.ok(html.includes("ms-auto"));
-    assert.ok(html.includes("[&amp;:dir(rtl)]:rotate-180"));
+    assert.ok(html.includes("lucide-arrow-left"), "back arrows use the owner-authored shared RTL rule");
     for (const route of ["/admin", "/admin/users", "/admin/organizations", "/admin/settings", "/dashboard"])
       assert.ok(html.includes(`href="${route}"`));
     assert.ok(html.indexOf('href="/admin/users"') < html.indexOf('href="/admin/organizations"'));
@@ -215,12 +215,16 @@ test("actual admin shell keeps links/permission and semantic order while using l
 });
 
 test("installed CSS preserves nonshrinking sidebar reservation, constrained content and physical collapse edges", async () => {
-  const compiler = await compile("@theme { --spacing: .25rem; --breakpoint-md: 48rem; } @tailwind utilities;");
+  const arrowRule = readFileSync("app/globals.css", "utf8").match(/svg\.lucide-arrow-left:dir\(rtl\)\s*\{[^}]+\}/)?.[0];
+  assert.ok(arrowRule, "the shared arrow rule is restricted to directional back icons in RTL");
+  const compiler = await compile(arrowRule + " @theme { --spacing: .25rem; --breakpoint-md: 48rem; } @tailwind utilities;");
   const css = compiler.build(["flex", "shrink-0", "flex-1", "min-w-0", "w-(--sidebar-width)",
     "left-0", "right-0", "data-[placement=end]:order-2", "group-data-[collapsible=offcanvas]:w-0",
     "group-data-[collapsible=icon]:w-(--sidebar-width-icon)",
     "group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
     "group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]", "border-e", "end-1", "text-start"]);
+  assert.ok(css.includes("svg.lucide-arrow-left:dir(rtl)"));
+  assert.ok(css.includes("rotate: 180deg"));
   for (const declaration of ["display: flex", "flex-shrink: 0", "flex: 1", "min-width: calc(var(--spacing) * 0)", "width: var(--sidebar-width)",
     "right: calc(var(--sidebar-width) * -1)", "left: calc(var(--sidebar-width) * -1)", "order: 2", "width: calc(var(--spacing) * 0)",
     "width: var(--sidebar-width-icon)", "border-inline-end-width", "inset-inline-end", "text-align: start"])

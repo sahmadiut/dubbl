@@ -1,3 +1,4 @@
+import { resolvePresentation } from "../i18n/locale";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -89,7 +90,7 @@ test("BOM examples, saved plurals, exact currency costs and caller escaping rend
       const Page = loaded(list, { loading: false, boms: [{ ...bom, currencyCode }] });
       const saved = renderWithPresentation(createElement(Page), locale);
       assert.ok(saved.includes(escape(caller)) && !saved.includes("<script>"));
-      assert.ok(saved.includes(escape(t("bomSummary", { item: caller, count: 1, cost: expenseMoneyDisplay(1650000004n, currencyCode) }))));
+      assert.ok(saved.includes(escape(t("bomSummary", { item: caller, count: 1, cost: expenseMoneyDisplay(1650000004n, currencyCode, resolvePresentation({ user: { language: locale } })) }))));
       for (const key of ["inactive", "actions", "open", "delete"] as const) assert.ok(saved.includes(escape(t(key))), key);
     }
     assert.notEqual(t("bomSummary", { item: "x", count: 1, cost: "y" }), t("bomSummary", { item: "x", count: 2, cost: "y" }));
@@ -103,7 +104,7 @@ test("BOM detail renders exact quantity, wastage, costs, empty components and ab
     for (const key of ["costBreakdown", "overhead", "totalCost", "removeComponent"] as const) assert.ok(html.includes(escape(t(key))), key);
     assert.ok(html.includes(escape(t("quantity", { quantity: component.quantity }))));
     assert.ok(html.includes(escape(t("wastage", { percent: component.wastagePercent }))));
-    assert.ok(html.includes(escape(expenseMoneyDisplay(1650000004n, "USD"))));
+    assert.ok(html.includes(escape(expenseMoneyDisplay(1650000004n, "USD", resolvePresentation({ user: { language: locale } })))));
     assert.ok(html.includes(escape(caller)) && !html.includes("<script>"));
     for (const [state, key] of [[null, "notFound"], [{ ...data, bom: { ...bom, components: [] } }, "noComponents"]] as const) {
       const State = loaded(detail, { loading: false, data: state });

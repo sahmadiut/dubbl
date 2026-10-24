@@ -6,6 +6,7 @@ import React from "react";
 import { renderToStaticMarkup } from "../helpers/presentation";
 import { createTranslator } from "next-intl";
 import en from "../../messages/en-US.json";
+import { resolvePresentation } from "../../i18n/locale";
 import { eq, sql } from "drizzle-orm";
 import pg from "pg";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -16,6 +17,11 @@ import { apiKey, auditLog, contact, customRole, emailConfig, invoice, invoiceSig
 import type { AuthContext } from "../../lib/api/auth-context";
 
 // Request locale and SMTP delivery are controlled; real handlers/services/SDK/database execute.
+// The server page now resolves the same presentation as the root request.
+// Supply only this request-scoped boundary; real services, SQL and MCP remain.
+mock.module(new URL("../../i18n/server.ts", import.meta.url).href, { namedExports: {
+  getPresentation: async () => resolvePresentation({ user: { language: "en-US" } }),
+} });
 mock.module("next-intl/server", { namedExports: {
   getTranslations: async () => createTranslator({ locale: "en-US", messages: en, namespace: "PublicSigning" }),
 } });

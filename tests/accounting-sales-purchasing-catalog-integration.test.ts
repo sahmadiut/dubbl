@@ -1,4 +1,4 @@
-import { currencyFixture } from "./helpers/localized-fixtures";
+import { currencyFixture, displayNumberFixture } from "./helpers/localized-fixtures";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import { createElement, type ReactNode } from "react";
@@ -135,7 +135,7 @@ test("accounting, sales, purchasing and tax share the real locale and preserve d
     assert.ok(tax.includes(escape(messages.TaxNavigation.periods)) && tax.includes('role="status"'));
     const [whole, fraction] = price.split(".");
     const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",") + (fraction ? `.${fraction}` : "");
-    assert.ok(tax.includes(grouped), `${currency}: settlement preserves exact low-order digits`);
+    assert.ok(tax.includes(displayNumberFixture(grouped, locale)), `${currency}: settlement preserves exact low-order digits`);
     assert.ok(!tax.includes("MISSING_MESSAGE"));
   }
 });

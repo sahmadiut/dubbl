@@ -134,8 +134,8 @@ test("Persian dashboard uses literal rial across cards, aging, expenses, budget 
   const h = render("page", states, "fa-IR");
   assert.match(h.html, /ریال/);
   assert.doesNotMatch(h.html, /IRR/);
-  assert.ok(h.html.includes(displayMoney(large, currencyCode, presentation)));
-  assert.ok(h.html.includes(displayMoney(-1n, currencyCode, presentation)), "signed subunit remains exact");
+  assert.ok(h.html.includes("۹٬۰۰۷٬۱۹۹٬۲۵۴٬۷۴۰٬۰۰۱\u00a0ریال"), "owner-preferred rial unit follows the exact amount");
+  assert.ok(h.html.includes("−۱\u00a0ریال"), "signed rial amount remains exact with the unit after it");
   assert.ok(h.html.includes(formatExactCurrencyDecimal(budgetDecimal(123n), currencyCode, presentation)), "budget preserves fixed-two units");
   const table = h.captured.find(p => p.emptyAction)!;
   const debitTotals = [{ currencyCode, totalDebit: Number(large), totalDebitMinor: String(large) }];

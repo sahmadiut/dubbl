@@ -115,7 +115,7 @@ test("combined budget layout and both pages share real context, catalogs and exa
   for (const locale of ["en-US", "fa-IR"] as const) for (const currency of ["USD", "JPY", "IRR", "KWD"]) for (const page of ["", "settings"] as const) {
     const messages = locale === "en-US" ? en : fa;
     const html = renderWithPresentation(composedBudget(page, currency), locale);
-    for (const value of [messages.Budgets.overview, messages.Budgets.settings, messages.Budgets.totalBudget, caller, budget.startDate, budgetMoney(amount, currency), budgetMoney(29n, currency)]) contains(html, value);
+    for (const value of [messages.Budgets.overview, messages.Budgets.settings, messages.Budgets.totalBudget, caller, budget.startDate, budgetMoney(amount, currency, resolvePresentation({ user: { language: locale } })), budgetMoney(29n, currency, resolvePresentation({ user: { language: locale } }))]) contains(html, value);
     assert.ok(!html.includes("<script>") && !html.includes("MISSING_MESSAGE"));
     if (page === "settings") {
       contains(html, messages.Budgets.save);

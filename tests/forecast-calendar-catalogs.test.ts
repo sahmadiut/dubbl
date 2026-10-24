@@ -1,3 +1,4 @@
+import { resolvePresentation } from "../i18n/locale";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -27,7 +28,7 @@ test("forecast production JSX localizes copy, options and controls with exact ch
   for (const locale of locales) {
     const t = tFor(locale), h = render("cash-flow-forecast", state("cash-flow-forecast"), locale);
     for (const key of ["forecastTitle", "forecastDescription", "clearFilter", "estimateHelp", "expectedIn", "expectedOut", "expectedChange", "cumulativeCashFlow", "weeklyBreakdown", "weekOf", "inflows", "outflows", "net", "cumulative"] as const) text(h, t(key));
-    text(h, analyticalMoney(large, "KWD")); text(h, analyticalMoney(1n, "KWD")); text(h, "2024-02-04");
+    text(h, analyticalMoney(large, "KWD", resolvePresentation({ user: { language: locale } }))); text(h, analyticalMoney(1n, "KWD", resolvePresentation({ user: { language: locale } }))); text(h, "2024-02-04");
     assert.ok(h.html.includes('href="/reports"'));
     const options = h.captured.filter(c => c.kind === "SelectItem").map(c => c.props);
     assert.deepEqual(options.map(p => p.value), ["4", "8", "12", "26", "52"]);
@@ -41,11 +42,11 @@ test("forecast production JSX localizes copy, options and controls with exact ch
     const tooltip = h.captured.find(c => c.props.formatter)!.props.formatter as (v: number, name: string, item: unknown) => unknown;
     for (const [dataKey, key, amount] of [["inflows", "inflows", large], ["outflows", "outflows", 1n], ["cumulative", "cumulativeNet", large - 1n]] as const) {
       assert.equal(h.captured.find(c => c.props.dataKey === dataKey)!.props.name, t(key));
-      assert.deepEqual(tooltip(0, t(key), { dataKey, payload: point }), [analyticalMoney(amount, "KWD"), t(key)]);
-      assert.deepEqual(tooltip(0, "arbitrary display name", { dataKey, payload: point }), [analyticalMoney(amount, "KWD"), "arbitrary display name"]);
+      assert.deepEqual(tooltip(0, t(key), { dataKey, payload: point }), [analyticalMoney(amount, "KWD", resolvePresentation({ user: { language: locale } })), t(key)]);
+      assert.deepEqual(tooltip(0, "arbitrary display name", { dataKey, payload: point }), [analyticalMoney(amount, "KWD", resolvePresentation({ user: { language: locale } })), "arbitrary display name"]);
     }
     const signed = render("cash-flow-forecast", { ...state("cash-flow-forecast"), netForecast: -1n, weeks: [{ ...point.minor, inflows: 0n, outflows: 1n, net: -1n, cumulativeNet: -1n }] }, locale);
-    text(signed, analyticalMoney(-1n, "KWD")); assert.ok(signed.html.includes("text-red-600"));
+    text(signed, analyticalMoney(-1n, "KWD", resolvePresentation({ user: { language: locale } }))); assert.ok(signed.html.includes("text-red-600"));
   }
 });
 
@@ -54,7 +55,7 @@ test("calendar production JSX localizes event kinds, weekdays, overflow and acce
     const t = tFor(locale), h = render("financial-calendar", state("financial-calendar"), locale);
     for (const key of ["calendarTitle", "calendarDescription", "today", "invoiceDue", "billDue", "recurring", "budgetPeriod", "allEvents", "sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"] as const) text(h, t(key));
     text(h, t("moreEvents", { count: 1 })); text(h, caller); assert.ok(!h.html.includes("<script>"));
-    text(h, analyticalMoney(large, "KWD")); text(h, analyticalMoney(-1n, "JPY"));
+    text(h, analyticalMoney(large, "KWD", resolvePresentation({ user: { language: locale } }))); text(h, analyticalMoney(-1n, "JPY", resolvePresentation({ user: { language: locale } })));
     assert.ok(h.html.includes('href="/reports"'));
     for (const [key, year, month] of [["previousMonth", 2024, 0], ["nextMonth", 2024, 2]] as const) {
       (h.captured.find(c => c.props["aria-label"] === t(key))!.props.onClick as () => void)();

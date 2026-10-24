@@ -1,3 +1,4 @@
+import { resolvePresentation } from "../i18n/locale";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createTranslator } from "next-intl";
@@ -25,7 +26,7 @@ test("both consolidation tabs render translated production JSX and preserve exac
     assert.ok(render("consolidation", ready, locale).html.includes(t("emptyGroups")));
     for (const tab of ["pnl", "balance-sheet"] as const) {
       const h = render("consolidation", { ...selected, report, tab }, locale);
-      for (const text of [t("title"), t("accountBreakdown"), t("totalLabel", { label: t(tab === "pnl" ? "revenue" : "assets") }), "Account &lt;b&gt;", "Group &lt;script&gt;", reportResultMoney(amount, "USD")]) assert.ok(h.html.includes(text), text);
+      for (const text of [t("title"), t("accountBreakdown"), t("totalLabel", { label: t(tab === "pnl" ? "revenue" : "assets") }), "Account &lt;b&gt;", "Group &lt;script&gt;", reportResultMoney(amount, "USD", resolvePresentation({ user: { language: locale } }))]) assert.ok(h.html.includes(text), text);
       assert.ok(!h.html.includes("Group <script>"));
       const output = h.captured.find(c => c.props.filename === `consolidation-${tab}`)!;
       assert.ok(output);

@@ -1,3 +1,4 @@
+import { resolvePresentation } from "../i18n/locale";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -127,7 +128,7 @@ test("one checked deal composes actual shared context, navigation, overview/acti
       const html = renderWithPresentation(createElement(Layout, null, createElement(Page)), locale);
       assert.ok(html.includes(escaped(label)), route);
       assert.ok(html.includes(escaped(caller)) && !html.includes("<script>"), route);
-      assert.ok(html.includes(escaped(payrollMoneyDisplay(checked.valueCents, checked.currency))), route);
+      assert.ok(html.includes(escaped(payrollMoneyDisplay(checked.valueCents, checked.currency, resolvePresentation({ user: { language: locale } })))), route);
       for (const key of ["overview", "activity", "settings"] as const) {
         const button = c.captured.find(p => p.kind === "button" && text(p.props.children) === messages.CrmDetail[key]);
         assert.ok(button, `${route}: ${key}`);
@@ -137,7 +138,7 @@ test("one checked deal composes actual shared context, navigation, overview/acti
       }
       if (tab === "overview") {
         const weighted = (BigInt(checked.valueCents) * 33n * 2n + 100n) / 200n;
-        assert.ok(html.includes(escaped(payrollMoneyDisplay(weighted, checked.currency))));
+        assert.ok(html.includes(escaped(payrollMoneyDisplay(weighted, checked.currency, resolvePresentation({ user: { language: locale } })))));
       }
       if (tab === "settings") assert.ok(html.includes('name="expectedCloseDate"') && html.includes("2024-02-29"));
       assert.ok(!html.includes("MISSING_MESSAGE"));
@@ -223,7 +224,7 @@ test("checked pipeline, detail and analytics share identical maximum fixed cents
       });
       const Pipeline = c.load(`${root}/page.tsx`).default, Analytics = c.load(`${root}/analytics/page.tsx`).default, Layout = c.load(layout).default, Overview = c.load(`${detail}/page.tsx`).default;
       const html = renderWithPresentation(createElement("div", null, createElement(Pipeline), createElement(Analytics), createElement(Layout, null, createElement(Overview))), locale);
-      const amount = escaped(payrollMoneyDisplay(deal.valueCents, currency));
+      const amount = escaped(payrollMoneyDisplay(deal.valueCents, currency, resolvePresentation({ user: { language: locale } })));
       assert.ok(html.split(amount).length - 1 >= 6, `${currency}/${locale}: common amount across list, statistics, stage and detail`);
       assert.ok(!html.includes("MISSING_MESSAGE"));
     }

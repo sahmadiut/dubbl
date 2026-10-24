@@ -1,3 +1,4 @@
+import { resolvePresentation } from "../i18n/locale";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -54,7 +55,19 @@ function loaded(values = states(), locale?: typeof locales[number], io: Record<s
     return require(id.startsWith("@/") ? resolve(id.slice(2)) : id);
   };
   new Function("require", "module", "exports", ...Object.keys(io), code)(load, compiled, compiled.exports, ...Object.values(io));
-  return { Page: compiled.exports.VatReturnPageWorkspace, events, effects, ref };
+
+  // Capture production callbacks while the actual presentation hooks execute
+  // under React and both application provider identities, not outside a render.
+  const tree = (props: { orgId: string | null }) => {
+    let result: ReactNode = null;
+    function Capture() {
+      result = (compiled.exports.VatReturnPageWorkspace as (props: { orgId: string | null }) => ReactNode)(props);
+      return null;
+    }
+    renderWithPresentation(createElement(Capture), locale ?? "en-US");
+    return result;
+  };
+  return { Page: compiled.exports.VatReturnPageWorkspace, tree, events, effects, ref };
 }
 const flush = () => new Promise(resolve => setImmediate(resolve));
 
@@ -66,7 +79,7 @@ test("VAT report renders all bilingual labels, nine statutory boxes and exact du
     for (const key of ["title", "description", "print", "taxPeriods", "countVat", "accrual", "cash", "accrualHelp", "flatRate", "flatRatePlaceholder", "flatRatePercent", "flatRateHelp", "comparison", "outputVat", "inputVat", "allBoxes", "drillHelp", "calculated", net < 0n ? "netRefund" : "netDue", net < 0n ? "boxFiveRefund" : "boxFiveDue"] as const) assert.ok(html.includes(escape(t(key))), key);
     for (const box of boxes) assert.ok(html.includes(escape(t(vatBoxLabelKey(box.box)!))));
     assert.ok(!html.includes("wire-label-") && html.includes('href="/tax/periods"'));
-    assert.ok(html.includes(escape(taxUiMoney(net < 0n ? -net : net, currency))));
+    assert.ok(html.includes(escape(taxUiMoney(net < 0n ? -net : net, currency, resolvePresentation({ user: { language: locale } })))));
     assert.equal((html.match(/aria-expanded="false"/g) ?? []).length, 2);
   }
 });
@@ -100,7 +113,7 @@ test("drilldown loading/empty/table states, ICU plurals and sums beyond safe Num
       for (const key of ["date", "entry", "transactionDescription", "reference", "amount"] as const) assert.ok(html.includes(escape(t(key))), key);
       assert.ok(html.includes(escape(t("totalLines", { count }))) && html.includes(escape(caller)) && !html.includes("<script>"));
       assert.ok(html.includes("2026-01-02") && html.includes("#42"));
-      assert.ok(html.includes(escape(taxUiMoney(count === 2 ? 9007199254740993n : 1250n, "USD"))));
+      assert.ok(html.includes(escape(taxUiMoney(count === 2 ? 9007199254740993n : 1250n, "USD", resolvePresentation({ user: { language: locale } })))));
     }
     for (const n of [0, 1, 2, 12]) assert.ok(t("totalLines", { count: n }).length);
   }
@@ -110,7 +123,7 @@ test("real controls preserve basis codes, rate text, canonical dates, print and 
   for (const locale of locales) {
     let printed = 0;
     const h = loaded(states(), locale, { window: { print: () => printed++ } });
-    const tree = nodes((h.Page as (props: { orgId: string }) => ReactNode)({ orgId: "org-a" }));
+    const tree = nodes(h.tree({ orgId: "org-a" }));
     for (const [key, value] of [["accrual", "accrual"], ["cash", "cash"]] as const) {
       const el = tree.find(el => el.props.children === translator(locale)(key))!;
       (el.props.onClick as () => void)(); assert.deepEqual(h.events.at(-1), [2, value]);
@@ -126,7 +139,7 @@ test("real controls preserve basis codes, rate text, canonical dates, print and 
     assert.deepEqual(csv.props.data, boxes.map(b => ({ box: b.box, description: b.label, amount: String(b.amount), currencyCode: "USD" })));
     for (const patch of [{ 6: true }, { 8: "error" }, { 7: null }]) {
       const broken = loaded(states(patch), locale);
-      const tree = nodes((broken.Page as (props: { orgId: string }) => ReactNode)({ orgId: "org-a" }));
+      const tree = nodes(broken.tree({ orgId: "org-a" }));
       assert.deepEqual(tree.find(el => el.props.filename === "vat-return")!.props.data, []);
     }
   }
@@ -144,7 +157,7 @@ test("report effect preserves org/date/basis/basis-point queries and validates r
       if (mode === "json") return new Response(caller);
       return Response.json({ currencyCode: mode === "currency" ? "BAD" : "USD", boxes: mode === "shape" ? {} : [{ box: "1", label: caller, amount: 1250, amountMinor: mode === "alias" ? "1251" : "1250" }] }, { status: mode === "status" ? 403 : 200 });
     } });
-    (h.Page as (props: { orgId: string | null }) => ReactNode)({ orgId: mode === "no-org" ? null : "org-a" });
+    h.tree({ orgId: mode === "no-org" ? null : "org-a" });
     const cleanup = h.effects[0](); if (mode === "cancelled") (cleanup as () => void)();
     await flush(); assert.equal(calls, mode === "no-org" ? 0 : 1);
     if (mode === "success") assert.deepEqual(h.events, [[6, true], [5, [{ box: "1", label: caller, amount: 1250n, amountMinor: "1250" }]], [7, "USD"], [8, null], [6, false]]);
@@ -161,7 +174,7 @@ test("flat-rate omission and cash request semantics remain unchanged", async () 
       assert.equal(params.get("basis"), "cash"); assert.equal(params.get("flatRatePercent"), expected);
       return Response.json({ currencyCode: "USD", boxes: [] });
     } });
-    (h.Page as (p: { orgId: string }) => ReactNode)({ orgId: "org-a" }); h.effects[0](); await flush();
+    h.tree({ orgId: "org-a" }); h.effects[0](); await flush();
     assert.ok(h.events.some(([i, value]) => i === 7 && value === "USD"));
   }
 });
@@ -178,7 +191,7 @@ test("drill callback keeps org/box query, money validation, cancellation, cache 
       if (mode === "json") return new Response(caller);
       return Response.json({ currencyCode: mode === "currency" ? "JPY" : "USD", transactions: mode === "shape" ? {} : [{ ...row, amount: 1250, debit: 0, credit: 1250, amountMinor: mode === "alias" ? "1251" : "1250" }] }, { status: mode === "status" ? 400 : 200 });
     } });
-    const tree = nodes((h.Page as (props: { orgId: string | null }) => ReactNode)({ orgId: mode === "no-org" ? null : "org-a" }));
+    const tree = nodes(h.tree({ orgId: mode === "no-org" ? null : "org-a" }));
     const button = tree.find(el => el.type === "button" && "aria-expanded" in el.props)!;
     (button.props.onClick as () => void)(); if (mode === "stale") h.ref.current++;
     await flush();
@@ -199,7 +212,7 @@ test("drill callback keeps org/box query, money validation, cancellation, cache 
 
 test("period/basis invalidation clears drill cache and invalidates late results", () => {
   const h = loaded(states(), "en-US");
-  (h.Page as (p: { orgId: string }) => ReactNode)({ orgId: "org-a" });
+  h.tree({ orgId: "org-a" });
   const cleanup = h.effects[1]();
   assert.deepEqual(h.events, [[9, null], [10, {}]]); assert.equal(h.ref.current, 1);
   (cleanup as () => void)(); assert.equal(h.ref.current, 2);

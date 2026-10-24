@@ -1,3 +1,4 @@
+import { resolvePresentation } from "../i18n/locale";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -129,11 +130,11 @@ test("one checked project composes actual provider, navigation and all seven det
       assert.ok(html.includes(escaped(caller)) && !html.includes("<script>"), route);
       for (const tab of ["", "/tasks", "/time", "/milestones", "/notes", "/members", "/settings"]) assert.ok(html.includes(`href="/projects/project-a${tab}"`), `${route}: ${tab}`);
       assert.ok(new RegExp(`<a(?=[^>]*href="/projects/project-a${suffix}")(?=[^>]*aria-current="page")[^>]*>`).test(html), route);
-      assert.ok(html.includes(escaped(projectMoneyDisplay(checked.budget, checked.currency))), route);
+      assert.ok(html.includes(escaped(projectMoneyDisplay(checked.budget, checked.currency, resolvePresentation({ user: { language: locale } })))), route);
       if (["page.tsx", "time/page.tsx"].includes(route)) {
         const derived = (95n * BigInt(Number.MAX_SAFE_INTEGER) + 30n) / 60n;
         assert.ok(derived > BigInt(Number.MAX_SAFE_INTEGER));
-        assert.ok(html.includes(escaped(projectMoneyDisplay(derived, checked.currency))), route);
+        assert.ok(html.includes(escaped(projectMoneyDisplay(derived, checked.currency, resolvePresentation({ user: { language: locale } })))), route);
       }
       assert.ok(!html.includes("MISSING_MESSAGE"));
     }

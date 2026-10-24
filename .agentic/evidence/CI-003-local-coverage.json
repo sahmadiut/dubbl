@@ -1,0 +1,88 @@
+{
+  "run": "https://github.com/sahmadiut/dubbl/actions/runs/40132766994",
+  "unitTests": 73,
+  "integrationTests": 3,
+  "matchedHostedFailures": 20,
+  "results": [
+    {
+      "title": "accounting, sales, purchasing and tax share the real locale and preserve distinct exact-money entry contracts",
+      "passed": true
+    },
+    {
+      "title": "combined budget layout and both pages share real context, catalogs and exact currency amounts",
+      "passed": true
+    },
+    {
+      "title": "both consolidation tabs render translated production JSX and preserve exact raw-unit export",
+      "passed": true
+    },
+    {
+      "title": "one checked deal composes actual shared context, navigation, overview/activity/settings in both locales",
+      "passed": true
+    },
+    {
+      "title": "checked pipeline, detail and analytics share identical maximum fixed cents across currency labels/locales",
+      "passed": true
+    },
+    {
+      "title": "forecast production JSX localizes copy, options and controls with exact chart carriers",
+      "passed": true
+    },
+    {
+      "title": "calendar production JSX localizes event kinds, weekdays, overflow and accessible navigation",
+      "passed": true
+    },
+    {
+      "title": "BOM examples, saved plurals, exact currency costs and caller escaping render bilingually",
+      "passed": true
+    },
+    {
+      "title": "BOM detail renders exact quantity, wastage, costs, empty components and absence",
+      "passed": true
+    },
+    {
+      "title": "one checked project composes actual provider, navigation and all seven detail workflows in both locales",
+      "passed": true
+    },
+    {
+      "title": "VAT report renders all bilingual labels, nine statutory boxes and exact due/refund totals",
+      "passed": true
+    },
+    {
+      "title": "drilldown loading/empty/table states, ICU plurals and sums beyond safe Number render exactly",
+      "passed": true
+    },
+    {
+      "title": "real controls preserve basis codes, rate text, canonical dates, print and CSV wire data",
+      "passed": true
+    },
+    {
+      "title": "report effect preserves org/date/basis/basis-point queries and validates reads without raw prose",
+      "passed": true
+    },
+    {
+      "title": "flat-rate omission and cash request semantics remain unchanged",
+      "passed": true
+    },
+    {
+      "title": "drill callback keeps org/box query, money validation, cancellation, cache and closing behavior",
+      "passed": true
+    },
+    {
+      "title": "period/basis invalidation clears drill cache and invalidates late results",
+      "passed": true
+    },
+    {
+      "title": "warehouse empty/help, filtered absence and loading states use real catalogs",
+      "passed": true
+    },
+    {
+      "title": "MON-126 actual signing REST/SSR/MCP contracts preserve money, scope and signed history",
+      "passed": true
+    },
+    {
+      "title": "MON-034 snapshots, audit, signing and public rendering compose without unit loss",
+      "passed": true
+    }
+  ]
+}

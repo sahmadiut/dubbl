@@ -119,7 +119,7 @@ test("warehouse empty/help, filtered absence and loading states use real catalog
     const Page = loaded(page, { loading: false }, [], events);
     const html = renderWithPresentation(createElement(Page), locale);
     for (const key of ["emptyDescription", "newWarehouse", "exampleWarehouse", "mainWarehouse", "exampleAddress", "trackingTitle", "transfersDescription", "countsDescription"] as const) assert.ok(html.includes(escape(t(key))), key);
-    assert.ok(html.includes("WH-001") && html.includes("$12,400"));
+    assert.ok(html.includes("WH-001") && html.includes(locale === "en-US" ? "$12,400" : "دلار ۱۲٬۴۰۰"));
     const action = callback(page, "openEdit", { setEditing: noop, setFormName: noop, setFormCode: noop, setFormAddress: noop, setSheetOpen: noop });
     action(root);
     for (const [states, key] of [[{ warehouses: [child], statusFilter: "active" }, "noFilterMatches"], [{ warehouses: rows.data, search: "missing" }, "trySearch"]] as const) {

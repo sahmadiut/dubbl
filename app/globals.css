@@ -675,3 +675,22 @@ svg.lucide-arrow-left:dir(rtl) {
     overflow-x: hidden !important;
   }
 }
+
+/* Fumadocs Steps use physical left spacing for the rail, but place step
+   numbers at logical start. Move the rail and its reserved space together in RTL. */
+:dir(rtl) #nd-page .fd-steps {
+  margin-left: 0;
+  margin-right: calc(var(--spacing) * 2);
+  border-left: 0;
+  border-right-style: var(--tw-border-style);
+  border-right-width: 1px;
+  padding-left: 0;
+  padding-right: calc(var(--spacing) * 6);
+}
+
+@media (min-width: 40rem) {
+  :dir(rtl) #nd-page .fd-steps {
+    margin-right: calc(var(--spacing) * 4);
+    padding-right: calc(var(--spacing) * 7);
+  }
+}

@@ -13,6 +13,8 @@ import * as budgetPresentation from "../i18n/budget-presentation";
 import * as money from "../lib/money/budget-ui";
 import { generatePeriods } from "../lib/budget-periods";
 import { renderWithPresentation } from "./helpers/presentation";
+import { formatDecimalDraft } from "../i18n/numbers";
+import { resolvePresentation } from "../i18n/locale";
 import en from "../messages/en-US.json";
 import fa from "../messages/fa-IR.json";
 
@@ -111,7 +113,7 @@ test("budget list, detail shell, overview, settings and drawer render bilingual 
         assert.ok(!html.includes("<script>"));
       }
       if ([overview,drawer,layout].includes(path)) assert.ok(html.includes(money.budgetMoney(amount, "USD")), path);
-      if (path === settings) assert.ok(html.includes(money.budgetDecimal(amount)), path);
+      if (path === settings) assert.ok(html.includes(formatDecimalDraft(money.budgetDecimal(amount), resolvePresentation({ user: { language: locale } }))), path);
       if ([settings,drawer].includes(path)) {
         assert.ok(html.includes('data-option="monthly"'));
         assert.ok(html.includes(escape(t("amountForPeriod", { period: budgetPresentation.budgetPeriodLabel(t, "Jan 2026") }))));

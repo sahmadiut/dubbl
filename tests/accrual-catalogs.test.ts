@@ -16,6 +16,8 @@ import * as presentation from "../i18n/accrual-presentation";
 import { accrualUiInput, accrualUiPeriods } from "../lib/money/budget-ui";
 import { assetMoneyDisplay } from "../lib/money/asset-display";
 import { renderWithPresentation } from "./helpers/presentation";
+import { formatDecimalDraft } from "../i18n/numbers";
+import { resolvePresentation } from "../i18n/locale";
 import en from "../messages/en-US.json";
 import fa from "../messages/fa-IR.json";
 
@@ -111,7 +113,7 @@ test("accrual pages and drawer render real bilingual content, exact amounts, esc
       if (path !== list || states[1] !== cases[0][1][1]) assert.ok(html.includes(escape(caller)),path);
       if (path === detail || path === list && states[1] !== cases[0][1][1]) assert.ok(html.includes(assetMoneyDisplay(schedule.totalAmount)),path);
       if (path === drawer) {
-        assert.ok(html.includes('value="40000000000000.01"'));
+        assert.ok(html.includes(`value="${formatDecimalDraft("40000000000000.01", resolvePresentation({ user: { language: locale } }))}"`));
         assert.ok(html.includes('drawer-accrual-amount'));
       }
     }

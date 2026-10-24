@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { randomUUID } from "node:crypto";
 import { createElement } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderToStaticMarkup } from "./helpers/presentation";
 import { expenseEditorAmount, expenseEditorItems, expenseEditorPreview, expenseUiCounts, expenseUiDecimal,
   expenseUiDocument, expenseUiHeader, expenseUiMileageSetting, expenseUiMinor, expenseUiMoney, expenseDistanceText } from "../lib/money/expense-ui";
 import { expenseSummaryDisplay } from "../lib/money/expense-display";

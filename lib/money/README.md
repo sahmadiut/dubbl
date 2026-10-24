@@ -34,7 +34,12 @@ qualification. It accepts one Latin/Persian/Arabic-Indic numeral script per valu
 explicit ASCII or Arabic separators and validated grouping, then delegates to
 `parseMajor` with explicit currency/rounding and int64 bounds. Unknown characters,
 bidi controls and mixed scripts reject. Machine-facing exact parsing remains
-canonical ASCII. LOC-003 retains UI adoption, formatting and numeral preferences.
+canonical ASCII. LOC-003 adds the exact `i18n/numbers.ts` decimal/currency and
+editing adapters, preferred-numeral `CurrencyInput`/`DualAmount` integration, and
+the `useNumberPresentation` hook. `bankMoneyDisplay` delegates to the same exact
+formatter with its existing English default. See the
+[localized-number contract](../../.agentic/registries/LOCALIZED_NUMBERS.md) for
+separator/sign/draft policies and the remaining module adoption boundaries.
 
 MON-167 adopts tax/tracking/consolidation/custom/saved report results through
 `report-result-ui.ts`: required numeric/Minor agreement, explicit currency,

@@ -2,6 +2,8 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { usePresentation } from "@/i18n/provider";
+import { decimalSeparatorsFor, formatDecimalDraft, normalizeDecimalDraft } from "@/i18n/numbers";
 
 interface CurrencyInputProps {
   value: string | number;
@@ -33,6 +35,11 @@ export function CurrencyInput({
   "aria-invalid": ariaInvalid,
 }: CurrencyInputProps) {
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const presentation = usePresentation();
+  // Preserve externally supplied invalid text for the caller's validation UI.
+  const displayDraft = (text: string) => {
+    try { return formatDecimalDraft(text, presentation); } catch { return text; }
+  };
 
   return (
     <div
@@ -60,16 +67,17 @@ export function CurrencyInput({
         aria-label={ariaLabel}
         aria-invalid={ariaInvalid}
         type="text"
+        dir="ltr"
         inputMode="decimal"
-        value={value}
+        value={displayDraft(String(value))}
         onChange={(e) => {
-          const v = e.target.value;
-          const pattern = fractionDigits === 0 ? /^-?\d*$/ : new RegExp(`^-?\\d*\\.?\\d{0,${fractionDigits}}$`);
-          if (v === "" || pattern.test(v)) {
-            onChange(v);
-          }
+          let normalized: string;
+          try {
+            normalized = normalizeDecimalDraft(e.target.value, decimalSeparatorsFor(presentation), fractionDigits);
+          } catch { return; } // Reject the entire malformed edit; never strip unknown characters.
+          onChange(normalized);
         }}
-        placeholder={placeholder}
+        placeholder={displayDraft(placeholder)}
         disabled={disabled}
         className={cn(
           "flex-1 min-w-0 bg-transparent text-right font-mono tabular-nums outline-none placeholder:text-muted-foreground",

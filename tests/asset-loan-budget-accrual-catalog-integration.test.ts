@@ -11,6 +11,8 @@ import * as DatePicker from "../components/ui/date-picker";
 import * as AccountPicker from "../components/dashboard/account-picker";
 import { budgetMoney, budgetDecimal } from "../lib/money/budget-ui";
 import { renderWithPresentation } from "./helpers/presentation";
+import { formatDecimalDraft } from "../i18n/numbers";
+import { resolvePresentation } from "../i18n/locale";
 import en from "../messages/en-US.json";
 import fa from "../messages/fa-IR.json";
 
@@ -117,7 +119,7 @@ test("combined budget layout and both pages share real context, catalogs and exa
     assert.ok(!html.includes("<script>") && !html.includes("MISSING_MESSAGE"));
     if (page === "settings") {
       contains(html, messages.Budgets.save);
-      contains(html, budgetDecimal(amount));
+      contains(html, formatDecimalDraft(budgetDecimal(amount), resolvePresentation({ user: { language: locale } })));
     } else contains(html, messages.Budgets.periodBreakdown);
   }
 });

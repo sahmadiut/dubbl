@@ -1,5 +1,6 @@
-import { formatMoney } from "@/lib/money";
-import { bankMoneyDisplay } from "@/lib/money/bank-display";
+"use client";
+
+import { useNumberPresentation } from "@/i18n/use-numbers";
 import { cn } from "@/lib/utils";
 
 interface DualAmountProps {
@@ -28,6 +29,11 @@ export function DualAmount({
   className,
   align = "left",
 }: DualAmountProps) {
+  const numbers = useNumberPresentation();
+  const display = (value: number | bigint, code: string) => {
+    if (typeof value === "number" && !Number.isSafeInteger(value)) throw new RangeError("Expected safe integer minor units");
+    return numbers.money(BigInt(value), code);
+  };
   const showBase = !!baseCurrency && baseCurrency !== currency;
 
   return (
@@ -38,12 +44,12 @@ export function DualAmount({
         className
       )}
     >
-      <span className="tabular-nums">{typeof amount === "bigint" ? bankMoneyDisplay(amount, currency) : formatMoney(amount, currency)}</span>
+      <span className="tabular-nums"><bdi>{display(amount, currency)}</bdi></span>
       {showBase && (
         <span className="text-xs text-muted-foreground tabular-nums">
           {baseAmount == null
             ? `≈ — ${baseCurrency}`
-            : `≈ ${typeof baseAmount === "bigint" ? bankMoneyDisplay(baseAmount, baseCurrency) : formatMoney(baseAmount, baseCurrency)}`}
+            : <bdi>{`≈ ${display(baseAmount, baseCurrency)}`}</bdi>}
         </span>
       )}
     </span>

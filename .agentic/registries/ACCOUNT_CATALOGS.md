@@ -1,5 +1,27 @@
 # Chart-of-accounts catalog extraction
 
+## Owner-requested account names and rial follow-up, 2026-10-24
+
+The current account list, detail header, locked settings name and shared picker
+also use `AccountNames` (101 paired generic-template names). Recognition requires
+an unchanged built-in name, type and subtype; custom names, renamed defaults and
+other country templates retain their saved names. Search accepts both saved and
+translated names; name sorting uses the display name. Account codes, IDs and
+saved names are unchanged. `IRR` displays as `ریال` on the list and in settings.
+
+New custom accounts default to the organization base currency in AccountDrawer,
+REST and MCP. The drawer waits for the scoped organization response and cancels
+stale reads. Explicit foreign currencies remain supported. `list_accounts` can
+receive `locale` (`en-US` or `fa-IR`) to add `displayName`; omitting it retains the
+original response shape. No currency conversion or amount rescaling occurs.
+
+The owner-authorized local test organization had 101 stale USD defaults despite
+an IRR base and no journal history. A guarded, audited maintenance transaction
+repaired those defaults in place. This does not migrate other organizations or
+enable production IRR. See [follow-up evidence](../evidence/ACCOUNTS-PERSIAN-IRR-2026-10-24.md).
+
+The remainder of this document records the original LOC-021 extraction.
+
 LOC-021 is the first bounded child of LOC-007. It adds 173 paired keys in
 `Accounts` and `AccountErrors` (2,334 keys per locale in total).
 

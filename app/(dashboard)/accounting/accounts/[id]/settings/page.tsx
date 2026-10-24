@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { accountDisplayName } from "@/i18n/account-names";
 import { requireAccountResponse, accountFailureMessage, accountTypeLabel } from "@/i18n/account-presentation";
 
 import { useState } from "react";
@@ -24,6 +25,7 @@ import { useAccountContext } from "../layout";
 
 export default function AccountSettingsPage() {
   const t = useTranslations("Accounts");
+  const names = useTranslations("AccountNames");
   const errors = useTranslations("AccountErrors");
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -166,7 +168,7 @@ export default function AccountSettingsPage() {
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">{t("accountName")}</Label>
-                <Input name="name" required defaultValue={account.name} readOnly={isSystem} disabled={isSystem} />
+                <Input name="name" required defaultValue={accountDisplayName(names, account)} readOnly={isSystem} disabled={isSystem} />
               </div>
             </div>
             <div className="space-y-1.5">
@@ -214,7 +216,7 @@ export default function AccountSettingsPage() {
             </div>
             <div>
               <p className="text-[11px] text-muted-foreground">{t("currency")}</p>
-              <p className="text-sm mt-0.5">{cur}</p>
+              <p className="text-sm mt-0.5">{cur === "IRR" ? t("rial") : cur}</p>
             </div>
           </div>
         </div>

@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { authErrorMessage, AuthPresentationError } from "@/i18n/auth-errors";
-import { countryName, industryName, referralName } from "@/i18n/onboarding-options";
+import { businessTypeName, countryName, industryName, referralName } from "@/i18n/onboarding-options";
 
 import { setActiveOrganization } from "@/i18n/organization-client";
 
@@ -65,7 +65,7 @@ export function OnboardingWizard() {
   // Form state
   const [orgId, setOrgId] = useState("");
   const [orgName, setOrgName] = useState("");
-  const [countryCode, setCountryCode] = useState("");
+  const [countryCode, setCountryCode] = useState("IR");
   const [businessType, setBusinessType] = useState("");
   const [industry, setIndustry] = useState("");
   const [referralSource, setReferralSource] = useState("");
@@ -530,7 +530,7 @@ export function StepBusinessType({
                 : "hover:bg-muted/60"
             }`}
           >
-            <span className="text-sm font-medium">{t.localName}</span>
+            <span className="text-sm font-medium">{businessTypeName(options, t)}</span>
             {t.localName !== t.englishName && (
               <span className="text-xs text-muted-foreground">
                 {t.englishName}
@@ -670,7 +670,7 @@ export function StepReview({
       value: country ? `${country.flag} ${countryName(options, country)}` : "-",
     },
     { label: t("currency"), value: country?.defaultCurrency ?? "-" },
-    { label: t("businessType"), value: bt?.localName ?? "-" },
+    { label: t("businessType"), value: bt ? businessTypeName(options, bt) : "-" },
     { label: t("industry"), value: ind ? industryName(options, ind) : "-" },
     {
       label: t("referral"),

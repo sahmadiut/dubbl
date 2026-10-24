@@ -76,8 +76,8 @@ test("LOC-007 reconciles all 87 current routes and their authored copy across do
     }
   }
   assert.equal(Object.values(routes).reduce((count, paths) => count + paths.length, 0), 87);
-  assert.equal(namespaces.size, 53, "Review new namespaces against the combined inventory");
-  assert.equal([...namespaces].reduce((count, ns) => count + Object.keys((en as Record<string, object>)[ns]).length, 0), 4142);
+  assert.equal(namespaces.size, 54, "Review new namespaces against the combined inventory");
+  assert.equal([...namespaces].reduce((count, ns) => count + Object.keys((en as Record<string, object>)[ns]).length, 0), 4250);
   for (const ns of namespaces) {
     const english = (en as Record<string, Record<string, string>>)[ns];
     const persian = (fa as Record<string, Record<string, string>>)[ns];

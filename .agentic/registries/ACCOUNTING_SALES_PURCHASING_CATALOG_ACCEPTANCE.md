@@ -3,8 +3,8 @@
 LOC-007 independently accepts the current combined extraction of LOC-021..028,
 using LOC-006's shared shell, confirmation, loading, table and date controls.
 All 87 route TSX files and their owned shared forms are reconciled below.
-The 53 domain/shared namespaces contain 4,142 paired messages; complete catalogs
-retain 6,328 compatible keys in each locale. Persian wording remains provisional
+The current 54 domain/shared namespaces contain 4,250 paired messages; complete catalogs
+contain 10,696 compatible keys in each locale as of 2026-10-24. Persian wording remains provisional
 pending native financial-language review. Earlier child inventories record their
 own acceptance-time counts and parent boundaries; they remain immutable history.
 
@@ -19,7 +19,7 @@ dynamic labels, error mappings, callbacks and portal option values.
 
 | Family | Route files | Paired messages | Current source and shared ownership |
 |---|---:|---:|---|
-| Chart and accounting navigation, LOC-021 | 6 | 173 | `accounting/layout.tsx`, `loading.tsx`, four `accounts/` files; Accounts (163), AccountErrors (10), AccountDrawer and AccountPicker. [Inventory](ACCOUNT_CATALOGS.md). |
+| Chart and accounting navigation, LOC-021 and owner follow-up | 6 | 275 | `accounting/layout.tsx`, `loading.tsx`, four `accounts/` files; Accounts (164), AccountErrors (10), AccountNames (101), AccountDrawer and AccountPicker. [Inventory](ACCOUNT_CATALOGS.md). |
 | Journals and opening balances, LOC-022 | 5 | 269 | Accounting list/detail, recurring-journal list/detail, opening balances; Journals (251), JournalErrors (15), JournalActivity (3). EntryForm, OpeningBalanceForm/details, ActivityFeed and three drawers. [Inventory](JOURNAL_CATALOGS.md). |
 | Banking, LOC-023 | 11 | 667 | All `accounting/banking/` files, transaction/import/reconciliation components, BankAccountDrawer, BankTransferDrawer and PaymentAmountPreview. Six namespaces and complete child links in [combined inventory](BANKING_CATALOG_ACCEPTANCE.md). |
 | Assets, loans, budgets, accruals, LOC-024 | 11 | 579 | Remaining accounting master/list/detail/context/settings routes and four drawers. Six namespaces and complete child links in [combined inventory](ASSET_LOAN_BUDGET_ACCRUAL_ACCEPTANCE.md). |

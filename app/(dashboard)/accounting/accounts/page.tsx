@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { accountDisplayName } from "@/i18n/account-names";
 import { requireAccountResponse, accountFailureMessage, accountTypeLabel } from "@/i18n/account-presentation";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
@@ -45,6 +46,7 @@ const ALL_TYPES = ["asset", "liability", "equity", "revenue", "expense"] as cons
 
 export default function AccountsPage() {
   const t = useTranslations("Accounts");
+  const names = useTranslations("AccountNames");
   const errors = useTranslations("AccountErrors");
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
@@ -94,6 +96,7 @@ export default function AccountsPage() {
       const q = search.toLowerCase();
       result = result.filter(
         (a) =>
+          accountDisplayName(names, a).toLowerCase().includes(q) ||
           a.name.toLowerCase().includes(q) ||
           a.code.toLowerCase().includes(q) ||
           a.description?.toLowerCase().includes(q)
@@ -104,13 +107,13 @@ export default function AccountsPage() {
     const mul = sortDir === "asc" ? 1 : -1;
     result = [...result].sort((a, b) => {
       if (sortKey === "code") return mul * a.code.localeCompare(b.code);
-      if (sortKey === "name") return mul * a.name.localeCompare(b.name);
+      if (sortKey === "name") return mul * accountDisplayName(names, a).localeCompare(accountDisplayName(names, b));
       if (sortKey === "type") return mul * a.type.localeCompare(b.type);
       return 0;
     });
 
     return result;
-  }, [accounts, typeFilter, search, sort]);
+  }, [accounts, typeFilter, search, sort, names]);
 
   const grouped = useMemo(() => {
     const map: Record<string, Account[]> = {};
@@ -336,7 +339,7 @@ export default function AccountsPage() {
                       <span className="font-mono text-xs text-muted-foreground w-14 shrink-0">{account.code}</span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <p className="text-sm font-medium truncate">{account.name}</p>
+                          <p className="text-sm font-medium truncate">{accountDisplayName(names, account)}</p>
                           {account.isSystem && (
                             <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded shrink-0">
                               <Lock className="size-2.5" />
@@ -348,7 +351,7 @@ export default function AccountsPage() {
                           <p className="text-xs text-muted-foreground truncate">{account.description}</p>
                         )}
                       </div>
-                      <span className="text-xs text-muted-foreground shrink-0">{account.currencyCode}</span>
+                      <span className="text-xs text-muted-foreground shrink-0">{account.currencyCode === "IRR" ? t("rial") : account.currencyCode}</span>
                       {!account.isActive && (
                         <span className="text-[10px] uppercase tracking-wider text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{t("inactive")}</span>
                       )}

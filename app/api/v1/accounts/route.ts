@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { chartAccount, taxRate } from "@/lib/db/schema";
+import { chartAccount, taxRate, organization } from "@/lib/db/schema";
 import { eq, and, isNull } from "drizzle-orm";
 import { getAuthContext, AuthError } from "@/lib/api/auth-context";
 import { requireRole } from "@/lib/api/require-role";
@@ -15,7 +15,7 @@ const createSchema = z.object({
   type: z.enum(["asset", "liability", "equity", "revenue", "expense"]),
   subType: z.string().nullable().optional(),
   parentId: z.string().nullable().optional(),
-  currencyCode: currencyCodeSchema.default("USD"),
+  currencyCode: currencyCodeSchema.optional(),
   description: z.string().nullable().optional(),
   // Account-driven tax defaulting: lines coded to this account
   // pick up this tax rate by default.
@@ -81,6 +81,9 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     const parsed = createSchema.parse(body);
+    const org = await db.query.organization.findFirst({ where: eq(organization.id, ctx.organizationId) });
+    if (!org) throw new AuthError("Organization not found", 404);
+    const currencyCode = currencyCodeSchema.parse(parsed.currencyCode ?? org.defaultCurrency);
 
     // Check for duplicate code
     const existing = await db.query.chartAccount.findFirst({
@@ -109,6 +112,7 @@ export async function POST(request: Request) {
       .values({
         organizationId: ctx.organizationId,
         ...parsed,
+        currencyCode,
       })
       .returning();
 

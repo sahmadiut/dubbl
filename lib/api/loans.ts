@@ -8,7 +8,7 @@ import { calculatePMT, generateAmortizationSchedule, loanPaymentDate } from "./a
 import { loanId, loanDto, loanScheduleDto, loanPrincipal, loanUpdateSchema, loanListSchema, loanPaymentSchema, loanPreflight } from "./loan-wire";
 import { assetDate, assetMoneyDto } from "./asset-master-wire";
 import { bankAccountDto } from "./bank-account-wire";
-import { currencyMetadata, roundRatio } from "@/lib/money/exact";
+import { roundRatio } from "@/lib/money/exact";
 import { legacyMinor, stringifyWire } from "@/lib/money/wire";
 import { ensureBankLedgerAccount } from "./bank-ledger";
 import { getNextEntryNumber } from "./journal-automation";
@@ -29,16 +29,18 @@ const unsupported = (message: string): never => { throw new AuthError(message, 4
 async function baseCurrency(tx: TaxTx, ctx: AuthContext) {
   const [org] = await tx.select().from(organization).where(and(eq(organization.id, ctx.organizationId), isNull(organization.deletedAt)));
   if (!org) throw new AuthError("Organization not found", 404);
-  // Loan tables have no currency snapshot. Preserve fixed cents and reject unlike scales.
-  if (currencyMetadata(org.defaultCurrency).minorUnits !== 2) unsupported("Loan fixed-cents contract requires a two-decimal base currency; historical currency qualification remains separate");
+  // Loan amounts retain fixed cents regardless of the base currency's ISO scale.
+  // Linked accounts and posted history must still agree with the base currency.
   return org.defaultCurrency;
 }
 async function account(tx: TaxTx, ctx: AuthContext, id: string | null, base: string, type: string, live: boolean) {
   if (!id) return unsupported("Loan posting account is missing");
   const query = tx.select().from(chartAccount).where(and(eq(chartAccount.id, id), eq(chartAccount.organizationId, ctx.organizationId)));
   const [a] = await (live ? query.for("share") : query);
-  if (!a || a.currencyCode !== base || a.type !== type || (live && (!a.isActive || a.deletedAt)))
-    return unsupported("Loan accounts must be organization-owned, have the required type and base currency; posting requires live active accounts");
+  if (!a) return unsupported("Loan account must belong to the organization");
+  if (a.currencyCode !== base) return unsupported("Loan accounts must use the organization base currency");
+  if (a.type !== type) return unsupported("Loan account has the wrong type");
+  if (live && (!a.isActive || a.deletedAt)) return unsupported("Loan posting account is inactive or deleted");
   return a;
 }
 async function links(tx: TaxTx, ctx: AuthContext, row: Loan, base: string, live = false) {
@@ -48,7 +50,9 @@ async function links(tx: TaxTx, ctx: AuthContext, row: Loan, base: string, live 
   if (row.bankAccountId) {
     const query = tx.select().from(bankAccount).where(and(eq(bankAccount.id, row.bankAccountId), eq(bankAccount.organizationId, ctx.organizationId)));
     const [saved] = await (live ? query.for("update") : query);
-    if (!saved || saved.currencyCode !== base || ["credit_card", "loan"].includes(saved.accountType) || (live && (!saved.isActive || saved.deletedAt))) unsupported("Loan bank must belong to the organization, use base currency and an asset GL; posting requires live active bank");
+    if (!saved || ["credit_card", "loan"].includes(saved.accountType)) unsupported("Loan bank must belong to the organization and use an asset GL");
+    if (saved.currencyCode !== base) unsupported("Loan repayment bank must use the organization base currency");
+    if (live && (!saved.isActive || saved.deletedAt)) unsupported("Loan repayment bank is inactive or deleted");
     bank = bankAccountDto(saved);
     if (saved.chartAccountId) await account(tx, ctx, saved.chartAccountId, base, "asset", live);
   }

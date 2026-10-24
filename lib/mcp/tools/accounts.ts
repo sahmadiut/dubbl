@@ -1,8 +1,13 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { createTranslator } from "next-intl";
+import enMessages from "@/messages/en-US.json";
+import faMessages from "@/messages/fa-IR.json";
+import { accountDisplayName } from "@/i18n/account-names";
 import { db } from "@/lib/db";
 import {
   chartAccount,
+  organization,
   journalLine,
   taxRate,
   taxComponent,
@@ -37,12 +42,14 @@ import {
 } from "@/lib/banking/special-categories";
 import type { AuthContext } from "@/lib/api/auth-context";
 import { accountDetail, accountDetailSchema } from "@/lib/api/account-detail";
+import { currencyCodeSchema } from "@/lib/currency/zod";
 
 export function registerAccountTools(server: McpServer, ctx: AuthContext) {
   server.tool(
     "list_accounts",
-    "List all chart of accounts (categories) for the organization. Returns account code, name, type (asset/liability/equity/revenue/expense), active status, and isSystem (true = a built-in default category that can't be renamed or deleted). Built-in defaults come from the code-owned template and are kept continuously in sync, so newly added defaults appear here automatically.",
+    "List all chart of accounts (categories) for the organization. Returns canonical account code, name, currencyCode, type, active status and isSystem (built-in defaults cannot be renamed or deleted). Optional locale adds displayName for recognized built-in names; canonical names, IDs, currency codes and stored money never change. Defaults stay in sync with the code-owned template.",
     {
+      locale: z.enum(["en-US", "fa-IR"]).optional().describe("Optional presentation locale; adds displayName without changing saved account names or currencies"),
       type: z
         .enum(["asset", "liability", "equity", "revenue", "expense"])
         .optional()
@@ -81,6 +88,10 @@ export function registerAccountTools(server: McpServer, ctx: AuthContext) {
           result = result.filter((a) => a.isActive);
         }
 
+        if (params.locale) {
+          const names = createTranslator({ locale: params.locale, messages: params.locale === "fa-IR" ? faMessages : enMessages, namespace: "AccountNames" });
+          return { accounts: result.map(account => ({ ...account, displayName: accountDisplayName(names, account) })), total: result.length };
+        }
         return { accounts: result, total: result.length };
       })
   );
@@ -108,11 +119,9 @@ export function registerAccountTools(server: McpServer, ctx: AuthContext) {
         .enum(["asset", "liability", "equity", "revenue", "expense"])
         .describe("Account type"),
       subType: z.string().optional().describe("Account sub-type"),
-      currencyCode: z
-        .string()
+      currencyCode: currencyCodeSchema
         .optional()
-        .default("USD")
-        .describe("Currency code (default: USD)"),
+        .describe("ISO 4217 account currency code; defaults to the organization's base currency when omitted"),
       description: z.string().optional().describe("Account description"),
       defaultTaxRateId: z
         .string()
@@ -137,6 +146,9 @@ export function registerAccountTools(server: McpServer, ctx: AuthContext) {
     (params) =>
       wrapTool(ctx, async () => {
         requireRole(ctx, "manage:accounts");
+        const org = await db.query.organization.findFirst({ where: eq(organization.id, ctx.organizationId) });
+        if (!org) throw new Error("Organization not found");
+        const currencyCode = currencyCodeSchema.parse(params.currencyCode ?? org.defaultCurrency);
 
         const existing = await db.query.chartAccount.findFirst({
           where: and(
@@ -165,7 +177,7 @@ export function registerAccountTools(server: McpServer, ctx: AuthContext) {
             name: params.name,
             type: params.type,
             subType: params.subType ?? null,
-            currencyCode: params.currencyCode,
+            currencyCode,
             description: params.description ?? null,
             defaultTaxRateId: params.defaultTaxRateId ?? null,
             reportingCode: params.reportingCode ?? null,

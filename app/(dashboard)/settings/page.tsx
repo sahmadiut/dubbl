@@ -39,7 +39,7 @@ import {
 import { Section } from "@/components/dashboard/section";
 import { LocalePreferences } from "@/components/settings/locale-preferences";
 import { useLocale, useTranslations } from "next-intl";
-import { countryName } from "@/i18n/onboarding-options";
+import { businessTypeName, countryName } from "@/i18n/onboarding-options";
 import { addressCountryName, paymentTermLabel } from "@/i18n/settings-options";
 import { settingsErrorMessage, requireSettingsResponse, settingsFailureMessage } from "@/i18n/settings-errors";
 import { readSettingsLockDate } from "@/components/settings/period-lock-response";
@@ -338,7 +338,7 @@ export default function SettingsPage() {
                 <SelectContent>
                   {businessTypes.map((bt) => (
                     <SelectItem key={bt.code} value={bt.code}>
-                      <span>{bt.localName}</span>
+                      <span>{businessTypeName(options, bt)}</span>
                       {bt.localName !== bt.englishName && (
                         <span className="ml-1 text-muted-foreground">
                           ({bt.englishName})

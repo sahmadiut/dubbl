@@ -15,6 +15,8 @@ export interface BusinessType {
 }
 
 export const COUNTRIES: Country[] = [
+  { code: "IR", name: "Iran", flag: "\u{1F1EE}\u{1F1F7}", defaultCurrency: "IRR" },
+
   // North America
   { code: "US", name: "United States", flag: "\u{1F1FA}\u{1F1F8}", defaultCurrency: "USD" },
   { code: "CA", name: "Canada", flag: "\u{1F1E8}\u{1F1E6}", defaultCurrency: "CAD" },

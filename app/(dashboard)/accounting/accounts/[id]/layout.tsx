@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { accountDisplayName } from "@/i18n/account-names";
 import { requireAccountResponse, accountFailureMessage, accountTypeLabel } from "@/i18n/account-presentation";
 
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
@@ -85,6 +86,7 @@ const PAGE_TABS = [
 
 export default function AccountDetailLayout({ children }: { children: React.ReactNode }) {
   const t = useTranslations("Accounts");
+  const names = useTranslations("AccountNames");
   const errors = useTranslations("AccountErrors");
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -149,7 +151,7 @@ export default function AccountDetailLayout({ children }: { children: React.Reac
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
-                <h1 className="text-base sm:text-lg font-semibold tracking-tight">{account.name}</h1>
+                <h1 className="text-base sm:text-lg font-semibold tracking-tight">{accountDisplayName(names, account)}</h1>
                 <Badge variant="outline" className={typeConfig?.badgeClass || ""}>
                   {accountTypeLabel(t, account.type)}
                 </Badge>

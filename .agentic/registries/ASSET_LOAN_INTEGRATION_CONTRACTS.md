@@ -33,7 +33,9 @@ retains decimal-major input; MCP principal remains integer cents. Exact bigint
 intermediates do not change stored units. Annual rates are basis points, useful
 life and terms are months, production readings are physical units, dates are
 Gregorian YYYY-MM-DD and instants are UTC. Identity posting FX is exact 1 with
-quote_per_base direction. Loan creation requires a two-decimal base currency.
+quote_per_base direction. Loan amounts retain fixed cents regardless of ISO
+currency scale; linked accounts and history must use the organization base
+currency. See the 2026-10-24 correction in [loan contracts](LOAN_WIRE_CONTRACTS.md).
 
 ## Combined lifecycle and ledger evidence
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { accountDisplayName } from "@/i18n/account-names";
 import { requireAccountResponse, accountFailureMessage } from "@/i18n/account-presentation";
 import { accountTypeGroupLabel } from "@/i18n/account-presentation";
 
@@ -31,6 +32,8 @@ interface Account {
   type: string;
   subType?: string | null;
   currencyCode?: string;
+  isActive?: boolean;
+  isSystem?: boolean;
 }
 
 interface AccountPickerProps {
@@ -38,6 +41,7 @@ interface AccountPickerProps {
   onChange: (accountId: string) => void;
   typeFilter?: string[];
   currencyFilter?: string;
+  activeOnly?: boolean;
   subTypeFilter?: string;
   placeholder?: string;
   /** Show a "Create new account" affordance linking to chart-of-accounts settings */
@@ -51,11 +55,13 @@ export function AccountPicker({
   onChange,
   typeFilter,
   currencyFilter,
+  activeOnly = false,
   subTypeFilter,
   placeholder,
   allowCreate = false,
 }: AccountPickerProps) {
   const t = useTranslations("Accounts");
+  const names = useTranslations("AccountNames");
   const errors = useTranslations("AccountErrors");
   const [open, setOpen] = useState(false);
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -77,7 +83,7 @@ export function AccountPicker({
         const data = await (await requireAccountResponse(res, errors, t("loadAccountsFailed"))).json();
         if (!cancelled && data.accounts) {
           setError(null);
-          setAccounts(data.accounts.filter((a: Account) => (!allow || allow.includes(a.type)) && (!currencyFilter || a.currencyCode === currencyFilter) && (!subTypeFilter || a.subType === subTypeFilter)));
+          setAccounts(data.accounts.filter((a: Account) => (!allow || allow.includes(a.type)) && (!currencyFilter || a.currencyCode === currencyFilter) && (!activeOnly || a.isActive === true) && (!subTypeFilter || a.subType === subTypeFilter)));
         }
       } catch (err) {
         if (!cancelled) { setAccounts([]); setError(accountFailureMessage(err, t("loadAccountsFailed"))); }
@@ -86,7 +92,7 @@ export function AccountPicker({
       }
     })();
     return () => { cancelled = true; };
-  }, [typeKey, currencyFilter, subTypeFilter, t, errors]);
+  }, [typeKey, currencyFilter, activeOnly, subTypeFilter, t, errors]);
 
   // Group accounts by type, in accounting display order, each group sorted by code.
   const groups = useMemo(() => {
@@ -122,7 +128,7 @@ export function AccountPicker({
             <span className="truncate">
               <span className="text-muted-foreground tabular-nums">{selected.code}</span>
               {" — "}
-              {selected.name}
+              {accountDisplayName(names, selected)}
             </span>
           ) : (
             <span className="text-muted-foreground">{placeholder ?? t("selectAccount")}</span>
@@ -151,7 +157,7 @@ export function AccountPicker({
                     {group.items.map((a) => (
                       <CommandItem
                         key={a.id}
-                        value={`${a.code} ${a.name}`}
+                        value={`${a.code} ${a.name} ${accountDisplayName(names, a)}`}
                         onSelect={() => {
                           onChange(a.id === value ? "" : a.id);
                           setOpen(false);
@@ -159,7 +165,7 @@ export function AccountPicker({
                       >
                         <Check className={cn("size-4 shrink-0", value === a.id ? "opacity-100" : "opacity-0")} />
                         <span className="text-muted-foreground tabular-nums text-xs w-12 shrink-0">{a.code}</span>
-                        <span className="truncate text-sm">{a.name}</span>
+                        <span className="truncate text-sm">{accountDisplayName(names, a)}</span>
                       </CommandItem>
                     ))}
                   </CommandGroup>

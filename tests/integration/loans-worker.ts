@@ -209,7 +209,61 @@ async function run() {
     await db.execute(sql`update loan set principal_amount=9007199254740992 where id=${fault.loan.id}`);
     await denied(() => get(req(), p(fault.loan.id)), 422); await mdenied("update_loan", { loanId: fault.loan.id, name: "Unsafe" }, ma, 422);
     await db.update(loan).set({ deletedAt: new Date() }).where(eq(loan.id, fault.loan.id)); await denied(() => get(req(), p(fault.loan.id)), 404);
+    // Relabeling the base cannot make the existing USD accounts valid for JPY.
     await db.update(organization).set({ defaultCurrency: "JPY" }).where(eq(organization.id, a.id)); await denied(() => create(req(base)), 422);
+    // ISO metadata must not disable the historical fixed-cents loan contract.
+    // Use independent tenants with matching accounts; never relabel existing history.
+    for (const currency of ["IRR", "JPY", "KWD"]) {
+      const [org] = await db.insert(organization).values({ name: `${currency} loans`, slug: `loans-${currency.toLowerCase()}`, defaultCurrency: currency }).returning();
+      await db.insert(member).values({ organizationId: org.id, userId: owner.id, role: "owner" });
+      const key = `dk_loans_${currency}`;
+      await db.insert(apiKey).values({ organizationId: org.id, createdBy: owner.id, name: currency, keyHash: createHash("sha256").update(key).digest("hex"), keyPrefix: "dk_loans" });
+      const [principal, interest, cash] = await db.insert(chartAccount).values([
+        { organizationId: org.id, code: "2300", name: "Principal", type: "liability", currencyCode: currency },
+        { organizationId: org.id, code: "5900", name: "Interest", type: "expense", currencyCode: currency },
+        { organizationId: org.id, code: "1100", name: "Cash", type: "asset", currencyCode: currency },
+      ]).returning();
+      const [bank] = await db.insert(bankAccount).values({ organizationId: org.id, accountName: "Repayment", bankName: "Fixture", accountType: "checking", currencyCode: currency, chartAccountId: cash.id }).returning();
+      const client = await connect({ ...ctx, organizationId: org.id });
+      const input = { name: `${currency} fixed cents`, principalAmountMinor: assetCentsInput("10000.29"), interestRate: 500, termMonths: 3, startDate: "2024-01-01", principalAccountId: principal.id, interestAccountId: interest.id, bankAccountId: bank.id };
+      try {
+        assert.equal((await data(await list(req({}, key)))).pagination.total, 0);
+        assert.equal((await client.call("list_loans", {})).body.total, 0);
+        const created = await data(await create(req(input, key)), 201);
+        assert.equal(created.loan.principalAmountMinor, "1000029");
+        const id = created.loan.id;
+        const detail = await data(await get(req({}, key), p(id)));
+        assert.deepEqual((await client.call("get_loan", { loanId: id })).body, detail);
+        const listed = await data(await list(req({}, key)));
+        assert.equal(listed.data[0].principalAmountMinor, "1000029");
+        assert.deepEqual((await client.call("list_loans", {})).body.loans, listed.data);
+        await data(await patch(req({ name: "Renamed" }, key), p(id)));
+        assert.equal((await client.call("update_loan", { loanId: id, name: input.name })).body.loan.name, input.name);
+        const paid = await data(await post(req({ scheduleEntryId: detail.schedule[0].id }, key), p(id)));
+        const replay = await client.call("post_loan_payment", { loanId: id, scheduleEntryId: detail.schedule[0].id });
+        assert.equal(replay.isError, false); assert.deepEqual(replay.body, paid);
+        for (const row of detail.schedule.slice(1)) assert.equal((await client.call("post_loan_payment", { loanId: id, scheduleEntryId: row.id })).isError, false);
+        assert.equal((await data(await get(req({}, key), p(id)))).loan.status, "paid_off");
+        const amounts = await db.execute(sql`select l.principal_amount::text as principal,
+          (select sum(s.principal_amount)::text from loan_schedule s where s.loan_id = l.id) as scheduled,
+          (select sum(jl.debit_amount)::text from journal_line jl join journal_entry je on je.id = jl.journal_entry_id where je.source_id = l.id and jl.account_id = ${principal.id}) as posted
+          from loan l where l.id = ${id}`);
+        assert.deepEqual(amounts.rows[0], { principal: "1000029", scheduled: "1000029", posted: "1000029" });
+        const legs = await db.select().from(journalLine).where(eq(journalLine.journalEntryId, paid.journalEntry.id));
+        assert.ok(legs.every(l => l.currencyCode === currency && l.rateExact === "1"));
+        assert.equal(legs.reduce((s, l) => s + BigInt(l.debitAmount), 0n), BigInt(paid.entry.totalPaymentMinor));
+        assert.equal(legs.reduce((s, l) => s + BigInt(l.creditAmount), 0n), BigInt(paid.entry.totalPaymentMinor));
+        const second = await client.call("create_loan", input); assert.equal(second.isError, false);
+        assert.equal(second.body.loan.principalAmountMinor, "1000029");
+        await data(await remove(req({}, key), p(second.body.loan.id)));
+        const third = await data(await create(req(input, key)), 201);
+        assert.equal((await client.call("delete_loan", { loanId: third.loan.id })).isError, false);
+        await data(await get(req({}, key), p(third.loan.id)), 404);
+        // Currency agreement and tenant isolation still apply to every currency scale.
+        await data(await create(req({ ...input, principalAccountId: liability.id }, key)), 422);
+        assert.equal((await client.call("get_loan", { loanId: ln })).isError, true);
+      } finally { await client.close(); }
+    }
     console.log("Loan contracts verified: six REST/MCP pairs, exact units/schedules, scoped ledger, permissions, periods, retries, concurrency and atomic failures");
   } finally { await ma.close(); await mb.close(); await ro.close(); await staff.close(); }
 }

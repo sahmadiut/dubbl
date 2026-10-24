@@ -1,11 +1,22 @@
 import type { useTranslations } from "next-intl";
-import type { Country } from "@/lib/data/business-types";
+import type { BusinessType, Country } from "@/lib/data/business-types";
 import type { Industry } from "@/lib/data/industries";
 import type { ReferralSource } from "@/lib/data/referral-sources";
 
 type Translate = ReturnType<typeof useTranslations<"OnboardingOptions">>;
 type OptionKey = Parameters<Translate>[0];
+// Match labels rather than codes: jurisdictions can reuse a code for a
+// different legal entity. Unmapped jurisdiction-specific names stay intact.
+const businessTypeKeys: Partial<Record<string, OptionKey>> = {
+  "Sole Proprietorship": "businessType_soleProprietorship",
+  "Partnership": "businessType_partnership",
+  "Corporation / Company": "businessType_corporation",
+  "Non-Profit / Charity": "businessType_nonprofit",
+  "Cooperative": "businessType_cooperative",
+  "Other": "businessType_other",
+};
 const countryKeys: Partial<Record<string, OptionKey>> = {
+  "IR": "country_IR",
   "US": "country_US",
   "CA": "country_CA",
   "MX": "country_MX",
@@ -77,6 +88,10 @@ const referralKeys: Partial<Record<string, OptionKey>> = {
 };
 
 // Labels are presentation only. Existing canonical names/codes still own writes.
+export function businessTypeName(t: Translate, businessType: BusinessType) {
+  const key = Object.hasOwn(businessTypeKeys, businessType.localName) ? businessTypeKeys[businessType.localName] : undefined;
+  return key ? t(key) : businessType.localName;
+}
 export function countryName(t: Translate, country: Country) {
   const key = Object.hasOwn(countryKeys, country.code) ? countryKeys[country.code] : undefined;
   return key ? t(key) : country.name;

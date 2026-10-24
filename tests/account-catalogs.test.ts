@@ -20,6 +20,8 @@ import { coreAccountMoney, coreLedgerMoney } from "../lib/money/core-presentatio
 import { renderWithPresentation } from "./helpers/presentation";
 import en from "../messages/en-US.json";
 import fa from "../messages/fa-IR.json";
+import { GENERIC_ACCOUNTS } from "../lib/db/chart-templates/generic";
+import { accountDisplayName } from "../i18n/account-names";
 
 const locales = ["en-US", "fa-IR"] as const;
 const base = "app/(dashboard)/accounting/accounts";
@@ -119,6 +121,60 @@ test("loaded chart, empty examples and errors render from the real page in both 
   }
 });
 
+test("built-in names render in Persian without renaming saved accounts or custom names", () => {
+  const rows = GENERIC_ACCOUNTS.map((a, index) => ({ ...sample, ...a, id: `system-${index}`, isSystem: true, currencyCode: "IRR" }));
+  const snapshot = JSON.stringify(rows);
+  for (const locale of locales) {
+    const messages = locale === "en-US" ? en : fa;
+    const names = createTranslator({ locale, messages, namespace: "AccountNames" });
+    const pageRows = rows.slice(0, 4);
+    const Page = loaded(`${base}/page.tsx`, [pageRows, null, false, "", "all", "code:asc"]).default;
+    const html = renderWithPresentation(createElement(Page), locale);
+    for (const row of rows) {
+      const displayName = accountDisplayName(names, row);
+      if (pageRows.includes(row)) assert.ok(html.includes(displayName), displayName);
+      if (locale === "fa-IR") assert.match(displayName, /\p{Script=Arabic}/u);
+      assert.equal(accountDisplayName(names, { ...row, isSystem: false }), row.name);
+      assert.equal(accountDisplayName(names, { ...row, name: "صادرات" }), "صادرات");
+      assert.equal(accountDisplayName(names, { ...row, type: "custom" }), row.name);
+    }
+    assert.ok(html.includes(messages.Accounts.rial));
+    const cash = loaded(`${base}/page.tsx`, [pageRows, null, false, locale === "fa-IR" ? "صندوق" : "Cash", "all", "name:asc"]).default;
+    const filtered = renderWithPresentation(createElement(cash), locale);
+    assert.ok(filtered.includes(accountDisplayName(names, rows[0])));
+    assert.ok(!filtered.includes(accountDisplayName(names, rows.find(row => row.code === "1100")!)));
+    const Picker = loaded("components/dashboard/account-picker.tsx", [true, [rows[0]], null, false]).AccountPicker;
+    const picker = renderWithPresentation(createElement(Picker, { value: rows[0].id, onChange: noop }), locale);
+    assert.ok(picker.includes(accountDisplayName(names, rows[0])));
+  }
+  assert.equal(JSON.stringify(rows), snapshot);
+});
+
+test("account drawer adopts organization currency, retains failed loading state, and cancels stale reads", async () => {
+  for (const mode of ["IRR", "USD", "failure", "invalid", "cancelled"] as const) {
+    const adopted: string[] = [], failures: string[] = [];
+    let finish!: (response: Response) => void;
+    const pending = new Promise<Response>(resolve => { finish = resolve; });
+    const effect = callback(drawer, "initialEffect", {
+      open: true, setAcctCurrency: (v: string) => adopted.push(v), localStorage: { getItem: () => "org-a" }, AbortController,
+      errors: createTranslator({ locale: "en-US", messages: en, namespace: "AccountErrors" }),
+      t: createTranslator({ locale: "en-US", messages: en, namespace: "Accounts" }), requireAccountResponse, accountFailureMessage,
+      toast: { error: (v: string) => failures.push(v) },
+      fetch: async (url: string, init: RequestInit) => {
+        assert.equal(url, "/api/v1/organization"); assert.equal((init.headers as Record<string, string>)["x-organization-id"], "org-a");
+        return pending;
+      },
+    }, "AccountDrawer");
+    const cleanup = effect();
+    if (mode === "cancelled") cleanup();
+    finish(mode === "failure" ? new Response("private", { status: 500 }) : Response.json({ organization: { defaultCurrency: mode === "invalid" ? "" : mode === "USD" ? "USD" : "IRR" } }));
+    await new Promise(resolve => setImmediate(resolve));
+    assert.deepEqual(adopted, ["", ...(["IRR", "USD"].includes(mode) ? [mode] : [])]);
+    assert.equal(failures.length, mode === "failure" || mode === "invalid" ? 1 : 0);
+    cleanup();
+  }
+});
+
 test("actual account settings preserve system locks, field names, saved data and localized rich notice", () => {
   for (const locale of locales) for (const isSystem of [false, true]) {
     const messages = locale === "en-US" ? en : fa;
@@ -194,7 +250,7 @@ test("account picker keeps selected IDs, translated grouping and type/currency/s
     const adopted: unknown[] = [];
     const effect = callback(path, "initialEffect", {
       t: createTranslator({ locale, messages, namespace: "Accounts" }), errors: createTranslator({ locale, messages, namespace: "AccountErrors" }), requireAccountResponse, accountFailureMessage,
-      typeKey: "asset", currencyFilter: "EUR", subTypeFilter: "Caller subtype", localStorage: { getItem: () => "org-a" },
+      typeKey: "asset", currencyFilter: "EUR", activeOnly: false, subTypeFilter: "Caller subtype", localStorage: { getItem: () => "org-a" },
       setAccounts: (v: unknown) => adopted.push(v), setError: noop, setLoading: noop,
       fetch: async (url: string, init: RequestInit) => {
         assert.equal(url, "/api/v1/accounts");

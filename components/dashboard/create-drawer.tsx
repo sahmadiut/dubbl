@@ -20,7 +20,7 @@ import { requireAccountResponse, accountFailureMessage } from "@/i18n/account-pr
 
 import { budgetTypeLabel, budgetPeriodLabel, budgetFailureMessage, requireBudgetResponse } from "@/i18n/budget-presentation";
 import { accrualJson, accrualFailureMessage } from "@/i18n/accrual-presentation";
-import { loanJson, loanFailureMessage } from "@/i18n/loan-presentation";
+import { loanJson, loanFailureMessage, loanRepaymentBanks } from "@/i18n/loan-presentation";
 import { currencyMetadata } from "@/lib/money/exact";
 import { bankUiTransfer, bankUiAccount, bankUiMoney } from "@/lib/money/bank-ui";
 
@@ -158,7 +158,7 @@ export function CreateDrawerProvider({ children }: { children: React.ReactNode }
       <EmployeeDrawer open={activeType === "employee"} onClose={close} />
       <CreditNoteDrawer open={activeType === "creditNote"} onClose={close} />
       <RecurringDrawer key={drawerOrgId} open={activeType === "recurring"} onClose={close} />
-      <AccountDrawer open={activeType === "account"} onClose={close} />
+      <AccountDrawer key={drawerOrgId} open={activeType === "account"} onClose={close} />
       <BankAccountDrawer open={activeType === "bankAccount"} onClose={close} />
       <WarehouseDrawer open={activeType === "warehouse"} onClose={close} />
       <StockTakeDrawer open={activeType === "stockTake"} onClose={close} />
@@ -2931,16 +2931,31 @@ export function AccountDrawer({ open, onClose }: { open: boolean; onClose: () =>
   const t = useTranslations("Accounts");
   const errors = useTranslations("AccountErrors");
   const [saving, setSaving] = useState(false);
-  const [acctCurrency, setAcctCurrency] = useState("USD");
+  const [acctCurrency, setAcctCurrency] = useState("");
 
-  useEffect(() => { if (!open) setAcctCurrency("USD"); }, [open]);
+  useEffect(() => {
+    setAcctCurrency("");
+    if (!open) return;
+    const orgId = localStorage.getItem("activeOrgId");
+    if (!orgId) return;
+    const controller = new AbortController();
+    fetch("/api/v1/organization", { headers: { "x-organization-id": orgId }, signal: controller.signal })
+      .then(async response => (await requireAccountResponse(response, errors, t("loadAccountsFailed"))).json())
+      .then(data => {
+        if (!/^[A-Z]{3}$/.test(data.organization?.defaultCurrency ?? "")) throw new Error("Invalid organization currency");
+        if (!controller.signal.aborted) setAcctCurrency(data.organization.defaultCurrency);
+      })
+      .catch(error => { if (!controller.signal.aborted) toast.error(accountFailureMessage(error, t("loadAccountsFailed"))); });
+    return () => controller.abort();
+  }, [open, errors, t]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (!acctCurrency) return;
     setSaving(true);
     const form = new FormData(e.currentTarget);
     const orgId = localStorage.getItem("activeOrgId");
-    if (!orgId) return;
+    if (!orgId) { setSaving(false); return; }
 
     try {
       const res = await fetch("/api/v1/accounts", {
@@ -3010,7 +3025,7 @@ export function AccountDrawer({ open, onClose }: { open: boolean; onClose: () =>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="drawer-account-currency">{t("currency")}</Label>
-                  <CurrencySelect value={acctCurrency} onValueChange={setAcctCurrency} />
+                  <CurrencySelect value={acctCurrency} onValueChange={setAcctCurrency} disabled={!acctCurrency} />
                 </div>
               </div>
             </div>
@@ -3025,7 +3040,7 @@ export function AccountDrawer({ open, onClose }: { open: boolean; onClose: () =>
               </div>
             </div>
           </div>
-          <DrawerFooter onClose={onClose} saving={saving} label={t("createAccount")} cancelLabel={t("cancel")} creatingLabel={t("creating")} />
+          <DrawerFooter onClose={onClose} saving={saving} disabled={!acctCurrency} label={t("createAccount")} cancelLabel={t("cancel")} creatingLabel={t("creating")} />
         </form>
       </SheetContent>
     </Sheet>
@@ -4405,21 +4420,33 @@ function LoanDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [bankAccounts, setBankAccounts] = useState<BankAccountOption[]>([]);
   const [principalAccountId, setPrincipalAccountId] = useState("");
   const [interestAccountId, setInterestAccountId] = useState("");
+  const [baseCurrency, setBaseCurrency] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) {
       setName(""); setPrincipalAmount("0.00"); setInterestPercent(""); setTermMonths("");
       setStartDate(new Date().toISOString().split("T")[0]); setBankAccountId("");
-      setPrincipalAccountId(""); setInterestAccountId("");
+      setPrincipalAccountId(""); setInterestAccountId(""); setBaseCurrency(null);
       return;
     }
     const orgId = localStorage.getItem("activeOrgId");
     if (!orgId) return;
     let cancelled = false;
     setBankAccounts([]);
-    fetch("/api/v1/bank-accounts", { headers: { "x-organization-id": orgId } })
-      .then((r) => loanJson(r, t, t("banksFailed"), "banks"))
-      .then((data) => { if (!cancelled) setBankAccounts(data.bankAccounts); })
+    setBaseCurrency(null);
+    Promise.all([
+      fetch("/api/v1/organization", { headers: { "x-organization-id": orgId } }).then(async response => {
+        if (!response.ok) throw new Error("Unable to load loan currency");
+        const data = await response.json();
+        const code = data.organization?.defaultCurrency;
+        if (typeof code !== "string" || currencyMetadata(code).code !== code) throw new Error("Invalid loan currency");
+        return code;
+      }),
+      fetch("/api/v1/bank-accounts", { headers: { "x-organization-id": orgId } }).then(r => loanJson(r, t, t("banksFailed"), "banks")),
+    ])
+      .then(([currency, data]) => {
+        if (!cancelled) { setBaseCurrency(currency); setBankAccounts(loanRepaymentBanks(data.bankAccounts, currency)); }
+      })
       .catch((error) => { if (!cancelled) toast.error(loanFailureMessage(error, t, t("banksFailed"))); });
     return () => { cancelled = true; };
   }, [open, t]);
@@ -4429,6 +4456,7 @@ function LoanDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
     if (!name.trim()) { toast.error(t("nameMissing")); return; }
     if (!principalAccountId) { toast.error(t("principalMissing")); return; }
     if (!interestAccountId) { toast.error(t("interestMissing")); return; }
+    if (!baseCurrency) { toast.error(t("currencyFailed")); return; }
 
     setSaving(true);
     const orgId = localStorage.getItem("activeOrgId");
@@ -4532,19 +4560,20 @@ function LoanDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
 
             <div className="space-y-4">
               <SectionLabel>{t("accounts")}</SectionLabel>
+              {baseCurrency && <p className="text-xs text-muted-foreground">{t("accountCurrencyHint", { currency: baseCurrency })}</p>}
               <div className="space-y-2">
                 <Label>{t("principalAccount")}</Label>
-                <AccountPicker value={principalAccountId} onChange={setPrincipalAccountId} typeFilter={["liability"]} placeholder={t("chooseLiability")} />
+                {baseCurrency && <AccountPicker key={`principal-${baseCurrency}`} value={principalAccountId} onChange={setPrincipalAccountId} typeFilter={["liability"]} currencyFilter={baseCurrency} activeOnly allowCreate placeholder={t("chooseLiability")} />}
                 <p className="text-[11px] text-muted-foreground">{t("liabilityHint")}</p>
               </div>
               <div className="space-y-2">
                 <Label>{t("interestAccount")}</Label>
-                <AccountPicker value={interestAccountId} onChange={setInterestAccountId} typeFilter={["expense"]} placeholder={t("chooseExpense")} />
+                {baseCurrency && <AccountPicker key={`interest-${baseCurrency}`} value={interestAccountId} onChange={setInterestAccountId} typeFilter={["expense"]} currencyFilter={baseCurrency} activeOnly allowCreate placeholder={t("chooseExpense")} />}
                 <p className="text-[11px] text-muted-foreground">{t("expenseHint")}</p>
               </div>
             </div>
           </div>
-          <DrawerFooter onClose={onClose} saving={saving} label={t("create")} cancelLabel={t("cancel")} creatingLabel={t("creating")} />
+          <DrawerFooter onClose={onClose} saving={saving} disabled={!baseCurrency || !principalAccountId || !interestAccountId} label={t("create")} cancelLabel={t("cancel")} creatingLabel={t("creating")} />
         </form>
       </SheetContent>
     </Sheet>

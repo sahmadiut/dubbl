@@ -59,14 +59,20 @@ Writes require `manage:invoices`, using custom-role permissions before role fall
   using UTC setters to remove host-timezone dependence. Jan 31, 2024 + one month
   is Mar 2, 2024. No end-of-month clamping policy is introduced.
 
-These tables have no saved currency/FX columns. Services require an organization
-base currency with two decimal places and same-currency scoped accounts/bank.
-This preserves fixed cents while failing unlike-scale currencies, including IRR,
-instead of converting them. USD/GBP identity postings are supported when their
-accounts are consistent. No historical currency is invented or snapshotted here.
+These tables have no saved currency/FX columns. Services require same-currency
+scoped accounts/bank, using the organization base currency. Loan inputs, saved
+amounts, schedules and journal legs retain fixed cents regardless of ISO scale,
+including IRR, JPY and KWD. ISO metadata does not rescale these values or block
+loan operations. No historical currency is invented or snapshotted here.
 The base setting plus linked account and saved journal tags are current checks;
 they cannot prove a historical base setting for an unposted loan. Parent MON-026
 retains historical currency policy and combined financial qualification.
+
+2026-10-24 correction: removed the two-decimal-base restriction that returned 422
+even for an empty loan list and prevented loan creation for IRR organizations.
+Regression fixtures exercise all six REST/MCP operation pairs for IRR/JPY/KWD,
+including payment replay, exact SQL principal conservation and balanced GL legs.
+Existing account-currency, tenant, period and history guards remain enforced.
 
 ## Transactions, historical data and payment coordination
 

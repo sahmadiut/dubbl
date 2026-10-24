@@ -582,3 +582,13 @@ LOC-103 owns directory/shared primitives; later slices depend on that foundation
 - [RTL-004](../tasks/RTL-004.md): Convert shared primitive layout and directional behavior.
 - [RTL-005](../tasks/RTL-005.md): Convert shared shells and navigation to logical direction.
 - RTL-001 retains independent combined bilingual layout/behavior/focus/icon acceptance; no child alone qualifies the parent.
+
+## RTL-008 module adoption children
+
+Actual source audit: shared tables contain click-only sort headers and narrow-toolbar/long-header risks; banking account fields and public/output identifiers require independent domain review.
+
+- [RTL-009](../tasks/RTL-009.md): Harden shared data-table direction layout and sorting accessibility.
+- [RTL-010](../tasks/RTL-010.md): Adopt bidi and resilient layout across dashboard modules.
+- [RTL-011](../tasks/RTL-011.md): Adopt bidi and resilient layout across public admin and outputs.
+
+RTL-008 retains exhaustive combined module/output acceptance; RTL-002 remains its independent integration parent. File ownership is recorded in `registries/RTL_MODULE_OWNERSHIP.json`; frozen provider sources stay unchanged.

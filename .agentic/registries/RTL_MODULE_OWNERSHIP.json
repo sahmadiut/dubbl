@@ -1,0 +1,1673 @@
+{
+  "scope": "Exhaustive app/components/lib TSX census at RTL-008 split. Ownership is audit responsibility, not a pass. Imported non-TSX output builders belong with their consuming surface; new files require classification. Shared inherited foundation does not constitute dedicated provider work.",
+  "files": [
+    {
+      "path": "app/(admin)/admin/email-preview/page.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "app/(admin)/admin/layout.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "app/(admin)/admin/organizations/[id]/page.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "app/(admin)/admin/organizations/page.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "app/(admin)/admin/page.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "app/(admin)/admin/settings/page.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "app/(admin)/admin/users/page.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "app/(auth)/layout.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "app/(auth)/mcp-authorize/page.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "app/(auth)/sign-in/page.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "app/(auth)/sign-up/page.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "app/(dashboard)/accounting/[id]/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/accounting/accounts/[id]/layout.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/accounting/accounts/[id]/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/accounting/accounts/[id]/settings/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/accounting/accounts/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/accounting/accruals/[id]/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/accounting/accruals/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/accounting/asset-categories/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/accounting/banking/[id]/(detail)/imports/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/accounting/banking/[id]/(detail)/layout.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/accounting/banking/[id]/(detail)/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/accounting/banking/[id]/(detail)/settings/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/accounting/banking/[id]/(detail)/transactions/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/accounting/banking/[id]/_components.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/accounting/banking/[id]/reconcile/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/accounting/banking/batches/[id]/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/accounting/banking/batches/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/accounting/banking/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/accounting/banking/scheduled/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/accounting/budgets/[id]/layout.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/accounting/budgets/[id]/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/accounting/budgets/[id]/settings/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/accounting/budgets/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/accounting/fixed-assets/[id]/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/accounting/fixed-assets/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/accounting/layout.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/accounting/loading.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/accounting/loans/[id]/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/accounting/loans/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/accounting/opening-balances/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/accounting/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/accounting/recurring-journals/[id]/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/accounting/recurring-journals/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/contacts/[id]/activity/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/contacts/[id]/bookkeeping/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/contacts/[id]/files/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/contacts/[id]/layout.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/contacts/[id]/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/contacts/[id]/people/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/contacts/[id]/statement/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/contacts/loading.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/contacts/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/crm/analytics/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/crm/deals/[id]/activity/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/crm/deals/[id]/layout.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/crm/deals/[id]/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/crm/deals/[id]/settings/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/crm/loading.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/crm/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/dashboard/loading.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/dashboard/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/documents/loading.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/documents/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/inventory/[id]/history/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/inventory/[id]/layout.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/inventory/[id]/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/inventory/[id]/suppliers/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/inventory/[id]/variants/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/inventory/alerts/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/inventory/assembly/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/inventory/bom/[id]/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/inventory/bom/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/inventory/categories/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/inventory/layout.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/inventory/loading.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/inventory/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/inventory/stock-takes/[id]/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/inventory/stock-takes/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/inventory/transfers/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/inventory/valuation/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/inventory/warehouses/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/invite/[token]/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/layout.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/notifications/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/payroll/analytics/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/payroll/compensation/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/payroll/compensation/reviews/[id]/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/payroll/contractors/[id]/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/payroll/contractors/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/payroll/employees/[id]/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/payroll/employees/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/payroll/forecasting/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/payroll/layout.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/payroll/leave/[id]/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/payroll/leave/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/payroll/loading.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/payroll/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/payroll/reports/[type]/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/payroll/reports/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/payroll/runs/[id]/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/payroll/runs/[id]/payslips/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/payroll/runs/off-cycle-dialog.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/payroll/runs/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/payroll/self-service/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/payroll/settings/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/payroll/tax-forms/[id]/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/payroll/tax-forms/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/payroll/tax-liabilities/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/payroll/time-leave/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/payroll/timesheets/[id]/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/payroll/timesheets/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/projects/[id]/layout.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/projects/[id]/members/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/projects/[id]/milestones/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/projects/[id]/notes/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/projects/[id]/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/projects/[id]/project-context.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/projects/[id]/settings/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/projects/[id]/tasks/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/projects/[id]/time/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/projects/loading.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/projects/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/purchases/[id]/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/purchases/bills/recurring/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/purchases/debit-notes/[id]/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/purchases/debit-notes/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/purchases/expenses/[id]/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/purchases/expenses/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/purchases/expenses/recurring/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/purchases/goods-receipts/[id]/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/purchases/goods-receipts/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/purchases/landed-costs/[id]/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/purchases/landed-costs/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/purchases/layout.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/purchases/loading.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/purchases/orders/[id]/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/purchases/orders/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/purchases/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/purchases/requisitions/[id]/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/purchases/requisitions/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/reports/1099/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/reports/_components.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/reports/aged-payables/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/reports/aged-receivables/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/reports/balance-sheet/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/reports/bank-cash-flow/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/reports/bank-reconciliation-status/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/reports/budget-vs-actual/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/reports/cash-flow/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/reports/cash-flow-forecast/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/reports/comparative-balance-sheet/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/reports/consolidation/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/reports/custom/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/reports/duplicate-detection/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/reports/executive-summary/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/reports/expense-analytics/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/reports/financial-calendar/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/reports/financial-ratios/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/reports/general-ledger/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/reports/income-statement/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/reports/loading.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/reports/pack/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/reports/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/reports/payment-performance/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/reports/pnl-comparison/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/reports/profit-and-loss/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/reports/profitability/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/reports/saved/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/reports/schedules/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/reports/tax-summary/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/reports/tracking/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/reports/trial-balance/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/reports/vat-return/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/reports/vendor-spend/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/sales/[id]/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/sales/credit-notes/[id]/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/sales/credit-notes/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/sales/customer-prepayments/[id]/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/sales/customer-prepayments/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/sales/layout.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/sales/loading.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/sales/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/sales/payments/[id]/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/sales/payments/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/sales/quotes/[id]/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/sales/quotes/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/sales/receipts/[id]/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/sales/receipts/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/sales/recurring/[id]/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/sales/recurring/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/sales/revenue-schedules/[id]/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/sales/revenue-schedules/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/settings/advisors/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/settings/api-keys/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/settings/approval-workflows/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/settings/audit-log/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/settings/backups/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/settings/bank-rules/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/settings/billing/page.tsx",
+      "owner": "DEC-008-frozen"
+    },
+    {
+      "path": "app/(dashboard)/settings/cost-centers/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/settings/document-templates/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/settings/import-export/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/settings/integrations/stripe/page.tsx",
+      "owner": "DEC-008-frozen"
+    },
+    {
+      "path": "app/(dashboard)/settings/layout.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/settings/loading.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/settings/members/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/settings/notifications/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/settings/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/settings/pipelines/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/settings/procurement/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/settings/reminders/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/settings/roles/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/settings/tags/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/settings/trash/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/settings/webhooks/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/tax/bas/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/tax/currencies/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/tax/layout.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/tax/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/tax/periods/[id]/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/tax/periods/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/tax/sales-tax/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/tax/schedule-c/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/tax/vat-return/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/teams/[id]/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/teams/layout.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/teams/members/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(dashboard)/teams/page.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "app/(landing)/layout.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "app/(landing)/page.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "app/(landing)/pricing/page.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "app/(landing)/privacy/page.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "app/(landing)/terms/page.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "app/(onboarding)/layout.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "app/(onboarding)/onboarding/page.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "app/docs/[[...slug]]/page.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "app/docs/layout.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "app/layout.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "app/not-found.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "app/pay/[token]/page.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "app/portal/[token]/invoices/page.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "app/portal/[token]/layout.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "app/portal/[token]/page.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "app/portal/[token]/payments/page.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "app/portal/[token]/quotes/page.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "app/portal/[token]/statements/page.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "app/sign/[token]/page.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "app/sign/[token]/signature-canvas.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/admin/navigation.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/admin/site-settings-form.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/admin/subscription-description.tsx",
+      "owner": "DEC-008-frozen"
+    },
+    {
+      "path": "components/bulk-import-wizard.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/dashboard/account-picker.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/activity-feed.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/approval-notification-text.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/audit-timeline.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/bill-currency-amounts.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/brand-loader.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/budget-progress-bar.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/cash-flow-widget.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/category-picker.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/command-palette.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/contact-picker.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/create-drawer.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/create-org-dialog.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/credit-note-money-details.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/customer-prepayment-money-details.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/data-table-advanced.tsx",
+      "owner": "RTL-009"
+    },
+    {
+      "path": "components/dashboard/data-table.tsx",
+      "owner": "RTL-009"
+    },
+    {
+      "path": "components/dashboard/date-range-filter.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/debit-note-money-details.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/debit-note-overview.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/edit-profile-dialog.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/email-history.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/empty-state.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/entry-form.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/error-state.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/expense-amount-input.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/export-button.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/file-uploader.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/inline-edit.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/inventory-item-picker.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/invoice-amount-input.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/line-items-editor.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/money-input.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/notification-dropdown.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/opening-balance-form.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/opening-balance-money-details.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/org-loader.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/org-switcher.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/page-header.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/page-skeleton.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/payment-amount-preview.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/procurement-money-details.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/quote-money-details.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/receipt-attachments.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/recurring-invoice-money-details.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/requisition-line-editor.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/sales-receipt-money-details.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/section.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/send-document-dialog.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/sidebar.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/sparkline.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/stat-card.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/status-dot.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/tab-layout.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/tag-picker.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/tax-settlement-preview.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/team-fields.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/time-picker.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/topbar.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/tracking-picker.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/user-menu.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/dashboard/warehouse-picker.tsx",
+      "owner": "RTL-010"
+    },
+    {
+      "path": "components/landing/bento-features.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/landing/cta-section.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/landing/dashboard-preview.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/landing/faq.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/landing/feature-sections.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/landing/footer.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/landing/gradient-background.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/landing/hero.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/landing/how-it-works.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/landing/integrations.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/landing/navbar.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/landing/open-source.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/landing/testimonials.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/landing/trust-bar.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/legal/legal-page-layout.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/legal/legal-toc.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/onboarding/onboarding-wizard.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/settings/api-key-fields.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/settings/approval-condition-help.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/settings/audit-activity-text.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/settings/billing-content.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/settings/cost-center-delete-description.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/settings/data-management-content.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/settings/document-template-content.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/settings/locale-preferences.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/settings/notification-preferences-form.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/settings/procurement-settings-form.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/settings/reminder-template-fields.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/settings/role-permission-fields.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/settings/stripe-integration-card.tsx",
+      "owner": "DEC-008-frozen"
+    },
+    {
+      "path": "components/settings/tag-fields.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/shared/animated-counter.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/shared/container.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/shared/grid-background.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/shared/hero-background.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/shared/logo.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/shared/orbital-decoration.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/shared/scroll-reveal.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/shared/section-header.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/shared/theme-provider.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/shared/theme-toggle.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/accordion.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/arrow-left-right-animated.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/avatar.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/badge.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/bidi-text.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/blur-reveal.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/breadcrumb.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/button-3d.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/button.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/calendar.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/card.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/cart.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/chart-line.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/checkbox.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/circle-help.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/collapsible.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/command.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/content-reveal.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/currency-input.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/currency-select.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/date-picker.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/dialog.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/dropdown-menu.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/dual-amount.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/file-text.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/folder-open.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/gauge.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/hand-coins.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/input.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/label.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/landmark-animated.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/layers.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/percent-animated.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/popover.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/rate-note.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/receipt-animated.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/search-input.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/select.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/separator.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/settings.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/sheet.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/sidebar.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/skeleton.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/sonner.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/stagger.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/switch.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/table.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/tabs.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/target.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/textarea.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/tooltip.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "components/ui/users-animated.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "lib/documents/pdf-renderer.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "lib/email/templates/document-sent.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "lib/email/templates/layout.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "lib/email/templates/login-alert.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "lib/email/templates/member-invite.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "lib/email/templates/notification-digest.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "lib/email/templates/org-created.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "lib/email/templates/welcome.tsx",
+      "owner": "RTL-011"
+    },
+    {
+      "path": "lib/hooks/use-confirm.tsx",
+      "owner": "RTL-011"
+    }
+  ]
+}

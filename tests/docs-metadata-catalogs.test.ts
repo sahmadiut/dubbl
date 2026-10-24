@@ -34,7 +34,8 @@ function load<T>(path: string, locale: Locale, extra: Record<string, unknown> = 
   const pass = ({children}: Props) => children;
   const font = () => ({variable: "font-variable", className: "font-class", style: {fontFamily: "Vazirmatn, fallback"}});
   const mocks: Record<string, unknown> = {
-    "next/font/google": {Vazirmatn: font, Geist_Mono: font, Playfair_Display: font},
+    "next/font/local": {default: font},
+    "next/font/google": {Geist_Mono: font, Playfair_Display: font},
     "next-intl/server": {
       getTranslations: async (namespace: "Docs" | "PublicMetadata") => createTranslator({locale, messages: {Docs: catalog.Docs, PublicMetadata: catalog.PublicMetadata}, namespace}),
       getMessages: async () => catalog,

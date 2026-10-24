@@ -139,7 +139,7 @@ export function DataTableAdvanced<T>({
 
   if (loading) {
     return (
-      <div className="space-y-3">
+      <div className="min-w-0 space-y-3">
         <div className="flex items-center gap-2">
           <Skeleton className="h-8 w-64" />
           <Skeleton className="h-8 w-8" />
@@ -149,7 +149,7 @@ export function DataTableAdvanced<T>({
             <TableHeader>
               <TableRow className="h-10 bg-muted/50 hover:bg-muted/50">
                 {activeCols.map((col) => (
-                  <TableHead key={col.key} className={cn("h-10 text-xs font-medium text-muted-foreground", col.className)}>
+                  <TableHead key={col.key} scope="col" className={cn("min-h-10 h-auto py-2 whitespace-normal [overflow-wrap:anywhere] text-xs font-medium text-muted-foreground", col.className)}>
                     {col.header}
                   </TableHead>
                 ))}
@@ -173,24 +173,26 @@ export function DataTableAdvanced<T>({
   }
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
+    <div className="min-w-0 space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
           <Input
             placeholder={searchPlaceholder}
+            aria-label={searchPlaceholder}
+            dir="auto"
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
               setPage(0);
             }}
-            className="h-8 w-64 text-sm"
+            className="h-8 w-64 max-w-full min-w-0 text-sm"
           />
           {selectable && selectedIds.size > 0 && bulkActions}
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" className="h-8">
-              <Settings2 className="mr-1.5 size-3.5" />
+              <Settings2 aria-hidden="true" className="me-1.5 size-3.5 shrink-0" />
               {t("columns")}
             </Button>
           </DropdownMenuTrigger>
@@ -218,7 +220,7 @@ export function DataTableAdvanced<T>({
           <TableHeader>
             <TableRow className="h-10 bg-muted/50 hover:bg-muted/50">
               {selectable && (
-                <TableHead className="w-10 h-10">
+                <TableHead scope="col" className="w-10 h-10">
                   <input
                     aria-label={t("selectAll")}
                     type="checkbox"
@@ -231,23 +233,27 @@ export function DataTableAdvanced<T>({
               {activeCols.map((col) => (
                 <TableHead
                   key={col.key}
+                  scope="col"
+                  aria-sort={col.sortable ? sortKey === col.key ? sortDir === "desc" ? "descending" : "ascending" : "none" : undefined}
                   className={cn(
-                    "h-10 text-xs font-medium text-muted-foreground",
-                    col.sortable && "cursor-pointer select-none",
+                    "min-h-10 h-auto py-2 whitespace-normal [overflow-wrap:anywhere] text-xs font-medium text-muted-foreground",
                     col.className
                   )}
-                  onClick={() => col.sortable && toggleSort(col.key)}
                 >
-                  <span className="flex items-center gap-1">
+                  {col.sortable ? <button
+                    type="button"
+                    onClick={() => toggleSort(col.key)}
+                    className="inline-flex min-w-0 items-center gap-1 whitespace-normal text-start [overflow-wrap:anywhere] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                  >
                     {col.header}
-                    {col.sortable && (
+                    {(
                       sortKey === col.key ? (
-                        sortDir === "asc" ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />
+                        sortDir === "asc" ? <ChevronUp aria-hidden="true" className="size-3 shrink-0" /> : <ChevronDown aria-hidden="true" className="size-3 shrink-0" />
                       ) : (
-                        <ChevronsUpDown className="size-3 text-muted-foreground/40" />
+                        <ChevronsUpDown aria-hidden="true" className="size-3 shrink-0 text-muted-foreground/40" />
                       )
                     )}
-                  </span>
+                  </button> : col.header}
                 </TableHead>
               ))}
             </TableRow>
@@ -304,11 +310,11 @@ export function DataTableAdvanced<T>({
       </div>
 
       {totalPages > 1 && (
-        <div className="flex items-center justify-between px-1">
-          <p className="text-xs text-muted-foreground tabular-nums">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+          <p className="min-w-0 [overflow-wrap:anywhere] text-xs text-muted-foreground tabular-nums">
             {search ? t("resultsFor", { count: sorted.length, search }) : t("results", { count: sorted.length })}
           </p>
-          <div className="flex items-center gap-1.5">
+          <div className="flex shrink-0 items-center gap-1.5">
             <Button
               aria-label={t("previousPage")}
               variant="outline"
@@ -317,9 +323,9 @@ export function DataTableAdvanced<T>({
               disabled={page === 0}
               onClick={() => setPage(page - 1)}
             >
-              <ChevronLeft className="size-3.5" />
+              <ChevronLeft aria-hidden="true" className="size-3.5 rtl:rotate-180" />
             </Button>
-            <span className="px-2 text-xs text-muted-foreground tabular-nums">
+            <span dir="ltr" className="[unicode-bidi:isolate] px-2 text-xs text-muted-foreground tabular-nums">
               {page + 1} / {totalPages}
             </span>
             <Button
@@ -330,7 +336,7 @@ export function DataTableAdvanced<T>({
               disabled={page >= totalPages - 1}
               onClick={() => setPage(page + 1)}
             >
-              <ChevronRight className="size-3.5" />
+              <ChevronRight aria-hidden="true" className="size-3.5 rtl:rotate-180" />
             </Button>
           </div>
         </div>

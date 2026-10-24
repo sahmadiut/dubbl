@@ -447,3 +447,13 @@ The RTL UI/UX and accessibility sections map to RTL-001's bounded children:
 RTL-001 retains independent combined bilingual layout, focus and icon acceptance;
 RTL-002 retains forms/tables/typography/mixed identifiers. DEC-005 and DEC-008
 remain applicable, including screenshot-free review and frozen provider surfaces.
+
+## RTL-008 module adoption children
+
+Actual source audit: shared tables contain click-only sort headers and narrow-toolbar/long-header risks; banking account fields and public/output identifiers require independent domain review.
+
+- [RTL-009](../tasks/RTL-009.md): Harden shared data-table direction layout and sorting accessibility.
+- [RTL-010](../tasks/RTL-010.md): Adopt bidi and resilient layout across dashboard modules.
+- [RTL-011](../tasks/RTL-011.md): Adopt bidi and resilient layout across public admin and outputs.
+
+RTL-008 retains exhaustive combined module/output acceptance; RTL-002 remains its independent integration parent. File ownership is recorded in `registries/RTL_MODULE_OWNERSHIP.json`; frozen provider sources stay unchanged.

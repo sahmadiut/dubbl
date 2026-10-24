@@ -55,18 +55,19 @@ export function DataTable<T>({
       const isActive = sortBy === col.sortKey;
       return (
         <button
+          type="button"
           onClick={() => onSort(col.sortKey!)}
-          className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
+          className="inline-flex min-w-0 items-center gap-1 whitespace-normal text-start [overflow-wrap:anywhere] hover:text-foreground transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
           {col.header}
           {isActive ? (
             sortOrder === "asc" ? (
-              <ArrowUp className="size-3" />
+              <ArrowUp aria-hidden="true" className="size-3 shrink-0" />
             ) : (
-              <ArrowDown className="size-3" />
+              <ArrowDown aria-hidden="true" className="size-3 shrink-0" />
             )
           ) : (
-            <ArrowUpDown className="size-3 opacity-40" />
+            <ArrowUpDown aria-hidden="true" className="size-3 shrink-0 opacity-40" />
           )}
         </button>
       );
@@ -81,7 +82,7 @@ export function DataTable<T>({
           <TableHeader>
             <TableRow className="bg-muted/50 hover:bg-muted/50">
               {columns.map((col) => (
-                <TableHead key={col.key} className={cn("h-10 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground", col.className)}>
+                <TableHead key={col.key} scope="col" className={cn("min-h-10 h-auto py-2 whitespace-normal [overflow-wrap:anywhere] text-[11px] font-semibold uppercase tracking-wide text-muted-foreground", col.className)}>
                   {col.header}
                 </TableHead>
               ))}
@@ -109,7 +110,7 @@ export function DataTable<T>({
         <TableHeader>
           <TableRow className="bg-muted/50 hover:bg-muted/50">
             {columns.map((col) => (
-              <TableHead key={col.key} className={cn("h-10 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground", col.className)}>
+              <TableHead key={col.key} scope="col" aria-sort={col.sortKey && onSort ? sortBy === col.sortKey ? sortOrder === "asc" ? "ascending" : "descending" : "none" : undefined} className={cn("min-h-10 h-auto py-2 whitespace-normal [overflow-wrap:anywhere] text-[11px] font-semibold uppercase tracking-wide text-muted-foreground", col.className)}>
                 {renderHeader(col)}
               </TableHead>
             ))}

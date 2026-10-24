@@ -35,7 +35,8 @@ function root(locale: Locale): Root {
   const pass = ({children}: Props) => children;
   const font = () => ({variable: "font-variable", className: "font-class", style: {fontFamily: "Vazirmatn, fallback"}});
   const mocks: Record<string, unknown> = {
-    "next/font/google": {Vazirmatn: font, Geist_Mono: font, Playfair_Display: font},
+    "next/font/local": {default: font},
+    "next/font/google": {Geist_Mono: font, Playfair_Display: font},
     "next-intl/server": {
       getMessages: async () => catalog,
       getNow: async () => new Date("2026-10-24T00:00:00Z"),

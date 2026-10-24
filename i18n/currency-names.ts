@@ -143,7 +143,7 @@ export const PERSIAN_CURRENCY_NAMES: Readonly<Record<string, string>> = Object.f
   "TZS": "شیلینگ تانزانیا",
   "UAH": "هریونیای اوکراین",
   "UGX": "شیلینگ اوگاندا",
-  "USD": "دلار آمریکا",
+  "USD": "دلار",
   "UYU": "پزوی اوروگوئه",
   "UZS": "سوم ازبکستان",
   "VES": "بولیوار ونزوئلا",

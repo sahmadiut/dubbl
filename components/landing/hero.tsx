@@ -1,12 +1,13 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 import { motion } from "motion/react";
 import { ArrowRight, Github } from "lucide-react";
 import Link from "next/link";
 import { Container } from "@/components/shared/container";
 import { cn } from "@/lib/utils";
+import { useLandingActivity } from "./use-landing-activity";
 
 /* ------------------------------------------------------------------ */
 /*  Floating data cards — scattered around the hero                    */
@@ -29,22 +30,10 @@ function FloatingCard({
       animate={{ opacity: 1, y: 0, rotate }}
       transition={{ duration: 0.9, delay, ease: [0.16, 1, 0.3, 1] }}
       className={cn(
-        "absolute overflow-hidden rounded-xl border border-border bg-card/90 shadow-lg shadow-black/5 backdrop-blur-sm dark:bg-card/80 dark:shadow-black/20",
+        "absolute overflow-hidden rounded-xl border border-border bg-card shadow-lg shadow-black/5 dark:shadow-black/20",
         className
       )}
     >
-      {/* Shimmer sweep */}
-      <motion.div
-        className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-emerald-500/[0.12] to-transparent dark:via-emerald-500/[0.06]"
-        animate={{ translateX: ["calc(-100%)", "calc(200%)"] }}
-        transition={{
-          duration: 3,
-          delay: delay + 2,
-          repeat: Infinity,
-          repeatDelay: 5 + delay * 2,
-          ease: "easeInOut",
-        }}
-      />
       <div className="relative">{children}</div>
     </motion.div>
   );
@@ -52,13 +41,13 @@ function FloatingCard({
 
 function DataVisuals() {
   const t = useTranslations("LandingShell");
-  // Line chart path data — animates drawing continuously
+  // Static charts avoid SVG painting and layout work on every frame.
   const chartPath = "M 0 40 C 10 38, 20 35, 30 30 S 50 20, 60 22 S 80 28, 90 18 S 110 8, 120 12 S 140 20, 150 10 S 170 5, 180 8";
   const chartPath2 = "M 0 44 C 15 42, 25 40, 35 36 S 55 30, 65 32 S 85 35, 95 28 S 115 22, 125 26 S 145 30, 155 20 S 175 18, 180 22";
 
   return (
     <>
-      {/* Top-left: Revenue line chart — continuously drawing */}
+      {/* Top-left: Revenue line chart */}
       <FloatingCard
         className="left-[2%] top-[12%] hidden w-52 px-3.5 py-3 lg:block xl:left-[6%]"
         delay={0.7}
@@ -66,36 +55,29 @@ function DataVisuals() {
       >
         <div className="mb-1 flex items-center justify-between">
           <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{t("revenue")}</p>
-          <motion.span
+          <span
             className="font-mono text-[11px] font-bold tabular-nums text-emerald-600 dark:text-emerald-400"
-            animate={{ opacity: [1, 0.5, 1] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
           >
             $48,250
-          </motion.span>
+          </span>
         </div>
         <svg viewBox="0 0 180 50" className="h-10 w-full">
           {/* Area fill */}
-          <motion.path
+          <path
             d={chartPath + " L 180 50 L 0 50 Z"}
             fill="url(#areaGrad)"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: [0.15, 0.3, 0.15] }}
-            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            opacity="0.25"
           />
           {/* Main line */}
-          <motion.path
+          <path
             d={chartPath}
             stroke="#10b981"
             strokeWidth="2"
             fill="none"
             strokeLinecap="round"
-            initial={{ pathLength: 0 }}
-            animate={{ pathLength: [0, 1, 1, 0] }}
-            transition={{ duration: 6, repeat: Infinity, times: [0, 0.4, 0.7, 1], ease: "easeInOut" }}
           />
           {/* Secondary line */}
-          <motion.path
+          <path
             d={chartPath2}
             stroke="#10b981"
             strokeWidth="1"
@@ -103,20 +85,11 @@ function DataVisuals() {
             fill="none"
             strokeLinecap="round"
             strokeDasharray="3 3"
-            initial={{ pathLength: 0 }}
-            animate={{ pathLength: [0, 1, 1, 0] }}
-            transition={{ duration: 6, delay: 0.5, repeat: Infinity, times: [0, 0.4, 0.7, 1], ease: "easeInOut" }}
           />
-          {/* Moving dot on the line */}
-          <motion.circle
-            r="2.5"
+          {/* Chart marker */}
+          <circle
+            cx="120" cy="12" r="2.5"
             fill="#10b981"
-            animate={{
-              cx: [0, 30, 60, 90, 120, 150, 180],
-              cy: [40, 30, 22, 18, 12, 10, 8],
-              opacity: [0, 1, 1, 1, 1, 1, 0],
-            }}
-            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
           />
           <defs>
             <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
@@ -126,16 +99,14 @@ function DataVisuals() {
           </defs>
         </svg>
         <div className="mt-1 flex items-center gap-1">
-          <motion.div
+          <div
             className="size-1.5 rounded-full bg-emerald-500"
-            animate={{ scale: [1, 1.4, 1] }}
-            transition={{ duration: 2, repeat: Infinity }}
           />
           <span className="text-[9px] text-emerald-600 dark:text-emerald-400">{t("monthlyChange", { change: "+12.5%" })}</span>
         </div>
       </FloatingCard>
 
-      {/* Top-right: Animated bar chart — bars cycle heights */}
+      {/* Top-right: Monthly bar chart */}
       <FloatingCard
         className="right-[2%] top-[8%] hidden w-48 px-3.5 py-3 lg:block xl:right-[6%]"
         delay={0.85}
@@ -146,18 +117,10 @@ function DataVisuals() {
         </p>
         <div className="flex items-end gap-[3px]" style={{ height: 48 }}>
           {[35, 52, 44, 70, 58, 82, 65, 90, 74, 85, 95].map((h, i) => (
-            <motion.div
+            <div
               key={i}
               className="flex-1 rounded-t bg-gradient-to-t from-emerald-600 to-emerald-400 dark:from-emerald-500 dark:to-emerald-300"
-              animate={{
-                height: [`${h}%`, `${Math.max(20, h + Math.sin(i * 1.5) * 20)}%`, `${h}%`],
-              }}
-              transition={{
-                duration: 3 + i * 0.2,
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: i * 0.15,
-              }}
+              style={{ height: `${h}%` }}
             />
           ))}
         </div>
@@ -167,7 +130,7 @@ function DataVisuals() {
         </div>
       </FloatingCard>
 
-      {/* Left-middle: Live transactions feed — rows appear and fade */}
+      {/* Left-middle: Transaction feed */}
       <FloatingCard
         className="left-0 top-[42%] hidden w-56 px-3.5 py-3 lg:block xl:left-[3%]"
         delay={1.0}
@@ -177,25 +140,21 @@ function DataVisuals() {
           <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
             {t("liveFeed")}
           </p>
-          <motion.div
+          <div
             className="flex items-center gap-1"
-            animate={{ opacity: [1, 0.4, 1] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
           >
             <div className="size-1.5 rounded-full bg-emerald-500" />
             <span className="text-[8px] font-medium text-emerald-600 dark:text-emerald-400">{t("live")}</span>
-          </motion.div>
+          </div>
         </div>
         {[
-          { desc: t("clientPayment"), amount: "+$12,500", positive: true, delay: 0 },
-          { desc: t("officeSupplies"), amount: "-$240", positive: false, delay: 2 },
-          { desc: t("consulting"), amount: "+$5,000", positive: true, delay: 4 },
+          { desc: t("clientPayment"), amount: "+$12,500", positive: true },
+          { desc: t("officeSupplies"), amount: "-$240", positive: false },
+          { desc: t("consulting"), amount: "+$5,000", positive: true },
         ].map((tx) => (
-          <motion.div
+          <div
             key={tx.desc}
             className="flex items-center justify-between border-b border-border/30 py-1.5 last:border-0"
-            animate={{ opacity: [0.4, 1, 1, 0.4] }}
-            transition={{ duration: 6, delay: tx.delay, repeat: Infinity, ease: "easeInOut" }}
           >
             <span className="text-[11px] text-foreground">{tx.desc}</span>
             <span className={cn(
@@ -204,7 +163,7 @@ function DataVisuals() {
             )}>
               {tx.amount}
             </span>
-          </motion.div>
+          </div>
         ))}
       </FloatingCard>
 
@@ -221,36 +180,30 @@ function DataVisuals() {
           <svg viewBox="0 0 36 36" className="size-14">
             {/* Background ring */}
             <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" strokeWidth="3" className="text-border" />
-            {/* Animated segments */}
-            <motion.circle
+            {/* Allocation segments */}
+            <circle
               cx="18" cy="18" r="15" fill="none"
               stroke="#10b981" strokeWidth="3"
               strokeDasharray="55 45"
               strokeDashoffset="0"
               strokeLinecap="round"
               transform="rotate(-90 18 18)"
-              animate={{ strokeDasharray: ["55 45", "60 40", "55 45"] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
             />
-            <motion.circle
+            <circle
               cx="18" cy="18" r="15" fill="none"
               stroke="#0d9488" strokeWidth="3"
               strokeDasharray="25 75"
               strokeDashoffset="-55"
               strokeLinecap="round"
               transform="rotate(-90 18 18)"
-              animate={{ strokeDasharray: ["25 75", "22 78", "25 75"] }}
-              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
             />
-            <motion.circle
+            <circle
               cx="18" cy="18" r="15" fill="none"
               stroke="#6ee7b7" strokeWidth="3"
               strokeDasharray="15 85"
               strokeDashoffset="-80"
               strokeLinecap="round"
               transform="rotate(-90 18 18)"
-              animate={{ strokeDasharray: ["15 85", "18 82", "15 85"] }}
-              transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
             />
           </svg>
           <div className="space-y-1.5">
@@ -282,29 +235,26 @@ function DataVisuals() {
           { label: t("accounts"), value: "23", spark: "M0 8 L3 6 L6 7 L9 4 L12 5 L15 3 L18 4 L21 2 L24 3" },
           { label: t("entries"), value: "142", spark: "M0 6 L3 8 L6 5 L9 7 L12 3 L15 5 L18 2 L21 4 L24 1" },
           { label: t("contacts"), value: "38", spark: "M0 5 L3 4 L6 6 L9 3 L12 5 L15 2 L18 3 L21 1 L24 2" },
-        ].map((s, i) => (
+        ].map((s) => (
           <div key={s.label} className="flex items-center justify-between border-b border-border/30 py-1.5 last:border-0">
             <div>
               <p className="text-[9px] text-muted-foreground">{s.label}</p>
               <p className="font-mono text-[12px] font-bold tabular-nums text-foreground">{s.value}</p>
             </div>
             <svg viewBox="0 0 24 10" className="h-3 w-8">
-              <motion.path
+              <path
                 d={s.spark}
                 stroke="#10b981"
                 strokeWidth="1.5"
                 fill="none"
                 strokeLinecap="round"
-                initial={{ pathLength: 0 }}
-                animate={{ pathLength: [0, 1] }}
-                transition={{ duration: 1.5, delay: 2 + i * 0.3, repeat: Infinity, repeatDelay: 3, ease: "easeOut" }}
               />
             </svg>
           </div>
         ))}
       </FloatingCard>
 
-      {/* Bottom-right: Invoice status with animated progress */}
+      {/* Bottom-right: Invoice status */}
       <FloatingCard
         className="bottom-[10%] right-[4%] hidden w-44 px-3.5 py-3 lg:block xl:right-[8%]"
         delay={1.35}
@@ -317,50 +267,39 @@ function DataVisuals() {
           { id: "INV-012", status: t("paid"), pct: 100, color: "bg-emerald-500", text: "text-emerald-600 dark:text-emerald-400" },
           { id: "INV-011", status: t("sent"), pct: 60, color: "bg-blue-500", text: "text-blue-600 dark:text-blue-400" },
           { id: "INV-010", status: t("overdue"), pct: 0, color: "bg-red-500", text: "text-red-500 dark:text-red-400" },
-        ].map((inv, i) => (
+        ].map((inv) => (
           <div key={inv.id} className="border-b border-border/30 py-1.5 last:border-0">
             <div className="flex items-center justify-between">
               <span className="font-mono text-[10px] text-muted-foreground">{inv.id}</span>
               <span className={cn("text-[10px] font-semibold", inv.text)}>{inv.status}</span>
             </div>
             <div className="mt-1 h-1 overflow-hidden rounded-full bg-border/50">
-              <motion.div
+              <div
                 className={cn("h-full rounded-full", inv.color)}
-                initial={{ width: "0%" }}
-                animate={{ width: `${inv.pct}%` }}
-                transition={{ duration: 1.5, delay: 2.5 + i * 0.3, repeat: Infinity, repeatDelay: 4, ease: "easeOut" }}
+                style={{ width: `${inv.pct}%` }}
               />
             </div>
           </div>
         ))}
       </FloatingCard>
 
-      {/* Scattered pulsing numbers */}
+      {/* Scattered demo numbers */}
       {[
-        { val: "$48,250", x: "left-[18%]", y: "top-[28%]", delay: 1.5, dur: 4 },
-        { val: "23", x: "right-[20%]", y: "top-[30%]", delay: 1.6, dur: 5 },
-        { val: "+18.1%", x: "left-[22%]", y: "bottom-[22%]", delay: 1.7, dur: 3.5 },
-        { val: "JE-047", x: "right-[18%]", y: "bottom-[18%]", delay: 1.8, dur: 4.5 },
+        { val: "$48,250", x: "left-[18%]", y: "top-[28%]" },
+        { val: "23", x: "right-[20%]", y: "top-[30%]" },
+        { val: "+18.1%", x: "left-[22%]", y: "bottom-[22%]" },
+        { val: "JE-047", x: "right-[18%]", y: "bottom-[18%]" },
       ].map((item) => (
-        <motion.span
+        <span
           key={item.val}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: [0, 0.12, 0.06, 0.12, 0] }}
-          transition={{
-            duration: item.dur,
-            delay: item.delay,
-            repeat: Infinity,
-            repeatDelay: 2,
-            ease: "easeInOut",
-          }}
           className={cn(
-            "absolute hidden font-mono text-xs tabular-nums font-semibold text-foreground lg:block",
+            "absolute hidden opacity-10 font-mono text-xs tabular-nums font-semibold text-foreground lg:block",
             item.x,
             item.y
           )}
         >
           {item.val}
-        </motion.span>
+        </span>
       ))}
     </>
   );
@@ -381,25 +320,11 @@ function HeroBackground() {
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_40%_30%_at_30%_30%,rgba(20,184,166,0.1),transparent)] dark:bg-[radial-gradient(ellipse_40%_30%_at_30%_30%,rgba(20,184,166,0.06),transparent)]" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_40%_30%_at_70%_60%,rgba(16,185,129,0.08),transparent)] dark:bg-[radial-gradient(ellipse_40%_30%_at_70%_60%,rgba(16,185,129,0.05),transparent)]" />
 
-      {/* Pulsing center glow */}
-      <motion.div
-        className="absolute left-1/2 top-1/2 h-[600px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-500/[0.07] blur-[120px] dark:bg-emerald-500/[0.04]"
-        animate={{ scale: [1, 1.15, 1], opacity: [0.5, 0.8, 0.5] }}
-        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-      />
-
-      {/* Orbital rings — centered, slow continuous rotation */}
-      <motion.svg
+      {/* Static orbital rings */}
+      <svg
         viewBox="0 0 1200 1200"
         fill="none"
-        className="absolute left-1/2 top-1/2 h-[1000px] w-[1000px] -translate-x-1/2 -translate-y-1/2 lg:h-[1400px] lg:w-[1400px]"
-        initial={{ opacity: 0, scale: 0.8, rotate: -15 }}
-        animate={{ opacity: 0.6, scale: 1, rotate: 360 }}
-        transition={{
-          opacity: { duration: 2.5, ease: "easeOut" },
-          scale: { duration: 2.5, ease: "easeOut" },
-          rotate: { duration: 120, ease: "linear", repeat: Infinity },
-        }}
+        className="absolute left-1/2 top-1/2 h-[1000px] w-[1000px] opacity-60 -translate-x-1/2 -translate-y-1/2 lg:h-[1400px] lg:w-[1400px]"
       >
         <ellipse cx="600" cy="600" rx="580" ry="580" stroke="url(#hr1)" strokeWidth="1" />
         <ellipse cx="600" cy="600" rx="460" ry="460" stroke="url(#hr2)" strokeWidth="0.8" />
@@ -434,31 +359,19 @@ function HeroBackground() {
             <stop offset="1" stopColor="#10b981" stopOpacity="0.08" />
           </linearGradient>
         </defs>
-      </motion.svg>
+      </svg>
 
       {/* Dashed blueprint rects */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 1.4, delay: 0.5 }}
+      <div
         className="absolute -left-12 top-[12%] size-52 rounded-2xl border border-dashed border-emerald-500/20"
       />
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 1.4, delay: 0.7 }}
+      <div
         className="absolute -right-8 top-[22%] h-40 w-56 rounded-2xl border border-dashed border-emerald-500/15"
       />
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 1.4, delay: 0.9 }}
+      <div
         className="absolute -left-4 bottom-[15%] h-36 w-44 rounded-2xl border border-dashed border-emerald-500/15"
       />
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 1.4, delay: 1.0 }}
+      <div
         className="absolute -right-10 bottom-[20%] size-48 rounded-2xl border border-dashed border-emerald-500/[0.12]"
       />
 
@@ -479,6 +392,7 @@ function HeroBackground() {
 
 function LiveTicker() {
   const t = useTranslations("LandingShell");
+  const { ref, isActive } = useLandingActivity();
   const tickerEvents = [
     t("tickerInvoice", { number: "INV-048", amount: "$4,200" }),
     t("tickerAccount"),
@@ -492,6 +406,7 @@ function LiveTicker() {
 
   return (
     <motion.div
+      ref={ref}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 1, delay: 0.3 }}
@@ -501,7 +416,7 @@ function LiveTicker() {
         WebkitMaskImage: "linear-gradient(to right, transparent, black 15%, black 85%, transparent)",
       }}
     >
-      <div className="flex w-max animate-marquee items-center gap-8">
+      <div className="flex w-max animate-marquee items-center gap-8" style={{ animationPlayState: isActive ? "running" : "paused" }}>
         {[...tickerEvents, ...tickerEvents].map((event, i) => (
           <div key={i} className="flex shrink-0 items-center gap-2 text-[12px] text-muted-foreground/60">
             <span className="size-1 rounded-full bg-emerald-500/50" />
@@ -519,6 +434,7 @@ function LiveTicker() {
 
 export function Hero() {
   const t = useTranslations("LandingShell");
+  const locale = useLocale();
   return (
     <section className="relative flex min-h-screen items-center overflow-hidden py-20">
       <HeroBackground />
@@ -564,7 +480,12 @@ export function Hero() {
 
             {/* Heading */}
             <motion.h1
-              className="font-[family-name:var(--font-display)] text-5xl font-semibold leading-[1.08] text-foreground text-balance sm:text-6xl md:text-7xl lg:text-8xl"
+              className={cn(
+                "text-5xl font-semibold leading-[1.08] text-foreground text-balance sm:text-6xl md:text-7xl lg:text-8xl",
+                locale === "fa-IR"
+                  ? "font-[family-name:var(--font-site)]"
+                  : "font-[family-name:var(--font-display)]"
+              )}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
@@ -609,8 +530,6 @@ export function Hero() {
                   transition={{
                     duration: 2.5,
                     delay: 2,
-                    repeat: Infinity,
-                    repeatDelay: 4,
                     ease: "easeInOut",
                   }}
                 />
@@ -636,14 +555,14 @@ export function Hero() {
                 <motion.div
                   className="pointer-events-none absolute top-0 left-0 h-px w-8 bg-gradient-to-r from-transparent via-emerald-400 to-transparent"
                   animate={{ left: ["0%", "100%", "0%"] }}
-                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                  transition={{ duration: 4, ease: "easeInOut" }}
                 />
                 <Github className="relative size-4" />
                 <span className="relative">&gt; git clone</span>
                 <motion.span
                   className="relative inline-block h-4 w-px bg-emerald-400"
                   animate={{ opacity: [1, 1, 0, 0] }}
-                  transition={{ duration: 1, repeat: Infinity, times: [0, 0.5, 0.5, 1] }}
+                  transition={{ duration: 1, times: [0, 0.5, 0.5, 1] }}
                 />
               </a>
             </div>

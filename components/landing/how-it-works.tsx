@@ -16,7 +16,7 @@ import {
   DollarSign,
   Percent,
 } from "lucide-react";
-import { GrainGradient } from "@paper-design/shaders-react";
+import { GradientBackground } from "./gradient-background";
 import { Container } from "@/components/shared/container";
 import { SectionHeader } from "@/components/shared/section-header";
 import { ScrollReveal } from "@/components/shared/scroll-reveal";
@@ -57,7 +57,7 @@ function ConnectVisual() {
       <motion.div
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
-        viewport={{ once: false }}
+        viewport={{ once: true }}
         transition={{ delay: 0.2, duration: 0.4 }}
         className="mb-3 flex items-center justify-between"
       >
@@ -74,7 +74,7 @@ function ConnectVisual() {
             key={item.name}
             initial={{ opacity: 0, x: -14 }}
             whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: false }}
+            viewport={{ once: true }}
             transition={{ delay: 0.3 + i * 0.12, duration: 0.4 }}
             className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5"
           >
@@ -133,7 +133,7 @@ function ConnectVisual() {
       <motion.div
         initial={{ opacity: 0, y: 6 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: false }}
+        viewport={{ once: true }}
         transition={{ delay: 0.7, duration: 0.35 }}
         className="mt-3 flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-border py-2 text-[10px] font-medium text-muted-foreground"
       >
@@ -155,7 +155,7 @@ function CategorizeVisual() {
       <motion.div
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
-        viewport={{ once: false }}
+        viewport={{ once: true }}
         transition={{ delay: 0.2, duration: 0.4 }}
         className="mb-3"
       >
@@ -168,7 +168,7 @@ function CategorizeVisual() {
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: false }}
+        viewport={{ once: true }}
         transition={{ delay: 0.3, duration: 0.4 }}
         className="mb-3 flex items-center justify-between rounded-lg border border-border bg-card px-3 py-2.5"
       >
@@ -185,7 +185,7 @@ function CategorizeVisual() {
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: false }}
+        viewport={{ once: true }}
         transition={{ delay: 0.45, duration: 0.4 }}
         className="mb-2.5"
       >
@@ -207,7 +207,7 @@ function CategorizeVisual() {
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: false }}
+        viewport={{ once: true }}
         transition={{ delay: 0.6, duration: 0.4 }}
         className="mb-3 grid grid-cols-2 gap-2"
       >
@@ -237,7 +237,7 @@ function CategorizeVisual() {
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         whileInView={{ opacity: 1, scale: 1 }}
-        viewport={{ once: false }}
+        viewport={{ once: true }}
         transition={{ delay: 0.75, duration: 0.35 }}
         className="flex items-center justify-center gap-1.5 rounded-lg bg-emerald-50 py-1.5 dark:bg-emerald-950/40"
       >
@@ -295,7 +295,7 @@ function InsightsVisual() {
       <motion.div
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
-        viewport={{ once: false }}
+        viewport={{ once: true }}
         transition={{ delay: 0.2, duration: 0.4 }}
         className="mb-3 flex items-center justify-between"
       >
@@ -314,7 +314,7 @@ function InsightsVisual() {
             key={kpi.label}
             initial={{ opacity: 0, y: 10 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: false }}
+            viewport={{ once: true }}
             transition={{ delay: 0.3 + i * 0.1, duration: 0.4 }}
             className="rounded-lg border border-border bg-card px-2.5 py-2"
           >
@@ -352,7 +352,7 @@ function InsightsVisual() {
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: false }}
+        viewport={{ once: true }}
         transition={{ delay: 0.65, duration: 0.4 }}
         className="rounded-lg border border-border bg-card p-3"
       >
@@ -376,7 +376,7 @@ function InsightsVisual() {
                 <motion.div
                   initial={{ height: 0 }}
                   whileInView={{ height: `${(bar.revenue / 84) * 100}%` }}
-                  viewport={{ once: false }}
+                  viewport={{ once: true }}
                   transition={{
                     delay: 0.8 + i * 0.08,
                     duration: 0.5,
@@ -388,7 +388,7 @@ function InsightsVisual() {
                 <motion.div
                   initial={{ height: 0 }}
                   whileInView={{ height: `${(bar.expense / 84) * 100}%` }}
-                  viewport={{ once: false }}
+                  viewport={{ once: true }}
                   transition={{
                     delay: 0.85 + i * 0.08,
                     duration: 0.5,
@@ -497,19 +497,7 @@ export function HowItWorks() {
               >
                 {/* Visual mockup area */}
                 <div className="relative overflow-hidden rounded-t-2xl p-4 pb-0">
-                  <GrainGradient
-                    className="pointer-events-none !absolute !inset-0 !rounded-none"
-                    width="100%"
-                    height="100%"
-                    colors={["#d1fae5", "#a7f3d0", "#6ee7b7", "#34d399", "#10b981", "#34d399", "#a7f3d0"]}
-                    colorBack="#34d399"
-                    softness={1}
-                    intensity={0.8}
-                    noise={0.9}
-                    shape="wave"
-                    scale={3.5}
-                    speed={0.2}
-                  />
+                  <GradientBackground />
                   <div className="relative">{item.visual}</div>
                 </div>
 

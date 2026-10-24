@@ -13,11 +13,12 @@ import {
   Building2,
   Globe,
 } from "lucide-react";
-import { GrainGradient } from "@paper-design/shaders-react";
+import { GradientBackground } from "./gradient-background";
 import { Container } from "@/components/shared/container";
 import { ScrollReveal } from "@/components/shared/scroll-reveal";
 import { AnimatedCounter } from "@/components/shared/animated-counter";
 import { cn } from "@/lib/utils";
+import { useLandingActivity } from "./use-landing-activity";
 
 type LandingTranslator = ReturnType<typeof useTranslations>;
 
@@ -95,7 +96,7 @@ function MissingRecordsMockup() {
       <motion.div
         className="pointer-events-none absolute inset-x-0 h-px bg-gradient-to-r from-transparent via-amber-500/60 to-transparent"
         animate={{ top: ["0%", "100%", "0%"] }}
-        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+        transition={{ duration: 4, ease: "easeInOut" }}
       />
       <div className="grid grid-cols-4 border-b border-border bg-muted/60 text-[10px] font-semibold text-muted-foreground">
         <div className="border-r border-border px-3 py-1.5">{t("invoice")}</div>
@@ -164,19 +165,7 @@ function ProblemSection() {
         {/* Header band with grain gradient */}
         <ScrollReveal>
           <div className="relative overflow-hidden rounded-2xl border border-red-400/30 p-8 dark:border-red-500/20 md:p-12">
-            <GrainGradient
-              className="pointer-events-none !absolute !inset-0 !rounded-none"
-              width="100%"
-              height="100%"
-              colors={["#fecaca", "#fca5a5", "#fb7185", "#f87171", "#ef4444", "#f87171", "#fca5a5"]}
-              colorBack="#f87171"
-              softness={1}
-              intensity={0.8}
-              noise={0.9}
-              shape="wave"
-              scale={3.5}
-              speed={0.2}
-            />
+            <GradientBackground tone="red" />
             <div className="relative">
               <div className="mb-5">
                 <span className="inline-flex items-center gap-2 rounded-full border border-red-300/60 bg-red-900/30 px-4 py-1.5 text-sm font-medium text-white backdrop-blur-sm">
@@ -204,19 +193,7 @@ function ProblemSection() {
               className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-red-400/30 dark:border-red-500/20"
             >
               {/* Full card grain gradient background */}
-              <GrainGradient
-                className="pointer-events-none !absolute !inset-0 !rounded-none"
-                width="100%"
-                height="100%"
-                colors={["#fecaca", "#fca5a5", "#fb7185", "#f87171", "#ef4444", "#f87171", "#fca5a5"]}
-                colorBack="#f87171"
-                softness={1}
-                intensity={0.8}
-                noise={0.9}
-                shape="wave"
-                scale={3.5}
-                speed={0.2}
-              />
+              <GradientBackground tone="red" />
               {/* Broken spreadsheet grid filling the entire card */}
               <div className="relative flex-1">
                 {/* Grid of cells — fills naturally */}
@@ -256,7 +233,7 @@ function ProblemSection() {
                         {isError ? (
                           <motion.span
                             animate={{ opacity: [1, 0.4, 1] }}
-                            transition={{ duration: 2 + (i % 3), delay: (i % 5) * 0.4, repeat: Infinity, ease: "easeInOut" }}
+                            transition={{ duration: 2 + (i % 3), delay: (i % 5) * 0.4, ease: "easeInOut" }}
                           >
                             {cell}
                           </motion.span>
@@ -336,7 +313,7 @@ function ProblemSection() {
                 <motion.div
                   className="pointer-events-none absolute inset-x-0 top-0 z-10 h-px bg-gradient-to-r from-transparent via-red-500 to-transparent"
                   animate={{ opacity: [0, 0.6, 0] }}
-                  transition={{ duration: 3, delay: 1, repeat: Infinity, ease: "easeInOut" }}
+                  transition={{ duration: 3, delay: 1, ease: "easeInOut" }}
                 />
                 <div className="flex flex-1 flex-col p-5">
                   <div className="mb-3 flex items-center gap-3">
@@ -365,7 +342,7 @@ function ProblemSection() {
                 <motion.div
                   className="pointer-events-none absolute inset-x-0 top-0 z-10 h-px bg-gradient-to-r from-transparent via-red-500 to-transparent"
                   animate={{ opacity: [0, 0.6, 0] }}
-                  transition={{ duration: 3, delay: 2, repeat: Infinity, ease: "easeInOut" }}
+                  transition={{ duration: 3, delay: 2, ease: "easeInOut" }}
                 />
                 <div className="flex flex-1 flex-col p-5">
                   <div className="mb-3 flex items-center gap-3">
@@ -415,7 +392,7 @@ const marqueeSizeClasses = {
   sm: "px-2 py-1 text-[9px]",
 };
 
-function MarqueeView() {
+function MarqueeView({ active = false }: { active?: boolean }) {
   const t = useTranslations("LandingFeatures");
   return (
     <div className="flex h-full flex-col justify-evenly overflow-hidden">
@@ -429,6 +406,7 @@ function MarqueeView() {
               className="flex shrink-0 items-center gap-2"
               style={{
                 animation: `marquee-${reverse ? "reverse" : "forward"} ${duration}s linear infinite`,
+                animationPlayState: active ? "running" : "paused",
               }}
             >
               {[...row.pills, ...row.pills, ...row.pills, ...row.pills].map((pill, j) => {
@@ -511,7 +489,7 @@ function NetworkView() {
             animate={{ pathLength: 1, strokeDashoffset: [0, -20] }}
             transition={{
               pathLength: { duration: 1.5, delay: i * 0.08 },
-              strokeDashoffset: { duration: 3, repeat: Infinity, ease: "linear" },
+              strokeDashoffset: { duration: 3, ease: "linear" },
             }}
           />
         ))}
@@ -530,7 +508,7 @@ function NetworkView() {
           transition={{
             opacity: { duration: 0.4, delay: i * 0.06 },
             scale: { duration: 0.4, delay: i * 0.06 },
-            y: { duration: 3 + (i % 3), delay: i * 0.2, repeat: Infinity, ease: "easeInOut" },
+            y: { duration: 3 + (i % 3), delay: i * 0.2, ease: "easeInOut" },
           }}
         >
           {node.label}
@@ -575,7 +553,7 @@ function ReceiptView() {
           transition={{
             opacity: { duration: 0.4, delay: i * 0.08 },
             scale: { duration: 0.4, delay: i * 0.08 },
-            y: { duration: 3.5 + (i % 3), delay: i * 0.3, repeat: Infinity, ease: "easeInOut" },
+            y: { duration: 3.5 + (i % 3), delay: i * 0.3, ease: "easeInOut" },
           }}
         >
           <div className="mb-1.5 flex items-center gap-1.5">
@@ -608,6 +586,7 @@ function SolutionShowcase() {
   const t = useTranslations("LandingFeatures");
   const [activeView, setActiveView] = useState(0);
   const [progressKey, setProgressKey] = useState(0);
+  const { ref, isActive } = useLandingActivity();
 
   const advance = useCallback(() => {
     setActiveView((v) => (v + 1) % 3);
@@ -620,15 +599,16 @@ function SolutionShowcase() {
   }, []);
 
   useEffect(() => {
+    if (!isActive) return;
     const timer = setTimeout(advance, CYCLE_DURATION);
     return () => clearTimeout(timer);
-  }, [activeView, progressKey, advance]);
+  }, [activeView, progressKey, advance, isActive]);
 
   const views = [MarqueeView, NetworkView, ReceiptView];
   const ActiveView = views[activeView];
 
   return (
-    <div className="relative min-h-[400px] md:min-h-[500px]">
+    <div ref={ref} className="relative min-h-[400px] md:min-h-[500px]">
       {/* View content — fills entire space, radial fade in center */}
       <div className="absolute inset-0 overflow-hidden" style={{
         maskImage: "radial-gradient(ellipse 120px 100px at center, transparent 40%, black 100%)",
@@ -643,7 +623,7 @@ function SolutionShowcase() {
             exit={{ opacity: 0, scale: 1.02 }}
             transition={{ duration: 0.3 }}
           >
-            <ActiveView />
+            <ActiveView active={isActive} />
           </motion.div>
         </AnimatePresence>
       </div>
@@ -659,7 +639,7 @@ function SolutionShowcase() {
               "0 10px 40px -10px rgba(16, 185, 129, 0.15)",
             ],
           }}
-          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+          transition={{ duration: 4, ease: "easeInOut" }}
         >
           <svg
             viewBox="0 0 40 32"
@@ -697,7 +677,7 @@ function SolutionShowcase() {
                 "h-full rounded-full bg-white/70",
                 idx < activeView && "w-full",
                 idx > activeView && "w-0",
-                idx === activeView && "animate-[progress-fill_6s_linear_forwards]"
+                idx === activeView && (isActive ? "animate-[progress-fill_6s_linear_forwards]" : "w-full")
               )}
             />
           </button>
@@ -744,19 +724,7 @@ function SolutionSection() {
         {/* Header band with green grain gradient */}
         <ScrollReveal>
           <div className="relative overflow-hidden rounded-2xl border border-emerald-400/30 p-8 dark:border-emerald-500/20 md:p-12">
-            <GrainGradient
-              className="pointer-events-none !absolute !inset-0 !rounded-none"
-              width="100%"
-              height="100%"
-              colors={["#d1fae5", "#a7f3d0", "#6ee7b7", "#34d399", "#10b981", "#34d399", "#a7f3d0"]}
-              colorBack="#34d399"
-              softness={1}
-              intensity={0.8}
-              noise={0.9}
-              shape="wave"
-              scale={3.5}
-              speed={0.2}
-            />
+            <GradientBackground />
             <div className="relative">
               <div className="mb-5">
                 <span className="inline-flex items-center gap-2 rounded-full border border-emerald-300/60 bg-emerald-900/30 px-4 py-1.5 text-sm font-medium text-white backdrop-blur-sm">
@@ -806,22 +774,10 @@ function SolutionSection() {
               className="relative overflow-hidden rounded-2xl border border-emerald-400/30 dark:border-emerald-500/20"
               initial={{ y: 30, opacity: 0 }}
               whileInView={{ y: 0, opacity: 1 }}
-              viewport={{ once: false, margin: "-80px" }}
+              viewport={{ once: true, margin: "-80px" }}
               transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
             >
-              <GrainGradient
-                className="pointer-events-none !absolute !inset-0 !rounded-none"
-                width="100%"
-                height="100%"
-                colors={["#d1fae5", "#a7f3d0", "#6ee7b7", "#34d399", "#10b981", "#34d399", "#a7f3d0"]}
-                colorBack="#34d399"
-                softness={1}
-                intensity={0.8}
-                noise={0.9}
-                shape="wave"
-                scale={3.5}
-                speed={0.2}
-              />
+              <GradientBackground />
               <div className="relative">
                 <SolutionShowcase />
               </div>

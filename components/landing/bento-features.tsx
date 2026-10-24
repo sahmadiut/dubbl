@@ -18,7 +18,7 @@ import {
   Trash2,
   Link2,
 } from "lucide-react";
-import { GrainGradient } from "@paper-design/shaders-react";
+import { GradientBackground } from "./gradient-background";
 import { Container } from "@/components/shared/container";
 import { SectionHeader } from "@/components/shared/section-header";
 import { ScrollReveal } from "@/components/shared/scroll-reveal";
@@ -80,7 +80,7 @@ function LedgerMockup() {
             key={i}
             initial={{ opacity: 0, y: 6 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: false }}
+            viewport={{ once: true }}
             transition={{ delay: 0.2 + i * 0.08, duration: 0.3, ease: "easeOut" }}
             className={cn(
               "grid grid-cols-[60px_1fr_80px_80px] px-3 py-2 text-[11px]",
@@ -101,7 +101,7 @@ function LedgerMockup() {
         <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
-          viewport={{ once: false }}
+          viewport={{ once: true }}
           transition={{ delay: 0.6, duration: 0.3 }}
           className="grid grid-cols-[60px_1fr_80px_80px] border-t border-border bg-muted/50 px-3 py-2 text-[11px]"
         >
@@ -115,7 +115,7 @@ function LedgerMockup() {
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         whileInView={{ opacity: 1, scale: 1 }}
-        viewport={{ once: false }}
+        viewport={{ once: true }}
         transition={{ delay: 0.75, duration: 0.3 }}
         className="mt-2.5 flex items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 dark:border-emerald-900 dark:bg-emerald-950/40"
       >
@@ -183,7 +183,7 @@ function ReportsMockup() {
             key={kpi.label}
             initial={{ opacity: 0, y: 8 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: false }}
+            viewport={{ once: true }}
             transition={{ delay: 0.15 + i * 0.08, duration: 0.3 }}
             className="rounded-md border border-border bg-muted/40 px-2.5 py-2"
           >
@@ -205,7 +205,7 @@ function ReportsMockup() {
       <motion.div
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
-        viewport={{ once: false }}
+        viewport={{ once: true }}
         transition={{ delay: 0.4, duration: 0.5 }}
         className="rounded-md border border-border bg-muted/20 p-2"
       >
@@ -232,7 +232,7 @@ function ReportsMockup() {
             d={toAreaPath(revenuePoints)}
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
-            viewport={{ once: false }}
+            viewport={{ once: true }}
             transition={{ delay: 0.6, duration: 0.5 }}
             className="fill-emerald-500/8 dark:fill-emerald-400/10"
           />
@@ -247,7 +247,7 @@ function ReportsMockup() {
             strokeLinejoin="round"
             initial={{ pathLength: 0 }}
             whileInView={{ pathLength: 1 }}
-            viewport={{ once: false }}
+            viewport={{ once: true }}
             transition={{ delay: 0.5, duration: 0.8, ease: "easeOut" }}
           />
 
@@ -262,7 +262,7 @@ function ReportsMockup() {
             strokeDasharray="4 3"
             initial={{ pathLength: 0 }}
             whileInView={{ pathLength: 1 }}
-            viewport={{ once: false }}
+            viewport={{ once: true }}
             transition={{ delay: 0.6, duration: 0.8, ease: "easeOut" }}
           />
 
@@ -337,7 +337,7 @@ function ReconciliationMockup() {
                 key={item.id}
                 initial={{ opacity: 0, x: -12 }}
                 whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: false }}
+                viewport={{ once: true }}
                 transition={{ delay: 0.2 + i * 0.1, duration: 0.3, ease: "easeOut" }}
                 className="rounded-md border border-border bg-card px-2 py-1.5"
               >
@@ -368,7 +368,7 @@ function ReconciliationMockup() {
               key={i}
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
-              viewport={{ once: false }}
+              viewport={{ once: true }}
               transition={{ delay: 0.5 + i * 0.1, duration: 0.3 }}
               className="flex h-[52px] items-center"
             >
@@ -394,7 +394,7 @@ function ReconciliationMockup() {
                 key={item.id}
                 initial={{ opacity: 0, x: 12 }}
                 whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: false }}
+                viewport={{ once: true }}
                 transition={{ delay: 0.3 + i * 0.1, duration: 0.3, ease: "easeOut" }}
                 className={cn(
                   "rounded-md border px-2 py-1.5",
@@ -435,7 +435,7 @@ function ReconciliationMockup() {
       <motion.div
         initial={{ opacity: 0, y: 4 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: false }}
+        viewport={{ once: true }}
         transition={{ delay: 0.8, duration: 0.3 }}
         className="mt-2.5 flex items-center justify-between rounded-md border border-border bg-muted/40 px-2.5 py-1.5"
       >
@@ -529,7 +529,7 @@ function AuditTrailMockup() {
             key={i}
             initial={{ opacity: 0, y: 10 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: false }}
+            viewport={{ once: true }}
             transition={{ delay: 0.15 + i * 0.1, duration: 0.3, ease: "easeOut" }}
             className="relative flex items-start gap-3 py-2"
           >
@@ -562,7 +562,7 @@ function AuditTrailMockup() {
       <motion.div
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
-        viewport={{ once: false }}
+        viewport={{ once: true }}
         transition={{ delay: 0.7, duration: 0.3 }}
         className="mt-1 text-center"
       >
@@ -666,19 +666,7 @@ export function BentoFeatures() {
               >
                 {/* Mockup visual area */}
                 <div className="relative overflow-hidden border-b border-border p-4 md:p-5">
-                  <GrainGradient
-                    className="pointer-events-none !absolute !inset-0 !rounded-none"
-                    width="100%"
-                    height="100%"
-                    colors={["#d1fae5", "#a7f3d0", "#6ee7b7", "#34d399", "#10b981", "#34d399", "#a7f3d0"]}
-                    colorBack="#34d399"
-                    softness={1}
-                    intensity={0.8}
-                    noise={0.9}
-                    shape="wave"
-                    scale={3.5}
-                    speed={0.2}
-                  />
+                  <GradientBackground />
                   <div className="relative">{feature.mockup}</div>
                 </div>
 

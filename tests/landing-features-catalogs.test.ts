@@ -34,7 +34,7 @@ function elements(node: React.ReactNode): Element[] {
 
 // Capture the production component's actual props/callbacks with deterministic
 // hook state; rendered-copy assertions above use static imports and real intl.
-function load(file: string, internals: string[] = [], state: number[] = []) {
+function load(file: string, internals: string[] = [], state: number[] = [], isActive = true) {
   const path = `components/landing/${file}.tsx`, require = createRequire(resolve(path));
   const mod = {exports: {} as Record<string, () => React.ReactNode>};
   const effects: Array<() => (() => void)> = [], updates = new Map<number, unknown>();
@@ -42,6 +42,7 @@ function load(file: string, internals: string[] = [], state: number[] = []) {
   const code = ts.transpileModule(readFileSync(path, "utf8") + internals.map(name => `\nexport {${name}};`).join(""), {compilerOptions: {module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022}}).outputText;
   new Function("require", "module", "exports", code)((id: string) => {
     if (id === "next-intl") return intl;
+    if (id === "./use-landing-activity") return {useLandingActivity: () => ({ref: {current: null}, isActive})};
     if (id === "react") return {...React,
       useState: (initial: unknown) => {
         const i = index++, value = state[i] ?? initial;
@@ -132,6 +133,21 @@ test("showcase retains all three views, locale-independent highlighting, timer a
       } finally { mock.timers.reset(); }
     }
   }
+});
+
+test("inactive showcase pauses automatic rotation while retaining manual navigation", () => {
+  const {components: c, effects, updates} = load("feature-sections", ["SolutionShowcase"], [1, 7], false);
+  const nodes = elements(capture(c.SolutionShowcase, "en-US"));
+  mock.timers.enable({apis: ["setTimeout"]});
+  try {
+    effects[0]();
+    mock.timers.tick(18000);
+    assert.equal(updates.size, 0);
+    const buttons = nodes.filter(node => node.type === "button");
+    (buttons[2].props.onClick as () => void)();
+    assert.equal(updates.get(0), 2);
+    assert.equal(updates.get(1), 8);
+  } finally { mock.timers.reset(); }
 });
 
 test("FAQ preserves the single collapsible accordion contract and every localized answer", () => {

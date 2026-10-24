@@ -592,3 +592,18 @@ Actual source audit: shared tables contain click-only sort headers and narrow-to
 - [RTL-011](../tasks/RTL-011.md): Adopt bidi and resilient layout across public admin and outputs.
 
 RTL-008 retains exhaustive combined module/output acceptance; RTL-002 remains its independent integration parent. File ownership is recorded in `registries/RTL_MODULE_OWNERSHIP.json`; frozen provider sources stay unchanged.
+
+## RTL-010 dashboard domain adoption
+
+- [RTL-012](../tasks/RTL-012.md): Harden shared dashboard summaries and tab navigation; RTL-010 child.
+- [RTL-013](../tasks/RTL-013.md): Adopt bidi across banking modules; RTL-010 child.
+- [RTL-014](../tasks/RTL-014.md): Adopt bidi across accounting and tax modules; RTL-010 child.
+- [RTL-015](../tasks/RTL-015.md): Adopt bidi across sales and purchase modules; RTL-010 child.
+- [RTL-016](../tasks/RTL-016.md): Adopt bidi across inventory modules; RTL-010 child.
+- [RTL-017](../tasks/RTL-017.md): Adopt bidi across payroll modules; RTL-010 child.
+- [RTL-018](../tasks/RTL-018.md): Adopt bidi across relationship and project modules; RTL-010 child.
+- [RTL-019](../tasks/RTL-019.md): Adopt bidi across dashboard settings modules; RTL-010 child.
+- [RTL-020](../tasks/RTL-020.md): Adopt bidi across dashboard and report charts; RTL-010 child.
+- [RTL-021](../tasks/RTL-021.md): Adopt bidi across shared editors and workspace controls; RTL-010 child.
+
+Source audit identified independent summary/navigation, banking input, domain/output, chart and shared-editor contracts. All 276 dashboard files have exactly one child owner; other owners and frozen sources remain unchanged. RTL-010 retains independent combined acceptance.

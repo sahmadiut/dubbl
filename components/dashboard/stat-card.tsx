@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
+import { BidiText } from "@/components/ui/bidi-text";
 
 interface StatCardProps {
   title: string;
@@ -26,7 +27,7 @@ function Sparkline({ data }: { data: number[] }) {
     .join(" ");
 
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="h-6 w-20">
+    <svg aria-hidden="true" viewBox={`0 0 ${w} ${h}`} className="h-6 w-20 shrink-0">
       <polyline
         points={points}
         fill="none"
@@ -47,17 +48,17 @@ export function StatCard({
   sparklineData,
 }: StatCardProps) {
   return (
-    <div className="rounded-lg border bg-card p-3 sm:p-5">
-      <div className="flex items-center justify-between">
-        <p className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-          {title}
+    <div className="min-w-0 rounded-lg border bg-card p-3 sm:p-5">
+      <div className="flex items-center justify-between gap-2">
+        <p className="min-w-0 text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
+          <BidiText>{title}</BidiText>
         </p>
-        <Icon className="size-4 text-muted-foreground/50" />
+        <Icon className="size-4 shrink-0 text-muted-foreground/50" />
       </div>
-      <div className="mt-2 flex items-end justify-between gap-2">
-        <div className="space-y-1">
+      <div className="mt-2 flex flex-wrap items-end justify-between gap-2">
+        <div className="min-w-0 max-w-full space-y-1">
           <p className="text-lg sm:text-[24px] font-bold tracking-tight font-mono tabular-nums">
-            {value}
+            <BidiText>{value}</BidiText>
           </p>
           {change && (
             <p
@@ -68,7 +69,7 @@ export function StatCard({
                 changeType === "neutral" && "text-muted-foreground"
               )}
             >
-              {change}
+              <BidiText>{change}</BidiText>
             </p>
           )}
         </div>

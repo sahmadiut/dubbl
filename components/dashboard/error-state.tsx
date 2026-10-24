@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { BidiText } from "@/components/ui/bidi-text";
 
 interface ErrorStateProps {
   message?: string;
@@ -18,14 +19,14 @@ export function ErrorState({ message, onRetry }: ErrorStateProps) {
         <AlertTriangle className="size-6 text-red-500" />
       </div>
       <h3 className="mt-4 text-sm font-medium">{t("somethingWentWrong")}</h3>
-      <p className="mt-1.5 text-xs text-muted-foreground max-w-[300px]">
-        {message || t("failedToLoadDataPleaseCheckYourConnectionAndTryAgain")}
+      <p role="alert" className="mt-1.5 min-w-0 max-w-full sm:max-w-[300px] text-xs text-muted-foreground">
+        <BidiText>{message || t("failedToLoadDataPleaseCheckYourConnectionAndTryAgain")}</BidiText>
       </p>
       {onRetry && (
         <Button
           variant="outline"
           size="sm"
-          className="mt-4 h-7 text-xs gap-1.5"
+          className="mt-4 h-auto min-h-7 max-w-full whitespace-normal text-xs gap-1.5"
           onClick={onRetry}
         >
           <RefreshCw className="size-3" />

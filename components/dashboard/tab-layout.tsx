@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BlurReveal } from "@/components/ui/blur-reveal";
 import { cn } from "@/lib/utils";
+import { BidiText } from "@/components/ui/bidi-text";
 
 interface Tab {
   href: string;
@@ -56,18 +57,19 @@ export function TabLayout({
                 key={tab.href}
                 href={tab.href}
                 title={tab.title}
+                aria-current={pathname === tab.href ? "page" : undefined}
                 className={cn(
-                  "flex items-center gap-1.5 border-b-2 px-2.5 pb-2.5 text-[13px] font-medium transition-colors whitespace-nowrap",
+                  "flex shrink-0 items-center gap-1.5 border-b-2 px-2.5 pb-2.5 text-[13px] font-medium transition-colors whitespace-nowrap",
                   isActive
                     ? "border-foreground text-foreground"
                     : "border-transparent text-muted-foreground hover:text-foreground"
                 )}
               >
-                {Icon && <Icon className="size-3.5" />}
-                {tab.label}
+                {Icon && <Icon className="size-3.5 shrink-0" />}
+                <BidiText>{tab.label}</BidiText>
                 {tab.badge != null && (
-                  <span className="ml-1 flex size-4.5 items-center justify-center rounded-full bg-blue-100 text-[10px] font-semibold text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
-                    {tab.badge}
+                  <span className="ms-1 flex min-h-4.5 min-w-4.5 shrink-0 items-center justify-center rounded-full bg-blue-100 px-1 text-[10px] font-semibold text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
+                    <BidiText>{tab.badge}</BidiText>
                   </span>
                 )}
               </Link>

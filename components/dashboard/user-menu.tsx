@@ -1,5 +1,7 @@
 "use client";
 
+import { Direction } from "radix-ui";
+
 import { useTranslations } from "next-intl";
 
 import { useState } from "react";
@@ -24,6 +26,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { AccountDialog } from "./edit-profile-dialog";
 
 export function UserMenu() {
+  const direction = Direction.useDirection();
   const t = useTranslations("Shell");
   const { data: session } = useSession();
   const user = session?.user;
@@ -54,7 +57,7 @@ export function UserMenu() {
                 {initials}
               </AvatarFallback>
             </Avatar>
-            <div className="grid flex-1 text-left leading-tight">
+            <div className="grid flex-1 text-start leading-tight">
               <span className="truncate text-sm font-medium text-sidebar-accent-foreground">
                 {user?.name || t("user")}
               </span>
@@ -62,13 +65,13 @@ export function UserMenu() {
                 {user?.email}
               </span>
             </div>
-            <ChevronsUpDown className="ml-auto size-4 text-sidebar-foreground/30" />
+            <ChevronsUpDown className="ms-auto size-4 text-sidebar-foreground/30" />
           </SidebarMenuButton>
         </DropdownMenuTrigger>
         <DropdownMenuContent
           className="w-64 rounded-xl p-0"
           align="end"
-          side={isMobile ? "top" : "right"}
+          side={isMobile ? "top" : direction === "rtl" ? "left" : "right"}
           sideOffset={8}
         >
           <div className="p-3">

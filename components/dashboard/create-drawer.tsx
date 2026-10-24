@@ -1831,7 +1831,7 @@ function ExpenseDrawer({ open, onClose }: { open: boolean; onClose: () => void }
               <div className="flex items-center justify-between">
                 <SectionLabel>{t("expenseItems")}</SectionLabel>
                 <Button type="button" variant="outline" size="sm" onClick={() => setItems((prev) => [...prev, { ...emptyExpenseItem(), mileageRate: settings?.rate || "" }])}>
-                  <Plus className="mr-2 size-3.5" />{t("addItem")}</Button>
+                  <Plus className="me-2 size-3.5" />{t("addItem")}</Button>
               </div>
               <div className="space-y-4">
                 {items.map((item, index) => (
@@ -2384,7 +2384,7 @@ function BudgetDrawer({ open, onClose }: { open: boolean; onClose: () => void })
               <div className="flex items-center justify-between">
                 <SectionLabel>{t("lines")}</SectionLabel>
                 <Button type="button" variant="outline" size="sm" onClick={() => setBudgetLines((prev) => [...prev, emptyBudgetLine(periodType, startDate, endDate)])}>
-                  <Plus className="mr-2 size-3.5" />{t("addLine")}
+                  <Plus className="me-2 size-3.5" />{t("addLine")}
                 </Button>
               </div>
 
@@ -2453,7 +2453,7 @@ function BudgetDrawer({ open, onClose }: { open: boolean; onClose: () => void })
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                         {line.periods.map((p, pi) => (
                           <div key={pi} className="space-y-1">
-                            <label className="text-[10px] text-muted-foreground pl-0.5">{budgetPeriodLabel(t, p.label)}</label>
+                            <label className="text-[10px] text-muted-foreground ps-0.5">{budgetPeriodLabel(t, p.label)}</label>
                             <CurrencyInput
                               size="sm"
                               aria-label={t("amountForPeriod", { period: budgetPeriodLabel(t, p.label) })}
@@ -3616,7 +3616,7 @@ function TransferDrawer({ open, onClose }: { open: boolean; onClose: () => void 
                 ))}
               </div>
               <Button type="button" variant="outline" size="sm" className="text-xs" onClick={addLine}>
-                <Plus className="size-3 mr-1.5" />{t("addItem")}</Button>
+                <Plus className="size-3 me-1.5" />{t("addItem")}</Button>
             </div>
 
             <div className="h-px bg-border" />
@@ -5137,7 +5137,7 @@ function RecurringJournalDrawer({ open, onClose }: { open: boolean; onClose: () 
                 ))}
                 <div className="grid min-w-[600px] grid-cols-[1fr_1fr_120px_120px_40px] gap-2 border-t bg-muted/30 px-3 py-2">
                   <Button type="button" variant="ghost" size="sm" onClick={addRow} className="w-fit text-xs">
-                    <Plus className="mr-1 size-3" />{t("addLine")}</Button>
+                    <Plus className="me-1 size-3" />{t("addLine")}</Button>
                   <span />
                   <span className="text-right text-sm font-mono font-semibold tabular-nums">{journalDecimal(totalDebit)}</span>
                   <span className="text-right text-sm font-mono font-semibold tabular-nums">{journalDecimal(totalCredit)}</span>

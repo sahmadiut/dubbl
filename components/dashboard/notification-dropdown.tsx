@@ -213,7 +213,7 @@ export function NotificationDropdown() {
                 animate={{ scale: 1 }}
                 exit={{ scale: 0 }}
                 transition={{ type: "spring", stiffness: 500, damping: 25 }}
-                className="absolute -top-0.5 -right-0.5 flex size-3.5 items-center justify-center rounded-full bg-red-500 text-[8px] font-medium text-white"
+                className="absolute -top-0.5 -end-0.5 flex size-3.5 items-center justify-center rounded-full bg-red-500 text-[8px] font-medium text-white"
               >
                 {badgeCount > 9 ? t("badgeOverflow") : badgeCount}
               </motion.span>
@@ -241,7 +241,7 @@ export function NotificationDropdown() {
               onClick={markAllRead}
               className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
             >
-              <CheckCheck className="size-3" />
+              <CheckCheck className="size-3 [&:dir(rtl)]:rotate-180" />
               {t("markAllRead")}
             </button>
           )}
@@ -275,7 +275,7 @@ export function NotificationDropdown() {
                       setOpen(false);
                       router.push(approvalEntityHref(req));
                     }}
-                    className="flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/50 group border-b border-border/50 last:border-0 bg-purple-500/[0.03]"
+                    className="flex w-full items-start gap-3 px-4 py-3 text-start transition-colors hover:bg-muted/50 group border-b border-border/50 last:border-0 bg-purple-500/[0.03]"
                   >
                     <div className="flex size-8 shrink-0 items-center justify-center rounded-lg text-purple-500 bg-purple-500/10">
                       <ShieldCheck className="size-3.5" />
@@ -293,7 +293,7 @@ export function NotificationDropdown() {
                         <ApprovalNotificationSender name={requester} />
                       </p>
                     </div>
-                    <ArrowRight className="size-3 shrink-0 self-center text-muted-foreground/40 group-hover:text-foreground transition-colors" />
+                    <ArrowRight className="size-3 [&:dir(rtl)]:rotate-180 shrink-0 self-center text-muted-foreground/40 group-hover:text-foreground transition-colors" />
                   </button>
                 );
               })}
@@ -327,7 +327,7 @@ export function NotificationDropdown() {
                     if (isUnread) markAsRead(n.id, e);
                   }}
                   className={cn(
-                    "flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/50 group border-b border-border/50 last:border-0",
+                    "flex w-full items-start gap-3 px-4 py-3 text-start transition-colors hover:bg-muted/50 group border-b border-border/50 last:border-0",
                     isUnread && "bg-primary/[0.03]"
                   )}
                 >
@@ -377,7 +377,7 @@ export function NotificationDropdown() {
               className="flex w-full items-center justify-center gap-1.5 py-2.5 text-[12px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
             >
               {t("viewAllNotifications")}
-              <ArrowRight className="size-3" />
+              <ArrowRight className="size-3 [&:dir(rtl)]:rotate-180" />
             </button>
           </div>
         )}

@@ -174,15 +174,15 @@ function ProjectsCollapsible({ pathname }: { pathname: string }) {
           )}
         >
           <LayersIcon ref={iconRef} size={16} className="shrink-0" />
-          <span className="flex-1 text-left">{t("projects")}</span>
+          <span className="flex-1 text-start">{t("projects")}</span>
           <ChevronRight className={cn(
             "size-3.5 shrink-0 transition-transform duration-200",
-            open && "rotate-90"
+            open ? "rotate-90" : "[&:dir(rtl)]:rotate-180"
           )} />
         </CollapsibleTrigger>
       </SidebarMenuItem>
       <CollapsibleContent>
-        <SidebarMenuSub className="mr-0">
+        <SidebarMenuSub className="me-0">
           {projects.map((project) => {
             const now = new Date();
             now.setHours(0, 0, 0, 0);

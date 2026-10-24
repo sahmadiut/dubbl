@@ -127,7 +127,7 @@ export default function AuthLayout({
 
             <div className="grid lg:grid-cols-[1.2fr_1fr]">
               {/* ---- Left: grain gradient showcase ---- */}
-              <div className="relative hidden overflow-hidden border-r border-white/10 lg:block">
+              <div className="relative hidden overflow-hidden border-e border-white/10 lg:block">
                 {/* Green grain gradient background */}
                 <GrainGradient
                   className="pointer-events-none !absolute !inset-0 !rounded-none"
@@ -275,7 +275,7 @@ export default function AuthLayout({
               className="inline-flex items-center gap-0.5 transition-colors hover:text-foreground"
             >
               {t("home")}
-              <ArrowUpRight className="size-3" />
+              <ArrowUpRight className="size-3 [&:dir(rtl)]:-rotate-90" />
             </Link>
             <span className="text-border">&middot;</span>
             <span>{t("trusted")}</span>

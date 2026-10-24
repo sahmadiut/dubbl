@@ -87,7 +87,7 @@ export function Navbar() {
             >
               <Link href="/sign-up" className="flex items-center gap-1.5">
                 {t("getStarted")}
-                <ArrowRight className="size-3.5" />
+                <ArrowRight className="size-3.5 [&:dir(rtl)]:rotate-180" />
               </Link>
             </Button>
           </div>
@@ -106,7 +106,7 @@ export function Navbar() {
                   <Menu className="size-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-72 p-0">
+              <SheetContent side="end" className="w-72 p-0">
                 <div className="flex flex-col h-full">
                   {/* Sheet header */}
                   <div className="flex items-center gap-2.5 px-6 pt-6 pb-4">
@@ -158,7 +158,7 @@ export function Navbar() {
                         className="flex items-center justify-center gap-1.5"
                       >
                         {t("getStarted")}
-                        <ArrowRight className="size-3.5" />
+                        <ArrowRight className="size-3.5 [&:dir(rtl)]:rotate-180" />
                       </Link>
                     </Button>
                   </div>

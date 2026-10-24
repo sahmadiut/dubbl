@@ -1,0 +1,135 @@
+{
+  "task": "RTL-005",
+  "hash_normalization": "UTF-8 text LF",
+  "sources": [
+    {
+      "source": "components/ui/sidebar.tsx",
+      "sha256": "f314be0c7514c079a026cc15f026508994cd12d65e1b6eebaeebe8731e663710",
+      "adopted": true
+    },
+    {
+      "source": "components/dashboard/sidebar.tsx",
+      "sha256": "5aea150705ee4b4e033e5624b60ebc927927d76c7be4935f459f8ed2913fa20c",
+      "adopted": true
+    },
+    {
+      "source": "app/(dashboard)/layout.tsx",
+      "sha256": "2617bf68bcdb7303950174a3f91b54225d7d26d5f531a1f7767de634b5dd6059",
+      "adopted": false
+    },
+    {
+      "source": "components/dashboard/topbar.tsx",
+      "sha256": "cebe72730cf66828546d95de32a52426cd892b9efb3a26e1f81226d599495f9f",
+      "adopted": true
+    },
+    {
+      "source": "components/dashboard/org-switcher.tsx",
+      "sha256": "9fa1b1edc441354e3488d97c934639f3380dac97a20c208618b974fc137f46e6",
+      "adopted": true
+    },
+    {
+      "source": "components/dashboard/user-menu.tsx",
+      "sha256": "bb19625a61785518c7411a12a76587e4fd942a172811890e53500b2c2f488436",
+      "adopted": true
+    },
+    {
+      "source": "components/dashboard/notification-dropdown.tsx",
+      "sha256": "070602bd9e19b24962c0ff27eb2c4ab9660a0cd80d7948f42900a78c6fa90bae",
+      "adopted": true
+    },
+    {
+      "source": "components/dashboard/command-palette.tsx",
+      "sha256": "c73fbc2911265af2df9069a037716f2332b84ac4002029ab670d555cb4df4f70",
+      "adopted": false
+    },
+    {
+      "source": "components/dashboard/page-header.tsx",
+      "sha256": "8d0ae9603c4f010baa637d7fe437c5ad17d23f604bc45023e60a2b811bf845f1",
+      "adopted": false
+    },
+    {
+      "source": "components/dashboard/create-drawer.tsx",
+      "sha256": "3fc8514b3151c92bf0977e45621dcb7a9f6ebf10d4c6ae04fe5af83737aa8ef9",
+      "adopted": true
+    },
+    {
+      "source": "components/admin/navigation.tsx",
+      "sha256": "63bb74c37585241983273a1690f5815813456024f2f5dedc152e4bd58ff3a9f3",
+      "adopted": true
+    },
+    {
+      "source": "app/(admin)/admin/layout.tsx",
+      "sha256": "42a0c06070450acb121dd8d7f84f1f926e8175457e40c42bd1b9f8c4f0ddea78",
+      "adopted": false
+    },
+    {
+      "source": "components/landing/navbar.tsx",
+      "sha256": "4e8d92e9a556e6ec0ef7b02968f3c745756f328ae55b053b6c036d3158e88fec",
+      "adopted": true
+    },
+    {
+      "source": "components/landing/footer.tsx",
+      "sha256": "f5ef84b56927848eb84e34dd707df0b61326c581247abe989fbfceef6e161f72",
+      "adopted": false
+    },
+    {
+      "source": "app/(landing)/layout.tsx",
+      "sha256": "becf28479386293f60a1893628f57983c7db860ea51c9901e00f8b1d17268a39",
+      "adopted": false
+    },
+    {
+      "source": "app/(auth)/layout.tsx",
+      "sha256": "1b6569a851fc7ccca93ce0172187b6d49318ce2147f2d7e92ed423694bd7144c",
+      "adopted": true
+    },
+    {
+      "source": "app/not-found.tsx",
+      "sha256": "0cd1a978c5fe6fcf8e5552c607d7e3df2e9410c932d09be378d9d4bb0bd6dacf",
+      "adopted": true
+    },
+    {
+      "source": "app/(onboarding)/layout.tsx",
+      "sha256": "d38e94320a37a796e93ddaf00177bde7fddb2b2578b469f93d8fa3a19f86cf62",
+      "adopted": false
+    },
+    {
+      "source": "app/portal/[token]/layout.tsx",
+      "sha256": "fddfd9e08e3a84cbaedd1ea5795d0ccb4277cff8bb299818a2c17c2c12144ac8",
+      "adopted": false
+    },
+    {
+      "source": "app/docs/layout.tsx",
+      "sha256": "9b4ee51380680a517062da298636905786540ba480b177af260184e8d3760120",
+      "adopted": false
+    }
+  ],
+  "sheet_callers": {
+    "inventory": "RTL-004-sheet-callers.json",
+    "files": 52,
+    "instances": 107,
+    "shell_overrides_reviewed": [
+      "components/ui/sidebar.tsx",
+      "components/landing/navbar.tsx"
+    ],
+    "remaining_explicit_module_sides_owner": "RTL-002"
+  },
+  "installed_docs": {
+    "package": "fumadocs-ui",
+    "version": "16.6.8",
+    "sources": [
+      "node_modules/fumadocs-ui/dist/layouts/docs/index.js",
+      "node_modules/fumadocs-ui/dist/layouts/docs/sidebar.js"
+    ],
+    "direction_behavior": "Existing start/end borders/insets, local rtl transforms; inherits RTL-003 root/Fumadocs provider, no vendor edit"
+  },
+  "frozen_sources": [
+    "components/settings/billing-content.tsx",
+    "app/(landing)/pricing/page.tsx",
+    "app/pay/[token]/page.tsx",
+    "components/landing/feature-sections.tsx"
+  ],
+  "mounted_browser_inventory": {
+    "apps": [],
+    "browsers": []
+  }
+}

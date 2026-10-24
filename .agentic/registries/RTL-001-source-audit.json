@@ -1,0 +1,571 @@
+{
+  "task": "RTL-001",
+  "baseline": "36597677487fa47ee666be1ff548a47683679951",
+  "hash_normalization": "UTF-8 text LF",
+  "source_count": 74,
+  "sources": [
+    {
+      "source": "app/(admin)/admin/layout.tsx",
+      "sha256": "42a0c06070450acb121dd8d7f84f1f926e8175457e40c42bd1b9f8c4f0ddea78",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": [
+        19
+      ]
+    },
+    {
+      "source": "app/(auth)/layout.tsx",
+      "sha256": "1b6569a851fc7ccca93ce0172187b6d49318ce2147f2d7e92ed423694bd7144c",
+      "positive_tabindex": [],
+      "directional_transform_lines": [
+        57,
+        278
+      ],
+      "visual_order_lines": []
+    },
+    {
+      "source": "app/(dashboard)/layout.tsx",
+      "sha256": "2617bf68bcdb7303950174a3f91b54225d7d26d5f531a1f7767de634b5dd6059",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "app/(landing)/layout.tsx",
+      "sha256": "becf28479386293f60a1893628f57983c7db860ea51c9901e00f8b1d17268a39",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "app/(onboarding)/layout.tsx",
+      "sha256": "d38e94320a37a796e93ddaf00177bde7fddb2b2578b469f93d8fa3a19f86cf62",
+      "positive_tabindex": [],
+      "directional_transform_lines": [
+        24
+      ],
+      "visual_order_lines": []
+    },
+    {
+      "source": "app/docs/layout.tsx",
+      "sha256": "9b4ee51380680a517062da298636905786540ba480b177af260184e8d3760120",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "app/globals.css",
+      "sha256": "ecd823e773237d284b2b8482d740705a48ffc8127d6dc109c964b74f39c8e55d",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "app/layout.tsx",
+      "sha256": "b2ba99953ffe81de45c9e7cb327f289e3b941c4fa9f062853c17b02840bd4754",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "app/not-found.tsx",
+      "sha256": "0cd1a978c5fe6fcf8e5552c607d7e3df2e9410c932d09be378d9d4bb0bd6dacf",
+      "positive_tabindex": [],
+      "directional_transform_lines": [
+        173
+      ],
+      "visual_order_lines": []
+    },
+    {
+      "source": "app/portal/[token]/layout.tsx",
+      "sha256": "fddfd9e08e3a84cbaedd1ea5795d0ccb4277cff8bb299818a2c17c2c12144ac8",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/admin/navigation.tsx",
+      "sha256": "63bb74c37585241983273a1690f5815813456024f2f5dedc152e4bd58ff3a9f3",
+      "positive_tabindex": [],
+      "directional_transform_lines": [
+        79,
+        142,
+        154,
+        168,
+        212
+      ],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/dashboard/command-palette.tsx",
+      "sha256": "c73fbc2911265af2df9069a037716f2332b84ac4002029ab670d555cb4df4f70",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/dashboard/create-drawer.tsx",
+      "sha256": "3fc8514b3151c92bf0977e45621dcb7a9f6ebf10d4c6ae04fe5af83737aa8ef9",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/dashboard/notification-dropdown.tsx",
+      "sha256": "070602bd9e19b24962c0ff27eb2c4ab9660a0cd80d7948f42900a78c6fa90bae",
+      "positive_tabindex": [],
+      "directional_transform_lines": [
+        244,
+        296,
+        380
+      ],
+      "visual_order_lines": [
+        305
+      ]
+    },
+    {
+      "source": "components/dashboard/org-switcher.tsx",
+      "sha256": "9fa1b1edc441354e3488d97c934639f3380dac97a20c208618b974fc137f46e6",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/dashboard/page-header.tsx",
+      "sha256": "8d0ae9603c4f010baa637d7fe437c5ad17d23f604bc45023e60a2b811bf845f1",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/dashboard/sidebar.tsx",
+      "sha256": "5aea150705ee4b4e033e5624b60ebc927927d76c7be4935f459f8ed2913fa20c",
+      "positive_tabindex": [],
+      "directional_transform_lines": [
+        180
+      ],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/dashboard/topbar.tsx",
+      "sha256": "cebe72730cf66828546d95de32a52426cd892b9efb3a26e1f81226d599495f9f",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/dashboard/user-menu.tsx",
+      "sha256": "bb19625a61785518c7411a12a76587e4fd942a172811890e53500b2c2f488436",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/landing/footer.tsx",
+      "sha256": "f5ef84b56927848eb84e34dd707df0b61326c581247abe989fbfceef6e161f72",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/landing/navbar.tsx",
+      "sha256": "4e8d92e9a556e6ec0ef7b02968f3c745756f328ae55b053b6c036d3158e88fec",
+      "positive_tabindex": [],
+      "directional_transform_lines": [
+        90,
+        161
+      ],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/accordion.tsx",
+      "sha256": "4e882fea4dc4286ab353ce57e668a3297eeacc6c4f2de748048b6db175cc2899",
+      "positive_tabindex": [],
+      "directional_transform_lines": [
+        38
+      ],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/arrow-left-right-animated.tsx",
+      "sha256": "7177694b0d2b6439f963595a881b9fe08749142ee15bf92b674544fd5d035c31",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/avatar.tsx",
+      "sha256": "a3be4bfc6c4337645b18a502bb70d5380360b41eef24e047b083f37b907a6488",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/badge.tsx",
+      "sha256": "731da0ab54eec1d22dad3446b8095fcbad528f0ea8bdb9d38a7dba057c02e31b",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/blur-reveal.tsx",
+      "sha256": "724dcbad79c6d53a95b205000f8acb2ad01491cde1fba13c2132af3fa8b3d452",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/breadcrumb.tsx",
+      "sha256": "7f0f513b5114ed2199c7144cd1eb0940f4798f97ab3e58aabf46300c2be7a46e",
+      "positive_tabindex": [],
+      "directional_transform_lines": [
+        80
+      ],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/button-3d.tsx",
+      "sha256": "0f6d3588deff6206995e56bb03ca28ead56ff39bc3818cf31f59ec842f29dc41",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/button.tsx",
+      "sha256": "78b86120a6e7b2417154d160671ce6f87bf2fc5024a8435cc251548655eeb156",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/calendar.tsx",
+      "sha256": "116065a1c48540a36ff35b96c74e66954cb64ae1010c2c0d0d2217ef22cb4a9a",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/card.tsx",
+      "sha256": "2040cdff27cd1ed771e0ebbd15abcd73d31f2f1e4be6664bd6816fffd2a87476",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/cart.tsx",
+      "sha256": "eb10514d121482cf2a0bf335e04826e6e47180167fccceb1ce59fcbefa89cb3e",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/chart-line.tsx",
+      "sha256": "2ea5bff317d97821b62d62bc1b12943ef51231f07c411321a8d810a03a87dc03",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/checkbox.tsx",
+      "sha256": "6fd0354dcbe9afc7c5ae89d175f88257884bc4766654e71d4ad76978b709166e",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/circle-help.tsx",
+      "sha256": "47e7d6e920f31689c9f2a7c16f39f876ef066f0941f89e0a884f9841dfb7884e",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/collapsible.tsx",
+      "sha256": "3a492f3e8f1ad5a214294cb8f664eae6682630b34fa404e73395b95677a05dd5",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/command.tsx",
+      "sha256": "1bd660a4e77ac22e2c09a1a245e0793b833559a3c4da5310b5dd97994069723d",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/content-reveal.tsx",
+      "sha256": "ca89c7158e4243db51544abee5f129a2eae0b6901f5dba8e3ad000e9b1045674",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/currency-input.tsx",
+      "sha256": "14becd47a7ea6b7bf8f7a02466e2ce417f453aee7c1b0900be5f2d515804fc72",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/currency-select.tsx",
+      "sha256": "ad6c16f35dc88ccb3a811caf50d35cbcd5e8f5fe118ca2e6511510a338b5f6b8",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/date-picker.tsx",
+      "sha256": "9489326da4980813c8a55437b119cfe57783523ed9956a6d1eaccdcc8875457d",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/dialog.tsx",
+      "sha256": "c55e218643935c3c9137a405bb8c0afb7815afb6b1088fd33cf49770daa461e9",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/dropdown-menu.tsx",
+      "sha256": "87803b07f638464a14d0be13a15c49362940f04b86b268ee8008a617d47dd611",
+      "positive_tabindex": [],
+      "directional_transform_lines": [
+        222
+      ],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/dual-amount.tsx",
+      "sha256": "149fa87270c6550367edbec59ce7398d45b049f7dce2e02f205663d2984aab85",
+      "positive_tabindex": [],
+      "directional_transform_lines": [
+        47,
+        48
+      ],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/file-text.tsx",
+      "sha256": "8f01570965f44e845a59805687437566be563c6a460bf715da202fa7da0411c4",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/folder-open.tsx",
+      "sha256": "b4b0a7f4f353fc709c01562ea2e17464679a67a86f39875c04025d6e21d67f09",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/gauge.tsx",
+      "sha256": "c840df02e1b818f8d2529a68093a44aaad47951305c1ac7db9f60bc84fcd9701",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/hand-coins.tsx",
+      "sha256": "3a364485da607dd91cd9b06c17f2c08c1a25879405d8933c3a3634c50a6ed9b2",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/input.tsx",
+      "sha256": "56b7fd30208addbcc2468cfda4f5bc0a55342211deaab61ee35b1c352b1622f1",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/label.tsx",
+      "sha256": "a476e41f08b9de5bd447de66a33d8bc2ad18f2fa6b96c064778bab4b6f439f4c",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/landmark-animated.tsx",
+      "sha256": "b6a660ee06e21ffbfd77685d2516a3ad5328df6c21db45625c88fc58d7966407",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/layers.tsx",
+      "sha256": "44fe6249ba1c3f89e8238e2bfd1e79fe38655ac9291d835583b1f96383d6e94e",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/percent-animated.tsx",
+      "sha256": "f9843fbc74647f8850bc7b976f1ea491cff06b341ccbd14a65faa62a3cf192e4",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/popover.tsx",
+      "sha256": "845c6fdf9fb88c24dc52d4d54404ac7c42c44e3ba64fe43b4c34404b1d7d9f0b",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/rate-note.tsx",
+      "sha256": "1ffddead00013ea8f84d2f852cda3308838d81c27d5c6fa2cedd130775aa312e",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/receipt-animated.tsx",
+      "sha256": "d3ecffe8dc2fa583c993488d5751826e2783ad9f3c2578380e2e49e3d8307039",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/search-input.tsx",
+      "sha256": "f6cb92ca4d1f871a850614ff66a098cf3a4f7f9cf3b48f36f4c32b652b08feff",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/select.tsx",
+      "sha256": "85ffd2f062e254ea6dfb2d2fea67a05351f54b25c241a0f1d66f15a1e6ebf650",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/separator.tsx",
+      "sha256": "bbd16f077778bb123cc86a16384751f53bfd22cee5cfdf6715862bdcd711cf12",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/settings.tsx",
+      "sha256": "dccbe307789095c85bd7847c383360e721bd235c42c95c069d6fc28b0fde22bc",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/sheet.tsx",
+      "sha256": "e3efc285f199e6dab0a176322ff3068f495d9ed2cf8204b7b40ad18601f59596",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/sidebar.tsx",
+      "sha256": "f314be0c7514c079a026cc15f026508994cd12d65e1b6eebaeebe8731e663710",
+      "positive_tabindex": [],
+      "directional_transform_lines": [
+        682,
+        725
+      ],
+      "visual_order_lines": [
+        202,
+        240
+      ]
+    },
+    {
+      "source": "components/ui/skeleton.tsx",
+      "sha256": "6ff3482c5ec3c18a7e085a452ff39170f1279d7f3b6c25dce12a63f50e044556",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/sonner.tsx",
+      "sha256": "74285e6fc062eece23b8bb043c1f327be9ae6700d9a26be54cb31be028ec9a6f",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/stagger.tsx",
+      "sha256": "1972fd17058468d5027cc6fa460ac9f592bb77d0708c404cba3b44f702fa5526",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/switch.tsx",
+      "sha256": "c2cc6f485eb3121521975dbba31281ffc51c0f7665ff78e681fd95b47d3866ef",
+      "positive_tabindex": [],
+      "directional_transform_lines": [
+        25
+      ],
+      "visual_order_lines": [
+        18
+      ]
+    },
+    {
+      "source": "components/ui/table.tsx",
+      "sha256": "828893478a36d8b7002aff45d782995113f6a87cecd02c561781c437af885057",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/tabs.tsx",
+      "sha256": "37dce5e8b5c78983882e3e4d0aab228793ed4de1bc7d379ebfff83584a58189a",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/target.tsx",
+      "sha256": "d1ccafdd43455360fdeea32cfbf53dfe757206fae16fe4c934f82af95b2f15a6",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/textarea.tsx",
+      "sha256": "de4e9fb0fd8e8ed10ea2e475ffe202a922ffe77e3f3edb2c517b0781447ad1b4",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/tooltip.tsx",
+      "sha256": "4deaee9de7ae94a6511df1d5cc715cd037f3730c24265af0b0e01f58d9270d70",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "components/ui/users-animated.tsx",
+      "sha256": "c9352e921d2c2b44ce02adc865eb8464044f363cd7b67257a95ca5f53e05bc0b",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "i18n/locale.ts",
+      "sha256": "a48ba130e49e3c4e40d6f664b08b5ab114ba6b8145fd123b4be3d17020e4bd3e",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    },
+    {
+      "source": "i18n/provider.tsx",
+      "sha256": "2843f6616a7686ab22fab80daa764f81152a3c08be6746dc777a2e005aaba21b",
+      "positive_tabindex": [],
+      "directional_transform_lines": [],
+      "visual_order_lines": []
+    }
+  ]
+}

@@ -1,6 +1,8 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { usePresentation } from "@/i18n/provider";
+import { currencyLabel } from "@/i18n/currency-labels";
 
 import { setActiveOrganization } from "@/i18n/organization-client";
 
@@ -25,6 +27,7 @@ interface Org {
 }
 
 export function OrgSwitcher() {
+  const presentation = usePresentation();
   const t = useTranslations("Shell");
   const ROLE_LABELS: Record<string, string> = {
     owner: t("owner"),
@@ -108,7 +111,7 @@ export function OrgSwitcher() {
                 </div>
                 <div className="bg-card px-2 py-1.5 text-center">
                   <p className="text-[10px] text-muted-foreground">{t("currency")}</p>
-                  <p className="text-[12px] font-semibold">{activeOrg.defaultCurrency}</p>
+                  <p className="text-[12px] font-semibold"><bdi>{currencyLabel(activeOrg.defaultCurrency, presentation.locale)}</bdi></p>
                 </div>
                 <div className="bg-card px-2 py-1.5 text-center">
                   <p className="text-[10px] text-muted-foreground">{t("plan")}</p>

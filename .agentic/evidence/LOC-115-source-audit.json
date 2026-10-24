@@ -1,0 +1,1257 @@
+{
+  "task": "LOC-115",
+  "base_commit": "111c8fce6be6089cb667bac92a0186ad2ef6446c",
+  "method": "Independent recursive TSX source census; lexical candidates plus AST JSX/direct-label and imported optional-presentation call audits, manually reconciled with CURRENCY_UNIT_PRESENTATION.md. Candidate/explicit flags are audit aids, not proof by themselves. Hashes cover final source.",
+  "tsx_files_scanned": 407,
+  "candidate_count": 208,
+  "records": [
+    {
+      "path": "app/(admin)/admin/organizations/[id]/page.tsx",
+      "sha256": "fc88492072393e915867170216bda4c031f33c633bdd7f541a5623b497575141",
+      "scope": "LOC-115 organization metadata / technical admin reference",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(admin)/admin/organizations/page.tsx",
+      "sha256": "c10cf03f261c21ec7cf99e8bdd9aa039c66b084f53faee82064caddfaee0d175",
+      "scope": "LOC-115 organization metadata / technical admin reference",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(auth)/layout.tsx",
+      "sha256": "6df91c216c0d70114301e128a5036ac05b29d1629c17f5417614a1f958326ed8",
+      "scope": "inspected no ordinary monetary unit / technical or output reference",
+      "explicit_presentation": false
+    },
+    {
+      "path": "app/(dashboard)/accounting/[id]/page.tsx",
+      "sha256": "5105be08241ce12aed42be21b8ef7507cd3fee0cc01a4506a42b6a96f451de92",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/accounting/accounts/[id]/layout.tsx",
+      "sha256": "89930e9bd30fceb29ccf9672351fa88e9cbb9243e00de6177d4e3a3700c88fda",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/accounting/accounts/[id]/page.tsx",
+      "sha256": "20b561d7adbe6e1c5dc7b2d38afe96861c46472a91cfb25e0695b3caa836b5c7",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/accounting/accounts/[id]/settings/page.tsx",
+      "sha256": "4f66337d67a37fe2136848d7000aa6dff363fbc37782183dfbf03cbb5dd9700a",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/accounting/accounts/page.tsx",
+      "sha256": "23d912c7590315c7c8cbd530346f22a29ca3061466a9cad490422aad9c72a42a",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/accounting/accruals/[id]/page.tsx",
+      "sha256": "e3b1f83c3e6b7ac281888fd9a9ee3042a60c7573b85108e0d52ed0a332281108",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/accounting/accruals/page.tsx",
+      "sha256": "3f859b21b3143bc4906af423ce92a2a6825e8ab3bd72e0461f7c185b12af137f",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/accounting/asset-categories/page.tsx",
+      "sha256": "77201c12b75559673e49258fa4a4dd98b30d813eae8ed8ffccd610951f2e1f6f",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/accounting/banking/[id]/(detail)/layout.tsx",
+      "sha256": "4ab4eeca7f78f7b309ac3d692efd581961236289bdf3b8ccbdce80ad1811af1a",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/accounting/banking/[id]/(detail)/page.tsx",
+      "sha256": "5967f55c5c33697a39decd149beb5d0a2b1d52c57d4d7fe9b66716ebb4d60118",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": false
+    },
+    {
+      "path": "app/(dashboard)/accounting/banking/[id]/(detail)/settings/page.tsx",
+      "sha256": "53b36f43ef5e4d5fc580d5cc274f6705b273db42843caf7e4c5eea17fb90faaf",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": false
+    },
+    {
+      "path": "app/(dashboard)/accounting/banking/[id]/(detail)/transactions/page.tsx",
+      "sha256": "e96edcedec74a547c2ceb6e210e19e3fba142e3afb1f3bddb606051f720690e5",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": false
+    },
+    {
+      "path": "app/(dashboard)/accounting/banking/[id]/_components.tsx",
+      "sha256": "e1a62da491d8728b4916408e22c2f8fb038d50d6a7f4479ef09c0740637938c2",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/accounting/banking/[id]/reconcile/page.tsx",
+      "sha256": "a7be07d0a3178c026a3f0254a3241f1bf999f3106f4ad0360db4791b001dece6",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/accounting/banking/batches/[id]/page.tsx",
+      "sha256": "9ed9decab4be94fdece5fa079ad7d74d953366c3410386049bd8a02872f6ac72",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/accounting/banking/batches/page.tsx",
+      "sha256": "45103950596b1f4087d7c44e3d16f1d059d49a6561a35b19c30539b036786f50",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/accounting/banking/page.tsx",
+      "sha256": "e95be5eec33673a0040b9c1e2290301d06e41ee0323de50637604bade21693ec",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/accounting/banking/scheduled/page.tsx",
+      "sha256": "9a657d0111cada4db57ac6af706d2a291a6f39e95c50b4b39de0ace3e47e7163",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/accounting/budgets/[id]/layout.tsx",
+      "sha256": "2f99ab2765ec0943d9394844eceaeb09067b34bf0d51a865955fe491afdcd350",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/accounting/budgets/[id]/page.tsx",
+      "sha256": "1c7c66d18fa4ce1e9ec9a6b31c5abe6b1636ca30ba4c028d28e0ec5e16d5cba9",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/accounting/budgets/[id]/settings/page.tsx",
+      "sha256": "c31df1e9c95811812ae5eb3cf8c64363edf82503e15732e0919291a789cfb7d2",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/accounting/budgets/page.tsx",
+      "sha256": "19cc78aec8ca9756d4f474520f8b31027bf2ff5fa6709bb2f3e0666666b1ba86",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/accounting/fixed-assets/[id]/page.tsx",
+      "sha256": "b367a9db7e0376ba000a937f94ae5d084f7f77d2a2b441cf39f6cc661149ef5a",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/accounting/fixed-assets/page.tsx",
+      "sha256": "918cc5bcae2a9441de75c5e48c17e89e7f16b29a120374e18aa60b10ba4f2cfa",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/accounting/loans/[id]/page.tsx",
+      "sha256": "73359e26889e7e7bb25f60995889e9b9c4d14f77179574b233f58811b1f31edf",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/accounting/loans/page.tsx",
+      "sha256": "5d2b8f71f07cfa8a941f72d2bfb7d8440325661c33d870102eeb01110d24d7a7",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/accounting/opening-balances/page.tsx",
+      "sha256": "f8bb8df69c8511ff1c81eb0343fc7c9304c7b11de7387bb3c10c19d0e3862337",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": false
+    },
+    {
+      "path": "app/(dashboard)/accounting/page.tsx",
+      "sha256": "3b1fa4b5f3ab12bb8d1740d05120be601b9279e83498ddc00c8599767fc5fab5",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/accounting/recurring-journals/[id]/page.tsx",
+      "sha256": "28e8d095247b85c750850bd5e128bdc559232fb5dd0a13ff6817794a549f6e25",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/contacts/[id]/activity/page.tsx",
+      "sha256": "0d8a022650493b2968a77c79bf07d06346a4dc8df761bbf804ba9942b5e4b676",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/contacts/[id]/bookkeeping/page.tsx",
+      "sha256": "f30341ab0ba808322a477df0d62fc2902b123ed9bbda19a108af31b71dd927b6",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": false
+    },
+    {
+      "path": "app/(dashboard)/contacts/[id]/layout.tsx",
+      "sha256": "45a26920b1539d7c8db0673da3527ae785ca247bf5f4bc89b085cc33a2aaaddf",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": false
+    },
+    {
+      "path": "app/(dashboard)/contacts/[id]/page.tsx",
+      "sha256": "7c44ccd7f77e9189c1c7b9e0847185aa12b554c3a54b7a5a1cdbeee08d92f82e",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": false
+    },
+    {
+      "path": "app/(dashboard)/contacts/[id]/statement/page.tsx",
+      "sha256": "2831544e390324dab92e6b795b0a4f09694f0c023eb454fba36142fe3ed338c0",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/contacts/page.tsx",
+      "sha256": "e4ca84c7fe7d32aa63bac0701e223e19aaecc19fe5ad5de2fd17110bf6ebd06f",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/crm/analytics/page.tsx",
+      "sha256": "c222f0db61817c34443b7f1449e820a55f4e367771197d4b081beee0a0982f02",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/crm/deals/[id]/activity/page.tsx",
+      "sha256": "3e5b03cf34b34c2a47f67e9e51c5af7097d0aa295d05bd7935a51a458667e688",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/crm/deals/[id]/layout.tsx",
+      "sha256": "8242c32651e8e7218d3d2fd7fa9dbf59f4cf5e00521a7430a1a46b98c37f32d1",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/crm/deals/[id]/page.tsx",
+      "sha256": "0c8a14ad504ac28bb5e420316fafbbcb89270d9ed656226c629aa13fa0993037",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/crm/deals/[id]/settings/page.tsx",
+      "sha256": "dbea6f636205d890cf35b279ddd117604a51cd2b168d17eef63837814a9af75e",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/crm/page.tsx",
+      "sha256": "2a558f22a2d73a3c4b04574a590b03a20d9cd2245028acefb2373519007afa24",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/dashboard/page.tsx",
+      "sha256": "5691d6031454c57e3bfc433436dc86c2de298b23cbf1b45a58bf7ec41c6876ad",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/inventory/[id]/history/page.tsx",
+      "sha256": "660b05f89877ca0cd891df8e3d9a778f0b98d118eacb18f6e6e67985992945f1",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": false
+    },
+    {
+      "path": "app/(dashboard)/inventory/[id]/layout.tsx",
+      "sha256": "08e5f0c66ce02c75825b1dc2fab8540a4da2ff8667c31b47b92c216530845aa4",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/inventory/[id]/page.tsx",
+      "sha256": "1f1f3b490106db05c2a7170301c7dc184487da220be7f00ad511f4fd05022606",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/inventory/[id]/suppliers/page.tsx",
+      "sha256": "817e10a7e8c4076bf79ac1605240cf0e7f0a772bc0430fed5fd205c75b33572c",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/inventory/[id]/variants/page.tsx",
+      "sha256": "b3c004d705e1a77fca1517a3b21baa389700a5f6747cd68308490aa910b0c02c",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/inventory/bom/[id]/page.tsx",
+      "sha256": "c9165cfd093c033604728645cfea296d2aebed361ab1036fc306260b9ebce816",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/inventory/bom/page.tsx",
+      "sha256": "de3f90b853137d118b334369da91ab124086253e3982b4eb357cd81c7813a99b",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/inventory/page.tsx",
+      "sha256": "fabea1331598622731bd0d5801d1a49b09b1e11df69b8147228b81409f46aa12",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/inventory/stock-takes/[id]/page.tsx",
+      "sha256": "d47d228e5d9017db4018717b27ba96202bb5053b2684ecc21037a650540503b7",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": false
+    },
+    {
+      "path": "app/(dashboard)/inventory/valuation/page.tsx",
+      "sha256": "eb846ac2d0cb3165d52ba093a41309eaa9e61b7c02c993a627e0d97a3e4d8436",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/inventory/warehouses/page.tsx",
+      "sha256": "2c585b5f3ce30866c8c1ba32d42b02e89920f569fb2c56516c5f5ea8e7507113",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/payroll/analytics/page.tsx",
+      "sha256": "44cd541146b3957eba02f415ea6af36f3cdaa37d4d2250c87a19cb7e928b1708",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/payroll/compensation/page.tsx",
+      "sha256": "ef255558e0036c855787f799b7a30d4c3921e995457b03af98af86d8f1887d71",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/payroll/compensation/reviews/[id]/page.tsx",
+      "sha256": "defba9079cf7094d0a78c8bb08eb638239a27fcacb286452a1b526b2f87988eb",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/payroll/contractors/[id]/page.tsx",
+      "sha256": "5e9c3917a031a2fb34a1313070bfb60310e63521cf455be7860565a034415353",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/payroll/contractors/page.tsx",
+      "sha256": "2e7c5b14825a970ca9e11937333e6c80ab5d18658ecb8a06fe834553463e8914",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/payroll/employees/[id]/page.tsx",
+      "sha256": "eed0cb65d1c851a5070fa78ece6e7ff3c4135d9107d00340e437106692165612",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/payroll/employees/page.tsx",
+      "sha256": "e897563e1631a989ba2307ea7eff80f0d149b171b64c2e386cfacd657e3daab0",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/payroll/forecasting/page.tsx",
+      "sha256": "200e6560af27a1c409b243c0cfa5448d40cc698556c52c6a4d597eb7454c3b4d",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/payroll/leave/[id]/page.tsx",
+      "sha256": "df71b3874766ed38759be4207d92762cde0f414ef831a29c04cb3b80b3484b95",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": false
+    },
+    {
+      "path": "app/(dashboard)/payroll/leave/page.tsx",
+      "sha256": "ee6f32b52fc480b099439e6fc54ee1e4d975b6394d9afad03a45169e9f18def4",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": false
+    },
+    {
+      "path": "app/(dashboard)/payroll/page.tsx",
+      "sha256": "647cacc9f30eedf307d5fea6eb4f262be37e2cfa226f3e28a16e78245bcc6c21",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/payroll/reports/[type]/page.tsx",
+      "sha256": "6bbeb4100b7550f8246221368b3cb66cdf53e692e6d053be32184a5438473031",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/payroll/reports/page.tsx",
+      "sha256": "4b093010ed7a952f63c3d0dc5ab798abb9a2351e3ca125d30f4be11bd936b5f0",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/payroll/runs/[id]/page.tsx",
+      "sha256": "89678711d88cf0c24e7d52aae8ab348ddc5e10f215ca92ef721421c9fd6949d3",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/payroll/runs/[id]/payslips/page.tsx",
+      "sha256": "5828cae8c5c50dd5c3b1086a9621dc82eef0693e9ce5a70c48d9d55c9943a53a",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/payroll/runs/off-cycle-dialog.tsx",
+      "sha256": "77038bb5caed06efcb1223f01cdb6a8c60c12763126fcb75e1d3d15db153cc64",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/payroll/runs/page.tsx",
+      "sha256": "917681cafc846eab69475696828b1c8de4aaee96dc23ecec443bb7598a612717",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/payroll/self-service/page.tsx",
+      "sha256": "02a84f92fdae6150a89c29d9007f67d31aec19baa76f17730036d5727bdf8d16",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/payroll/settings/page.tsx",
+      "sha256": "b367e8e0f66b9134dbf85299f57dce6a6d0d9e5de83bff466588bf64ca368571",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/payroll/tax-forms/[id]/page.tsx",
+      "sha256": "85734de8884a9d7a2144b8e5dfe7e264b7dc20b5de7d235672e3ea946b2b0684",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/payroll/tax-forms/page.tsx",
+      "sha256": "fdced9cd210379386df6193e6c5feb5bb41d13c0b77cd09a3156f73f132e5f58",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/payroll/tax-liabilities/page.tsx",
+      "sha256": "c3a855e69d0a6207f31969f47520a71fc3699d83944ffcf52ea5be993736c1ea",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/payroll/timesheets/[id]/page.tsx",
+      "sha256": "bdad174738d4e39180c3d61617c5c09be85633198d5e0ee6f4f50b5c4fb4dffe",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": false
+    },
+    {
+      "path": "app/(dashboard)/payroll/timesheets/page.tsx",
+      "sha256": "9caf3758d11d3cbaae78b147b16eaaaf5d5c7e3e347274be4b2ae6637e73794a",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": false
+    },
+    {
+      "path": "app/(dashboard)/projects/[id]/layout.tsx",
+      "sha256": "9f621a1cb1af39c6b8cf07475a93cd11b0043232039566e14d5968b485057aa4",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/projects/[id]/members/page.tsx",
+      "sha256": "288785eebd53d13b23af244f4a8a4c9c6c77a7d488b33f5db9be52497e2c5114",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/projects/[id]/milestones/page.tsx",
+      "sha256": "ba6a31b78c00ddf1ae1674e4cfac017a4b03514f326739e622aa0d50959eedcf",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/projects/[id]/page.tsx",
+      "sha256": "b0b45a77e61e0060cedc0260e4b435a347d7f7d531a4ea0daea08f001a1fe71b",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/projects/[id]/project-context.tsx",
+      "sha256": "a516e9459e714439cf594de3064ad205889d229fc2965584e8284c29fd58d70f",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": false
+    },
+    {
+      "path": "app/(dashboard)/projects/[id]/settings/page.tsx",
+      "sha256": "40d5e3634a74ab17722f64b341429c921e867afff875790c252aaab74de3ec49",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/projects/[id]/tasks/page.tsx",
+      "sha256": "1dce35bbf6855002648df08ad79dc7a104c25f97afa0fff47e3c32c33913675a",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": false
+    },
+    {
+      "path": "app/(dashboard)/projects/[id]/time/page.tsx",
+      "sha256": "fb7282aede959bbf645cfb6d629ca0497af9621f6a69d40104bad7e5b2ffeb7c",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/projects/page.tsx",
+      "sha256": "9af4a91feff9342154f2f7c8f54c12e70368739bcda197dfb270b5985317e0f9",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/purchases/[id]/page.tsx",
+      "sha256": "9de609925b8218f92d91b379c8e028aab8aaa3ae3a35b9d5b2e9cbb2d0c7bc57",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/purchases/bills/recurring/page.tsx",
+      "sha256": "829f2f2852412b417b7698a4d9841257200d8d9637555704aaae278497fbc5ab",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/purchases/debit-notes/[id]/page.tsx",
+      "sha256": "efc16fe72e1a7e435703b61ed9c82b8d0d17d3c1aed931a117482b694ec87fce",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/purchases/debit-notes/page.tsx",
+      "sha256": "c93c5a3454d9b1da15366067f7ec6d975a0a75b0cd5255251488beeebcdc96da",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/purchases/expenses/[id]/page.tsx",
+      "sha256": "2ed0c298f5d020fc8db9ab004c72a3ee3c0e4f4e439fd8c6d6c79f5a34188a65",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/purchases/expenses/page.tsx",
+      "sha256": "2e7c5f0f61f77bf728d718a22e53708d265805194987c4b31395d31932e45606",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/purchases/expenses/recurring/page.tsx",
+      "sha256": "9a08502b27bb5a6bad6bfcce718aaf267c0c2b82a4e29155b94ef53e219beb3a",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/purchases/goods-receipts/[id]/page.tsx",
+      "sha256": "bb87cbf746d9ad765c778ac51fef3bae913c8d3665765c44b56bc9b388c619c9",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/purchases/goods-receipts/page.tsx",
+      "sha256": "0dffb7efbb041fb4f6c6d2cf366eff5231e42ac225d9d22f9f0efef561ec64da",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/purchases/landed-costs/[id]/page.tsx",
+      "sha256": "62e1d731e2beea91269543223b1941949b7b00015abeb84b50d4e1a7e9f27357",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/purchases/landed-costs/page.tsx",
+      "sha256": "29d0af2e6213fa38ab304e0ddaebbc0d83c07df6039928ed51dc380d68c4ba01",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/purchases/orders/[id]/page.tsx",
+      "sha256": "3a0834406b13c0470f7398fcf11a15f38268472d3d14b70e5b8c664f4a888036",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/purchases/orders/page.tsx",
+      "sha256": "20ec6926405a1d7d6b395ce45f6c90943660b240a7eb099d3ae594eed4767e1b",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/purchases/page.tsx",
+      "sha256": "8f366045f35c6365028f63fd44e84f93f943cb4e296079b0d9b4490c2e2d27bf",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/purchases/requisitions/[id]/page.tsx",
+      "sha256": "9afb2cd496765dd40442dd7d26af9d3a1453dd7b4421187f9a161f2060047c9b",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/purchases/requisitions/page.tsx",
+      "sha256": "c8565536fb768cc3cab5cc0c2dbfc616af8f1b9d611c780d3b5fe04bc2b2c33b",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/reports/1099/page.tsx",
+      "sha256": "00a13309528201adf9ce4186400868a9e902586d9271fd974f427f477d99b2fe",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/reports/_components.tsx",
+      "sha256": "2a7ddf028adacb3b961dfde8a7decdbeaf71e7516048f5f78d837831994f51d0",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": false
+    },
+    {
+      "path": "app/(dashboard)/reports/aged-payables/page.tsx",
+      "sha256": "369cb896a916963c44aee27a44a67ccb60ddaee842132ece7d430b1d1004e96d",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/reports/aged-receivables/page.tsx",
+      "sha256": "8dfe492883da78a3668cc4b71505b3c5b0ef89b728a003848b96882a5599709a",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/reports/balance-sheet/page.tsx",
+      "sha256": "28e71281d19314f9c45144e86c9e7b178554cf36c82313bf14113a4e1887617c",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/reports/bank-cash-flow/page.tsx",
+      "sha256": "814cc3a90b008570a9decf24e6d056a3bed6cb906570e42cab966fbffecaeaeb",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/reports/bank-reconciliation-status/page.tsx",
+      "sha256": "b96d1a6379cbd4252a3d9d81ce05b8cb377faad5502d9ff7ae97151f89f6341b",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/reports/budget-vs-actual/page.tsx",
+      "sha256": "4470f81afd28c1f0e2664b9cd0bd8cf4562fc94c1ba930b526b072448db4e243",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/reports/cash-flow/page.tsx",
+      "sha256": "130bc3a291ffdadc4f9676a7cece7eb30081821ca48c92bf5daa9b4eee826c05",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/reports/cash-flow-forecast/page.tsx",
+      "sha256": "ce3b113a3fced38de9041c02240ee2ca00126765476b789645232a793359ef82",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/reports/comparative-balance-sheet/page.tsx",
+      "sha256": "4fd044a49702ced5857d02d6eb0d2f066ea5cf7e3cead8029094344d2af7edfd",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/reports/consolidation/page.tsx",
+      "sha256": "807fe764fccf32d204516591219c91e4bc7ed3f4c0788c53c3d9fc0f1838e3f7",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/reports/custom/page.tsx",
+      "sha256": "68e29c3788c00c785f4c711af4fb09c58e90bf5c906a217fd224d41c4f5acf22",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": false
+    },
+    {
+      "path": "app/(dashboard)/reports/duplicate-detection/page.tsx",
+      "sha256": "17c949baf7c5f1eb7124062cb25f1d976774bd45a6c41a3064a8989a9348021e",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/reports/executive-summary/page.tsx",
+      "sha256": "f14f7f9502bad26690e1c6f4cd171d1778ab9d18b5e0390b514b9b1d0077d2b5",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/reports/expense-analytics/page.tsx",
+      "sha256": "dbc60bc8acef2c6df8c85257c2a16167f37e54c4f5b9036d5314ddda47165938",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/reports/financial-calendar/page.tsx",
+      "sha256": "18590ac6366b07e7677747925687606847a85650a429ec00fe383f6ec2fcd886",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/reports/financial-ratios/page.tsx",
+      "sha256": "d7a0ec0dd2b1da55f77f0d082817e44715a1b0ce637ab4d5d73972883ca82bc1",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/reports/general-ledger/page.tsx",
+      "sha256": "e72104d54b02778af30f582123a39eed4d1c5fcbe268d9d5ced8670ae4d9c779",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/reports/income-statement/page.tsx",
+      "sha256": "5282c9f99ef8ad8a32e0f33d0bdb24c9f1fedcc59993d112350d00c000c0e265",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/reports/payment-performance/page.tsx",
+      "sha256": "b94d1e80e75132fe61b78edd5120b3bfb26daa65b37ad4b2390a7a63ece31728",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/reports/pnl-comparison/page.tsx",
+      "sha256": "5ed699721d718f7d406928ee867a410c737fb594b3457db137ee3e76f49ae4eb",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/reports/profit-and-loss/page.tsx",
+      "sha256": "e9afd11c4f41804f58e3a749e5d93b6317b289a70d6cc9bfa188d0240580bef0",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/reports/profitability/page.tsx",
+      "sha256": "6f199875137b030e1a2c9a9968ba06d87c403bf83ed28144d90b6813a80fb540",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/reports/saved/page.tsx",
+      "sha256": "948183766b876c005eca213ad456ba82c227ec667eab990b8261614e1d93d7c1",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": false
+    },
+    {
+      "path": "app/(dashboard)/reports/tax-summary/page.tsx",
+      "sha256": "d0f17421fb1ec5fc10545d8c7a6708b1ae9201963c93e56792640e103f6b8d62",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/reports/tracking/page.tsx",
+      "sha256": "281c99a721e63b5c0ba2b1ef4d12483eec837cf145b05ce37e704f8243fbc08b",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/reports/trial-balance/page.tsx",
+      "sha256": "8da12fae81b188e421e4553e85903bab25aa270c2fa82ef4b3b9856a7b29a51f",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/reports/vat-return/page.tsx",
+      "sha256": "2a150198585bf8fa5eee6cfd7d281a103afdc824f874aa92933b7f6c1c08e8f0",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/reports/vendor-spend/page.tsx",
+      "sha256": "fc4841532b3a1928be7d0ed254f6414f4b7637e30ae084022dc25006940f3f24",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/sales/[id]/page.tsx",
+      "sha256": "65c1356f2e36ed8dff08cfd582338255cf9f0b0f555edcae38b04a9eabe013b2",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/sales/credit-notes/[id]/page.tsx",
+      "sha256": "938031145a1f7fc667a31d8b9ea3dd5287655e00d3af9139e50dc6d3346d45c2",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/sales/credit-notes/page.tsx",
+      "sha256": "46529e001ab75159506f17135b480e74e8b9b98b35780dab21a4de9a87546d84",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/sales/customer-prepayments/[id]/page.tsx",
+      "sha256": "e5895146183fbcd077daf2d5dc9ff287af0ac8ed676fa77c0847a5c615b1c010",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/sales/customer-prepayments/page.tsx",
+      "sha256": "550b08131473f6835e78ea34384e07d19c95922013d6372931f9c3bdc8b201ed",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/sales/page.tsx",
+      "sha256": "bb20e1ce504e5e24b02cefe760588de97d130734e1c660dc85741a57888d7533",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/sales/payments/[id]/page.tsx",
+      "sha256": "fcbf997d5abf6f44598ae67f1a2d7b895fde7ad74903c3b4b11b03f720d03e37",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/sales/payments/page.tsx",
+      "sha256": "5228b63db14098f16dbab4021394bfaf360a06c4937de74da5950096036766da",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/sales/quotes/[id]/page.tsx",
+      "sha256": "2ba3977f3d64b66f8d06eba0b58598aae200a73fcc9d43236ba2c70a06564a4e",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": false
+    },
+    {
+      "path": "app/(dashboard)/sales/quotes/page.tsx",
+      "sha256": "d29ddc0353cf47158b5f38884999c383507830c3b19fd8d6dc78abe1d471bf22",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/sales/receipts/[id]/page.tsx",
+      "sha256": "815950ea3c7eacefb305165f505f9fe7cd7453e1702bdac44ac3165d4221b5f2",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/sales/receipts/page.tsx",
+      "sha256": "378278b48c1e1a883fc5fe19795013939a256d10583998acf9dec6d7d0cb5f6d",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/sales/recurring/[id]/page.tsx",
+      "sha256": "b74fa92b40690296114d3a9d8d7b4a860b42d2af5e57912ec5f87869b87598ca",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": false
+    },
+    {
+      "path": "app/(dashboard)/sales/recurring/page.tsx",
+      "sha256": "0e7b8ec30c3513cd610b1a6b40982315071f7aa97feafd6f20a141ffb1f19a1e",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/sales/revenue-schedules/[id]/page.tsx",
+      "sha256": "22ab0b7b0543a10879095d6c85834500b0940a8c735306f4ea8ea82363307698",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/sales/revenue-schedules/page.tsx",
+      "sha256": "7c0f07ed892ae2a05fa2b2327d0d8f477bb701512b2f552054d12ba35caabb73",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/settings/approval-workflows/page.tsx",
+      "sha256": "8bfd7c696c66d313a0c82d1552d60e912cb586b3c3f0107a1609a19d4d820dd3",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": false
+    },
+    {
+      "path": "app/(dashboard)/settings/bank-rules/page.tsx",
+      "sha256": "6ee1c0b11a5f8fcdfea3d2ada509eab99bfbc9e133505be3308d28ac48e45984",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": false
+    },
+    {
+      "path": "app/(dashboard)/settings/integrations/stripe/page.tsx",
+      "sha256": "41b454a453e04cdfd333cb225ce152f053cf58986a6a9bd28f4f0a7016c77626",
+      "scope": "DEC-008 frozen provider/subscription",
+      "explicit_presentation": false
+    },
+    {
+      "path": "app/(dashboard)/settings/page.tsx",
+      "sha256": "3d28ce25db957aa06112e42535d5a8bd57ed582d1000854afdcf4f4f233dae30",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": false
+    },
+    {
+      "path": "app/(dashboard)/tax/bas/page.tsx",
+      "sha256": "683831ae487fc135c9b9e8101b41637e27051c77ef0ac583fcf6b8ef917fc7df",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/tax/currencies/page.tsx",
+      "sha256": "f27c175a6c9b6ec3f7db44ebb4d98e4131b6472146375b71540bf1039b64962e",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/tax/periods/[id]/page.tsx",
+      "sha256": "09c98e8639fbcab900799290af33b3ca7099aecc3a75a3257abff230f3a80745",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/tax/sales-tax/page.tsx",
+      "sha256": "7e5970c97c051567a74708c8db18df3daa2536fb349039428e3ac25785027d8c",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/tax/schedule-c/page.tsx",
+      "sha256": "d505c92e357334975dc91f5d9f2322ee422664ae9020c3956a0588f6e0ebbcf4",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(dashboard)/tax/vat-return/page.tsx",
+      "sha256": "4fdfc9aef0c248ef277cba774c83e7c6c9b7565b56f4f4c82065dcd291e9ea8e",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/(landing)/pricing/page.tsx",
+      "sha256": "bc211fe26674c3a1e9ee6418badeee1d7bc5074fd08f8047ee96ec628a328d44",
+      "scope": "DEC-008 frozen provider/subscription",
+      "explicit_presentation": false
+    },
+    {
+      "path": "app/pay/[token]/page.tsx",
+      "sha256": "5191b61e88efdf3aaf3f3bd5275fb8994f315bda18092b8b227ae04e1850bd9d",
+      "scope": "DEC-008 frozen provider/subscription",
+      "explicit_presentation": false
+    },
+    {
+      "path": "app/portal/[token]/invoices/page.tsx",
+      "sha256": "ec295f30eb7a0d06ffd0a49aabf7c1dc1f763c6115962735921e3e43dbeddd2f",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/portal/[token]/payments/page.tsx",
+      "sha256": "d84ab8acc9df9c53a3e170dcc5bb84c2371cd5503ab2d6edd2f942c3acb7e017",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/portal/[token]/quotes/page.tsx",
+      "sha256": "705803d48b572b7f91215b467762c9b77a1e010e28b080f76483e43690825e28",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/portal/[token]/statements/page.tsx",
+      "sha256": "c09404386b61be0e6d3cd8162dc2b6d600851b66224d35c4122fa65b7f4c51d9",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "app/sign/[token]/page.tsx",
+      "sha256": "4354ccca6285300154d098fa1ab8ca7bf6bac201f72d0c879bedd2bacf5908f3",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": false
+    },
+    {
+      "path": "components/dashboard/account-picker.tsx",
+      "sha256": "ed34346df91999133a000e323c9e2ac72786ea42f34e847d9e12ec0d86e569cb",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": false
+    },
+    {
+      "path": "components/dashboard/bill-currency-amounts.tsx",
+      "sha256": "e4d3bbeeb52f11a4313e2ce85e4df77b58632a73b82e0824fcb4ff4e6e355e8b",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "components/dashboard/budget-progress-bar.tsx",
+      "sha256": "74e8964d40d6af01aacc783aed36ae52bc7268b2b9a771da69bcba5e3a863cd2",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "components/dashboard/cash-flow-widget.tsx",
+      "sha256": "3d9d0bb9d3fbaf6fe92b06a7cce6312aa92d1d979d16f770fc36825982000934",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "components/dashboard/create-drawer.tsx",
+      "sha256": "9819db24b5ac93db70440c650791e4f37f6a970f3683138540ab5d08c722c6ec",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "components/dashboard/credit-note-money-details.tsx",
+      "sha256": "d0012e9cec4347e449d5a5d116965cd6c4615653a217582d2aca9c438da1f559",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "components/dashboard/customer-prepayment-money-details.tsx",
+      "sha256": "dd757797073084a4c65b44370ec9f4fb0d6a7a47252290f42cad26a42c2be869",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "components/dashboard/debit-note-money-details.tsx",
+      "sha256": "c0bf75e320568cc5ca8cc118871a5fabe98d9220ddfba8c51f0b757b37471c22",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "components/dashboard/debit-note-overview.tsx",
+      "sha256": "3578a398035659c0b216fe6704586756140b0a5c862f464cde0017efef6a16f4",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "components/dashboard/entry-form.tsx",
+      "sha256": "59d4f9cba3def25ad7e0ba31bd970a892d33543224ca3fa5d410b8e31d705fdf",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "components/dashboard/expense-amount-input.tsx",
+      "sha256": "458cbe01e14e73668fb0e65487c67364ce7e5b082486d89bacdef18fe72be2ed",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": false
+    },
+    {
+      "path": "components/dashboard/inventory-item-picker.tsx",
+      "sha256": "4dc3c18e4f945da51dc8ea377b3fd41215cfe594acd28e62f25260bac79cf6a7",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": false
+    },
+    {
+      "path": "components/dashboard/invoice-amount-input.tsx",
+      "sha256": "6d05a03719b2617b0d1173c91391d09c19acf6158e67dc0b409b92e7737c18ed",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "components/dashboard/line-items-editor.tsx",
+      "sha256": "f8bc24e947c039c8b682cb27592ace7720d0d9762cf60eb26ea492f06d7b618a",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "components/dashboard/money-input.tsx",
+      "sha256": "d35d97b87b7da144937ae1c3ca98c5e4d59140851853c4cd449ad9b003221e49",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": false
+    },
+    {
+      "path": "components/dashboard/opening-balance-form.tsx",
+      "sha256": "0d133c6bf697050518fde13410060225cfcb083a564f8012de20a1c0437f2c26",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "components/dashboard/opening-balance-money-details.tsx",
+      "sha256": "71bc108efa847d114801dabf11070a9e8193d01e3028404f770446c73cc928e7",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "components/dashboard/org-switcher.tsx",
+      "sha256": "f6c783273c64d73d5c3b7deae8a4b10873c4ab6a0841210cb657042cacde5ff0",
+      "scope": "LOC-115 organization metadata / technical admin reference",
+      "explicit_presentation": true
+    },
+    {
+      "path": "components/dashboard/payment-amount-preview.tsx",
+      "sha256": "e23c9854fd11f135424c1eb16fab4c49d03dfbcd013720a48932564ed3852296",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "components/dashboard/procurement-money-details.tsx",
+      "sha256": "be874b65788dcdfd20164124f637990ddd367861ab23288d5aa10d995aa9c1b9",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "components/dashboard/quote-money-details.tsx",
+      "sha256": "376a9d75445715dd9a2d56e1d0657c649cc3fdce074752c393c853d63c984763",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "components/dashboard/recurring-invoice-money-details.tsx",
+      "sha256": "303835f6eac425e73d4887912311576a610fae97b404c3d98984d22a5cd38b4a",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "components/dashboard/requisition-line-editor.tsx",
+      "sha256": "f88779e94ea51b387429b849efd1fecded4afd9b256a163bc15f4bfb0cad4209",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "components/dashboard/sales-receipt-money-details.tsx",
+      "sha256": "f07053b0dca77b10945384c9d96bc4024c495e02fc4a303afc4f30d01b1eb0b9",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "components/dashboard/send-document-dialog.tsx",
+      "sha256": "0cb7a9a01aa8ebbc410536820c577a02edca32667dcc92e043578d25fa8b67e7",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": false
+    },
+    {
+      "path": "components/dashboard/tax-settlement-preview.tsx",
+      "sha256": "18aded6829a2d46289c9d6cef93a7b5cad0e54cb6dddedec1d573476a427c469",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "components/landing/bento-features.tsx",
+      "sha256": "18dda0a8891a35757725f83150cc88cec26a6d94328a74e80313364529d9fa03",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "components/landing/dashboard-preview.tsx",
+      "sha256": "587786716f480119c153d8e3f5130a677ae56a38df9535d6eb555409b9ff7ff8",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "components/landing/faq.tsx",
+      "sha256": "a1f1c081266b9d0fd6554b02f333ad5359514d11b145d42949a6d4f640f932a9",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": false
+    },
+    {
+      "path": "components/landing/feature-sections.tsx",
+      "sha256": "5a251a2783214de999343865dfc94439a4661c102df2c424c5ae6e20f183c1f1",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "components/landing/footer.tsx",
+      "sha256": "1c57a9fdd3a835a639ee50ed57e73602d0be0e47388e99901dc116966f9421eb",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": false
+    },
+    {
+      "path": "components/landing/hero.tsx",
+      "sha256": "698e072b57217e09d51d46b488113cf660cf42fb1da940f4d647e70c76dc0c4d",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "components/landing/how-it-works.tsx",
+      "sha256": "359c56e91164af35a03bb4912401ff8fa78f16e6faaa998ab4c15a9df448b391",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "components/onboarding/onboarding-wizard.tsx",
+      "sha256": "bace8835e473c18a3161ad20cb3afb377120edbba3557ae7c1f2f44c95bc8da4",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "components/settings/billing-content.tsx",
+      "sha256": "8611ebeb73ae888e060e1fe871698f4fec0d50b658f75e6ca5a0cea2854284f3",
+      "scope": "DEC-008 frozen provider/subscription",
+      "explicit_presentation": false
+    },
+    {
+      "path": "components/settings/document-template-content.tsx",
+      "sha256": "1936434ec689516864482d5f2dde08a932b274b48b70705289ba6d6f64432553",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": false
+    },
+    {
+      "path": "components/ui/currency-input.tsx",
+      "sha256": "a63131e33281bd05aae5e81e3aaf4dd572b7683dec40c7840cd4ddc1f4755bc3",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "components/ui/currency-select.tsx",
+      "sha256": "f54c13e03ad3b122629fee482c6aece6cbd77eea3c8dfbd29fc695be529a0148",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": false
+    },
+    {
+      "path": "components/ui/dual-amount.tsx",
+      "sha256": "ccd76142d8eb7f37bd89d958ba501d9ec0da701c0deda89f2c9e96e7a692b2a5",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    },
+    {
+      "path": "components/ui/rate-note.tsx",
+      "sha256": "8ef1265ba1cbf7f73145ad7483b8b42668e37fcaec5595616fb6669de27021c9",
+      "scope": "LOC-129/130/131/132/133/134 adopted or inherited / explicit registry exceptions",
+      "explicit_presentation": true
+    }
+  ]
+}

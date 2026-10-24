@@ -489,3 +489,63 @@ assigned domains. LOC-132 does not complete LOC-115's independent combined audit
 Native terminology, mounted-browser/layout/focus/hydration, RTL and IRR financial
 or production activation remain separate. No build/dev server or application DB
 access occurred in this task.
+
+## LOC-115 independent whole-website acceptance
+
+The parent audit independently inspected the final combined source rather than
+accepting child status as proof. A recursive census covered all 407 TSX files in
+`app/` and `components/`; 208 lexical money/currency candidates have final source
+hashes and scope classifications in
+[`LOC-115-source-audit.json`](../evidence/LOC-115-source-audit.json). The candidate
+flags are audit aids, not automatic proof: JSX child/accessibility expressions,
+imported optional-presentation calls, local formatting closures, catalog literals,
+currency-input prefixes and actual caller ownership were inspected together.
+
+This audit found and repaired normal-unit omissions outside the child inventories:
+
+- `components/dashboard/org-switcher.tsx`: active organization currency info.
+- `app/(admin)/admin/organizations/page.tsx`: organization list currency metadata.
+- `app/(admin)/admin/organizations/[id]/page.tsx`: organization header currency.
+- Three fixed-USD Persian catalog labels: `Journals.accountBalances`,
+  `RecurringInvoices.currencyHint`, `InventoryItems.writeDownAmount`.
+
+Organization display names use isolated localized labels; the underlying org
+objects, IDs, selected organization, routes and defaultCurrency remain canonical.
+The admin detail change is limited to organization metadata; its subscription
+and provider code is untouched. The fixed-USD labels retain their actual USD
+contract and English wording; the Persian wording uses the existing dollar name.
+
+No unresolved ordinary currency-code display was left by the direct-label audit.
+The imported helper audit found no website call missing an optional presentation
+argument. Dashboard-local wrappers explicitly close over presentation and do not
+need an extra caller argument. The four prefixless CurrencyInput uses are
+numeric-only line-price/budget/CRM fields: the component has no default unit prefix
+and invents no currency. Bank grand-total/landed-cost decimal bodies intentionally
+retain existing ASCII formatting while their unit names localize.
+
+Technical currency reference/FX code columns and pairs, ISO selection/search
+values, request/organization headers, machine import/export configuration and
+CSV/JSON code contracts remain unchanged. In particular,
+`SettingsImportExport.currencyDefaultUSD` describes a technical import code field;
+`TaxCurrencies.codePlaceholder` illustrates a technical JPY identifier. Saved
+reference/user names and ambiguous arbitrary prefixes are preserved and escaped.
+The auth layout census candidate is currency-feature prose with no extra unit.
+
+The DEC-008 exceptions above remain owner-frozen: dedicated Stripe/checkout
+surfaces, billing and paid subscription pricing, public payment checkout and the
+entire mixed reconciliation illustration. No source change in this acceptance
+touches them. Email/PDF/issued snapshots and server/default output stay unchanged.
+No new business operation or REST/MCP route/tool, schema, migration, rounding,
+rescaling, FX change or IRR activation is introduced.
+
+Independent composed tests cover selector full/compact/search/canonical callbacks,
+hidden input values, preferred digits, domain rows/grouped totals, dashboard,
+operational fixed-two amounts, reports, tax, landing/public output and organization
+metadata. Literal `ریال`, exact signed int64 low digits for IRR/USD/JPY/KWD,
+safe unknown/escaped caller data, and output/ISO invariance are checked separately.
+The new parent fixtures render the real shell/list/header and opening-balance
+templates; portal/animation/page-state boundaries are controlled. They do not
+claim mounted browser filtering/focus/layout/hydration qualification.
+
+Owner-specified `ریال` is fixed. Other terminology remains provisional for
+L10N-001/L10N-012. RTL-001 and native/browser qualification stay independent.

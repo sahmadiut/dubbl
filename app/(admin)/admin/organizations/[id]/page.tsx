@@ -1,6 +1,8 @@
 "use client";
 
 import { adminPlanLabel, adminStatusLabel, adminRoleLabel } from "@/i18n/admin-labels";
+import { currencyLabel } from "@/i18n/currency-labels";
+import { usePresentation } from "@/i18n/provider";
 import { SubscriptionDescription } from "@/components/admin/subscription-description";
 import { useTranslations } from "next-intl";
 
@@ -142,6 +144,7 @@ export default function AdminOrgDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const presentation = usePresentation();
   const t = useTranslations("Admin");
 
   const { id } = use(params);
@@ -326,7 +329,7 @@ export default function AdminOrgDetailPage({
                 </Badge>
               </div>
               <p className="text-xs text-muted-foreground">
-                {org.slug} · {org.defaultCurrency} · {t("created", { date: new Date(org.createdAt).toLocaleDateString() })}
+                {org.slug} · <bdi>{currencyLabel(org.defaultCurrency, presentation.locale)}</bdi> · {t("created", { date: new Date(org.createdAt).toLocaleDateString() })}
               </p>
             </div>
           </div>

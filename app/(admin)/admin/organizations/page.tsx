@@ -1,6 +1,8 @@
 "use client";
 
 import { adminPlanLabel } from "@/i18n/admin-labels";
+import { currencyLabel } from "@/i18n/currency-labels";
+import { usePresentation } from "@/i18n/provider";
 import { useTranslations } from "next-intl";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -48,6 +50,7 @@ const PLAN_BADGE: Record<string, string> = {
 type SortKey = "name" | "created" | "members";
 
 export default function AdminOrganizationsPage() {
+  const presentation = usePresentation();
   const t = useTranslations("Admin");
 
   const [orgs, setOrgs] = useState<Org[]>([]);
@@ -238,7 +241,7 @@ export default function AdminOrganizationsPage() {
                       )}
                     </div>
                     <p className="truncate text-xs text-muted-foreground">
-                      {o.slug} · {o.defaultCurrency}
+                      {o.slug} · <bdi>{currencyLabel(o.defaultCurrency, presentation.locale)}</bdi>
                     </p>
                   </div>
                   <div className="hidden sm:flex items-center gap-1 text-xs text-muted-foreground">

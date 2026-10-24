@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { authErrorMessage, AuthPresentationError } from "@/i18n/auth-errors";
 
 import { useState, useEffect } from "react";
@@ -113,7 +114,7 @@ export default function SignUpPage() {
   }
 
   return (
-    <div>
+    <div className="min-w-0 [overflow-wrap:anywhere]">
       <motion.div
         className="mb-7"
         initial={{ opacity: 0, y: 12 }}
@@ -146,7 +147,7 @@ export default function SignUpPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.03 }}
         >
-          {t("allowedDomains", { domains: providers.allowedDomains.split(",").join(", ") })}
+          {t.rich("allowedDomains", { domains: providers.allowedDomains.split(",").join(", "), code: (chunks) => <IdentifierText>{chunks}</IdentifierText> })}
         </motion.div>
       )}
 
@@ -163,7 +164,7 @@ export default function SignUpPage() {
               <Button
                 type="button"
                 variant="outline"
-                className="h-11 rounded-lg text-sm font-medium"
+                className="h-auto min-h-11 whitespace-normal py-2 rounded-lg text-sm font-medium"
                 onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
               >
                 <GoogleIcon className="size-4" />
@@ -174,7 +175,7 @@ export default function SignUpPage() {
               <Button
                 type="button"
                 variant="outline"
-                className="h-11 rounded-lg text-sm font-medium"
+                className="h-auto min-h-11 whitespace-normal py-2 rounded-lg text-sm font-medium"
                 onClick={() => signIn("apple", { callbackUrl: "/dashboard" })}
               >
                 <AppleIcon className="size-4" />
@@ -201,8 +202,8 @@ export default function SignUpPage() {
         transition={{ duration: 0.4, delay: 0.1 }}
       >
         {error && (
-          <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-950/40 dark:text-red-400">
-            {error}
+          <div role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-950/40 dark:text-red-400">
+            <BidiText>{error}</BidiText>
           </div>
         )}
 
@@ -212,6 +213,7 @@ export default function SignUpPage() {
           </Label>
           <Input
             id="name"
+            dir="auto"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder={t("yourName")}
@@ -242,6 +244,7 @@ export default function SignUpPage() {
           </Label>
           <Input
             id="password"
+            dir="ltr"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -254,7 +257,7 @@ export default function SignUpPage() {
 
         <Button
           type="submit"
-          className="h-11 w-full rounded-lg bg-emerald-600 shadow-md shadow-emerald-600/15 transition-all hover:bg-emerald-500 hover:shadow-lg hover:shadow-emerald-600/20 active:scale-[0.98]"
+          className="h-auto min-h-11 whitespace-normal py-2 w-full rounded-lg bg-emerald-600 shadow-md shadow-emerald-600/15 transition-all hover:bg-emerald-500 hover:shadow-lg hover:shadow-emerald-600/20 active:scale-[0.98]"
           disabled={loading}
         >
           {loading ? (
@@ -262,7 +265,7 @@ export default function SignUpPage() {
           ) : (
             <span className="inline-flex items-center gap-2">
               {t("create")}
-              <ArrowRight className="size-4" />
+              <ArrowRight className="size-4 shrink-0 [&:dir(rtl)]:rotate-180" />
             </span>
           )}
         </Button>

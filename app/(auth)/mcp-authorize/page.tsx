@@ -1,8 +1,14 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { BidiText } from "@/components/ui/bidi-text";
 import { authErrorMessage, AuthPresentationError } from "@/i18n/auth-errors";
 import { richTextTags } from "@/i18n/rich-text";
+
+const consentRichTextTags = {
+  ...richTextTags,
+  strong: (chunks: React.ReactNode) => <BidiText><strong>{chunks}</strong></BidiText>,
+};
 
 import { Suspense, useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -107,7 +113,7 @@ function McpAuthorizeContent() {
   }
 
   return (
-    <div>
+    <div className="min-w-0 [overflow-wrap:anywhere]">
       <motion.div
         className="mb-7"
         initial={{ opacity: 0, y: 12 }}
@@ -121,7 +127,7 @@ function McpAuthorizeContent() {
           {t("title")}
         </h1>
         <p className="mt-1.5 text-sm text-muted-foreground">
-          {t.rich("request", { ...richTextTags, client: clientName })}
+          {t.rich("request", { ...consentRichTextTags, client: clientName })}
         </p>
       </motion.div>
 
@@ -132,8 +138,8 @@ function McpAuthorizeContent() {
         transition={{ duration: 0.4, delay: 0.05 }}
       >
         {error && (
-          <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-950/40 dark:text-red-400">
-            {error}
+          <div role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-950/40 dark:text-red-400">
+            <BidiText>{error}</BidiText>
           </div>
         )}
 
@@ -151,15 +157,17 @@ function McpAuthorizeContent() {
 
         {organizations.length > 1 && (
           <div className="space-y-2">
-            <label className="text-xs font-medium">{t("selectOrg")}</label>
+            <label htmlFor="consent-organization" className="text-xs font-medium">{t("selectOrg")}</label>
             <Select value={selectedOrg} onValueChange={setSelectedOrg}>
-              <SelectTrigger className="h-11 rounded-lg">
-                <SelectValue placeholder={t("chooseOrg")} />
+              <SelectTrigger id="consent-organization" className="h-auto data-[size=default]:h-auto min-h-11 w-full min-w-0 rounded-lg whitespace-normal *:data-[slot=select-value]:min-w-0 *:data-[slot=select-value]:whitespace-normal *:data-[slot=select-value]:line-clamp-none">
+                <SelectValue placeholder={t("chooseOrg")}>
+                  {selectedOrg && <BidiText>{organizations.find((org) => org.id === selectedOrg)?.name}</BidiText>}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {organizations.map((org) => (
                   <SelectItem key={org.id} value={org.id}>
-                    {org.name}
+                    <BidiText>{org.name}</BidiText>
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -169,22 +177,22 @@ function McpAuthorizeContent() {
 
         {organizations.length === 1 && (
           <div className="rounded-lg border bg-muted/30 p-3 text-sm">
-            {t.rich("organization", { ...richTextTags, name: organizations[0].name })}
+            {t.rich("organization", { ...consentRichTextTags, name: organizations[0].name })}
           </div>
         )}
 
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <Button
             variant="outline"
-            className="h-11 flex-1 rounded-lg"
+            className="h-auto min-h-11 min-w-0 whitespace-normal py-2 flex-1 rounded-lg"
             onClick={handleDeny}
             disabled={loading}
           >
-            <X className="mr-1.5 size-4" />
+            <X className="me-1.5 size-4 shrink-0" />
             {t("deny")}
           </Button>
           <Button
-            className="h-11 flex-1 rounded-lg bg-emerald-600 shadow-md shadow-emerald-600/15 transition-all hover:bg-emerald-500 hover:shadow-lg hover:shadow-emerald-600/20 active:scale-[0.98]"
+            className="h-auto min-h-11 min-w-0 whitespace-normal py-2 flex-1 rounded-lg bg-emerald-600 shadow-md shadow-emerald-600/15 transition-all hover:bg-emerald-500 hover:shadow-lg hover:shadow-emerald-600/20 active:scale-[0.98]"
             onClick={handleApprove}
             disabled={loading || !selectedOrg}
           >

@@ -607,3 +607,16 @@ RTL-008 retains exhaustive combined module/output acceptance; RTL-002 remains it
 - [RTL-021](../tasks/RTL-021.md): Adopt bidi across shared editors and workspace controls; RTL-010 child.
 
 Source audit identified independent summary/navigation, banking input, domain/output, chart and shared-editor contracts. All 276 dashboard files have exactly one child owner; other owners and frozen sources remain unchanged. RTL-010 retains independent combined acceptance.
+
+## RTL-011 public and output adoption
+
+- [RTL-022](../tasks/RTL-022.md): Adopt bidi across authentication and MCP consent; 4 census sources; RTL-011 child.
+- [RTL-023](../tasks/RTL-023.md): Adopt bidi across administration; 9 census sources; RTL-011 child.
+- [RTL-024](../tasks/RTL-024.md): Adopt bidi across onboarding; 3 census sources; RTL-011 child.
+- [RTL-025](../tasks/RTL-025.md): Adopt bidi across public marketing documentation and shared shells; 35 census sources; RTL-011 child.
+- [RTL-026](../tasks/RTL-026.md): Adopt bidi across customer portals and signing; 9 census sources; RTL-011 child.
+- [RTL-027](../tasks/RTL-027.md): Adopt bidi across shared settings and import controls; 14 census sources; RTL-011 child.
+- [RTL-028](../tasks/RTL-028.md): Audit remaining UI primitives and confirmation controls; 53 census sources; RTL-011 child.
+- [RTL-029](../tasks/RTL-029.md): Adopt bidi across email and document outputs; 8 census sources; RTL-011 child.
+
+All 135 public/shared/output sources have one child owner. Source findings separate credentials/consent, admin, onboarding, public shells, portals/signing, settings/import, framework primitives and output engines. RTL-011 retains independent combined acceptance.

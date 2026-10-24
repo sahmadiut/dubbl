@@ -165,7 +165,7 @@
     "creating": "Creating account...",
     "create": "Create account",
     "hasAccount": "Already have an account?",
-    "allowedDomains": "Registration is limited to: {domains}",
+    "allowedDomains": "Registration is limited to: <code>{domains}</code>",
     "passwordPlaceholder": "Your password",
     "codePlaceholder": "6-digit code or backup code",
     "codeHint": "Enter the code from your authenticator app, or a backup code."

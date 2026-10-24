@@ -165,7 +165,7 @@
     "creating": "در حال ایجاد حساب...",
     "create": "ایجاد حساب",
     "hasAccount": "از قبل حساب دارید؟",
-    "allowedDomains": "ثبت‌نام به این دامنه‌ها محدود است: {domains}",
+    "allowedDomains": "ثبت‌نام به این دامنه‌ها محدود است: <code>{domains}</code>",
     "passwordPlaceholder": "گذرواژه شما",
     "codePlaceholder": "کد ۶ رقمی یا کد پشتیبان",
     "codeHint": "کد برنامه احراز هویت یا یکی از کدهای پشتیبان را وارد کنید."

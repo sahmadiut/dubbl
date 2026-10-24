@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { BidiText } from "@/components/ui/bidi-text";
 import { AuthPresentationError } from "@/i18n/auth-errors";
 
 import { setActiveOrganization } from "@/i18n/organization-client";
@@ -153,7 +154,7 @@ function SignInContent() {
   }
 
   return (
-    <div>
+    <div className="min-w-0 [overflow-wrap:anywhere]">
       <motion.div
         className="mb-7"
         initial={{ opacity: 0, y: 12 }}
@@ -177,7 +178,7 @@ function SignInContent() {
           <Button
             type="button"
             variant="outline"
-            className="w-full rounded-lg border-dashed border-amber-400/60 bg-amber-50/80 text-amber-700 hover:bg-amber-100 hover:text-amber-800 dark:border-amber-500/30 dark:bg-amber-950/30 dark:text-amber-400 dark:hover:bg-amber-950/50"
+            className="h-auto min-h-11 whitespace-normal py-2 w-full rounded-lg border-dashed border-amber-400/60 bg-amber-50/80 text-amber-700 hover:bg-amber-100 hover:text-amber-800 dark:border-amber-500/30 dark:bg-amber-950/30 dark:text-amber-400 dark:hover:bg-amber-950/50"
             onClick={handleDevLogin}
             disabled={devLoading}
           >
@@ -204,7 +205,7 @@ function SignInContent() {
               <Button
                 type="button"
                 variant="outline"
-                className="h-11 rounded-lg text-sm font-medium"
+                className="h-auto min-h-11 whitespace-normal py-2 rounded-lg text-sm font-medium"
                 onClick={() => signIn("google", { callbackUrl })}
               >
                 <GoogleIcon className="size-4" />
@@ -215,7 +216,7 @@ function SignInContent() {
               <Button
                 type="button"
                 variant="outline"
-                className="h-11 rounded-lg text-sm font-medium"
+                className="h-auto min-h-11 whitespace-normal py-2 rounded-lg text-sm font-medium"
                 onClick={() => signIn("apple", { callbackUrl })}
               >
                 <AppleIcon className="size-4" />
@@ -242,8 +243,8 @@ function SignInContent() {
         transition={{ duration: 0.4, delay: 0.1 }}
       >
         {error && (
-          <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-950/40 dark:text-red-400">
-            {error}
+          <div role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-950/40 dark:text-red-400">
+            <BidiText>{error}</BidiText>
           </div>
         )}
 
@@ -269,6 +270,7 @@ function SignInContent() {
           </Label>
           <Input
             id="password"
+            dir="ltr"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -285,6 +287,7 @@ function SignInContent() {
             </Label>
             <Input
               id="totp"
+              dir="ltr"
               type="text"
               inputMode="numeric"
               autoComplete="one-time-code"
@@ -303,7 +306,7 @@ function SignInContent() {
 
         <Button
           type="submit"
-          className="h-11 w-full rounded-lg bg-emerald-600 shadow-md shadow-emerald-600/15 transition-all hover:bg-emerald-500 hover:shadow-lg hover:shadow-emerald-600/20 active:scale-[0.98]"
+          className="h-auto min-h-11 whitespace-normal py-2 w-full rounded-lg bg-emerald-600 shadow-md shadow-emerald-600/15 transition-all hover:bg-emerald-500 hover:shadow-lg hover:shadow-emerald-600/20 active:scale-[0.98]"
           disabled={loading}
         >
           {loading ? (
@@ -311,7 +314,7 @@ function SignInContent() {
           ) : (
             <span className="inline-flex items-center gap-2">
               {t("signIn")}
-              <ArrowRight className="size-4" />
+              <ArrowRight className="size-4 shrink-0 [&:dir(rtl)]:rotate-180" />
             </span>
           )}
         </Button>

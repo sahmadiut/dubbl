@@ -47,7 +47,7 @@ export default function AuthLayout({
   ];
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-background">
+    <div className="relative flex min-h-screen min-w-0 flex-col [overflow-wrap:anywhere] bg-background">
       {/* Background effects */}
       <div className="noise-overlay pointer-events-none fixed inset-0 z-0" />
       <div className="pointer-events-none fixed inset-0 z-0 gradient-mesh" />
@@ -125,7 +125,7 @@ export default function AuthLayout({
               </div>
             </div>
 
-            <div className="grid lg:grid-cols-[1.2fr_1fr]">
+            <div className="grid min-w-0 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
               {/* ---- Left: grain gradient showcase ---- */}
               <div className="relative hidden overflow-hidden border-e border-white/10 lg:block">
                 {/* Green grain gradient background */}
@@ -157,7 +157,7 @@ export default function AuthLayout({
                   }}
                 >
                   <div className="relative h-full w-full">
-                    <svg className="absolute inset-0 h-full w-full">
+                    <svg aria-hidden="true" className="absolute inset-0 h-full w-full">
                       {networkEdges.map(([from, to], i) => (
                         <motion.line
                           key={i}
@@ -243,7 +243,7 @@ export default function AuthLayout({
                     </div>
 
                     {/* Feature badges below card */}
-                    <div className="mt-5 flex items-center gap-2">
+                    <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
                       {features.map(({ text, icon: Icon }) => (
                         <div
                           key={text}
@@ -262,14 +262,14 @@ export default function AuthLayout({
               </div>
 
               {/* ---- Right: form panel ---- */}
-              <div className="relative flex flex-col justify-center px-6 py-10 sm:px-10 lg:px-12 lg:py-12">
-                <div className="mx-auto w-full max-w-sm">{children}</div>
+              <div className="relative flex min-w-0 flex-col justify-center px-6 py-10 sm:px-10 lg:px-12 lg:py-12">
+                <div className="mx-auto w-full min-w-0 max-w-sm">{children}</div>
               </div>
             </div>
           </div>
 
           {/* Footer */}
-          <div className="mt-5 flex items-center justify-center gap-4 text-[11px] text-muted-foreground">
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-4 text-[11px] text-muted-foreground">
             <Link
               href="/"
               className="inline-flex items-center gap-0.5 transition-colors hover:text-foreground"

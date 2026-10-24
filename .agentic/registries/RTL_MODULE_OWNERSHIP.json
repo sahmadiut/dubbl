@@ -1,49 +1,49 @@
 {
-  "scope": "Exhaustive app/components/lib TSX census at RTL-008 split. Ownership is audit responsibility, not a pass. Imported non-TSX output builders belong with their consuming surface; new files require classification. Shared inherited foundation does not constitute dedicated provider work. RTL-010 dashboard ownership subdivided after source audit into RTL-012 through RTL-021; intermediate and root parents retain independent acceptance.",
+  "scope": "Exhaustive app/components/lib TSX census at RTL-008 split. Ownership is audit responsibility, not a pass. Imported non-TSX output builders belong with their consuming surface; new files require classification. Shared inherited foundation does not constitute dedicated provider work. RTL-010 dashboard ownership subdivided after source audit into RTL-012 through RTL-021; intermediate and root parents retain independent acceptance. RTL-011 public/shared/output ownership subdivided after source audit into RTL-022 through RTL-029; the parent retains independent combined acceptance.",
   "files": [
     {
       "path": "app/(admin)/admin/email-preview/page.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-023"
     },
     {
       "path": "app/(admin)/admin/layout.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-023"
     },
     {
       "path": "app/(admin)/admin/organizations/[id]/page.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-023"
     },
     {
       "path": "app/(admin)/admin/organizations/page.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-023"
     },
     {
       "path": "app/(admin)/admin/page.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-023"
     },
     {
       "path": "app/(admin)/admin/settings/page.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-023"
     },
     {
       "path": "app/(admin)/admin/users/page.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-023"
     },
     {
       "path": "app/(auth)/layout.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-022"
     },
     {
       "path": "app/(auth)/mcp-authorize/page.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-022"
     },
     {
       "path": "app/(auth)/sign-in/page.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-022"
     },
     {
       "path": "app/(auth)/sign-up/page.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-022"
     },
     {
       "path": "app/(dashboard)/accounting/[id]/page.tsx",
@@ -919,91 +919,91 @@
     },
     {
       "path": "app/(landing)/layout.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-025"
     },
     {
       "path": "app/(landing)/page.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-025"
     },
     {
       "path": "app/(landing)/pricing/page.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-025"
     },
     {
       "path": "app/(landing)/privacy/page.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-025"
     },
     {
       "path": "app/(landing)/terms/page.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-025"
     },
     {
       "path": "app/(onboarding)/layout.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-024"
     },
     {
       "path": "app/(onboarding)/onboarding/page.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-024"
     },
     {
       "path": "app/docs/[[...slug]]/page.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-025"
     },
     {
       "path": "app/docs/layout.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-025"
     },
     {
       "path": "app/layout.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-025"
     },
     {
       "path": "app/not-found.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-025"
     },
     {
       "path": "app/pay/[token]/page.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-026"
     },
     {
       "path": "app/portal/[token]/invoices/page.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-026"
     },
     {
       "path": "app/portal/[token]/layout.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-026"
     },
     {
       "path": "app/portal/[token]/page.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-026"
     },
     {
       "path": "app/portal/[token]/payments/page.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-026"
     },
     {
       "path": "app/portal/[token]/quotes/page.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-026"
     },
     {
       "path": "app/portal/[token]/statements/page.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-026"
     },
     {
       "path": "app/sign/[token]/page.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-026"
     },
     {
       "path": "app/sign/[token]/signature-canvas.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-026"
     },
     {
       "path": "components/admin/navigation.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-023"
     },
     {
       "path": "components/admin/site-settings-form.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-023"
     },
     {
       "path": "components/admin/subscription-description.tsx",
@@ -1011,7 +1011,7 @@
     },
     {
       "path": "components/bulk-import-wizard.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-027"
     },
     {
       "path": "components/dashboard/account-picker.tsx",
@@ -1263,119 +1263,119 @@
     },
     {
       "path": "components/landing/bento-features.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-025"
     },
     {
       "path": "components/landing/cta-section.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-025"
     },
     {
       "path": "components/landing/dashboard-preview.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-025"
     },
     {
       "path": "components/landing/faq.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-025"
     },
     {
       "path": "components/landing/feature-sections.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-025"
     },
     {
       "path": "components/landing/footer.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-025"
     },
     {
       "path": "components/landing/gradient-background.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-025"
     },
     {
       "path": "components/landing/hero.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-025"
     },
     {
       "path": "components/landing/how-it-works.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-025"
     },
     {
       "path": "components/landing/integrations.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-025"
     },
     {
       "path": "components/landing/navbar.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-025"
     },
     {
       "path": "components/landing/open-source.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-025"
     },
     {
       "path": "components/landing/testimonials.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-025"
     },
     {
       "path": "components/landing/trust-bar.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-025"
     },
     {
       "path": "components/legal/legal-page-layout.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-025"
     },
     {
       "path": "components/legal/legal-toc.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-025"
     },
     {
       "path": "components/onboarding/onboarding-wizard.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-024"
     },
     {
       "path": "components/settings/api-key-fields.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-027"
     },
     {
       "path": "components/settings/approval-condition-help.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-027"
     },
     {
       "path": "components/settings/audit-activity-text.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-027"
     },
     {
       "path": "components/settings/billing-content.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-027"
     },
     {
       "path": "components/settings/cost-center-delete-description.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-027"
     },
     {
       "path": "components/settings/data-management-content.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-027"
     },
     {
       "path": "components/settings/document-template-content.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-027"
     },
     {
       "path": "components/settings/locale-preferences.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-027"
     },
     {
       "path": "components/settings/notification-preferences-form.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-027"
     },
     {
       "path": "components/settings/procurement-settings-form.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-027"
     },
     {
       "path": "components/settings/reminder-template-fields.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-027"
     },
     {
       "path": "components/settings/role-permission-fields.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-027"
     },
     {
       "path": "components/settings/stripe-integration-card.tsx",
@@ -1383,291 +1383,291 @@
     },
     {
       "path": "components/settings/tag-fields.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-027"
     },
     {
       "path": "components/shared/animated-counter.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-025"
     },
     {
       "path": "components/shared/container.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-025"
     },
     {
       "path": "components/shared/grid-background.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-025"
     },
     {
       "path": "components/shared/hero-background.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-025"
     },
     {
       "path": "components/shared/logo.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-025"
     },
     {
       "path": "components/shared/orbital-decoration.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-025"
     },
     {
       "path": "components/shared/scroll-reveal.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-025"
     },
     {
       "path": "components/shared/section-header.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-025"
     },
     {
       "path": "components/shared/theme-provider.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-025"
     },
     {
       "path": "components/shared/theme-toggle.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-025"
     },
     {
       "path": "components/ui/accordion.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/arrow-left-right-animated.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/avatar.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/badge.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/bidi-text.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/blur-reveal.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/breadcrumb.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/button-3d.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/button.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/calendar.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/card.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/cart.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/chart-line.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/checkbox.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/circle-help.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/collapsible.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/command.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/content-reveal.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/currency-input.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/currency-select.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/date-picker.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/dialog.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/dropdown-menu.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/dual-amount.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/file-text.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/folder-open.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/gauge.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/hand-coins.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/input.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/label.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/landmark-animated.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/layers.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/percent-animated.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/popover.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/rate-note.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/receipt-animated.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/search-input.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/select.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/separator.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/settings.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/sheet.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/sidebar.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/skeleton.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/sonner.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/stagger.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/switch.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/table.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/tabs.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/target.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/textarea.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/tooltip.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "components/ui/users-animated.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     },
     {
       "path": "lib/documents/pdf-renderer.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-029"
     },
     {
       "path": "lib/email/templates/document-sent.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-029"
     },
     {
       "path": "lib/email/templates/layout.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-029"
     },
     {
       "path": "lib/email/templates/login-alert.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-029"
     },
     {
       "path": "lib/email/templates/member-invite.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-029"
     },
     {
       "path": "lib/email/templates/notification-digest.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-029"
     },
     {
       "path": "lib/email/templates/org-created.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-029"
     },
     {
       "path": "lib/email/templates/welcome.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-029"
     },
     {
       "path": "lib/hooks/use-confirm.tsx",
-      "owner": "RTL-011"
+      "owner": "RTL-028"
     }
   ]
 }

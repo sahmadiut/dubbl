@@ -1,4 +1,5 @@
 "use client";
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { usePresentation } from "@/i18n/provider";
 import { currencyLabel } from "@/i18n/currency-labels";
 import { bankUiAccount, bankUiTransaction, bankUiReport, bankUiReconciliation, bankUiBalance } from "@/lib/money/bank-ui";
@@ -310,37 +311,25 @@ export default function ReconcilePage() {
 
   return (
     <ContentReveal className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-8 shrink-0"
-          aria-label={t("back")}
-          onClick={() => router.push(`/accounting/banking/${id}`)}
-        >
-          <ArrowLeft className="size-4" />
+      <div className="flex flex-wrap items-center gap-3">
+        <Button variant="ghost" size="icon" aria-label={t("back")} onClick={() => router.push(`/accounting/banking/${id}`)} className="h-auto min-h-8 min-w-0 whitespace-normal size-8 shrink-0">
+          <ArrowLeft className="[&:dir(rtl)]:rotate-180 size-4" />
         </Button>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-lg font-semibold tracking-tight truncate">
-            {t("title", { account: account.accountName })}
+        <div className="min-w-0 flex-1 basis-40">
+          <h1 className="text-lg font-semibold tracking-tight min-w-0 whitespace-normal [overflow-wrap:anywhere]">
+            <BidiText>{t("title", { account: account.accountName })}</BidiText>
           </h1>
           <p className="text-sm text-muted-foreground">
             {t("hint")}
           </p>
         </div>
         {activeRec ? (
-          <Button
-            size="sm"
-            onClick={() => finishStatementCheck()}
-            disabled={acting || !report || report.currencyCode !== report.glCurrencyCode}
-            className="bg-emerald-600 hover:bg-emerald-700"
-            title={t("finishAllTitle")}
-          >
-            <CheckCircle className="mr-1.5 size-3.5" />
+          <Button size="sm" onClick={() => finishStatementCheck()} disabled={acting || !report || report.currencyCode !== report.glCurrencyCode} title={t("finishAllTitle")} className="h-auto min-h-8 min-w-0 whitespace-normal bg-emerald-600 hover:bg-emerald-700">
+            <CheckCircle className="me-1.5 size-3.5" />
             {t("finish")}
           </Button>
         ) : (
-          <Button variant="outline" size="sm" onClick={() => setSheetOpen(true)}>
+          <Button variant="outline" size="sm" onClick={() => setSheetOpen(true)} className="h-auto min-h-8 min-w-0 whitespace-normal">
             {t("checkStatement")}
           </Button>
         )}
@@ -348,19 +337,19 @@ export default function ReconcilePage() {
 
       {/* Progress bar */}
       <div className="rounded-xl border bg-card overflow-hidden">
-        <div className="grid grid-cols-3 divide-x">
+        <div className="grid grid-cols-1 divide-y sm:grid-cols-3 sm:divide-y-0 sm:divide-x rtl:sm:divide-x-reverse">
           <div className="p-4">
             <p className="text-[11px] text-muted-foreground uppercase tracking-wide">{t("accountBalance")}</p>
             <p className="mt-1 text-xl font-semibold font-mono tabular-nums">
-              {formatBankAmount(account?.balance || 0n)}
+              <BidiText>{formatBankAmount(account?.balance || 0n)}</BidiText>
             </p>
           </div>
           <div className="p-4">
             <p className="text-[11px] text-muted-foreground uppercase tracking-wide">{t("stillToMatch")}</p>
             <p className="mt-1 text-xl font-semibold font-mono tabular-nums">
               {transactions.length}
-              <span className="text-sm font-normal text-muted-foreground ml-1.5">
-                ({formatBankAmount(unreconciledTotal)})
+              <span className="text-sm font-normal text-muted-foreground ms-1.5">
+                (<BidiText>{formatBankAmount(unreconciledTotal)}</BidiText>)
               </span>
             </p>
           </div>
@@ -374,7 +363,7 @@ export default function ReconcilePage() {
             )}>
               {selectedIds.size > 0 ? formatBankAmount(selectedTotal) : "-"}
               {selectedIds.size > 0 && (
-                <span className="text-sm font-normal text-muted-foreground ml-1.5">
+                <span className="text-sm font-normal text-muted-foreground ms-1.5">
                   ({t("itemCount", { count: selectedIds.size })})
                 </span>
               )}
@@ -382,25 +371,13 @@ export default function ReconcilePage() {
           </div>
         </div>
         {selectedIds.size > 0 && (
-          <div className="flex items-center gap-2 px-4 py-2.5 border-t bg-muted/30">
-            <Button
-              size="sm"
-              onClick={() => finishStatementCheck([...selectedIds])}
-              disabled={acting || !activeRec}
-              className="bg-emerald-600 hover:bg-emerald-700"
-              title={activeRec ? t("finishSelectedTitle") : t("startFirstTitle")}
-            >
-              <CheckCircle className="mr-1.5 size-3.5" />
+          <div className="flex flex-wrap items-center gap-2 px-4 py-2.5 border-t bg-muted/30">
+            <Button size="sm" onClick={() => finishStatementCheck([...selectedIds])} disabled={acting || !activeRec} title={activeRec ? t("finishSelectedTitle") : t("startFirstTitle")} className="h-auto min-h-8 min-w-0 whitespace-normal bg-emerald-600 hover:bg-emerald-700">
+              <CheckCircle className="me-1.5 size-3.5" />
               {t("markSelected", { count: selectedIds.size })}
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => bulkAction("exclude")}
-              disabled={acting || transactions.some((tx) => selectedIds.has(tx.id) && (tx.status === "reconciled" || tx.journalEntryId !== null))}
-              title={t("ignoreTitle")}
-            >
-              <XCircle className="mr-1.5 size-3.5" />
+            <Button variant="outline" size="sm" onClick={() => bulkAction("exclude")} disabled={acting || transactions.some((tx) => selectedIds.has(tx.id) && (tx.status === "reconciled" || tx.journalEntryId !== null))} title={t("ignoreTitle")} className="h-auto min-h-8 min-w-0 whitespace-normal">
+              <XCircle className="me-1.5 size-3.5" />
               {t("ignoreSelected", { count: selectedIds.size })}
             </Button>
             <div className="flex-1" />
@@ -437,15 +414,10 @@ export default function ReconcilePage() {
         </div>
       ) : (
         <div className="space-y-3">
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder={t("search")}
-                className="pl-9 h-8 text-sm"
-              />
+              <Search className="absolute start-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("search")} className="ps-9 h-8 text-sm" dir="auto" aria-label={t("search")} />
             </div>
             <button
               type="button"
@@ -481,7 +453,7 @@ export default function ReconcilePage() {
                   onClick={() => toggleSelect(tx)}
                   aria-disabled={!categorized}
                   className={cn(
-                    "flex w-full items-center gap-3 px-4 py-3 text-left transition-colors",
+                    "flex w-full items-center gap-3 px-4 py-3 text-start transition-colors",
                     !categorized
                       ? "cursor-not-allowed opacity-60 hover:bg-muted/20"
                       : selected
@@ -511,21 +483,21 @@ export default function ReconcilePage() {
                     {isIncome ? <ArrowDownRight className="size-4" /> : <ArrowUpRight className="size-4" />}
                   </div>
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium truncate">{tx.description}</p>
+                  <div className="min-w-0 flex-1 basis-40">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-sm font-medium min-w-0 whitespace-normal [overflow-wrap:anywhere]"><BidiText>{tx.description}</BidiText></p>
                       {categorized && tx.accountName && (
-                        <span className="text-xs text-muted-foreground truncate shrink min-w-0">
-                          &rarr; {tx.accountName}
+                        <span className="text-xs text-muted-foreground min-w-0 whitespace-normal [overflow-wrap:anywhere] shrink min-w-0">
+                          &rarr; <BidiText>{tx.accountName}</BidiText>
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-xs text-muted-foreground">{tx.date}</span>
+                    <div className="flex flex-wrap items-center gap-2 mt-0.5">
+                      <span className="text-xs text-muted-foreground"><IdentifierText>{tx.date}</IdentifierText></span>
                       {tx.reference && (
                         <>
                           <span className="text-muted-foreground/30">·</span>
-                          <span className="text-xs text-muted-foreground">{tx.reference}</span>
+                          <span className="text-xs text-muted-foreground"><IdentifierText>{tx.reference}</IdentifierText></span>
                         </>
                       )}
                       {!categorized && (
@@ -543,7 +515,7 @@ export default function ReconcilePage() {
                     "font-mono text-sm font-medium tabular-nums shrink-0",
                     isIncome ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
                   )}>
-                    {isIncome ? "+" : ""}{formatBankAmount(tx.amount)}
+                    {isIncome ? "+" : ""}<BidiText>{formatBankAmount(tx.amount)}</BidiText>
                   </p>
                 </button>
               );
@@ -560,12 +532,12 @@ export default function ReconcilePage() {
             {reconciliations.map((rec) => (
               <div key={rec.id} className="flex items-center gap-4 px-4 py-3">
                 <Calendar className="size-4 shrink-0 text-muted-foreground" />
-                <div className="flex-1 min-w-0">
+                <div className="min-w-0 flex-1 basis-40">
                   <p className="text-sm font-medium">
                     {t("range", { start: rec.startDate, end: rec.endDate })}
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    {t("range", { start: formatBankAmount(rec.startBalance), end: formatBankAmount(rec.endBalance) })}
+                    <BidiText>{t("range", { start: formatBankAmount(rec.startBalance), end: formatBankAmount(rec.endBalance) })}</BidiText>
                   </p>
                 </div>
                 <Badge
@@ -633,39 +605,27 @@ export default function ReconcilePage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="statement-opening">{t("openingBalance", { currency: currencyLabel(account.currencyCode, unitPresentation.locale) })}</Label>
-                  <Input
-                    inputMode="decimal"
-                    id="statement-opening"
-                    value={recForm.startBalance}
-                    onChange={(event) =>
+                  <Input inputMode="decimal" id="statement-opening" value={recForm.startBalance} onChange={(event) =>
                       setRecForm({ ...recForm, startBalance: event.target.value })
-                    }
-                    placeholder="0.00"
-                  />
+                    } placeholder="0.00" dir="ltr" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="statement-closing">{t("closingBalance", { currency: currencyLabel(account.currencyCode, unitPresentation.locale) })}</Label>
-                  <Input
-                    inputMode="decimal"
-                    id="statement-closing"
-                    value={recForm.endBalance}
-                    onChange={(event) =>
+                  <Input inputMode="decimal" id="statement-closing" value={recForm.endBalance} onChange={(event) =>
                       setRecForm({ ...recForm, endBalance: event.target.value })
-                    }
-                    placeholder="0.00"
-                  />
+                    } placeholder="0.00" dir="ltr" />
                 </div>
               </div>
             </div>
           </div>
-          <div className="sticky bottom-0 flex items-center justify-end gap-3 border-t bg-background/80 px-6 py-4 backdrop-blur-sm">
-            <Button variant="outline" onClick={() => setSheetOpen(false)}>
+          <div className="sticky bottom-0 flex flex-wrap items-center justify-end gap-3 border-t bg-background/80 px-6 py-4 backdrop-blur-sm">
+            <Button variant="outline" onClick={() => setSheetOpen(false)} className="h-auto min-h-8 min-w-0 whitespace-normal">
               {t("cancel")}
             </Button>
             <Button
               onClick={createReconciliation}
               disabled={!recForm.startDate || !recForm.endDate || savingRec}
-              className="bg-emerald-600 hover:bg-emerald-700"
+              className="h-auto min-h-8 min-w-0 whitespace-normal bg-emerald-600 hover:bg-emerald-700"
             >
               {savingRec ? t("starting") : t("start")}
             </Button>

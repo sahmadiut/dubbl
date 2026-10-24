@@ -1,0 +1,11 @@
+# RTL-013 self-review
+
+Reviewer: codex-batch01-task2. Kind: self. Result: approve for this bounded child only. This is not owner/native/peer/browser/accounting acceptance.
+
+I reviewed all eleven assigned files against their original sources and the ownership registry. Exact money helpers, underlying REST/MCP payloads/routes/headers/IDs, canonical dates/statuses, preserved input values, callback guards and original financial calculations remain unchanged. An AST comparison found identical non-JSX control/data/function trees after excluding only the new bidi import. Actual production callback tests confirm exact low digits and success/failure behavior through the affected forms/actions. Existing SVG/icon geometry is not blanket mirrored; only navigation reverses. Long text wraps, logical offsets follow direction, and native account/country/numeric/date inputs preserve technical order. New native labels/IDs in settings target their actual controls; unowned picker primitives retain their independent qualification.
+
+Evidence: RTL-013-attempt-1.md. Final focused combined suite: 54/54 pass; all four new presentation/CSS tests pass. Typecheck and scoped lint exit 0; full lint exit 0 with zero errors and 20 existing warnings; both 10,702-key catalogs pass; nine legacy gates and 417-column/1,874-consumer generated money inventory pass. Controller structure and whitespace checks pass. Schema/column classification records and all ownership assignments remain unchanged. Repetitive class repairs and compacted JSX attributes explain the diff size; no transport or financial service implementation is changed.
+
+Initial harness/context identity and Intl-mark assertion failures are disclosed and corrected in the attempt evidence. Final code preserves legitimate Intl direction marks rather than altering financial formatting to satisfy a test.
+
+Mounted/native/browser clipping, selection/caret/keyboard, assistive technology, native Persian/accounting, PDF/print/email, hosted CI and deployment are unperformed. Parents RTL-010/008/002 remain open. No DB or dedicated provider work occurred. Concurrent drawer source/hash are deliberately excluded. Approve the bounded implementation and actual verification; do not infer complete product qualification.

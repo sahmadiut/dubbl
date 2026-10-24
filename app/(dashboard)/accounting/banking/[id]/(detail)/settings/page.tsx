@@ -106,25 +106,25 @@ export default function BankSettingsPage() {
   return (
     <>
       <form onSubmit={handleSaveSettings} className="space-y-10">
-        <div className="grid gap-6 sm:grid-cols-[200px_1fr] sm:gap-10">
+        <div className="grid gap-6 sm:grid-cols-[200px_minmax(0,1fr)] sm:gap-10">
           <div className="shrink-0">
             <p className="text-sm font-medium">{t("general")}</p>
             <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">{t("generalHint")}</p>
           </div>
           <div className="min-w-0 space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("accountName")}</Label>
-              <Input name="accountName" required defaultValue={account.accountName} />
+              <Label htmlFor="bank-settings-accountName" className="text-xs">{t("accountName")}</Label>
+              <Input id="bank-settings-accountName" name="accountName" required defaultValue={account.accountName} dir="auto" aria-label={t("accountName")} />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label className="text-xs">{t("bankName")}</Label>
-                <Input name="bankName" defaultValue={account.bankName || ""} placeholder={t("bankExample")} />
+                <Label htmlFor="bank-settings-bankName" className="text-xs">{t("bankName")}</Label>
+                <Input id="bank-settings-bankName" name="bankName" defaultValue={account.bankName || ""} placeholder={t("bankExample")} dir="auto" aria-label={t("bankName")} />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">{t("accountType")}</Label>
+                <Label htmlFor="bank-settings-type" className="text-xs">{t("accountType")}</Label>
                 <Select name="accountType" defaultValue={account.accountType}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger id="bank-settings-type" className="h-auto min-h-9 min-w-0 max-w-full whitespace-normal text-start data-[size=default]:h-auto data-[size=sm]:h-auto [&_[data-slot=select-value]]:line-clamp-none [&_[data-slot=select-value]]:whitespace-normal" aria-label={t("accountType")}><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {BANK_ACCOUNT_TYPES.map((v) => (
                       <SelectItem key={v} value={v}>{bankAccountTypeLabel(t, v)}</SelectItem>
@@ -134,15 +134,15 @@ export default function BankSettingsPage() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("accountNumber")}</Label>
-              <Input name="accountNumber" defaultValue={account.accountNumber || ""} placeholder={t("numberPlaceholder")} />
+              <Label htmlFor="bank-settings-accountNumber" className="text-xs">{t("accountNumber")}</Label>
+              <Input id="bank-settings-accountNumber" name="accountNumber" defaultValue={account.accountNumber || ""} placeholder={t("numberPlaceholder")} dir="ltr" aria-label={t("accountNumber")} />
             </div>
           </div>
         </div>
 
         <div className="h-px bg-border" />
 
-        <div className="grid gap-6 sm:grid-cols-[200px_1fr] sm:gap-10">
+        <div className="grid gap-6 sm:grid-cols-[200px_minmax(0,1fr)] sm:gap-10">
           <div className="shrink-0">
             <p className="text-sm font-medium">{t("region")}</p>
             <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">{t("regionHint")}</p>
@@ -153,15 +153,15 @@ export default function BankSettingsPage() {
               <CurrencySelect value={bankCurrency} onValueChange={setBankCurrency} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("country")}</Label>
-              <Input name="countryCode" defaultValue={account.countryCode || ""} placeholder="US" maxLength={2} />
+              <Label htmlFor="bank-settings-countryCode" className="text-xs">{t("country")}</Label>
+              <Input id="bank-settings-countryCode" name="countryCode" defaultValue={account.countryCode || ""} placeholder="US" maxLength={2} dir="ltr" aria-label={t("country")} />
             </div>
           </div>
         </div>
 
         <div className="h-px bg-border" />
 
-        <div className="grid gap-6 sm:grid-cols-[200px_1fr] sm:gap-10">
+        <div className="grid gap-6 sm:grid-cols-[200px_minmax(0,1fr)] sm:gap-10">
           <div className="shrink-0">
             <p className="text-sm font-medium">{t("booksConnection")}</p>
             <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
@@ -182,7 +182,7 @@ export default function BankSettingsPage() {
 
         <div className="h-px bg-border" />
 
-        <div className="grid gap-6 sm:grid-cols-[200px_1fr] sm:gap-10">
+        <div className="grid gap-6 sm:grid-cols-[200px_minmax(0,1fr)] sm:gap-10">
           <div className="shrink-0">
             <p className="text-sm font-medium">{t("accentColor")}</p>
             <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">{t("colorHint")}</p>
@@ -210,13 +210,13 @@ export default function BankSettingsPage() {
         <div className="h-px bg-border" />
 
         <div className="flex justify-end">
-          <Button type="submit" size="sm" loading={saving} className="bg-emerald-600 hover:bg-emerald-700">
+          <Button type="submit" size="sm" loading={saving} className="h-auto min-h-8 min-w-0 whitespace-normal bg-emerald-600 hover:bg-emerald-700">
             {t("saveChanges")}</Button>
         </div>
 
         <div className="h-px bg-border" />
 
-        <div className="grid gap-6 sm:grid-cols-[200px_1fr] sm:gap-10">
+        <div className="grid gap-6 sm:grid-cols-[200px_minmax(0,1fr)] sm:gap-10">
           <div className="shrink-0">
             <p className="text-sm font-medium text-red-600">{t("dangerZone")}</p>
             <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">{t("dangerHint")}</p>
@@ -227,7 +227,7 @@ export default function BankSettingsPage() {
                 <p className="text-sm font-medium text-red-600 dark:text-red-400">{t("deleteAccount")}</p>
                 <p className="text-[12px] text-muted-foreground">{t("deleteHint")}</p>
               </div>
-              <Button variant="destructive" size="sm" type="button" onClick={handleDelete}>{t("delete")}</Button>
+              <Button variant="destructive" size="sm" type="button" onClick={handleDelete} className="h-auto min-h-8 min-w-0 whitespace-normal">{t("delete")}</Button>
             </div>
           </div>
         </div>

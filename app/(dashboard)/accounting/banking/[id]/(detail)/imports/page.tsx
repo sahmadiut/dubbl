@@ -1,4 +1,5 @@
 "use client";
+import { BidiText } from "@/components/ui/bidi-text";
 
 import { useTranslations } from "next-intl";
 import { FileStack, Upload } from "lucide-react";
@@ -16,8 +17,8 @@ export default function BankImportsPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-end">
-        <Button size="sm" onClick={openImport} className="bg-emerald-600 hover:bg-emerald-700">
-          <Upload className="mr-2 size-3.5" />{t("title")}
+        <Button size="sm" onClick={openImport} className="h-auto min-h-8 min-w-0 whitespace-normal bg-emerald-600 hover:bg-emerald-700">
+          <Upload className="me-2 size-3.5" /><BidiText>{t("title")}</BidiText>
         </Button>
       </div>
 

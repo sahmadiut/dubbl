@@ -1,4 +1,5 @@
 "use client";
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 
 import { usePresentation } from "@/i18n/provider";
 import { useTranslations } from "next-intl";
@@ -260,12 +261,7 @@ function BatchDetails({ id, orgId }: { id: string; orgId: string | null }) {
     return (
       <ContentReveal className="py-16 text-center">
         <p className="text-sm text-muted-foreground">{t("notFound")}</p>
-        <Button
-          variant="outline"
-          size="sm"
-          className="mt-4"
-          onClick={() => router.push("/accounting/banking/batches")}
-        >{t("backBatches")}</Button>
+        <Button variant="outline" size="sm" onClick={() => router.push("/accounting/banking/batches")} className="h-auto min-h-8 min-w-0 whitespace-normal mt-4">{t("backBatches")}</Button>
       </ContentReveal>
     );
   }
@@ -287,17 +283,17 @@ function BatchDetails({ id, orgId }: { id: string; orgId: string | null }) {
         onClick={() => router.push("/accounting/banking/batches")}
         className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
       >
-        <ArrowLeft className="size-3.5" />{t("backBatches")}</button>
+        <ArrowLeft className="[&:dir(rtl)]:rotate-180 size-3.5" />{t("backBatches")}</button>
 
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <div className="flex size-10 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">
             <FileStack className="size-5" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-sm font-semibold">{batch.name}</h2>
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-sm font-semibold"><BidiText>{batch.name}</BidiText></h2>
               <Badge
                 variant={
                   batch.status === "draft"
@@ -322,26 +318,22 @@ function BatchDetails({ id, orgId }: { id: string; orgId: string | null }) {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {batch.status !== "draft" && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleOpenRemittance}
-            >
-              <Mail className="mr-2 size-4" />{t("viewRemittance")}</Button>
+            <Button size="sm" variant="outline" onClick={handleOpenRemittance} className="h-auto min-h-8 min-w-0 whitespace-normal">
+              <Mail className="me-2 size-4" />{t("viewRemittance")}</Button>
           )}
           {batch.status === "draft" && (
             <Button
               size="sm"
               onClick={handleSubmit}
               disabled={submitting || batch.items.length === 0}
-              className="bg-emerald-600 hover:bg-emerald-700"
+              className="h-auto min-h-8 min-w-0 whitespace-normal bg-emerald-600 hover:bg-emerald-700"
             >
               {submitting ? (
-                <Loader2 className="mr-2 size-4 animate-spin" />
+                <Loader2 className="me-2 size-4 animate-spin" />
               ) : (
-                <CheckCircle2 className="mr-2 size-4" />
+                <CheckCircle2 className="me-2 size-4" />
               )}
               {t("submitBatch")}
             </Button>
@@ -354,7 +346,7 @@ function BatchDetails({ id, orgId }: { id: string; orgId: string | null }) {
         <div className="rounded-lg border p-3">
           <p className="text-[11px] text-muted-foreground">{t("totalAmount")}</p>
           <p className="mt-0.5 font-mono text-sm font-semibold tabular-nums break-all">
-            {formatMoney(batch.totalAmount, batch.currencyCode, unitPresentation)}
+            <BidiText>{formatMoney(batch.totalAmount, batch.currencyCode, unitPresentation)}</BidiText>
           </p>
         </div>
         <div className="rounded-lg border p-3">
@@ -408,12 +400,12 @@ function BatchDetails({ id, orgId }: { id: string; orgId: string | null }) {
             return (
               <div
                 key={item.id}
-                className="flex items-center gap-3 px-4 py-3"
+                className="flex flex-wrap items-center gap-3 px-4 py-3"
               >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium truncate">
-                      {contactName}
+                <div className="min-w-0 flex-1 basis-40">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-medium min-w-0 whitespace-normal [overflow-wrap:anywhere]">
+                      <BidiText>{contactName}</BidiText>
                     </p>
                     {batch.status !== "draft" && (
                       <Badge
@@ -426,22 +418,16 @@ function BatchDetails({ id, orgId }: { id: string; orgId: string | null }) {
                   </div>
                   {item.bill && (
                     <p className="text-xs text-muted-foreground mt-0.5 font-mono">
-                      {item.bill.billNumber}
+                      <IdentifierText>{item.bill.billNumber}</IdentifierText>
                     </p>
                   )}
                 </div>
-                <div className="flex items-center gap-3 shrink-0">
+                <div className="flex flex-wrap items-center gap-3 shrink-0">
                   <p className="font-mono text-sm font-semibold tabular-nums break-all">
-                    {formatMoney(item.amount, item.currencyCode, unitPresentation)}
+                    <BidiText>{formatMoney(item.amount, item.currencyCode, unitPresentation)}</BidiText>
                   </p>
                   {batch.status === "draft" && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 w-7 p-0 text-muted-foreground hover:text-red-600"
-                      aria-label={t("removeItem")}
-                      onClick={() => handleRemoveItem(item.id)}
-                    >
+                    <Button variant="ghost" size="sm" aria-label={t("removeItem")} onClick={() => handleRemoveItem(item.id)} className="h-auto min-h-8 min-w-0 whitespace-normal w-7 p-0 text-muted-foreground hover:text-red-600">
                       <Trash2 className="size-3.5" />
                     </Button>
                   )}
@@ -475,12 +461,12 @@ function BatchDetails({ id, orgId }: { id: string; orgId: string | null }) {
                 >
                   <div className="flex items-center justify-between gap-2 border-b bg-muted/40 px-4 py-2.5">
                     <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">
-                        {group.contactName}
+                      <p className="text-sm font-medium min-w-0 whitespace-normal [overflow-wrap:anywhere]">
+                        <BidiText>{group.contactName}</BidiText>
                       </p>
                       {group.contactEmail ? (
-                        <p className="text-xs text-muted-foreground truncate">
-                          {group.contactEmail}
+                        <p className="text-xs text-muted-foreground min-w-0 whitespace-normal [overflow-wrap:anywhere]">
+                          <IdentifierText>{group.contactEmail}</IdentifierText>
                         </p>
                       ) : (
                         <p className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
@@ -488,7 +474,7 @@ function BatchDetails({ id, orgId }: { id: string; orgId: string | null }) {
                       )}
                     </div>
                     <p className="font-mono text-sm font-semibold tabular-nums break-all shrink-0">
-                      {formatMoney(group.totalPaid, group.currencyCode, unitPresentation)}
+                      <BidiText>{formatMoney(group.totalPaid, group.currencyCode, unitPresentation)}</BidiText>
                     </p>
                   </div>
                   <div className="divide-y divide-border">
@@ -498,20 +484,20 @@ function BatchDetails({ id, orgId }: { id: string; orgId: string | null }) {
                         className="flex items-center justify-between gap-2 px-4 py-2"
                       >
                         <div className="min-w-0">
-                          <p className="text-xs font-mono truncate">
-                            {line.billNumber}
+                          <p className="text-xs font-mono min-w-0 whitespace-normal [overflow-wrap:anywhere]">
+                            <IdentifierText>{line.billNumber}</IdentifierText>
                           </p>
                           <p className="text-[11px] text-muted-foreground">
                             {new Date(
                               line.billDate + "T00:00:00"
                             ).toLocaleDateString()}
-                            {line.billReference
+                            <BidiText>{line.billReference
                               ? ` · ${line.billReference}`
-                              : ""}
+                              : ""}</BidiText>
                           </p>
                         </div>
                         <p className="font-mono text-xs tabular-nums break-all">
-                          {formatMoney(line.amountPaid, line.currencyCode, unitPresentation)}
+                          <BidiText>{formatMoney(line.amountPaid, line.currencyCode, unitPresentation)}</BidiText>
                         </p>
                       </div>
                     ))}
@@ -522,26 +508,17 @@ function BatchDetails({ id, orgId }: { id: string; orgId: string | null }) {
           )}
 
           <DialogFooter>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setRemittanceOpen(false)}
-              disabled={sending}
-            >{t("close")}</Button>
-            <Button
-              size="sm"
-              onClick={handleSendRemittance}
-              disabled={
+            <Button variant="outline" size="sm" onClick={() => setRemittanceOpen(false)} disabled={sending} className="h-auto min-h-8 min-w-0 whitespace-normal">{t("close")}</Button>
+            <Button size="sm" onClick={handleSendRemittance} disabled={
                 sending ||
                 remittanceLoading ||
                 !remittanceGroups ||
                 !remittanceGroups.some((g) => g.contactEmail)
-              }
-            >
+              } className="h-auto min-h-8 min-w-0 whitespace-normal">
               {sending ? (
-                <Loader2 className="mr-2 size-4 animate-spin" />
+                <Loader2 className="me-2 size-4 animate-spin" />
               ) : (
-                <Send className="mr-2 size-4" />
+                <Send className="me-2 size-4" />
               )}
               {t("emailSuppliers")}
             </Button>

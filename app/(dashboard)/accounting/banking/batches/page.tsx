@@ -1,4 +1,5 @@
 "use client";
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 
 import { usePresentation } from "@/i18n/provider";
 import { currencyLabel } from "@/i18n/currency-labels";
@@ -204,12 +205,8 @@ function PaymentBatchesList({ orgId }: { orgId: string | null }) {
           <h2 className="text-sm font-semibold">{t("batchesHeading")}</h2>
           <p className="text-xs text-muted-foreground mt-0.5">{t("batchesHint")}</p>
         </div>
-        <Button
-          size="sm"
-          onClick={openCreateDialog}
-          className="h-8 bg-emerald-600 hover:bg-emerald-700 text-xs"
-        >
-          <Plus className="mr-1.5 size-3.5" />{t("createBatch")}</Button>
+        <Button size="sm" onClick={openCreateDialog} className="h-auto min-h-8 min-w-0 whitespace-normal bg-emerald-600 hover:bg-emerald-700 text-xs">
+          <Plus className="me-1.5 size-3.5" />{t("createBatch")}</Button>
       </div>
 
       {/* Empty state */}
@@ -225,9 +222,9 @@ function PaymentBatchesList({ orgId }: { orgId: string | null }) {
           <Button
             size="sm"
             onClick={openCreateDialog}
-            className="bg-emerald-600 hover:bg-emerald-700"
+            className="h-auto min-h-8 min-w-0 whitespace-normal bg-emerald-600 hover:bg-emerald-700"
           >
-            <Plus className="mr-2 size-4" />{t("createBatch")}</Button>
+            <Plus className="me-2 size-4" />{t("createBatch")}</Button>
         </div>
       )}
 
@@ -241,14 +238,14 @@ function PaymentBatchesList({ orgId }: { orgId: string | null }) {
               onClick={() =>
                 router.push(`/accounting/banking/batches/${batch.id}`)
               }
-              className="group flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-muted/40"
+              className="group flex w-full items-center gap-3 px-4 py-3.5 text-start transition-colors hover:bg-muted/40"
             >
               <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">
                 <FileStack className="size-4" />
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium truncate">{batch.name}</p>
+              <div className="min-w-0 flex-1 basis-40">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-sm font-medium min-w-0 whitespace-normal [overflow-wrap:anywhere]"><BidiText>{batch.name}</BidiText></p>
                   <Badge
                     variant={STATUS_VARIANTS[batch.status] || "secondary"}
                     className="text-[10px] capitalize"
@@ -266,11 +263,11 @@ function PaymentBatchesList({ orgId }: { orgId: string | null }) {
                   </span>
                 </div>
               </div>
-              <div className="flex items-center gap-3 shrink-0">
+              <div className="flex flex-wrap items-center gap-3 shrink-0">
                 <p className="font-mono text-sm font-semibold tabular-nums break-all">
-                  {formatMoney(batch.totalAmount, batch.currencyCode, unitPresentation)}
+                  <BidiText>{formatMoney(batch.totalAmount, batch.currencyCode, unitPresentation)}</BidiText>
                 </p>
-                <ChevronRight className="size-4 text-muted-foreground/0 transition-all group-hover:text-muted-foreground group-hover:translate-x-0.5" />
+                <ChevronRight className="size-4 text-muted-foreground/0 transition-all group-hover:text-muted-foreground [&:dir(rtl)]:rotate-180 ltr:group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" />
               </div>
             </button>
           ))}
@@ -286,11 +283,7 @@ function PaymentBatchesList({ orgId }: { orgId: string | null }) {
           <div className="space-y-4 py-2">
             <div className="space-y-2">
               <Label className="text-xs">{t("batchName")}</Label>
-              <Input
-                value={batchName}
-                onChange={(e) => setBatchName(e.target.value)}
-                placeholder={t("batchNamePlaceholder")}
-              />
+              <Input value={batchName} onChange={(e) => setBatchName(e.target.value)} placeholder={t("batchNamePlaceholder")} dir="auto" aria-label={t("batchName")} />
             </div>
 
             <div className="space-y-2">
@@ -311,7 +304,7 @@ function PaymentBatchesList({ orgId }: { orgId: string | null }) {
                   return (
                     <div key={b.id} className="px-3 py-2.5">
                       <button
-                        className="flex w-full items-center gap-2 text-left"
+                        className="flex w-full items-center gap-2 text-start"
                         type="button"
                         aria-pressed={isSelected}
                         onClick={() => toggleBill(b)}
@@ -340,28 +333,20 @@ function PaymentBatchesList({ orgId }: { orgId: string | null }) {
                             </svg>
                           )}
                         </div>
-                        <div className="flex-1 min-w-0">
+                        <div className="min-w-0 flex-1 basis-40">
                           <p className="text-xs font-medium">
-                            {b.billNumber} - {b.contact?.name || t("unknown")}
+                            <IdentifierText>{b.billNumber}</IdentifierText> - <BidiText>{b.contact?.name || t("unknown")}</BidiText>
                           </p>
                         </div>
                         <p className="text-xs font-mono tabular-nums text-muted-foreground">
-                          {formatMoney(b.amountDue, b.currencyCode, unitPresentation)}
+                          <BidiText>{formatMoney(b.amountDue, b.currencyCode, unitPresentation)}</BidiText>
                         </p>
                       </button>
                       {isSelected && selectedItem && (
-                        <div className="mt-2 ml-6">
-                          <Input
-                            type="text"
-                            inputMode="decimal"
-                            aria-label={t("paymentBillAmount", { bill: b.billNumber, currency: currencyLabel(b.currencyCode, unitPresentation.locale) })}
-                            value={selectedItem.amount}
-                            onChange={(e) =>
+                        <div className="mt-2 ms-6">
+                          <Input type="text" inputMode="decimal" aria-label={t("paymentBillAmount", { bill: b.billNumber, currency: currencyLabel(b.currencyCode, unitPresentation.locale) })} value={selectedItem.amount} onChange={(e) =>
                               updateBillAmount(b.id, e.target.value)
-                            }
-                            className="h-7 text-xs"
-                            placeholder={t("amount")}
-                          />
+                            } className="h-7 text-xs" placeholder={t("amount")} dir="ltr" />
                         </div>
                       )}
                     </div>
@@ -374,22 +359,22 @@ function PaymentBatchesList({ orgId }: { orgId: string | null }) {
               <div className="flex items-center justify-between pt-2 border-t">
                 <p className="text-xs text-muted-foreground">{t("total")}</p>
                 <p className="text-sm font-mono font-semibold tabular-nums">
-                  {preview ? formatMoney(preview.total, preview.currencyCode, unitPresentation) : t("unavailable")}
+                  <BidiText>{preview ? formatMoney(preview.total, preview.currencyCode, unitPresentation) : t("unavailable")}</BidiText>
                 </p>
               </div>
             )}
           </div>
           {previewError && <p role="alert" className="text-sm text-destructive">{previewError}</p>}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDialog(false)}>{t("cancel")}</Button>
+            <Button variant="outline" onClick={() => setShowDialog(false)} className="h-auto min-h-8 min-w-0 whitespace-normal">{t("cancel")}</Button>
             <Button
               onClick={handleCreateBatch}
               disabled={
                 saving || !batchName || !preview
               }
-              className="bg-emerald-600 hover:bg-emerald-700"
+              className="h-auto min-h-8 min-w-0 whitespace-normal bg-emerald-600 hover:bg-emerald-700"
             >
-              {saving && <Loader2 className="mr-2 size-4 animate-spin" />}
+              {saving && <Loader2 className="me-2 size-4 animate-spin" />}
               {t("createBatch")}
             </Button>
           </DialogFooter>

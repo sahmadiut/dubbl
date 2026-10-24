@@ -1,4 +1,5 @@
 "use client";
+import { BidiText } from "@/components/ui/bidi-text";
 
 import { usePresentation } from "@/i18n/provider";
 import { currencyLabel } from "@/i18n/currency-labels";
@@ -429,7 +430,7 @@ export default function BankAccountDetailLayout({ children }: { children: React.
     return (
       <div className="space-y-4 pt-12 text-center">
         <p className="text-sm text-muted-foreground">{t("accountNotFound")}</p>
-        <Button variant="outline" size="sm" onClick={() => router.push("/accounting/banking")}>{t("backBanking")}</Button>
+        <Button variant="outline" size="sm" onClick={() => router.push("/accounting/banking")} className="h-auto min-h-8 min-w-0 whitespace-normal">{t("backBanking")}</Button>
       </div>
     );
   }
@@ -465,12 +466,12 @@ export default function BankAccountDetailLayout({ children }: { children: React.
           onClick={() => router.push("/accounting/banking")}
           className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors mb-6"
         >
-          <ArrowLeft className="size-3.5" />
+          <ArrowLeft className="[&:dir(rtl)]:rotate-180 size-3.5" />
           {t("backBankingLower")}</button>
 
         {/* Header */}
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between mb-5">
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <div
               className="flex size-10 shrink-0 items-center justify-center rounded-lg"
               style={{ backgroundColor: account.color + "18", color: account.color }}
@@ -479,23 +480,23 @@ export default function BankAccountDetailLayout({ children }: { children: React.
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
-                <h1 className="text-base sm:text-lg font-semibold tracking-tight">{account.accountName}</h1>
+                <h1 className="text-base sm:text-lg font-semibold tracking-tight"><BidiText>{account.accountName}</BidiText></h1>
                 <Badge variant="outline">{bankAccountTypeLabel(accountLabels, account.accountType)}</Badge>
                 <Badge variant="outline" className="text-[10px]">{currencyLabel(account.currencyCode, unitPresentation.locale)}</Badge>
               </div>
               <p className="text-sm text-muted-foreground mt-0.5">
-                {[account.bankName, account.countryCode, account.accountNumber ? `····${account.accountNumber.slice(-4)}` : null]
+                <BidiText>{[account.bankName, account.countryCode, account.accountNumber ? `····${account.accountNumber.slice(-4)}` : null]
                   .filter(Boolean)
-                  .join(" · ") || t("manualImports")}
+                  .join(" · ") || t("manualImports")}</BidiText>
               </p>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => router.push(`/accounting/banking/${id}/reconcile`)} title={t("statementCheckHint")}>
-              <RefreshCcw className="mr-2 size-3.5" />
+            <Button variant="outline" size="sm" onClick={() => router.push(`/accounting/banking/${id}/reconcile`)} title={t("statementCheckHint")} className="h-auto min-h-8 min-w-0 whitespace-normal">
+              <RefreshCcw className="me-2 size-3.5" />
               {t("matchStatement")}</Button>
-            <Button size="sm" onClick={() => setImportOpen(true)} className="bg-emerald-600 hover:bg-emerald-700">
-              <Upload className="mr-2 size-3.5" />
+            <Button size="sm" onClick={() => setImportOpen(true)} className="h-auto min-h-8 min-w-0 whitespace-normal bg-emerald-600 hover:bg-emerald-700">
+              <Upload className="me-2 size-3.5" />
               {t("import")}</Button>
           </div>
         </div>
@@ -504,19 +505,19 @@ export default function BankAccountDetailLayout({ children }: { children: React.
         <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-4 mb-8">
           <div>
             <p className="text-[11px] text-muted-foreground">{t("balance")}</p>
-            <p className="mt-0.5 font-mono text-xl font-semibold tabular-nums">{formatMoney(account.balance, cur, unitPresentation)}</p>
+            <p className="mt-0.5 font-mono text-xl font-semibold tabular-nums"><BidiText>{formatMoney(account.balance, cur, unitPresentation)}</BidiText></p>
           </div>
           <div>
             <p className="text-[11px] text-muted-foreground flex items-center gap-1"><ArrowDownRight className="size-3 text-emerald-500" />{t("moneyIn")}</p>
-            <p className="mt-0.5 font-mono text-lg font-semibold tabular-nums text-emerald-600">{formatMoney(summary.credits, cur, unitPresentation)}</p>
+            <p className="mt-0.5 font-mono text-lg font-semibold tabular-nums text-emerald-600"><BidiText>{formatMoney(summary.credits, cur, unitPresentation)}</BidiText></p>
           </div>
           <div>
             <p className="text-[11px] text-muted-foreground flex items-center gap-1"><ArrowUpRight className="size-3 text-red-500" />{t("moneyOut")}</p>
-            <p className="mt-0.5 font-mono text-lg font-semibold tabular-nums text-red-600">{formatMoney(summary.debits, cur, unitPresentation)}</p>
+            <p className="mt-0.5 font-mono text-lg font-semibold tabular-nums text-red-600"><BidiText>{formatMoney(summary.debits, cur, unitPresentation)}</BidiText></p>
           </div>
           <div>
             <p className="text-[11px] text-muted-foreground">{t("done")}</p>
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex flex-wrap items-center gap-2 mt-1">
               <div className="h-2 flex-1 rounded-full bg-gray-200 dark:bg-muted overflow-hidden">
                 <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${reconciledPct}%` }} />
               </div>
@@ -545,10 +546,10 @@ export default function BankAccountDetailLayout({ children }: { children: React.
                 <Icon className="size-3.5" />
                 {tab.label}
                 {tab.value === "transactions" && summary.unreconciled > 0 && (
-                  <span className="ml-1 text-[11px] tabular-nums text-amber-600">{summary.unreconciled}</span>
+                  <span className="ms-1 text-[11px] tabular-nums text-amber-600">{summary.unreconciled}</span>
                 )}
                 {tab.value === "imports" && imports.length > 0 && (
-                  <span className="ml-1 text-[11px] tabular-nums text-muted-foreground">{imports.length}</span>
+                  <span className="ms-1 text-[11px] tabular-nums text-muted-foreground">{imports.length}</span>
                 )}
               </button>
             );

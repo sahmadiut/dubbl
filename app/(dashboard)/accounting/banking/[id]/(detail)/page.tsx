@@ -43,7 +43,7 @@ export default function BankAccountOverviewPage() {
             { label: t("done"), count: summary.reconciled, dot: "bg-emerald-500", text: "text-emerald-600 dark:text-emerald-400" },
             { label: t("ignored"), count: summary.excluded, dot: "bg-gray-400", text: "text-muted-foreground" },
           ].map(({ label, count, dot, text }) => (
-            <div key={label} className="flex items-center gap-2">
+            <div key={label} className="flex flex-wrap items-center gap-2">
               <span className={cn("size-2 rounded-full", dot)} />
               <span className="text-muted-foreground">{label}</span>
               <span className={cn("font-mono font-semibold tabular-nums", text)}>{count}</span>
@@ -77,8 +77,8 @@ export default function BankAccountOverviewPage() {
               <p className="text-sm font-medium">{t("noTransactions")}</p>
               <p className="text-xs text-muted-foreground mt-1">{t("importStartHint")}</p>
             </div>
-            <Button size="sm" onClick={openImport} className="mt-2 bg-emerald-600 hover:bg-emerald-700">
-              <Upload className="mr-2 size-3.5" />{t("importStatement")}</Button>
+            <Button size="sm" onClick={openImport} className="h-auto min-h-8 min-w-0 whitespace-normal mt-2 bg-emerald-600 hover:bg-emerald-700">
+              <Upload className="me-2 size-3.5" />{t("importStatement")}</Button>
           </div>
         ) : (
           <div className="rounded-lg border">

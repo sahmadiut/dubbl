@@ -1,4 +1,5 @@
 "use client";
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 
 import { usePresentation } from "@/i18n/provider";
 import { currencyLabel } from "@/i18n/currency-labels";
@@ -382,7 +383,7 @@ export function TransactionRow({
   return (
     <div
       className={cn(
-        "group flex items-center gap-4 px-4 py-3 transition-colors hover:bg-muted/30",
+        "group flex flex-wrap items-center gap-4 px-4 py-3 transition-colors hover:bg-muted/30",
         !isLast && "border-b"
       )}
     >
@@ -404,12 +405,12 @@ export function TransactionRow({
         }
       </div>
 
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <p className="text-sm font-medium truncate">{tx.description}</p>
+      <div className="min-w-0 flex-1 basis-40">
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-sm font-medium min-w-0 whitespace-normal [overflow-wrap:anywhere]"><BidiText>{tx.description}</BidiText></p>
           {derived === "categorized" && tx.accountName && (
-            <span className="text-xs text-muted-foreground truncate shrink min-w-0" title={t("assignedTo", { account: tx.accountName })}>
-              &rarr; {tx.accountName}
+            <span className="text-xs text-muted-foreground min-w-0 whitespace-normal [overflow-wrap:anywhere] shrink min-w-0" title={t("assignedTo", { account: tx.accountName })}>
+              &rarr; <BidiText>{tx.accountName}</BidiText>
             </span>
           )}
           <Badge
@@ -420,62 +421,51 @@ export function TransactionRow({
             {stateMeta.label}
           </Badge>
         </div>
-        <p className="text-xs text-muted-foreground truncate mt-0.5">
-          {tx.date}
-          {tx.reference && <> · {tx.reference}</>}
-          {tx.payee && <> · {tx.payee}</>}
+        <p className="text-xs text-muted-foreground min-w-0 whitespace-normal [overflow-wrap:anywhere] mt-0.5">
+          <IdentifierText>{tx.date}</IdentifierText>
+          {tx.reference && <> · <IdentifierText>{tx.reference}</IdentifierText></>}
+          {tx.payee && <> · <BidiText>{tx.payee}</BidiText></>}
         </p>
       </div>
 
-      <div className="flex items-center gap-3 shrink-0">
+      <div className="flex flex-wrap items-center gap-3 shrink-0">
         <div className="flex items-center gap-1.5">
           {tx.status === "unreconciled" && (
             <>
               {/* Surfaced primary action — the most common thing to do with a line */}
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 px-2.5 text-xs"
-                onClick={() => onCategorize(tx)}
-                title={t("categorizeHint")}
-              >
-                <Tags className="mr-1.5 size-3.5" />{t("categorize")}</Button>
+              <Button size="sm" variant="outline" onClick={() => onCategorize(tx)} title={t("categorizeHint")} className="h-auto min-h-8 min-w-0 whitespace-normal px-2.5 text-xs">
+                <Tags className="me-1.5 size-3.5" />{t("categorize")}</Button>
               {/* Everything else, one level down */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 px-2 text-xs opacity-0 transition-opacity group-hover:opacity-100 data-[state=open]:opacity-100"
-                    title={t("moreActions")}
-                  >
+                  <Button size="sm" variant="ghost" title={t("moreActions")} className="h-auto min-h-8 min-w-0 whitespace-normal px-2 text-xs opacity-0 transition-opacity group-hover:opacity-100 data-[state=open]:opacity-100">
                     <MoreHorizontal className="size-3.5" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   {onMatch && (
                     <DropdownMenuItem onClick={() => onMatch(tx)} title={t("findMatchHint")}>
-                      <Link2 className="mr-2 size-3.5" />{t("findMatchEllipsis")}</DropdownMenuItem>
+                      <Link2 className="me-2 size-3.5" />{t("findMatchEllipsis")}</DropdownMenuItem>
                   )}
                   {onSplit && (
                     <DropdownMenuItem onClick={() => onSplit(tx)} title={t("splitHint")}>
-                      <Split className="mr-2 size-3.5" />{t("splitCategories")}</DropdownMenuItem>
+                      <Split className="me-2 size-3.5" />{t("splitCategories")}</DropdownMenuItem>
                   )}
                   {onTransfer && (
                     <DropdownMenuItem onClick={() => onTransfer(tx)} title={t("recordTransferHint")}>
-                      <ArrowLeftRight className="mr-2 size-3.5" />{t("recordTransferTitle")}</DropdownMenuItem>
+                      <ArrowLeftRight className="me-2 size-3.5" />{t("recordTransferTitle")}</DropdownMenuItem>
                   )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => setConfirmClear(true)} title={t("clearHint")}>
-                    <CheckCircle className="mr-2 size-3.5" />{t("markCleared")}</DropdownMenuItem>
+                    <CheckCircle className="me-2 size-3.5" />{t("markCleared")}</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => onExclude(tx.id)} className="text-muted-foreground" title={t("ignoreHint")}>
-                    <XCircle className="mr-2 size-3.5" />{t("ignoreTransaction")}</DropdownMenuItem>
+                    <XCircle className="me-2 size-3.5" />{t("ignoreTransaction")}</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </>
           )}
           {tx.status === "excluded" && (
-            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => onExclude(tx.id)} title={t("restoreHint")}>{t("stopIgnoring")}</Button>
+            <Button size="sm" variant="ghost" onClick={() => onExclude(tx.id)} title={t("restoreHint")} className="h-auto min-h-8 min-w-0 whitespace-normal px-2 text-xs">{t("stopIgnoring")}</Button>
           )}
           {/* A line you've already dealt with: let the user fix it. Plain
               categorizations can be edited in place; everything else (matches,
@@ -483,49 +473,26 @@ export function TransactionRow({
           {tx.status === "reconciled" && (
             <>
               {canEditCategory ? (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 px-2.5 text-xs"
-                  onClick={() => onCategorize(tx)}
-                  title={t("editHint")}
-                >
-                  <Pencil className="mr-1.5 size-3.5" />{t("edit")}</Button>
+                <Button size="sm" variant="outline" onClick={() => onCategorize(tx)} title={t("editHint")} className="h-auto min-h-8 min-w-0 whitespace-normal px-2.5 text-xs">
+                  <Pencil className="me-1.5 size-3.5" />{t("edit")}</Button>
               ) : derived === "cleared" ? (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 px-2.5 text-xs"
-                  onClick={() => onCategorize(tx)}
-                  title={t("recordPurpose")}
-                >
-                  <Tags className="mr-1.5 size-3.5" />{t("categorize")}</Button>
+                <Button size="sm" variant="outline" onClick={() => onCategorize(tx)} title={t("recordPurpose")} className="h-auto min-h-8 min-w-0 whitespace-normal px-2.5 text-xs">
+                  <Tags className="me-1.5 size-3.5" />{t("categorize")}</Button>
               ) : onUndo ? (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground"
-                  onClick={() => setConfirmUndo(true)}
-                  title={t("undoHint")}
-                >
-                  <Undo2 className="mr-1.5 size-3.5" />{t("undo")}</Button>
+                <Button size="sm" variant="ghost" onClick={() => setConfirmUndo(true)} title={t("undoHint")} className="h-auto min-h-8 min-w-0 whitespace-normal px-2.5 text-xs text-muted-foreground hover:text-foreground">
+                  <Undo2 className="me-1.5 size-3.5" />{t("undo")}</Button>
               ) : null}
               {/* When a primary action is shown, tuck Undo into the menu. */}
               {onUndo && (canEditCategory || derived === "cleared") && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 px-2 text-xs opacity-0 transition-opacity group-hover:opacity-100 data-[state=open]:opacity-100"
-                      title={t("moreActions")}
-                    >
+                    <Button size="sm" variant="ghost" title={t("moreActions")} className="h-auto min-h-8 min-w-0 whitespace-normal px-2 text-xs opacity-0 transition-opacity group-hover:opacity-100 data-[state=open]:opacity-100">
                       <MoreHorizontal className="size-3.5" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
                     <DropdownMenuItem onClick={() => setConfirmUndo(true)} title={t("redoHint")}>
-                      <Undo2 className="mr-2 size-3.5" />{t("undoToDo")}</DropdownMenuItem>
+                      <Undo2 className="me-2 size-3.5" />{t("undoToDo")}</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}
@@ -533,10 +500,10 @@ export function TransactionRow({
           )}
         </div>
         <span className={cn(
-          "font-mono text-sm font-medium tabular-nums w-24 text-right",
+          "font-mono text-sm font-medium tabular-nums min-w-0 max-w-full sm:w-24 text-end",
           isCredit ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
         )}>
-          {isCredit ? "+" : ""}{formatMoney(tx.amount, cur, unitPresentation)}
+          <BidiText>{isCredit ? "+" : ""}{formatMoney(tx.amount, cur, unitPresentation)}</BidiText>
         </span>
       </div>
 
@@ -549,12 +516,12 @@ export function TransactionRow({
           </DialogHeader>
           <div className="space-y-3 text-sm">
             <div className="rounded-lg border bg-muted/30 p-3">
-              <p className="font-medium">{tx.description}</p>
+              <p className="font-medium"><BidiText>{tx.description}</BidiText></p>
               <p className={cn(
                 "mt-1 font-mono text-xs tabular-nums",
                 isCredit ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
               )}>
-                {tx.date} · {isCredit ? "+" : ""}{formatMoney(tx.amount, cur, unitPresentation)}
+                <IdentifierText>{tx.date}</IdentifierText> · <BidiText>{isCredit ? "+" : ""}{formatMoney(tx.amount, cur, unitPresentation)}</BidiText>
               </p>
             </div>
             <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
@@ -565,11 +532,8 @@ export function TransactionRow({
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmClear(false)}>{t("cancel")}</Button>
-            <Button
-              className="bg-emerald-600 hover:bg-emerald-700"
-              onClick={() => { onReconcile(tx.id); setConfirmClear(false); }}
-            >
+            <Button variant="outline" onClick={() => setConfirmClear(false)} className="h-auto min-h-8 min-w-0 whitespace-normal">{t("cancel")}</Button>
+            <Button onClick={() => { onReconcile(tx.id); setConfirmClear(false); }} className="h-auto min-h-8 min-w-0 whitespace-normal bg-emerald-600 hover:bg-emerald-700">
               {t("markCleared")}</Button>
           </DialogFooter>
         </DialogContent>
@@ -584,15 +548,15 @@ export function TransactionRow({
           </DialogHeader>
           <div className="space-y-3 text-sm">
             <div className="rounded-lg border bg-muted/30 p-3">
-              <p className="font-medium">{tx.description}</p>
+              <p className="font-medium"><BidiText>{tx.description}</BidiText></p>
               {derived === "categorized" && tx.accountName && (
-                <p className="mt-0.5 text-xs text-muted-foreground">{t("currentlyAssigned", { account: tx.accountName })}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground"><BidiText>{t("currentlyAssigned", { account: tx.accountName })}</BidiText></p>
               )}
               <p className={cn(
                 "mt-1 font-mono text-xs tabular-nums",
                 isCredit ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
               )}>
-                {tx.date} · {isCredit ? "+" : ""}{formatMoney(tx.amount, cur, unitPresentation)}
+                <IdentifierText>{tx.date}</IdentifierText> · <BidiText>{isCredit ? "+" : ""}{formatMoney(tx.amount, cur, unitPresentation)}</BidiText>
               </p>
             </div>
             <p className="text-xs text-muted-foreground">
@@ -602,12 +566,9 @@ export function TransactionRow({
             </p>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmUndo(false)}>{t("cancel")}</Button>
-            <Button
-              variant="destructive"
-              onClick={() => { onUndo?.(tx); setConfirmUndo(false); }}
-            >
-              <Undo2 className="mr-2 size-3.5" />{t("undo")}</Button>
+            <Button variant="outline" onClick={() => setConfirmUndo(false)} className="h-auto min-h-8 min-w-0 whitespace-normal">{t("cancel")}</Button>
+            <Button variant="destructive" onClick={() => { onUndo?.(tx); setConfirmUndo(false); }} className="h-auto min-h-8 min-w-0 whitespace-normal">
+              <Undo2 className="me-2 size-3.5" />{t("undo")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -622,16 +583,16 @@ export function ImportRow({ imp, isLast }: { imp: StatementImport; isLast: boole
   const t = useTranslations("BankImports");
   return (
     <div className={cn("flex items-center justify-between px-4 py-3", !isLast && "border-b")}>
-      <div className="flex items-center gap-3 min-w-0">
+      <div className="flex flex-wrap items-center gap-3 min-w-0">
         <div className="flex size-8 items-center justify-center rounded-lg bg-muted shrink-0">
           <FileStack className="size-4 text-muted-foreground" />
         </div>
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium truncate">{imp.fileName}</span>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-medium min-w-0 whitespace-normal [overflow-wrap:anywhere]"><IdentifierText>{imp.fileName}</IdentifierText></span>
             <Badge variant="outline" className="text-[10px]">{imp.format.toUpperCase()}</Badge>
           </div>
-          <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-2 mt-0.5 text-xs text-muted-foreground">
             <span>{new Date(imp.createdAt).toLocaleDateString()}</span>
             {imp.statementStartDate && imp.statementEndDate && (
               <span>{t("period", { start: imp.statementStartDate, end: imp.statementEndDate })}</span>
@@ -690,12 +651,12 @@ export function ImportSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="sm:max-w-2xl w-full p-0 flex flex-col">
         <SheetHeader className="px-4 pt-4 pb-3 sm:px-6 sm:pt-6 sm:pb-4 border-b space-y-3">
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
               <Upload className="size-5" />
             </div>
             <div>
-              <SheetTitle className="text-lg">{t("title")}</SheetTitle>
+              <SheetTitle className="text-lg"><BidiText>{t("title")}</BidiText></SheetTitle>
               <SheetDescription>{t("hint")}</SheetDescription>
             </div>
           </div>
@@ -728,13 +689,13 @@ export function ImportSheet({
               {selectedFile ? (
                 <>
                   <FileText className="size-8 text-emerald-600" />
-                  <p className="mt-3 text-sm font-medium">{selectedFile.name}</p>
+                  <p className="mt-3 text-sm font-medium"><IdentifierText>{selectedFile.name}</IdentifierText></p>
                   <p className="mt-1 text-xs text-muted-foreground">{t("fileSize", { size: (selectedFile.size / 1024).toFixed(1) })}</p>
                   <button
                     type="button"
                     aria-label={t("removeFile")}
                     onClick={(e) => { e.stopPropagation(); setSelectedFile(null); }}
-                    className="absolute right-3 top-3 rounded-full p-1.5 text-muted-foreground hover:bg-muted transition-colors"
+                    className="absolute end-3 top-3 rounded-full p-1.5 text-muted-foreground hover:bg-muted transition-colors"
                   >
                     <X className="size-4" />
                   </button>
@@ -755,14 +716,7 @@ export function ImportSheet({
 
           <div className="space-y-4">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("pasteContent")}</p>
-            <Textarea
-              value={manualContent}
-              onChange={(e) => setManualContent(e.target.value)}
-              rows={5}
-              className="font-mono text-xs"
-              aria-label={t("pasteContent")}
-              placeholder={t("contentPlaceholder")}
-            />
+            <Textarea value={manualContent} onChange={(e) => setManualContent(e.target.value)} rows={5} className="font-mono text-xs" aria-label={t("pasteContent")} placeholder={t("contentPlaceholder")} dir="auto" />
           </div>
 
           <div className="h-px bg-border" />
@@ -770,7 +724,7 @@ export function ImportSheet({
           <div className="space-y-4">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("format")}</p>
             <Select value={format} onValueChange={(v) => setFormat(v as StatementFormat)}>
-              <SelectTrigger aria-label={t("format")}><SelectValue /></SelectTrigger>
+              <SelectTrigger aria-label={t("format")} className="h-auto min-h-9 min-w-0 max-w-full whitespace-normal text-start data-[size=default]:h-auto data-[size=sm]:h-auto [&_[data-slot=select-value]]:line-clamp-none [&_[data-slot=select-value]]:whitespace-normal"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {Object.entries(formatLabels).map(([v, l]) => (
                   <SelectItem key={v} value={v}>{l}</SelectItem>
@@ -808,21 +762,21 @@ export function ImportSheet({
                 )}
 
                 <div className="rounded-lg border overflow-hidden overflow-x-auto">
-                  <div className="grid min-w-[320px] grid-cols-[90px_1fr_100px] gap-2 border-b bg-muted/30 px-3 py-2">
+                  <div className="grid min-w-[320px] grid-cols-[90px_minmax(0,1fr)_100px] gap-2 border-b bg-muted/30 px-3 py-2">
                     <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{t("date")}</span>
                     <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{t("description")}</span>
-                    <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground text-right">{t("amount")}</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground text-end">{t("amount")}</span>
                   </div>
                   <div className="max-h-60 overflow-y-auto">
                     {preview.transactions.map((tx, i) => (
                       <div
                         key={`${tx.date}-${tx.description}-${i}`}
-                        className={cn("grid min-w-[320px] grid-cols-[90px_1fr_100px] gap-2 px-3 py-2.5", i < preview.transactions.length - 1 && "border-b")}
+                        className={cn("grid min-w-[320px] grid-cols-[90px_minmax(0,1fr)_100px] gap-2 px-3 py-2.5", i < preview.transactions.length - 1 && "border-b")}
                       >
-                        <span className="text-xs text-muted-foreground">{tx.date}</span>
-                        <p className="text-xs font-medium truncate">{tx.description}</p>
-                        <span className={cn("text-right font-mono text-xs tabular-nums", tx.amount < 0 ? "text-red-600" : "text-emerald-600")}>
-                          {formatMoney(tx.amount, currencyCode, unitPresentation)}
+                        <span className="text-xs text-muted-foreground"><IdentifierText>{tx.date}</IdentifierText></span>
+                        <p className="text-xs font-medium min-w-0 whitespace-normal [overflow-wrap:anywhere]"><BidiText>{tx.description}</BidiText></p>
+                        <span className={cn("text-end font-mono text-xs tabular-nums", tx.amount < 0 ? "text-red-600" : "text-emerald-600")}>
+                          <BidiText>{formatMoney(tx.amount, currencyCode, unitPresentation)}</BidiText>
                         </span>
                       </div>
                     ))}
@@ -834,12 +788,12 @@ export function ImportSheet({
         </div>
 
         <div className="sticky bottom-0 z-10 flex flex-wrap items-center justify-end gap-2 sm:gap-3 border-t bg-background/80 px-4 py-3 sm:px-6 sm:py-4 backdrop-blur-sm">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t("cancel")}</Button>
-          <Button variant="outline" disabled={!canPreview || previewing} onClick={onPreview}>
-            {previewing ? <><Loader2 className="mr-2 size-3.5 animate-spin" />{t("previewing")}</> : t("preview")}
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="h-auto min-h-8 min-w-0 whitespace-normal">{t("cancel")}</Button>
+          <Button variant="outline" disabled={!canPreview || previewing} onClick={onPreview} className="h-auto min-h-8 min-w-0 whitespace-normal">
+            {previewing ? <><Loader2 className="me-2 size-3.5 animate-spin" />{t("previewing")}</> : t("preview")}
           </Button>
-          <Button onClick={onImport} disabled={!canPreview || importing} className="bg-emerald-600 hover:bg-emerald-700">
-            {importing ? <><Loader2 className="mr-2 size-3.5 animate-spin" />{t("importing")}</> : t("import")}
+          <Button onClick={onImport} disabled={!canPreview || importing} className="h-auto min-h-8 min-w-0 whitespace-normal bg-emerald-600 hover:bg-emerald-700">
+            {importing ? <><Loader2 className="me-2 size-3.5 animate-spin" />{t("importing")}</> : t("import")}
           </Button>
         </div>
       </SheetContent>
@@ -939,11 +893,11 @@ export function MatchToBillSheet({
           {transaction && (
             <div className="rounded-lg border bg-muted/30 p-3">
               <p className="text-xs text-muted-foreground mb-1">{t("bankTransaction")}</p>
-              <p className="text-sm font-medium">{transaction.description}</p>
-              <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
-                <span>{transaction.date}</span>
+              <p className="text-sm font-medium"><BidiText>{transaction.description}</BidiText></p>
+              <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-muted-foreground">
+                <span><IdentifierText>{transaction.date}</IdentifierText></span>
                 <span className="font-mono font-semibold text-red-600 dark:text-red-400">
-                  {formatMoney(transaction.amount, currencyCode, unitPresentation)}
+                  <BidiText>{formatMoney(transaction.amount, currencyCode, unitPresentation)}</BidiText>
                 </span>
               </div>
             </div>
@@ -962,22 +916,22 @@ export function MatchToBillSheet({
                       type="button"
                       onClick={() => { setSelectedBill(b.id); setPayAmount(bankUiDecimal(bankUiMin(bankUiAbs(transaction?.amount || 0n), b.amountDue), currencyCode)); }}
                       className={cn(
-                        "w-full flex items-center justify-between rounded-lg border p-3 text-left transition-colors hover:bg-muted/50",
+                        "w-full flex items-center justify-between rounded-lg border p-3 text-start transition-colors hover:bg-muted/50",
                         selectedBill === b.id && "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20"
                       )}
                     >
                       <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium">{b.billNumber}</span>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-sm font-medium"><IdentifierText>{b.billNumber}</IdentifierText></span>
                           <Badge variant="outline" className="text-[10px] border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
                             {t("confidence", { percent: s.confidence })}
                           </Badge>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-0.5">{b.contactName} · {t("dueOn", { date: b.dueDate })}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5"><BidiText>{b.contactName}</BidiText> · {t("dueOn", { date: b.dueDate })}</p>
                         <p className="text-[10px] text-muted-foreground mt-0.5">{s.reasons.map(reason => bankMatchReason(t, reason)).join(t("listSeparator"))}</p>
                       </div>
-                      <span className="font-mono text-sm font-medium tabular-nums shrink-0 ml-3">
-                        {formatMoney(b.amountDue, currencyCode, unitPresentation)}
+                      <span className="font-mono text-sm font-medium tabular-nums shrink-0 ms-3">
+                        <BidiText>{formatMoney(b.amountDue, currencyCode, unitPresentation)}</BidiText>
                       </span>
                     </button>
                   );
@@ -991,13 +945,8 @@ export function MatchToBillSheet({
               {suggestions.length > 0 ? t("allOpenBills") : t("openBills")}
             </p>
             <div className="relative mb-2">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-              <Input
-                placeholder={t("searchBills")}
-                value={billSearch}
-                onChange={(e) => setBillSearch(e.target.value)}
-                className="pl-9 h-8 text-xs"
-              />
+              <Search className="absolute start-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+              <Input placeholder={t("searchBills")} value={billSearch} onChange={(e) => setBillSearch(e.target.value)} className="ps-9 h-8 text-xs" dir="auto" aria-label={t("searchBills")} />
             </div>
             {loading ? (
               <div className="flex items-center justify-center py-8">
@@ -1013,18 +962,18 @@ export function MatchToBillSheet({
                     type="button"
                     onClick={() => { setSelectedBill(b.id); setPayAmount(bankUiDecimal(bankUiMin(bankUiAbs(transaction?.amount || 0n), b.amountDue), currencyCode)); }}
                     className={cn(
-                      "w-full flex items-center justify-between rounded-lg border p-3 text-left transition-colors hover:bg-muted/50",
+                      "w-full flex items-center justify-between rounded-lg border p-3 text-start transition-colors hover:bg-muted/50",
                       selectedBill === b.id && "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20",
                       suggestedBillIds.has(b.id) && selectedBill !== b.id && "border-emerald-200 dark:border-emerald-900"
                     )}
                   >
                     <div className="min-w-0">
-                      <span className="text-sm font-medium">{b.billNumber}</span>
-                      <p className="text-xs text-muted-foreground mt-0.5">{b.contactName} · {t("dueOn", { date: b.dueDate })}</p>
+                      <span className="text-sm font-medium"><IdentifierText>{b.billNumber}</IdentifierText></span>
+                      <p className="text-xs text-muted-foreground mt-0.5"><BidiText>{b.contactName}</BidiText> · {t("dueOn", { date: b.dueDate })}</p>
                     </div>
-                    <div className="text-right shrink-0 ml-3">
-                      <span className="font-mono text-sm font-medium tabular-nums">{formatMoney(b.amountDue, currencyCode, unitPresentation)}</span>
-                      <p className="text-[10px] text-muted-foreground">{t("ofTotal", { amount: formatMoney(b.total, currencyCode, unitPresentation) })}</p>
+                    <div className="text-end shrink-0 ms-3">
+                      <span className="font-mono text-sm font-medium tabular-nums"><BidiText>{formatMoney(b.amountDue, currencyCode, unitPresentation)}</BidiText></span>
+                      <p className="text-[10px] text-muted-foreground"><BidiText>{t("ofTotal", { amount: formatMoney(b.total, currencyCode, unitPresentation) })}</BidiText></p>
                     </div>
                   </button>
                 ))}
@@ -1037,7 +986,7 @@ export function MatchToBillSheet({
               <div className="flex items-center justify-between">
                 <Label className="text-xs">{t("paymentAmount")}</Label>
                 <span className="text-[10px] text-muted-foreground">
-                  {t("billDue", { amount: formatMoney(selected.amountDue, currencyCode, unitPresentation) })}
+                  <BidiText>{t("billDue", { amount: formatMoney(selected.amountDue, currencyCode, unitPresentation) })}</BidiText>
                 </span>
               </div>
               <CurrencyInput
@@ -1050,14 +999,14 @@ export function MatchToBillSheet({
           )}
         </div>
 
-        <div className="sticky bottom-0 flex items-center justify-end gap-2 border-t bg-background/80 px-4 py-3 sm:px-6 backdrop-blur-sm shrink-0">
-          <Button variant="outline" onClick={onClose}>{t("cancel")}</Button>
+        <div className="sticky bottom-0 flex flex-wrap items-center justify-end gap-2 border-t bg-background/80 px-4 py-3 sm:px-6 backdrop-blur-sm shrink-0">
+          <Button variant="outline" onClick={onClose} className="h-auto min-h-8 min-w-0 whitespace-normal">{t("cancel")}</Button>
           <Button
             onClick={handleMatch}
             disabled={!selectedBill || saving}
-            className="bg-emerald-600 hover:bg-emerald-700"
+            className="h-auto min-h-8 min-w-0 whitespace-normal bg-emerald-600 hover:bg-emerald-700"
           >
-            {saving ? <><Loader2 className="mr-2 size-3.5 animate-spin" />{t("linkingDots")}</> : t("linkAndPay")}
+            {saving ? <><Loader2 className="me-2 size-3.5 animate-spin" />{t("linkingDots")}</> : t("linkAndPay")}
           </Button>
         </div>
       </SheetContent>
@@ -1169,11 +1118,11 @@ export function CreateExpenseSheet({
           {transaction && (
             <div className="rounded-lg border bg-muted/30 p-3">
               <p className="text-xs text-muted-foreground mb-1">{t("bankTransaction")}</p>
-              <p className="text-sm font-medium">{transaction.description}</p>
-              <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
-                <span>{transaction.date}</span>
+              <p className="text-sm font-medium"><BidiText>{transaction.description}</BidiText></p>
+              <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-muted-foreground">
+                <span><IdentifierText>{transaction.date}</IdentifierText></span>
                 <span className="font-mono font-semibold text-red-600 dark:text-red-400">
-                  {formatMoney(transaction.amount, currencyCode, unitPresentation)}
+                  <BidiText>{formatMoney(transaction.amount, currencyCode, unitPresentation)}</BidiText>
                 </span>
               </div>
             </div>
@@ -1181,13 +1130,13 @@ export function CreateExpenseSheet({
 
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("title")}</Label>
-              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("officeSupplies")} />
+              <Label className="text-xs"><BidiText>{t("title")}</BidiText></Label>
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("officeSupplies")} dir="auto" aria-label={t("title")} />
             </div>
 
             <div className="space-y-1.5">
               <Label className="text-xs">{t("descriptionOptional")}</Label>
-              <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t("expenseNotes")} />
+              <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t("expenseNotes")} dir="auto" aria-label={t("descriptionOptional")} />
             </div>
 
             <div className="h-px bg-border" />
@@ -1196,7 +1145,7 @@ export function CreateExpenseSheet({
 
             <div className="space-y-1.5">
               <Label className="text-xs">{t("itemDescription")}</Label>
-              <Input value={itemDesc} onChange={(e) => setItemDesc(e.target.value)} placeholder={t("purchasedHint")} />
+              <Input value={itemDesc} onChange={(e) => setItemDesc(e.target.value)} placeholder={t("purchasedHint")} dir="auto" aria-label={t("itemDescription")} />
             </div>
 
             <div className="space-y-1.5">
@@ -1222,7 +1171,7 @@ export function CreateExpenseSheet({
             <div className="space-y-1.5">
               <Label className="text-xs">{t("tax")}{" "}<span className="text-muted-foreground font-normal">{t("taxInclusive")}</span></Label>
               <Select value={taxRateId} onValueChange={setTaxRateId}>
-                <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-auto min-h-9 min-w-0 max-w-full whitespace-normal text-start data-[size=default]:h-auto data-[size=sm]:h-auto [&_[data-slot=select-value]]:line-clamp-none [&_[data-slot=select-value]]:whitespace-normal text-sm" aria-label={t("tax")}><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">{t("noTax")}</SelectItem>
                   {taxRates.map((t) => (
@@ -1252,14 +1201,14 @@ export function CreateExpenseSheet({
           </div>
         </div>
 
-        <div className="sticky bottom-0 flex items-center justify-end gap-2 border-t bg-background/80 px-4 py-3 sm:px-6 backdrop-blur-sm shrink-0">
-          <Button variant="outline" onClick={onClose}>{t("cancel")}</Button>
+        <div className="sticky bottom-0 flex flex-wrap items-center justify-end gap-2 border-t bg-background/80 px-4 py-3 sm:px-6 backdrop-blur-sm shrink-0">
+          <Button variant="outline" onClick={onClose} className="h-auto min-h-8 min-w-0 whitespace-normal">{t("cancel")}</Button>
           <Button
             onClick={handleCreate}
             disabled={saving || !title.trim() || !accountId}
-            className="bg-emerald-600 hover:bg-emerald-700"
+            className="h-auto min-h-8 min-w-0 whitespace-normal bg-emerald-600 hover:bg-emerald-700"
           >
-            {saving ? <><Loader2 className="mr-2 size-3.5 animate-spin" />{t("recordingDots")}</> : t("recordExpense")}
+            {saving ? <><Loader2 className="me-2 size-3.5 animate-spin" />{t("recordingDots")}</> : t("recordExpense")}
           </Button>
         </div>
       </SheetContent>
@@ -1517,11 +1466,11 @@ export function CategorizeSheet({
           {transaction && (
             <div className="rounded-lg border bg-muted/30 p-3">
               <p className="text-xs text-muted-foreground mb-1">{t("bankTransaction")}</p>
-              <p className="text-sm font-medium">{transaction.description}</p>
-              <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
-                <span>{transaction.date}</span>
+              <p className="text-sm font-medium"><BidiText>{transaction.description}</BidiText></p>
+              <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-muted-foreground">
+                <span><IdentifierText>{transaction.date}</IdentifierText></span>
                 <span className={cn("font-mono font-semibold", isCredit ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400")}>
-                  {isCredit ? "+" : ""}{formatMoney(transaction.amount, currencyCode, unitPresentation)}
+                  <BidiText>{isCredit ? "+" : ""}{formatMoney(transaction.amount, currencyCode, unitPresentation)}</BidiText>
                 </span>
               </div>
             </div>
@@ -1561,7 +1510,7 @@ export function CategorizeSheet({
                 allowCreate
               />
               {choiceHint && (
-                <p className="text-[11px] text-muted-foreground">{choiceHint}</p>
+                <p className="text-[11px] text-muted-foreground"><BidiText>{choiceHint}</BidiText></p>
               )}
             </div>
           </div>
@@ -1569,7 +1518,7 @@ export function CategorizeSheet({
           <div className="space-y-1.5">
             <Label className="text-xs">{t("tax")}{" "}<span className="text-muted-foreground font-normal">{t("taxInclusive")}</span></Label>
             <Select value={taxRateId} onValueChange={setTaxRateId}>
-              <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-auto min-h-9 min-w-0 max-w-full whitespace-normal text-start data-[size=default]:h-auto data-[size=sm]:h-auto [&_[data-slot=select-value]]:line-clamp-none [&_[data-slot=select-value]]:whitespace-normal text-sm" aria-label={t("tax")}><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">{t("noTax")}</SelectItem>
                 {taxRates.map((t) => (
@@ -1581,16 +1530,16 @@ export function CategorizeSheet({
             </Select>
             {taxPreview && (
               <div className="rounded-lg border bg-muted/20 p-2.5 text-[11px] text-muted-foreground">
-                <div className="flex justify-between"><span>{t("net")}</span><span className="font-mono tabular-nums">{formatMoney(taxPreview.net, currencyCode, unitPresentation)}</span></div>
+                <div className="flex justify-between"><span>{t("net")}</span><span className="font-mono tabular-nums"><BidiText>{formatMoney(taxPreview.net, currencyCode, unitPresentation)}</BidiText></span></div>
                 {isCredit ? (
-                  <div className="flex justify-between"><span>{t("outputTax")}</span><span className="font-mono tabular-nums">{formatMoney(taxPreview.tax, currencyCode, unitPresentation)}</span></div>
+                  <div className="flex justify-between"><span>{t("outputTax")}</span><span className="font-mono tabular-nums"><BidiText>{formatMoney(taxPreview.tax, currencyCode, unitPresentation)}</BidiText></span></div>
                 ) : (
                   <>
                     {taxPreview.recoverable > 0 && (
-                      <div className="flex justify-between"><span>{t("inputTax")}</span><span className="font-mono tabular-nums">{formatMoney(taxPreview.recoverable, currencyCode, unitPresentation)}</span></div>
+                      <div className="flex justify-between"><span>{t("inputTax")}</span><span className="font-mono tabular-nums"><BidiText>{formatMoney(taxPreview.recoverable, currencyCode, unitPresentation)}</BidiText></span></div>
                     )}
                     {taxPreview.absorbed > 0 && (
-                      <div className="flex justify-between"><span>{t("absorbedTax")}</span><span className="font-mono tabular-nums">{formatMoney(taxPreview.absorbed, currencyCode, unitPresentation)}</span></div>
+                      <div className="flex justify-between"><span>{t("absorbedTax")}</span><span className="font-mono tabular-nums"><BidiText>{formatMoney(taxPreview.absorbed, currencyCode, unitPresentation)}</BidiText></span></div>
                     )}
                   </>
                 )}
@@ -1612,16 +1561,16 @@ export function CategorizeSheet({
 
           <div className="space-y-1.5">
             <Label className="text-xs">{t("memoOptional")}</Label>
-            <Input value={memo} onChange={(e) => setMemo(e.target.value)} placeholder={t("recordsNote")} />
+            <Input value={memo} onChange={(e) => setMemo(e.target.value)} placeholder={t("recordsNote")} dir="auto" aria-label={t("memoOptional")} />
           </div>
 
           <ReceiptAttachments orgId={orgId} entityType="bank_transaction" entityId={transaction?.id ?? null} />
         </div>
 
-        <div className="sticky bottom-0 flex items-center justify-end gap-2 border-t bg-background/80 px-4 py-3 sm:px-6 backdrop-blur-sm shrink-0">
-          <Button variant="outline" onClick={onClose}>{t("cancel")}</Button>
-          <Button onClick={handleSave} disabled={saving || !accountId} className="bg-emerald-600 hover:bg-emerald-700">
-            {saving ? <><Loader2 className="mr-2 size-3.5 animate-spin" />{t("saving")}</> : isEditing ? t("saveChanges") : t("assignCategory")}
+        <div className="sticky bottom-0 flex flex-wrap items-center justify-end gap-2 border-t bg-background/80 px-4 py-3 sm:px-6 backdrop-blur-sm shrink-0">
+          <Button variant="outline" onClick={onClose} className="h-auto min-h-8 min-w-0 whitespace-normal">{t("cancel")}</Button>
+          <Button onClick={handleSave} disabled={saving || !accountId} className="h-auto min-h-8 min-w-0 whitespace-normal bg-emerald-600 hover:bg-emerald-700">
+            {saving ? <><Loader2 className="me-2 size-3.5 animate-spin" />{t("saving")}</> : isEditing ? t("saveChanges") : t("assignCategory")}
           </Button>
         </div>
       </SheetContent>
@@ -1729,11 +1678,11 @@ export function MatchToInvoiceSheet({
           {transaction && (
             <div className="rounded-lg border bg-muted/30 p-3">
               <p className="text-xs text-muted-foreground mb-1">{t("bankTransaction")}</p>
-              <p className="text-sm font-medium">{transaction.description}</p>
-              <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
-                <span>{transaction.date}</span>
+              <p className="text-sm font-medium"><BidiText>{transaction.description}</BidiText></p>
+              <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-muted-foreground">
+                <span><IdentifierText>{transaction.date}</IdentifierText></span>
                 <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">
-                  {formatMoney(transaction.amount, currencyCode, unitPresentation)}
+                  <BidiText>{formatMoney(transaction.amount, currencyCode, unitPresentation)}</BidiText>
                 </span>
               </div>
             </div>
@@ -1752,22 +1701,22 @@ export function MatchToInvoiceSheet({
                       type="button"
                       onClick={() => { setSelectedInvoice(inv.id); setPayAmount(bankUiDecimal(bankUiMin(bankUiAbs(transaction?.amount || 0n), inv.amountDue), currencyCode)); }}
                       className={cn(
-                        "w-full flex items-center justify-between rounded-lg border p-3 text-left transition-colors hover:bg-muted/50",
+                        "w-full flex items-center justify-between rounded-lg border p-3 text-start transition-colors hover:bg-muted/50",
                         selectedInvoice === inv.id && "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20"
                       )}
                     >
                       <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium">{inv.invoiceNumber}</span>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-sm font-medium"><IdentifierText>{inv.invoiceNumber}</IdentifierText></span>
                           <Badge variant="outline" className="text-[10px] border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
                             {t("confidence", { percent: s.confidence })}
                           </Badge>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-0.5">{inv.contactName} · {t("dueOn", { date: inv.dueDate })}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5"><BidiText>{inv.contactName}</BidiText> · {t("dueOn", { date: inv.dueDate })}</p>
                         <p className="text-[10px] text-muted-foreground mt-0.5">{s.reasons.map(reason => bankMatchReason(t, reason)).join(t("listSeparator"))}</p>
                       </div>
-                      <span className="font-mono text-sm font-medium tabular-nums shrink-0 ml-3">
-                        {formatMoney(inv.amountDue, currencyCode, unitPresentation)}
+                      <span className="font-mono text-sm font-medium tabular-nums shrink-0 ms-3">
+                        <BidiText>{formatMoney(inv.amountDue, currencyCode, unitPresentation)}</BidiText>
                       </span>
                     </button>
                   );
@@ -1781,13 +1730,8 @@ export function MatchToInvoiceSheet({
               {suggestions.length > 0 ? t("allOpenInvoices") : t("openInvoices")}
             </p>
             <div className="relative mb-2">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-              <Input
-                placeholder={t("searchInvoices")}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 h-8 text-xs"
-              />
+              <Search className="absolute start-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+              <Input placeholder={t("searchInvoices")} value={search} onChange={(e) => setSearch(e.target.value)} className="ps-9 h-8 text-xs" dir="auto" aria-label={t("searchInvoices")} />
             </div>
             {loading ? (
               <div className="flex items-center justify-center py-8">
@@ -1803,18 +1747,18 @@ export function MatchToInvoiceSheet({
                     type="button"
                     onClick={() => { setSelectedInvoice(inv.id); setPayAmount(bankUiDecimal(bankUiMin(bankUiAbs(transaction?.amount || 0n), inv.amountDue), currencyCode)); }}
                     className={cn(
-                      "w-full flex items-center justify-between rounded-lg border p-3 text-left transition-colors hover:bg-muted/50",
+                      "w-full flex items-center justify-between rounded-lg border p-3 text-start transition-colors hover:bg-muted/50",
                       selectedInvoice === inv.id && "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20",
                       suggestedIds.has(inv.id) && selectedInvoice !== inv.id && "border-emerald-200 dark:border-emerald-900"
                     )}
                   >
                     <div className="min-w-0">
-                      <span className="text-sm font-medium">{inv.invoiceNumber}</span>
-                      <p className="text-xs text-muted-foreground mt-0.5">{inv.contactName} · {t("dueOn", { date: inv.dueDate })}</p>
+                      <span className="text-sm font-medium"><IdentifierText>{inv.invoiceNumber}</IdentifierText></span>
+                      <p className="text-xs text-muted-foreground mt-0.5"><BidiText>{inv.contactName}</BidiText> · {t("dueOn", { date: inv.dueDate })}</p>
                     </div>
-                    <div className="text-right shrink-0 ml-3">
-                      <span className="font-mono text-sm font-medium tabular-nums">{formatMoney(inv.amountDue, currencyCode, unitPresentation)}</span>
-                      <p className="text-[10px] text-muted-foreground">{t("ofTotal", { amount: formatMoney(inv.total, currencyCode, unitPresentation) })}</p>
+                    <div className="text-end shrink-0 ms-3">
+                      <span className="font-mono text-sm font-medium tabular-nums"><BidiText>{formatMoney(inv.amountDue, currencyCode, unitPresentation)}</BidiText></span>
+                      <p className="text-[10px] text-muted-foreground"><BidiText>{t("ofTotal", { amount: formatMoney(inv.total, currencyCode, unitPresentation) })}</BidiText></p>
                     </div>
                   </button>
                 ))}
@@ -1827,7 +1771,7 @@ export function MatchToInvoiceSheet({
               <div className="flex items-center justify-between">
                 <Label className="text-xs">{t("amountReceived")}</Label>
                 <span className="text-[10px] text-muted-foreground">
-                  {t("invoiceDue", { amount: formatMoney(selected.amountDue, currencyCode, unitPresentation) })}
+                  <BidiText>{t("invoiceDue", { amount: formatMoney(selected.amountDue, currencyCode, unitPresentation) })}</BidiText>
                 </span>
               </div>
               <CurrencyInput prefix={currencyCode} fractionDigits={currencyMetadata(currencyCode).minorUnits} aria-label={t("amountInCurrency", { currency: currencyLabel(currencyCode, unitPresentation.locale) })} value={payAmount} onChange={setPayAmount} />
@@ -1836,14 +1780,14 @@ export function MatchToInvoiceSheet({
           )}
         </div>
 
-        <div className="sticky bottom-0 flex items-center justify-end gap-2 border-t bg-background/80 px-4 py-3 sm:px-6 backdrop-blur-sm shrink-0">
-          <Button variant="outline" onClick={onClose}>{t("cancel")}</Button>
+        <div className="sticky bottom-0 flex flex-wrap items-center justify-end gap-2 border-t bg-background/80 px-4 py-3 sm:px-6 backdrop-blur-sm shrink-0">
+          <Button variant="outline" onClick={onClose} className="h-auto min-h-8 min-w-0 whitespace-normal">{t("cancel")}</Button>
           <Button
             onClick={handleMatch}
             disabled={!selectedInvoice || saving}
-            className="bg-emerald-600 hover:bg-emerald-700"
+            className="h-auto min-h-8 min-w-0 whitespace-normal bg-emerald-600 hover:bg-emerald-700"
           >
-            {saving ? <><Loader2 className="mr-2 size-3.5 animate-spin" />{t("linkingDots")}</> : t("linkAndPay")}
+            {saving ? <><Loader2 className="me-2 size-3.5 animate-spin" />{t("linkingDots")}</> : t("linkAndPay")}
           </Button>
         </div>
       </SheetContent>
@@ -1986,11 +1930,11 @@ export function MatchSheet({
           {transaction && (
             <div className="rounded-lg border bg-muted/30 p-3">
               <p className="text-xs text-muted-foreground mb-1">{t("bankTransaction")}</p>
-              <p className="text-sm font-medium">{transaction.description}</p>
-              <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
-                <span>{transaction.date}</span>
+              <p className="text-sm font-medium"><BidiText>{transaction.description}</BidiText></p>
+              <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-muted-foreground">
+                <span><IdentifierText>{transaction.date}</IdentifierText></span>
                 <span className={cn("font-mono font-semibold", isCredit ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400")}>
-                  {isCredit ? "+" : ""}{formatMoney(transaction.amount, currencyCode, unitPresentation)}
+                  <BidiText>{isCredit ? "+" : ""}{formatMoney(transaction.amount, currencyCode, unitPresentation)}</BidiText>
                 </span>
               </div>
             </div>
@@ -2015,22 +1959,22 @@ export function MatchSheet({
                           type="button"
                           onClick={() => setSelection({ kind: "existing", match: m })}
                           className={cn(
-                            "w-full flex items-center justify-between rounded-lg border p-3 text-left transition-colors hover:bg-muted/50",
+                            "w-full flex items-center justify-between rounded-lg border p-3 text-start transition-colors hover:bg-muted/50",
                             isSelected && "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20"
                           )}
                         >
                           <div className="min-w-0">
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
                               <Badge variant="outline" className={cn("text-[10px]", meta.className)}>{meta.label}</Badge>
                               <Badge variant="outline" className="text-[10px] border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
                                 {t("confidence", { percent: m.confidence })}
                               </Badge>
                             </div>
-                            <p className="text-sm font-medium truncate mt-1">{m.candidate.description}</p>
-                            <p className="text-[10px] text-muted-foreground mt-0.5">{m.candidate.date} · {m.reasons.map(reason => bankMatchReason(t, reason)).join(t("listSeparator"))}</p>
+                            <p className="text-sm font-medium min-w-0 whitespace-normal [overflow-wrap:anywhere] mt-1"><BidiText>{m.candidate.description}</BidiText></p>
+                            <p className="text-[10px] text-muted-foreground mt-0.5"><IdentifierText>{m.candidate.date}</IdentifierText> · {m.reasons.map(reason => bankMatchReason(t, reason)).join(t("listSeparator"))}</p>
                           </div>
-                          <span className="font-mono text-sm font-medium tabular-nums shrink-0 ml-3">
-                            {formatMoney(m.candidate.amount, currencyCode, unitPresentation)}
+                          <span className="font-mono text-sm font-medium tabular-nums shrink-0 ms-3">
+                            <BidiText>{formatMoney(m.candidate.amount, currencyCode, unitPresentation)}</BidiText>
                           </span>
                         </button>
                       );
@@ -2046,13 +1990,8 @@ export function MatchSheet({
                   {t(isCredit ? "openInvoices" : "openBills")}
                 </p>
                 <div className="relative mb-2">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-                  <Input
-                    placeholder={t(isCredit ? "searchInvoices" : "searchBills")}
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="pl-9 h-8 text-xs"
-                  />
+                  <Search className="absolute start-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+                  <Input placeholder={t(isCredit ? "searchInvoices" : "searchBills")} value={search} onChange={(e) => setSearch(e.target.value)} className="ps-9 h-8 text-xs" dir="auto" aria-label={t(isCredit ? "searchInvoices" : "searchBills")} />
                 </div>
                 {filteredDocs.length === 0 ? (
                   <p className="text-xs text-muted-foreground py-4 text-center">{t(isCredit ? "noOpenInvoices" : "noOpenBills")}</p>
@@ -2071,13 +2010,13 @@ export function MatchSheet({
                             setPayAmount(bankUiDecimal(bankUiMin(bankUiAbs(transaction?.amount || 0n), d.amountDue), currencyCode));
                           }}
                           className={cn(
-                            "w-full flex items-center justify-between rounded-lg border p-3 text-left transition-colors hover:bg-muted/50",
+                            "w-full flex items-center justify-between rounded-lg border p-3 text-start transition-colors hover:bg-muted/50",
                             isSelected && "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20",
                             suggested && !isSelected && "border-emerald-200 dark:border-emerald-900"
                           )}
                         >
                           <div className="min-w-0">
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
                               <span className="text-sm font-medium">{num}</span>
                               {suggested && (
                                 <Badge variant="outline" className="text-[10px] border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
@@ -2085,11 +2024,11 @@ export function MatchSheet({
                                 </Badge>
                               )}
                             </div>
-                            <p className="text-xs text-muted-foreground mt-0.5">{d.contactName} · {t("dueOn", { date: d.dueDate })}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5"><BidiText>{d.contactName}</BidiText> · {t("dueOn", { date: d.dueDate })}</p>
                           </div>
-                          <div className="text-right shrink-0 ml-3">
-                            <span className="font-mono text-sm font-medium tabular-nums">{formatMoney(d.amountDue, currencyCode, unitPresentation)}</span>
-                            <p className="text-[10px] text-muted-foreground">{t("ofTotal", { amount: formatMoney(d.total, currencyCode, unitPresentation) })}</p>
+                          <div className="text-end shrink-0 ms-3">
+                            <span className="font-mono text-sm font-medium tabular-nums"><BidiText>{formatMoney(d.amountDue, currencyCode, unitPresentation)}</BidiText></span>
+                            <p className="text-[10px] text-muted-foreground"><BidiText>{t("ofTotal", { amount: formatMoney(d.total, currencyCode, unitPresentation) })}</BidiText></p>
                           </div>
                         </button>
                       );
@@ -2109,10 +2048,10 @@ export function MatchSheet({
           )}
         </div>
 
-        <div className="sticky bottom-0 flex items-center justify-end gap-2 border-t bg-background/80 px-4 py-3 sm:px-6 backdrop-blur-sm shrink-0">
-          <Button variant="outline" onClick={onClose}>{t("cancel")}</Button>
-          <Button onClick={handleMatch} disabled={!selection || saving} className="bg-emerald-600 hover:bg-emerald-700">
-            {saving ? <><Loader2 className="mr-2 size-3.5 animate-spin" />{t("linking")}</> : t("link")}
+        <div className="sticky bottom-0 flex flex-wrap items-center justify-end gap-2 border-t bg-background/80 px-4 py-3 sm:px-6 backdrop-blur-sm shrink-0">
+          <Button variant="outline" onClick={onClose} className="h-auto min-h-8 min-w-0 whitespace-normal">{t("cancel")}</Button>
+          <Button onClick={handleMatch} disabled={!selection || saving} className="h-auto min-h-8 min-w-0 whitespace-normal bg-emerald-600 hover:bg-emerald-700">
+            {saving ? <><Loader2 className="me-2 size-3.5 animate-spin" />{t("linking")}</> : t("link")}
           </Button>
         </div>
       </SheetContent>
@@ -2220,11 +2159,11 @@ export function TransferSheet({
           {transaction && (
             <div className="rounded-lg border bg-muted/30 p-3">
               <p className="text-xs text-muted-foreground mb-1">{t("bankTransaction")}</p>
-              <p className="text-sm font-medium">{transaction.description}</p>
-              <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
-                <span>{transaction.date}</span>
+              <p className="text-sm font-medium"><BidiText>{transaction.description}</BidiText></p>
+              <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-muted-foreground">
+                <span><IdentifierText>{transaction.date}</IdentifierText></span>
                 <span className={cn("font-mono font-semibold", isCredit ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400")}>
-                  {isCredit ? "+" : ""}{formatMoney(transaction.amount, currencyCode, unitPresentation)}
+                  <BidiText>{isCredit ? "+" : ""}{formatMoney(transaction.amount, currencyCode, unitPresentation)}</BidiText>
                 </span>
               </div>
             </div>
@@ -2233,15 +2172,15 @@ export function TransferSheet({
           <div className="space-y-1.5">
             <Label className="text-xs">{isCredit ? t("transferredFrom") : t("transferredTo")}</Label>
             <Select value={targetId} onValueChange={setTargetId}>
-              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder={t("chooseBank")} /></SelectTrigger>
+              <SelectTrigger className="h-auto min-h-9 min-w-0 max-w-full whitespace-normal text-start data-[size=default]:h-auto data-[size=sm]:h-auto [&_[data-slot=select-value]]:line-clamp-none [&_[data-slot=select-value]]:whitespace-normal text-sm" aria-label={isCredit ? t("transferredFrom") : t("transferredTo")}><SelectValue placeholder={t("chooseBank")} /></SelectTrigger>
               <SelectContent>
                 {targets.length === 0 ? (
                   <div className="px-2 py-3 text-xs text-muted-foreground">{t("noOtherBanks")}</div>
                 ) : (
                   targets.map((target) => (
                     <SelectItem key={target.id} value={target.id} disabled={!target.hasLedgerAccount}>
-                      {target.accountName}
-                      {target.bankName ? ` · ${target.bankName}` : ""}
+                      <BidiText>{target.accountName}</BidiText>
+                      <BidiText>{target.bankName ? ` · ${target.bankName}` : ""}</BidiText>
                       {!target.hasLedgerAccount ? t("notSetupSuffix") : ""}
                     </SelectItem>
                   ))
@@ -2258,7 +2197,7 @@ export function TransferSheet({
             <div className="space-y-1.5">
               <Label className="text-xs">{t("counterLine")}</Label>
               {loadingCounters ? (
-                <div className="flex items-center gap-2 py-3 text-xs text-muted-foreground">
+                <div className="flex flex-wrap items-center gap-2 py-3 text-xs text-muted-foreground">
                   <Loader2 className="size-3.5 animate-spin" /> {t("lookingForMatch")}</div>
               ) : counterCandidates.length === 0 ? (
                 <p className="text-[11px] text-muted-foreground">
@@ -2271,16 +2210,16 @@ export function TransferSheet({
                       type="button"
                       onClick={() => setCounterTx(counterTx === c.id ? null : c.id)}
                       className={cn(
-                        "w-full flex items-center justify-between rounded-lg border p-2.5 text-left transition-colors hover:bg-muted/50",
+                        "w-full flex items-center justify-between rounded-lg border p-2.5 text-start transition-colors hover:bg-muted/50",
                         counterTx === c.id && "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20"
                       )}
                     >
                       <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{c.description}</p>
-                        <p className="text-[10px] text-muted-foreground mt-0.5">{c.date}</p>
+                        <p className="text-sm font-medium min-w-0 whitespace-normal [overflow-wrap:anywhere]"><BidiText>{c.description}</BidiText></p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5"><IdentifierText>{c.date}</IdentifierText></p>
                       </div>
-                      <span className="font-mono text-xs font-medium tabular-nums shrink-0 ml-3">
-                        {formatMoney(c.amount, currencyCode, unitPresentation)}
+                      <span className="font-mono text-xs font-medium tabular-nums shrink-0 ms-3">
+                        <BidiText>{formatMoney(c.amount, currencyCode, unitPresentation)}</BidiText>
                       </span>
                     </button>
                   ))}
@@ -2292,14 +2231,14 @@ export function TransferSheet({
           )}
         </div>
 
-        <div className="sticky bottom-0 flex items-center justify-end gap-2 border-t bg-background/80 px-4 py-3 sm:px-6 backdrop-blur-sm shrink-0">
-          <Button variant="outline" onClick={onClose}>{t("cancel")}</Button>
+        <div className="sticky bottom-0 flex flex-wrap items-center justify-end gap-2 border-t bg-background/80 px-4 py-3 sm:px-6 backdrop-blur-sm shrink-0">
+          <Button variant="outline" onClick={onClose} className="h-auto min-h-8 min-w-0 whitespace-normal">{t("cancel")}</Button>
           <Button
             onClick={handleTransfer}
             disabled={!targetId || saving || (selectedTarget && !selectedTarget.hasLedgerAccount)}
-            className="bg-emerald-600 hover:bg-emerald-700"
+            className="h-auto min-h-8 min-w-0 whitespace-normal bg-emerald-600 hover:bg-emerald-700"
           >
-            {saving ? <><Loader2 className="mr-2 size-3.5 animate-spin" />{t("recording")}</> : t("recordTransfer")}
+            {saving ? <><Loader2 className="me-2 size-3.5 animate-spin" />{t("recording")}</> : t("recordTransfer")}
           </Button>
         </div>
       </SheetContent>
@@ -2420,11 +2359,11 @@ export function SplitAccountSheet({
           {transaction && (
             <div className="rounded-lg border bg-muted/30 p-3">
               <p className="text-xs text-muted-foreground mb-1">{t("bankTransaction")}</p>
-              <p className="text-sm font-medium">{transaction.description}</p>
-              <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
-                <span>{transaction.date}</span>
+              <p className="text-sm font-medium"><BidiText>{transaction.description}</BidiText></p>
+              <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-muted-foreground">
+                <span><IdentifierText>{transaction.date}</IdentifierText></span>
                 <span className={cn("font-mono font-semibold", isCredit ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400")}>
-                  {isCredit ? "+" : ""}{formatMoney(transaction.amount, currencyCode, unitPresentation)}
+                  <BidiText>{isCredit ? "+" : ""}{formatMoney(transaction.amount, currencyCode, unitPresentation)}</BidiText>
                 </span>
               </div>
             </div>
@@ -2457,7 +2396,7 @@ export function SplitAccountSheet({
                   <div className="space-y-1.5">
                     <Label className="text-xs">{t("tax")}</Label>
                     <Select value={row.taxRateId} onValueChange={(v) => updateRow(row.key, { taxRateId: v })}>
-                      <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="h-auto min-h-9 min-w-0 max-w-full whitespace-normal text-start data-[size=default]:h-auto data-[size=sm]:h-auto [&_[data-slot=select-value]]:line-clamp-none [&_[data-slot=select-value]]:whitespace-normal text-sm" aria-label={t("tax")}><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="none">{t("noTax")}</SelectItem>
                         {taxRates.map((t) => (
@@ -2471,12 +2410,12 @@ export function SplitAccountSheet({
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">{t("memoOptional")}</Label>
-                  <Input value={row.memo} onChange={(e) => updateRow(row.key, { memo: e.target.value })} placeholder={t("partNote")} className="h-8 text-sm" />
+                  <Input value={row.memo} onChange={(e) => updateRow(row.key, { memo: e.target.value })} placeholder={t("partNote")} className="h-8 text-sm" dir="auto" aria-label={t("memoOptional")} />
                 </div>
               </div>
             ))}
-            <Button variant="outline" size="sm" onClick={addRow} className="w-full">
-              <Plus className="mr-1.5 size-3.5" />{t("addPart")}</Button>
+            <Button variant="outline" size="sm" onClick={addRow} className="h-auto min-h-8 min-w-0 whitespace-normal w-full">
+              <Plus className="me-1.5 size-3.5" />{t("addPart")}</Button>
           </div>
 
           <div className={cn(
@@ -2485,12 +2424,12 @@ export function SplitAccountSheet({
           )}>
             <div>
               <p className="text-xs text-muted-foreground">{t("allocated")}</p>
-              <p className="font-mono font-medium tabular-nums">{t("allocatedOf", { amount: splitPreview.valid ? formatMoney(allocatedCents, currencyCode, unitPresentation) : t("enterValidAmounts"), total: formatMoney(totalCents, currencyCode, unitPresentation) })}</p>
+              <p className="font-mono font-medium tabular-nums"><BidiText>{t("allocatedOf", { amount: splitPreview.valid ? formatMoney(allocatedCents, currencyCode, unitPresentation) : t("enterValidAmounts"), total: formatMoney(totalCents, currencyCode, unitPresentation) })}</BidiText></p>
             </div>
-            <div className="text-right">
+            <div className="text-end">
               <p className="text-xs text-muted-foreground">{remainingCents >= 0 ? t("remaining") : t("overBy")}</p>
               <p className={cn("font-mono font-medium tabular-nums", balanced ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400")}>
-                {splitPreview.valid ? formatMoney(bankUiAbs(remainingCents), currencyCode, unitPresentation) : t("unavailable")}
+                <BidiText>{splitPreview.valid ? formatMoney(bankUiAbs(remainingCents), currencyCode, unitPresentation) : t("unavailable")}</BidiText>
               </p>
             </div>
           </div>
@@ -2500,10 +2439,10 @@ export function SplitAccountSheet({
           <ReceiptAttachments orgId={orgId} entityType="bank_transaction" entityId={transaction?.id ?? null} />
         </div>
 
-        <div className="sticky bottom-0 flex items-center justify-end gap-2 border-t bg-background/80 px-4 py-3 sm:px-6 backdrop-blur-sm shrink-0">
-          <Button variant="outline" onClick={onClose}>{t("cancel")}</Button>
-          <Button onClick={handleSave} disabled={saving || !balanced} className="bg-emerald-600 hover:bg-emerald-700">
-            {saving ? <><Loader2 className="mr-2 size-3.5 animate-spin" />{t("saving")}</> : t("saveSplit")}
+        <div className="sticky bottom-0 flex flex-wrap items-center justify-end gap-2 border-t bg-background/80 px-4 py-3 sm:px-6 backdrop-blur-sm shrink-0">
+          <Button variant="outline" onClick={onClose} className="h-auto min-h-8 min-w-0 whitespace-normal">{t("cancel")}</Button>
+          <Button onClick={handleSave} disabled={saving || !balanced} className="h-auto min-h-8 min-w-0 whitespace-normal bg-emerald-600 hover:bg-emerald-700">
+            {saving ? <><Loader2 className="me-2 size-3.5 animate-spin" />{t("saving")}</> : t("saveSplit")}
           </Button>
         </div>
       </SheetContent>
@@ -2639,16 +2578,16 @@ export function CashCodingGrid({
           {t("linesToAssign", { count: codeable.length })}
           {readyIds.length > 0 && <> · <span className="text-emerald-600 dark:text-emerald-400">{t("readyCount", { count: readyIds.length })}</span></>}
         </p>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={fillDown} title={t("fillDownHint")}>
-            <ArrowDownRight className="mr-1.5 size-3.5" />{t("fillDown")}</Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="sm" onClick={fillDown} title={t("fillDownHint")} className="h-auto min-h-8 min-w-0 whitespace-normal">
+            <ArrowDownRight className="me-1.5 size-3.5" />{t("fillDown")}</Button>
           <Button
             size="sm"
             onClick={handleSave}
             disabled={saving || readyIds.length === 0}
-            className="bg-emerald-600 hover:bg-emerald-700"
+            className="h-auto min-h-8 min-w-0 whitespace-normal bg-emerald-600 hover:bg-emerald-700"
           >
-            {saving ? <><Loader2 className="mr-1.5 size-3.5 animate-spin" />{t("saving")}</> : <>{t("assignCount", { count: readyIds.length || "" })}</>}
+            {saving ? <><Loader2 className="me-1.5 size-3.5 animate-spin" />{t("saving")}</> : <>{t("assignCount", { count: readyIds.length || "" })}</>}
           </Button>
         </div>
       </div>
@@ -2666,23 +2605,23 @@ export function CashCodingGrid({
             return (
               <div key={tx.id} className="grid min-w-[900px] grid-cols-[150px_minmax(0,1fr)_220px_150px_180px] items-center gap-2 px-3 py-2">
                 <div className="min-w-0">
-                  <p className="text-xs font-medium truncate" title={tx.description}>{tx.description}</p>
-                  <p className="text-[10px] text-muted-foreground">{tx.date}</p>
+                  <p className="text-xs font-medium min-w-0 whitespace-normal [overflow-wrap:anywhere]" title={tx.description}><BidiText>{tx.description}</BidiText></p>
+                  <p className="text-[10px] text-muted-foreground"><IdentifierText>{tx.date}</IdentifierText></p>
                 </div>
                 <span className={cn(
                   "font-mono text-xs font-medium tabular-nums",
                   isCredit ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
                 )}>
-                  {isCredit ? "+" : ""}{formatMoney(tx.amount, currencyCode, unitPresentation)}
+                  <BidiText>{isCredit ? "+" : ""}{formatMoney(tx.amount, currencyCode, unitPresentation)}</BidiText>
                 </span>
                 <AccountPicker value={r.account} onChange={(v) => updateRow(tx.id, { account: v })} placeholder={t("categoryPlaceholder")} />
                 <Select value={r.taxRateId} onValueChange={(v) => updateRow(tx.id, { taxRateId: v })}>
-                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-auto min-h-9 min-w-0 max-w-full whitespace-normal text-start data-[size=default]:h-auto data-[size=sm]:h-auto [&_[data-slot=select-value]]:line-clamp-none [&_[data-slot=select-value]]:whitespace-normal text-xs"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">{t("noTax")}</SelectItem>
                     {taxRates.map((t) => (
                       <SelectItem key={t.id} value={t.id}>
-                        {t.name} ({(t.rate / 100).toFixed(t.rate % 100 === 0 ? 0 : 2)}%)
+                        <BidiText>{t.name}</BidiText> ({(t.rate / 100).toFixed(t.rate % 100 === 0 ? 0 : 2)}%)
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -2784,12 +2723,12 @@ export function ReconciliationReport({
         <div className="grid grid-cols-1 divide-y sm:grid-cols-3 sm:divide-x sm:divide-y-0">
           <div className="p-4">
             <p className="text-[11px] text-muted-foreground uppercase tracking-wide">{t("statementBalance")}</p>
-            <p className="mt-1 text-xl font-semibold font-mono tabular-nums">{bankMoneyDisplay(data.statementEndBalance, currencyCode, unitPresentation)}</p>
+            <p className="mt-1 text-xl font-semibold font-mono tabular-nums"><BidiText>{bankMoneyDisplay(data.statementEndBalance, currencyCode, unitPresentation)}</BidiText></p>
           </div>
           <div className="p-4">
             <p className="text-[11px] text-muted-foreground uppercase tracking-wide">{t("booksBalance")}</p>
             <p className="mt-1 text-xl font-semibold font-mono tabular-nums">
-              {data.glBalance == null ? "—" : bankMoneyDisplay(data.glBalance, data.glCurrencyCode, unitPresentation)}
+              <BidiText>{data.glBalance == null ? "—" : bankMoneyDisplay(data.glBalance, data.glCurrencyCode, unitPresentation)}</BidiText>
             </p>
           </div>
           <div className="p-4">
@@ -2798,7 +2737,7 @@ export function ReconciliationReport({
               "mt-1 text-xl font-semibold font-mono tabular-nums",
               diff == null ? "text-muted-foreground" : balanced ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"
             )}>
-              {diff == null ? "—" : bankMoneyDisplay(diff, currencyCode, unitPresentation)}
+              <BidiText>{diff == null ? "—" : bankMoneyDisplay(diff, currencyCode, unitPresentation)}</BidiText>
             </p>
           </div>
         </div>
@@ -2823,8 +2762,8 @@ export function ReconciliationReport({
                   : t("booksMore")}
               </span>
               <div className="flex-1" />
-              <Button size="sm" variant="outline" onClick={() => setAdjustOpen(true)} disabled={diff == null || diff === 0n || data.reconciliation?.status === "completed"} title={t("adjustTitle")}>
-                <Scale className="mr-1.5 size-3.5" />{t("writeOff")}
+              <Button size="sm" variant="outline" onClick={() => setAdjustOpen(true)} disabled={diff == null || diff === 0n || data.reconciliation?.status === "completed"} title={t("adjustTitle")} className="h-auto min-h-8 min-w-0 whitespace-normal">
+                <Scale className="me-1.5 size-3.5" />{t("writeOff")}
               </Button>
             </>
           )}
@@ -2836,7 +2775,7 @@ export function ReconciliationReport({
           <div className="flex items-center justify-between border-b px-3 py-2">
             <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("matchedToStatement")}</span>
             <span className="text-xs font-mono tabular-nums text-muted-foreground">
-              {data.reconciled.count} · {bankMoneyDisplay(data.reconciled.total, currencyCode, unitPresentation)}
+              {data.reconciled.count} · <BidiText>{bankMoneyDisplay(data.reconciled.total, currencyCode, unitPresentation)}</BidiText>
             </span>
           </div>
           <RecLineList transactions={data.reconciled.transactions} currencyCode={currencyCode} empty={t("noMatched")} />
@@ -2845,7 +2784,7 @@ export function ReconciliationReport({
           <div className="flex items-center justify-between border-b px-3 py-2">
             <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("notMatched")}</span>
             <span className="text-xs font-mono tabular-nums text-muted-foreground">
-              {data.unreconciled.count} · {bankMoneyDisplay(data.unreconciled.total, currencyCode, unitPresentation)}
+              {data.unreconciled.count} · <BidiText>{bankMoneyDisplay(data.unreconciled.total, currencyCode, unitPresentation)}</BidiText>
             </span>
           </div>
           <RecLineList transactions={data.unreconciled.transactions} currencyCode={currencyCode} empty={t("noUnmatched")} />
@@ -2868,7 +2807,7 @@ export function ReconciliationReport({
                   "font-mono font-semibold tabular-nums",
                   diff != null && diff > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
                 )}>
-                  {diff != null ? bankMoneyDisplay(diff, currencyCode, unitPresentation) : "—"}
+                  <BidiText>{diff != null ? bankMoneyDisplay(diff, currencyCode, unitPresentation) : "—"}</BidiText>
                 </span>
               </div>
               <p className="mt-1.5 text-[11px] text-muted-foreground">
@@ -2879,13 +2818,13 @@ export function ReconciliationReport({
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">{t("description")}</Label>
-              <Input value={adjustDesc} onChange={(e) => setAdjustDesc(e.target.value)} placeholder={t("descriptionPlaceholder")} />
+              <Input value={adjustDesc} onChange={(e) => setAdjustDesc(e.target.value)} placeholder={t("descriptionPlaceholder")} dir="auto" aria-label={t("description")} />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAdjustOpen(false)}>{t("cancel")}</Button>
-            <Button onClick={postAdjustment} disabled={posting || diff == null || diff === 0n || data.reconciliation?.status === "completed"} className="bg-emerald-600 hover:bg-emerald-700">
-              {posting ? <><Loader2 className="mr-2 size-3.5 animate-spin" />{t("saving")}</> : t("writeOff")}
+            <Button variant="outline" onClick={() => setAdjustOpen(false)} className="h-auto min-h-8 min-w-0 whitespace-normal">{t("cancel")}</Button>
+            <Button onClick={postAdjustment} disabled={posting || diff == null || diff === 0n || data.reconciliation?.status === "completed"} className="h-auto min-h-8 min-w-0 whitespace-normal bg-emerald-600 hover:bg-emerald-700">
+              {posting ? <><Loader2 className="me-2 size-3.5 animate-spin" />{t("saving")}</> : t("writeOff")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2912,16 +2851,16 @@ function RecLineList({
       {transactions.map((tx) => {
         const isCredit = tx.amount > 0;
         return (
-          <div key={tx.id} className="flex items-center gap-3 px-3 py-2">
+          <div key={tx.id} className="flex flex-wrap items-center gap-3 px-3 py-2">
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-medium truncate">{tx.description}</p>
-              <p className="text-[10px] text-muted-foreground">{tx.date}{tx.accountName ? ` · ${tx.accountName}` : ""}</p>
+              <p className="text-xs font-medium min-w-0 whitespace-normal [overflow-wrap:anywhere]"><BidiText>{tx.description}</BidiText></p>
+              <p className="text-[10px] text-muted-foreground"><IdentifierText>{tx.date}</IdentifierText><BidiText>{tx.accountName ? ` · ${tx.accountName}` : ""}</BidiText></p>
             </div>
             <span className={cn(
               "font-mono text-xs font-medium tabular-nums shrink-0",
               isCredit ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
             )}>
-              {isCredit ? "+" : ""}{bankMoneyDisplay(tx.amount, currencyCode, unitPresentation)}
+              {isCredit ? "+" : ""}<BidiText>{bankMoneyDisplay(tx.amount, currencyCode, unitPresentation)}</BidiText>
             </span>
           </div>
         );

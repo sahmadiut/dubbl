@@ -1,4 +1,5 @@
 "use client";
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 
 import { usePresentation } from "@/i18n/provider";
 import { currencyLabel } from "@/i18n/currency-labels";
@@ -321,9 +322,9 @@ function ScheduledPaymentsList({ orgId }: { orgId: string | null }) {
           <h2 className="text-sm font-semibold">{t("scheduledHeading")}</h2>
           <p className="text-xs text-muted-foreground mt-0.5">{t("scheduledHint")}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="h-8 w-[130px] text-xs">
+            <SelectTrigger className="h-auto min-h-9 min-w-0 max-w-full whitespace-normal text-start data-[size=default]:h-auto data-[size=sm]:h-auto [&_[data-slot=select-value]]:line-clamp-none [&_[data-slot=select-value]]:whitespace-normal w-[130px] text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -334,26 +335,16 @@ function ScheduledPaymentsList({ orgId }: { orgId: string | null }) {
               <SelectItem value="failed">{t("failed")}</SelectItem>
             </SelectContent>
           </Select>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleProcessNow}
-            disabled={processing}
-            className="h-8 text-xs"
-          >
+          <Button variant="outline" size="sm" onClick={handleProcessNow} disabled={processing} className="h-auto min-h-8 min-w-0 whitespace-normal text-xs">
             {processing ? (
-              <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+              <Loader2 className="me-1.5 size-3.5 animate-spin" />
             ) : (
-              <CheckCircle2 className="mr-1.5 size-3.5" />
+              <CheckCircle2 className="me-1.5 size-3.5" />
             )}
             {t("processDue")}
           </Button>
-          <Button
-            size="sm"
-            onClick={openScheduleDialog}
-            className="h-8 bg-emerald-600 hover:bg-emerald-700 text-xs"
-          >
-            <Plus className="mr-1.5 size-3.5" />{t("schedulePayment")}</Button>
+          <Button size="sm" onClick={openScheduleDialog} className="h-auto min-h-8 min-w-0 whitespace-normal bg-emerald-600 hover:bg-emerald-700 text-xs">
+            <Plus className="me-1.5 size-3.5" />{t("schedulePayment")}</Button>
         </div>
       </div>
 
@@ -370,16 +361,16 @@ function ScheduledPaymentsList({ orgId }: { orgId: string | null }) {
           <Button
             size="sm"
             onClick={openScheduleDialog}
-            className="bg-emerald-600 hover:bg-emerald-700"
+            className="h-auto min-h-8 min-w-0 whitespace-normal bg-emerald-600 hover:bg-emerald-700"
           >
-            <Plus className="mr-2 size-4" />{t("schedulePayment")}</Button>
+            <Plus className="me-2 size-4" />{t("schedulePayment")}</Button>
         </div>
       )}
 
       {/* Grouped list */}
       {grouped.map((group) => (
         <div key={group.label} className="space-y-2">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <p
               className={cn(
                 "text-xs font-medium uppercase tracking-wider",
@@ -407,7 +398,7 @@ function ScheduledPaymentsList({ orgId }: { orgId: string | null }) {
               return (
                 <div
                   key={item.id}
-                  className="flex items-center gap-3 px-4 py-3"
+                  className="flex flex-wrap items-center gap-3 px-4 py-3"
                 >
                   <div
                     className={cn(
@@ -423,10 +414,10 @@ function ScheduledPaymentsList({ orgId }: { orgId: string | null }) {
                   >
                     <StatusIcon className="size-4" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium truncate">
-                        {contactName}
+                  <div className="min-w-0 flex-1 basis-40">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-sm font-medium min-w-0 whitespace-normal [overflow-wrap:anywhere]">
+                        <BidiText>{contactName}</BidiText>
                       </p>
                       <Badge variant={config.variant} className="text-[10px]">
                         {bankPaymentStatus(t, item.status)}
@@ -435,7 +426,7 @@ function ScheduledPaymentsList({ orgId }: { orgId: string | null }) {
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
                       {item.bill && (
                         <span className="font-mono">
-                          {item.bill.billNumber}
+                          <IdentifierText>{item.bill.billNumber}</IdentifierText>
                         </span>
                       )}
                       {item.bill && (
@@ -449,22 +440,17 @@ function ScheduledPaymentsList({ orgId }: { orgId: string | null }) {
                       {item.notes && (
                         <>
                           <span className="text-border">{"\u00B7"}</span>
-                          <span className="truncate">{item.notes}</span>
+                          <span className="min-w-0 whitespace-normal [overflow-wrap:anywhere]"><BidiText>{item.notes}</BidiText></span>
                         </>
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 shrink-0">
+                  <div className="flex flex-wrap items-center gap-3 shrink-0">
                     <p className="font-mono text-sm font-semibold tabular-nums break-all">
-                      {formatMoney(item.amount, item.currencyCode, unitPresentation)}
+                      <BidiText>{formatMoney(item.amount, item.currencyCode, unitPresentation)}</BidiText>
                     </p>
                     {item.status === "pending" && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 text-xs text-muted-foreground"
-                        onClick={() => handleCancel(item.id)}
-                      >{t("cancel")}</Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleCancel(item.id)} className="h-auto min-h-8 min-w-0 whitespace-normal text-xs text-muted-foreground">{t("cancel")}</Button>
                     )}
                   </div>
                 </div>
@@ -491,14 +477,14 @@ function ScheduledPaymentsList({ orgId }: { orgId: string | null }) {
                   if (b) setAmount(paymentUiDecimal(b.amountDue, b.currencyCode));
                 }}
               >
-                <SelectTrigger>
+                <SelectTrigger className="h-auto min-h-9 min-w-0 max-w-full whitespace-normal text-start data-[size=default]:h-auto data-[size=sm]:h-auto [&_[data-slot=select-value]]:line-clamp-none [&_[data-slot=select-value]]:whitespace-normal" aria-label={t("bill")}>
                   <SelectValue placeholder={t("selectBill")} />
                 </SelectTrigger>
                 <SelectContent>
                   {bills.map((b) => (
                     <SelectItem key={b.id} value={b.id}>
-                      {b.billNumber} - {b.contact?.name || t("unknown")} (
-                      {t("amountDue", { amount: formatMoney(b.amountDue, b.currencyCode, unitPresentation) })})
+                      <IdentifierText>{b.billNumber}</IdentifierText> - <BidiText>{b.contact?.name || t("unknown")}</BidiText> (
+                      <BidiText>{t("amountDue", { amount: formatMoney(b.amountDue, b.currencyCode, unitPresentation) })}</BidiText>)
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -506,45 +492,26 @@ function ScheduledPaymentsList({ orgId }: { orgId: string | null }) {
             </div>
             <div className="space-y-2">
               <Label className="text-xs">{t("amount")}</Label>
-              <Input
-                type="text"
-                inputMode="decimal"
-                aria-label={t("paymentAmount", { currency: currencyLabel(selectedBill?.currencyCode || t("selectBill"), unitPresentation.locale) })}
-                aria-invalid={!!amount && !preview}
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="0.00"
-              />
+              <Input type="text" inputMode="decimal" aria-label={t("paymentAmount", { currency: currencyLabel(selectedBill?.currencyCode || t("selectBill"), unitPresentation.locale) })} aria-invalid={!!amount && !preview} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" dir="ltr" />
             </div>
             <PaymentAmountPreview text={amount} bill={selectedBill} />
             <div className="space-y-2">
               <Label className="text-xs">{t("scheduledDate")}</Label>
-              <Input
-                type="date"
-                value={scheduledDate}
-                onChange={(e) => setScheduledDate(e.target.value)}
-              />
+              <Input type="date" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} dir="ltr" aria-label={t("scheduledDate")} />
             </div>
             <div className="space-y-2">
               <Label className="text-xs">{t("notesOptional")}</Label>
-              <Input
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder={t("notePlaceholder")}
-              />
+              <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("notePlaceholder")} dir="auto" aria-label={t("notesOptional")} />
             </div>
           </div>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowDialog(false)}
-            >{t("cancel")}</Button>
+            <Button variant="outline" onClick={() => setShowDialog(false)} className="h-auto min-h-8 min-w-0 whitespace-normal">{t("cancel")}</Button>
             <Button
               onClick={handleSchedule}
               disabled={saving || !selectedBill || !scheduledDate || !preview}
-              className="bg-emerald-600 hover:bg-emerald-700"
+              className="h-auto min-h-8 min-w-0 whitespace-normal bg-emerald-600 hover:bg-emerald-700"
             >
-              {saving && <Loader2 className="mr-2 size-4 animate-spin" />}
+              {saving && <Loader2 className="me-2 size-4 animate-spin" />}
               {t("schedule")}
             </Button>
           </DialogFooter>

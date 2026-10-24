@@ -1,4 +1,5 @@
 "use client";
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { usePresentation } from "@/i18n/provider";
 import { currencyLabel } from "@/i18n/currency-labels";
 import { useTranslations } from "next-intl";
@@ -172,12 +173,8 @@ export default function BankingPage() {
               <p className="mt-1.5 text-sm text-muted-foreground max-w-md mx-auto">
                 {t("firstAccountHint")}</p>
             </div>
-            <Button
-              onClick={() => openDrawer("bankAccount")}
-              size="lg"
-              className="bg-emerald-600 hover:bg-emerald-700"
-            >
-              <Plus className="mr-2 size-4" />
+            <Button onClick={() => openDrawer("bankAccount")} size="lg" className="h-auto min-h-8 min-w-0 whitespace-normal bg-emerald-600 hover:bg-emerald-700">
+              <Plus className="me-2 size-4" />
               {t("newBankAccount")}</Button>
           </div>
 
@@ -262,30 +259,16 @@ export default function BankingPage() {
           <p className="text-xs text-muted-foreground mt-0.5">
             {t("listHint")}</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 text-xs gap-1.5 text-muted-foreground"
-            onClick={() => setShowBalances(!showBalances)}
-          >
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={() => setShowBalances(!showBalances)} className="h-auto min-h-8 min-w-0 whitespace-normal text-xs gap-1.5 text-muted-foreground">
             {showBalances ? <Eye className="size-3.5" /> : <EyeOff className="size-3.5" />}
             {showBalances ? t("hide") : t("show")}
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => openDrawer("bankTransfer")}
-            title={t("moveMoneyHint")}
-          >
-            <ArrowLeftRight className="mr-2 size-4" />
+          <Button variant="outline" size="sm" onClick={() => openDrawer("bankTransfer")} title={t("moveMoneyHint")} className="h-auto min-h-8 min-w-0 whitespace-normal">
+            <ArrowLeftRight className="me-2 size-4" />
             {t("moveMoney")}</Button>
-          <Button
-            onClick={() => openDrawer("bankAccount")}
-            size="sm"
-            className="bg-emerald-600 hover:bg-emerald-700"
-          >
-            <Plus className="mr-2 size-4" />
+          <Button onClick={() => openDrawer("bankAccount")} size="sm" className="h-auto min-h-8 min-w-0 whitespace-normal bg-emerald-600 hover:bg-emerald-700">
+            <Plus className="me-2 size-4" />
             {t("newAccount")}</Button>
         </div>
       </div>
@@ -301,7 +284,7 @@ export default function BankingPage() {
             <div key={type}>
               {sortedGroups.length > 1 && (
                 <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <Icon className="size-3.5 text-muted-foreground" />
                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       {bankAccountGroupLabel(t, type)}
@@ -324,7 +307,7 @@ export default function BankingPage() {
                       key={account.id}
                       type="button"
                       onClick={() => router.push(`/accounting/banking/${account.id}`)}
-                      className="group relative flex w-full items-center gap-3 sm:gap-4 px-4 py-3.5 text-left transition-colors hover:bg-muted/40"
+                      className="group relative flex w-full items-center gap-3 sm:gap-4 px-4 py-3.5 text-start transition-colors hover:bg-muted/40"
                     >
                       {/* Icon with accent */}
                       <div
@@ -338,9 +321,9 @@ export default function BankingPage() {
                       </div>
 
                       {/* Account info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-medium truncate">{account.accountName}</p>
+                      <div className="min-w-0 flex-1 basis-40">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-medium min-w-0 whitespace-normal [overflow-wrap:anywhere]"><BidiText>{account.accountName}</BidiText></p>
                           {!account.isActive && (
                             <Badge variant="outline" className="text-[10px] shrink-0 text-muted-foreground border-muted-foreground/30">
                               {t("inactive")}</Badge>
@@ -348,13 +331,13 @@ export default function BankingPage() {
                         </div>
                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
                           {account.bankName && (
-                            <span className="truncate">{account.bankName}</span>
+                            <span className="min-w-0 whitespace-normal [overflow-wrap:anywhere]"><BidiText>{account.bankName}</BidiText></span>
                           )}
                           {account.bankName && account.accountNumber && (
                             <span className="text-border">·</span>
                           )}
                           {account.accountNumber && (
-                            <span className="font-mono tabular-nums">····{account.accountNumber.slice(-4)}</span>
+                            <span className="font-mono tabular-nums">····<IdentifierText>{account.accountNumber.slice(-4)}</IdentifierText></span>
                           )}
                           {!account.bankName && !account.accountNumber && (
                             <span>{bankAccountTypeLabel(t, account.accountType)}</span>
@@ -369,7 +352,7 @@ export default function BankingPage() {
                       </div>
 
                       {/* Balance bar + amount */}
-                      <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+                      <div className="flex flex-wrap items-center gap-3 sm:gap-4 shrink-0">
                         {/* Mini balance bar - hidden on mobile */}
                         <div className="hidden sm:block w-20">
                           <div className="h-1.5 rounded-full bg-muted overflow-hidden">
@@ -384,7 +367,7 @@ export default function BankingPage() {
                         </div>
 
                         {/* Balance */}
-                        <div className="text-right min-w-[90px]">
+                        <div className="text-end min-w-[90px]">
                           <p className={cn(
                             "font-mono text-sm font-semibold tabular-nums",
                             account.balance > 0
@@ -393,7 +376,7 @@ export default function BankingPage() {
                                 ? "text-red-600 dark:text-red-400"
                                 : "text-muted-foreground"
                           )}>
-                            {showBalances ? formatMoney(account.balance, account.currencyCode, unitPresentation) : "****"}
+                            <BidiText>{showBalances ? formatMoney(account.balance, account.currencyCode, unitPresentation) : "****"}</BidiText>
                           </p>
                           <p className="text-[10px] text-muted-foreground font-medium mt-0.5">{currencyLabel(account.currencyCode, unitPresentation.locale)}</p>
                         </div>
@@ -407,16 +390,16 @@ export default function BankingPage() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-40">
                             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/accounting/banking/${account.id}`); }}>
-                              <ExternalLink className="size-3.5 mr-2" />
+                              <ExternalLink className="size-3.5 me-2" />
                               {t("viewDetails")}</DropdownMenuItem>
                             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/accounting/banking/${account.id}/transactions`); }}>
-                              <ArrowUpRight className="size-3.5 mr-2" />
+                              <ArrowUpRight className="size-3.5 me-2" />
                               {t("transactions")}</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
 
                         {/* Chevron */}
-                        <ChevronRight className="size-4 shrink-0 text-muted-foreground/0 transition-all duration-200 group-hover:text-muted-foreground group-hover:translate-x-0.5 hidden sm:block" />
+                        <ChevronRight className="size-4 shrink-0 text-muted-foreground/0 transition-all duration-200 group-hover:text-muted-foreground [&:dir(rtl)]:rotate-180 ltr:group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5 hidden sm:block" />
                       </div>
                     </button>
                   );

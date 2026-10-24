@@ -218,20 +218,15 @@ export default function BankTransactionsPage() {
           <TabsList>
             <TabsTrigger value="all">{t("all")}</TabsTrigger>
             <TabsTrigger value="unreconciled" title={t("toDoHint")}>
-              {t("toDo")}{summary.unreconciled > 0 && <span className="ml-1 tabular-nums text-amber-600">{summary.unreconciled}</span>}
+              {t("toDo")}{summary.unreconciled > 0 && <span className="ms-1 tabular-nums text-amber-600">{summary.unreconciled}</span>}
             </TabsTrigger>
             <TabsTrigger value="reconciled" title={t("doneHint")}>{t("done")}</TabsTrigger>
             <TabsTrigger value="excluded" title={t("ignoredHint")}>{t("ignored")}</TabsTrigger>
           </TabsList>
         </Tabs>
         <div className="relative w-full sm:max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-          <Input
-            placeholder={t("searchTransactions")}
-            value={txSearch}
-            onChange={(e) => setTxSearch(e.target.value)}
-            className="pl-9"
-          />
+          <Search className="absolute start-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+          <Input placeholder={t("searchTransactions")} value={txSearch} onChange={(e) => setTxSearch(e.target.value)} className="ps-9" dir="auto" aria-label={t("searchTransactions")} />
         </div>
       </div>
 
@@ -256,7 +251,7 @@ export default function BankTransactionsPage() {
           />
         </div>
         <Select value={txSort} onValueChange={setTxSort}>
-          <SelectTrigger className="h-8 w-44 text-xs">
+          <SelectTrigger className="h-auto min-h-9 min-w-0 max-w-full whitespace-normal text-start data-[size=default]:h-auto data-[size=sm]:h-auto [&_[data-slot=select-value]]:line-clamp-none [&_[data-slot=select-value]]:whitespace-normal w-44 text-xs">
             <SelectValue placeholder={t("sortBy")} />
           </SelectTrigger>
           <SelectContent>
@@ -267,19 +262,14 @@ export default function BankTransactionsPage() {
           </SelectContent>
         </Select>
         {(txDateFrom || txDateTo || txSearch) && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 text-xs text-muted-foreground"
-            onClick={() => { setTxDateFrom(""); setTxDateTo(""); setTxSearch(""); }}
-          >
-            <X className="mr-1 size-3" />
+          <Button variant="ghost" size="sm" onClick={() => { setTxDateFrom(""); setTxDateTo(""); setTxSearch(""); }} className="h-auto min-h-8 min-w-0 whitespace-normal text-xs text-muted-foreground">
+            <X className="me-1 size-3" />
             {t("clearFilters")}</Button>
         )}
       </div>
 
       {/* Results summary */}
-      <div className="flex items-center gap-3 text-[13px] text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-3 text-[13px] text-muted-foreground">
         {selectableTx.length > 0 && (
           <Checkbox
             checked={allVisibleSelected}
@@ -307,18 +297,12 @@ export default function BankTransactionsPage() {
           <div className="w-56">
             <AccountPicker value={batchAccountId} onChange={setBatchAccountId} allowCreate />
           </div>
-          <Button
-            size="sm"
-            className="bg-emerald-600 hover:bg-emerald-700"
-            disabled={!batchAccountId || batchSaving}
-            loading={batchSaving}
-            onClick={applyBatchCategorize}
-          >
+          <Button size="sm" disabled={!batchAccountId || batchSaving} loading={batchSaving} onClick={applyBatchCategorize} className="h-auto min-h-8 min-w-0 whitespace-normal bg-emerald-600 hover:bg-emerald-700">
             {t("applyCount", { count: selectedIds.size })}
           </Button>
-          <Button size="sm" variant="ghost" disabled={batchSaving} onClick={batchIgnore}>
+          <Button size="sm" variant="ghost" disabled={batchSaving} onClick={batchIgnore} className="h-auto min-h-8 min-w-0 whitespace-normal">
             {t("ignore")}</Button>
-          <Button size="sm" variant="ghost" className="text-muted-foreground" onClick={clearSelection}>
+          <Button size="sm" variant="ghost" onClick={clearSelection} className="h-auto min-h-8 min-w-0 whitespace-normal text-muted-foreground">
             {t("clear")}</Button>
         </div>
       )}

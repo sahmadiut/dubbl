@@ -1,5 +1,13 @@
 # Message catalog foundation
 
+LOC-002 independently accepts the complete extraction/ICU/safe-rendering
+integration: 157 namespaces and 10,587 compatible leaves per locale. See
+[whole-catalog ownership, runtime coverage and retained qualification](WHOLE_CATALOG_ACCEPTANCE.md).
+Earlier entries below preserve their historical child acceptance boundaries;
+their references to LOC-002 being open are superseded by this combined record.
+Native Persian terminology, complete Persian/RTL workflows, number/date/input
+adapters, recipient delivery and Persian PDF qualification remain separate.
+
 LOC-122 independently accepts the combined landing/help extraction after
 LOC-125..128. See [combined composition and exception inventory](LANDING_HELP_INTEGRATION.md).
 Actual root/landing production composition passes in both locales; all rendered

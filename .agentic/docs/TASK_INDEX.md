@@ -571,3 +571,7 @@ LOC-103 owns directory/shared primitives; later slices depend on that foundation
 - [LOC-126](../tasks/LOC-126.md): Extract landing feature and help catalogs; LOC-122 child.
 - [LOC-127](../tasks/LOC-127.md): Extract public pricing and legal catalogs; LOC-122 child.
 - [LOC-128](../tasks/LOC-128.md): Extract documentation chrome and public metadata catalogs; LOC-122 child.
+
+## Currency-name adoption follow-up
+
+- [LOC-133](../tasks/LOC-133.md): Fix the owner-reported dashboard IRR label; bounded LOC-132 child with independent completed shared-helper prerequisites.

@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
+import { usePresentation } from "@/i18n/provider";
+import { formatExactCurrencyDecimal, type NumberPresentation } from "@/i18n/numbers";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
@@ -29,10 +31,10 @@ import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { coreJournalSummary, coreDebitDisplay, type DebitGroup } from "@/lib/money/core-presentation";
-import { displayMoney as formatMoney, displayJson, displayPercent, dashboardAlertsUi, dashboardTrendsUi } from "@/lib/money/contact-dashboard-ui";
+import { displayMoney, displayJson, displayPercent, dashboardAlertsUi, dashboardTrendsUi } from "@/lib/money/contact-dashboard-ui";
 import { profitLossUi, type ProfitLossUi } from "@/lib/money/financial-statement-ui";
 import { receivablesUi, payablesUi, type AgingUi } from "@/lib/money/ledger-aging-ui";
-import { budgetUiPayload, budgetMoney, budgetPercent } from "@/lib/money/budget-ui";
+import { budgetUiPayload, budgetDecimal, budgetPercent } from "@/lib/money/budget-ui";
 import { devDelay } from "@/lib/dev-delay";
 import { BrandLoader } from "@/components/dashboard/brand-loader";
 import { ErrorState } from "@/components/dashboard/error-state";
@@ -69,7 +71,7 @@ type PnLData = Pick<ProfitLossUi, "totalRevenue" | "totalExpenses" | "netIncome"
 type AgingBucket = Pick<AgingUi["buckets"][number], "label" | "total" | "count">;
 type AgingData = { buckets: AgingBucket[]; grandTotal: bigint; currencyCode: string };
 
-function entryColumns(t: ReturnType<typeof useTranslations>): Column<Entry>[] {
+function entryColumns(t: ReturnType<typeof useTranslations>, presentation: NumberPresentation): Column<Entry>[] {
   return [
   {
     key: "number",
@@ -117,7 +119,7 @@ function entryColumns(t: ReturnType<typeof useTranslations>): Column<Entry>[] {
     className: "w-28 text-right",
     render: (r) => (
       <span className="font-mono text-sm tabular-nums">
-        {coreDebitDisplay([r])}
+        {coreDebitDisplay([r], presentation)}
       </span>
     ),
   },
@@ -144,6 +146,8 @@ function AgingColumn({
   currencyCode: string;
 }) {
   const t = useTranslations("DashboardOverview");
+  const presentation = usePresentation();
+  const formatMoney = (amount: bigint, code: string) => displayMoney(amount, code, presentation);
   const maxBucket = buckets.reduce((max, bucket) => bucket.total > max ? bucket.total : max, 1n);
 
   return (
@@ -196,7 +200,11 @@ function KpiItem({ label, value, good }: { label: string; value: string; good: b
 
 export default function DashboardPage() {
   const t = useTranslations("DashboardOverview");
-  const columns = entryColumns(t);
+  const presentation = usePresentation();
+  const formatMoney = (amount: bigint, code: string) => displayMoney(amount, code, presentation);
+  // Budget reports retain their documented fixed-two scale, even for IRR/JPY.
+  const budgetMoney = (amount: bigint, code: string) => formatExactCurrencyDecimal(budgetDecimal(amount), code, presentation);
+  const columns = entryColumns(t, presentation);
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
   const { data: session } = useSession();

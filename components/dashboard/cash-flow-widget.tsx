@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
+import { usePresentation } from "@/i18n/provider";
+import { currencyPartsText } from "@/i18n/currency-labels";
 import {
   AreaChart,
   Area,
@@ -24,6 +26,7 @@ const periods = [
 
 function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: { dataKey: "inflows" | "outflows" | "balance"; payload: ReturnType<typeof forecastChartPoint> }[]; label?: string }) {
   const t = useTranslations("DashboardOverview");
+  const presentation = usePresentation();
   if (!active || !payload?.length) return null;
   return (
     <div className="rounded-lg border bg-card p-3 shadow-md">
@@ -46,7 +49,7 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
                 : ""
             )}
           >
-            {displayMoney(entry.payload[`${entry.dataKey}Exact`], entry.payload.currencyCode)}
+            {displayMoney(entry.payload[`${entry.dataKey}Exact`], entry.payload.currencyCode, presentation)}
           </span>
         </div>
       ))}
@@ -56,6 +59,7 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
 
 export function CashFlowWidget() {
   const t = useTranslations("DashboardOverview");
+  const presentation = usePresentation();
   const [currencyCode, setCurrencyCode] = useState("");
   const [weeks, setWeeks] = useState(4);
   const [forecast, setForecast] = useState<CashForecastUi | null>(null);
@@ -173,7 +177,7 @@ export function CashFlowWidget() {
                   tick={{ fontSize: 11 }}
                   className="text-muted-foreground"
                   tickFormatter={(v) =>
-                    new Intl.NumberFormat("en-US", { style: "currency", currency: forecast.currencyCode, notation: "compact" }).format(v)
+                    currencyPartsText(new Intl.NumberFormat(presentation.locale, { numberingSystem: presentation.numerals, style: "currency", currency: forecast.currencyCode, notation: "compact" }).formatToParts(v), forecast.currencyCode, presentation.locale)
                   }
                 />
                 <Tooltip content={<CustomTooltip />} />
@@ -214,13 +218,13 @@ export function CashFlowWidget() {
             <div className="text-center">
               <p className="text-xs text-muted-foreground">{t("expectedIn")}</p>
               <p className="text-sm font-bold font-mono tabular-nums text-emerald-600">
-                {displayMoney(forecast.totalInflows, forecast.currencyCode)}
+                {displayMoney(forecast.totalInflows, forecast.currencyCode, presentation)}
               </p>
             </div>
             <div className="text-center">
               <p className="text-xs text-muted-foreground">{t("expectedOut")}</p>
               <p className="text-sm font-bold font-mono tabular-nums text-red-600">
-                {displayMoney(forecast.totalOutflows, forecast.currencyCode)}
+                {displayMoney(forecast.totalOutflows, forecast.currencyCode, presentation)}
               </p>
             </div>
             <div className="text-center">
@@ -233,7 +237,7 @@ export function CashFlowWidget() {
                     : "text-red-600"
                 )}
               >
-                {displayMoney(forecast.netForecast, forecast.currencyCode)}
+                {displayMoney(forecast.netForecast, forecast.currencyCode, presentation)}
               </p>
             </div>
           </div>

@@ -14,6 +14,7 @@ import * as CurrencySelect from "../components/ui/currency-select";
 import * as BrandLoader from "../components/dashboard/brand-loader";
 import * as ErrorState from "../components/dashboard/error-state";
 import { displayMoney } from "../lib/money/contact-dashboard-ui";
+import { resolvePresentation } from "../i18n/locale";
 import { renderWithPresentation } from "./helpers/presentation";
 import en from "../messages/en-US.json";
 import fa from "../messages/fa-IR.json";
@@ -123,7 +124,7 @@ test("dashboard composes actual activity and cash widgets under one locale with 
       [component("activity-feed")]: { loading: false, entries: [{ id: "audit-id", action: "create", entityType: "invoice", userName: caller, createdAt: "invalid-date" }, { id: "unknown", action: "custom_code", entityType: "custom_entity", userName: caller, createdAt: "invalid-date" }] },
     });
     const html = renderWithPresentation(React.createElement(h.compile(dashboard).default), locale);
-    for (const value of [m.DashboardOverview.revenue, m.DashboardOverview.forecastTitle, m.DashboardOverview.forecastError, m.JournalActivity.title, m.JournalActivity.viewAll, m.SettingsAudit.action_create, m.SettingsAudit.entity_invoice, m.SettingsAudit.unknownDate, displayMoney(large, "KWD")]) assert.ok(html.includes(value), value);
+    for (const value of [m.DashboardOverview.revenue, m.DashboardOverview.forecastTitle, m.DashboardOverview.forecastError, m.JournalActivity.title, m.JournalActivity.viewAll, m.SettingsAudit.action_create, m.SettingsAudit.entity_invoice, m.SettingsAudit.unknownDate, displayMoney(large, "KWD", resolvePresentation({ user: { language: locale } }))]) assert.ok(html.includes(value), value);
     assert.ok(html.includes("&lt;script&gt;caller &amp; name&lt;/script&gt;"));
     assert.ok(html.includes('href="/settings/audit-log"'));
     assert.ok(html.includes("custom_code") && html.includes("custom entity"), "unknown audit values retain technical-data exception");

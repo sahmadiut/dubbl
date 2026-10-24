@@ -1,5 +1,6 @@
 import { currencyMetadata } from "./exact";
 import { journalRestMinor, journalStoredMinor, journalMoney } from "./journal-display";
+import type { NumberPresentation } from "../../i18n/numbers";
 
 /** Account REST/MCP fields are integer minor units, not decimal-major strings. */
 export function coreStoredMinor(value: number, exact: string) {
@@ -27,13 +28,13 @@ export function coreJournalSummary<T extends JournalSummary>(row: T): T {
   if (sum !== raw) throw new RangeError("Journal currency totals disagree with raw total");
   return row;
 }
-export function coreDebitDisplay(rows: readonly { debitTotals: DebitGroup[] }[]) {
+export function coreDebitDisplay(rows: readonly { debitTotals: DebitGroup[] }[], presentation: NumberPresentation = { locale: "en-US", numerals: "latn" }) {
   const groups = new Map<string, bigint>();
   for (const row of rows) for (const group of row.debitTotals) {
     const code = currencyMetadata(group.currencyCode).code;
     groups.set(code, (groups.get(code) ?? 0n) + coreStoredMinor(group.totalDebit, group.totalDebitMinor));
   }
-  return [...groups].sort(([a], [b]) => a.localeCompare(b)).map(([code, amount]) => journalMoney(amount, code)).join(" · ") || "—";
+  return [...groups].sort(([a], [b]) => a.localeCompare(b)).map(([code, amount]) => journalMoney(amount, code, presentation)).join(" · ") || "—";
 }
 /** Amount sorting groups unlike currencies first; only like-unit values are compared. */
 export function coreDebitCompare(a: { debitTotals: DebitGroup[] }, b: { debitTotals: DebitGroup[] }) {

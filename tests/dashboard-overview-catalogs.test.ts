@@ -10,6 +10,9 @@ import ts from "typescript";
 import { renderWithPresentation } from "./helpers/presentation";
 import { flush, withIO } from "./helpers/report-page";
 import { displayMoney, cashForecastUi } from "../lib/money/contact-dashboard-ui";
+import { resolvePresentation } from "../i18n/locale";
+import { formatExactCurrencyDecimal } from "../i18n/numbers";
+import { budgetDecimal } from "../lib/money/budget-ui";
 import en from "../messages/en-US.json";
 import fa from "../messages/fa-IR.json";
 import * as DataTable from "../components/dashboard/data-table";
@@ -77,7 +80,8 @@ test("dashboard production rendering localizes overview, aging, alerts and onboa
     const h = render("page", ready, locale);
     for (const key of ["overviewHelp", "morning0", "gettingStarted", "setupHelp", "budgetAlerts", "revenue", "expenses", "netIncome", "aging", "kpis", "overdueInvoices", "overdueBills", "uncategorized", "needsReconciliation", "recentEntries", "noEntries", "firstEntry", "bucket0", "bucket4"] as const) assert.ok(h.html.includes(t(key)), key);
     assert.ok(h.html.includes("&lt;script&gt;caller")); assert.ok(!h.html.includes("<script>"));
-    assert.ok(h.html.includes(displayMoney(large, "KWD"))); assert.ok(h.html.includes(displayMoney(1n, "JPY")));
+    const presentation = resolvePresentation({ user: { language: locale } });
+    assert.ok(h.html.includes(displayMoney(large, "KWD", presentation))); assert.ok(h.html.includes(displayMoney(1n, "JPY", presentation)));
     assert.ok(h.events.some(([key, value]) => key === "title" && value === t("documentTitle")));
     for (const props of h.captured.filter(p => p.onClick && p.children === t("newEntry"))) props.onClick();
     // Button children also include icons, so test every declared navigation callback.
@@ -113,10 +117,63 @@ test("cash widget renders translated periods, legend, exact tooltip and finite e
     for (const key of ["inflows", "outflows", "balance"] as const) assert.equal(h.captured.find(p => p.dataKey === key)?.name, t(key));
     const tooltip = h.captured.find(p => p.content)?.content;
     const html = renderWithPresentation(React.cloneElement(tooltip, { active: true, payload: [{ dataKey: "inflows", payload: point }], label: "Feb 4" }), locale);
-    assert.ok(html.includes(t("inflows"))); assert.ok(html.includes(displayMoney(large, "KWD")));
+    assert.ok(html.includes(t("inflows"))); assert.ok(html.includes(displayMoney(large, "KWD", resolvePresentation({ user: { language: locale } }))));
     assert.ok(render("cash", { loading: false, forecast: null, error: "forecastError" }, locale).html.includes(t("forecastError")));
     assert.ok(render("cash", { loading: true }, locale).html.includes("animate-pulse"));
   }
+});
+
+test("Persian dashboard uses literal rial across cards, aging, expenses, budget alerts and grouped journal amounts", () => {
+  const currencyCode = "IRR", presentation = resolvePresentation({ user: { language: "fa-IR" } });
+  const states = { ...ready,
+    pnl: { ...ready.pnl, currencyCode, netIncome: -1n },
+    receivables: { ...aging, currencyCode }, payables: { ...aging, currencyCode },
+    budgetAlerts: [{ ...ready.budgetAlerts[0], currencyCode, actual: 123n, budgeted: 100n }],
+    actionAlerts: { ...ready.actionAlerts, overdueInvoices: { count: 1, currencyCode, total: large }, overdueBills: { count: 1, currencyCode, total: 1n } },
+  };
+  const h = render("page", states, "fa-IR");
+  assert.match(h.html, /ریال/);
+  assert.doesNotMatch(h.html, /IRR/);
+  assert.ok(h.html.includes(displayMoney(large, currencyCode, presentation)));
+  assert.ok(h.html.includes(displayMoney(-1n, currencyCode, presentation)), "signed subunit remains exact");
+  assert.ok(h.html.includes(formatExactCurrencyDecimal(budgetDecimal(123n), currencyCode, presentation)), "budget preserves fixed-two units");
+  const table = h.captured.find(p => p.emptyAction)!;
+  const debitTotals = [{ currencyCode, totalDebit: Number(large), totalDebitMinor: String(large) }];
+  const amount = renderWithPresentation(table.columns.find((p: Props) => p.key === "amount").render({ debitTotals }), "fa-IR");
+  assert.match(amount, /ریال/); assert.doesNotMatch(amount, /IRR/);
+  assert.ok(amount.includes(displayMoney(large, currencyCode, presentation)));
+  assert.equal(debitTotals[0].currencyCode, "IRR"); assert.equal(debitTotals[0].totalDebitMinor, String(large));
+  const english = render("page", states, "en-US");
+  assert.ok(english.html.includes(displayMoney(large, currencyCode))); assert.doesNotMatch(english.html, /ریال/);
+});
+
+test("Persian forecast uses rial in totals, approximate axis and exact tooltip while picker retains ISO", () => {
+  const currencyCode = "IRR";
+  const h = render("cash", { loading: false, currencyCode, forecast: cashForecastUi({ ...forecast, currencyCode }) }, "fa-IR");
+  assert.match(h.html, /ریال/); assert.doesNotMatch(h.html, /IRR/);
+  const axis = h.captured.find(p => p.tickFormatter)!;
+  assert.match(axis.tickFormatter(1234.5), /ریال/); assert.doesNotMatch(axis.tickFormatter(1234.5), /IRR/);
+  const point = h.captured.find(p => p.data)!.data[0];
+  assert.equal(point.inflowsExact, large); assert.equal(point.currencyCode, currencyCode);
+  const tooltip = h.captured.find(p => p.content)!.content;
+  const html = renderWithPresentation(React.cloneElement(tooltip, { active: true, payload: [{ dataKey: "inflows", payload: point }], label: "week" }), "fa-IR");
+  assert.match(html, /ریال/); assert.doesNotMatch(html, /IRR/);
+  assert.ok(html.includes(displayMoney(large, currencyCode, resolvePresentation({ user: { language: "fa-IR" } }))));
+  h.captured.find(p => p.onValueChange)!.onValueChange("IRR");
+  assert.ok(h.events.some(([key, value]) => key === "currencyCode" && value === "IRR"));
+});
+
+test("rial forecast requests keep ISO query and organization scope", async () => {
+  await withIO(async (url, init) => {
+    assert.equal(String(url), "/api/v1/reports/cash-flow-forecast?weeks=4&currencyCode=IRR");
+    assert.deepEqual(init?.headers, { "x-organization-id": "org-a" });
+    return new Response(JSON.stringify({ ...forecast, currencyCode: "IRR" }));
+  }, async () => {
+    const h = render("cash", { weeks: 4, currencyCode: "IRR" }, "fa-IR");
+    const cleanup = h.effects[0](); await flush();
+    assert.ok(h.events.some(([key, value]) => key === "forecast" && value && (value as Props).currencyCode === "IRR" && (value as Props).totalInflows === large));
+    if (cleanup) cleanup();
+  });
 });
 
 test("cash effect preserves org/query and cancellation, rejects failed HTTP, JSON, money and network responses", async () => {

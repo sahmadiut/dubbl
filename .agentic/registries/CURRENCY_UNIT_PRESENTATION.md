@@ -211,3 +211,42 @@ production logic changed in LOC-130.
 Parent LOC-115 remains independent and open. LOC-131 and LOC-132 retain their
 assigned adoption scopes. Native Persian terminology, mounted browser behavior,
 RTL/layout and production financial/IRR qualification are not accepted here.
+
+## LOC-133 dashboard report fix
+
+The owner reported that the Persian dashboard still displayed IRR. Its overview
+and cash-flow widget used shared formatters without explicit presentation, which
+retained their default English/ISO behavior. The following callers now use the
+active PresentationProvider language/numerals:
+
+- `app/(dashboard)/dashboard/page.tsx`: revenue/expense/net-income and aging
+  cards; income/expense breakdowns; receivable/payable buckets; budget and action
+  alerts; recent journal amount column.
+- `components/dashboard/cash-flow-widget.tsx`: inflow/outflow/net summaries,
+  exact original-integer tooltip, approximate compact chart-axis currency part.
+- `lib/money/core-presentation.ts`: optional explicit presentation for grouped
+  debit display; existing callers retain English default and unlike units remain
+  separate. No grouping, validation or numeric contract changed.
+
+Budget alert values retain fixed-two `budgetDecimal` semantics, including IRR;
+ordinary currency-minor displays keep their explicit metadata scale. Chart
+coordinates/ticks remain approximate geometry; exact totals/tooltips never
+round-trip through chart numbers. Canonical `IRR` selector values, requests,
+organization headers, REST/MCP/storage and saved data remain unchanged. No new
+business operation/tool, schema or migration is introduced. Stripe is untouched.
+
+`tests/dashboard-overview-catalogs.test.ts` exercises literal Persian ریال on
+the real dashboard/forecast JSX, exact signed/large values, grouped amounts,
+fixed-two budgets, axis/tooltip and ISO callbacks/queries. Existing composed
+dashboard/activity/forecast coverage stays in
+`tests/dashboard-document-catalog-integration.test.ts`.
+
+LOC-133 is an owner-prioritized LOC-132 child. Inspection proved no dependency on
+LOC-131's domain-page adoption; completed LOC-129/130 supply its shared helpers.
+LOC-132 retains LOC-131 and LOC-133 dependencies and its independent remaining
+scope/acceptance. LOC-115 also remains open. The external USD name edit was
+preserved and externally committed separately before this task's commit. An
+existing port-3000 server was observed, but browser
+inventory was empty and IAB returned unavailable; no mounted-browser pass is
+claimed. Native terminology, RTL, broader page adoption and IRR financial
+qualification remain separate.

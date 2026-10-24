@@ -1,9 +1,15 @@
 # Message catalog foundation
 
+LOC-122 independently accepts the combined landing/help extraction after
+LOC-125..128. See [combined composition and exception inventory](LANDING_HELP_INTEGRATION.md).
+Actual root/landing production composition passes in both locales; all rendered
+docs links have paired MDX sources. Catalogs contain 10,587 matching keys per
+locale. LOC-009/002 and native Persian/legal/RTL qualification stay independent.
+
 LOC-128 extracts 33 paired documentation chrome/public metadata messages; see
 [ownership, routing contracts and exceptions](DOCS_METADATA_CATALOGS.md).
 Root/legal metadata uses the existing request locale; MDX content remains in
-its bilingual source. LOC-122/009/002 and native Persian/RTL acceptance remain
+its bilingual source. LOC-009/002 and native Persian/RTL acceptance remain
 independent.
 
 LOC-008 independently accepts the combined operations/reporting slice: 101 route

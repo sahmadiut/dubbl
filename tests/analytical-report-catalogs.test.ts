@@ -45,7 +45,7 @@ test("tracking JSX translates finite sections and unassigned headers, preserves 
   for (const locale of locales) {
     const t = tFor(locale), h = render("tracking", state("tracking"), locale);
     for (const key of ["trackingTitle", "trackingDescription", "trackingProjectHelp", "exportSpreadsheet", "splitBy", "department", "project", "account", "total", "revenue", "expenses", "totalRevenue", "totalExpenses", "trackingProfit", "unassigned"] as const) expectText(h, t(key));
-    expectText(h, caller); assert.ok(!h.html.includes("<script>")); expectText(h, reportResultMoney(large, "KWD"));
+    expectText(h, caller); assert.ok(!h.html.includes("<script>")); expectText(h, reportResultMoney(large, "KWD", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }));
     assert.ok(h.captured.some(c => c.props.href === "/reports/general-ledger?startDate=2024-01-01&endDate=2024-03-15&projectId=p#r"));
     assert.ok(h.captured.some(c => c.props.href === "/api/v1/reports/tracking-category?startDate=2024-01-01&endDate=2024-03-15&basis=cash&dimension=projectId&mode=pnl&format=xlsx"));
     const unassigned = structuredClone(tracking); unassigned.sections[0].accounts[0].amounts.reverse(); unassigned.sections[0].accounts[0].amountsMinor.reverse(); unassigned.sections[0].totals.reverse(); unassigned.sections[0].totalsMinor.reverse(); unassigned.netIncome.byColumn.reverse(); unassigned.netIncome.byColumnMinor.reverse();
@@ -60,8 +60,8 @@ test("budget JSX localizes headers and shared progress while retaining fixed cen
   for (const locale of locales) {
     const t = tFor(locale), h = render("budget-vs-actual", state("budget-vs-actual"), locale);
     for (const key of ["budgetTitle", "budgetDescription", "budgetLabel", "code", "account", "budgeted", "actual", "variance", "totalBudgeted", "totalActual", "totalVariance"] as const) expectText(h, t(key));
-    expectText(h, t("progressActual", { amount: budgetMoney(-1n, "JPY") })); expectText(h, t("progressBudget", { amount: budgetMoney(large, "JPY") }));
-    expectText(h, budgetMoney(large + 1n, "JPY")); assert.ok(h.html.includes("width:0%"));
+    expectText(h, t("progressActual", { amount: budgetMoney(-1n, "JPY", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }) })); expectText(h, t("progressBudget", { amount: budgetMoney(large, "JPY", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }) }));
+    expectText(h, budgetMoney(large + 1n, "JPY", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" })); assert.ok(h.html.includes("width:0%"));
     const item = h.captured.find(c => c.kind === "SelectItem")!.props; assert.equal(item.value, "budget-1"); assert.equal(item.children, caller);
     (h.captured.find(c => c.kind === "Select")!.props.onValueChange as (v: string) => void)("budget-2"); assert.ok(has(h, "selectedBudgetId", "budget-2"));
     const empty = render("budget-vs-actual", ready, locale); expectText(empty, t("noBudgets")); expectText(empty, t("noBudgetsDescription"));
@@ -73,15 +73,15 @@ test("expense and profitability JSX localize counts, trends and signed amounts",
   for (const locale of locales) {
     const t = tFor(locale), h = render("expense-analytics", state("expense-analytics"), locale);
     for (const key of ["expenseTitle", "expenseDescription", "totalSpent", "monthlyAverage", "monthlySpending", "byCategory"] as const) expectText(h, t(key));
-    expectText(h, t("categoryTransactions", { code: "5000", count: 2 })); expectText(h, analyticalMoney(large, "KWD"));
+    expectText(h, t("categoryTransactions", { code: "5000", count: 2 })); expectText(h, analyticalMoney(large, "KWD", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }));
     const series = h.captured.find(c => c.props.dataKey === "expenses")!.props; assert.equal(series.name, t("expenses"));
     const chart = h.captured.find(c => Array.isArray(c.props.data) && (c.props.data[0] as { minorUnits?: bigint })?.minorUnits)!.props;
     const data = chart.data as { minorUnits: bigint }[]; assert.equal(data[0].minorUnits, large);
     const tooltip = h.captured.find(c => c.props.formatter)!.props.formatter as (v: number, name: string, item: unknown) => string[];
-    assert.deepEqual(tooltip(0, t("expenses"), { payload: data[0] }), [analyticalMoney(large, "KWD")]);
+    assert.deepEqual(tooltip(0, t("expenses"), { payload: data[0] }), [analyticalMoney(large, "KWD", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" })]);
     const p = render("profitability", state("profitability"), locale);
     for (const key of ["profitTitle", "profitDescription", "moneyIn", "costs", "profit", "overallMargin", "documentCurrency", "clearFilter", "contact", "revenue", "margin", "invoices", "bills", "total"] as const) expectText(p, t(key));
-    expectText(p, analyticalMoney(1n - large, "KWD")); expectText(p, caller); assert.ok(!p.html.includes("<script>"));
+    expectText(p, analyticalMoney(1n - large, "KWD", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" })); expectText(p, caller); assert.ok(!p.html.includes("<script>"));
     (p.captured.find(c => c.kind === "CurrencySelect")!.props.onValueChange as (v: string) => void)("JPY"); assert.ok(has(p, "currencyFilter", "JPY"));
     (p.captured.find(c => c.props.children === t("clearFilter"))!.props.onClick as () => void)(); assert.ok(has(p, "currencyFilter", ""));
   }
@@ -100,9 +100,9 @@ test("comparison chart names localize while tooltip amounts follow stable dataKe
     const tooltip = h.captured.find(c => c.props.formatter)!.props.formatter as (v: number, name: string, item: unknown) => unknown[];
     for (const key of ["revenue", "expenses"] as const) {
       assert.equal(h.captured.find(c => c.props.dataKey === key)!.props.name, t(key));
-      assert.deepEqual(tooltip(0, t(key), { dataKey: key, payload: data[0] }), [statementUiMoney(key === "revenue" ? large : 0n, "KWD"), t(key)]);
+      assert.deepEqual(tooltip(0, t(key), { dataKey: key, payload: data[0] }), [statementUiMoney(key === "revenue" ? large : 0n, "KWD", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }), t(key)]);
     }
-    expectText(h, statementUiMoney(-1n, "KWD")); expectText(h, statementUiMoney(-2n, "KWD"));
+    expectText(h, statementUiMoney(-1n, "KWD", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" })); expectText(h, statementUiMoney(-2n, "KWD", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }));
   }
 });
 
@@ -111,7 +111,7 @@ test("all ratio labels, explanations, exact unit text and balances localize; nul
     const t = tFor(locale), h = render("financial-ratios", state("financial-ratios"), locale);
     for (const key of ratioKeys) { expectText(h, t(`${key}Label`)); expectText(h, t(`${key}Description`)); }
     for (const key of ["ratiosTitle", "ratiosDescription", "underlyingBalances", "totalAssets", "currentAssets", "inventory", "totalLiabilities", "currentLiabilities", "totalEquity", "periodRevenue", "periodExpenses", "periodNetIncome", "receivablesDue", "payablesDue"] as const) expectText(h, t(key));
-    expectText(h, t("ratioDays", { value: "2" })); expectText(h, "1.23x"); expectText(h, "1.23%"); expectText(h, analyticalMoney(large, "KWD"));
+    expectText(h, t("ratioDays", { value: "2" })); expectText(h, "1.23x"); expectText(h, "1.23%"); expectText(h, analyticalMoney(large, "KWD", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }));
     const hidden = render("financial-ratios", { ...state("financial-ratios"), ratios: { ...ratios.ratios, currentRatio: null } }, locale); assert.ok(!hidden.html.includes(esc(t("currentRatioDescription"))));
   }
 });

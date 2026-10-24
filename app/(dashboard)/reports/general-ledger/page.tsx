@@ -1,5 +1,6 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { accountTypeLabel } from "@/i18n/account-presentation";
@@ -39,6 +40,7 @@ function readDrilldown() {
 }
 
 export default function GeneralLedgerPage() {
+  const presentation = usePresentation();
   const t = useTranslations("LedgerReports");
   const ta = useTranslations("Accounts");
   const entryColumns: Column<LedgerEntryUi>[] = [
@@ -46,9 +48,9 @@ export default function GeneralLedgerPage() {
     { key: "entry", header: t("entryNumber"), className: "w-24", render: (r) => <span className="font-mono text-sm">{r.entryNumber}</span> },
     { key: "desc", header: t("description"), render: (r) => <span className="text-sm">{r.description}</span> },
     { key: "ref", header: t("reference"), className: "w-28", render: (r) => <span className="text-sm text-muted-foreground">{r.reference || "-"}</span> },
-    { key: "debit", header: t("debit"), className: "w-28 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{r.debit ? reportUiMoney(r.debit, r.currencyCode) : ""}</span> },
-    { key: "credit", header: t("credit"), className: "w-28 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{r.credit ? reportUiMoney(r.credit, r.currencyCode) : ""}</span> },
-    { key: "balance", header: t("runningBalance"), className: "w-28 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{reportUiMoney(r.runningBalance, r.currencyCode)}</span> },
+    { key: "debit", header: t("debit"), className: "w-28 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{r.debit ? reportUiMoney(r.debit, r.currencyCode, presentation) : ""}</span> },
+    { key: "credit", header: t("credit"), className: "w-28 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{r.credit ? reportUiMoney(r.credit, r.currencyCode, presentation) : ""}</span> },
+    { key: "balance", header: t("runningBalance"), className: "w-28 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{reportUiMoney(r.runningBalance, r.currencyCode, presentation)}</span> },
   ];
   const now = new Date();
   const [drilldown] = useState(readDrilldown);
@@ -62,7 +64,7 @@ export default function GeneralLedgerPage() {
   const requestVersion = useRef(0);
   const reportRef = useRef<GeneralLedgerUi | null>(null);
   const accounts = data?.accounts ?? [];
-  const formatMoney = (amount: bigint) => reportUiMoney(amount, data!.currencyCode);
+  const formatMoney = (amount: bigint) => reportUiMoney(amount, data!.currencyCode, presentation);
   const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(new Set());
   const [loadingMore, setLoadingMore] = useState<Set<string>>(new Set());
 

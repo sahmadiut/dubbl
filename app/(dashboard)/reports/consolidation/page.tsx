@@ -1,5 +1,6 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
@@ -88,6 +89,7 @@ function apiFetch(url: string, options: RequestInit = {}) {
 }
 
 export default function ConsolidationPage() {
+  const presentation = usePresentation();
   const t = useTranslations("ConsolidationReports");
   const now = new Date();
   const [initialLoad, setInitialLoad] = useState(true);
@@ -449,11 +451,11 @@ export default function ConsolidationPage() {
                 <div className="space-y-6">
                   {/* Stats */}
                   <div className="grid gap-4 sm:grid-cols-3">
-                    <StatCard title={t("totalRevenue")} value={reportResultMoney(pnl.totalRevenue, report!.presentationCurrency)} icon={TrendingUp} changeType="positive" />
-                    <StatCard title={t("totalExpenses")} value={reportResultMoney(pnl.totalExpenses, report!.presentationCurrency)} icon={TrendingDown} changeType="negative" />
+                    <StatCard title={t("totalRevenue")} value={reportResultMoney(pnl.totalRevenue, report!.presentationCurrency, presentation)} icon={TrendingUp} changeType="positive" />
+                    <StatCard title={t("totalExpenses")} value={reportResultMoney(pnl.totalExpenses, report!.presentationCurrency, presentation)} icon={TrendingDown} changeType="negative" />
                     <StatCard
                       title={t("netIncome")}
-                      value={reportResultMoney(pnl.netIncome, report!.presentationCurrency)}
+                      value={reportResultMoney(pnl.netIncome, report!.presentationCurrency, presentation)}
                       icon={DollarSign}
                       changeType={pnl.netIncome >= 0 ? "positive" : "negative"}
                     />
@@ -477,19 +479,19 @@ export default function ConsolidationPage() {
                         {pnl.byEntity.map((e) => (
                           <TableRow key={e.orgId} className="border-border/30">
                             <TableCell className="px-4 py-3 font-medium">{e.label}</TableCell>
-                            <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(e.revenue, report!.presentationCurrency)}</TableCell>
-                            <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(e.expenses, report!.presentationCurrency)}</TableCell>
+                            <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(e.revenue, report!.presentationCurrency, presentation)}</TableCell>
+                            <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(e.expenses, report!.presentationCurrency, presentation)}</TableCell>
                             <TableCell className={cn("px-4 py-3 text-right font-mono tabular-nums", e.netIncome >= 0 ? "text-emerald-600" : "text-red-600")}>
-                              {reportResultMoney(e.netIncome, report!.presentationCurrency)}
+                              {reportResultMoney(e.netIncome, report!.presentationCurrency, presentation)}
                             </TableCell>
                           </TableRow>
                         ))}
                         <TableRow className="bg-muted/30 font-semibold">
                           <TableCell className="px-4 py-3">{t("total")}</TableCell>
-                          <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(pnl.totalRevenue, report!.presentationCurrency)}</TableCell>
-                          <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(pnl.totalExpenses, report!.presentationCurrency)}</TableCell>
+                          <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(pnl.totalRevenue, report!.presentationCurrency, presentation)}</TableCell>
+                          <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(pnl.totalExpenses, report!.presentationCurrency, presentation)}</TableCell>
                           <TableCell className={cn("px-4 py-3 text-right font-mono tabular-nums", pnl.netIncome >= 0 ? "text-emerald-600" : "text-red-600")}>
-                            {reportResultMoney(pnl.netIncome, report!.presentationCurrency)}
+                            {reportResultMoney(pnl.netIncome, report!.presentationCurrency, presentation)}
                           </TableCell>
                         </TableRow>
                       </TableBody>
@@ -511,9 +513,9 @@ export default function ConsolidationPage() {
                 <div className="space-y-6">
                   {/* Stats */}
                   <div className="grid gap-4 sm:grid-cols-3">
-                    <StatCard title={t("totalAssets")} value={reportResultMoney(bs.totalAssets, report!.presentationCurrency)} icon={TrendingUp} changeType="positive" />
-                    <StatCard title={t("totalLiabilities")} value={reportResultMoney(bs.totalLiabilities, report!.presentationCurrency)} icon={TrendingDown} changeType="negative" />
-                    <StatCard title={t("totalEquity")} value={reportResultMoney(bs.totalEquity, report!.presentationCurrency)} icon={DollarSign} changeType="positive" />
+                    <StatCard title={t("totalAssets")} value={reportResultMoney(bs.totalAssets, report!.presentationCurrency, presentation)} icon={TrendingUp} changeType="positive" />
+                    <StatCard title={t("totalLiabilities")} value={reportResultMoney(bs.totalLiabilities, report!.presentationCurrency, presentation)} icon={TrendingDown} changeType="negative" />
+                    <StatCard title={t("totalEquity")} value={reportResultMoney(bs.totalEquity, report!.presentationCurrency, presentation)} icon={DollarSign} changeType="positive" />
                   </div>
 
                   {/* Per Entity Summary */}
@@ -534,16 +536,16 @@ export default function ConsolidationPage() {
                         {bs.byEntity.map((e) => (
                           <TableRow key={e.orgId} className="border-border/30">
                             <TableCell className="px-4 py-3 font-medium">{e.label}</TableCell>
-                            <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(e.assets, report!.presentationCurrency)}</TableCell>
-                            <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(e.liabilities, report!.presentationCurrency)}</TableCell>
-                            <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(e.equity, report!.presentationCurrency)}</TableCell>
+                            <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(e.assets, report!.presentationCurrency, presentation)}</TableCell>
+                            <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(e.liabilities, report!.presentationCurrency, presentation)}</TableCell>
+                            <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(e.equity, report!.presentationCurrency, presentation)}</TableCell>
                           </TableRow>
                         ))}
                         <TableRow className="bg-muted/30 font-semibold">
                           <TableCell className="px-4 py-3">{t("total")}</TableCell>
-                          <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(bs.totalAssets, report!.presentationCurrency)}</TableCell>
-                          <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(bs.totalLiabilities, report!.presentationCurrency)}</TableCell>
-                          <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(bs.totalEquity, report!.presentationCurrency)}</TableCell>
+                          <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(bs.totalAssets, report!.presentationCurrency, presentation)}</TableCell>
+                          <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(bs.totalLiabilities, report!.presentationCurrency, presentation)}</TableCell>
+                          <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(bs.totalEquity, report!.presentationCurrency, presentation)}</TableCell>
                         </TableRow>
                       </TableBody>
                     </Table>
@@ -635,6 +637,7 @@ function GroupSection({
   currencyCode: string;
   members: { orgId: string; label: string; orgName: string }[];
 }) {
+  const presentation = usePresentation();
   const t = useTranslations("ConsolidationReports");
   const groupTotal = accounts.reduce((sum, a) => sum + a.total, 0n);
   const entityTotals: Record<string, bigint> = {};
@@ -657,11 +660,11 @@ function GroupSection({
           </TableCell>
           {members.map((m) => (
             <TableCell key={m.orgId} className="px-4 py-2.5 text-right font-mono tabular-nums">
-              {reportResultMoney(a.byEntity[m.orgId] ?? 0n, currencyCode)}
+              {reportResultMoney(a.byEntity[m.orgId] ?? 0n, currencyCode, presentation)}
             </TableCell>
           ))}
           <TableCell className="px-4 py-2.5 text-right font-mono tabular-nums font-medium">
-            {reportResultMoney(a.total, currencyCode)}
+            {reportResultMoney(a.total, currencyCode, presentation)}
           </TableCell>
         </TableRow>
       ))}
@@ -669,11 +672,11 @@ function GroupSection({
         <TableCell className="px-4 py-2 font-semibold text-sm">{t("totalLabel", { label })}</TableCell>
         {members.map((m) => (
           <TableCell key={m.orgId} className="px-4 py-2 text-right font-mono tabular-nums font-semibold">
-            {reportResultMoney(entityTotals[m.orgId] ?? 0n, currencyCode)}
+            {reportResultMoney(entityTotals[m.orgId] ?? 0n, currencyCode, presentation)}
           </TableCell>
         ))}
         <TableCell className="px-4 py-2 text-right font-mono tabular-nums font-semibold">
-          {reportResultMoney(groupTotal, currencyCode)}
+          {reportResultMoney(groupTotal, currencyCode, presentation)}
         </TableCell>
       </TableRow>
     </>

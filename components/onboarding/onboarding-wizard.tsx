@@ -1,5 +1,7 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
+import { currencyLabel } from "@/i18n/currency-labels";
 import { useTranslations } from "next-intl";
 import { authErrorMessage, AuthPresentationError } from "@/i18n/auth-errors";
 import { businessTypeName, countryName, industryName, referralName } from "@/i18n/onboarding-options";
@@ -433,6 +435,7 @@ export function StepCountry({
   selected: string;
   onSelect: (code: string) => void;
 }) {
+  const presentation = usePresentation();
   const t = useTranslations("Onboarding");
   const options = useTranslations("OnboardingOptions");
   const [search, setSearch] = useState("");
@@ -477,7 +480,7 @@ export function StepCountry({
             <span className="text-lg">{c.flag}</span>
             <span className="font-medium">{countryName(options, c)}</span>
             <span className="ml-auto text-xs text-muted-foreground">
-              {c.defaultCurrency}
+              {currencyLabel(c.defaultCurrency, presentation.locale)}
             </span>
           </button>
         ))}
@@ -655,6 +658,7 @@ export function StepReview({
   referralSource: string;
   referralOther: string;
 }) {
+  const presentation = usePresentation();
   const t = useTranslations("Onboarding");
   const options = useTranslations("OnboardingOptions");
   const country = COUNTRIES.find((c) => c.code === countryCode);
@@ -669,7 +673,7 @@ export function StepReview({
       label: t("country"),
       value: country ? `${country.flag} ${countryName(options, country)}` : "-",
     },
-    { label: t("currency"), value: country?.defaultCurrency ?? "-" },
+    { label: t("currency"), value: country ? currencyLabel(country.defaultCurrency, presentation.locale) : "-" },
     { label: t("businessType"), value: bt ? businessTypeName(options, bt) : "-" },
     { label: t("industry"), value: ind ? industryName(options, ind) : "-" },
     {

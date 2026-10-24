@@ -1,5 +1,6 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { scheduleCLineLabelKey } from "@/lib/i18n/tax-filing-presentation";
@@ -30,6 +31,7 @@ export default function ScheduleCPage() {
 }
 
 function ScheduleCPageWorkspace({ orgId }: { orgId: string | null }) {
+  const presentation = usePresentation();
   const t = useTranslations("ScheduleCReport");
   const lineLabel = (line: ScheduleCLine) => {
     const key = scheduleCLineLabelKey(line.line);
@@ -137,7 +139,7 @@ function ScheduleCPageWorkspace({ orgId }: { orgId: string | null }) {
                     <span className="text-muted-foreground">{t("grossIncome")}</span>
                   </div>
                   <span className="font-mono text-sm tabular-nums font-medium text-emerald-600 dark:text-emerald-400">
-                    {taxUiMoney(totalIncome, currency!)}
+                    {taxUiMoney(totalIncome, currency!, presentation)}
                   </span>
                 </div>
                 <div className="h-2 rounded-full bg-muted">
@@ -154,7 +156,7 @@ function ScheduleCPageWorkspace({ orgId }: { orgId: string | null }) {
                     <span className="text-muted-foreground">{t("totalExpenses")}</span>
                   </div>
                   <span className="font-mono text-sm tabular-nums font-medium text-red-600 dark:text-red-400">
-                    {taxUiMoney(totalExpenses, currency!)}
+                    {taxUiMoney(totalExpenses, currency!, presentation)}
                   </span>
                 </div>
                 <div className="h-2 rounded-full bg-muted">
@@ -173,7 +175,7 @@ function ScheduleCPageWorkspace({ orgId }: { orgId: string | null }) {
                   "font-mono text-sm tabular-nums font-semibold",
                   netProfit >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
                 )}>
-                  {taxUiMoney(netProfit, currency!)}
+                  {taxUiMoney(netProfit, currency!, presentation)}
                 </span>
               </div>
             </div>
@@ -195,7 +197,7 @@ function ScheduleCPageWorkspace({ orgId }: { orgId: string | null }) {
                   "mt-1 text-2xl font-bold font-mono tabular-nums",
                   netProfit >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
                 )}>
-                  {taxUiMoney(taxUiAbs(netProfit), currency!)}
+                  {taxUiMoney(taxUiAbs(netProfit), currency!, presentation)}
                 </p>
               </div>
               <div className={cn(
@@ -233,13 +235,13 @@ function ScheduleCPageWorkspace({ orgId }: { orgId: string | null }) {
                         <span className="flex size-7 items-center justify-center rounded-md bg-muted text-[11px] font-mono font-bold text-muted-foreground">{l.line}</span>
                         <span className="text-sm">{lineLabel(l)}</span>
                       </div>
-                      <span className="font-mono text-sm tabular-nums font-medium">{taxUiMoney(l.amount, currency!)}</span>
+                      <span className="font-mono text-sm tabular-nums font-medium">{taxUiMoney(l.amount, currency!, presentation)}</span>
                     </div>
                   ))}
                 </div>
                 <div className="flex justify-between items-center px-4 py-2.5 mt-2 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg border border-emerald-200 dark:border-emerald-900/40 text-sm font-semibold">
                   <span>{t("grossIncome")}</span>
-                  <span className="font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{taxUiMoney(totalIncome, currency!)}</span>
+                  <span className="font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{taxUiMoney(totalIncome, currency!, presentation)}</span>
                 </div>
               </div>
             )}
@@ -266,14 +268,14 @@ function ScheduleCPageWorkspace({ orgId }: { orgId: string | null }) {
                         <span className="text-sm">{lineLabel(l)}</span>
                       </div>
                       <span className="font-mono text-sm tabular-nums font-medium">
-                        {l.amount === 0n ? "-" : taxUiMoney(l.amount, currency!)}
+                        {l.amount === 0n ? "-" : taxUiMoney(l.amount, currency!, presentation)}
                       </span>
                     </div>
                   ))}
                 </div>
                 <div className="flex justify-between items-center px-4 py-2.5 mt-2 bg-red-50 dark:bg-red-950/30 rounded-lg border border-red-200 dark:border-red-900/40 text-sm font-semibold">
                   <span>{t("totalExpenses")}</span>
-                  <span className="font-mono tabular-nums text-red-600 dark:text-red-400">{taxUiMoney(totalExpenses, currency!)}</span>
+                  <span className="font-mono tabular-nums text-red-600 dark:text-red-400">{taxUiMoney(totalExpenses, currency!, presentation)}</span>
                 </div>
               </div>
             )}
@@ -306,7 +308,7 @@ function ScheduleCPageWorkspace({ orgId }: { orgId: string | null }) {
                           isNet && "text-base font-bold",
                           isNet && (l.amount >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400")
                         )}>
-                          {taxUiMoney(l.amount, currency!)}
+                          {taxUiMoney(l.amount, currency!, presentation)}
                         </span>
                       </div>
                     );

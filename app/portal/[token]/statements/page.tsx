@@ -1,5 +1,6 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
 import { portalStatusKey } from "@/i18n/public-portal-presentation";
 import { useTranslations } from "next-intl";
 
@@ -34,6 +35,7 @@ interface StatementLine {
 
 
 export default function PortalStatementsPage() {
+  const presentation = usePresentation();
   const t = useTranslations("PublicPortal");
   const { token } = useParams<{ token: string }>();
   const [lines, setLines] = useState<StatementLine[]>([]);
@@ -77,7 +79,7 @@ export default function PortalStatementsPage() {
           </Button>
           <div className="text-right">
             <p className="text-sm text-gray-500">{t("outstanding")}</p>
-            <p className="text-xl font-bold">{formatMoney(totalOutstanding, currencyCode)}</p>
+            <p className="text-xl font-bold">{formatMoney(totalOutstanding, currencyCode, presentation)}</p>
           </div>
         </div>
       </div>
@@ -106,9 +108,9 @@ export default function PortalStatementsPage() {
                 <TableRow key={i}>
                   <TableCell className="text-sm">{line.date}</TableCell>
                   <TableCell className="text-sm">{line.description}</TableCell>
-                  <TableCell className="text-sm text-right">{formatMoney(line.amount, currencyCode)}</TableCell>
-                  <TableCell className="text-sm text-right">{formatMoney(line.paid, currencyCode)}</TableCell>
-                  <TableCell className="text-sm text-right font-medium">{formatMoney(line.balance, currencyCode)}</TableCell>
+                  <TableCell className="text-sm text-right">{formatMoney(line.amount, currencyCode, presentation)}</TableCell>
+                  <TableCell className="text-sm text-right">{formatMoney(line.paid, currencyCode, presentation)}</TableCell>
+                  <TableCell className="text-sm text-right font-medium">{formatMoney(line.balance, currencyCode, presentation)}</TableCell>
                   <TableCell>
                     <Badge variant={line.status === "paid" ? "default" : "secondary"} className="text-xs">
                       {t(portalStatusKey(line.status))}

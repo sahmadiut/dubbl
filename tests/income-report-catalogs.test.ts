@@ -102,7 +102,7 @@ test("income report production JSX renders bilingual copy, exact money, safe dat
     const t = translator(locale), data = profitLossUi(pnl);
     const h = render("profit-and-loss", { ...ready, ...data }, locale);
     for (const key of ["profitLossTitle", "profitLossDescription", "profitLossHelp", "downloadPdf", "comparePeriods", "splitByTeam", "moneyIn", "moneyOut", "profitShort", "totalMoneyIn", "totalMoneyOut", "profit", "emptyCosts", "code", "account", "amount"] as const) assert.ok(h.html.includes(escaped(t(key))), key);
-    assert.ok(h.html.includes(escaped(statementUiMoney(BigInt(amount), "KWD"))));
+    assert.ok(h.html.includes(escaped(statementUiMoney(BigInt(amount), "KWD", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }))));
     assert.ok(h.html.includes(escaped(caller)) && !h.html.includes("<script>"));
     const hrefs = h.captured.filter(c => c.kind === "a").map(c => c.props.href);
     assert.ok(hrefs.includes("/api/v1/reports/profit-and-loss?startDate=2024-01-01&endDate=2024-01-31&basis=cash&format=pdf"));
@@ -118,9 +118,9 @@ test("income report production JSX renders bilingual copy, exact money, safe dat
     assert.ok(out.html.includes(escaped(t("emptyIncome"))));
     const summary = render("income-statement", { ...ready, data: incomeStatementUi(income), year: 2024 }, locale);
     for (const key of ["incomeTitle", "incomeDescription", "incomeHelp", "year", "totalIncome", "totalCosts", "profit", "code", "account", "amount"] as const) assert.ok(summary.html.includes(escaped(t(key))), key);
-    assert.ok(summary.html.includes(escaped(caller)) && summary.html.includes(escaped(statementUiMoney(BigInt(amount), "KWD"))));
+    assert.ok(summary.html.includes(escaped(caller)) && summary.html.includes(escaped(statementUiMoney(BigInt(amount), "KWD", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }))));
     assert.ok(render("income-statement", ready, locale).html.includes(escaped(t("noData"))));
-    for (const currencyCode of ["USD", "JPY", "IRR", "KWD"]) assert.ok(render("income-statement", { ...ready, data: incomeStatementUi({ ...income, currencyCode }) }, locale).html.includes(escaped(statementUiMoney(BigInt(amount), currencyCode))));
+    for (const currencyCode of ["USD", "JPY", "IRR", "KWD"]) assert.ok(render("income-statement", { ...ready, data: incomeStatementUi({ ...income, currencyCode }) }, locale).html.includes(escaped(statementUiMoney(BigInt(amount), currencyCode, { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }))));
   }
 });
 
@@ -131,8 +131,8 @@ test("executive production JSX localizes every known KPI and period/percent mess
     assert.ok(h.html.includes(escaped(t("priorPeriod", { start: "2023-12-01", end: "2023-12-31" }))));
     for (const [sign, value] of [["+", "12.5"], ["", "-2"], ["+", "0"]]) assert.ok(h.html.includes(escaped(t("deltaPercent", { sign, value }))));
     assert.ok(h.html.includes(escaped(caller)) && !h.html.includes("<script>"));
-    assert.ok(h.html.includes(`+${escaped(statementUiMoney(BigInt(amount), "KWD"))}`));
-    assert.ok(h.html.includes(`-${escaped(statementUiMoney(1n, "KWD"))}`));
+    assert.ok(h.html.includes(`+${escaped(statementUiMoney(BigInt(amount), "KWD", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }))}`));
+    assert.ok(h.html.includes(`-${escaped(statementUiMoney(1n, "KWD", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }))}`));
     assert.ok(h.captured.some(c => c.props.href === "/api/v1/reports/executive-summary?startDate=2024-01-01&endDate=2024-01-31&basis=cash&format=pdf"));
     assert.ok(!h.html.includes("MISSING_MESSAGE"));
   }

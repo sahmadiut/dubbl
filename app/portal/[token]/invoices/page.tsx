@@ -1,5 +1,6 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
 import { portalStatusKey } from "@/i18n/public-portal-presentation";
 import { useTranslations } from "next-intl";
 
@@ -44,6 +45,7 @@ const statusColors: Record<string, string> = {
 };
 
 export default function PortalInvoicesPage() {
+  const presentation = usePresentation();
   const t = useTranslations("PublicPortal");
   const { token } = useParams<{ token: string }>();
   const [invoices, setInvoices] = useState<PortalInvoice[]>([]);
@@ -100,7 +102,7 @@ export default function PortalInvoicesPage() {
                     {t(portalStatusKey(inv.status))}
                   </Badge>
                   <span className="text-sm font-mono tabular-nums font-medium text-gray-900">
-                    {formatMoney(inv.total, inv.currencyCode)}
+                    {formatMoney(inv.total, inv.currencyCode, presentation)}
                   </span>
                   <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={async () => {
                     try {

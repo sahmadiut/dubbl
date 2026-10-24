@@ -1,5 +1,6 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { MapPin, Receipt, FileText, Printer, ArrowUpRight } from "lucide-react";
@@ -27,6 +28,7 @@ export default function SalesTaxPage() {
 }
 
 function SalesTaxPageWorkspace({ orgId }: { orgId: string | null }) {
+  const presentation = usePresentation();
   const t = useTranslations("SalesTaxReport");
   const now = new Date();
   const [startDate, setStartDate] = useState(`${now.getFullYear()}-01-01`);
@@ -117,7 +119,7 @@ function SalesTaxPageWorkspace({ orgId }: { orgId: string | null }) {
                 <Receipt className="size-4 text-blue-500/50" />
               </div>
               <p className="mt-1 break-all text-xl font-bold font-mono tabular-nums text-blue-700 dark:text-blue-300">
-                {taxUiMoney(totalCollected, currency!)}
+                {taxUiMoney(totalCollected, currency!, presentation)}
               </p>
               <p className="text-[11px] text-blue-600/60 dark:text-blue-400/60 mt-0.5">
                 {t("invoiceCount", { count: totalInvoices })}
@@ -129,7 +131,7 @@ function SalesTaxPageWorkspace({ orgId }: { orgId: string | null }) {
                 <FileText className="size-4 text-muted-foreground/50" />
               </div>
               <p className="mt-1 break-all text-xl font-bold font-mono tabular-nums">
-                {taxUiMoney(totalTaxable, currency!)}
+                {taxUiMoney(totalTaxable, currency!, presentation)}
               </p>
               <div className="mt-2 h-1.5 rounded-full bg-muted">
                 <div
@@ -144,7 +146,7 @@ function SalesTaxPageWorkspace({ orgId }: { orgId: string | null }) {
                 <MapPin className="size-4 text-muted-foreground/50" />
               </div>
               <p className="mt-1 break-all text-xl font-bold font-mono tabular-nums">
-                {taxUiMoney(exemptAmount, currency!)}
+                {taxUiMoney(exemptAmount, currency!, presentation)}
               </p>
               <div className="mt-2 h-1.5 rounded-full bg-muted">
                 <div
@@ -182,10 +184,10 @@ function SalesTaxPageWorkspace({ orgId }: { orgId: string | null }) {
                       </div>
                       <div className="text-right">
                         <p className="text-sm font-semibold font-mono tabular-nums text-blue-600 dark:text-blue-400">
-                          {taxUiMoney(b.taxCollected, currency!)}
+                          {taxUiMoney(b.taxCollected, currency!, presentation)}
                         </p>
                         <p className="text-xs text-muted-foreground font-mono tabular-nums">
-                          {t("onAmount", { amount: taxUiMoney(b.taxableAmount, currency!) })}
+                          {t("onAmount", { amount: taxUiMoney(b.taxableAmount, currency!, presentation) })}
                         </p>
                       </div>
                     </div>
@@ -205,7 +207,7 @@ function SalesTaxPageWorkspace({ orgId }: { orgId: string | null }) {
           <div className="rounded-lg border-2 border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/20 px-5 py-3.5">
             <div className="flex justify-between items-center">
               <span className="text-sm font-semibold">{t("totalTaxCollected")}</span>
-              <span className="font-mono text-base tabular-nums font-bold text-blue-600 dark:text-blue-400">{taxUiMoney(totalCollected, currency!)}</span>
+              <span className="font-mono text-base tabular-nums font-bold text-blue-600 dark:text-blue-400">{taxUiMoney(totalCollected, currency!, presentation)}</span>
             </div>
           </div>
         </ContentReveal>

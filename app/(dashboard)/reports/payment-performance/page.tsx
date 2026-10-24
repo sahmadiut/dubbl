@@ -1,5 +1,8 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
+import { currencyLabel } from "@/i18n/currency-labels";
+import { formatExactDecimal } from "@/i18n/numbers";
 import { paymentPerformanceUi, analyticalReportJson } from "@/lib/money/analytical-report-ui";
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
@@ -168,6 +171,7 @@ function PerformanceTable({
   getTotal: (e: PerformanceEntry) => string;
   currencyCode: string;
 }) {
+  const presentation = usePresentation();
   const t = useTranslations("AgingVendorReports");
   return (
     <div>
@@ -196,7 +200,7 @@ function PerformanceTable({
                   </td>
                   <td className="px-4 py-2.5 text-right font-mono tabular-nums text-muted-foreground">{t("dayValue", { days: e.avgTermDays })}</td>
                   <td className="px-4 py-2.5 text-right text-muted-foreground">{getCount(e)}</td>
-                  <td className="px-4 py-2.5 text-right font-mono tabular-nums">{currencyCode} {toMajorDecimal(money(BigInt(getTotal(e)), currencyCode))}</td>
+                  <td className="px-4 py-2.5 text-right font-mono tabular-nums">{currencyLabel(currencyCode, presentation.locale)} {formatExactDecimal(toMajorDecimal(money(BigInt(getTotal(e)), currencyCode)), presentation, false)}</td>
                   <td className="px-4 py-2.5 text-right text-red-600">{e.lateCount > 0 ? e.lateCount : "-"}</td>
                   <td className={cn("px-4 py-2.5 text-right font-mono tabular-nums", e.onTimeRate >= 80 ? "text-emerald-600" : "text-red-600")}>
                     {e.onTimeRate}%

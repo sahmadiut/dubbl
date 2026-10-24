@@ -1,5 +1,7 @@
 "use client";
 
+import { authoredUsdText } from "@/i18n/currency-labels";
+import { usePresentation } from "@/i18n/provider";
 import { useTranslations } from "next-intl";
 
 import { motion } from "motion/react";
@@ -148,6 +150,7 @@ function ConnectVisual() {
 /* ------------------------------------------------------------------ */
 
 function CategorizeVisual() {
+  const presentation = usePresentation();
   const t = useTranslations("LandingFeatures");
   return (
     <div className="rounded-xl rounded-b-none bg-card p-4">
@@ -177,7 +180,7 @@ function CategorizeVisual() {
           <p className="text-[10px] text-muted-foreground">Mar 1, 2026</p>
         </div>
         <span className="text-sm font-bold tabular-nums text-foreground">
-          -$2,450.00
+          {authoredUsdText("-$2,450.00", presentation.locale)}
         </span>
       </motion.div>
 
@@ -243,7 +246,7 @@ function CategorizeVisual() {
       >
         <Check className="size-3 text-emerald-600 dark:text-emerald-400" />
         <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-          {t("balanced245000")}
+          {authoredUsdText(t("balanced245000"), presentation.locale)}
         </span>
       </motion.div>
     </div>
@@ -288,6 +291,7 @@ const chartBars = [
 ];
 
 function InsightsVisual() {
+  const presentation = usePresentation();
   const t = useTranslations("LandingFeatures");
   return (
     <div className="rounded-xl rounded-b-none bg-card p-4">
@@ -325,7 +329,7 @@ function InsightsVisual() {
               </span>
             </div>
             <p className="text-sm font-bold tabular-nums text-foreground leading-none">
-              {kpi.value}
+              {authoredUsdText(kpi.value, presentation.locale)}
             </p>
             <div className="mt-1 flex items-center gap-0.5">
               {kpi.trend === "up" ? (

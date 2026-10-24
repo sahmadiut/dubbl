@@ -76,7 +76,7 @@ test("checked income and profit/loss share exact money while pack filters and CS
       const annual = render("income-statement", { ...ready, data: income, year: 2024 }, locale);
       for (const h of [profit, annual]) {
         assert.ok(h.html.includes(escape(caller)) && !h.html.includes("<script>"));
-        assert.ok(h.html.includes(escape(statementUiMoney(pnl.netIncome, currencyCode))));
+        assert.ok(h.html.includes(escape(statementUiMoney(pnl.netIncome, currencyCode, { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }))));
         assert.ok(h.html.includes('href="/reports"'));
         assert.ok(!h.html.includes("MISSING_MESSAGE"));
       }

@@ -1,5 +1,7 @@
 "use client";
 
+import { currencyLabel } from "@/i18n/currency-labels";
+import { usePresentation } from "@/i18n/provider";
 import { bankStatusUi, analyticalReportJson } from "@/lib/money/analytical-report-ui";
 import Link from "next/link";
 import { useState, useEffect } from "react";
@@ -30,6 +32,7 @@ function fmtDate(d: string | null | undefined): string {
 }
 
 export default function BankReconciliationStatusPage() {
+  const presentation = usePresentation();
   const t = useTranslations("BankingReports");
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -156,14 +159,14 @@ export default function BankReconciliationStatusPage() {
                         )}
                       </TableCell>
                       <TableCell className="text-right font-mono tabular-nums">
-                        {formatMoney(a.balance, a.currencyCode)}
+                        {formatMoney(a.balance, a.currencyCode, presentation)}
                       </TableCell>
                       <TableCell className="text-right font-mono tabular-nums">
                         {a.unreconciled.count}
                       </TableCell>
                       <TableCell className="text-right font-mono tabular-nums">
                         {a.unreconciled.total > 0
-                          ? formatMoney(a.unreconciled.total, a.currencyCode)
+                          ? formatMoney(a.unreconciled.total, a.currencyCode, presentation)
                           : "—"}
                       </TableCell>
                       <TableCell className="text-right font-mono tabular-nums">
@@ -206,7 +209,7 @@ export default function BankReconciliationStatusPage() {
                   </TableCell>
                   <TableCell className="text-right font-mono tabular-nums">
                     {[...currencyTotals].map(([currency, total]) => (
-                      <div key={currency}>{currency} {bankTotalDecimal(total, currency)}</div>
+                      <div key={currency}>{currencyLabel(currency, presentation.locale)} {bankTotalDecimal(total, currency)}</div>
                     ))}
                   </TableCell>
                   <TableCell colSpan={4} />

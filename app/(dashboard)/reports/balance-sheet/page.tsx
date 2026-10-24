@@ -1,5 +1,6 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
@@ -24,6 +25,7 @@ type SectionData = BalanceSheetUi["assets"];
 type SectionAccount = SectionData["accounts"][number];
 
 export default function BalanceSheetPage() {
+  const presentation = usePresentation();
   const t = useTranslations("BalanceCashReports");
   const today = new Date().toISOString().slice(0, 10);
   const [initialLoad, setInitialLoad] = useState(true);
@@ -161,7 +163,7 @@ export default function BalanceSheetPage() {
                           </TableCell>
                           {balancesFor(a).map((bal, i) => (
                             <TableCell key={i} className="text-right font-mono tabular-nums">
-                              {statementUiMoney(bal, data!.currencyCode)}
+                              {statementUiMoney(bal, data!.currencyCode, presentation)}
                             </TableCell>
                           ))}
                         </TableRow>
@@ -170,7 +172,7 @@ export default function BalanceSheetPage() {
                         <TableCell colSpan={2}>{t(`balanceTotal_${section.label}`)}</TableCell>
                         {totalsFor(section.data).map((t, i) => (
                           <TableCell key={i} className="text-right font-mono tabular-nums">
-                            {statementUiMoney(t, data!.currencyCode)}
+                            {statementUiMoney(t, data!.currencyCode, presentation)}
                           </TableCell>
                         ))}
                       </TableRow>

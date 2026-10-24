@@ -97,7 +97,7 @@ test("all eight tax pages compose with real bilingual navigation and exact curre
       }
       if (!["", "periods", "bas", "vat-return"].includes(spec.route)) assert.ok(html.includes(escape(caller)), spec.route);
       assert.ok(!html.includes("<script>"), spec.route);
-      if (!["", "periods"].includes(spec.route)) assert.ok(html.includes(escape(taxUiMoney(amount < 0n && ["bas", "schedule-c", "vat-return"].includes(spec.route) ? -amount : amount, currency))), `${spec.route}/${currency}/${amount}`);
+      if (!["", "periods"].includes(spec.route)) assert.ok(html.includes(escape(taxUiMoney(amount < 0n && ["bas", "schedule-c", "vat-return"].includes(spec.route) ? -amount : amount, currency, { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }))), `${spec.route}/${currency}/${amount}`);
     }
   }
 });
@@ -108,7 +108,7 @@ test("settlement preview shares the tax layout locale while preserving exact dec
       const Layout = loaded(`${root}/layout.tsx`, ["GB", 1], "/tax/periods");
       const html = renderWithPresentation(createElement(Layout, null, createElement(SettlementPreview.TaxSettlementPreview, { currency, amount: input })), locale);
       const messages = locale === "en-US" ? en : fa;
-      if (input === amount) assert.ok(html.includes('role="status"') && html.includes(escape(taxUiMoney(minor, currency))));
+      if (input === amount) assert.ok(html.includes('role="status"') && html.includes(escape(taxUiMoney(minor, currency, { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }))));
       else assert.ok(html.includes('role="alert"') && html.includes(escape(messages.TaxPeriods[input === "" ? "enterAmount" : "invalidAmount"])));
     }
   }

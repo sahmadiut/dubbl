@@ -1,5 +1,6 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
 import React, { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
@@ -16,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 type PeriodBalance = ReturnType<typeof statementComparisonPeriods>[number];
 
 export default function ComparativeBalanceSheetPage() {
+  const presentation = usePresentation();
   const t = useTranslations("BalanceCashReports");
   const navigation = useTranslations("ReportNavigation");
   const [initialLoad, setInitialLoad] = useState(true);
@@ -149,11 +151,11 @@ export default function ComparativeBalanceSheetPage() {
                               {info.name}
                             </td>
                             {values.map((v, i) => (
-                              <td key={i} className="px-4 py-2 text-right font-mono tabular-nums">{statementUiMoney(v, periods[i].currencyCode)}</td>
+                              <td key={i} className="px-4 py-2 text-right font-mono tabular-nums">{statementUiMoney(v, periods[i].currencyCode, presentation)}</td>
                             ))}
                             {periods.length >= 2 && (
                               <td className={cn("px-4 py-2 text-right font-mono tabular-nums text-xs", change > 0 ? "text-emerald-600" : change < 0 ? "text-red-600" : "text-muted-foreground")}>
-                                {change !== 0n ? `${change > 0 ? "+" : ""}${statementUiMoney(change, periods[0].currencyCode)}` : "-"}
+                                {change !== 0n ? `${change > 0 ? "+" : ""}${statementUiMoney(change, periods[0].currencyCode, presentation)}` : "-"}
                               </td>
                             )}
                           </tr>
@@ -165,7 +167,7 @@ export default function ComparativeBalanceSheetPage() {
                         {periods.map((p) => {
                           const total = section === "Assets" ? p.assets.total : section === "Liabilities" ? p.liabilities.total : p.equity.total;
                           return (
-                            <td key={p.label} className="px-4 py-2 text-right font-mono tabular-nums font-semibold">{statementUiMoney(total, p.currencyCode)}</td>
+                            <td key={p.label} className="px-4 py-2 text-right font-mono tabular-nums font-semibold">{statementUiMoney(total, p.currencyCode, presentation)}</td>
                           );
                         })}
                         {periods.length >= 2 && <td />}

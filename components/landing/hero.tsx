@@ -1,5 +1,7 @@
 "use client";
 
+import { authoredUsdText } from "@/i18n/currency-labels";
+import { usePresentation } from "@/i18n/provider";
 import { useLocale, useTranslations } from "next-intl";
 
 import { motion } from "motion/react";
@@ -40,6 +42,7 @@ function FloatingCard({
 }
 
 function DataVisuals() {
+  const presentation = usePresentation();
   const t = useTranslations("LandingShell");
   // Static charts avoid SVG painting and layout work on every frame.
   const chartPath = "M 0 40 C 10 38, 20 35, 30 30 S 50 20, 60 22 S 80 28, 90 18 S 110 8, 120 12 S 140 20, 150 10 S 170 5, 180 8";
@@ -58,7 +61,7 @@ function DataVisuals() {
           <span
             className="font-mono text-[11px] font-bold tabular-nums text-emerald-600 dark:text-emerald-400"
           >
-            $48,250
+            {authoredUsdText("$48,250", presentation.locale)}
           </span>
         </div>
         <svg viewBox="0 0 180 50" className="h-10 w-full">
@@ -148,9 +151,9 @@ function DataVisuals() {
           </div>
         </div>
         {[
-          { desc: t("clientPayment"), amount: "+$12,500", positive: true },
-          { desc: t("officeSupplies"), amount: "-$240", positive: false },
-          { desc: t("consulting"), amount: "+$5,000", positive: true },
+          { desc: t("clientPayment"), amount: authoredUsdText("+$12,500", presentation.locale), positive: true },
+          { desc: t("officeSupplies"), amount: authoredUsdText("-$240", presentation.locale), positive: false },
+          { desc: t("consulting"), amount: authoredUsdText("+$5,000", presentation.locale), positive: true },
         ].map((tx) => (
           <div
             key={tx.desc}
@@ -161,7 +164,7 @@ function DataVisuals() {
               "font-mono text-[11px] tabular-nums font-semibold",
               tx.positive ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400"
             )}>
-              {tx.amount}
+              {authoredUsdText(tx.amount, presentation.locale)}
             </span>
           </div>
         ))}
@@ -239,7 +242,7 @@ function DataVisuals() {
           <div key={s.label} className="flex items-center justify-between border-b border-border/30 py-1.5 last:border-0">
             <div>
               <p className="text-[9px] text-muted-foreground">{s.label}</p>
-              <p className="font-mono text-[12px] font-bold tabular-nums text-foreground">{s.value}</p>
+              <p className="font-mono text-[12px] font-bold tabular-nums text-foreground">{authoredUsdText(s.value, presentation.locale)}</p>
             </div>
             <svg viewBox="0 0 24 10" className="h-3 w-8">
               <path
@@ -285,7 +288,7 @@ function DataVisuals() {
 
       {/* Scattered demo numbers */}
       {[
-        { val: "$48,250", x: "left-[18%]", y: "top-[28%]" },
+        { val: authoredUsdText("$48,250", presentation.locale), x: "left-[18%]", y: "top-[28%]" },
         { val: "23", x: "right-[20%]", y: "top-[30%]" },
         { val: "+18.1%", x: "left-[22%]", y: "bottom-[22%]" },
         { val: "JE-047", x: "right-[18%]", y: "bottom-[18%]" },
@@ -391,15 +394,16 @@ function HeroBackground() {
 /* ------------------------------------------------------------------ */
 
 function LiveTicker() {
+  const presentation = usePresentation();
   const t = useTranslations("LandingShell");
   const { ref, isActive } = useLandingActivity();
   const tickerEvents = [
-    t("tickerInvoice", { number: "INV-048", amount: "$4,200" }),
+    t("tickerInvoice", { number: "INV-048", amount: authoredUsdText("$4,200", presentation.locale) }),
     t("tickerAccount"),
     t("tickerJournal", { number: "JE-102" }),
     t("tickerReconciliation", { period: "Dec 2025" }),
-    t("tickerRevenue", { amount: "$12,500" }),
-    t("tickerExpense", { amount: "$240" }),
+    t("tickerRevenue", { amount: authoredUsdText("$12,500", presentation.locale) }),
+    t("tickerExpense", { amount: authoredUsdText("$240", presentation.locale) }),
     t("tickerTrialBalance"),
     t("tickerApi", { request: "POST /v1/transactions" }),
   ];

@@ -1,5 +1,6 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
 import Link from "next/link";
 import { Fragment, useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
@@ -26,6 +27,7 @@ type AccountBalance = TrialBalanceUi["accounts"][number];
 type SplitBalance = Pick<AccountBalance, "balance" | "debitBalance" | "creditBalance">;
 
 export default function TrialBalancePage() {
+  const presentation = usePresentation();
   const t = useTranslations("LedgerReports");
   const ta = useTranslations("Accounts");
   const today = new Date().toISOString().slice(0, 10);
@@ -75,7 +77,7 @@ export default function TrialBalancePage() {
   }
 
   const totals = data ? trialBalanceTotals(data) : [];
-  const formatMoney = (value: bigint) => statementUiMoney(value, data!.currencyCode);
+  const formatMoney = (value: bigint) => statementUiMoney(value, data!.currencyCode, presentation);
 
   return (
     <ContentReveal className="space-y-6">

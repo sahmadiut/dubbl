@@ -1,5 +1,6 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
 import { bankCashFlowUi, bankAccountPickerUi, analyticalReportJson, analyticalAbs } from "@/lib/money/analytical-report-ui";
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
@@ -32,6 +33,7 @@ interface BankAccount {
 const GROUP_OPTIONS = ["day", "week", "month"] as const;
 
 export default function BankCashFlowPage() {
+  const presentation = usePresentation();
   const t = useTranslations("BankingReports");
   const now = new Date();
   const [initialLoad, setInitialLoad] = useState(true);
@@ -165,17 +167,17 @@ export default function BankCashFlowPage() {
           <div className="grid gap-4 sm:grid-cols-3">
             <StatCard
               title={t("moneyIn")}
-              value={formatMoney(totals.inflows, currency)}
+              value={formatMoney(totals.inflows, currency, presentation)}
               icon={ArrowDownToLine}
             />
             <StatCard
               title={t("moneyOut")}
-              value={formatMoney(analyticalAbs(totals.outflows), currency)}
+              value={formatMoney(analyticalAbs(totals.outflows), currency, presentation)}
               icon={ArrowUpFromLine}
             />
             <StatCard
               title={t("netChange")}
-              value={formatMoney(totals.net, currency)}
+              value={formatMoney(totals.net, currency, presentation)}
               icon={Wallet}
             />
           </div>
@@ -206,16 +208,16 @@ export default function BankCashFlowPage() {
                     <TableRow key={p.startDate}>
                       <TableCell className="font-medium text-sm">{p.label}</TableCell>
                       <TableCell className="text-right font-mono text-sm tabular-nums text-emerald-600">
-                        {formatMoney(p.inflows, currency)}
+                        {formatMoney(p.inflows, currency, presentation)}
                       </TableCell>
                       <TableCell className="text-right font-mono text-sm tabular-nums text-rose-600">
-                        {formatMoney(analyticalAbs(p.outflows), currency)}
+                        {formatMoney(analyticalAbs(p.outflows), currency, presentation)}
                       </TableCell>
                       <TableCell className="text-right font-mono text-sm tabular-nums">
-                        {formatMoney(p.net, currency)}
+                        {formatMoney(p.net, currency, presentation)}
                       </TableCell>
                       <TableCell className="text-right font-mono text-sm tabular-nums">
-                        {formatMoney(p.balance, currency)}
+                        {formatMoney(p.balance, currency, presentation)}
                       </TableCell>
                     </TableRow>
                   ))
@@ -226,13 +228,13 @@ export default function BankCashFlowPage() {
                   <TableRow className="bg-muted/30 font-bold">
                     <TableCell>{t("total")}</TableCell>
                     <TableCell className="text-right font-mono text-sm tabular-nums">
-                      {formatMoney(totals.inflows, currency)}
+                      {formatMoney(totals.inflows, currency, presentation)}
                     </TableCell>
                     <TableCell className="text-right font-mono text-sm tabular-nums">
-                      {formatMoney(analyticalAbs(totals.outflows), currency)}
+                      {formatMoney(analyticalAbs(totals.outflows), currency, presentation)}
                     </TableCell>
                     <TableCell className="text-right font-mono text-sm tabular-nums">
-                      {formatMoney(totals.net, currency)}
+                      {formatMoney(totals.net, currency, presentation)}
                     </TableCell>
                     <TableCell />
                   </TableRow>

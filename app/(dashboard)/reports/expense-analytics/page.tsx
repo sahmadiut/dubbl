@@ -1,5 +1,7 @@
 "use client";
 
+import { currencyLabel } from "@/i18n/currency-labels";
+import { usePresentation } from "@/i18n/provider";
 import { expenseAnalyticsUi, analyticalReportJson } from "@/lib/money/analytical-report-ui";
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
@@ -41,6 +43,7 @@ const CATEGORY_COLORS = [
 ];
 
 export default function ExpenseAnalyticsPage() {
+  const presentation = usePresentation();
   const t = useTranslations("AnalyticalReports");
   const now = new Date();
   const [initialLoad, setInitialLoad] = useState(true);
@@ -117,13 +120,13 @@ export default function ExpenseAnalyticsPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <StatCard
               title={t("totalSpent")}
-              value={statementMoneyText(totalExpenses, currencyCode)}
+              value={statementMoneyText(totalExpenses, currencyCode, presentation)}
               icon={TrendingDown}
               changeType="negative"
             />
             <StatCard
               title={t("monthlyAverage")}
-              value={statementMoneyText(monthlyAverage, currencyCode)}
+              value={statementMoneyText(monthlyAverage, currencyCode, presentation)}
               icon={PieChart}
               changeType="neutral"
             />
@@ -144,10 +147,10 @@ export default function ExpenseAnalyticsPage() {
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                     <XAxis dataKey="name" tick={{ fontSize: 11 }} className="text-muted-foreground" />
-                    <YAxis tick={{ fontSize: 11 }} className="text-muted-foreground" tickFormatter={(v) => `${currencyCode} ${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`} />
+                    <YAxis tick={{ fontSize: 11 }} className="text-muted-foreground" tickFormatter={(v) => `${currencyLabel(currencyCode, presentation.locale)} ${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`} />
                     <Tooltip
                       contentStyle={{ fontSize: 12, borderRadius: 8 }}
-                      formatter={(_value, _name, item) => [statementMoneyText(item.payload.minorUnits, currencyCode)]}
+                      formatter={(_value, _name, item) => [statementMoneyText(item.payload.minorUnits, currencyCode, presentation)]}
                     />
                     <Area type="monotone" dataKey="expenses" name={t("expenses")} stroke="#ef4444" fill="url(#expGrad)" strokeWidth={2} />
                   </AreaChart>
@@ -186,7 +189,7 @@ export default function ExpenseAnalyticsPage() {
                       </div>
                     </div>
                     <div className="text-right shrink-0 ml-4">
-                      <p className="text-sm font-mono font-semibold tabular-nums">{statementMoneyText(c.total, currencyCode)}</p>
+                      <p className="text-sm font-mono font-semibold tabular-nums">{statementMoneyText(c.total, currencyCode, presentation)}</p>
                       <p className="text-xs text-muted-foreground font-mono tabular-nums">{c.percentage}%</p>
                     </div>
                   </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { Receipt, ArrowUpRight, ArrowDownLeft } from "lucide-react";
@@ -27,6 +28,7 @@ function initialDates() {
 }
 
 export default function TaxSummaryPage() {
+  const presentation = usePresentation();
   const t = useTranslations("TaxReports");
   const [dates] = useState(initialDates);
   const [initialLoad, setInitialLoad] = useState(true);
@@ -95,19 +97,19 @@ export default function TaxSummaryPage() {
             <div className="grid gap-4 sm:grid-cols-3">
               <StatCard
                 title={t("outputTax")}
-                value={reportResultMoney(totalOutputTax, data.currencyCode)}
+                value={reportResultMoney(totalOutputTax, data.currencyCode, presentation)}
                 icon={ArrowUpRight}
                 changeType="neutral"
               />
               <StatCard
                 title={t("inputTax")}
-                value={reportResultMoney(totalInputTax, data.currencyCode)}
+                value={reportResultMoney(totalInputTax, data.currencyCode, presentation)}
                 icon={ArrowDownLeft}
                 changeType="neutral"
               />
               <StatCard
                 title={netTaxPayable >= 0 ? t("oweOffice") : t("refundOffice")}
-                value={reportResultMoney(taxUiAbs(netTaxPayable), data.currencyCode)}
+                value={reportResultMoney(taxUiAbs(netTaxPayable), data.currencyCode, presentation)}
                 icon={Receipt}
                 changeType={netTaxPayable > 0 ? "negative" : "positive"}
               />
@@ -138,15 +140,15 @@ export default function TaxSummaryPage() {
                         <td className="px-4 py-2.5 text-right font-mono tabular-nums text-muted-foreground">
                           {(r.rate / 100).toFixed(2)}%
                         </td>
-                        <td className="px-4 py-2.5 text-right font-mono tabular-nums">{reportResultMoney(r.outputNet, data.currencyCode)}</td>
-                        <td className="px-4 py-2.5 text-right font-mono tabular-nums text-blue-600">{reportResultMoney(r.outputTax, data.currencyCode)}</td>
-                        <td className="px-4 py-2.5 text-right font-mono tabular-nums">{reportResultMoney(r.inputNet, data.currencyCode)}</td>
-                        <td className="px-4 py-2.5 text-right font-mono tabular-nums text-orange-600">{reportResultMoney(r.inputTax, data.currencyCode)}</td>
+                        <td className="px-4 py-2.5 text-right font-mono tabular-nums">{reportResultMoney(r.outputNet, data.currencyCode, presentation)}</td>
+                        <td className="px-4 py-2.5 text-right font-mono tabular-nums text-blue-600">{reportResultMoney(r.outputTax, data.currencyCode, presentation)}</td>
+                        <td className="px-4 py-2.5 text-right font-mono tabular-nums">{reportResultMoney(r.inputNet, data.currencyCode, presentation)}</td>
+                        <td className="px-4 py-2.5 text-right font-mono tabular-nums text-orange-600">{reportResultMoney(r.inputTax, data.currencyCode, presentation)}</td>
                         <td className={cn(
                           "px-4 py-2.5 text-right font-mono tabular-nums font-medium",
                           r.netTax >= 0 ? "text-red-600" : "text-emerald-600"
                         )}>
-                          {t(r.netTax < 0 ? "refundAmount" : "dueAmount", { amount: reportResultMoney(taxUiAbs(r.netTax), data.currencyCode) })}
+                          {t(r.netTax < 0 ? "refundAmount" : "dueAmount", { amount: reportResultMoney(taxUiAbs(r.netTax), data.currencyCode, presentation) })}
                         </td>
                       </tr>
                     ))}
@@ -154,14 +156,14 @@ export default function TaxSummaryPage() {
                   <tfoot>
                     <tr className="border-t bg-muted/30">
                       <td className="px-4 py-2.5 font-semibold" colSpan={3}>{t("total")}</td>
-                      <td className="px-4 py-2.5 text-right font-mono tabular-nums font-semibold text-blue-600">{reportResultMoney(totalOutputTax, data.currencyCode)}</td>
+                      <td className="px-4 py-2.5 text-right font-mono tabular-nums font-semibold text-blue-600">{reportResultMoney(totalOutputTax, data.currencyCode, presentation)}</td>
                       <td className="px-4 py-2.5 text-right font-mono tabular-nums font-semibold" />
-                      <td className="px-4 py-2.5 text-right font-mono tabular-nums font-semibold text-orange-600">{reportResultMoney(totalInputTax, data.currencyCode)}</td>
+                      <td className="px-4 py-2.5 text-right font-mono tabular-nums font-semibold text-orange-600">{reportResultMoney(totalInputTax, data.currencyCode, presentation)}</td>
                       <td className={cn(
                         "px-4 py-2.5 text-right font-mono tabular-nums font-semibold",
                         netTaxPayable >= 0 ? "text-red-600" : "text-emerald-600"
                       )}>
-                        {t(netTaxPayable < 0 ? "refundAmount" : "dueAmount", { amount: reportResultMoney(taxUiAbs(netTaxPayable), data.currencyCode) })}
+                        {t(netTaxPayable < 0 ? "refundAmount" : "dueAmount", { amount: reportResultMoney(taxUiAbs(netTaxPayable), data.currencyCode, presentation) })}
                       </td>
                     </tr>
                   </tfoot>

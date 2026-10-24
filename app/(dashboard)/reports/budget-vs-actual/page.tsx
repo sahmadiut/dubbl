@@ -1,5 +1,6 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { BackToReports } from "../_components";
@@ -33,15 +34,16 @@ interface Comparison {
 }
 
 export default function BudgetVsActualPage() {
+  const presentation = usePresentation();
   const t = useTranslations("AnalyticalReports");
   const columns: Column<Comparison>[] = [
     { key: "code", header: t("code"), className: "w-24", render: (r) => <span className="font-mono text-sm">{r.accountCode}</span> },
     { key: "name", header: t("account"), render: (r) => <span className="text-sm font-medium">{r.accountName}</span> },
-    { key: "budgeted", header: t("budgeted"), className: "w-28 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{formatMoney(r.budgeted, r.currencyCode)}</span> },
-    { key: "actual", header: t("actual"), className: "w-28 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{formatMoney(r.actual, r.currencyCode)}</span> },
+    { key: "budgeted", header: t("budgeted"), className: "w-28 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{formatMoney(r.budgeted, r.currencyCode, presentation)}</span> },
+    { key: "actual", header: t("actual"), className: "w-28 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{formatMoney(r.actual, r.currencyCode, presentation)}</span> },
     { key: "variance", header: t("variance"), className: "w-28 text-right", render: (r) => (
       <span className={`font-mono text-sm tabular-nums ${r.variance >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-        {formatMoney(r.variance, r.currencyCode)}
+        {formatMoney(r.variance, r.currencyCode, presentation)}
       </span>
     )},
     { key: "pct", header: "%", className: "w-20 text-right", render: (r) => (
@@ -156,11 +158,11 @@ export default function BudgetVsActualPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard title={t("totalBudgeted")} value={formatMoney(totalBudgeted, currencyCode)} icon={Target} />
-        <StatCard title={t("totalActual")} value={formatMoney(totalActual, currencyCode)} icon={DollarSign} />
+        <StatCard title={t("totalBudgeted")} value={formatMoney(totalBudgeted, currencyCode, presentation)} icon={Target} />
+        <StatCard title={t("totalActual")} value={formatMoney(totalActual, currencyCode, presentation)} icon={DollarSign} />
         <StatCard
           title={t("variance")}
-          value={formatMoney(totalVariance, currencyCode)}
+          value={formatMoney(totalVariance, currencyCode, presentation)}
           icon={DollarSign}
           changeType={totalVariance >= 0 ? "positive" : "negative"}
         />
@@ -195,7 +197,7 @@ export default function BudgetVsActualPage() {
           <div className="flex justify-between px-3 py-2 sm:px-4 sm:py-3 bg-muted/50 rounded-lg text-sm font-semibold mt-6">
             <span>{t("totalVariance")}</span>
             <span className={`font-mono tabular-nums ${totalVariance >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-              {formatMoney(totalVariance, currencyCode)}
+              {formatMoney(totalVariance, currencyCode, presentation)}
             </span>
           </div>
         </ContentReveal>

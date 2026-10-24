@@ -1,5 +1,6 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
 import { vendorSpendUi, analyticalReportJson } from "@/lib/money/analytical-report-ui";
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
@@ -25,6 +26,7 @@ const BAR_COLORS = [
 ];
 
 export default function VendorSpendPage() {
+  const presentation = usePresentation();
   const t = useTranslations("AgingVendorReports");
   const now = new Date();
   const [initialLoad, setInitialLoad] = useState(true);
@@ -92,7 +94,7 @@ export default function VendorSpendPage() {
       ) : error ? <p role="alert" className="text-sm text-destructive">{t("loadFailed")}</p> : (
         <ContentReveal>
           <div className="grid gap-4 sm:grid-cols-2">
-            <StatCard title={t("totalSpentWithSuppliers")} value={formatMoney(totalSpend, currencyCode)} icon={TrendingDown} changeType="negative" />
+            <StatCard title={t("totalSpentWithSuppliers")} value={formatMoney(totalSpend, currencyCode, presentation)} icon={TrendingDown} changeType="negative" />
             <StatCard title={t("suppliers")} value={String(vendors.length)} icon={TrendingDown} changeType="neutral" change={t("activeCount", { count: vendors.length })} />
           </div>
 
@@ -130,9 +132,9 @@ export default function VendorSpendPage() {
                             <span className="font-medium">{v.contactName}</span>
                           </div>
                         </td>
-                        <td className="px-4 py-2.5 text-right font-mono tabular-nums font-medium">{formatMoney(v.totalSpend, currencyCode)}</td>
+                        <td className="px-4 py-2.5 text-right font-mono tabular-nums font-medium">{formatMoney(v.totalSpend, currencyCode, presentation)}</td>
                         <td className="px-4 py-2.5 text-right text-muted-foreground">{v.billCount}</td>
-                        <td className="px-4 py-2.5 text-right font-mono tabular-nums text-muted-foreground">{formatMoney(v.avgBillAmount, currencyCode)}</td>
+                        <td className="px-4 py-2.5 text-right font-mono tabular-nums text-muted-foreground">{formatMoney(v.avgBillAmount, currencyCode, presentation)}</td>
                         <td className="px-4 py-2.5 text-right text-muted-foreground">{new Date(v.lastBillDate + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</td>
                         <td className="px-4 py-2.5 text-right font-mono tabular-nums text-muted-foreground">{v.percentage}%</td>
                       </tr>

@@ -1,5 +1,6 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
 import { portalStatusKey } from "@/i18n/public-portal-presentation";
 import { useTranslations } from "next-intl";
 
@@ -32,6 +33,7 @@ interface Payment {
 
 
 export default function PortalPaymentsPage() {
+  const presentation = usePresentation();
   const t = useTranslations("PublicPortal");
   const { token } = useParams<{ token: string }>();
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -81,8 +83,8 @@ export default function PortalPaymentsPage() {
               payments.map(p => (
                 <TableRow key={p.invoiceId}>
                   <TableCell className="text-sm font-medium">{p.invoiceNumber}</TableCell>
-                  <TableCell className="text-sm text-right">{formatMoney(p.total, p.currencyCode)}</TableCell>
-                  <TableCell className="text-sm text-right font-medium">{formatMoney(p.amountPaid, p.currencyCode)}</TableCell>
+                  <TableCell className="text-sm text-right">{formatMoney(p.total, p.currencyCode, presentation)}</TableCell>
+                  <TableCell className="text-sm text-right font-medium">{formatMoney(p.amountPaid, p.currencyCode, presentation)}</TableCell>
                   <TableCell className="text-sm">{p.paidAt ? new Date(p.paidAt).toLocaleDateString() : "-"}</TableCell>
                   <TableCell>
                     <Badge variant={p.status === "paid" ? "default" : "secondary"} className="text-xs">

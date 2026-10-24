@@ -1,5 +1,6 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
 import { profitabilityUi, analyticalReportJson } from "@/lib/money/analytical-report-ui";
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
@@ -18,6 +19,7 @@ import { cn } from "@/lib/utils";
 type ProfitabilityEntry = ReturnType<typeof profitabilityUi>["entries"][number];
 
 export default function ProfitabilityPage() {
+  const presentation = usePresentation();
   const t = useTranslations("AnalyticalReports");
   const now = new Date();
   const [initialLoad, setInitialLoad] = useState(true);
@@ -92,19 +94,19 @@ export default function ProfitabilityPage() {
       {!loading && !error && <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title={t("moneyIn")}
-          value={statementMoneyText(totalRevenue, currencyCode)}
+          value={statementMoneyText(totalRevenue, currencyCode, presentation)}
           icon={TrendingUp}
           changeType="positive"
         />
         <StatCard
           title={t("costs")}
-          value={statementMoneyText(totalCosts, currencyCode)}
+          value={statementMoneyText(totalCosts, currencyCode, presentation)}
           icon={TrendingDown}
           changeType="negative"
         />
         <StatCard
           title={t("profit")}
-          value={statementMoneyText(totalProfit, currencyCode)}
+          value={statementMoneyText(totalProfit, currencyCode, presentation)}
           icon={DollarSign}
           changeType={totalProfit >= 0 ? "positive" : "negative"}
         />
@@ -147,13 +149,13 @@ export default function ProfitabilityPage() {
                 {entries.map((e) => (
                   <tr key={e.contactId} className="border-b last:border-b-0">
                     <td className="px-4 py-2.5 font-medium">{e.contactName}</td>
-                    <td className="px-4 py-2.5 text-right font-mono tabular-nums text-emerald-600">{statementMoneyText(e.revenue, currencyCode)}</td>
-                    <td className="px-4 py-2.5 text-right font-mono tabular-nums text-red-600">{statementMoneyText(e.costs, currencyCode)}</td>
+                    <td className="px-4 py-2.5 text-right font-mono tabular-nums text-emerald-600">{statementMoneyText(e.revenue, currencyCode, presentation)}</td>
+                    <td className="px-4 py-2.5 text-right font-mono tabular-nums text-red-600">{statementMoneyText(e.costs, currencyCode, presentation)}</td>
                     <td className={cn(
                       "px-4 py-2.5 text-right font-mono tabular-nums font-medium",
                       e.profit >= 0 ? "text-emerald-600" : "text-red-600"
                     )}>
-                      {statementMoneyText(e.profit, currencyCode)}
+                      {statementMoneyText(e.profit, currencyCode, presentation)}
                     </td>
                     <td className={cn(
                       "px-4 py-2.5 text-right font-mono tabular-nums",
@@ -169,13 +171,13 @@ export default function ProfitabilityPage() {
               <tfoot>
                 <tr className="border-t bg-muted/30">
                   <td className="px-4 py-2.5 font-semibold">{t("total")}</td>
-                  <td className="px-4 py-2.5 text-right font-mono tabular-nums font-semibold text-emerald-600">{statementMoneyText(totalRevenue, currencyCode)}</td>
-                  <td className="px-4 py-2.5 text-right font-mono tabular-nums font-semibold text-red-600">{statementMoneyText(totalCosts, currencyCode)}</td>
+                  <td className="px-4 py-2.5 text-right font-mono tabular-nums font-semibold text-emerald-600">{statementMoneyText(totalRevenue, currencyCode, presentation)}</td>
+                  <td className="px-4 py-2.5 text-right font-mono tabular-nums font-semibold text-red-600">{statementMoneyText(totalCosts, currencyCode, presentation)}</td>
                   <td className={cn(
                     "px-4 py-2.5 text-right font-mono tabular-nums font-semibold",
                     totalProfit >= 0 ? "text-emerald-600" : "text-red-600"
                   )}>
-                    {statementMoneyText(totalProfit, currencyCode)}
+                    {statementMoneyText(totalProfit, currencyCode, presentation)}
                   </td>
                   <td className={cn(
                     "px-4 py-2.5 text-right font-mono tabular-nums font-semibold",

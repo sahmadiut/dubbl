@@ -86,7 +86,7 @@ test("actual landing composition shares one root locale across shell, feature, p
           const faqTriggers = [...html.matchAll(/<button\b[^>]*data-slot="accordion-trigger"[^>]*>/g)].map(match => match[0]);
           assert.equal(faqTriggers.length, 9);
           for (const trigger of faqTriggers) assert.ok(trigger.includes('aria-expanded="false"'));
-          for (const sample of ["$48,250", "INV-012", "Stripe Payout", "POST /v1/transactions"]) assert.ok(html.includes(sample), sample);
+          for (const sample of ["$48,250", "INV-012", "Stripe Payout", "POST /v1/transactions"]) assert.ok(html.includes(locale === "fa-IR" ? sample.replaceAll("$", "دلار\u00a0") : sample), sample);
         } else {
           const heading = [catalog.PublicPricingLegal.transparentPricing, catalog.PublicPricingLegal.privacyPolicy, catalog.PublicPricingLegal.termsOfService][index - 1];
           assert.ok(html.includes(escape(heading)), heading);

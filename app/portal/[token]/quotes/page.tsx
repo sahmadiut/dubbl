@@ -1,5 +1,6 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
 import { portalStatusKey } from "@/i18n/public-portal-presentation";
 import { useTranslations } from "next-intl";
 
@@ -33,6 +34,7 @@ interface Quote {
 
 
 export default function PortalQuotesPage() {
+  const presentation = usePresentation();
   const t = useTranslations("PublicPortal");
   const { token } = useParams<{ token: string }>();
   const [quotes, setQuotes] = useState<Quote[]>([]);
@@ -99,7 +101,7 @@ export default function PortalQuotesPage() {
                   <TableCell className="text-sm font-medium">{q.quoteNumber}</TableCell>
                   <TableCell className="text-sm">{q.issueDate}</TableCell>
                   <TableCell className="text-sm">{q.expiryDate}</TableCell>
-                  <TableCell className="text-sm text-right">{formatMoney(q.total, q.currencyCode)}</TableCell>
+                  <TableCell className="text-sm text-right">{formatMoney(q.total, q.currencyCode, presentation)}</TableCell>
                   <TableCell>
                     <Badge variant={q.status === "accepted" ? "default" : q.status === "declined" ? "destructive" : "secondary"} className="text-xs">
                       {t(portalStatusKey(q.status))}

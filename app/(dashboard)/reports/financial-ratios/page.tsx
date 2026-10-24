@@ -1,5 +1,6 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
 import { financialRatiosUi, analyticalReportJson } from "@/lib/money/analytical-report-ui";
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
@@ -74,6 +75,7 @@ const ratioInfo = {
 } as const;
 
 export default function FinancialRatiosPage() {
+  const presentation = usePresentation();
   const t = useTranslations("AnalyticalReports");
   const now = new Date();
   const [initialLoad, setInitialLoad] = useState(true);
@@ -189,7 +191,7 @@ export default function FinancialRatiosPage() {
                       <tr key={label} className="border-b last:border-b-0">
                         <td className="px-4 py-2 text-muted-foreground">{t(label)}</td>
                         <td className="px-4 py-2 text-right font-mono tabular-nums font-medium">
-                          {formatMoney(value, currencyCode)}
+                          {formatMoney(value, currencyCode, presentation)}
                         </td>
                       </tr>
                     ))}

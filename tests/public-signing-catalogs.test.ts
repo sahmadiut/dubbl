@@ -20,6 +20,7 @@ function load(file: string, locale: "en-US" | "fa-IR", result: unknown, states: 
   new Function("require", "module", "exports", code)((id: string) => {
     if (id === "next-intl") return intl;
     if (id === "next-intl/server") return { getTranslations: async () => t };
+    if (id === "@/i18n/server") return { getPresentation: async () => ({ locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }) };
     if (id === "react") return { ...React, useState: (v: unknown) => [index < states.length ? states[index++] : v, () => {}], useEffect: () => {}, useRef: () => ({ current: null }), useCallback: (fn: unknown) => fn };
     if (id === "./signature-canvas") return { SignatureCanvas: () => React.createElement("span", null, "canvas-boundary") };
     if (id === "@/lib/api/invoice-signatures") return { getPublicInvoiceSignature: async () => result };
@@ -32,10 +33,10 @@ test("public signing renders localized statuses and escaped frozen data without 
   for (const locale of ["en-US", "fa-IR"] as const) {
     const t = intl.createTranslator({ locale, messages: locale === "en-US" ? en : fa, namespace: "PublicSigning" });
     for (const [status, expired, key] of [["signed", false, "alreadySigned"], ["pending", true, "expiredHeading"], ["declined", false, "declinedHeading"], ["pending", false, null]] as const) {
-      const result = { signature: { status, signerName: "<script>Signer</script>", signerEmail: "a@example.test", signedAt: null }, invoice: { invoiceNumber: "INV-ASCII", contact: { name: "<b>Contact</b>" }, issueDate: "2026-10-23", dueDate: "2026-11-23", totalFormatted: "USD 40000000000000.01" }, isExpired: expired };
+      const result = { signature: { status, signerName: "<script>Signer</script>", signerEmail: "a@example.test", signedAt: null }, invoice: { invoiceNumber: "INV-ASCII", contact: { name: "<b>Contact</b>" }, issueDate: "2026-10-23", dueDate: "2026-11-23", currencyCode: "USD", total: 4000000000000001, totalMinor: "4000000000000001", totalFormatted: "USD 40000000000000.01" }, isExpired: expired };
       const page = load("page.tsx", locale, result).default as unknown as (p: { params: Promise<{token: string}> }) => Promise<React.ReactNode>;
       const html = renderWithPresentation(await page({ params: Promise.resolve({token: "opaque-token"}) }), locale);
-      for (const value of ["INV-ASCII", "2026-10-23", "USD 40000000000000.01", "&lt;script&gt;Signer&lt;/script&gt;"]) assert.ok(html.includes(value), value);
+      for (const value of ["INV-ASCII", "2026-10-23", locale === "fa-IR" ? "۴۰٬۰۰۰٬۰۰۰٬۰۰۰٬۰۰۰٫۰۱" : "$40,000,000,000,000.01", "&lt;script&gt;Signer&lt;/script&gt;"]) assert.ok(html.includes(value), value);
       assert.ok(html.includes(key ? t(key) : "canvas-boundary"));
       if (status === "signed") assert.ok(html.includes(t("previousDate")));
     }

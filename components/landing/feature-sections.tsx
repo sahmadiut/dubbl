@@ -1,5 +1,7 @@
 "use client";
 
+import { authoredUsdText } from "@/i18n/currency-labels";
+import { usePresentation } from "@/i18n/provider";
 import { useTranslations } from "next-intl";
 
 import { useState, useEffect, useCallback } from "react";
@@ -82,12 +84,13 @@ function BankTimelineMockup() {
 }
 
 function MissingRecordsMockup() {
+  const presentation = usePresentation();
   const t = useTranslations("LandingFeatures");
   const rows = [
-    { id: "INV-1041", vendor: "Acme Corp", amount: "$3,200", status: "ok" },
+    { id: "INV-1041", vendor: "Acme Corp", amount: authoredUsdText("$3,200", presentation.locale), status: "ok" },
     { id: "INV-1042", vendor: "—", amount: "—", status: "missing" },
-    { id: "INV-1043", vendor: "Globex Inc", amount: "$890", status: "ok" },
-    { id: "INV-1044", vendor: "—", amount: "$1,475", status: "partial" },
+    { id: "INV-1043", vendor: "Globex Inc", amount: authoredUsdText("$890", presentation.locale), status: "ok" },
+    { id: "INV-1044", vendor: "—", amount: authoredUsdText("$1,475", presentation.locale), status: "partial" },
   ];
 
   return (
@@ -130,7 +133,7 @@ function MissingRecordsMockup() {
               row.amount === "—" ? "text-muted-foreground/40" : "text-foreground"
             )}
           >
-            {row.amount}
+            {authoredUsdText(row.amount, presentation.locale)}
           </div>
           <div className="px-3 py-1.5">
             {row.status === "ok" ? (
@@ -158,6 +161,7 @@ function MissingRecordsMockup() {
 /* -------------------------------------------------------------------------- */
 
 function ProblemSection() {
+  const presentation = usePresentation();
   const t = useTranslations("LandingFeatures");
   return (
     <section className="py-16 md:py-20">
@@ -199,27 +203,27 @@ function ProblemSection() {
                 {/* Grid of cells — fills naturally */}
                 <div className="grid auto-rows-fr grid-cols-6 md:grid-cols-8">
                   {[
-                    "$142,500", "#REF!", "$—", "MISMATCH", "$156,800", "#N/A", "$178,300", "#VALUE!",
-                    "$—", "$138,200", "#DIV/0!", "$161,400", "#NULL!", "$174,900", "ERR:502", "$—",
-                    "#NAME?", "$89,200", "$—", "$3,200", "CONFLICT", "#SPILL!", "$45,100", "NaN",
-                    "$—", "#REF!", "$67,800", "MISSING", "$—", "#ERROR!", "$12,350", "$—",
-                    "$92,100", "DUPLICATE", "$—", "#N/A", "$55,670", "$—", "TIMEOUT", "$78,400",
-                    "#VALUE!", "$—", "$34,500", "OVERWRITE", "$—", "#REF!", "$—", "$23,100",
-                    "$67,200", "#SPILL!", "$—", "$44,800", "#REF!", "$—", "MISMATCH", "$91,300",
-                    "$—", "$15,700", "#NAME?", "$—", "$82,400", "NaN", "$—", "#NULL!",
-                    "#ERROR!", "$—", "$56,100", "CONFLICT", "$—", "$73,200", "#DIV/0!", "$—",
-                    "$—", "$28,900", "$—", "#VALUE!", "$48,600", "MISSING", "$—", "ERR:502",
-                    "$33,700", "#REF!", "TIMEOUT", "$—", "$61,500", "$—", "#N/A", "DUPLICATE",
-                    "$—", "$77,400", "$—", "#SPILL!", "$—", "OVERWRITE", "$19,800", "$—",
-                    "$41,200", "#NULL!", "$—", "$88,300", "#REF!", "NaN", "$—", "#VALUE!",
-                    "$—", "MISSING", "$52,900", "$—", "#NAME?", "$—", "$66,700", "CONFLICT",
-                    "#DIV/0!", "$—", "$71,800", "#SPILL!", "$—", "$95,200", "$—", "#ERROR!",
-                    "$—", "$36,400", "DUPLICATE", "$—", "TIMEOUT", "$—", "#REF!", "$43,500",
-                    "$84,600", "$—", "#N/A", "$—", "MISMATCH", "$57,300", "$—", "#NULL!",
-                    "$—", "OVERWRITE", "$—", "#VALUE!", "$—", "$68,900", "ERR:502", "$—",
+                    authoredUsdText("$142,500", presentation.locale), "#REF!", authoredUsdText("$—", presentation.locale), "MISMATCH", authoredUsdText("$156,800", presentation.locale), "#N/A", authoredUsdText("$178,300", presentation.locale), "#VALUE!",
+                    authoredUsdText("$—", presentation.locale), authoredUsdText("$138,200", presentation.locale), "#DIV/0!", authoredUsdText("$161,400", presentation.locale), "#NULL!", authoredUsdText("$174,900", presentation.locale), "ERR:502", authoredUsdText("$—", presentation.locale),
+                    "#NAME?", authoredUsdText("$89,200", presentation.locale), authoredUsdText("$—", presentation.locale), authoredUsdText("$3,200", presentation.locale), "CONFLICT", "#SPILL!", authoredUsdText("$45,100", presentation.locale), "NaN",
+                    authoredUsdText("$—", presentation.locale), "#REF!", authoredUsdText("$67,800", presentation.locale), "MISSING", authoredUsdText("$—", presentation.locale), "#ERROR!", authoredUsdText("$12,350", presentation.locale), authoredUsdText("$—", presentation.locale),
+                    authoredUsdText("$92,100", presentation.locale), "DUPLICATE", authoredUsdText("$—", presentation.locale), "#N/A", authoredUsdText("$55,670", presentation.locale), authoredUsdText("$—", presentation.locale), "TIMEOUT", authoredUsdText("$78,400", presentation.locale),
+                    "#VALUE!", authoredUsdText("$—", presentation.locale), authoredUsdText("$34,500", presentation.locale), "OVERWRITE", authoredUsdText("$—", presentation.locale), "#REF!", authoredUsdText("$—", presentation.locale), authoredUsdText("$23,100", presentation.locale),
+                    authoredUsdText("$67,200", presentation.locale), "#SPILL!", authoredUsdText("$—", presentation.locale), authoredUsdText("$44,800", presentation.locale), "#REF!", authoredUsdText("$—", presentation.locale), "MISMATCH", authoredUsdText("$91,300", presentation.locale),
+                    authoredUsdText("$—", presentation.locale), authoredUsdText("$15,700", presentation.locale), "#NAME?", authoredUsdText("$—", presentation.locale), authoredUsdText("$82,400", presentation.locale), "NaN", authoredUsdText("$—", presentation.locale), "#NULL!",
+                    "#ERROR!", authoredUsdText("$—", presentation.locale), authoredUsdText("$56,100", presentation.locale), "CONFLICT", authoredUsdText("$—", presentation.locale), authoredUsdText("$73,200", presentation.locale), "#DIV/0!", authoredUsdText("$—", presentation.locale),
+                    authoredUsdText("$—", presentation.locale), authoredUsdText("$28,900", presentation.locale), authoredUsdText("$—", presentation.locale), "#VALUE!", authoredUsdText("$48,600", presentation.locale), "MISSING", authoredUsdText("$—", presentation.locale), "ERR:502",
+                    authoredUsdText("$33,700", presentation.locale), "#REF!", "TIMEOUT", authoredUsdText("$—", presentation.locale), authoredUsdText("$61,500", presentation.locale), authoredUsdText("$—", presentation.locale), "#N/A", "DUPLICATE",
+                    authoredUsdText("$—", presentation.locale), authoredUsdText("$77,400", presentation.locale), authoredUsdText("$—", presentation.locale), "#SPILL!", authoredUsdText("$—", presentation.locale), "OVERWRITE", authoredUsdText("$19,800", presentation.locale), authoredUsdText("$—", presentation.locale),
+                    authoredUsdText("$41,200", presentation.locale), "#NULL!", authoredUsdText("$—", presentation.locale), authoredUsdText("$88,300", presentation.locale), "#REF!", "NaN", authoredUsdText("$—", presentation.locale), "#VALUE!",
+                    authoredUsdText("$—", presentation.locale), "MISSING", authoredUsdText("$52,900", presentation.locale), authoredUsdText("$—", presentation.locale), "#NAME?", authoredUsdText("$—", presentation.locale), authoredUsdText("$66,700", presentation.locale), "CONFLICT",
+                    "#DIV/0!", authoredUsdText("$—", presentation.locale), authoredUsdText("$71,800", presentation.locale), "#SPILL!", authoredUsdText("$—", presentation.locale), authoredUsdText("$95,200", presentation.locale), authoredUsdText("$—", presentation.locale), "#ERROR!",
+                    authoredUsdText("$—", presentation.locale), authoredUsdText("$36,400", presentation.locale), "DUPLICATE", authoredUsdText("$—", presentation.locale), "TIMEOUT", authoredUsdText("$—", presentation.locale), "#REF!", authoredUsdText("$43,500", presentation.locale),
+                    authoredUsdText("$84,600", presentation.locale), authoredUsdText("$—", presentation.locale), "#N/A", authoredUsdText("$—", presentation.locale), "MISMATCH", authoredUsdText("$57,300", presentation.locale), authoredUsdText("$—", presentation.locale), "#NULL!",
+                    authoredUsdText("$—", presentation.locale), "OVERWRITE", authoredUsdText("$—", presentation.locale), "#VALUE!", authoredUsdText("$—", presentation.locale), authoredUsdText("$68,900", presentation.locale), "ERR:502", authoredUsdText("$—", presentation.locale),
                   ].map((cell, i) => {
                     const isError = cell.startsWith("#") || ["MISMATCH", "MISSING", "CONFLICT", "DUPLICATE", "TIMEOUT", "OVERWRITE", "NaN", "ERR:502"].includes(cell);
-                    const isEmpty = cell === "$—";
+                    const isEmpty = cell === authoredUsdText("$—", presentation.locale);
                     return (
                       <div
                         key={i}
@@ -393,6 +397,7 @@ const marqueeSizeClasses = {
 };
 
 function MarqueeView({ active = false }: { active?: boolean }) {
+  const presentation = usePresentation();
   const t = useTranslations("LandingFeatures");
   return (
     <div className="flex h-full flex-col justify-evenly overflow-hidden">
@@ -422,7 +427,7 @@ function MarqueeView({ active = false }: { active?: boolean }) {
                         : "bg-white/10"
                     )}
                   >
-                    {pill.label}
+                    {authoredUsdText(pill.label, presentation.locale)}
                   </span>
                 );
               })}
@@ -531,6 +536,7 @@ const getReceiptCards = (t: LandingTranslator) => [
 ];
 
 function ReceiptView() {
+  const presentation = usePresentation();
   const t = useTranslations("LandingFeatures");
   return (
     <div className="relative h-full w-full">
@@ -567,7 +573,7 @@ function ReceiptView() {
               "text-xs font-bold",
               card.amount.startsWith("+") ? "text-emerald-200" : "text-white"
             )}>
-              {card.amount}
+              {authoredUsdText(card.amount, presentation.locale)}
             </span>
             <span className="rounded-full bg-white/20 px-1.5 py-0.5 text-[8px] font-medium text-white">
               {card.status}

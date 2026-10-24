@@ -1,5 +1,7 @@
 "use client";
 
+import { currencyLabel } from "@/i18n/currency-labels";
+import { usePresentation } from "@/i18n/provider";
 import { cashForecastUi, analyticalReportJson } from "@/lib/money/analytical-report-ui";
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
@@ -29,6 +31,7 @@ import {
 type ForecastWeek = ReturnType<typeof cashForecastUi>["weeks"][number];
 
 export default function CashFlowForecastPage() {
+  const presentation = usePresentation();
   const t = useTranslations("ForecastCalendarReports");
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -112,19 +115,19 @@ export default function CashFlowForecastPage() {
       <div className="grid gap-4 sm:grid-cols-3">
         <StatCard
           title={t("expectedIn")}
-          value={statementMoneyText(totalInflows, currencyCode)}
+          value={statementMoneyText(totalInflows, currencyCode, presentation)}
           icon={TrendingUp}
           changeType="positive"
         />
         <StatCard
           title={t("expectedOut")}
-          value={statementMoneyText(totalOutflows, currencyCode)}
+          value={statementMoneyText(totalOutflows, currencyCode, presentation)}
           icon={TrendingDown}
           changeType="negative"
         />
         <StatCard
           title={t("expectedChange")}
-          value={statementMoneyText(netForecast, currencyCode)}
+          value={statementMoneyText(netForecast, currencyCode, presentation)}
           icon={DollarSign}
           changeType={netForecast >= 0 ? "positive" : "negative"}
         />
@@ -155,13 +158,13 @@ export default function CashFlowForecastPage() {
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                     <XAxis dataKey="name" tick={{ fontSize: 10 }} className="text-muted-foreground" />
-                    <YAxis tick={{ fontSize: 11 }} className="text-muted-foreground" tickFormatter={(v) => `${currencyCode} ${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`} />
+                    <YAxis tick={{ fontSize: 11 }} className="text-muted-foreground" tickFormatter={(v) => `${currencyLabel(currencyCode, presentation.locale)} ${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`} />
                     <Tooltip
                       contentStyle={{ fontSize: 12, borderRadius: 8 }}
                       formatter={(_value, name, item) => {
                         const minor = item.payload?.minor as ForecastWeek | undefined;
                         const value = item.dataKey === "inflows" ? minor?.inflows : item.dataKey === "outflows" ? minor?.outflows : minor?.cumulativeNet;
-                        return [value === undefined ? "" : statementMoneyText(value, currencyCode), name];
+                        return [value === undefined ? "" : statementMoneyText(value, currencyCode, presentation), name];
                       }}
                     />
                     <Legend wrapperStyle={{ fontSize: 12 }} />
@@ -193,22 +196,22 @@ export default function CashFlowForecastPage() {
                       <tr key={w.weekOf} className="border-b last:border-b-0">
                         <td className="px-4 py-2">{w.weekOf}</td>
                         <td className="px-4 py-2 text-right font-mono tabular-nums text-emerald-600">
-                          {w.inflows > 0 ? statementMoneyText(w.inflows, currencyCode) : "-"}
+                          {w.inflows > 0 ? statementMoneyText(w.inflows, currencyCode, presentation) : "-"}
                         </td>
                         <td className="px-4 py-2 text-right font-mono tabular-nums text-red-600">
-                          {w.outflows > 0 ? statementMoneyText(w.outflows, currencyCode) : "-"}
+                          {w.outflows > 0 ? statementMoneyText(w.outflows, currencyCode, presentation) : "-"}
                         </td>
                         <td className={cn(
                           "px-4 py-2 text-right font-mono tabular-nums font-medium",
                           w.net >= 0 ? "text-emerald-600" : "text-red-600"
                         )}>
-                          {statementMoneyText(w.net, currencyCode)}
+                          {statementMoneyText(w.net, currencyCode, presentation)}
                         </td>
                         <td className={cn(
                           "px-4 py-2 text-right font-mono tabular-nums",
                           w.cumulativeNet >= 0 ? "text-blue-600" : "text-red-600"
                         )}>
-                          {statementMoneyText(w.cumulativeNet, currencyCode)}
+                          {statementMoneyText(w.cumulativeNet, currencyCode, presentation)}
                         </td>
                       </tr>
                     ))}

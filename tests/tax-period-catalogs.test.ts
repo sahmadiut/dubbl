@@ -118,8 +118,8 @@ test("detail renders exact signed boxes, statutory identifiers and settlement/nu
       for (const key of ["settleHelp", "noBoxes", "noFrozenBoxes"] as const) assert.ok(html.includes(escape(t(key))), key);
     } else {
       for (const key of ["returnBoxes", "box", "boxDescription", "amount", amount < 0n ? "negativeBoxHelp" : "netBoxHelp"] as const) assert.ok(html.includes(escape(t(key))), key);
-      assert.ok(html.includes(escape(taxUiMoney(amount, "USD"))));
-      assert.ok(html.includes(escape(amount === 0n ? t("nothingDue") : t(amount < 0n ? "refundDue" : "paymentDue", { amount: taxUiMoney(amount < 0n ? -amount : amount, "USD") }))));
+      assert.ok(html.includes(escape(taxUiMoney(amount, "USD", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }))));
+      assert.ok(html.includes(escape(amount === 0n ? t("nothingDue") : t(amount < 0n ? "refundDue" : "paymentDue", { amount: taxUiMoney(amount < 0n ? -amount : amount, "USD", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }) }))));
     }
     assert.ok(html.includes(escape(caller)) && !html.includes("<script>"));
     const Open = loaded(detail, [{ ...period, status: "open" }, false, false, "USD", null]).TaxPeriodWorkspace;
@@ -163,7 +163,7 @@ test("create/file/settlement templates localize fields, busy controls and exact 
       const Settle = loaded(detail, ["bank-a", "12.50", direction, "2026-04-02", caller, busy]).SettleSheet;
       const settle = renderWithPresentation(createElement(Settle, { period, open: true, onClose: noop, onSettled: noop, orgId: "org-a", defaultIsRefund: false, netAmount: 1250n, currency: "USD" }), locale);
       for (const key of ["settlementTitle", "whatHappened", direction === "pay" ? "paymentAccount" : "refundAccount", "accountPlaceholder", "date", "reference", busy ? "saving" : direction === "pay" ? "recordPayment" : "recordRefund"] as const) assert.ok(settle.includes(escape(t(key))), key);
-      assert.ok(settle.includes(escape(t("settlementHelp", { name: caller }))) && settle.includes(escape(t("settlementPreview", { amount: taxUiMoney(1250n, "USD") }))));
+      assert.ok(settle.includes(escape(t("settlementHelp", { name: caller }))) && settle.includes(escape(t("settlementPreview", { amount: taxUiMoney(1250n, "USD", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }) }))));
       assert.ok(settle.includes('inputMode="decimal"') && settle.includes('value="12.50"') && settle.includes(escape(caller)) && !settle.includes("<script>"));
       assert.equal(settle.includes('disabled=""'), busy);
     }
@@ -183,7 +183,10 @@ test("actual Select element trees keep canonical period types and settlement dir
     const create = nodes(Create({ open: true, setOpen: noop, onCreated: noop, orgId: "org-a" }));
     for (const value of ["monthly", "quarterly", "annual"] as const) assert.ok(create.some(el => el.props.value === value && el.props.children === t(value)));
     const Settle = loaded(detail, [], locale).SettleSheet as (props: Record<string, unknown>) => ReactNode;
-    const settle = nodes(Settle({ period, open: true, onClose: noop, onSettled: noop, orgId: "org-a", defaultIsRefund: true, netAmount: -1250n, currency: "USD" }));
+    let settleTree: ReactNode;
+    function Capture() { settleTree = Settle({ period, open: true, onClose: noop, onSettled: noop, orgId: "org-a", defaultIsRefund: true, netAmount: -1250n, currency: "USD" }); return null; }
+    renderWithPresentation(createElement(Capture), locale);
+    const settle = nodes(settleTree);
     for (const [value, key] of [["pay", "paidOffice"], ["refund", "receivedRefund"]] as const) assert.ok(settle.some(el => el.props.value === value && el.props.children === t(key)));
     assert.ok(settle.some(el => el.props.currencyFilter === "USD" && el.props.subTypeFilter === "bank" && JSON.stringify(el.props.typeFilter) === '["asset"]'));
   }
@@ -195,7 +198,7 @@ test("settlement preview keeps currency scales, max safe values, zero and locali
     for (const [currency, amount] of [["USD", "12.50"], ["JPY", "1250"], ["IRR", "1250"], ["KWD", "1.250"], ["USD", "90071992547409.91"], ["JPY", "0"]]) {
       const preview = taxUiSettlement(amount, currency);
       const html = renderWithPresentation(createElement(SettlementPreview.TaxSettlementPreview, { amount, currency }), locale);
-      assert.ok(html.includes('role="status"') && html.includes(escape(t("settlementPreview", { amount: taxUiMoney(preview.amount, currency) }))));
+      assert.ok(html.includes('role="status"') && html.includes(escape(t("settlementPreview", { amount: taxUiMoney(preview.amount, currency, { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }) }))));
     }
     for (const [currency, amount] of [["USD", ""], ["USD", "0.005"], ["JPY", "0.1"], ["KWD", "0.0001"], ["USD", "90071992547409.92"], ["USD", "-1"], ["USD", "1e3"], ["USD", caller], ["BAD", "1"]]) {
       const html = renderWithPresentation(createElement(SettlementPreview.TaxSettlementPreview, { amount, currency }), locale);

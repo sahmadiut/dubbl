@@ -1,5 +1,6 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
@@ -33,6 +34,7 @@ const BOX_PLAIN: Record<BoxNumber, { title: `box${BoxNumber}Title`; help: `box${
 };
 
 export default function VatReturnPage() {
+  const presentation = usePresentation();
   const t = useTranslations("TaxReports");
   const now = new Date();
   const [error, setError] = useState(false);
@@ -148,7 +150,7 @@ export default function VatReturnPage() {
                       </span>
                     </div>
                     <span className="font-mono tabular-nums text-sm font-semibold shrink-0">
-                      {reportResultMoney(b.amount, data.currencyCode)}
+                      {reportResultMoney(b.amount, data.currencyCode, presentation)}
                     </span>
                   </button>
                   {isOpen && (

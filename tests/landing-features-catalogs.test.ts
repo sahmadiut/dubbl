@@ -1,3 +1,4 @@
+const sampleUnit = (text: string, locale: "en-US" | "fa-IR") => locale === "fa-IR" ? text.replaceAll("$", "دلار\u00a0") : text;
 import assert from "node:assert/strict";
 import { test, mock } from "node:test";
 import { readFileSync } from "node:fs";
@@ -69,17 +70,17 @@ test("landing features render bilingual production templates, retaining demos, l
       const m = (locale === "en-US" ? en : fa).LandingFeatures;
       assert.ok(html[locale].includes(escape(m[headingKeys[i]])), `${files[i]} heading ${locale}`);
       assert.doesNotMatch(html[locale], /LandingFeatures\./);
-      if (files[i] === "bento-features") for (const text of [m.debit, m.credit, m.total, "15,650.00", "$84.2k", "TXN-4821", "JE-1042", "Stripe Payout", "Alice Wang", "Mar 01", "API-First", "Every feature accessible via REST API. Built-in Stripe integration for payment syncing. Build custom integrations in minutes."]) assert.ok(html[locale].includes(escape(text)), text);
-      if (files[i] === "dashboard-preview") for (const text of [m.netProfit, m.recentTransactions, "$84,200", "$48,250", "+12.5%", "Mar 01", "60%", "17%", "23%"]) assert.ok(html[locale].includes(escape(text)), text);
+      if (files[i] === "bento-features") for (const text of [m.debit, m.credit, m.total, "15,650.00", "$84.2k", "TXN-4821", "JE-1042", "Stripe Payout", "Alice Wang", "Mar 01", "API-First", "Every feature accessible via REST API. Built-in Stripe integration for payment syncing. Build custom integrations in minutes."]) assert.ok(html[locale].includes(escape(sampleUnit(text, locale))), locale+": "+text);
+      if (files[i] === "dashboard-preview") for (const text of [m.netProfit, m.recentTransactions, "$84,200", "$48,250", "+12.5%", "Mar 01", "60%", "17%", "23%"]) assert.ok(html[locale].includes(escape(sampleUnit(text, locale))), text);
       if (files[i] === "feature-sections") {
-        for (const text of [m.spreadsheetErrors, m.missingRecords, "$12,580", "#2847", "$174,900", "$45,000", "INV-1041", "Acme Corp", "#REF!"]) assert.ok(html[locale].includes(escape(text)), text);
+        for (const text of [m.spreadsheetErrors, m.missingRecords, "$12,580", "#2847", "$174,900", "$45,000", "INV-1041", "Acme Corp", "#REF!"]) assert.ok(html[locale].includes(escape(sampleUnit(text, locale))), text);
         assert.match(html[locale], /<span class="text-red-950">/);
         assert.match(html[locale], /<span class="text-emerald-950">/);
       }
-      if (files[i] === "how-it-works") for (const text of [m.integrations, m.categorizeTransaction, m.balanced245000, "Mar 1, 2026", "$2,450.00", "6200", "1000"]) assert.ok(html[locale].includes(escape(text)), text);
-      if (files[i] === "integrations") for (const text of ["Stripe", "Payments", "QuickBooks", "Xero", m.cSVImport, m.comingSoon, m.fullControl]) assert.ok(html[locale].includes(escape(text)), text);
-      if (files[i] === "open-source") for (const text of [m.viewRepository, "terminal", "git clone", "docker compose up -d", "Container dubbl-db", "http://localhost:3000"]) assert.ok(html[locale].includes(escape(text)), text);
-      if (files[i] === "testimonials") for (const text of ["// Fetch recent transactions", "// Each entry is double-entry balanced", "e.amount", "@dubbl/sdk", "npm install", "docker compose up -d", "localhost:3000", m.selfHostable]) assert.ok(html[locale].includes(escape(text)), text);
+      if (files[i] === "how-it-works") for (const text of [m.integrations, m.categorizeTransaction, m.balanced245000, "Mar 1, 2026", "$2,450.00", "6200", "1000"]) assert.ok(html[locale].includes(escape(sampleUnit(text, locale))), text);
+      if (files[i] === "integrations") for (const text of ["Stripe", "Payments", "QuickBooks", "Xero", m.cSVImport, m.comingSoon, m.fullControl]) assert.ok(html[locale].includes(escape(sampleUnit(text, locale))), text);
+      if (files[i] === "open-source") for (const text of [m.viewRepository, "terminal", "git clone", "docker compose up -d", "Container dubbl-db", "http://localhost:3000"]) assert.ok(html[locale].includes(escape(sampleUnit(text, locale))), text);
+      if (files[i] === "testimonials") for (const text of ["// Fetch recent transactions", "// Each entry is double-entry balanced", "e.amount", "@dubbl/sdk", "npm install", "docker compose up -d", "localhost:3000", m.selfHostable]) assert.ok(html[locale].includes(escape(sampleUnit(text, locale))), text);
       if (files[i] === "faq") {
         assert.equal(attrs(html[locale], "aria-expanded").filter(s => s === "false").length, 9);
         assert.ok(html[locale].includes(escape(m.isDubblReallyFree)));

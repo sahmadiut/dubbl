@@ -1,3 +1,4 @@
+import { currencyFixture } from "./helpers/localized-fixtures";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -78,9 +79,9 @@ test("currency workspace renders real bilingual copy, source labels, exact amoun
     for (const key of ["title", "description", "addCurrency", "addRate", "organizationCurrency", "baseHelp", "exchangeRates", "currencyPairs", "isoCurrencies", "fxTitle", "netUnrealized", "gains", "losses", "invoice", "bill", "manual", "auto", "manualHelp", "autoHelp", "reference", "hide", "filterPlaceholder"] as const) assert.ok(html.includes(escape(t(key))), key);
     for (const c of currencies) assert.ok(html.includes(escape(t("decimals", { count: c.decimalPlaces }))));
     assert.ok(html.includes(escape(t("missingRates", { count: 1 }))));
-    assert.ok(html.includes(escape(t("fxEstimate", { currency: "USD" }))));
-    assert.ok(html.includes(escape(t("amountDue", { amount: taxUiMoney(1250n, "JPY") }))));
-    assert.ok(html.includes(escape(taxUiMoney(-500n, "USD"))) && html.includes("—"));
+    assert.ok(html.includes(escape(t("fxEstimate", { currency: currencyFixture("USD", locale) }))));
+    assert.ok(html.includes(escape(t("amountDue", { amount: taxUiMoney(1250n, "JPY", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }) }))));
+    assert.ok(html.includes(escape(taxUiMoney(-500n, "USD", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }))) && html.includes("—"));
     assert.ok(html.includes("1.234567") && html.includes("USD") && html.includes("EUR"));
     assert.ok(html.includes(escape(caller)) && !html.includes("<script>"));
     assert.ok(html.includes("text-red-600") && html.includes("text-emerald-600"));

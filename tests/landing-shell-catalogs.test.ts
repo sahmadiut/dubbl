@@ -1,3 +1,4 @@
+const sampleUnit = (text: string, locale: "en-US" | "fa-IR") => locale === "fa-IR" ? text.replaceAll("$", "دلار\u00a0") : text;
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -53,16 +54,16 @@ test("landing shell renders real bilingual templates and retains destinations an
       const headings = {navbar: m.signIn, footer: m.footerDescription, hero: m.heroDescription, "cta-section": m.ctaHeading, "trust-bar": m.trustedTools};
       assert.ok(html[locale].includes(headings[file]), `${file}: ${locale}`);
       if (file === "hero") {
-        for (const value of [m.revenue, m.monthlyProfitLoss, m.liveFeed, m.clientPayment, m.assetAllocation, m.accounts, m.paid, m.getStartedFree, "$48,250", "+$12,500", "-$240", "+$5,000", "58%", "INV-012", "INV-048", "JE-102", "Dec 2025", "POST /v1/transactions", "> git clone"]) assert.ok(html[locale].includes(value.replaceAll("&", "&amp;").replaceAll(">", "&gt;")), value);
+        for (const value of [m.revenue, m.monthlyProfitLoss, m.liveFeed, m.clientPayment, m.assetAllocation, m.accounts, m.paid, m.getStartedFree, "$48,250", "+$12,500", "-$240", "+$5,000", "58%", "INV-012", "INV-048", "JE-102", "Dec 2025", "POST /v1/transactions", "> git clone"]) assert.ok(html[locale].includes(sampleUnit(value, locale).replaceAll("&", "&amp;").replaceAll(">", "&gt;")), value);
         assert.match(html[locale], /<em class="pr-1 italic bg-gradient-to-r/);
         assert.ok(hrefs(html[locale]).includes("/sign-up"));
       }
       if (file === "footer") {
-        for (const value of ["Stripe Integration", "Mindroot Ltd", "16543299", "71-75 Shelton Street, London, WC2H 9JQ", "2026 dubbl", "Apache 2.0"]) assert.ok(html[locale].includes(value), value);
+        for (const value of ["Stripe Integration", "Mindroot Ltd", "16543299", "71-75 Shelton Street, London, WC2H 9JQ", "2026 dubbl", "Apache 2.0"]) assert.ok(html[locale].includes(sampleUnit(value, locale)), value);
         for (const url of ["/docs/guides/stripe-integration", "/pricing", "/privacy", "/terms", "https://x.com/DubblHQ"]) assert.ok(hrefs(html[locale]).includes(url), url);
       }
       if (file === "cta-section") assert.deepEqual(hrefs(html[locale]), ["/sign-up", "/contact"]);
-      if (file === "trust-bar") for (const value of ["Next.js", "PostgreSQL", "TypeScript", "Drizzle ORM", "REST API", "Apache 2.0"]) assert.ok(html[locale].includes(value));
+      if (file === "trust-bar") for (const value of ["Next.js", "PostgreSQL", "TypeScript", "Drizzle ORM", "REST API", "Apache 2.0"]) assert.ok(html[locale].includes(sampleUnit(value, locale)));
     }
     if (file === "hero") {
       const paths = (value: string) => [...value.matchAll(/\sd="([^"]+)"/g)].map(match => match[1]);

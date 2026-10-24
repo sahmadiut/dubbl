@@ -5,6 +5,8 @@ import { WireCompatibilityError } from "@/lib/money/wire";
 import { z } from "zod";
 import { notFound } from "next/navigation";
 import { SignatureCanvas } from "./signature-canvas";
+import { getPresentation } from "@/i18n/server";
+import { statementMoneyText } from "@/lib/reports/statement-money";
 
 export default async function SignPage({
   params,
@@ -13,6 +15,7 @@ export default async function SignPage({
 }) {
   const { token } = await params;
   const t = await getTranslations("PublicSigning");
+  const presentation = await getPresentation();
 
   let result;
   try { result = await getPublicInvoiceSignature(token); }
@@ -75,7 +78,7 @@ export default async function SignPage({
           <div className="flex justify-between text-sm">
             <span className="text-gray-500 dark:text-gray-400">{t("total")}</span>
             <span className="text-gray-900 dark:text-gray-100 font-semibold">
-              {inv.totalFormatted}
+              {statementMoneyText(inv.total, inv.currencyCode, presentation)}
             </span>
           </div>
         </div>

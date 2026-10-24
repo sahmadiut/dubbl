@@ -1,5 +1,7 @@
 "use client";
 
+import { currencyLabel } from "@/i18n/currency-labels";
+import { usePresentation } from "@/i18n/provider";
 import { duplicateDetectionUi, analyticalReportJson } from "@/lib/money/analytical-report-ui";
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
@@ -17,6 +19,7 @@ import { BackToReports } from "../_components";
 type DuplicateGroup = ReturnType<typeof duplicateDetectionUi>["duplicateGroups"][number];
 
 export default function DuplicateDetectionPage() {
+  const presentation = usePresentation();
   const t = useTranslations("AgingVendorReports");
   const router = useRouter();
   const ti = useTranslations("SalesInvoices");
@@ -97,7 +100,7 @@ export default function DuplicateDetectionPage() {
                     </Badge>
                     <span className="text-sm font-medium">{group.contactName}</span>
                   </div>
-                  <span className="font-mono text-sm font-semibold tabular-nums">{group.currencyCode} {formatMoney(group.amount, group.currencyCode)}</span>
+                  <span className="font-mono text-sm font-semibold tabular-nums">{currencyLabel(group.currencyCode, presentation.locale)} {formatMoney(group.amount, group.currencyCode, presentation)}</span>
                 </div>
                 <div className="space-y-1">
                   {group.items.map((item) => (

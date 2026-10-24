@@ -11,6 +11,11 @@ export function currencyPrefix(prefix: string, locale: string): string {
   return Object.hasOwn(PERSIAN_CURRENCY_NAMES, prefix) ? currencyLabel(prefix, locale) : prefix;
 }
 
+/** Authored USD illustrations only; never infer a saved/user amount's currency from $. */
+export function authoredUsdText(text: string, locale: string): string {
+  return locale === "fa-IR" ? text.replaceAll("$", currencyLabel("USD", locale) + "\u00a0") : text;
+}
+
 /** Replace only Intl's identified currency unit, preserving all exact number parts. */
 export function currencyPartsText(parts: readonly Intl.NumberFormatPart[], code: string, locale: string): string {
   if (locale !== "fa-IR") return parts.map(part => part.value).join("");

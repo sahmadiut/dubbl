@@ -1,5 +1,6 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
 import Link from "next/link";
 
 import { useState, useEffect } from "react";
@@ -28,6 +29,7 @@ type SectionData = TrackingReportUi["sections"][number];
 type Dimension = "costCenterId" | "projectId";
 
 export default function TrackingReportPage() {
+  const presentation = usePresentation();
   const t = useTranslations("AnalyticalReports");
   const now = new Date();
   const [error, setError] = useState(false);
@@ -170,11 +172,11 @@ export default function TrackingReportPage() {
                     <TableCell>{t("trackingProfit")}</TableCell>
                     {data.netIncome.byColumn.map((amt, i) => (
                       <TableCell key={i} className="text-right font-mono tabular-nums">
-                        {reportResultMoney(amt, data!.currencyCode)}
+                        {reportResultMoney(amt, data!.currencyCode, presentation)}
                       </TableCell>
                     ))}
                     <TableCell className="text-right font-mono tabular-nums">
-                      {reportResultMoney(data.netIncome.total, data!.currencyCode)}
+                      {reportResultMoney(data.netIncome.total, data!.currencyCode, presentation)}
                     </TableCell>
                   </TableRow>
                 )}
@@ -198,6 +200,7 @@ function RenderSection({
   columns: ColumnDesc[];
   ledgerHref: (accountId: string, col: ColumnDesc) => string;
 }) {
+  const presentation = usePresentation();
   const t = useTranslations("AnalyticalReports");
   return (
     <>
@@ -216,22 +219,22 @@ function RenderSection({
             <TableCell key={c.key} className="text-right font-mono tabular-nums">
               {a.amounts[i] !== 0n ? (
                 <Link href={ledgerHref(a.accountId, c)} className="hover:text-emerald-600 hover:underline">
-                  {reportResultMoney(a.amounts[i], currencyCode)}
+                  {reportResultMoney(a.amounts[i], currencyCode, presentation)}
                 </Link>
               ) : (
-                <span className="text-muted-foreground/50">{reportResultMoney(0n, currencyCode)}</span>
+                <span className="text-muted-foreground/50">{reportResultMoney(0n, currencyCode, presentation)}</span>
               )}
             </TableCell>
           ))}
-          <TableCell className="text-right font-mono tabular-nums">{reportResultMoney(a.total, currencyCode)}</TableCell>
+          <TableCell className="text-right font-mono tabular-nums">{reportResultMoney(a.total, currencyCode, presentation)}</TableCell>
         </TableRow>
       ))}
       <TableRow className="font-semibold">
         <TableCell>{t(section.label === "Revenue" ? "totalRevenue" : "totalExpenses")}</TableCell>
         {section.totals.map((t, i) => (
-          <TableCell key={i} className="text-right font-mono tabular-nums">{reportResultMoney(t, currencyCode)}</TableCell>
+          <TableCell key={i} className="text-right font-mono tabular-nums">{reportResultMoney(t, currencyCode, presentation)}</TableCell>
         ))}
-        <TableCell className="text-right font-mono tabular-nums">{reportResultMoney(section.total, currencyCode)}</TableCell>
+        <TableCell className="text-right font-mono tabular-nums">{reportResultMoney(section.total, currencyCode, presentation)}</TableCell>
       </TableRow>
     </>
   );

@@ -1,5 +1,6 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
 import { executiveSummaryUi, analyticalReportJson, analyticalAbs } from "@/lib/money/analytical-report-ui";
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
@@ -26,6 +27,7 @@ const KPI_LABEL_KEYS = {
 } as const;
 
 export default function ExecutiveSummaryPage() {
+  const presentation = usePresentation();
   const t = useTranslations("IncomeReports");
   const now = new Date();
   const [initialLoad, setInitialLoad] = useState(true);
@@ -121,12 +123,12 @@ export default function ExecutiveSummaryPage() {
                     {Object.hasOwn(KPI_LABEL_KEYS, k.key) ? t(KPI_LABEL_KEYS[k.key as keyof typeof KPI_LABEL_KEYS]) : k.label}
                   </p>
                   <p className="mt-1.5 text-xl sm:text-2xl font-bold font-mono tabular-nums">
-                    {statementMoneyText(k.current, currencyCode)}
+                    {statementMoneyText(k.current, currencyCode, presentation)}
                   </p>
                   <div className="mt-2 flex items-center gap-1.5 text-xs">
                     <Icon className={cn("size-3.5", up && "text-emerald-600", down && "text-red-600", !up && !down && "text-muted-foreground")} />
                     <span className={cn("font-medium", up && "text-emerald-600", down && "text-red-600", !up && !down && "text-muted-foreground")}>
-                      {k.delta >= 0 ? "+" : "-"}{statementMoneyText(analyticalAbs(k.delta), currencyCode)}
+                      {k.delta >= 0 ? "+" : "-"}{statementMoneyText(analyticalAbs(k.delta), currencyCode, presentation)}
                       {k.deltaPercent !== null && t("deltaPercent", { sign: k.deltaPercent >= 0 ? "+" : "", value: String(k.deltaPercent) })}
                     </span>
                     <span className="text-muted-foreground">{t("vsLastPeriod")}</span>

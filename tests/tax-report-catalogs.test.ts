@@ -35,7 +35,7 @@ test("1099 production JSX translates all vendor copy and retains exact exported 
     const t = translator(locale), h = render("1099", state("1099"), locale);
     for (const key of ["vendorTitle", "vendorDescription", "vendorHelp", "taxYear", "needForm", "aboveThreshold", "reportableTotal", "threshold", "contractor", "taxId", "payments", "totalPaid", "needsForm", "backupWithholding", "missing", "fileForm", "belowThreshold"] as const) contains(h.html, t(key));
     contains(h.html, caller); assert.ok(!h.html.includes("<script>"));
-    contains(h.html, reportResultMoney(large, "KWD"));
+    contains(h.html, reportResultMoney(large, "KWD", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }));
     const exp = h.captured.find(c => c.kind === "ExportButton")!.props;
     assert.equal(exp.filename, "1099-2024");
     assert.deepEqual(exp.columns, ["name", "taxIdentifier", "totalPaid", "paymentCount", "reportable", "currencyCode"]);
@@ -55,7 +55,7 @@ test("summary production JSX translates tax/refund states without losing currenc
     for (const currencyCode of ["USD", "KWD", "JPY", "IRR"]) {
       const data = taxSummaryUi({ ...summary(refund), currencyCode }), h = render("tax-summary", { ...ready, data }, locale);
       for (const key of ["summaryTitle", "summaryDescription", "summaryHelp", "openReturn", "outputTax", "inputTax", "taxRate", "rate", "salesBeforeTax", "taxCharged", "purchasesBeforeTax", "taxPaid", "oweRefund", "total", refund ? "refundOffice" : "oweOffice"] as const) contains(h.html, t(key));
-      contains(h.html, t(refund ? "refundAmount" : "dueAmount", { amount: reportResultMoney(large - 1001n, currencyCode) }));
+      contains(h.html, t(refund ? "refundAmount" : "dueAmount", { amount: reportResultMoney(large - 1001n, currencyCode, { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }) }));
       contains(h.html, caller); assert.ok(h.html.includes('href="/reports/vat-return"') && !h.html.includes("<script>"));
       assert.ok(h.html.includes("20.00%"));
       const filter = h.captured.find(c => c.kind === "DateRangeFilter")!.props;
@@ -75,7 +75,7 @@ test("VAT production JSX translates nine boxes and retains official labels, expa
       contains(h.html, t(`box${b.box}Title` as "box1Title")); contains(h.html, t(`box${b.box}Help` as "box1Help"));
       contains(h.html, t("officialLabel", { label: b.label }));
     }
-    contains(h.html, reportResultMoney(large, "KWD")); assert.ok(!h.html.includes("<script>"));
+    contains(h.html, reportResultMoney(large, "KWD", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" })); assert.ok(!h.html.includes("<script>"));
     assert.ok(h.html.includes('href="/api/v1/reports/vat-return?startDate=2024-02-01&amp;endDate=2024-02-29&amp;basis=cash"'));
     assert.equal((h.html.match(/href="\/reports\/tax-summary\?startDate=2024-02-01&amp;endDate=2024-02-29"/g) ?? []).length, 5);
     const buttons = h.captured.filter(c => c.kind === "button" && typeof c.props["aria-expanded"] === "boolean");

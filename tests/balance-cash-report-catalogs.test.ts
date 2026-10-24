@@ -109,8 +109,8 @@ test("balance pages render bilingual labels and exact comparisons while preservi
     for (const key of ["balanceTitle", "balanceDescription", "balanceHelp", "downloadPdf", "asOfLabel", "comparingEarlier", "balance_assets", "balance_liabilities", "balance_equity", "balanceTotal_assets", "balanceTotal_liabilities", "balanceTotal_equity", "code", "account"] as const) assert.ok(h.html.includes(escaped(t(key))), key);
     for (const date of dates) assert.ok(h.html.includes(escaped(t("asOfDate", { date }))));
     assert.ok(h.html.includes(escaped(caller)) && !h.html.includes("<script>"));
-    assert.ok(h.html.includes(escaped(statementUiMoney(BigInt(alias), "KWD"))));
-    assert.ok(h.html.includes(escaped(statementUiMoney(-1n, "KWD"))));
+    assert.ok(h.html.includes(escaped(statementUiMoney(BigInt(alias), "KWD", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }))));
+    assert.ok(h.html.includes(escaped(statementUiMoney(-1n, "KWD", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }))));
     assert.ok(h.captured.some(c => c.props.href === "/api/v1/reports/balance-sheet?asAt=2024-03-15&format=pdf&compareDate=2024-02-29"));
     assert.ok(h.captured.some(c => c.props.href === "/reports/general-ledger?endDate=2024-03-15#asset"));
     assert.equal(h.captured.filter(c => c.kind === "DatePicker")[1].props.placeholder, t("earlierDate"));
@@ -119,8 +119,8 @@ test("balance pages render bilingual labels and exact comparisons while preservi
     assert.ok(single.captured.some(c => c.props.href === "/api/v1/reports/balance-sheet?asAt=2024-03-15&format=pdf"));
     const comparison = render("comparative-balance-sheet", { ...ready, periods }, locale);
     for (const key of ["comparativeTitle", "comparativeDescription", "account", "change", "current", "section_Assets", "section_Liabilities", "section_Equity", "sectionTotal_Assets", "sectionTotal_Liabilities", "sectionTotal_Equity"] as const) assert.ok(comparison.html.includes(escaped(t(key))), key);
-    assert.ok(comparison.html.includes(`+${escaped(statementUiMoney(BigInt(alias), "KWD"))}`));
-    assert.ok(comparison.html.includes(escaped(statementUiMoney(-1n, "KWD"))));
+    assert.ok(comparison.html.includes(`+${escaped(statementUiMoney(BigInt(alias), "KWD", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }))}`));
+    assert.ok(comparison.html.includes(escaped(statementUiMoney(-1n, "KWD", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }))));
     assert.ok(comparison.html.includes("Jan 2024") && comparison.html.includes("Feb 2024"));
     const exported = comparison.captured.find(c => c.kind === "ExportButton")!.props;
     assert.equal(exported.filename, "comparative-balance-sheet");
@@ -134,7 +134,7 @@ test("balance pages render bilingual labels and exact comparisons while preservi
     assert.deepEqual(options.map(c => c.props.value), ["2", "3", "4", "6"]);
     for (const option of options) assert.equal(option.props.children, t("periodCount", { count: Number(option.props.value) }));
     assert.ok(comparison.captured.some(c => c.props["aria-label"] === t("periodCountLabel")));
-    for (const currencyCode of ["USD", "JPY", "IRR", "KWD"]) assert.ok(render("balance-sheet", { ...ready, data: balanceSheetUi({ ...balance, currencyCode }) }, locale).html.includes(escaped(statementUiMoney(BigInt(alias), currencyCode))));
+    for (const currencyCode of ["USD", "JPY", "IRR", "KWD"]) assert.ok(render("balance-sheet", { ...ready, data: balanceSheetUi({ ...balance, currencyCode }) }, locale).html.includes(escaped(statementUiMoney(BigInt(alias), currencyCode, { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }))));
   }
 });
 
@@ -144,13 +144,13 @@ test("cash-flow production JSX renders all section help, complete totals and emp
     const h = render("cash-flow", { ...ready, data }, locale);
     for (const key of ["cashTitle", "cashDescription", "cashHelp", "cash_operating", "cash_investing", "cash_financing", "cashHelp_operating", "cashHelp_investing", "cashHelp_financing", "cashTotal_operating", "cashTotal_investing", "cashTotal_financing", "cashEmpty_investing", "cashEmpty_financing", "changeInCash", "totalCashChange", "code", "account", "amount"] as const) assert.ok(h.html.includes(escaped(t(key))), key);
     assert.ok(h.html.includes(escaped(caller)) && !h.html.includes("<script>"));
-    assert.ok(h.html.includes(escaped(reportUiMoney(BigInt(alias), "KWD"))));
+    assert.ok(h.html.includes(escaped(reportUiMoney(BigInt(alias), "KWD", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }))));
     assert.ok(render("cash-flow", ready, locale).html.includes(escaped(t("cashEmpty_operating"))));
     const tables = h.captured.filter(c => c.kind === "DataTable");
     assert.deepEqual((tables[0].props.columns as { key: string }[]).map(c => c.key), ["code", "name", "amount"]);
-    for (const currencyCode of ["USD", "JPY", "IRR", "KWD"]) assert.ok(render("cash-flow", { ...ready, data: cashFlowUi({ ...cash, currencyCode }) }, locale).html.includes(escaped(reportUiMoney(BigInt(alias), currencyCode))));
+    for (const currencyCode of ["USD", "JPY", "IRR", "KWD"]) assert.ok(render("cash-flow", { ...ready, data: cashFlowUi({ ...cash, currencyCode }) }, locale).html.includes(escaped(reportUiMoney(BigInt(alias), currencyCode, { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }))));
     const negative = cashFlowUi({ ...cash, operating: [{ ...cash.operating[0], amount: -1, amountMinor: "-1" }], totalOperating: -1, totalOperatingMinor: "-1", netCashFlow: -1, netCashFlowMinor: "-1" });
-    assert.ok(render("cash-flow", { ...ready, data: negative }, locale).html.includes(escaped(reportUiMoney(-1n, "KWD"))));
+    assert.ok(render("cash-flow", { ...ready, data: negative }, locale).html.includes(escaped(reportUiMoney(-1n, "KWD", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }))));
   }
 });
 

@@ -117,7 +117,7 @@ test("trial production JSX localizes comparisons and types while preserving exac
     for (const date of dates) assert.ok(h.html.includes(escaped(t("asOfDate", { date }))));
     assert.ok(h.html.includes(escaped(caller)) && !h.html.includes("<script>"));
     assert.ok(h.html.includes(escaped(ta("asset"))));
-    for (const total of trialBalanceTotals(data)) for (const value of [total.debit, total.credit]) assert.ok(h.html.includes(escaped(statementUiMoney(value, "KWD"))));
+    for (const total of trialBalanceTotals(data)) for (const value of [total.debit, total.credit]) assert.ok(h.html.includes(escaped(statementUiMoney(value, "KWD", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }))));
     assert.ok(h.captured.some(c => c.props.href === "/reports/general-ledger?endDate=2024-03-15#cash"));
     assert.equal(h.captured.filter(c => c.kind === "DatePicker")[1].props.placeholder, t("earlierDate"));
     const single = render("trial-balance", { ...ready, showCompare: false, data: trialBalanceUi({ ...trial, dates: undefined, compareDates: undefined, accounts: [{ ...trial.accounts[0], balances: undefined }] }) }, locale);
@@ -128,7 +128,7 @@ test("trial production JSX localizes comparisons and types while preserving exac
     const rows = exported.data as Record<string, unknown>[];
     assert.equal(rows[0].type, "asset"); assert.equal(rows[0].debitBalanceMinor, String(large)); assert.equal(rows[0].name, caller);
     assert.ok(generateCSV(rows, exported.columns as string[]).includes(String(large)));
-    for (const currencyCode of ["USD", "JPY", "IRR", "KWD"]) assert.ok(render("trial-balance", { ...ready, data: trialBalanceUi({ ...trial, currencyCode }) }, locale).html.includes(escaped(statementUiMoney(large, currencyCode))));
+    for (const currencyCode of ["USD", "JPY", "IRR", "KWD"]) assert.ok(render("trial-balance", { ...ready, data: trialBalanceUi({ ...trial, currencyCode }) }, locale).html.includes(escaped(statementUiMoney(large, currencyCode, { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }))));
     for (const type of ["asset", "liability", "equity", "revenue", "expense", "caller-type"]) {
       const typed = render("trial-balance", { ...ready, data: trialBalanceUi({ ...trial, accounts: [{ ...trial.accounts[0], type }] }) }, locale);
       assert.ok(typed.html.includes(type === "caller-type" ? type : escaped(ta(type as "asset"))));
@@ -143,7 +143,7 @@ test("ledger JSX translates complete filters, counts, labels and paging while pr
     for (const key of ["ledgerTitle", "ledgerDescription", "ledgerHelp", "date", "entryNumber", "description", "reference", "debit", "credit", "runningBalance", "projectFilter", "showAll", "expandAll", "collapseAll"] as const) assert.ok(h.html.includes(escaped(t(key))), key);
     assert.ok(h.html.includes(escaped(t("summary", { accounts: 1, entries: 2 }))));
     assert.ok(h.html.includes(escaped(t("loadMore", { loaded: 1, total: 2 }))));
-    for (const [key, value] of [["inAmount", data.accounts[0].totalDebit], ["outAmount", data.accounts[0].totalCredit], ["balanceAmount", data.accounts[0].balance]] as const) assert.ok(h.html.includes(escaped(t(key, { amount: reportUiMoney(value, "KWD") }))));
+    for (const [key, value] of [["inAmount", data.accounts[0].totalDebit], ["outAmount", data.accounts[0].totalCredit], ["balanceAmount", data.accounts[0].balance]] as const) assert.ok(h.html.includes(escaped(t(key, { amount: reportUiMoney(value, "KWD", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }) }))));
     assert.ok(h.html.includes(escaped(caller)) && !h.html.includes("<script>"));
     assert.ok(h.html.includes("Jan 10")); // Existing date-presentation exception.
     assert.ok(h.captured.some(c => c.props.id === "gl-cash"));
@@ -168,9 +168,9 @@ test("ledger JSX translates complete filters, counts, labels and paging while pr
     assert.ok(singular.html.includes(escaped(t("summary", { accounts: 1, entries: 1 }))));
     const multiple = generalLedgerUi({ ...ledger, accounts: [ledger.accounts[0], { ...ledger.accounts[0], accountId: "other" }] });
     assert.ok(render("general-ledger", { ...ready, data: multiple }, locale).html.includes(escaped(t("summary", { accounts: 2, entries: 4 }))));
-    for (const currencyCode of ["USD", "JPY", "IRR", "KWD"]) assert.ok(render("general-ledger", { ...ready, data: generalLedgerUi({ ...ledger, currencyCode }) }, locale).html.includes(escaped(reportUiMoney(large, currencyCode))));
+    for (const currencyCode of ["USD", "JPY", "IRR", "KWD"]) assert.ok(render("general-ledger", { ...ready, data: generalLedgerUi({ ...ledger, currencyCode }) }, locale).html.includes(escaped(reportUiMoney(large, currencyCode, { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }))));
     const negative = generalLedgerUi({ ...ledger, accounts: [{ ...ledger.accounts[0], accountType: "revenue", ...pair("balance", -large + 901n), ...pair("openingBalance", -101n), ...pair("closingLedgerBalance", -large + 800n), entries: [{ ...entry, ...pair("runningBalance", -large), ...pair("ledgerBalance", -large - 101n) }] }] });
-    assert.ok(render("general-ledger", { ...ready, data: negative }, locale).html.includes(escaped(reportUiMoney(-large, "KWD"))));
+    assert.ok(render("general-ledger", { ...ready, data: negative }, locale).html.includes(escaped(reportUiMoney(-large, "KWD", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }))));
   }
 });
 

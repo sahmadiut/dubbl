@@ -1,5 +1,7 @@
 "use client";
 
+import { currencyLabel } from "@/i18n/currency-labels";
+import { usePresentation } from "@/i18n/provider";
 import { financialCalendarUi, analyticalReportJson } from "@/lib/money/analytical-report-ui";
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
@@ -22,6 +24,7 @@ const typeColors: Record<string, { bg: string; text: string; dot: string }> = {
 };
 
 export default function FinancialCalendarPage() {
+  const presentation = usePresentation();
   const t = useTranslations("ForecastCalendarReports");
   const typeLabels = {
     invoice_due: t("invoiceDue"),
@@ -195,7 +198,7 @@ export default function FinancialCalendarPage() {
                           </div>
                           <p className="text-sm font-medium">{e.title}</p>
                           {e.amount !== undefined && (
-                            <p className="text-sm font-mono tabular-nums">{e.currencyCode} {formatMoney(e.amount, e.currencyCode)}</p>
+                            <p className="text-sm font-mono tabular-nums">{currencyLabel(e.currencyCode, presentation.locale)} {formatMoney(e.amount, e.currencyCode, presentation)}</p>
                           )}
                         </div>
                       ))}
@@ -221,7 +224,7 @@ export default function FinancialCalendarPage() {
                           <span className="truncate">{e.title}</span>
                         </div>
                         {e.amount !== undefined && (
-                          <span className="font-mono tabular-nums shrink-0 ml-2">{e.currencyCode} {formatMoney(e.amount, e.currencyCode)}</span>
+                          <span className="font-mono tabular-nums shrink-0 ml-2">{currencyLabel(e.currencyCode, presentation.locale)} {formatMoney(e.amount, e.currencyCode, presentation)}</span>
                         )}
                       </div>
                     ))}

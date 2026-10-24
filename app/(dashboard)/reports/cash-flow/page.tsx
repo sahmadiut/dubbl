@@ -1,5 +1,6 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { ArrowDownUp, TrendingUp, TrendingDown, DollarSign } from "lucide-react";
@@ -16,11 +17,12 @@ import { BackToReports, ReportHelp } from "../_components";
 type CashFlowRow = CashFlowUi["operating"][number] & { currencyCode: string };
 
 export default function CashFlowPage() {
+  const presentation = usePresentation();
   const t = useTranslations("BalanceCashReports");
   const columns: Column<CashFlowRow>[] = [
     { key: "code", header: t("code"), className: "w-24", render: (r) => <span className="font-mono text-sm">{r.accountCode}</span> },
     { key: "name", header: t("account"), render: (r) => <span className="text-sm font-medium">{r.accountName}</span> },
-    { key: "amount", header: t("amount"), className: "w-32 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{reportUiMoney(r.amount, r.currencyCode)}</span> },
+    { key: "amount", header: t("amount"), className: "w-32 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{reportUiMoney(r.amount, r.currencyCode, presentation)}</span> },
   ];
   const now = new Date();
   const [initialLoad, setInitialLoad] = useState(true);
@@ -60,7 +62,7 @@ export default function CashFlowPage() {
   const operating = rows(data?.operating ?? []), investing = rows(data?.investing ?? []), financing = rows(data?.financing ?? []);
   const totalOperating = data?.totalOperating ?? 0n, totalInvesting = data?.totalInvesting ?? 0n;
   const totalFinancing = data?.totalFinancing ?? 0n, netCashFlow = data?.netCashFlow ?? 0n;
-  const formatMoney = (amount: bigint) => reportUiMoney(amount, currencyCode);
+  const formatMoney = (amount: bigint) => reportUiMoney(amount, currencyCode, presentation);
 
   const sections = [
     {

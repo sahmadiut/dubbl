@@ -1,5 +1,7 @@
 "use client";
 
+import { authoredUsdText } from "@/i18n/currency-labels";
+import { usePresentation } from "@/i18n/provider";
 import { useTranslations } from "next-intl";
 
 import { motion } from "motion/react";
@@ -79,6 +81,7 @@ const getAccountSegments = (t: LandingTranslator) => [
 /* ------------------------------------------------------------------ */
 
 export function DashboardPreview() {
+  const presentation = usePresentation();
   const t = useTranslations("LandingFeatures");
   const chartPolyline = linePoints.map(([x, y]) => `${x},${y}`).join(" ");
   const areaPolygon = `0,100 ${chartPolyline} 360,100`;
@@ -122,7 +125,7 @@ export function DashboardPreview() {
                       <Sparkline trend={kpi.trend} />
                     </div>
                     <p className="mt-2 text-2xl font-bold tabular-nums tracking-tight text-foreground">
-                      {kpi.value}
+                      {authoredUsdText(kpi.value, presentation.locale)}
                     </p>
                     <div className="mt-1.5 flex items-center gap-1.5">
                       {kpi.up ? (
@@ -267,7 +270,7 @@ export function DashboardPreview() {
                               : "text-foreground"
                           )}
                         >
-                          {tx.amount}
+                          {authoredUsdText(tx.amount, presentation.locale)}
                         </span>
                       </motion.div>
                     ))}

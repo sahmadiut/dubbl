@@ -35,7 +35,7 @@ test("bank reports render all paired messages with exact money, separate currenc
     const html = [flow.html, reconciliation.html, emptyFlow.html, emptyStatus.html, errors].join("");
     for (const key of Object.keys(messages.BankingReports) as (keyof typeof en.BankingReports)[]) contains(html, t(key, { days: 2, count: 1 }));
     contains(flow.html, caller); assert.ok(!html.includes("<script>"));
-    contains(flow.html, analyticalMoney(high, "KWD"));
+    contains(flow.html, analyticalMoney(high, "KWD", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }));
     assert.ok(reconciliation.html.includes("18014398509481.982"));
     assert.ok(reconciliation.html.includes("9007199254740991"));
     assert.ok(reconciliation.html.includes('/accounting/banking/a/reconcile'));

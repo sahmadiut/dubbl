@@ -1,6 +1,7 @@
 import { checkedMinor, currencyMetadata, money, toMajorDecimal } from "@/lib/money/exact";
 import { WireCompatibilityError } from "@/lib/money/wire";
 import { reportStoredMinor } from "./statement-wire";
+import { formatExactMoney, type NumberPresentation } from "@/i18n/numbers";
 
 function exportAmount(value: number | bigint, currency: string) {
   const amount = typeof value === "bigint" ? checkedMinor(value) : reportStoredMinor(value);
@@ -21,8 +22,9 @@ export function statementCellNumber(value: number | bigint, currency: string): n
 }
 
 /** Format the integer and fractional parts separately, retaining every stored minor unit. */
-export function statementMoneyText(value: number | bigint, currency: string): string {
+export function statementMoneyText(value: number | bigint, currency: string, presentation?: NumberPresentation): string {
   const amount = exportAmount(value, currency);
+  if (presentation) return formatExactMoney(amount.amountMinor, currency, presentation);
   const [whole, fraction] = toMajorDecimal(amount).split(".");
   const scale = currencyMetadata(currency).minorUnits;
   return new Intl.NumberFormat("en-US", { style: "currency", currency, minimumFractionDigits: scale, maximumFractionDigits: scale })

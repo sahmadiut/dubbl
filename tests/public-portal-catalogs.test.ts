@@ -1,3 +1,4 @@
+import { displayNumberFixture } from "./helpers/localized-fixtures";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -71,7 +72,7 @@ test("all portal pages render bilingual loading, empty, populated, error and unk
     for (const [file, data, heading, empty, loading] of rows) {
       const state = (items: unknown, busy: boolean, error: string | null) => file.startsWith("statements") ? [items, 12345, "USD", busy, error] : [items, busy, error, null];
       const html = harness(file, locale, state(data, false, null)).html;
-      for (const text of [heading, m.statusSent, "123.45"]) assert.ok(html.includes(text), `${file}: ${text}`);
+      for (const text of [heading, m.statusSent, displayNumberFixture("123.45", locale)]) assert.ok(html.includes(text), `${file}: ${text}`);
       assert.ok(harness(file, locale, state([], false, null)).html.includes(empty));
       assert.ok(harness(file, locale, state([], true, null)).html.includes(loading));
       assert.ok(harness(file, locale, state([], false, m.invoiceLoadFailed)).html.includes(m.invoiceLoadFailed));
@@ -135,4 +136,16 @@ test("quote acceptance and PDF callbacks preserve routes and use reviewed failur
       assert.equal(h.updates.get(slot), error);
     }
   }
+});
+
+
+test("actual public invoice renders literal Persian rial without changing token URLs or caller data", () => {
+  const row = {...invoice, currencyCode: "IRR", total: 1250, amountDue: 1250};
+  const html = harness("invoices/page.tsx", "fa-IR", [[row], false, null]).html;
+  assert.ok(html.includes("ریال"));
+  assert.ok(html.includes("۱٬۲۵۰"));
+  assert.ok(html.includes("INV-ASCII"));
+  assert.ok(html.includes("/pay/pay-opaque"));
+  assert.equal(row.currencyCode, "IRR");
+  assert.equal(row.total, 1250);
 });

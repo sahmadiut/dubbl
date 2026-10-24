@@ -1,5 +1,6 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { DollarSign } from "lucide-react";
@@ -18,6 +19,7 @@ import { BackToReports } from "../_components";
 type DocumentRow = AgingItemUi;
 
 export default function AgedReceivablesPage() {
+  const presentation = usePresentation();
   const t = useTranslations("AgingVendorReports");
   const today = new Date().toISOString().slice(0, 10);
   const [initialLoad, setInitialLoad] = useState(true);
@@ -55,14 +57,14 @@ export default function AgedReceivablesPage() {
   if (error) return <ErrorState message={t("loadFailed")} onRetry={() => window.location.reload()} />;
   const buckets = data?.buckets ?? [], grandTotal = data?.grandTotal ?? 0n;
   const allInvoices = buckets.flatMap(b => b.items.map(row => ({ ...row, bucket: b.label })));
-  const formatMoney = (amount: bigint) => reportUiMoney(amount, data!.currencyCode);
+  const formatMoney = (amount: bigint) => reportUiMoney(amount, data!.currencyCode, presentation);
 
   const columns: Column<DocumentRow>[] = [
     { key: "number", header: t("invoice"), className: "w-32", render: (r) => <span className="font-mono text-sm">{r.invoiceNumber}</span> },
     { key: "contact", header: t("customer"), render: (r) => <span className="text-sm font-medium">{r.contactName}</span> },
     { key: "due", header: t("dueDate"), className: "w-28", render: (r) => <span className="text-sm">{r.dueDate}</span> },
     { key: "days", header: t("daysOverdue"), className: "w-28", render: (r) => <span className="text-sm tabular-nums">{r.daysOverdue}</span> },
-    { key: "amount", header: t("amountDue"), className: "w-32 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{reportUiMoney(r.amountDue, r.currencyCode)}</span> },
+    { key: "amount", header: t("amountDue"), className: "w-32 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{reportUiMoney(r.amountDue, r.currencyCode, presentation)}</span> },
   ];
 
   return (

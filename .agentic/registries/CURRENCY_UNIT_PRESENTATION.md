@@ -377,3 +377,115 @@ documented ASCII decimal body while localizing only the unit. The whole-catalog
 inventory includes the 115 previously added account/onboarding/loan leaves and
 continues executing every production key. This repair does not accept LOC-132
 or parent LOC-115 and does not claim hosted/build/native/RTL/browser completion.
+
+
+## LOC-132 reports, tax, public and remaining website adoption
+
+Assigned ordinary report, tax/FX, public/portal, onboarding and generic landing
+money labels use active presentation. Report totals, rows, nested sections,
+grouped summaries, accessible settlement labels and chart units pass the owning
+provider explicitly. Budget progress retains fixed-two units, including IRR.
+
+`statementMoneyText` accepts optional presentation after the existing checked
+amount/currency validation. Only website/signing-summary callers opt in. Default
+document HTML/PDF, email, digest and worker output remains unchanged, as tested
+with interleaved USD/JPY/KWD/IRR fixtures. The signing service envelope, existing
+`totalFormatted`, issued snapshots and saved values are unchanged; its page
+formats the existing validated saved amount for the viewer.
+
+Onboarding country/review unit labels localize while org creation JSON, country
+codes, legal names and defaults stay canonical. FX cards show localized names
+and preserve differing saved reference names separately; search accepts both,
+ISO codes and symbols. Technical reference codes, pair keys, selector/hidden
+values, org headers, URLs and raw CSV/XLSX/JSON fields remain unchanged. Unknown
+caller text stays escaped and translated labels never flow back into writes.
+
+`authoredUsdText` applies only to known authored USD illustrations, never to
+user/saved text with ambiguous dollar symbols. Generic hero, dashboard/report
+illustrations and marquee samples change unit markers while preserving numeric
+bodies, signs, percentages, abbreviated suffixes, SVG geometry, dates and IDs.
+
+Adopted source inventory:
+
+- `app/(dashboard)/reports/1099/page.tsx`
+- `app/(dashboard)/reports/aged-payables/page.tsx`
+- `app/(dashboard)/reports/aged-receivables/page.tsx`
+- `app/(dashboard)/reports/balance-sheet/page.tsx`
+- `app/(dashboard)/reports/bank-cash-flow/page.tsx`
+- `app/(dashboard)/reports/bank-reconciliation-status/page.tsx`
+- `app/(dashboard)/reports/budget-vs-actual/page.tsx`
+- `app/(dashboard)/reports/cash-flow-forecast/page.tsx`
+- `app/(dashboard)/reports/cash-flow/page.tsx`
+- `app/(dashboard)/reports/comparative-balance-sheet/page.tsx`
+- `app/(dashboard)/reports/consolidation/page.tsx`
+- `app/(dashboard)/reports/duplicate-detection/page.tsx`
+- `app/(dashboard)/reports/executive-summary/page.tsx`
+- `app/(dashboard)/reports/expense-analytics/page.tsx`
+- `app/(dashboard)/reports/financial-calendar/page.tsx`
+- `app/(dashboard)/reports/financial-ratios/page.tsx`
+- `app/(dashboard)/reports/general-ledger/page.tsx`
+- `app/(dashboard)/reports/income-statement/page.tsx`
+- `app/(dashboard)/reports/payment-performance/page.tsx`
+- `app/(dashboard)/reports/pnl-comparison/page.tsx`
+- `app/(dashboard)/reports/profit-and-loss/page.tsx`
+- `app/(dashboard)/reports/profitability/page.tsx`
+- `app/(dashboard)/reports/tax-summary/page.tsx`
+- `app/(dashboard)/reports/tracking/page.tsx`
+- `app/(dashboard)/reports/trial-balance/page.tsx`
+- `app/(dashboard)/reports/vat-return/page.tsx`
+- `app/(dashboard)/reports/vendor-spend/page.tsx`
+- `app/(dashboard)/tax/bas/page.tsx`
+- `app/(dashboard)/tax/currencies/page.tsx`
+- `app/(dashboard)/tax/periods/[id]/page.tsx`
+- `app/(dashboard)/tax/sales-tax/page.tsx`
+- `app/(dashboard)/tax/schedule-c/page.tsx`
+- `app/(dashboard)/tax/vat-return/page.tsx`
+- `app/portal/[token]/invoices/page.tsx`
+- `app/portal/[token]/payments/page.tsx`
+- `app/portal/[token]/quotes/page.tsx`
+- `app/portal/[token]/statements/page.tsx`
+- `app/sign/[token]/page.tsx`
+- `components/dashboard/budget-progress-bar.tsx`
+- `components/dashboard/tax-settlement-preview.tsx`
+- `components/landing/bento-features.tsx`
+- `components/landing/dashboard-preview.tsx`
+- `components/landing/feature-sections.tsx`
+- `components/landing/hero.tsx`
+- `components/landing/how-it-works.tsx`
+- `components/onboarding/onboarding-wizard.tsx`
+- `i18n/currency-labels.ts`
+- `lib/reports/statement-money.ts`
+
+Inspected unchanged surfaces and explicit exceptions:
+
+- DEC-008: `components/settings/billing-content.tsx` and
+  `app/(landing)/pricing/page.tsx` retain all subscription/seat/storage/annual/
+  monthly and checkout-linked prices. Dedicated Stripe source, cards, routes,
+  tools and provider behavior are untouched. `app/pay/[token]/page.tsx` is also
+  unchanged: it is explicitly Stripe checkout/redirect UI, so its invoice amounts
+  retain the frozen provider-page display. The entire mixed Stripe Payout
+  `ReconciliationMockup` in `components/landing/bento-features.tsx` is identical
+  to HEAD, including its sibling bank/journal samples and their displays.
+- General settings currency controls already inherit LOC-129 CurrencySelect.
+  Document-template machine tokens and reference/configuration fields retain
+  technical values. Tax percentages, statutory boxes/account codes, rate
+  direction/precision and reference data are unchanged. Rate/period/navigation
+  pages have no extra ordinary money units. Custom/saved/scheduled report config
+  and pack controls retain canonical keys, URLs and output contracts.
+- Portal overview/layout, auth/invitation/admin/team/help navigation and legal
+  pages have no extra ordinary money units. Documentation API/code examples
+  retain technical ASCII currency contracts.
+- Compact chart numeric bodies retain existing approximate geometry/sample
+  policy while visible currency units localize. Exact tooltips/totals retain
+  saved bigint values. Bank grand totals keep their exact canonical decimal
+  body while unit names localize; aggregates gain no new stored-int64 limit.
+- Issued snapshots, sender/recipient data, server document formatting,
+  email/PDF/digest/output APIs and machine exports are unchanged. No schema,
+  migration, business operation or REST/MCP tool change is introduced. Existing
+  MCP currency/Minor fields remain the corresponding canonical machine surface.
+
+LOC-133 independently accepted dashboard/forecast; LOC-130/131 retain their
+assigned domains. LOC-132 does not complete LOC-115's independent combined audit.
+Native terminology, mounted-browser/layout/focus/hydration, RTL and IRR financial
+or production activation remain separate. No build/dev server or application DB
+access occurred in this task.

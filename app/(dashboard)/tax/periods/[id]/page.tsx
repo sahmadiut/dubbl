@@ -1,5 +1,7 @@
 "use client";
 
+import { currencyLabel } from "@/i18n/currency-labels";
+import { usePresentation } from "@/i18n/provider";
 import { useState, useEffect, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { taxPeriodTypeKey, taxPeriodStatusKey } from "@/lib/i18n/tax-period-presentation";
@@ -101,6 +103,7 @@ function SettleSheet({
   netAmount: bigint | null;
   currency: string;
 }) {
+  const presentation = usePresentation();
   const t = useTranslations("TaxPeriods");
   const [bankGlAccountId, setBankGlAccountId] = useState("");
   const [amount, setAmount] = useState("");
@@ -225,7 +228,7 @@ function SettleSheet({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="tax-settlement-amount">{t("amountCurrency", { currency })}</Label>
+            <Label htmlFor="tax-settlement-amount">{t("amountCurrency", { currency: currencyLabel(currency, presentation.locale) })}</Label>
             <Input
               id="tax-settlement-amount"
               inputMode="decimal"
@@ -285,6 +288,7 @@ export default function TaxPeriodDetailPage() {
 }
 
 function TaxPeriodWorkspace({ id, orgId }: { id: string; orgId: string | null }) {
+  const presentation = usePresentation();
   const t = useTranslations("TaxPeriods");
   const [period, setPeriod] = useState<TaxPeriodDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -403,9 +407,9 @@ function TaxPeriodWorkspace({ id, orgId }: { id: string; orgId: string | null })
               {netAmount == null
                 ? t("settleHelp")
                 : netAmount < 0
-                  ? t("refundDue", { amount: taxUiMoney(taxUiAbs(netAmount), currency) })
+                  ? t("refundDue", { amount: taxUiMoney(taxUiAbs(netAmount), currency, presentation) })
                   : netAmount > 0
-                    ? t("paymentDue", { amount: taxUiMoney(netAmount, currency) })
+                    ? t("paymentDue", { amount: taxUiMoney(netAmount, currency, presentation) })
                     : t("nothingDue")}
             </p>
           </div>
@@ -465,7 +469,7 @@ function TaxPeriodWorkspace({ id, orgId }: { id: string; orgId: string | null })
                         )}
                       </td>
                       <td className="px-4 py-2.5 text-right font-mono tabular-nums">
-                        {taxUiMoney(line.amount, currency)}
+                        {taxUiMoney(line.amount, currency, presentation)}
                       </td>
                     </tr>
                   );

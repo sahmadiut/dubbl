@@ -1,5 +1,6 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { FileText, AlertTriangle } from "lucide-react";
@@ -23,6 +24,7 @@ import { BackToReports, ReportHelp } from "../_components";
 type Report1099 = Report1099Ui;
 
 export default function Form1099Page() {
+  const presentation = usePresentation();
   const t = useTranslations("TaxReports");
   const now = new Date();
   const [error, setError] = useState(false);
@@ -122,11 +124,11 @@ export default function Form1099Page() {
               </div>
               <div className="rounded-xl border bg-card/80 p-4">
                 <p className="text-xs text-muted-foreground">{t("reportableTotal")}</p>
-                <p className="mt-1 text-xl font-bold font-mono tabular-nums">{reportResultMoney(data.reportableTotal, data.currencyCode)}</p>
+                <p className="mt-1 text-xl font-bold font-mono tabular-nums">{reportResultMoney(data.reportableTotal, data.currencyCode, presentation)}</p>
               </div>
               <div className="rounded-xl border bg-card/80 p-4">
                 <p className="text-xs text-muted-foreground">{t("threshold")}</p>
-                <p className="mt-1 text-xl font-bold font-mono tabular-nums">{reportResultMoney(data.threshold, data.currencyCode)}</p>
+                <p className="mt-1 text-xl font-bold font-mono tabular-nums">{reportResultMoney(data.threshold, data.currencyCode, presentation)}</p>
               </div>
             </div>
 
@@ -156,7 +158,7 @@ export default function Form1099Page() {
                         {v.taxIdentifier || <span className="text-amber-600">{t("missing")}</span>}
                       </TableCell>
                       <TableCell className="text-right font-mono tabular-nums">{v.paymentCount}</TableCell>
-                      <TableCell className="text-right font-mono tabular-nums">{reportResultMoney(v.totalPaid, data.currencyCode)}</TableCell>
+                      <TableCell className="text-right font-mono tabular-nums">{reportResultMoney(v.totalPaid, data.currencyCode, presentation)}</TableCell>
                       <TableCell>
                         <span className={cn(
                           "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",

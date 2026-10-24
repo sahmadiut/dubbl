@@ -1,3 +1,4 @@
+import { currencyFixture } from "./helpers/localized-fixtures";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createElement, type ReactNode } from "react";
@@ -140,7 +141,7 @@ test("all real onboarding steps render translated controls and review labels whi
     assert.ok(name.includes('value="شرکت Test"'));
     const countries = render(locale, createElement(StepCountry, { selected: "JP", onSelect: noop }));
     assert.ok(countries.includes(messages.OnboardingOptions.country_JP));
-    assert.ok(countries.includes("JPY"));
+    assert.ok(countries.includes(currencyFixture("JPY", locale)));
     const types = render(locale, createElement(StepBusinessType, { countryCode: "JP", selected: "KK", onSelect: noop }));
     assert.ok(types.includes("株式会社"));
     const industries = render(locale, createElement(StepIndustry, { selected: "technology", onSelect: noop }));

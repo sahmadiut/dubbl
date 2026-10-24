@@ -1,5 +1,6 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 
@@ -22,6 +23,7 @@ const CURRENT_YEAR = new Date().getFullYear();
 const YEAR_OPTIONS = [0, 1, 2, 3, 4].map((n) => CURRENT_YEAR - n);
 
 export default function IncomeStatementPage() {
+  const presentation = usePresentation();
   const t = useTranslations("IncomeReports");
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -120,14 +122,14 @@ export default function IncomeStatementPage() {
                           <TableCell className="font-mono text-sm">{a.code}</TableCell>
                           <TableCell>{a.name}</TableCell>
                           <TableCell className="text-right font-mono tabular-nums">
-                            {statementUiMoney(a.balance, data.currencyCode)}
+                            {statementUiMoney(a.balance, data.currencyCode, presentation)}
                           </TableCell>
                         </TableRow>
                       ))}
                       <TableRow className="bg-muted/30 font-bold">
                         <TableCell colSpan={2}>{s.totalLabel}</TableCell>
                         <TableCell className="text-right font-mono tabular-nums">
-                          {statementUiMoney(s.section.total, data.currencyCode)}
+                          {statementUiMoney(s.section.total, data.currencyCode, presentation)}
                         </TableCell>
                       </TableRow>
                     </TableBody>
@@ -142,7 +144,7 @@ export default function IncomeStatementPage() {
                   {t("profit")}
                 </span>
                 <span className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-emerald-700 dark:text-emerald-300">
-                  {statementUiMoney(data.netIncome, data.currencyCode)}
+                  {statementUiMoney(data.netIncome, data.currencyCode, presentation)}
                 </span>
               </div>
             </div>

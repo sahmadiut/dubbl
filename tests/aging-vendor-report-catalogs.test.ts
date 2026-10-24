@@ -1,3 +1,4 @@
+import { displayNumberFixture } from "./helpers/localized-fixtures";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -45,7 +46,7 @@ test("aging production JSX translates buckets and counts while preserving exact 
     for (const count of [0, 1, 2]) assert.ok(t(isReceivable ? "invoiceCount" : "billCount", { count }));
     assert.ok(h.html.includes(escaped(t(isReceivable ? "invoiceCount" : "billCount", { count: 1 }))));
     assert.ok(h.html.includes(escaped(caller)) && !h.html.includes("<script>"));
-    assert.ok(h.html.includes(escaped(reportUiMoney(large, "KWD"))));
+    assert.ok(h.html.includes(escaped(reportUiMoney(large, "KWD", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }))));
     const exp = h.captured.find(c => c.kind === "ExportButton")!.props;
     assert.equal(exp.filename, route);
     assert.deepEqual(exp.columns, [isReceivable ? "invoiceNumber" : "billNumber", "contactName", "dueDate", "daysOverdue", "currencyCode", "amountDueMinor", "bucket"]);
@@ -53,7 +54,7 @@ test("aging production JSX translates buckets and counts while preserving exact 
     assert.ok(generateCSV(rows, exp.columns as string[]).includes(String(large)));
     for (const currencyCode of ["USD", "JPY", "IRR", "KWD"]) {
       const data = isReceivable ? receivablesUi(aging("invoices", currencyCode)) : payablesUi(aging("bills", currencyCode));
-      assert.ok(render(route, { ...ready, data }, locale).html.includes(escaped(reportUiMoney(large, currencyCode))));
+      assert.ok(render(route, { ...ready, data }, locale).html.includes(escaped(reportUiMoney(large, currencyCode, { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }))));
     }
   }
 });
@@ -68,10 +69,10 @@ test("vendor and timing JSX translate copy and day units without changing export
       const exp = h.captured.find(c => c.kind === "ExportButton")!.props; assert.equal(exp.filename, route);
       const csv = generateCSV(exp.data as Record<string, unknown>[], exp.columns as string[]); assert.ok(csv.includes(String(large)) && csv.includes("KWD"));
       if (route === "payment-performance") {
-        assert.ok(h.html.includes(escaped(t("dayValue", { days: 2 })))); assert.ok(h.html.includes("9007199254740.001"));
+        assert.ok(h.html.includes(escaped(t("dayValue", { days: 2 })))); assert.ok(h.html.includes(displayNumberFixture("9007199254740.001", locale)));
         assert.deepEqual((exp.data as { type: string }[]).map(row => row.type), ["receivable", "payable"]);
         assert.ok((exp.columns as string[]).includes("totalCollectedMinor"));
-      } else assert.ok(h.html.includes(escaped(analyticalMoney(large, "KWD"))));
+      } else assert.ok(h.html.includes(escaped(analyticalMoney(large, "KWD", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }))));
       const filtered = h.captured.find(c => c.kind === "CurrencySelect")!.props; (filtered.onValueChange as (v: string) => void)("JPY"); assert.ok(has(h, "currencyFilter", "JPY"));
       const clear = h.captured.find(c => c.props.children === t("clearFilter"))!; (clear.props.onClick as () => void)(); assert.ok(has(h, "currencyFilter", ""));
       for (const mode of ["error", "loading"]) assert.deepEqual(render(route, { ...state(route), [mode]: true }, locale).captured.find(c => c.kind === "ExportButton")!.props.data, []);

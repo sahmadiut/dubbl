@@ -37,6 +37,7 @@ function page(file: string, locale: Locale, states: unknown[], signature?: unkno
   }}).outputText;
   new Function("require", "module", "exports", "fetch", code)((id: string) => {
     if (id === "next-intl") return intl;
+    if (id === "@/i18n/server") return { getPresentation: async () => ({locale, numerals: locale === "fa-IR" ? "arabext" : "latn"}) };
     if (id === "next-intl/server") return {getTranslations: async () => intl.createTranslator({locale, messages: catalog, namespace: "PublicSigning"})};
     if (id === "react") return {...React,
       useState: (initial: unknown) => {const index = slot++; return [index < states.length ? states[index] : initial, (value: unknown) => updates.set(index, value)];},
@@ -62,6 +63,7 @@ test("public invoice, signed snapshot, document HTML, email and digest preserve 
       const wire = portalInvoicesSchema.parse({data: [invoice]});
       const frozen = JSON.stringify(wire);
       const formatted = documentMoneyText(wire.data[0].total, currencyCode);
+      const websiteFormatted = documentMoneyText(wire.data[0].total, currencyCode, { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" });
       const list = page("app/portal/[token]/invoices/page.tsx", locale, [wire.data, false, null]);
       const layout = page("app/portal/[token]/layout.tsx", locale, [{organization: {name: caller}, contact: {name: caller}}]);
       const signing = page("app/sign/[token]/page.tsx", locale, [], {
@@ -82,7 +84,7 @@ test("public invoice, signed snapshot, document HTML, email and digest preserve 
         notifications: [{type: "system_alert", title: background("invoiceSubject", {number: invoice.invoiceNumber}),
           body: formatted, createdAt: invoice.issueDate}], dashboardUrl: `/portal/${token}`}));
       for (const [surface, text] of Object.entries({portal, signed, html, email, digest})) {
-        assert.ok(text.includes(escape(formatted)), `${surface} ${locale} ${currencyCode}: exact money`);
+        assert.ok(text.includes(escape(surface === "portal" || surface === "signed" ? websiteFormatted : formatted)), `${surface} ${locale} ${currencyCode}: exact money`);
         assert.ok(text.includes(invoice.invoiceNumber), `${surface}: document number`);
         assert.ok(text.includes(invoice.issueDate), `${surface}: Gregorian date`);
         assert.ok(text.includes(escape(caller)), `${surface}: escaped caller`);

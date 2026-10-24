@@ -1,3 +1,4 @@
+import { displayNumberFixture } from "./helpers/localized-fixtures";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import { test } from "node:test";
@@ -81,7 +82,7 @@ test("cross-module headers, empty states, filters, budget and exports share the 
     ), locale);
     for (const label of [m.DashboardOverview.revenue, m.SharedUI.exportCSV, m.DateRange.thisMonth, m.DateRange.lastYear, m.DateRange.custom]) assert.ok(html.includes(label), label);
     assert.ok(html.includes("&lt;script&gt;Caller &amp; budget&lt;/script&gt;"));
-    assert.ok(html.includes("90,071,992,547,400.01") && html.includes("90,071,992,547,400.02"));
+    assert.ok(html.includes(displayNumberFixture("90,071,992,547,400.01", locale)) && html.includes(displayNumberFixture("90,071,992,547,400.02", locale)));
     assert.ok(!html.includes("MISSING_MESSAGE") && !html.includes("<script>"));
   }
 });

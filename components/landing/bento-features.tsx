@@ -1,5 +1,7 @@
 "use client";
 
+import { authoredUsdText } from "@/i18n/currency-labels";
+import { usePresentation } from "@/i18n/provider";
 import { useTranslations } from "next-intl";
 
 import { motion } from "motion/react";
@@ -133,11 +135,12 @@ function LedgerMockup() {
 /* ------------------------------------------------------------------ */
 
 function ReportsMockup() {
+  const presentation = usePresentation();
   const t = useTranslations("LandingFeatures");
   const kpis = [
-    { label: t("revenue"), value: "$84.2k", change: "+12.4%", positive: true },
-    { label: t("expenses"), value: "$41.8k", change: "+3.1%", positive: false },
-    { label: t("profit"), value: "$42.3k", change: "+21.8%", positive: true },
+    { label: t("revenue"), value: authoredUsdText("$84.2k", presentation.locale), change: "+12.4%", positive: true },
+    { label: t("expenses"), value: authoredUsdText("$41.8k", presentation.locale), change: "+3.1%", positive: false },
+    { label: t("profit"), value: authoredUsdText("$42.3k", presentation.locale), change: "+21.8%", positive: true },
   ];
 
   // SVG chart data points (normalized 0-1 range, mapped to viewBox)
@@ -188,7 +191,7 @@ function ReportsMockup() {
             className="rounded-md border border-border bg-muted/40 px-2.5 py-2"
           >
             <p className="text-[9px] font-medium uppercase tracking-wider text-muted-foreground">{kpi.label}</p>
-            <p className="mt-0.5 text-sm font-bold tabular-nums text-foreground">{kpi.value}</p>
+            <p className="mt-0.5 text-sm font-bold tabular-nums text-foreground">{authoredUsdText(kpi.value, presentation.locale)}</p>
             <p
               className={cn(
                 "mt-0.5 text-[10px] font-semibold tabular-nums",

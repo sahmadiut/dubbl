@@ -1,5 +1,6 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { basFieldLabelKey } from "@/lib/i18n/tax-filing-presentation";
@@ -37,6 +38,7 @@ export default function BasPage() {
 }
 
 function BasPageWorkspace({ orgId }: { orgId: string | null }) {
+  const presentation = usePresentation();
   const t = useTranslations("BasReport");
   const fieldLabel = (field: BasField) => {
     const key = basFieldLabelKey(field.field);
@@ -133,7 +135,7 @@ function BasPageWorkspace({ orgId }: { orgId: string | null }) {
                     <span className="text-muted-foreground">{t("salesComparison")}</span>
                   </div>
                   <span className="font-mono text-sm tabular-nums font-medium text-blue-600 dark:text-blue-400">
-                    {taxUiMoney(gstOnSales, currency!)}
+                    {taxUiMoney(gstOnSales, currency!, presentation)}
                   </span>
                 </div>
                 <div className="h-2 rounded-full bg-muted">
@@ -150,7 +152,7 @@ function BasPageWorkspace({ orgId }: { orgId: string | null }) {
                     <span className="text-muted-foreground">{t("purchasesComparison")}</span>
                   </div>
                   <span className="font-mono text-sm tabular-nums font-medium text-orange-600 dark:text-orange-400">
-                    {taxUiMoney(gstOnPurchases, currency!)}
+                    {taxUiMoney(gstOnPurchases, currency!, presentation)}
                   </span>
                 </div>
                 <div className="h-2 rounded-full bg-muted">
@@ -168,7 +170,7 @@ function BasPageWorkspace({ orgId }: { orgId: string | null }) {
                   "font-mono text-sm tabular-nums font-semibold",
                   netGst >= 0 ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"
                 )}>
-                  {taxUiMoney(taxUiAbs(netGst), currency!)}
+                  {taxUiMoney(taxUiAbs(netGst), currency!, presentation)}
                 </span>
               </div>
             </div>
@@ -191,7 +193,7 @@ function BasPageWorkspace({ orgId }: { orgId: string | null }) {
                     "mt-1 text-2xl font-bold font-mono tabular-nums",
                     netField.amount >= 0 ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"
                   )}>
-                    {taxUiMoney(taxUiAbs(netField.amount), currency!)}
+                    {taxUiMoney(taxUiAbs(netField.amount), currency!, presentation)}
                   </p>
                 </div>
                 <div className={cn(
@@ -245,7 +247,7 @@ function BasPageWorkspace({ orgId }: { orgId: string | null }) {
                         f.field === "1A" && "text-blue-600 dark:text-blue-400",
                         f.field === "1B" && "text-orange-600 dark:text-orange-400"
                       )}>
-                        {taxUiMoney(f.amount, currency!)}
+                        {taxUiMoney(f.amount, currency!, presentation)}
                       </span>
                     </div>
                   );
@@ -273,7 +275,7 @@ function BasPageWorkspace({ orgId }: { orgId: string | null }) {
                       </div>
                       <p className="text-sm">{fieldLabel(f)}</p>
                     </div>
-                    <span className="font-mono text-sm tabular-nums font-medium">{taxUiMoney(f.amount, currency!)}</span>
+                    <span className="font-mono text-sm tabular-nums font-medium">{taxUiMoney(f.amount, currency!, presentation)}</span>
                   </div>
                 ))}
               </div>

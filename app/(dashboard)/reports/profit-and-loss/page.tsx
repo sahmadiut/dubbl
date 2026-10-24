@@ -1,5 +1,6 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { TrendingUp, TrendingDown, DollarSign } from "lucide-react";
@@ -18,6 +19,7 @@ import { BackToReports, ReportHelp, BasisToggle } from "../_components";
 type AccountRow = ProfitLossUi["revenue"][number];
 
 export default function ProfitAndLossPage() {
+  const presentation = usePresentation();
   const t = useTranslations("IncomeReports");
   const now = new Date();
   const [initialLoad, setInitialLoad] = useState(true);
@@ -30,9 +32,9 @@ export default function ProfitAndLossPage() {
   const columns: Column<AccountRow>[] = [
     { key: "code", header: t("code"), className: "w-24", render: (r) => <span className="font-mono text-sm">{r.accountCode}</span> },
     { key: "name", header: t("account"), render: (r) => <span className="text-sm font-medium">{r.accountName}</span> },
-    { key: "balance", header: t("amount"), className: "w-32 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{statementUiMoney(r.balance, currencyCode)}</span> },
+    { key: "balance", header: t("amount"), className: "w-32 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{statementUiMoney(r.balance, currencyCode, presentation)}</span> },
   ];
-  const formatMoney = (value: bigint) => statementUiMoney(value, currencyCode);
+  const formatMoney = (value: bigint) => statementUiMoney(value, currencyCode, presentation);
   const [revenue, setRevenue] = useState<AccountRow[]>([]);
   const [expenses, setExpenses] = useState<AccountRow[]>([]);
   const [totalRevenue, setTotalRevenue] = useState(0n);

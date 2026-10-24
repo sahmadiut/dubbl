@@ -1,5 +1,7 @@
 "use client";
 
+import { currencyLabel } from "@/i18n/currency-labels";
+import { usePresentation } from "@/i18n/provider";
 import { useState, useEffect, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { taxUiMinor, taxUiCurrency, taxUiMoney, taxUiRate, taxUiRateInput } from "@/lib/money/tax-ui";
@@ -304,6 +306,7 @@ export default function CurrenciesPage() {
 }
 
 function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
+  const presentation = usePresentation();
   const t = useTranslations("TaxCurrencies");
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [exchangeRates, setExchangeRates] = useState<ExchangeRate[]>([]);
@@ -403,9 +406,10 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
       (c) =>
         c.code.toLowerCase().includes(q) ||
         c.name.toLowerCase().includes(q) ||
+        currencyLabel(c.code, presentation.locale, c.name).toLowerCase().includes(q) ||
         c.symbol.includes(q)
     );
-  }, [currencies, search]);
+  }, [currencies, search, presentation.locale]);
 
   const isLoading = loading || ratesLoading;
 
@@ -452,7 +456,7 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
             {t("organizationCurrency")}
           </p>
           <p className="mt-1 text-2xl font-bold tabular-nums text-emerald-700 dark:text-emerald-300">
-            {baseCurrency}
+            {currencyLabel(baseCurrency, presentation.locale)}
           </p>
           <p className="mt-1 text-[12px] text-emerald-600/60 dark:text-emerald-400/50">
             {t("baseHelp")}
@@ -499,7 +503,7 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
               {t("fxTitle")}
             </h3>
             <span className="text-[11px] text-muted-foreground/70">
-              {t("fxEstimate", { currency: fxReport.defaultCurrency })}
+              {t("fxEstimate", { currency: currencyLabel(fxReport.defaultCurrency, presentation.locale) })}
             </span>
           </div>
 
@@ -528,7 +532,7 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
                   >
                     {taxUiMoney(
                       fxReport.summary.netUnrealizedGainLoss,
-                      fxReport.defaultCurrency
+                      fxReport.defaultCurrency, presentation
                     )}
                   </p>
                 </div>
@@ -539,7 +543,7 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
                   <p className="mt-1 text-xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
                     {taxUiMoney(
                       fxReport.summary.totalUnrealizedGain,
-                      fxReport.defaultCurrency
+                      fxReport.defaultCurrency, presentation
                     )}
                   </p>
                 </div>
@@ -550,7 +554,7 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
                   <p className="mt-1 text-xl font-bold tabular-nums text-red-600 dark:text-red-400">
                     {taxUiMoney(
                       fxReport.summary.totalUnrealizedLoss,
-                      fxReport.defaultCurrency
+                      fxReport.defaultCurrency, presentation
                     )}
                   </p>
                 </div>
@@ -570,7 +574,7 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
                         {item.number}
                       </span>
                       <span className="text-sm text-muted-foreground">
-                        {t("amountDue", { amount: taxUiMoney(item.amountDue, item.currencyCode) })}
+                        {t("amountDue", { amount: taxUiMoney(item.amountDue, item.currencyCode, presentation) })}
                       </span>
                     </div>
                     <span
@@ -584,7 +588,7 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
                         ? "—"
                         : taxUiMoney(
                             item.unrealizedGainLoss,
-                            fxReport.defaultCurrency
+                            fxReport.defaultCurrency, presentation
                           )}
                     </span>
                   </div>
@@ -621,9 +625,9 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
               >
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-1.5 font-mono text-sm font-semibold">
-                    <span>{rate.baseCurrency}</span>
+                    <span>{currencyLabel(rate.baseCurrency, presentation.locale)}</span>
                     <ArrowRightLeft className="size-3 text-muted-foreground" />
-                    <span>{rate.targetCurrency}</span>
+                    <span>{currencyLabel(rate.targetCurrency, presentation.locale)}</span>
                   </div>
                   <span className="font-mono text-sm tabular-nums text-muted-foreground">
                     {taxUiRate(rate.rate, rate.rateExact)}
@@ -738,8 +742,10 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
                           )}
                         </div>
                         <p className="mt-2 truncate text-[13px] text-muted-foreground">
-                          {c.name}
+                          {currencyLabel(c.code, presentation.locale, c.name)}
                         </p>
+                        {currencyLabel(c.code, presentation.locale, c.name) !== c.name &&
+                          <p className="mt-1 truncate text-xs text-muted-foreground">{c.name}</p>}
                         <p className="mt-1.5 text-[11px] text-muted-foreground/60">
                           {t("decimals", { count: c.decimalPlaces })}
                         </p>

@@ -1,5 +1,6 @@
 "use client";
 
+import { usePresentation } from "@/i18n/provider";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { vatBoxLabelKey } from "@/lib/i18n/vat-return-presentation";
@@ -54,6 +55,7 @@ export default function VatReturnPage() {
 }
 
 function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
+  const presentation = usePresentation();
   const t = useTranslations("VatReturn");
   const now = new Date();
   const [startDate, setStartDate] = useState(`${now.getFullYear()}-01-01`);
@@ -259,7 +261,7 @@ function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
                     <span className="text-muted-foreground">{t("outputVat")}</span>
                   </div>
                   <span className="font-mono text-sm tabular-nums font-medium">
-                    {taxUiMoney(outputVat, currency!)}
+                    {taxUiMoney(outputVat, currency!, presentation)}
                   </span>
                 </div>
                 <div className="h-2 rounded-full bg-muted">
@@ -276,7 +278,7 @@ function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
                     <span className="text-muted-foreground">{t("inputVat")}</span>
                   </div>
                   <span className="font-mono text-sm tabular-nums font-medium">
-                    {taxUiMoney(inputVat, currency!)}
+                    {taxUiMoney(inputVat, currency!, presentation)}
                   </span>
                 </div>
                 <div className="h-2 rounded-full bg-muted">
@@ -294,7 +296,7 @@ function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
                   "font-mono text-sm tabular-nums font-semibold",
                   netVat >= 0 ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"
                 )}>
-                  {taxUiMoney(taxUiAbs(netVat), currency!)}
+                  {taxUiMoney(taxUiAbs(netVat), currency!, presentation)}
                 </span>
               </div>
             </div>
@@ -316,7 +318,7 @@ function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
                   "mt-1 text-2xl font-bold font-mono tabular-nums",
                   netVat >= 0 ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"
                 )}>
-                  {taxUiMoney(taxUiAbs(netVat), currency!)}
+                  {taxUiMoney(taxUiAbs(netVat), currency!, presentation)}
                 </p>
               </div>
               <div className={cn(
@@ -385,7 +387,7 @@ function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
                         isKey && netVat < 0 && "text-emerald-600 dark:text-emerald-400",
                         !isKey && "font-medium"
                       )}>
-                        {taxUiMoney(taxUiAbs(b.amount), currency!)}
+                        {taxUiMoney(taxUiAbs(b.amount), currency!, presentation)}
                       </p>
                     </div>
                   </>
@@ -445,7 +447,7 @@ function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
                                     <td className="py-1.5 pr-3">{t.description || "—"}</td>
                                     <td className="py-1.5 pr-3 text-muted-foreground">{t.reference || "—"}</td>
                                     <td className="py-1.5 pl-3 text-right font-mono tabular-nums">
-                                      {taxUiMoney(t.amount, currency!)}
+                                      {taxUiMoney(t.amount, currency!, presentation)}
                                     </td>
                                   </tr>
                                 ))}
@@ -456,7 +458,7 @@ function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
                                     {t("totalLines", { count: rows.length })}
                                   </td>
                                   <td className="py-1.5 pl-3 text-right font-mono tabular-nums">
-                                    {taxUiMoney(rows.reduce((s, t) => s + t.amount, 0n), currency!)}
+                                    {taxUiMoney(rows.reduce((s, t) => s + t.amount, 0n), currency!, presentation)}
                                   </td>
                                 </tr>
                               </tfoot>

@@ -70,7 +70,12 @@ function loaded(spec: Spec, values = states(spec), locale?: Locale, io: Record<s
   return { Page: compiled.exports[spec.component], events, effects, titles };
 }
 const flush = () => new Promise(resolve => setImmediate(resolve));
-const invoke = (h: ReturnType<typeof loaded>, orgId: string | null = "org-a") => (h.Page as (props: { orgId: string | null }) => ReactNode)({ orgId });
+const invoke = (h: ReturnType<typeof loaded>, orgId: string | null = "org-a") => {
+  let tree: ReactNode;
+  function Capture() { tree = (h.Page as (props: {orgId: string | null}) => ReactNode)({orgId}); return null; }
+  renderWithPresentation(createElement(Capture));
+  return tree;
+};
 
 test("BAS renders bilingual summaries, statutory IDs, known labels and refund/zero/payable exact values", () => {
   const spec = specs[0];
@@ -81,7 +86,7 @@ test("BAS renders bilingual summaries, statutory IDs, known labels and refund/ze
     for (const key of ["title", "description", "print", "taxPeriods", "comparison", "salesComparison", "purchasesComparison", "gstInformation", amount < 0n ? "netRefund" : "netPayable", amount < 0n ? "atoRefund" : "atoPayable"] as const) assert.ok(html.includes(escape(t(key))), key);
     for (const id of basIds.filter(id => id !== "NET")) assert.ok(html.includes(escape(t(basFieldLabelKey(id)!))) && html.includes(id));
     assert.ok(!html.includes("wire-") && html.includes("G1-G11, 1A-1B"));
-    assert.ok(html.includes(escape(taxUiMoney(amount < 0n ? -amount : amount, currency))));
+    assert.ok(html.includes(escape(taxUiMoney(amount < 0n ? -amount : amount, currency, { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }))));
     assert.deepEqual(h.titles, [t("documentTitle")]);
   }
 });
@@ -96,7 +101,7 @@ test("Schedule C renders all current subtype labels, sections, worksheet warning
     for (const key of ["title", "description", "print", "worksheetNoticeTitle", "worksheetNotice", "comparison", "grossIncome", "totalExpenses", "netProfitLoss", "incomePart", "incomeLines", "expensesPart", "expenseLines", "summary", profit < 0n ? "lineLoss" : "lineProfit"] as const) assert.ok(html.includes(escape(t(key))), key);
     for (const id of scheduleIds) assert.ok(html.includes(escape(t(scheduleCLineLabelKey(id)!))), id);
     assert.ok(html.includes(escape(caller)) && !html.includes("<script>") && !html.includes("wire-"));
-    assert.ok(html.includes(escape(taxUiMoney(profit < 0n ? -profit : profit, currency))));
+    assert.ok(html.includes(escape(taxUiMoney(profit < 0n ? -profit : profit, currency, { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }))));
     assert.ok(html.includes("opacity-40"));
     assert.deepEqual(h.titles, [t("documentTitle")]);
   }
@@ -113,8 +118,8 @@ test("sales tax renders bilingual ICU plurals, missing rates, caller data and ex
     assert.ok(html.includes(escape(t("invoiceCount", { count }))));
     assert.ok(html.includes(escape(t("rateInvoices", { rate: "14.50%", count }))));
     assert.ok(html.includes(escape(t("rateInvoices", { rate: t("notAvailable"), count: 0 }))));
-    assert.ok(html.includes(escape(t("onAmount", { amount: taxUiMoney(9007199254740991n, currency) }))));
-    assert.ok(html.includes(escape(taxUiMoney(9007199254740993n, currency))));
+    assert.ok(html.includes(escape(t("onAmount", { amount: taxUiMoney(9007199254740991n, currency, { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }) }))));
+    assert.ok(html.includes(escape(taxUiMoney(9007199254740993n, currency, { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }))));
     assert.ok(html.includes(escape(caller)) && !html.includes("<script>"));
     assert.deepEqual(h.titles, [t("documentTitle")]);
   }

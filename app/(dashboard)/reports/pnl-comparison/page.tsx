@@ -1,5 +1,7 @@
 "use client";
 
+import { currencyLabel } from "@/i18n/currency-labels";
+import { usePresentation } from "@/i18n/provider";
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { BackToReports } from "../_components";
@@ -25,6 +27,7 @@ import {
 type PeriodData = PnlComparisonUi["periods"][number];
 
 export default function PnlComparisonPage() {
+  const presentation = usePresentation();
   const t = useTranslations("AnalyticalReports");
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -32,7 +35,7 @@ export default function PnlComparisonPage() {
   const [compareType, setCompareType] = useState("monthly");
   const [periodsCount, setPeriodsCount] = useState(6);
   const [currencyCode, setCurrencyCode] = useState("USD");
-  const formatMoney = (value: bigint) => statementUiMoney(value, currencyCode);
+  const formatMoney = (value: bigint) => statementUiMoney(value, currencyCode, presentation);
   const [periods, setPeriods] = useState<PeriodData[]>([]);
 
   useEffect(() => {
@@ -129,10 +132,10 @@ export default function PnlComparisonPage() {
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} className="text-muted-foreground" />
-                  <YAxis tick={{ fontSize: 11 }} className="text-muted-foreground" tickFormatter={(v) => `${currencyCode} ${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`} />
+                  <YAxis tick={{ fontSize: 11 }} className="text-muted-foreground" tickFormatter={(v) => `${currencyLabel(currencyCode, presentation.locale)} ${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`} />
                   <Tooltip
                     contentStyle={{ fontSize: 12, borderRadius: 8 }}
-                    formatter={(_value, name, item) => [statementUiMoney(item.payload[item.dataKey === "revenue" ? "revenueExact" : "expensesExact"], currencyCode), name]}
+                    formatter={(_value, name, item) => [statementUiMoney(item.payload[item.dataKey === "revenue" ? "revenueExact" : "expensesExact"], currencyCode, presentation), name]}
                   />
                   <Legend wrapperStyle={{ fontSize: 12 }} />
                   <Area type="monotone" dataKey="revenue" name={t("revenue")} stroke="#10b981" fill="url(#revenueGrad)" strokeWidth={2} />
@@ -232,12 +235,13 @@ export default function PnlComparisonPage() {
 }
 
 function ChangeCell({ amount, pct, inverted, currencyCode }: { amount: bigint; pct: number; inverted?: boolean; currencyCode: string }) {
+  const presentation = usePresentation();
   const positive = inverted ? amount < 0 : amount > 0;
   const color = amount === 0n ? "text-muted-foreground" : positive ? "text-emerald-600" : "text-red-600";
 
   return (
     <div className={cn("text-xs font-mono tabular-nums", color)}>
-      <span>{amount > 0 ? "+" : ""}{statementUiMoney(amount, currencyCode)}</span>
+      <span>{amount > 0 ? "+" : ""}{statementUiMoney(amount, currencyCode, presentation)}</span>
       <span className="ml-1 text-[10px]">({pct > 0 ? "+" : ""}{pct}%)</span>
     </div>
   );

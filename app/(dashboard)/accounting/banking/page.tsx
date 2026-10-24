@@ -120,7 +120,8 @@ export default function BankingPage() {
         <div className="flex flex-col items-center gap-12 pt-20 pb-16">
           {/* Step flow */}
           <div className="w-full max-w-lg">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-0">
+            <div className="relative grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-0">
+              <div className="hidden sm:block absolute inset-x-[16.6667%] top-5 h-px bg-border" />
               {[
                 {
                   step: "1",
@@ -146,11 +147,8 @@ export default function BankingPage() {
                   color: "bg-emerald-500",
                   ring: "ring-emerald-200 dark:ring-emerald-900",
                 },
-              ].map(({ step, label, sub, icon: Icon, color, ring }, i) => (
+              ].map(({ step, label, sub, icon: Icon, color, ring }) => (
                 <div key={step} className="flex flex-col items-center text-center relative">
-                  {i < 2 && (
-                    <div className="hidden sm:block absolute top-5 left-[calc(50%+20px)] w-[calc(100%-40px)] h-px bg-border" />
-                  )}
                   <div className={cn(
                     "relative z-10 flex size-10 items-center justify-center rounded-xl ring-4",
                     color, ring

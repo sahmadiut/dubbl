@@ -1,7 +1,7 @@
 import type { Presentation } from "./locale";
 import { currencyMetadata, money, toMajorDecimal } from "../lib/money/exact";
 import { normalizeLocalizedDecimal, type DecimalSeparators } from "../lib/money/localized";
-import { currencyPartsText } from "./currency-labels";
+import { currencyLabel, currencyPartsText } from "./currency-labels";
 
 export type NumberPresentation = Pick<Presentation, "locale" | "numerals">;
 
@@ -52,6 +52,13 @@ export function formatExactCurrencyDecimal(value: string, currency: string, pres
 export function formatExactMoney(amountMinor: bigint, currency: string, presentation: NumberPresentation) {
   const code = currencyMetadata(currency).code;
   return formatDecimal(toMajorDecimal(money(amountMinor, code)), presentation, code);
+}
+
+/** Dashboard-only Persian unit placement for the local currency after its amount. */
+export function formatExactMoneyAfterAmount(amountMinor: bigint, currency: string, presentation: NumberPresentation) {
+  const code = currencyMetadata(currency).code;
+  const amount = formatDecimal(toMajorDecimal(money(amountMinor, code)), presentation);
+  return `${amount}\u00a0${currencyLabel(code, presentation.locale)}`;
 }
 
 /**

@@ -170,7 +170,7 @@ export default function NotFound() {
                 ease: "easeInOut",
               }}
             />
-            <ArrowLeft className="relative size-4 transition-transform [&:dir(rtl)]:rotate-180 group-hover:-translate-x-0.5 [&:dir(rtl)]:group-hover:translate-x-0.5" />
+            <ArrowLeft className="relative size-4 transition-transform group-hover:-translate-x-0.5 [&:dir(rtl)]:group-hover:translate-x-0.5" />
             <span className="relative">{t("backHome")}</span>
           </Link>
         </motion.div>

@@ -229,7 +229,8 @@ export default function TransactionsPage() {
         <div className="flex flex-col items-center gap-10 pt-8 pb-12">
           {/* Entry lifecycle stepper */}
           <div className="w-full max-w-xl">
-            <div className="grid grid-cols-3 gap-0">
+            <div className="relative grid grid-cols-3 gap-0">
+              <div className="absolute inset-x-[16.6667%] top-4 h-px bg-border" />
               {[
                 {
                   step: "1",
@@ -255,14 +256,11 @@ export default function TransactionsPage() {
                   color: "bg-emerald-500",
                   ring: "ring-emerald-200 dark:ring-emerald-900",
                 },
-              ].map(({ step, icon: StepIcon, label, sub, color, ring }, i) => (
+              ].map(({ step, icon: StepIcon, label, sub, color, ring }) => (
                 <div
                   key={step}
                   className="flex flex-col items-center text-center relative"
                 >
-                  {i < 2 && (
-                    <div className="absolute top-4 left-[calc(50%+16px)] w-[calc(100%-32px)] h-px bg-border" />
-                  )}
                   <div
                     className={`relative z-10 flex size-8 items-center justify-center rounded-full ${color} ring-4 ${ring} text-white text-xs font-bold`}
                   >

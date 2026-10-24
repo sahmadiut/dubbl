@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { usePresentation } from "@/i18n/provider";
-import { formatExactCurrencyDecimal, type NumberPresentation } from "@/i18n/numbers";
+import { formatExactCurrencyDecimal, formatExactMoneyAfterAmount, type NumberPresentation } from "@/i18n/numbers";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
@@ -147,7 +147,10 @@ function AgingColumn({
 }) {
   const t = useTranslations("DashboardOverview");
   const presentation = usePresentation();
-  const formatMoney = (amount: bigint, code: string) => displayMoney(amount, code, presentation);
+  const formatMoney = (amount: bigint, code: string) =>
+    code === "IRR" && presentation.locale === "fa-IR"
+      ? formatExactMoneyAfterAmount(amount, code, presentation)
+      : displayMoney(amount, code, presentation);
   const maxBucket = buckets.reduce((max, bucket) => bucket.total > max ? bucket.total : max, 1n);
 
   return (
@@ -201,7 +204,10 @@ function KpiItem({ label, value, good }: { label: string; value: string; good: b
 export default function DashboardPage() {
   const t = useTranslations("DashboardOverview");
   const presentation = usePresentation();
-  const formatMoney = (amount: bigint, code: string) => displayMoney(amount, code, presentation);
+  const formatMoney = (amount: bigint, code: string) =>
+    code === "IRR" && presentation.locale === "fa-IR"
+      ? formatExactMoneyAfterAmount(amount, code, presentation)
+      : displayMoney(amount, code, presentation);
   // Budget reports retain their documented fixed-two scale, even for IRR/JPY.
   const budgetMoney = (amount: bigint, code: string) => formatExactCurrencyDecimal(budgetDecimal(amount), code, presentation);
   const columns = entryColumns(t, presentation);
@@ -506,7 +512,7 @@ export default function DashboardPage() {
                     <button
                       key={step.href}
                       onClick={() => router.push(step.href)}
-                      className="flex items-start gap-3 rounded-lg border bg-background p-3 text-left transition-colors hover:border-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                      className="flex items-start gap-3 rounded-lg border bg-background p-3 text-right transition-colors hover:border-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
                     >
                       <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-muted-foreground/40" />
                       <div className="min-w-0 flex-1">

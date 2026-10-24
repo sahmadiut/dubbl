@@ -76,7 +76,7 @@ export function AdminNavigation({ children, allowed }: { children?: ReactNode; a
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => router.push("/dashboard")}>
-          <ArrowLeft className="[&:dir(rtl)]:rotate-180 size-3.5 me-1.5" />
+          <ArrowLeft className="size-3.5 me-1.5" />
           {t("backToHome")}
         </Button>
       </div>
@@ -139,7 +139,7 @@ export function AdminNavigation({ children, allowed }: { children?: ReactNode; a
               href="/dashboard"
               className="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
             >
-              <ArrowLeft className="[&:dir(rtl)]:rotate-180 size-3.5" />
+              <ArrowLeft className="size-3.5" />
               {t("backToApp")}
             </Link>
           </div>
@@ -151,7 +151,7 @@ export function AdminNavigation({ children, allowed }: { children?: ReactNode; a
         <div className="flex items-center gap-2">
           {isDetailPage ? (
             <Button variant="ghost" size="sm" className="gap-1 -ms-2" onClick={() => router.back()}>
-              <ArrowLeft className="[&:dir(rtl)]:rotate-180 size-3.5" />
+              <ArrowLeft className="size-3.5" />
               {t("back")}
             </Button>
           ) : (
@@ -165,7 +165,7 @@ export function AdminNavigation({ children, allowed }: { children?: ReactNode; a
           <ThemeToggle className="[&_button]:size-6 [&_button_svg]:size-3" />
           <Button variant="ghost" size="sm" asChild>
             <Link href="/dashboard">
-              <ArrowLeft className="[&:dir(rtl)]:rotate-180 size-3.5 me-1" />
+              <ArrowLeft className="size-3.5 me-1" />
               {t("app")}
             </Link>
           </Button>
@@ -209,7 +209,7 @@ export function AdminNavigation({ children, allowed }: { children?: ReactNode; a
         {isDetailPage && (
           <div className="hidden md:flex h-14 items-center gap-3 border-b px-6">
             <Button variant="ghost" size="sm" className="gap-1.5 -ms-2" onClick={() => router.back()}>
-              <ArrowLeft className="[&:dir(rtl)]:rotate-180 size-3.5" />
+              <ArrowLeft className="size-3.5" />
               {t("back")}
             </Button>
             <div className="flex-1" />

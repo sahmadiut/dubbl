@@ -272,7 +272,14 @@ export default function CRMPage() {
   }, [hasMore, loadingMore, filtering, initialLoading, page, fetchDeals]);
 
   const defaultStages = useMemo(() => DEFAULT_STAGES.map(stage => ({ ...stage, name: t(stage.id === "closed_won" ? "won" : stage.id === "closed_lost" ? "lost" : stage.id as "lead" | "qualified" | "proposal" | "negotiation") })), [t]);
-  const stages = useMemo(() => activePipeline?.stages?.length ? activePipeline.stages : defaultStages, [activePipeline, defaultStages]);
+  const stages = useMemo(() => {
+    if (!activePipeline?.stages?.length) return defaultStages;
+    return activePipeline.stages.map(stage => {
+      const defaultStage = DEFAULT_STAGES.find(candidate => candidate.id === stage.id && candidate.name === stage.name);
+      const localizedDefault = defaultStage && defaultStages.find(candidate => candidate.id === defaultStage.id);
+      return localizedDefault ? { ...stage, name: localizedDefault.name } : stage;
+    });
+  }, [activePipeline, defaultStages]);
 
   // Stage distribution from API (full dataset, not paginated)
   const stageDistribution = useMemo(() => {

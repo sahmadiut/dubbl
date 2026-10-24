@@ -34,6 +34,10 @@
 
 @custom-variant dark (&:is(.dark *));
 
+svg.lucide-arrow-left:dir(rtl) {
+  rotate: 180deg;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

@@ -129,7 +129,7 @@ function DialogTitle({
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className={cn("text-lg leading-none font-semibold", className)}
+      className={cn("min-w-0 text-lg leading-none font-semibold [overflow-wrap:anywhere]", className)}
       {...props}
     />
   )
@@ -142,7 +142,7 @@ function DialogDescription({
   return (
     <DialogPrimitive.Description
       data-slot="dialog-description"
-      className={cn("text-muted-foreground text-sm", className)}
+      className={cn("min-w-0 text-muted-foreground text-sm [overflow-wrap:anywhere]", className)}
       {...props}
     />
   )

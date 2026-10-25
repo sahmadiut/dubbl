@@ -13,10 +13,11 @@ interface SearchInputProps {
   placeholder?: string;
   loading?: boolean;
   className?: string;
+  "aria-label"?: string;
 }
 
 const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
-  ({ value, onChange, placeholder: suppliedPlaceholder, loading, className }, ref) => {
+  ({ value, onChange, placeholder: suppliedPlaceholder, loading, className, "aria-label": ariaLabel }, ref) => {
     const t = useTranslations("SharedUI");
     const placeholder = suppliedPlaceholder ?? t("search");
     return (
@@ -25,6 +26,8 @@ const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
         <Input
           ref={ref}
           placeholder={placeholder}
+          aria-label={ariaLabel ?? placeholder}
+          dir="auto"
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className="ps-9 pe-8 h-8 text-sm"
@@ -34,6 +37,7 @@ const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
             <Loader2 className="size-3.5 text-muted-foreground animate-spin" />
           ) : value ? (
             <button
+              type="button"
               aria-label={t("clearSearch")}
               onClick={() => onChange("")}
               className="text-muted-foreground hover:text-foreground transition-colors"

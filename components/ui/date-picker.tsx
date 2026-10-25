@@ -48,6 +48,7 @@ export function DatePicker({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+          type="button"
           variant="outline"
           dir={presentation.locale === "fa-IR" ? "rtl" : "ltr"}
           className={cn(
@@ -57,7 +58,7 @@ export function DatePicker({
           )}
         >
           <CalendarIcon className="size-3.5 text-muted-foreground" />
-          {date ? formatDateOnly(value!, presentation) : <span>{placeholder}</span>}
+          <bdi className="min-w-0 truncate">{date ? formatDateOnly(value!, presentation) : placeholder}</bdi>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">

@@ -31,6 +31,7 @@ import { Command } from "../components/ui/command";
 import { GlobalSearchResults } from "../components/dashboard/command-palette";
 import { ProfileTab, AccountsTab, SecurityTab, formatProvider, timeAgo } from "../components/dashboard/edit-profile-dialog";
 import { authErrorMessage } from "../i18n/auth-errors";
+import { resolvePresentation } from "../i18n/locale";
 import NotFound from "../app/not-found";
 import en from "../messages/en-US.json";
 import fa from "../messages/fa-IR.json";
@@ -168,7 +169,10 @@ test("rate-note wording is translated without changing rate units or currency li
     const status = { rate: 1234567, origin: "manual" as const, effectiveDate: "2026-10-17", ageDays: 2, stale: true, missing: false };
     const html = renderWithPresentation(createElement(RateNote, { currency: "EUR", baseCurrency: "USD", status }), locale);
     assert.ok(html.includes(messages.SharedUI.manualRate));
-    assert.ok(html.includes("1.234567"));
+    const presentation = resolvePresentation({ user: { language: locale } });
+    assert.ok(html.includes(new Intl.NumberFormat(locale, {
+      numberingSystem: presentation.numerals, maximumFractionDigits: 6,
+    }).format(1.234567)));
     const missing = renderWithPresentation(createElement(RateNote, { currency: "EUR", baseCurrency: "USD", status: { ...status, missing: true } }), locale);
     assert.ok(missing.includes('href="/tax/currencies"'));
     assert.ok(missing.includes(messages.SharedUI.setACustomRate));

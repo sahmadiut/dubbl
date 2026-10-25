@@ -45,7 +45,7 @@ test("LOC-002 executes every actual catalog leaf with real ICU, rich tags and ad
   // OnboardingOptions +7, Loans +6, Accounts +1 and RTL accessibility controls +18.
   // Every leaf below still
   // executes against real ICU/rich text rather than only checking this count.
-  assert.equal(keys.length, 10720, "Reconcile newly added or removed production keys with whole-catalog ownership");
+  assert.equal(keys.length, 10723, "Reconcile newly added or removed production keys with whole-catalog ownership");
   assert.deepEqual([...flattenCatalog(fa).keys()].sort(), keys);
   for (const locale of ["fa-IR", "en-US", "fa-IR"] as const) {
     const messages = locale === "fa-IR" ? fa : en;

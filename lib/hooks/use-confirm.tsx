@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
+import { useTranslations } from "next-intl";
+import { BidiText } from "@/components/ui/bidi-text";
 import {
   Dialog,
   DialogContent,
@@ -21,6 +23,7 @@ interface ConfirmOptions {
 }
 
 export function useConfirm() {
+  const t = useTranslations("SharedUI");
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [options, setOptions] = useState<ConfirmOptions>({});
@@ -64,22 +67,24 @@ export function useConfirm() {
       <DialogContent showCloseButton={false} className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-base">
-            {options.title || "Are you sure?"}
+            <BidiText>{options.title || t("areYouSure")}</BidiText>
           </DialogTitle>
           {options.description && (
-            <DialogDescription>{options.description}</DialogDescription>
+            <DialogDescription><BidiText>{options.description}</BidiText></DialogDescription>
           )}
         </DialogHeader>
-        <DialogFooter className="gap-3">
-          <Button variant="outline" disabled={loading} onClick={handleCancel}>
-            {options.cancelLabel || "Cancel"}
+        <DialogFooter className="gap-3 sm:flex-wrap">
+          <Button type="button" className="h-auto min-h-9 whitespace-normal [overflow-wrap:anywhere]" variant="outline" disabled={loading} onClick={handleCancel}>
+            <BidiText>{options.cancelLabel || t("cancel")}</BidiText>
           </Button>
           <Button
+            type="button"
+            className="h-auto min-h-9 whitespace-normal [overflow-wrap:anywhere]"
             variant={options.destructive ? "destructive" : "default"}
             loading={loading}
             onClick={handleConfirm}
           >
-            {options.confirmLabel || "Confirm"}
+            <BidiText>{options.confirmLabel || t("confirm")}</BidiText>
           </Button>
         </DialogFooter>
       </DialogContent>

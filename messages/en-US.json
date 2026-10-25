@@ -596,7 +596,10 @@
     "nextPage": "Next page",
     "pageMissing": "This page doesn't exist or has been moved.",
     "backHome": "Back to Home",
-    "notFoundStatus": "404 Not Found"
+    "notFoundStatus": "404 Not Found",
+    "areYouSure": "Are you sure?",
+    "cancel": "Cancel",
+    "confirm": "Confirm"
   },
   "Account": {
     "emailPassword": "Email & Password",

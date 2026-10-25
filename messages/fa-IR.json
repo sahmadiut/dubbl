@@ -596,7 +596,10 @@
     "nextPage": "صفحه بعد",
     "pageMissing": "این صفحه وجود ندارد یا جابه‌جا شده است.",
     "backHome": "بازگشت به خانه",
-    "notFoundStatus": "404 یافت نشد"
+    "notFoundStatus": "404 یافت نشد",
+    "areYouSure": "آیا مطمئن هستید؟",
+    "cancel": "انصراف",
+    "confirm": "تأیید"
   },
   "Account": {
     "emailPassword": "ایمیل و گذرواژه",

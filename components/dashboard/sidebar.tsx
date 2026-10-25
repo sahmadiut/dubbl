@@ -93,13 +93,13 @@ function NavItemLink({ item, active, badge }: { item: NavItem; active: boolean; 
       <Link
         href={item.href}
         className={cn(
-          "flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px] transition-colors",
+          "flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] transition-colors",
           active
             ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
             : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
         )}
       >
-        <IconComp ref={iconRef} size={16} className="shrink-0" />
+        <IconComp ref={iconRef} size={18} className="shrink-0" />
         <span className="flex-1">{item.label}</span>
         {badge !== undefined && badge > 0 && (
           <span className="size-4 rounded-full bg-red-100 text-red-600 text-[9px] font-medium flex items-center justify-center shrink-0 dark:bg-red-950 dark:text-red-400">
@@ -167,16 +167,16 @@ function ProjectsCollapsible({ pathname }: { pathname: string }) {
       >
         <CollapsibleTrigger
           className={cn(
-            "flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px] transition-colors",
+            "flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] transition-colors",
             projectsActive
               ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
               : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
           )}
         >
-          <LayersIcon ref={iconRef} size={16} className="shrink-0" />
+          <LayersIcon ref={iconRef} size={18} className="shrink-0" />
           <span className="flex-1 text-start">{t("projects")}</span>
           <ChevronRight className={cn(
-            "size-3.5 shrink-0 transition-transform duration-200",
+            "size-4 shrink-0 transition-transform duration-200",
             open ? "rotate-90" : "[&:dir(rtl)]:rotate-180"
           )} />
         </CollapsibleTrigger>

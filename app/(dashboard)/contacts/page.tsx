@@ -72,6 +72,7 @@ function buildColumns(t: ContactTranslator, onDelete: (c: Contact) => void, onOp
       key: "name",
       header: t("name"),
       sortKey: "name",
+      className: "min-w-[200px]",
       render: (r) => (
         <div className="min-w-0">
           <p className="text-sm font-medium min-w-0 whitespace-normal [overflow-wrap:anywhere]"><BidiText className="min-w-0 max-w-full">{r.name}</BidiText></p>
@@ -215,9 +216,9 @@ function buildColumns(t: ContactTranslator, onDelete: (c: Contact) => void, onOp
       key: "createdAt",
       header: t("created"),
       sortKey: "created",
-      className: "w-28 text-end",
+      className: "w-32 text-end whitespace-nowrap",
       render: (r) => (
-        <span className="text-sm tabular-nums text-muted-foreground">
+        <span className="text-sm tabular-nums text-muted-foreground whitespace-nowrap">
           <IdentifierText className="min-w-0 max-w-full">{new Date(r.createdAt).toLocaleDateString("en-US", {
             month: "short",
             day: "numeric",
@@ -562,22 +563,21 @@ export default function ContactsPage() {
           title={t("title")}
           description={t("description")}
         >
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               variant="outline"
               size="sm"
-              className="h-auto min-h-9 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full"
               onClick={() => router.push("/reports/duplicate-detection")}
               title={t("duplicatesHint")}
             >
               <Copy className="me-1.5 size-4" />
               {t("duplicates")}
             </Button>
-            <Tabs value={typeFilter} onValueChange={setTypeFilter}>
-              <TabsList className="h-auto flex-wrap">
-                <TabsTrigger className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" value="all">{t("all")}</TabsTrigger>
-                <TabsTrigger className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" value="customer">{t("customers")}</TabsTrigger>
-                <TabsTrigger className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" value="supplier">{t("suppliers")}</TabsTrigger>
+            <Tabs value={typeFilter} onValueChange={setTypeFilter} className="shrink-0">
+              <TabsList>
+                <TabsTrigger value="all">{t("all")}</TabsTrigger>
+                <TabsTrigger value="customer">{t("customers")}</TabsTrigger>
+                <TabsTrigger value="supplier">{t("suppliers")}</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>

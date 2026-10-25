@@ -158,9 +158,9 @@ function AgingColumn({
   return (
     <div>
       <p className="text-sm font-medium"><BidiText>{title}</BidiText></p>
-      <p className="mt-0.5 font-mono text-lg font-bold tabular-nums"><IdentifierText>
+      <p className="mt-0.5 font-mono text-lg font-bold tabular-nums"><BidiText>
         {formatMoney(total, currencyCode)}
-      </IdentifierText></p>
+      </BidiText></p>
       <div className="mt-3 space-y-2">
         {buckets.map((bucket, i) => {
           const pct = displayPercent(bucket.total, maxBucket);
@@ -168,9 +168,9 @@ function AgingColumn({
             <div key={bucket.label} className="space-y-1">
               <div className="flex flex-wrap items-center justify-between text-xs">
                 <span className="text-muted-foreground">{t((["bucket0", "bucket1", "bucket2", "bucket3", "bucket4"] as const)[i])}</span>
-                <span className="font-mono tabular-nums"><IdentifierText>
+                <span className="font-mono tabular-nums"><BidiText>
                   {formatMoney(bucket.total, currencyCode)}
-                </IdentifierText></span>
+                </BidiText></span>
               </div>
               <div className="h-1.5 rounded-full bg-muted">
                 <div
@@ -620,9 +620,9 @@ export default function DashboardPage() {
                   <div className="space-y-1.5">
                     <div className="flex flex-wrap items-center justify-between text-sm">
                       <span className="text-muted-foreground">{t("revenue")}</span>
-                      <span className="font-mono text-sm tabular-nums font-medium"><IdentifierText>
+                      <span className="font-mono text-sm tabular-nums font-medium"><BidiText>
                         {formatMoney(pnl.totalRevenue, pnl.currencyCode)}
-                      </IdentifierText></span>
+                      </BidiText></span>
                     </div>
                     <div className="h-2 rounded-full bg-muted">
                       <div
@@ -634,9 +634,9 @@ export default function DashboardPage() {
                   <div className="space-y-1.5">
                     <div className="flex flex-wrap items-center justify-between text-sm">
                       <span className="text-muted-foreground">{t("expenses")}</span>
-                      <span className="font-mono text-sm tabular-nums font-medium"><IdentifierText>
+                      <span className="font-mono text-sm tabular-nums font-medium"><BidiText>
                         {formatMoney(pnl.totalExpenses, pnl.currencyCode)}
-                      </IdentifierText></span>
+                      </BidiText></span>
                     </div>
                     <div className="h-2 rounded-full bg-muted">
                       <div
@@ -656,9 +656,9 @@ export default function DashboardPage() {
                           ? "text-emerald-600 dark:text-emerald-400"
                           : "text-red-600 dark:text-red-400"
                       )}
-                    ><IdentifierText>
+                    ><BidiText>
                       {formatMoney(pnl.netIncome, pnl.currencyCode)}
-                    </IdentifierText></span>
+                    </BidiText></span>
                   </div>
                 </div>
                 {topExpenses.length > 0 && (
@@ -675,9 +675,9 @@ export default function DashboardPage() {
                           <span className="min-w-0 whitespace-normal [overflow-wrap:anywhere] text-muted-foreground"><BidiText>
                             {exp.accountName}
                           </BidiText></span>
-                          <span className="ms-2 shrink-0 font-mono text-xs tabular-nums"><IdentifierText>
+                          <span className="ms-2 shrink-0 font-mono text-xs tabular-nums"><BidiText>
                             {formatMoney(exp.balance, pnl.currencyCode)}
-                          </IdentifierText></span>
+                          </BidiText></span>
                         </div>
                       ))}
                     </div>

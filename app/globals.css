@@ -663,6 +663,10 @@ svg.lucide-arrow-left:dir(rtl) {
 }
 
 /* Fix Fumadocs TOC bleeding on mobile */
+#nd-docs-layout {
+  --fd-layout-width: 100%;
+}
+
 @media (max-width: 1279.98px) {
   div#nd-toc {
     display: none !important;

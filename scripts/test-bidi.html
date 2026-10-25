@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="fa">
+<head>
+<meta charset="utf-8">
+<style>
+body { font-family: sans-serif; font-size: 24px; padding: 40px; }
+.box { border: 1px solid #ccc; padding: 15px; margin: 15px 0; }
+.label { font-size: 14px; color: #666; margin-bottom: 5px; }
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="label">1. plain: "۰ ریال" (RTL container)</div>
+  <div><span id="s1">۰</span> <span id="s2">ریال</span></div>
+</div>
+<div class="box">
+  <div class="label">2. IdentifierText: &lt;bdi dir="ltr"&gt;۰ ریال&lt;/bdi&gt;</div>
+  <bdi dir="ltr"><span id="s3">۰</span> <span id="s4">ریال</span></bdi>
+</div>
+<div class="box">
+  <div class="label">3. IdentifierText: &lt;bdi dir="ltr"&gt;ریال ۰&lt;/bdi&gt;</div>
+  <bdi dir="ltr"><span id="s5">ریال</span> <span id="s6">۰</span></bdi>
+</div>
+<div class="box">
+  <div class="label">4. BidiText: &lt;bdi dir="auto"&gt;۰ ریال&lt;/bdi&gt;</div>
+  <bdi dir="auto"><span id="s7">۰</span> <span id="s8">ریال</span></bdi>
+</div>
+<div class="box">
+  <div class="label">6. BidiText: &lt;bdi dir="auto"&gt;۱۲٬۳۴۵&nbsp;ریال&lt;/bdi&gt;</div>
+  <bdi dir="auto" class="font-mono tabular-nums">۱۲٬۳۴۵&nbsp;ریال</bdi>
+</div>
+<div class="box">
+  <div class="label">7. IdentifierText: &lt;bdi dir="ltr"&gt;۱۲٬۳۴۵&nbsp;ریال&lt;/bdi&gt;</div>
+  <bdi dir="ltr" class="font-mono tabular-nums">۱۲٬۳۴۵&nbsp;ریال</bdi>
+</div>
+<div class="box">
+  <div class="label">8. BidiText: &lt;bdi dir="auto"&gt;۰&nbsp;ریال&lt;/bdi&gt;</div>
+  <bdi dir="auto" class="font-mono tabular-nums">۰&nbsp;ریال</bdi>
+</div>
+<div class="box">
+  <div class="label">Test Left-Rial: We want [ریال] on the LEFT and [۰] on the RIGHT:</div>
+  <!-- Candidate 1: LTR container with "ریال ۰" -->
+  <div style="border: 1px dashed green; padding: 5px; margin: 5px 0;">
+    <span>C1 (dir=ltr "ریال ۰"): </span>
+    <bdi dir="ltr"><span id="c1_rial">ریال</span>&nbsp;<span id="c1_num">۰</span></bdi>
+  </div>
+
+  <!-- Candidate 2: RTL container with "ریال ۰" without \u200E -->
+  <div style="border: 1px dashed blue; padding: 5px; margin: 5px 0;">
+    <span>C2 (dir=rtl "ریال ۰" pure): </span>
+    <bdi dir="rtl"><span id="c2_rial">ریال</span>&nbsp;<span id="c2_num">۰</span></bdi>
+  </div>
+
+  <!-- Candidate 3: LTR container with "ریال ۰" and multi-digit "ریال ۱۲٬۳۴۵" -->
+  <div style="border: 1px dashed purple; padding: 5px; margin: 5px 0;">
+    <span>C3 (dir=ltr "ریال ۱۲٬۳۴۵"): </span>
+    <bdi dir="ltr"><span id="c3_rial">ریال</span>&nbsp;<span id="c3_num">۱۲٬۳۴۵</span></bdi>
+  </div>
+
+  <!-- Candidate 4: RTL container with "۱۲٬۳۴۵ ریال" (Persian natural: in RTL, number first on right, unit on left!) -->
+  <div style="border: 1px dashed orange; padding: 5px; margin: 5px 0;">
+    <span>C4 (dir=rtl "۱۲٬۳۴۵ ریال" natural Persian): </span>
+    <bdi dir="rtl"><span id="c4_num">۱۲٬۳۴۵</span>&nbsp;<span id="c4_rial">ریال</span></bdi>
+  </div>
+
+  <!-- Candidate 5: RTL container with "۰ ریال" (natural Persian) -->
+  <div style="border: 1px dashed red; padding: 5px; margin: 5px 0;">
+    <span>C5 (dir=rtl "۰ ریال" natural Persian): </span>
+    <bdi dir="rtl"><span id="c5_num">۰</span>&nbsp;<span id="c5_rial">ریال</span></bdi>
+  </div>
+</div>
+<script>
+function testPositions() {
+  const tests = [
+    ["c1_rial", "c1_num", "C1"],
+    ["c2_rial", "c2_num", "C2"],
+    ["c3_rial", "c3_num", "C3"],
+    ["c4_rial", "c4_num", "C4"],
+    ["c5_rial", "c5_num", "C5"],
+  ];
+  for (const [rId, nId, name] of tests) {
+    const r = document.getElementById(rId).getBoundingClientRect();
+    const n = document.getElementById(nId).getBoundingClientRect();
+    out.textContent += `${name}:\n  rial left=${r.left.toFixed(1)}, num left=${n.left.toFixed(1)}\n  -> ${r.left < n.left ? "RIAL IS ON THE LEFT (num on right)" : "NUM IS ON THE LEFT (rial on right)"}\n\n`;
+  }
+}
+testPositions();
+</script>
+<div class="box">
+  <div class="label">12. SVG with &lt;text text-anchor="end" x="80"&gt;...</div>
+  <svg width="200" height="150" style="background: #222; color: #fff;">
+    <!-- line at x=80 -->
+    <line x1="80" y1="0" x2="80" y2="150" stroke="red" stroke-width="2" />
+    <!-- Current tickFormatter: \u200Eریال ۰ -->
+    <text x="75" y="30" fill="white" font-size="12" text-anchor="end">&#x200E;ریال ۰</text>
+    <!-- Current tickFormatter: \u200Eریال ۴ -->
+    <text x="75" y="60" fill="white" font-size="12" text-anchor="end">&#x200E;ریال ۴</text>
+    <!-- Option A: ۰ ریال -->
+    <text x="75" y="90" fill="lightgreen" font-size="12" text-anchor="end">۰ ریال</text>
+    <text x="75" y="120" fill="lightgreen" font-size="12" text-anchor="end">۴ ریال</text>
+  </svg>
+</div>
+<div class="box">
+  <div class="label">16. Test YAxis with dir="ltr" [&_text]:[unicode-bidi:plaintext]:</div>
+  <div dir="ltr" style="background: #18181b; padding: 20px;">
+    <svg width="400" height="200" style="font-family: sans-serif; overflow: visible;">
+      <!-- Recharts YAxis default width is 60. With tickMargin 8, tick x is around 52. Axis line at x=60. -->
+      <!-- Let's test with width=75, tick x=65, line at x=75: -->
+      <line x1="75" y1="10" x2="75" y2="180" stroke="#3f3f46" stroke-width="1" />
+      
+      <!-- Option 1: plain "ریال ۴" with unicode-bidi: plaintext -->
+      <text x="67" y="40" fill="#a1a1aa" font-size="11" text-anchor="end" style="unicode-bidi: plaintext;">ریال ۴</text>
+      <text x="67" y="70" fill="#a1a1aa" font-size="11" text-anchor="end" style="unicode-bidi: plaintext;">ریال ۰</text>
+
+      <!-- Option 2: plain "۴ ریال" with unicode-bidi: plaintext -->
+      <text x="67" y="100" fill="#10b981" font-size="11" text-anchor="end" style="unicode-bidi: plaintext;">۴ ریال</text>
+      <text x="67" y="130" fill="#10b981" font-size="11" text-anchor="end" style="unicode-bidi: plaintext;">۰ ریال</text>
+
+      <!-- Option 3: what if width is 80? line at 180, tick at 170 -->
+      <g transform="translate(150, 0)">
+        <line x1="85" y1="10" x2="85" y2="180" stroke="#3f3f46" stroke-width="1" />
+        <text x="77" y="40" fill="#38bdf8" font-size="11" text-anchor="end" style="unicode-bidi: plaintext;">ریال ۴</text>
+        <text x="77" y="70" fill="#38bdf8" font-size="11" text-anchor="end" style="unicode-bidi: plaintext;">ریال ۰</text>
+      </g>
+    </svg>
+  </div>
+</div>
+<pre id="output"></pre>
+<script>
+const out = document.getElementById("output");
+function logPos(id1, id2, desc) {
+  const r1 = document.getElementById(id1).getBoundingClientRect();
+  const r2 = document.getElementById(id2).getBoundingClientRect();
+  out.textContent += `${desc}:\n  ${id1} left=${r1.left.toFixed(1)}, right=${r1.right.toFixed(1)}\n  ${id2} left=${r2.left.toFixed(1)}, right=${r2.right.toFixed(1)}\n  visual order: ${r1.left < r2.left ? id1 + " is LEFT of " + id2 : id2 + " is LEFT of " + id1}\n\n`;
+}
+logPos("s1", "s2", "Box 1 (plain RTL)");
+logPos("s3", "s4", "Box 2 (bdi dir=ltr)");
+logPos("s5", "s6", "Box 3 (bdi dir=ltr with ریال ۰)");
+logPos("s7", "s8", "Box 4 (bdi dir=auto)");
+</script>
+</body>
+</html>

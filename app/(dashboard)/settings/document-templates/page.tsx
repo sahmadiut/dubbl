@@ -187,7 +187,7 @@ export default function DocumentTemplatesPage() {
 
         {/* Create/Edit Sheet */}
         <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-          <SheetContent side="right" className="sm:max-w-lg w-full overflow-y-auto">
+          <SheetContent side="end" className="sm:max-w-lg w-full overflow-y-auto">
             <SheetHeader>
               <SheetTitle>{editing ? st("editTemplate") : st("newTemplate")}</SheetTitle>
             </SheetHeader>
@@ -229,9 +229,9 @@ export default function DocumentTemplatesPage() {
         <Dialog open={!!previewHtml} onOpenChange={() => { setPreviewHtml(null); setPreviewTemplateId(null); }}>
           <DialogContent className="max-w-3xl max-h-[80vh] overflow-auto">
             <DialogHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <DialogTitle>{st("previewTitle")}</DialogTitle>
-                <Button variant="outline" size="sm" onClick={handleDownloadSamplePdf} className="gap-1.5">
+                <Button variant="outline" size="sm" onClick={handleDownloadSamplePdf} className="gap-1.5 h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5">
                   <Download className="size-3.5" />
                   {st("downloadSample")}
                 </Button>

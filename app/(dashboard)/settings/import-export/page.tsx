@@ -132,7 +132,7 @@ export default function ImportExportPage() {
                   key={s.key}
                   variant={source === s.key ? "default" : "outline"}
                   size="sm"
-                  className="h-8 text-xs"
+                  className="text-xs h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5"
                   onClick={() => setSource(s.key)}
                 >
                   {s.label}
@@ -149,13 +149,13 @@ export default function ImportExportPage() {
                 <button
                   key={entity.key}
                   onClick={() => handleEntityClick(entity)}
-                  className="group flex items-center gap-3 rounded-lg border p-3.5 text-left transition-all hover:bg-muted hover:border-foreground/20"
+                  className="group flex items-center gap-3 rounded-lg border p-3.5 text-start transition-all hover:bg-muted hover:border-foreground/20"
                 >
                   <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-muted group-hover:bg-background transition-colors">
                     <Icon className="size-4 text-muted-foreground" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium truncate">{entity.label}</p>
+                    <p className="text-sm font-medium min-w-0 whitespace-normal [overflow-wrap:anywhere]">{entity.label}</p>
                     <p className="text-[11px] text-muted-foreground">{entity.note}</p>
                   </div>
                   <ArrowRight className="size-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
@@ -193,19 +193,19 @@ export default function ImportExportPage() {
           </div>
 
           <div className="rounded-lg border p-4 space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="text-sm text-muted-foreground">{t("selectEntitiesToExportAsCSV")}</p>
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 text-xs text-muted-foreground"
+                className="text-xs text-muted-foreground h-auto min-h-7 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5"
                 onClick={selectAllExports}
               >
                 {t("selectAll")}
               </Button>
             </div>
 
-            <div className="grid grid-cols-2 gap-x-6 gap-y-2.5 sm:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-x-6 gap-y-2.5 sm:grid-cols-3 lg:grid-cols-4">
               {EXPORT_ENTITIES.map(entity => (
                 <Label
                   key={entity.key}
@@ -213,11 +213,11 @@ export default function ImportExportPage() {
                 >
                   <Checkbox
                     checked={selectedExports.has(entity.key)}
-                    onCheckedChange={() => toggleExport(entity.key)}
+                    onCheckedChange={() => toggleExport(entity.key)} aria-label={entity.label}
                   />
                   <span>{entity.label}</span>
                   {entity.transactional && (
-                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-normal text-muted-foreground">{t("dateRange")}</Badge>
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 min-h-4 h-auto whitespace-normal font-normal text-muted-foreground">{t("dateRange")}</Badge>
                   )}
                 </Label>
               ))}
@@ -225,7 +225,7 @@ export default function ImportExportPage() {
 
             {/* Date range */}
             {hasTransactionalSelected && (
-              <div className="flex items-end gap-3 pt-1">
+              <div className="flex flex-wrap items-end gap-3 pt-1">
                 <div className="space-y-1.5">
                   <Label className="text-xs text-muted-foreground">{t("from")}</Label>
                   <DatePicker
@@ -250,17 +250,17 @@ export default function ImportExportPage() {
             <div className="flex items-center gap-2 pt-1">
               <Button
                 size="sm"
-                className="h-8 text-xs"
+                className="text-xs h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5"
                 onClick={() => handleExport()}
                 disabled={exporting || selectedExports.size === 0}
               >
-                <Download className="mr-1.5 size-3.5" />
+                <Download className="me-1.5 size-3.5" />
                 {exporting ? t("exporting") : t("exportSelected")}
               </Button>
               <Button
                 variant="outline"
                 size="sm"
-                className="h-8 text-xs"
+                className="text-xs h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5"
                 onClick={() => {
                   selectAllExports();
                   handleExport("all");

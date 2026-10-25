@@ -1,4 +1,6 @@
 "use client";
+
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { useTranslations } from "next-intl";
 import { requireSettingsResponse, settingsFailureMessage } from "@/i18n/settings-errors";
 
@@ -275,14 +277,14 @@ export default function RemindersPage() {
       <div className="space-y-8">
         {/* Reminder Rules */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="text-lg font-semibold">{t("paymentReminders")}</h2>
               <p className="text-sm text-muted-foreground">
                 {t("configureAutomatedDunningRulesForOverdueInvoicesAndBills")}
               </p>
             </div>
-            <Button size="sm" className="h-7 text-xs gap-1" onClick={openCreate}>
+            <Button size="sm" className="text-xs gap-1 h-auto min-h-7 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5" onClick={openCreate}>
               <Plus className="size-3" /> {t("newRule")}
             </Button>
           </div>
@@ -294,7 +296,7 @@ export default function RemindersPage() {
               <p className="text-xs text-muted-foreground mt-1">
                 {t("createYourFirstRuleToStartSendingAutomatedPaymentReminders")}
               </p>
-              <Button size="sm" className="h-7 text-xs gap-1 mt-4" onClick={openCreate}>
+              <Button size="sm" className="text-xs gap-1 mt-4 h-auto min-h-7 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5" onClick={openCreate}>
                 <Plus className="size-3" /> {t("newRule")}
               </Button>
             </div>
@@ -317,7 +319,7 @@ export default function RemindersPage() {
                       className="cursor-pointer"
                       onClick={() => openEdit(rule)}
                     >
-                      <TableCell className="text-sm font-medium">{rule.name}</TableCell>
+                      <TableCell className="text-sm font-medium"><BidiText>{rule.name}</BidiText></TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {TRIGGER_LABELS[rule.triggerType]}
                         {rule.triggerType !== "on_due" && (
@@ -332,7 +334,7 @@ export default function RemindersPage() {
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         <Switch
                           checked={rule.enabled}
-                          onCheckedChange={() => handleToggle(rule)}
+                          onCheckedChange={() => handleToggle(rule)} aria-label={t("enabled")}
                         />
                       </TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()}>
@@ -355,7 +357,7 @@ export default function RemindersPage() {
 
         {/* Reminder Log */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="text-lg font-semibold">{t("reminderLog")}</h2>
               <p className="text-sm text-muted-foreground">
@@ -363,7 +365,7 @@ export default function RemindersPage() {
               </p>
             </div>
             <Select value={logStatus} onValueChange={(v) => { setLogStatus(v === "all" ? "" : v); setLogPage(1); }}>
-              <SelectTrigger className="h-7 w-[130px] text-xs">
+              <SelectTrigger className="w-[130px] text-xs h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" aria-label={t("allStatuses")}>
                 <SelectValue placeholder={t("allStatuses")} />
               </SelectTrigger>
               <SelectContent>
@@ -414,16 +416,16 @@ export default function RemindersPage() {
                           )}
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {log.reminderRule?.name || "-"}
+                          <BidiText>{log.reminderRule?.name || "-"}</BidiText>
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {log.recipientEmail}
+                          <IdentifierText>{log.recipientEmail}</IdentifierText>
                         </TableCell>
-                        <TableCell className="text-sm truncate max-w-[200px]">
-                          {log.subject}
+                        <TableCell className="text-sm min-w-0 whitespace-normal [overflow-wrap:anywhere] max-w-[200px]">
+                          <BidiText>{log.subject}</BidiText>
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                          {new Date(log.sentAt).toLocaleDateString()}
+                          <IdentifierText>{new Date(log.sentAt).toLocaleDateString()}</IdentifierText>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -432,7 +434,7 @@ export default function RemindersPage() {
               </div>
 
               {logTotalPages > 1 && (
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <p className="text-xs text-muted-foreground">
                     {t("pagination", { page: logPage, pages: logTotalPages, count: logTotal })}
                   </p>
@@ -440,7 +442,7 @@ export default function RemindersPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-7 text-xs"
+                      className="text-xs h-auto min-h-7 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5"
                       disabled={logPage <= 1}
                       onClick={() => setLogPage((p) => p - 1)}
                     >
@@ -449,7 +451,7 @@ export default function RemindersPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-7 text-xs"
+                      className="text-xs h-auto min-h-7 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5"
                       disabled={logPage >= logTotalPages}
                       onClick={() => setLogPage((p) => p + 1)}
                     >
@@ -477,25 +479,25 @@ export default function RemindersPage() {
 
           <div className="space-y-4 px-4 pb-6">
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("name")}</Label>
+              <Label className="text-xs" htmlFor="settings-reminders-1">{t("name")}</Label>
               <Input
                 placeholder={t("eG7DaysBeforeDue")}
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="h-8 text-sm"
+                className="h-8 text-sm" aria-label={t("name")} id="settings-reminders-1" dir="auto"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs">{t("triggerType")}</Label>
+                <Label className="text-xs" htmlFor="settings-reminders-2">{t("triggerType")}</Label>
                 <Select
                   value={form.triggerType}
                   onValueChange={(v) =>
                     setForm({ ...form, triggerType: v as typeof form.triggerType })
                   }
                 >
-                  <SelectTrigger className="h-8 text-sm">
+                  <SelectTrigger className="text-sm h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" aria-label={t("triggerType")} id="settings-reminders-2">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -508,7 +510,7 @@ export default function RemindersPage() {
 
               {form.triggerType !== "on_due" && (
                 <div className="space-y-1.5">
-                  <Label className="text-xs">{t("days")}</Label>
+                  <Label className="text-xs" htmlFor="settings-reminders-3">{t("days")}</Label>
                   <Input
                     type="number"
                     min={0}
@@ -516,22 +518,22 @@ export default function RemindersPage() {
                     onChange={(e) =>
                       setForm({ ...form, triggerDays: Number(e.target.value) || 0 })
                     }
-                    className="h-8 text-sm"
+                    className="h-8 text-sm" aria-label={t("days")} id="settings-reminders-3" dir="ltr"
                   />
                 </div>
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs">{t("documentType")}</Label>
+                <Label className="text-xs" htmlFor="settings-reminders-4">{t("documentType")}</Label>
                 <Select
                   value={form.documentType}
                   onValueChange={(v) =>
                     setForm({ ...form, documentType: v as typeof form.documentType })
                   }
                 >
-                  <SelectTrigger className="h-8 text-sm">
+                  <SelectTrigger className="text-sm h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" aria-label={t("documentType")} id="settings-reminders-4">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -542,14 +544,14 @@ export default function RemindersPage() {
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs">{t("recipient")}</Label>
+                <Label className="text-xs" htmlFor="settings-reminders-5">{t("recipient")}</Label>
                 <Select
                   value={form.recipientType}
                   onValueChange={(v) =>
                     setForm({ ...form, recipientType: v as typeof form.recipientType })
                   }
                 >
-                  <SelectTrigger className="h-8 text-sm">
+                  <SelectTrigger className="text-sm h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" aria-label={t("recipient")} id="settings-reminders-5">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -563,12 +565,12 @@ export default function RemindersPage() {
 
             {form.recipientType === "custom" && (
               <div className="space-y-1.5">
-                <Label className="text-xs">{t("customEmailsLabel")}</Label>
+                <Label className="text-xs" htmlFor="settings-reminders-6">{t("customEmailsLabel")}</Label>
                 <Input
                   placeholder={t("email1ExampleComEmail2ExampleCom")}
                   value={form.customEmails}
                   onChange={(e) => setForm({ ...form, customEmails: e.target.value })}
-                  className="h-8 text-sm"
+                  className="h-8 text-sm" aria-label={t("customEmailsLabel")} id="settings-reminders-6" dir="ltr"
                 />
                 <p className="text-[11px] text-muted-foreground">
                   {t("separateMultipleEmailsWithCommas")}
@@ -583,7 +585,7 @@ export default function RemindersPage() {
               onInsert={insertVariable}
             />
 
-            <div className="flex items-center justify-between rounded-lg border p-3">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">
               <div>
                 <p className="text-sm font-medium">{t("enableRule")}</p>
                 <p className="text-xs text-muted-foreground">
@@ -592,7 +594,7 @@ export default function RemindersPage() {
               </div>
               <Switch
                 checked={form.enabled}
-                onCheckedChange={(v) => setForm({ ...form, enabled: v })}
+                onCheckedChange={(v) => setForm({ ...form, enabled: v })} aria-label={t("enableRule")}
               />
             </div>
 
@@ -600,14 +602,14 @@ export default function RemindersPage() {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-7 text-xs"
+                className="text-xs h-auto min-h-7 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5"
                 onClick={() => setSheetOpen(false)}
               >
                 {t("cancel")}
               </Button>
               <Button
                 size="sm"
-                className="h-7 text-xs"
+                className="text-xs h-auto min-h-7 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5"
                 onClick={handleSave}
                 disabled={saving || !form.name.trim()}
               >

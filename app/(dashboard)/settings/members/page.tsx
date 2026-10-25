@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { invitationRole } from "@/i18n/invitation-role";
 import { memberCapacityReason, memberPlanLabel } from "@/i18n/access-presentation";
 import { useTranslations } from "next-intl";
@@ -340,10 +342,10 @@ export default function MembersPage() {
           <Button
             variant="outline"
             size="sm"
-            className="shrink-0 text-xs border-red-200 text-red-700 hover:bg-red-100 dark:border-red-800 dark:text-red-300"
+            className="shrink-0 text-xs border-red-200 text-red-700 hover:bg-red-100 dark:border-red-800 dark:text-red-300 h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5"
             onClick={() => router.push("/settings/billing")}
           >
-            {t("updateBilling")}<ArrowUpRight className="ml-1 size-3" />
+            {t("updateBilling")}<ArrowUpRight className="ms-1 size-3" />
           </Button>
         </div>
       )}
@@ -420,16 +422,16 @@ export default function MembersPage() {
           <Button
             variant="outline"
             size="sm"
-            className="shrink-0 text-xs border-amber-200 text-amber-700 hover:bg-amber-100 dark:border-amber-800 dark:text-amber-300"
+            className="shrink-0 text-xs border-amber-200 text-amber-700 hover:bg-amber-100 dark:border-amber-800 dark:text-amber-300 h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5"
             onClick={() => router.push("/settings/billing")}
           >
-            {t("upgrade")}<ArrowUpRight className="ml-1 size-3" />
+            {t("upgrade")}<ArrowUpRight className="ms-1 size-3" />
           </Button>
         </div>
       )}
 
       {/* Team header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold tracking-tight">{t("team")}</h2>
           <p className="mt-0.5 text-[13px] text-muted-foreground">
@@ -440,9 +442,9 @@ export default function MembersPage() {
           size="sm"
           onClick={() => setInviteOpen(true)}
           disabled={capacity ? !capacity.canInvite : false}
-          className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50"
+          className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5"
         >
-          <Plus className="mr-1.5 size-3.5" />
+          <Plus className="me-1.5 size-3.5" />
           {t("inviteMember")}
         </Button>
       </div>
@@ -471,26 +473,26 @@ export default function MembersPage() {
                 <div className="flex items-center gap-3 min-w-0">
                   <Avatar className="size-9 shrink-0">
                     <AvatarFallback className="text-xs">
-                      {(m.userName || m.userEmail)[0].toUpperCase()}
+                      <BidiText>{(m.userName || m.userEmail)[0].toUpperCase()}</BidiText>
                     </AvatarFallback>
                   </Avatar>
                   <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">
-                      {m.userName || m.userEmail}
+                    <p className="text-sm font-medium min-w-0 whitespace-normal [overflow-wrap:anywhere]">
+                      <BidiText>{m.userName || m.userEmail}</BidiText>
                     </p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {m.userEmail}
+                    <p className="text-xs text-muted-foreground min-w-0 whitespace-normal [overflow-wrap:anywhere]">
+                      <IdentifierText>{m.userEmail}</IdentifierText>
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 sm:gap-4">
+                <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                   <Badge variant="outline" className={ROLE_COLORS[m.role]}>
-                    <RoleIcon className="mr-1 size-3" />
-                    {m.customRoleName || invitationRole(tr, m.role)}
+                    <RoleIcon className="me-1 size-3" />
+                    <BidiText>{m.customRoleName || invitationRole(tr, m.role)}</BidiText>
                   </Badge>
                   <span className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
                     <CalendarDays className="size-3" />
-                    {joinDate}
+                    <IdentifierText>{joinDate}</IdentifierText>
                   </span>
                   {m.role !== "owner" ? (
                     <DropdownMenu>
@@ -512,7 +514,7 @@ export default function MembersPage() {
                             onClick={() => assignCustomRole(m.id, cr.id)}
                             disabled={actionMemberId !== null}
                           >
-                            {t("assignRole", { name: cr.name })}
+                            {t.rich("assignRole", { name: cr.name , em: children => <BidiText>{children}</BidiText>})}
                           </DropdownMenuItem>
                         ))}
                         {m.customRoleId && (
@@ -545,7 +547,7 @@ export default function MembersPage() {
       {/* Pending Invitations */}
       {invitations.length > 0 && (
         <div className="space-y-3">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Mail className="size-4 text-muted-foreground" />
             <h3 className="text-sm font-semibold tracking-tight">{t("pendingInvitations")}</h3>
             <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
@@ -569,9 +571,9 @@ export default function MembersPage() {
                       </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">{inv.email}</p>
+                      <p className="text-sm font-medium min-w-0 whitespace-normal [overflow-wrap:anywhere]"><IdentifierText>{inv.email}</IdentifierText></p>
                       <p className="text-xs text-muted-foreground">
-                        {t("invitedBy", { name: inv.invitedBy?.name || inv.invitedBy?.email || t("unknown") })}
+                        {t.rich("invitedBy", { name: inv.invitedBy?.name || inv.invitedBy?.email || t("unknown") , em: children => <BidiText>{children}</BidiText>})}
                         {" · "}
                         {isExpired ? (
                           <span className="text-red-500">{t("expired")}</span>
@@ -581,10 +583,10 @@ export default function MembersPage() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-3">
                     <Badge variant="outline" className="capitalize">{invitationRole(tr, inv.role)}</Badge>
                     <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-400">
-                      <Clock className="mr-1 size-3" />
+                      <Clock className="me-1 size-3" />
                       {t("pending")}
                     </Badge>
                     <Button
@@ -607,7 +609,7 @@ export default function MembersPage() {
 
       {/* Invite Links */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <Link2 className="size-4 text-muted-foreground" />
             <h3 className="text-sm font-semibold tracking-tight">{t("inviteLinks")}</h3>
@@ -620,11 +622,11 @@ export default function MembersPage() {
           <Button
             variant="outline"
             size="sm"
-            className="text-xs"
+            className="text-xs h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5"
             onClick={() => setLinkSheetOpen(true)}
             disabled={capacity ? !capacity.canInvite : false}
           >
-            <Plus className="mr-1 size-3" />
+            <Plus className="me-1 size-3" />
             {t("createLink")}
           </Button>
         </div>
@@ -650,12 +652,12 @@ export default function MembersPage() {
                 >
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <code className="text-xs text-muted-foreground font-mono truncate">
+                      <code dir="ltr" className="[unicode-bidi:isolate] text-xs text-muted-foreground font-mono min-w-0 whitespace-normal [overflow-wrap:anywhere]">
                         /invite/{link.token.slice(0, 8)}...
                       </code>
                       {isUsable ? (
                         <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-400">
-                          <Check className="mr-1 size-3" />
+                          <Check className="me-1 size-3" />
                           {t("active")}
                         </Badge>
                       ) : (
@@ -668,7 +670,7 @@ export default function MembersPage() {
                       {t("linkRole", { role: invitationRole(tr, link.defaultRole) })}
                       {link.maxUses && t("linkUses", { used: link.useCount, max: link.maxUses })}
                       {!link.maxUses && link.useCount > 0 && t("uses", { count: link.useCount })}
-                      {link.expiresAt && t("expires", { date: new Date(link.expiresAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }) })}
+                      {link.expiresAt && t.rich("expires", { date: new Date(link.expiresAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }) , code: children => <IdentifierText>{children}</IdentifierText>})}
                     </p>
                   </div>
                   <div className="flex items-center gap-1.5">
@@ -793,26 +795,26 @@ export default function MembersPage() {
               <div className="rounded-lg bg-muted/50 p-3">
                 <p className="text-xs text-muted-foreground">
                   {t("seats", { current: capacity.current, max: capacity.max ?? t("unlimited") })}
-                  <span className="ml-1 capitalize">{t("plan", { plan: memberPlanLabel(t, capacity.plan) })}</span>
+                  <span className="ms-1 capitalize">{t("plan", { plan: memberPlanLabel(t, capacity.plan) })}</span>
                 </p>
               </div>
             )}
             <div className="space-y-2">
-              <Label>{t("email")}</Label>
+              <Label htmlFor="settings-members-1">{t("email")}</Label>
               <Input
                 type="email"
                 value={inviteEmail}
                 onChange={(e) => setInviteEmail(e.target.value)}
-                placeholder={t("colleagueCompanyCom")}
+                placeholder={t("colleagueCompanyCom")} aria-label={t("email")} id="settings-members-1" dir="ltr"
               />
               <p className="text-[11px] text-muted-foreground">
                 {t("anInvitationEmailWillBeSentWithALinkToJoin")}
               </p>
             </div>
             <div className="space-y-2">
-              <Label>{t("role")}</Label>
+              <Label htmlFor="settings-members-2">{t("role")}</Label>
               <Select value={inviteRole} onValueChange={setInviteRole}>
-                <SelectTrigger>
+                <SelectTrigger className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" aria-label={t("role")} id="settings-members-2">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -823,13 +825,13 @@ export default function MembersPage() {
             </div>
           </div>
           <SheetFooter>
-            <Button variant="outline" onClick={() => setInviteOpen(false)}>
+            <Button variant="outline" onClick={() => setInviteOpen(false)} className="h-auto min-h-9 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5">
               {t("cancel")}
             </Button>
             <Button
               onClick={invite}
               disabled={!inviteEmail || saving}
-              className="bg-emerald-600 hover:bg-emerald-700"
+              className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-9 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5"
             >
               {saving ? t("sending") : t("sendInvitation")}
             </Button>
@@ -848,9 +850,9 @@ export default function MembersPage() {
               {t("anyoneWithThisLinkCanJoinYourOrganizationYouCanDisable")}
             </p>
             <div className="space-y-2">
-              <Label>{t("defaultRole")}</Label>
+              <Label htmlFor="settings-members-3">{t("defaultRole")}</Label>
               <Select value={linkRole} onValueChange={setLinkRole}>
-                <SelectTrigger>
+                <SelectTrigger className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" aria-label={t("defaultRole")} id="settings-members-3">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -860,26 +862,26 @@ export default function MembersPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>{t("maxUses")}</Label>
+              <Label htmlFor="settings-members-4">{t("maxUses")}</Label>
               <Input
                 type="number"
                 min="1"
                 value={linkMaxUses}
                 onChange={(e) => setLinkMaxUses(e.target.value)}
-                placeholder={t("unlimited")}
+                placeholder={t("unlimited")} aria-label={t("maxUses")} id="settings-members-4" dir="ltr"
               />
               <p className="text-[11px] text-muted-foreground">
                 {t("leaveEmptyForUnlimitedUses")}
               </p>
             </div>
             <div className="space-y-2">
-              <Label>{t("expiresInDays")}</Label>
+              <Label htmlFor="settings-members-5">{t("expiresInDays")}</Label>
               <Input
                 type="number"
                 min="1"
                 value={linkExpiryDays}
                 onChange={(e) => setLinkExpiryDays(e.target.value)}
-                placeholder={t("never")}
+                placeholder={t("never")} aria-label={t("expiresInDays")} id="settings-members-5" dir="ltr"
               />
               <p className="text-[11px] text-muted-foreground">
                 {t("leaveEmptyForNoExpiration")}
@@ -887,13 +889,13 @@ export default function MembersPage() {
             </div>
           </div>
           <SheetFooter>
-            <Button variant="outline" onClick={() => setLinkSheetOpen(false)}>
+            <Button variant="outline" onClick={() => setLinkSheetOpen(false)} className="h-auto min-h-9 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5">
               {t("cancel")}
             </Button>
             <Button
               onClick={createInviteLink}
               disabled={creatingLink}
-              className="bg-emerald-600 hover:bg-emerald-700"
+              className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-9 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5"
             >
               {creatingLink ? t("creating") : t("createLink")}
             </Button>

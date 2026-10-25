@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
 import { Check, ChevronsUpDown, Lock } from "lucide-react";
@@ -248,16 +250,16 @@ export default function SettingsPage() {
               id="organization-name"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              placeholder={st("acmeInc")}
+              placeholder={st("acmeInc")} aria-label={st("name")} dir="auto"
             />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="organization-language" className="text-xs">{t("organizationLanguage")}</Label>
             <select
               id="organization-language"
-              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              className="h-auto min-h-9 w-full rounded-md border border-input bg-background px-3 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               value={form.defaultLanguage}
-              onChange={(event) => setForm({ ...form, defaultLanguage: event.target.value })}
+              onChange={(event) => setForm({ ...form, defaultLanguage: event.target.value })} aria-label={t("organizationLanguage")}
             >
               <option value="">{t("inherit")}</option>
               <option value="en-US">{t("english")}</option>
@@ -273,16 +275,17 @@ export default function SettingsPage() {
       <Section title={st("legal")} description={st("legalEntityInformationTaxIDsAndRegistrationDetails")}>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label className="text-xs">{st("countrySetsYourTaxRules")}</Label>
+            <Label className="text-xs" htmlFor="settings-country-trigger">{st("countrySetsYourTaxRules")}</Label>
             <Popover open={countryOpen} onOpenChange={setCountryOpen}>
               <PopoverTrigger asChild>
                 <button
                   type="button"
                   role="combobox"
+                  id="settings-country-trigger" aria-label={st("countrySetsYourTaxRules")}
                   aria-controls="settings-country-options"
                   aria-expanded={countryOpen}
                   className={cn(
-                    "flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors",
+                    "flex h-auto min-h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors",
                     "placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
                     !selectedCountry && "text-muted-foreground"
                   )}
@@ -290,12 +293,12 @@ export default function SettingsPage() {
                   {selectedCountry
                     ? `${selectedCountry.flag} ${countryName(options, selectedCountry)}`
                     : st("selectCountry")}
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  <ChevronsUpDown className="ms-2 h-4 w-4 shrink-0 opacity-50" />
                 </button>
               </PopoverTrigger>
               <PopoverContent className="p-0" align="start">
                 <Command>
-                  <CommandInput placeholder={st("searchCountry")} />
+                  <CommandInput placeholder={st("searchCountry")} aria-label={st("searchCountry")} dir="auto" />
                   <CommandList id="settings-country-options">
                     <CommandEmpty>{st("noCountryFound")}</CommandEmpty>
                     <CommandGroup>
@@ -307,7 +310,7 @@ export default function SettingsPage() {
                         >
                           <Check
                             className={cn(
-                              "mr-2 h-4 w-4",
+                              "me-2 h-4 w-4",
                               form.countryCode === country.code
                                 ? "opacity-100"
                                 : "opacity-0"
@@ -326,13 +329,13 @@ export default function SettingsPage() {
             </p>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">{st("businessStructure")}</Label>
+            <Label className="text-xs" htmlFor="settings-business-type">{st("businessStructure")}</Label>
             {form.countryCode ? (
               <Select
                 value={form.businessType}
                 onValueChange={(v) => setForm({ ...form, businessType: v })}
               >
-                <SelectTrigger>
+                <SelectTrigger id="settings-business-type" aria-label={st("businessStructure")} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal">
                   <SelectValue placeholder={st("selectType")} />
                 </SelectTrigger>
                 <SelectContent>
@@ -340,8 +343,8 @@ export default function SettingsPage() {
                     <SelectItem key={bt.code} value={bt.code}>
                       <span>{businessTypeName(options, bt)}</span>
                       {bt.localName !== bt.englishName && (
-                        <span className="ml-1 text-muted-foreground">
-                          ({bt.englishName})
+                        <span className="ms-1 text-muted-foreground">
+                          (<BidiText>{bt.englishName}</BidiText>)
                         </span>
                       )}
                     </SelectItem>
@@ -349,37 +352,37 @@ export default function SettingsPage() {
                 </SelectContent>
               </Select>
             ) : (
-              <div className="flex h-9 items-center rounded-md border border-input px-3 text-xs text-muted-foreground">
+              <div className="flex min-h-9 items-center rounded-md border border-input px-3 text-xs text-muted-foreground">
                 {st("selectACountryFirst")}
               </div>
             )}
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">{st("taxIDVAT")}</Label>
+            <Label className="text-xs" htmlFor="settings-page-2">{st("taxIDVAT")}</Label>
             <Input
               value={form.taxId}
               onChange={(e) => setForm({ ...form, taxId: e.target.value })}
-              placeholder={st("taxIdExample")}
+              placeholder={st("taxIdExample")} aria-label={st("taxIDVAT")} id="settings-page-2" dir="ltr"
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">{st("registrationNumber")}</Label>
+            <Label className="text-xs" htmlFor="settings-page-3">{st("registrationNumber")}</Label>
             <Input
               value={form.businessRegistrationNumber}
               onChange={(e) =>
                 setForm({ ...form, businessRegistrationNumber: e.target.value })
               }
-              placeholder={st("registrationExample")}
+              placeholder={st("registrationExample")} aria-label={st("registrationNumber")} id="settings-page-3" dir="ltr"
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">{st("industry")}</Label>
+            <Label className="text-xs" htmlFor="settings-page-4">{st("industry")}</Label>
             <Input
               value={form.industrySector}
               onChange={(e) =>
                 setForm({ ...form, industrySector: e.target.value })
               }
-              placeholder={st("eGTechnology")}
+              placeholder={st("eGTechnology")} aria-label={st("industry")} id="settings-page-4" dir="auto"
             />
           </div>
         </div>
@@ -391,55 +394,55 @@ export default function SettingsPage() {
       <Section title={st("address")} description={st("yourOrganizationSRegisteredAddress")}>
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <Label className="text-xs">{st("street")}</Label>
+            <Label className="text-xs" htmlFor="settings-page-5">{st("street")}</Label>
             <Input
               value={form.addressStreet}
               onChange={(e) =>
                 setForm({ ...form, addressStreet: e.target.value })
               }
-              placeholder={st("streetExample")}
+              placeholder={st("streetExample")} aria-label={st("street")} id="settings-page-5" dir="auto"
             />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label className="text-xs">{st("city")}</Label>
+              <Label className="text-xs" htmlFor="settings-page-6">{st("city")}</Label>
               <Input
                 value={form.addressCity}
                 onChange={(e) =>
                   setForm({ ...form, addressCity: e.target.value })
                 }
-                placeholder={st("sanFrancisco")}
+                placeholder={st("sanFrancisco")} aria-label={st("city")} id="settings-page-6" dir="auto"
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">{st("stateProvince")}</Label>
+              <Label className="text-xs" htmlFor="settings-page-7">{st("stateProvince")}</Label>
               <Input
                 value={form.addressState}
                 onChange={(e) =>
                   setForm({ ...form, addressState: e.target.value })
                 }
-                placeholder={st("california")}
+                placeholder={st("california")} aria-label={st("stateProvince")} id="settings-page-7" dir="auto"
               />
             </div>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label className="text-xs">{st("postalCode")}</Label>
+              <Label className="text-xs" htmlFor="settings-page-8">{st("postalCode")}</Label>
               <Input
                 value={form.addressPostalCode}
                 onChange={(e) =>
                   setForm({ ...form, addressPostalCode: e.target.value })
                 }
-                placeholder={st("postalCodeExample")}
+                placeholder={st("postalCodeExample")} aria-label={st("postalCode")} id="settings-page-8" dir="ltr"
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">{st("country")}</Label>
+              <Label className="text-xs" htmlFor="settings-page-9">{st("country")}</Label>
               <Select
                 value={form.addressCountry}
                 onValueChange={(v) => setForm({ ...form, addressCountry: v })}
               >
-                <SelectTrigger>
+                <SelectTrigger className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" aria-label={st("country")} id="settings-page-9">
                   <SelectValue placeholder={st("selectAddressCountry")} />
                 </SelectTrigger>
                 <SelectContent>
@@ -461,34 +464,34 @@ export default function SettingsPage() {
       <Section title={st("contact")} description={st("howCustomersAndPartnersCanReachYourOrganization")}>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label className="text-xs">{st("phone")}</Label>
+            <Label className="text-xs" htmlFor="settings-page-10">{st("phone")}</Label>
             <Input
               value={form.contactPhone}
               onChange={(e) =>
                 setForm({ ...form, contactPhone: e.target.value })
               }
-              placeholder={st("phoneExample")}
+              placeholder={st("phoneExample")} aria-label={st("phone")} id="settings-page-10" dir="ltr"
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">{st("email")}</Label>
+            <Label className="text-xs" htmlFor="settings-page-11">{st("email")}</Label>
             <Input
               type="email"
               value={form.contactEmail}
               onChange={(e) =>
                 setForm({ ...form, contactEmail: e.target.value })
               }
-              placeholder={st("emailExample")}
+              placeholder={st("emailExample")} aria-label={st("email")} id="settings-page-11" dir="ltr"
             />
           </div>
           <div className="space-y-1.5 sm:col-span-2">
-            <Label className="text-xs">{st("website")}</Label>
+            <Label className="text-xs" htmlFor="settings-page-12">{st("website")}</Label>
             <Input
               value={form.contactWebsite}
               onChange={(e) =>
                 setForm({ ...form, contactWebsite: e.target.value })
               }
-              placeholder={st("websiteExample")}
+              placeholder={st("websiteExample")} aria-label={st("website")} id="settings-page-12" dir="ltr"
             />
           </div>
         </div>
@@ -499,7 +502,7 @@ export default function SettingsPage() {
       {/* Financials */}
       <Section title={st("financials")} description={st("currencyFiscalYearAndDefaultPaymentTerms")}>
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          <div className="space-y-1.5">
+          <div role="group" aria-label={st("defaultCurrency")} className="space-y-1.5">
             <Label className="text-xs">{st("defaultCurrency")}</Label>
             <CurrencySelect
               value={form.defaultCurrency}
@@ -516,14 +519,14 @@ export default function SettingsPage() {
             )}
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">{st("fiscalYearStart")}</Label>
+            <Label className="text-xs" htmlFor="settings-page-13">{st("fiscalYearStart")}</Label>
             <Select
               value={form.fiscalYearStartMonth}
               onValueChange={(v) =>
                 setForm({ ...form, fiscalYearStartMonth: v })
               }
             >
-              <SelectTrigger>
+              <SelectTrigger className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" aria-label={st("fiscalYearStart")} id="settings-page-13">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -536,14 +539,14 @@ export default function SettingsPage() {
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">{st("paymentTerms")}</Label>
+            <Label className="text-xs" htmlFor="settings-page-14">{st("paymentTerms")}</Label>
             <Select
               value={form.defaultPaymentTerms}
               onValueChange={(v) =>
                 setForm({ ...form, defaultPaymentTerms: v })
               }
             >
-              <SelectTrigger>
+              <SelectTrigger className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" aria-label={st("paymentTerms")} id="settings-page-14">
                 <SelectValue placeholder={st("selectTerms")} />
               </SelectTrigger>
               <SelectContent>
@@ -566,7 +569,7 @@ export default function SettingsPage() {
           onClick={save}
           disabled={saving}
           size="sm"
-          className="bg-emerald-600 hover:bg-emerald-700"
+          className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5"
         >
           {saving ? st("saving") : st("saveChanges")}
         </Button>
@@ -578,20 +581,20 @@ export default function SettingsPage() {
       <Section title={st("sendInvoicesElectronically")} description={st("yourBusinessIDOnThePEPPOLNetworkWhichLetsYouSendInvoices")}>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label className="text-xs">{st("peppolParticipantId")}</Label>
+            <Label className="text-xs" htmlFor="settings-page-15">{st("peppolParticipantId")}</Label>
             <Input
               value={peppolId}
               onChange={(e) => setPeppolId(e.target.value)}
-              placeholder={st("peppolIdExample")}
+              placeholder={st("peppolIdExample")} aria-label={st("peppolParticipantId")} id="settings-page-15" dir="ltr"
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">{st("peppolScheme")}</Label>
+            <Label className="text-xs" htmlFor="settings-page-16">{st("peppolScheme")}</Label>
             <Select
               value={peppolScheme}
               onValueChange={setPeppolScheme}
             >
-              <SelectTrigger>
+              <SelectTrigger className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" aria-label={st("peppolScheme")} id="settings-page-16">
                 <SelectValue placeholder={st("selectScheme")} />
               </SelectTrigger>
               <SelectContent>
@@ -615,19 +618,19 @@ export default function SettingsPage() {
 
       {/* Period Lock */}
       <Section title={st("lockPastDates")} description={st("lockPastDatesSoTheyCanTBeChangedOnceSetNothing")}>
-        <div className="flex items-end gap-3">
+        <div className="flex flex-wrap items-end gap-3">
           <div className="space-y-1.5 flex-1 max-w-xs">
-            <Label className="text-xs">{st("lockEverythingUpToAndIncluding")}</Label>
+            <Label className="text-xs" htmlFor="settings-page-17">{st("lockEverythingUpToAndIncluding")}</Label>
             <Input
               type="date"
               value={lockDate}
-              onChange={(e) => setLockDate(e.target.value)}
+              onChange={(e) => setLockDate(e.target.value)} aria-label={st("lockEverythingUpToAndIncluding")} id="settings-page-17" dir="ltr"
             />
           </div>
           <Button
             size="sm"
             variant="outline"
-            className="gap-1.5"
+            className="gap-1.5 h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5"
             disabled={lockSaving}
             onClick={async () => {
               const orgId = localStorage.getItem("activeOrgId");
@@ -658,7 +661,7 @@ export default function SettingsPage() {
         </div>
         {lockDate && (
           <p className="text-xs text-amber-600 mt-2">
-            {st("lockNotice", { date: lockDate })}
+            {st.rich("lockNotice", { date: lockDate , code: children => <IdentifierText>{children}</IdentifierText>})}
           </p>
         )}
       </Section>
@@ -674,7 +677,7 @@ export default function SettingsPage() {
               {st("permanentlyDeleteThisOrganizationAndAllItsData")}
             </p>
           </div>
-          <Button variant="destructive" size="sm" className="w-fit">
+          <Button variant="destructive" size="sm" className="w-fit h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5">
             {st("delete")}
           </Button>
         </div>

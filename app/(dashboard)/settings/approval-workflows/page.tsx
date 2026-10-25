@@ -1,4 +1,6 @@
 "use client";
+
+import { BidiText } from "@/components/ui/bidi-text";
 import { ApprovalConditionHelp } from "@/components/settings/approval-condition-help";
 import { useTranslations } from "next-intl";
 import { settingsErrorMessage, SettingsRequestError } from "@/i18n/settings-errors";
@@ -301,7 +303,7 @@ function ApprovalWorkflowsWorkspace({ activeOrgId }: { activeOrgId: string | nul
 
   return (
     <ContentReveal className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold tracking-tight">
             {t("approvalWorkflows")}
@@ -313,9 +315,9 @@ function ApprovalWorkflowsWorkspace({ activeOrgId }: { activeOrgId: string | nul
         <Button
           size="sm"
           onClick={openCreate}
-          className="bg-emerald-600 hover:bg-emerald-700"
+          className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5"
         >
-          <Plus className="mr-1.5 size-3.5" />
+          <Plus className="me-1.5 size-3.5" />
           {t("createWorkflow")}
         </Button>
       </div>
@@ -343,11 +345,11 @@ function ApprovalWorkflowsWorkspace({ activeOrgId }: { activeOrgId: string | nul
                 {wfs.map((w) => (
                   <div
                     key={w.id}
-                    className="flex items-center justify-between px-4 py-3"
+                    className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
                   >
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium">{w.name}</p>
+                        <p className="text-sm font-medium"><BidiText>{w.name}</BidiText></p>
                         <Badge
                           variant={w.isActive ? "default" : "secondary"}
                           className="text-[10px]"
@@ -369,18 +371,18 @@ function ApprovalWorkflowsWorkspace({ activeOrgId }: { activeOrgId: string | nul
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="size-8"
+                          className="size-8" aria-label={t("editWorkflow")}
                         >
                           <MoreHorizontal className="size-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => openEdit(w)}>
-                          <Pencil className="mr-2 size-3.5" />
+                          <Pencil className="me-2 size-3.5" />
                           {t("edit")}
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => toggleActive(w)}>
-                          <ToggleLeft className="mr-2 size-3.5" />
+                          <ToggleLeft className="me-2 size-3.5" />
                           {w.isActive ? t("deactivate") : t("activate")}
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
@@ -388,7 +390,7 @@ function ApprovalWorkflowsWorkspace({ activeOrgId }: { activeOrgId: string | nul
                           onClick={() => deleteWorkflow(w.id)}
                           className="text-red-600"
                         >
-                          <Trash2 className="mr-2 size-3.5" />
+                          <Trash2 className="me-2 size-3.5" />
                           {t("delete")}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
@@ -413,19 +415,19 @@ function ApprovalWorkflowsWorkspace({ activeOrgId }: { activeOrgId: string | nul
           <div className="space-y-5 px-4 py-4">
             {/* Name */}
             <div className="space-y-2">
-              <Label>{t("name")}</Label>
+              <Label htmlFor="settings-approval-workflows-1">{t("name")}</Label>
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder={t("eGHighValueBillApproval")}
+                placeholder={t("eGHighValueBillApproval")} aria-label={t("name")} id="settings-approval-workflows-1" dir="auto"
               />
             </div>
 
             {/* Entity Type */}
             <div className="space-y-2">
-              <Label>{t("entityType")}</Label>
+              <Label htmlFor="settings-approval-workflows-2">{t("entityType")}</Label>
               <Select value={entityType} onValueChange={setEntityType}>
-                <SelectTrigger>
+                <SelectTrigger className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" aria-label={t("entityType")} id="settings-approval-workflows-2">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -440,16 +442,16 @@ function ApprovalWorkflowsWorkspace({ activeOrgId }: { activeOrgId: string | nul
 
             {/* Conditions */}
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <Label>{t("conditions")}</Label>
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
                   onClick={addCondition}
-                  className="h-7 text-xs"
+                  className="text-xs h-auto min-h-7 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5"
                 >
-                  <Plus className="mr-1 size-3" />
+                  <Plus className="me-1 size-3" />
                   {t("add")}
                 </Button>
               </div>
@@ -462,7 +464,7 @@ function ApprovalWorkflowsWorkspace({ activeOrgId }: { activeOrgId: string | nul
                       updateCondition(i, { field: e.target.value })
                     }
                     placeholder={t("field")}
-                    className="flex-1"
+                    className="flex-1" aria-label={t("field")} dir="ltr"
                   />
                   <Select
                     value={c.operator}
@@ -472,7 +474,7 @@ function ApprovalWorkflowsWorkspace({ activeOrgId }: { activeOrgId: string | nul
                       })
                     }
                   >
-                    <SelectTrigger className="w-[130px]">
+                    <SelectTrigger className="w-[130px] h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" aria-label={t("operator")}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -490,14 +492,14 @@ function ApprovalWorkflowsWorkspace({ activeOrgId }: { activeOrgId: string | nul
                     }
                     aria-label={t("conditionValue", { number: i + 1 })}
                     placeholder={t("value")}
-                    className="flex-1"
+                    className="flex-1" dir="auto"
                   />
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
                     onClick={() => removeCondition(i)}
-                    className="size-8 shrink-0 text-red-500"
+                    className="size-8 shrink-0 text-red-500" aria-label={t("delete")}
                   >
                     <Trash2 className="size-3.5" />
                   </Button>
@@ -507,16 +509,16 @@ function ApprovalWorkflowsWorkspace({ activeOrgId }: { activeOrgId: string | nul
 
             {/* Steps */}
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <Label>{t("approvalSteps")}</Label>
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
                   onClick={addStep}
-                  className="h-7 text-xs"
+                  className="text-xs h-auto min-h-7 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5"
                 >
-                  <Plus className="mr-1 size-3" />
+                  <Plus className="me-1 size-3" />
                   {t("addStep")}
                 </Button>
               </div>
@@ -537,13 +539,13 @@ function ApprovalWorkflowsWorkspace({ activeOrgId }: { activeOrgId: string | nul
                     value={s.approverId}
                     onValueChange={(v) => updateStep(i, { approverId: v })}
                   >
-                    <SelectTrigger className="flex-1">
+                    <SelectTrigger className="flex-1 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" aria-label={t("selectApprover")}>
                       <SelectValue placeholder={t("selectApprover")} />
                     </SelectTrigger>
                     <SelectContent>
                       {members.map((m) => (
                         <SelectItem key={m.id} value={m.id}>
-                          {memberLabel(m)}
+                          <BidiText>{memberLabel(m)}</BidiText>
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -555,7 +557,7 @@ function ApprovalWorkflowsWorkspace({ activeOrgId }: { activeOrgId: string | nul
                       size="icon"
                       className="size-7"
                       disabled={i === 0}
-                      onClick={() => moveStep(i, -1)}
+                      onClick={() => moveStep(i, -1)} aria-label={t("moveStepUp")}
                     >
                       <ArrowUp className="size-3.5" />
                     </Button>
@@ -565,7 +567,7 @@ function ApprovalWorkflowsWorkspace({ activeOrgId }: { activeOrgId: string | nul
                       size="icon"
                       className="size-7"
                       disabled={i === steps.length - 1}
-                      onClick={() => moveStep(i, 1)}
+                      onClick={() => moveStep(i, 1)} aria-label={t("moveStepDown")}
                     >
                       <ArrowDown className="size-3.5" />
                     </Button>
@@ -574,7 +576,7 @@ function ApprovalWorkflowsWorkspace({ activeOrgId }: { activeOrgId: string | nul
                       variant="ghost"
                       size="icon"
                       className="size-7 text-red-500"
-                      onClick={() => removeStep(i)}
+                      onClick={() => removeStep(i)} aria-label={t("delete")}
                     >
                       <Trash2 className="size-3.5" />
                     </Button>
@@ -586,7 +588,7 @@ function ApprovalWorkflowsWorkspace({ activeOrgId }: { activeOrgId: string | nul
 
           {conditionError && <p role="alert" className="px-4 text-sm text-destructive">{conditionError}</p>}
           <SheetFooter>
-            <Button variant="outline" onClick={() => setSheetOpen(false)}>
+            <Button variant="outline" onClick={() => setSheetOpen(false)} className="h-auto min-h-9 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5">
               {t("cancel")}
             </Button>
             <Button
@@ -597,10 +599,10 @@ function ApprovalWorkflowsWorkspace({ activeOrgId }: { activeOrgId: string | nul
                 steps.some((s) => !s.approverId) ||
                 saving
               }
-              className="bg-emerald-600 hover:bg-emerald-700"
+              className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-9 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5"
             >
               {saving ? (
-                <Loader2 className="mr-2 size-4 animate-spin" />
+                <Loader2 className="me-2 size-4 animate-spin" />
               ) : null}
               {editingWorkflow ? t("update") : t("create")}
             </Button>

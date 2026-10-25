@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText } from "@/components/ui/bidi-text";
+
 import { useTranslations } from "next-intl";
 import { settingsErrorMessage, SettingsRequestError } from "@/i18n/settings-errors";
 
@@ -144,15 +146,15 @@ export default function RolesPage() {
 
   return (
     <ContentReveal className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold tracking-tight">{t("customRoles")}</h2>
           <p className="mt-0.5 text-[13px] text-muted-foreground">
             {t("buildYourOwnAccessLevelsByChoosingExactlyWhatEachPerson")}
           </p>
         </div>
-        <Button size="sm" onClick={openCreate} className="bg-emerald-600 hover:bg-emerald-700">
-          <Plus className="mr-1.5 size-3.5" />
+        <Button size="sm" onClick={openCreate} className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5">
+          <Plus className="me-1.5 size-3.5" />
           {t("createRole")}
         </Button>
       </div>
@@ -166,10 +168,10 @@ export default function RolesPage() {
       ) : (
         <div className="divide-y rounded-lg border">
           {roles.map((role) => (
-            <div key={role.id} className="flex items-center justify-between px-4 py-3">
+            <div key={role.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium">{role.name}</p>
+                  <p className="text-sm font-medium"><BidiText>{role.name}</BidiText></p>
                   {role.isSystem && (
                     <Badge variant="secondary" className="text-[10px]">{t("system")}</Badge>
                   )}
@@ -178,7 +180,7 @@ export default function RolesPage() {
                   </Badge>
                 </div>
                 {role.description && (
-                  <p className="mt-0.5 text-xs text-muted-foreground">{role.description}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground"><BidiText>{role.description}</BidiText></p>
                 )}
                 <p className="mt-1 text-[11px] text-muted-foreground">
                   {t("permissionCount", { count: role.permissions.length })}
@@ -193,14 +195,14 @@ export default function RolesPage() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => openEdit(role)}>
-                      <Pencil className="mr-2 size-3.5" />
+                      <Pencil className="me-2 size-3.5" />
                       {t("edit")}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => deleteRole(role.id)}
                       className="text-red-600"
                     >
-                      <Trash2 className="mr-2 size-3.5" />
+                      <Trash2 className="me-2 size-3.5" />
                       {t("delete")}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -218,32 +220,32 @@ export default function RolesPage() {
           </SheetHeader>
           <div className="space-y-4 px-4 py-4">
             <div className="space-y-2">
-              <Label>{t("name")}</Label>
+              <Label htmlFor="settings-roles-1">{t("name")}</Label>
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder={t("eGBookkeeper")}
+                placeholder={t("eGBookkeeper")} aria-label={t("name")} id="settings-roles-1" dir="auto"
               />
             </div>
             <div className="space-y-2">
-              <Label>{t("description")}</Label>
+              <Label htmlFor="settings-roles-2">{t("description")}</Label>
               <Textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder={t("optionalDescription")}
-                rows={2}
+                rows={2} aria-label={t("description")} id="settings-roles-2" dir="auto"
               />
             </div>
             <RolePermissionFields selectedPermissions={selectedPermissions} onToggleCategory={toggleCategory} onTogglePermission={togglePermission} />
           </div>
           <SheetFooter>
-            <Button variant="outline" onClick={() => setSheetOpen(false)}>{t("cancel")}</Button>
+            <Button variant="outline" onClick={() => setSheetOpen(false)} className="h-auto min-h-9 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5">{t("cancel")}</Button>
             <Button
               onClick={save}
               disabled={!name || selectedPermissions.length === 0 || saving}
-              className="bg-emerald-600 hover:bg-emerald-700"
+              className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-9 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5"
             >
-              {saving ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
+              {saving ? <Loader2 className="me-2 size-4 animate-spin" /> : null}
               {editingRole ? t("update") : t("create")}
             </Button>
           </SheetFooter>

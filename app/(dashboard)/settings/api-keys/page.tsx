@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { richTextTags } from "@/i18n/rich-text";
 import { useTranslations } from "next-intl";
 import { settingsErrorMessage, SettingsRequestError } from "@/i18n/settings-errors";
@@ -125,21 +127,21 @@ export default function ApiKeysPage() {
           <Button
             variant="outline"
             size="sm"
-            className="shrink-0 text-xs border-amber-200 text-amber-700 hover:bg-amber-100 dark:border-amber-800 dark:text-amber-300"
+            className="shrink-0 text-xs border-amber-200 text-amber-700 hover:bg-amber-100 dark:border-amber-800 dark:text-amber-300 h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5"
             onClick={() => router.push("/settings/billing")}
           >
-            {t("upgrade")}<ArrowUpRight className="ml-1 size-3" />
+            {t("upgrade")}<ArrowUpRight className="ms-1 size-3" />
           </Button>
         </div>
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold tracking-tight">{t("apiKeys")}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {t("createAndManageKeysForProgrammaticAccessToTheDubblAPI")}{keys.length > 0 && (
-              <span className="ml-2 inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
+              <span className="ms-2 inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
                 {keys.length}/{maxKeys}
               </span>
             )}
@@ -152,9 +154,9 @@ export default function ApiKeysPage() {
             setCreateOpen(true);
           }}
           disabled={!apiAccess || keys.length >= maxKeys}
-          className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50"
+          className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5"
         >
-          <Plus className="mr-1.5 size-3.5" />
+          <Plus className="me-1.5 size-3.5" />
           {t("newKey")}
         </Button>
       </div>
@@ -177,9 +179,9 @@ export default function ApiKeysPage() {
               setCreateOpen(true);
             }}
             disabled={!apiAccess}
-            className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50"
+            className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5"
           >
-            <Plus className="mr-1.5 size-3.5" />
+            <Plus className="me-1.5 size-3.5" />
             {t("createYourFirstKey")}
           </Button>
         </EmptyState>
@@ -188,7 +190,7 @@ export default function ApiKeysPage() {
           {keys.map((k, i) => (
             <div
               key={k.id}
-              className={`flex items-center gap-4 px-5 py-4 ${
+              className={`flex flex-wrap items-center gap-4 px-5 py-4 ${
                 i !== keys.length - 1 ? "border-b" : ""
               }`}
             >
@@ -199,9 +201,9 @@ export default function ApiKeysPage() {
 
               {/* Name + prefix */}
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium truncate">{k.name}</p>
-                <p className="mt-0.5 font-mono text-xs text-muted-foreground truncate">
-                  {k.keyPrefix}...
+                <p className="text-sm font-medium min-w-0 whitespace-normal [overflow-wrap:anywhere]"><BidiText>{k.name}</BidiText></p>
+                <p className="mt-0.5 font-mono text-xs text-muted-foreground min-w-0 whitespace-normal [overflow-wrap:anywhere]">
+                  <IdentifierText>{k.keyPrefix}...</IdentifierText>
                 </p>
               </div>
 
@@ -209,11 +211,11 @@ export default function ApiKeysPage() {
               <div className="hidden items-center gap-6 sm:flex">
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Clock className="size-3" />
-                  <span>{k.lastUsedAt ? t("used", { date: k.lastUsedAt }) : t("neverUsed")}</span>
+                  <span>{k.lastUsedAt ? t.rich("used", { date: k.lastUsedAt , code: children => <IdentifierText>{children}</IdentifierText>}) : t("neverUsed")}</span>
                 </div>
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Calendar className="size-3" />
-                  <span>{t("created", { date: k.createdAt })}</span>
+                  <span>{t.rich("created", { date: k.createdAt , code: children => <IdentifierText>{children}</IdentifierText>})}</span>
                 </div>
               </div>
 
@@ -241,7 +243,7 @@ export default function ApiKeysPage() {
       <div className="space-y-3">
         <h3 className="text-sm font-medium">{t("authentication")}</h3>
         <div className="overflow-hidden rounded-xl border bg-zinc-950 dark:bg-zinc-900">
-          <div className="flex items-center justify-between border-b border-zinc-800 px-4 py-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800 px-4 py-2.5">
             <span className="text-xs font-medium text-zinc-400">{t("exampleRequest")}</span>
             <Button
               variant="ghost"
@@ -256,14 +258,14 @@ export default function ApiKeysPage() {
               <Copy className="size-3" />
             </Button>
           </div>
-          <pre className="overflow-x-auto p-4 text-[13px] leading-relaxed font-mono text-emerald-400">
+          <pre dir="ltr" className="[unicode-bidi:isolate] text-start overflow-x-auto p-4 text-[13px] leading-relaxed font-mono text-emerald-400">
             <code>{curlExample}</code>
           </pre>
         </div>
         <p className="text-xs text-muted-foreground">
           {t.rich("authenticationHelp", {
             ...richTextTags,
-            code: text => <code className="rounded bg-muted px-1 py-0.5 text-[11px] font-mono">{text}</code>,
+            code: text => <code dir="ltr" className="[unicode-bidi:isolate] rounded bg-muted px-1 py-0.5 text-[11px] font-mono">{text}</code>,
           })}
         </p>
       </div>
@@ -295,16 +297,16 @@ export default function ApiKeysPage() {
           }} />
           <SheetFooter>
             {newKey ? (
-              <Button onClick={() => setCreateOpen(false)}>{t("done")}</Button>
+              <Button onClick={() => setCreateOpen(false)} className="h-auto min-h-9 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5">{t("done")}</Button>
             ) : (
               <>
-                <Button variant="outline" onClick={() => setCreateOpen(false)}>
+                <Button variant="outline" onClick={() => setCreateOpen(false)} className="h-auto min-h-9 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5">
                   {t("cancel")}
                 </Button>
                 <Button
                   onClick={createKey}
                   disabled={!name || saving}
-                  className="bg-emerald-600 hover:bg-emerald-700"
+                  className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-9 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5"
                 >
                   {saving ? t("creating") : t("createKey")}
                 </Button>

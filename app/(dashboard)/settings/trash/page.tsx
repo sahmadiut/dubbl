@@ -148,7 +148,7 @@ export default function TrashPage() {
   return (
     <ContentReveal>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold">{t("trash")}</h2>
             <p className="text-sm text-muted-foreground">{t("deletedItemsAreKeptFor30DaysBeforePermanentRemoval")}</p>
@@ -157,7 +157,7 @@ export default function TrashPage() {
             <Button
               variant="destructive"
               size="sm"
-              className="h-8 text-xs gap-1.5"
+              className="text-xs gap-1.5 h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5"
               onClick={() => setEmptyOpen(true)}
             >
               <Trash2 className="size-3.5" />
@@ -168,16 +168,16 @@ export default function TrashPage() {
 
         <div className="flex items-center gap-3">
           <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+            <Search className="absolute start-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
             <Input
               placeholder={t("searchDeletedItems")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 h-8 text-sm"
+              className="ps-8 h-8 text-sm" aria-label={t("searchDeletedItems")} dir="auto"
             />
           </div>
           <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-[180px] h-8 text-sm">
+            <SelectTrigger className="w-[180px]  text-sm h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" aria-label={t("allTypes")}>
               <SelectValue placeholder={t("allTypes")} />
             </SelectTrigger>
             <SelectContent>
@@ -210,8 +210,8 @@ export default function TrashPage() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteItem(null)} disabled={acting}>{t("cancel")}</Button>
-            <Button variant="destructive" onClick={confirmDeletePermanently} disabled={acting}>
+            <Button variant="outline" onClick={() => setDeleteItem(null)} disabled={acting} className="h-auto min-h-9 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5">{t("cancel")}</Button>
+            <Button variant="destructive" onClick={confirmDeletePermanently} disabled={acting} className="h-auto min-h-9 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5">
               {acting ? t("deleting") : t("deletePermanently")}
             </Button>
           </DialogFooter>
@@ -228,8 +228,8 @@ export default function TrashPage() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEmptyOpen(false)} disabled={acting}>{t("cancel")}</Button>
-            <Button variant="destructive" onClick={confirmEmptyTrash} disabled={acting}>
+            <Button variant="outline" onClick={() => setEmptyOpen(false)} disabled={acting} className="h-auto min-h-9 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5">{t("cancel")}</Button>
+            <Button variant="destructive" onClick={confirmEmptyTrash} disabled={acting} className="h-auto min-h-9 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5">
               {acting ? t("emptying") : t("emptyTrashAction")}
             </Button>
           </DialogFooter>

@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { useTranslations } from "next-intl";
 import { settingsErrorMessage } from "@/i18n/settings-errors";
 
@@ -132,7 +134,7 @@ export default function AdvisorsPage() {
   return (
     <ContentReveal>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold">{t("advisors")}</h2>
             <p className="text-sm text-muted-foreground">
@@ -141,7 +143,7 @@ export default function AdvisorsPage() {
           </div>
           <Button
             size="sm"
-            className="h-8 text-xs gap-1.5"
+            className="text-xs gap-1.5 h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5"
             onClick={() => {
               setEmail("");
               setRole("accountant");
@@ -165,7 +167,7 @@ export default function AdvisorsPage() {
             title={t("noAdvisors")}
             description={t("inviteYourAccountantOrBookkeeperToGiveThemAccessToYour")}
           >
-            <Button size="sm" className="h-8 text-xs gap-1.5 mt-3" onClick={() => setSheetOpen(true)}>
+            <Button size="sm" className="text-xs gap-1.5 mt-3 h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5" onClick={() => setSheetOpen(true)}>
               <Plus className="size-3.5" />
               {t("inviteAdvisor")}
             </Button>
@@ -186,12 +188,12 @@ export default function AdvisorsPage() {
                 {advisors.map((a) => (
                   <TableRow key={a.id}>
                     <TableCell className="font-medium">
-                      {a.advisor?.email || a.inviteEmail || "-"}
+                      <IdentifierText>{a.advisor?.email || a.inviteEmail || "-"}</IdentifierText>
                     </TableCell>
-                    <TableCell>{roleLabels[a.role] || a.role}</TableCell>
+                    <TableCell><BidiText>{roleLabels[a.role] || a.role}</BidiText></TableCell>
                     <TableCell>{getStatusBadge(a)}</TableCell>
                     <TableCell className="text-muted-foreground text-xs">
-                      {new Date(a.invitedAt).toLocaleDateString()}
+                      <IdentifierText>{new Date(a.invitedAt).toLocaleDateString()}</IdentifierText>
                     </TableCell>
                     <TableCell>
                       {!a.revokedAt && (
@@ -221,21 +223,21 @@ export default function AdvisorsPage() {
           </SheetHeader>
           <div className="space-y-4 px-4 py-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">{t("email")}</label>
+              <label className="text-sm font-medium" htmlFor="settings-advisors-1">{t("email")}</label>
               <Input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder={t("accountantExampleCom")}
+                placeholder={t("accountantExampleCom")} aria-label={t("email")} id="settings-advisors-1" dir="ltr"
               />
               <p className="text-xs text-muted-foreground">
                 {t("theAdvisorMustHaveAnExistingAccount")}
               </p>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">{t("role")}</label>
+              <label className="text-sm font-medium" htmlFor="settings-advisors-2">{t("role")}</label>
               <Select value={role} onValueChange={setRole}>
-                <SelectTrigger>
+                <SelectTrigger className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" aria-label={t("role")} id="settings-advisors-2">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -257,13 +259,13 @@ export default function AdvisorsPage() {
             </div>
           </div>
           <SheetFooter>
-            <Button variant="outline" onClick={() => setSheetOpen(false)}>
+            <Button variant="outline" onClick={() => setSheetOpen(false)} className="h-auto min-h-9 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5">
               {t("cancel")}
             </Button>
             <Button
               onClick={handleInvite}
               disabled={saving || !email.trim()}
-              className="bg-emerald-600 hover:bg-emerald-700"
+              className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-9 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5"
             >
               {saving ? t("inviting") : t("sendInvitation")}
             </Button>

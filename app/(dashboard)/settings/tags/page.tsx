@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText } from "@/components/ui/bidi-text";
+
 import { useTranslations } from "next-intl";
 
 import { useState, useEffect, useCallback } from "react";
@@ -129,14 +131,14 @@ export default function TagsPage() {
   return (
     <ContentReveal>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold">{st("tags")}</h2>
             <p className="text-sm text-muted-foreground">
               {st("createTagsToCategorizeTransactionsInvoicesBillsAndContacts")}
             </p>
           </div>
-          <Button size="sm" className="h-8 text-xs gap-1.5" onClick={openCreate}>
+          <Button size="sm" className="text-xs gap-1.5 h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5" onClick={openCreate}>
             <Plus className="size-3.5" />
             {st("addTag")}
           </Button>
@@ -154,7 +156,7 @@ export default function TagsPage() {
             title={st("noTagsYet")}
             description={st("tagsHelpYouCategorizeAndFilterTransactionsAcrossYourOrganization")}
           >
-            <Button size="sm" className="h-8 text-xs gap-1.5 mt-3" onClick={openCreate}>
+            <Button size="sm" className="text-xs gap-1.5 mt-3 h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5" onClick={openCreate}>
               <Plus className="size-3.5" />
               {st("createTag")}
             </Button>
@@ -179,9 +181,9 @@ export default function TagsPage() {
                         style={{ backgroundColor: tag.color }}
                       />
                     </TableCell>
-                    <TableCell className="font-medium">{tag.name}</TableCell>
+                    <TableCell className="font-medium"><BidiText>{tag.name}</BidiText></TableCell>
                     <TableCell className="text-muted-foreground">
-                      {tag.description || "-"}
+                      <BidiText>{tag.description || "-"}</BidiText>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
@@ -221,7 +223,7 @@ export default function TagsPage() {
           <TagFields name={name} color={color} description={description}
             onNameChange={setName} onColorChange={setColor} onDescriptionChange={setDescription} />
           <SheetFooter>
-            <Button onClick={handleSave} disabled={saving || !name.trim()} className="w-full">
+            <Button onClick={handleSave} disabled={saving || !name.trim()} className="w-full h-auto min-h-9 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5">
               {saving ? st("saving") : editingTag ? st("update") : st("create")}
             </Button>
           </SheetFooter>

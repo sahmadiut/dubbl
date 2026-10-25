@@ -1,5 +1,7 @@
 "use client";
 
+import { IdentifierText } from "@/components/ui/bidi-text";
+
 import { useTranslations } from "next-intl";
 import { AUDIT_ENTITY_TYPES, auditActionLabel, auditEntityLabel, auditRelativeTime, auditDayLabel } from "@/i18n/audit-presentation";
 import { usePresentation } from "@/i18n/provider";
@@ -268,11 +270,11 @@ export default function AuditLogPage() {
           <Tabs value={actionFilter} onValueChange={setActionFilter}>
             <TabsList className="overflow-x-auto">
               <TabsTrigger value="all" className="whitespace-nowrap">
-                {t("all")}<span className="ml-1.5 text-[10px] text-muted-foreground tabular-nums">{allTotal}</span>
+                {t("all")}<span className="ms-1.5 text-[10px] text-muted-foreground tabular-nums">{allTotal}</span>
               </TabsTrigger>
               {Object.entries(actionCounts).map(([action, count]) => (
                 <TabsTrigger key={action} value={action} className="whitespace-nowrap capitalize">
-                  {auditActionLabel(t, action)} <span className="ml-1.5 text-[10px] text-muted-foreground tabular-nums">{count}</span>
+                  {auditActionLabel(t, action)} <span className="ms-1.5 text-[10px] text-muted-foreground tabular-nums">{count}</span>
                 </TabsTrigger>
               ))}
             </TabsList>
@@ -281,16 +283,16 @@ export default function AuditLogPage() {
           {/* Filter bar */}
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+              <Search className="absolute start-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
               <Input
                 placeholder={t("searchUserEntity")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="h-8 w-52 pl-8 text-xs"
+                className="h-8 w-52 ps-8 text-xs" aria-label={t("searchUserEntity")} dir="auto"
               />
             </div>
             <Select value={entityTypeFilter} onValueChange={setEntityTypeFilter}>
-              <SelectTrigger className="h-8 w-40 text-xs">
+              <SelectTrigger className="w-40 text-xs h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" aria-label={t("entityType")}>
                 <SelectValue placeholder={t("entityType")} />
               </SelectTrigger>
               <SelectContent>
@@ -322,14 +324,14 @@ export default function AuditLogPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 text-xs text-muted-foreground"
+                className="text-xs text-muted-foreground h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5"
                 onClick={() => {
                   setSearch("");
                   setEntityTypeFilter("all"); setActionFilter("all");
                   setDateFrom(""); setDateTo("");
                 }}
               >
-                <X className="mr-1 size-3" />
+                <X className="me-1 size-3" />
                 {t("clear")}
               </Button>
             )}
@@ -354,10 +356,10 @@ export default function AuditLogPage() {
               {grouped.map((group, gi) => (
                 <div key={group.label}>
                   {/* Day header with dot on timeline */}
-                  <div className="relative flex items-center gap-3 py-3 pl-[9px]">
+                  <div className="relative flex items-center gap-3 py-3 ps-[9px]">
                     {/* Timeline line above day label */}
                     {gi > 0 && (
-                      <div className="absolute left-[12px] -top-0 h-3 w-px bg-border" />
+                      <div className="absolute start-[12px] -top-0 h-3 w-px bg-border" />
                     )}
                     <div className="relative z-10 flex size-2 shrink-0 rounded-full bg-border ring-4 ring-background" />
                     <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
@@ -369,7 +371,7 @@ export default function AuditLogPage() {
                   {/* Timeline entries */}
                   <div className="relative">
                     {/* Continuous vertical line */}
-                    <div className="absolute left-[12px] top-0 bottom-0 w-px bg-border" />
+                    <div className="absolute start-[12px] top-0 bottom-0 w-px bg-border" />
 
                     {group.items.map((entry, i) => {
                       const EntityIcon = ENTITY_ICONS[entry.entityType] || ArrowLeftRight;
@@ -381,7 +383,7 @@ export default function AuditLogPage() {
                         <div
                           key={entry.id}
                           className={cn(
-                            "relative flex items-start gap-3 pr-3 py-2.5 transition-colors hover:bg-muted/30 rounded-lg group",
+                            "relative flex items-start gap-3 pe-3 py-2.5 transition-colors hover:bg-muted/30 rounded-lg group",
                             isLastEntry && "pb-4"
                           )}
                         >
@@ -406,7 +408,7 @@ export default function AuditLogPage() {
                           </div>
 
                           {/* Content card */}
-                          <div className="flex-1 min-w-0 flex items-start justify-between gap-3 rounded-lg border bg-card px-3.5 py-2.5 shadow-xs transition-shadow group-hover:shadow-sm">
+                          <div className="flex-1 min-w-0 flex flex-wrap items-start justify-between gap-3 rounded-lg border bg-card px-3.5 py-2.5 shadow-xs transition-shadow group-hover:shadow-sm">
                             <div className="min-w-0">
                               <p className="text-[13px] leading-snug">
                                 <AuditActivityText userName={entry.userName} action={entry.action} entityType={entry.entityType}
@@ -416,20 +418,20 @@ export default function AuditLogPage() {
                                 <Badge variant="outline" className={cn("text-[10px] capitalize h-[18px] px-1.5", actionConfig.badgeClass)}>
                                   {auditActionLabel(t, entry.action)}
                                 </Badge>
-                                <span className="font-mono text-[10px] text-muted-foreground/40">{entry.entityId.slice(0, 8)}</span>
+                                <span className="font-mono text-[10px] text-muted-foreground/40"><IdentifierText>{entry.entityId.slice(0, 8)}</IdentifierText></span>
                                 {entry.ipAddress && (
                                   <>
                                     <span className="text-muted-foreground/20">·</span>
-                                    <span className="text-[10px] text-muted-foreground/40">{entry.ipAddress}</span>
+                                    <span className="text-[10px] text-muted-foreground/40"><IdentifierText>{entry.ipAddress}</IdentifierText></span>
                                   </>
                                 )}
                               </div>
                             </div>
 
                             {/* Timestamp */}
-                            <div className="text-right shrink-0">
+                            <div className="text-end shrink-0">
                               <p className="text-[11px] text-muted-foreground tabular-nums">
-                                {new Date(entry.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                <IdentifierText>{new Date(entry.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</IdentifierText>
                               </p>
                               <p className="text-[10px] text-muted-foreground/40 hidden sm:block">
                                 {auditRelativeTime(t, presentation, entry.createdAt)}
@@ -447,7 +449,7 @@ export default function AuditLogPage() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between pt-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-4">
                 <p className="text-[11px] text-muted-foreground tabular-nums">
                   {t("pagination", { page, total: totalPages })}
                 </p>
@@ -455,21 +457,21 @@ export default function AuditLogPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-7 text-xs"
+                    className="text-xs h-auto min-h-7 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5"
                     disabled={page <= 1}
                     onClick={() => setPage((p) => p - 1)}
                   >
-                    <ChevronLeft className="size-3 mr-1" />
+                    <ChevronLeft className="size-3 me-1 rtl:rotate-180" />
                     {t("previous")}
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-7 text-xs"
+                    className="text-xs h-auto min-h-7 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5"
                     disabled={page >= totalPages}
                     onClick={() => setPage((p) => p + 1)}
                   >
-                    {t("next")}<ChevronRight className="size-3 ml-1" />
+                    {t("next")}<ChevronRight className="size-3 ms-1 rtl:rotate-180" />
                   </Button>
                 </div>
               </div>

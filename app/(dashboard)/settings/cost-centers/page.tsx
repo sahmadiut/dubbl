@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { useTranslations } from "next-intl";
 
 import { useState, useEffect, useCallback } from "react";
@@ -240,7 +242,7 @@ export default function CostCentersPage() {
   return (
     <ContentReveal className="w-full space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 gap-4">
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2.5">
             <Network className="size-5 text-muted-foreground" />
@@ -259,10 +261,10 @@ export default function CostCentersPage() {
         </div>
         <Button
           size="sm"
-          className="bg-emerald-600 hover:bg-emerald-700"
+          className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5"
           onClick={openCreate}
         >
-          <Plus className="mr-1.5 size-3.5" />
+          <Plus className="me-1.5 size-3.5" />
           {st("newCostCenter")}
         </Button>
       </div>
@@ -298,7 +300,7 @@ export default function CostCentersPage() {
                 <TableHead>{st("name")}</TableHead>
                 <TableHead className="w-[160px]">{st("parent")}</TableHead>
                 <TableHead className="w-[100px]">{st("status")}</TableHead>
-                <TableHead className="w-[100px] text-right">{st("actions")}</TableHead>
+                <TableHead className="w-[100px] text-end">{st("actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -307,27 +309,27 @@ export default function CostCentersPage() {
                   <TableCell className="font-mono text-sm">
                     <div
                       className="flex items-center"
-                      style={{ paddingLeft: `${depth * 24}px` }}
+                      style={{ paddingInlineStart: `${depth * 24}px` }}
                     >
                       {depth > 0 && (
-                        <span className="mr-2 flex items-center text-muted-foreground/50">
+                        <span className="me-2 flex items-center text-muted-foreground/50">
                           <span className="inline-block h-px w-3 bg-border" />
-                          <ChevronRight className="size-3" />
+                          <ChevronRight className="size-3 rtl:rotate-180" />
                         </span>
                       )}
-                      {node.code}
+                      <IdentifierText>{node.code}</IdentifierText>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div
-                      style={{ paddingLeft: `${depth * 24}px` }}
+                      style={{ paddingInlineStart: `${depth * 24}px` }}
                       className="text-sm"
                     >
-                      {node.name}
+                      <BidiText>{node.name}</BidiText>
                     </div>
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {parentName(node.parentId)}
+                    <BidiText>{parentName(node.parentId)}</BidiText>
                   </TableCell>
                   <TableCell>
                     <Badge
@@ -341,7 +343,7 @@ export default function CostCentersPage() {
                       {node.isActive ? st("active") : st("inactive")}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-end">
                     <div className="flex items-center justify-end gap-1">
                       <Button
                         variant="ghost"
@@ -380,57 +382,57 @@ export default function CostCentersPage() {
           </SheetHeader>
           <form onSubmit={handleSave} className="space-y-4 px-4 py-4">
             <div className="space-y-2">
-              <Label>{st("code")}</Label>
+              <Label htmlFor="settings-cost-centers-1">{st("code")}</Label>
               <Input
                 value={formCode}
                 onChange={(e) => setFormCode(e.target.value)}
                 placeholder={st("eGDEPTENG")}
-                required
+                required aria-label={st("code")} id="settings-cost-centers-1" dir="ltr"
               />
             </div>
             <div className="space-y-2">
-              <Label>{st("name")}</Label>
+              <Label htmlFor="settings-cost-centers-2">{st("name")}</Label>
               <Input
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
                 placeholder={st("eGEngineering")}
-                required
+                required aria-label={st("name")} id="settings-cost-centers-2" dir="auto"
               />
             </div>
             <div className="space-y-2">
-              <Label>{st("parentCostCenter")}</Label>
+              <Label htmlFor="settings-cost-centers-3">{st("parentCostCenter")}</Label>
               <Select value={formParentId} onValueChange={setFormParentId}>
-                <SelectTrigger>
+                <SelectTrigger className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" aria-label={st("parentCostCenter")} id="settings-cost-centers-3">
                   <SelectValue placeholder={st("noneTopLevel")} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">{st("noneTopLevel")}</SelectItem>
                   {availableParents.map((cc) => (
                     <SelectItem key={cc.id} value={cc.id}>
-                      {cc.code} · {cc.name}
+                      <IdentifierText>{cc.code}</IdentifierText> · <BidiText>{cc.name}</BidiText>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             {editing && (
-              <div className="flex items-center justify-between rounded-lg border px-4 py-3">
-                <Label className="text-sm font-normal">{st("active")}</Label>
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border px-4 py-3">
+                <Label className="text-sm font-normal" htmlFor="settings-cost-centers-4">{st("active")}</Label>
                 <Switch
                   checked={formIsActive}
-                  onCheckedChange={setFormIsActive}
+                  onCheckedChange={setFormIsActive} aria-label={st("active")} id="settings-cost-centers-4"
                 />
               </div>
             )}
           </form>
           <SheetFooter>
-            <Button variant="outline" onClick={closeDrawer}>
+            <Button variant="outline" onClick={closeDrawer} className="h-auto min-h-9 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5">
               {st("cancel")}
             </Button>
             <Button
               onClick={handleSave}
               disabled={saving || !formCode.trim() || !formName.trim()}
-              className="bg-emerald-600 hover:bg-emerald-700"
+              className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-9 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5"
             >
               {saving
                 ? editing
@@ -453,13 +455,13 @@ export default function CostCentersPage() {
           <CostCenterDeleteDescription code={deleting?.code ?? ""} name={deleting?.name ?? ""}
             hasChildren={!!deleting && costCenters.some(c => c.parentId === deleting.id)} />
           <SheetFooter>
-            <Button variant="outline" onClick={() => setDeleting(null)}>
+            <Button variant="outline" onClick={() => setDeleting(null)} className="h-auto min-h-9 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5">
               {st("cancel")}
             </Button>
             <Button
               variant="destructive"
               onClick={handleDelete}
-              disabled={saving}
+              disabled={saving} className="h-auto min-h-9 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5"
             >
               {saving ? st("deleting") : st("delete")}
             </Button>

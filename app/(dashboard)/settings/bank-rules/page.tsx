@@ -1,4 +1,6 @@
 "use client";
+
+import { BidiText } from "@/components/ui/bidi-text";
 import { bankFieldLabels, opsForField, summarizeRule, isAmountField, type ConditionField, type ConditionOp, type RuleCondition, type SplitAllocation, type BankRule, type AccountOption, type ContactOption, type TaxRateOption } from "@/i18n/bank-rule-presentation";
 import { useTranslations } from "next-intl";
 import { settingsErrorMessage } from "@/i18n/settings-errors";
@@ -423,12 +425,12 @@ export default function BankRulesPage() {
     <ContentReveal>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold">{t("bankRules")}</h2>
             <p className="text-sm text-muted-foreground">
               {t("descriptionText")}{rules.length > 0 && (
-                <span className="ml-2 inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
+                <span className="ms-2 inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
                   {t("ruleCount", { count: rules.length })}
                 </span>
               )}
@@ -438,13 +440,13 @@ export default function BankRulesPage() {
             <Button
               variant="outline"
               size="sm"
-              className="h-8 text-xs gap-1.5"
+              className="text-xs gap-1.5 h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5"
               onClick={handleGetSuggestions}
             >
               <Sparkles className="size-3.5" />
               {t("getSuggestions")}
             </Button>
-            <Button size="sm" className="h-8 text-xs gap-1.5" onClick={openCreate}>
+            <Button size="sm" className="text-xs gap-1.5 h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5" onClick={openCreate}>
               <Plus className="size-3.5" />
               {t("addRule")}
             </Button>
@@ -466,7 +468,7 @@ export default function BankRulesPage() {
           >
             <Button
               size="sm"
-              className="h-8 text-xs gap-1.5 mt-3"
+              className="text-xs gap-1.5 mt-3 h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5"
               onClick={openCreate}
             >
               <Plus className="size-3.5" />
@@ -487,14 +489,14 @@ export default function BankRulesPage() {
                 <div key={rule.id} className="flex items-center gap-4 px-4 py-3">
                   {/* Name + match info */}
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium truncate">{rule.name}</p>
+                    <p className="text-sm font-medium min-w-0 whitespace-normal [overflow-wrap:anywhere]"><BidiText>{rule.name}</BidiText></p>
                     <div className="mt-1 flex items-center gap-2 flex-wrap">
                       <code className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono text-muted-foreground">
-                        {match}
+                        <BidiText>{match}</BidiText>
                       </code>
                       {actions.map((a, i) => (
                         <Badge key={i} variant="secondary" className="text-xs">
-                          {a}
+                          <BidiText>{a}</BidiText>
                         </Badge>
                       ))}
                     </div>
@@ -526,11 +528,11 @@ export default function BankRulesPage() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => openEdit(rule)}>
-                        <Pencil className="mr-2 size-3.5" />
+                        <Pencil className="me-2 size-3.5" />
                         {t("edit")}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleToggleActive(rule)}>
-                        <ToggleLeft className="mr-2 size-3.5" />
+                        <ToggleLeft className="me-2 size-3.5" />
                         {rule.isActive ? t("disable") : t("enable")}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
@@ -538,7 +540,7 @@ export default function BankRulesPage() {
                         className="text-red-600"
                         onClick={() => handleDelete(rule.id)}
                       >
-                        <Trash2 className="mr-2 size-3.5" />
+                        <Trash2 className="me-2 size-3.5" />
                         {t("delete")}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -560,17 +562,17 @@ export default function BankRulesPage() {
           </SheetHeader>
           <div className="space-y-6 px-4 py-4">
             <div className="space-y-2">
-              <Label>{t("ruleName")}</Label>
+              <Label htmlFor="settings-bank-rules-1">{t("ruleName")}</Label>
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder={t("eGStripePayouts")}
+                placeholder={t("eGStripePayouts")} aria-label={t("ruleName")} id="settings-bank-rules-1" dir="auto"
               />
             </div>
 
             {/* WHEN — conditions */}
             <div className="space-y-3 rounded-lg border p-3">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <Label className="text-sm font-semibold">
                   {t("whenATransactionMatches")}
                 </Label>
@@ -579,7 +581,7 @@ export default function BankRulesPage() {
                     value={matchAll ? "all" : "any"}
                     onValueChange={(v) => setMatchAll(v === "all")}
                   >
-                    <SelectTrigger className="h-7 w-auto text-xs">
+                    <SelectTrigger className="w-auto text-xs h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" aria-label={t("whenATransactionMatches")}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -601,7 +603,7 @@ export default function BankRulesPage() {
                         </div>
                       )}
                       <div className="flex items-start gap-2">
-                        <div className="grid flex-1 grid-cols-2 gap-2">
+                        <div className="grid flex-1 grid-cols-1 sm:grid-cols-2 gap-2">
                           {/* Field */}
                           <Select
                             value={cond.field}
@@ -611,7 +613,7 @@ export default function BankRulesPage() {
                               })
                             }
                           >
-                            <SelectTrigger>
+                            <SelectTrigger className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" aria-label={t("whenATransactionMatches")}>
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -632,7 +634,7 @@ export default function BankRulesPage() {
                               updateCondition(idx, { op: v as ConditionOp })
                             }
                           >
-                            <SelectTrigger>
+                            <SelectTrigger className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" aria-label={t("operator")}>
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -646,7 +648,7 @@ export default function BankRulesPage() {
 
                           {/* Value */}
                           {cond.op === "between" ? (
-                            <div className="col-span-2 flex items-center gap-2">
+                            <div className="sm:col-span-2 flex items-center gap-2">
                               <Input
                                 type="number"
                                 step="1"
@@ -658,7 +660,7 @@ export default function BankRulesPage() {
                                     }`,
                                   })
                                 }
-                                placeholder={t("min")}
+                                placeholder={t("min")} aria-label={t("min")} dir="ltr"
                               />
                               <span className="text-xs text-muted-foreground">
                                 {t("to")}
@@ -674,12 +676,12 @@ export default function BankRulesPage() {
                                     },${e.target.value}`,
                                   })
                                 }
-                                placeholder={t("max")}
+                                placeholder={t("max")} aria-label={t("max")} dir="ltr"
                               />
                             </div>
                           ) : (
                             <Input
-                              className="col-span-2"
+                              className="sm:col-span-2"
                               type={isAmount ? "number" : "text"}
                               step={isAmount ? "1" : undefined}
                               value={cond.value}
@@ -688,7 +690,7 @@ export default function BankRulesPage() {
                               }
                               placeholder={
                                 isAmount ? t("minorUnitsEG1250USDCents") : t("textToMatch")
-                              }
+                              } aria-label={isAmount ? t("minorUnitsEG1250USDCents") : t("textToMatch")} dir={isAmount ? "ltr" : "auto"}
                             />
                           )}
                         </div>
@@ -714,7 +716,7 @@ export default function BankRulesPage() {
                 type="button"
                 variant="outline"
                 size="sm"
-                className="h-8 text-xs gap-1.5"
+                className="text-xs gap-1.5 h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5"
                 onClick={addCondition}
               >
                 <Plus className="size-3.5" />
@@ -724,37 +726,37 @@ export default function BankRulesPage() {
 
             {/* THEN — actions */}
             <div className="space-y-3 rounded-lg border p-3">
-              <Label className="text-sm font-semibold">{t("thenDoThis")}</Label>
+              <Label className="text-sm font-semibold" htmlFor="settings-bank-rules-2">{t("thenDoThis")}</Label>
 
               {/* Split toggle */}
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="space-y-0.5">
-                  <Label>{t("splitAcrossSeveralCategories")}</Label>
+                  <Label htmlFor="settings-bank-rules-2">{t("splitAcrossSeveralCategories")}</Label>
                   <p className="text-xs text-muted-foreground">
                     {t("splitHelp")}
                   </p>
                 </div>
-                <Switch checked={useSplits} onCheckedChange={setUseSplits} />
+                <Switch checked={useSplits} onCheckedChange={setUseSplits} aria-label={t("splitAcrossSeveralCategories")} id="settings-bank-rules-2" />
               </div>
 
               {!useSplits ? (
                 <>
                   <div className="space-y-2">
-                    <Label>{t("assignToCategoryAccount")}</Label>
+                    <Label htmlFor="settings-bank-rules-3">{t("assignToCategoryAccount")}</Label>
                     <Select
                       value={accountId || NONE}
                       onValueChange={(v) =>
                         setAccountId(v === NONE ? "" : v)
                       }
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" aria-label={t("assignToCategoryAccount")} id="settings-bank-rules-3">
                         <SelectValue placeholder={t("selectCategory")} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value={NONE}>{t("none")}</SelectItem>
                         {accounts.map((a) => (
                           <SelectItem key={a.id} value={a.id}>
-                            {a.name}
+                            <BidiText>{a.name}</BidiText>
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -762,21 +764,21 @@ export default function BankRulesPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label>{t("taxRateOptional")}</Label>
+                    <Label htmlFor="settings-bank-rules-4">{t("taxRateOptional")}</Label>
                     <Select
                       value={taxRateId || NONE}
                       onValueChange={(v) =>
                         setTaxRateId(v === NONE ? "" : v)
                       }
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" aria-label={t("taxRateOptional")} id="settings-bank-rules-4">
                         <SelectValue placeholder={t("noTax")} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value={NONE}>{t("noTax")}</SelectItem>
                         {taxRates.map((t) => (
                           <SelectItem key={t.id} value={t.id}>
-                            {t.name}
+                            <BidiText>{t.name}</BidiText>
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -795,7 +797,7 @@ export default function BankRulesPage() {
                       key={idx}
                       className="space-y-2 rounded-md border p-2.5"
                     >
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
                         <span className="text-xs font-medium text-muted-foreground">
                           {t("splitNumber", { number: idx + 1 })}
                         </span>
@@ -818,19 +820,19 @@ export default function BankRulesPage() {
                           })
                         }
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" aria-label={t("category")}>
                           <SelectValue placeholder={t("category")} />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value={NONE}>{t("selectCategory")}</SelectItem>
                           {accounts.map((a) => (
                             <SelectItem key={a.id} value={a.id}>
-                              {a.name}
+                              <BidiText>{a.name}</BidiText>
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <div className="space-y-1">
                           <Label className="text-xs">{t("percent")}</Label>
                           <Input
@@ -848,7 +850,7 @@ export default function BankRulesPage() {
                                 amountMinor: undefined,
                               })
                             }
-                            placeholder={t("eG50")}
+                            placeholder={t("eG50")} aria-label={t("percent")} dir="ltr"
                           />
                         </div>
                         <div className="space-y-1">
@@ -866,7 +868,7 @@ export default function BankRulesPage() {
                                 percent: undefined,
                               });
                             }}
-                            placeholder={t("eG1250")}
+                            placeholder={t("eG1250")} aria-label={t("orFixedMinorUnits")} dir="ltr"
                           />
                         </div>
                       </div>
@@ -880,14 +882,14 @@ export default function BankRulesPage() {
                             })
                           }
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" aria-label={t("taxRateOptional")}>
                             <SelectValue placeholder={t("noTax")} />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value={NONE}>{t("noTax")}</SelectItem>
                             {taxRates.map((t) => (
                               <SelectItem key={t.id} value={t.id}>
-                                {t.name}
+                                <BidiText>{t.name}</BidiText>
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -899,7 +901,7 @@ export default function BankRulesPage() {
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="h-8 text-xs gap-1.5"
+                    className="text-xs gap-1.5 h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5"
                     onClick={addSplit}
                   >
                     <Plus className="size-3.5" />
@@ -913,19 +915,19 @@ export default function BankRulesPage() {
 
               {/* Contact applies in both modes */}
               <div className="space-y-2">
-                <Label>{t("linkToAContactOptional")}</Label>
+                <Label htmlFor="settings-bank-rules-5">{t("linkToAContactOptional")}</Label>
                 <Select
                   value={contactId || NONE}
                   onValueChange={(v) => setContactId(v === NONE ? "" : v)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" aria-label={t("linkToAContactOptional")} id="settings-bank-rules-5">
                     <SelectValue placeholder={t("selectContact")} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value={NONE}>{t("none")}</SelectItem>
                     {contacts.map((c) => (
                       <SelectItem key={c.id} value={c.id}>
-                        {c.name}
+                        <BidiText>{c.name}</BidiText>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -937,21 +939,21 @@ export default function BankRulesPage() {
             <div className="space-y-4 rounded-lg border p-3">
               <Label className="text-sm font-semibold">{t("options")}</Label>
               <div className="space-y-2">
-                <Label>{t("priority")}</Label>
+                <Label htmlFor="settings-bank-rules-6">{t("priority")}</Label>
                 <Input
                   type="number"
                   value={priority}
                   onChange={(e) => setPriority(Number(e.target.value))}
-                  placeholder="0"
+                  placeholder="0" aria-label={t("priority")} id="settings-bank-rules-6" dir="ltr"
                 />
                 <p className="text-xs text-muted-foreground">
                   {t("higherPriorityRulesAreCheckedFirst")}
                 </p>
               </div>
 
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="space-y-0.5">
-                  <Label title={t("clearingHelp")}>
+                  <Label title={t("clearingHelp")} htmlFor="settings-bank-rules-7">
                     {t("markMatchingTransactionsAsCleared")}
                   </Label>
                   <p className="text-xs text-muted-foreground">
@@ -960,16 +962,16 @@ export default function BankRulesPage() {
                 </div>
                 <Switch
                   checked={autoReconcile}
-                  onCheckedChange={setAutoReconcile}
+                  onCheckedChange={setAutoReconcile} aria-label={t("markMatchingTransactionsAsCleared")} id="settings-bank-rules-7"
                 />
               </div>
             </div>
           </div>
           <SheetFooter>
-            <Button variant="outline" onClick={() => setSheetOpen(false)}>
+            <Button variant="outline" onClick={() => setSheetOpen(false)} className="h-auto min-h-9 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5">
               {t("cancel")}
             </Button>
-            <Button onClick={handleSave} disabled={saving || !canSave}>
+            <Button onClick={handleSave} disabled={saving || !canSave} className="h-auto min-h-9 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5">
               {saving ? t("saving") : editingRule ? t("update") : t("create")}
             </Button>
           </SheetFooter>

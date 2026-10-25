@@ -104,7 +104,7 @@ export default function SettingsLayout({
         <nav className="hidden md:flex w-52 shrink-0 flex-col gap-6 -mt-1">
           {GROUPS.map((group) => (
             <div key={group.label}>
-              <p className="mb-1.5 pl-0 pr-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+              <p className="mb-1.5 ps-0 pe-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">
                 {group.label}
               </p>
               <div className="flex flex-col gap-0.5">
@@ -118,7 +118,7 @@ export default function SettingsLayout({
                       key={item.href}
                       href={item.href}
                       className={cn(
-                        "flex items-center gap-2 rounded-md pl-0 pr-2 py-1.5 text-[13px] font-medium transition-colors",
+                        "flex items-center gap-2 rounded-md ps-0 pe-2 py-1.5 text-[13px] font-medium transition-colors",
                         isActive
                           ? "bg-muted text-foreground"
                           : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
@@ -137,7 +137,7 @@ export default function SettingsLayout({
 
       {/* Mobile: horizontal scrolling tabs */}
       {!isDetailPage && (
-        <nav className="md:hidden fixed left-0 right-0 z-10 -mt-2 mb-6 flex items-center gap-1 overflow-x-auto border-b border-border bg-background px-4 scrollbar-none">
+        <nav className="md:hidden fixed start-0 end-0 z-10 -mt-2 mb-6 flex items-center gap-1 overflow-x-auto border-b border-border bg-background px-4 scrollbar-none">
           {ALL_ITEMS.map((item) => {
             const isActive = item.exact
               ? pathname === item.href

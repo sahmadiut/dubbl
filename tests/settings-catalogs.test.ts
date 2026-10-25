@@ -97,7 +97,7 @@ test("cost-center delete message preserves escaped identity, emphasis and condit
       assert.equal(html.includes(messages.SettingsCostCenters.warningThisCostCenterHasChildrenDeletingItWillOrphanItsChild), hasChildren);
     }
     const t = createTranslator({ locale, messages, namespace: "SettingsGeneral" });
-    const html = renderWithPresentation(createElement("p", null, t("lockNotice", { date: "2026-10-17" })), locale);
+    const html = renderWithPresentation(createElement("p", null, t.rich("lockNotice", { date: "2026-10-17", code: children => createElement("code", null, children) })), locale);
     assert.ok(html.includes("2026-10-17"));
     assert.ok(!html.includes("{date}"));
   }

@@ -1,4 +1,6 @@
 "use client";
+
+import { BidiText } from "@/components/ui/bidi-text";
 import { createPipelineStages, pipelineAnnouncements } from "@/i18n/pipeline-stages";
 import { useTranslations } from "next-intl";
 import { settingsErrorMessage, SettingsRequestError, requireSettingsResponse, settingsFailureMessage } from "@/i18n/settings-errors";
@@ -145,7 +147,7 @@ function SortableStageRow({
           style={{ backgroundColor: stage.color }}
         />
         {showColors && (
-          <div className="absolute top-8 left-0 z-50 grid grid-cols-5 gap-1 rounded-lg border bg-popover p-2 shadow-lg">
+          <div className="absolute top-8 start-0 z-50 grid grid-cols-5 gap-1 rounded-lg border bg-popover p-2 shadow-lg">
             {PRESET_COLORS.map((c) => (
               <button
                 key={c}
@@ -174,7 +176,7 @@ function SortableStageRow({
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") save(); if (e.key === "Escape") { setName(stage.name); setEditing(false); } }}
             className="h-7 text-sm flex-1"
-            autoFocus
+            autoFocus aria-label={t("name")} dir="auto"
           />
           <Button type="button" variant="ghost" size="sm" className="size-7 p-0" onClick={save} aria-label={t("saveStage")}>
             <Check className="size-3.5 text-emerald-600" />
@@ -184,12 +186,12 @@ function SortableStageRow({
           </Button>
         </div>
       ) : (
-        <span className="text-sm font-medium flex-1 min-w-0 truncate">{stage.name}</span>
+        <span className="text-sm font-medium flex-1 min-w-0 min-w-0 whitespace-normal [overflow-wrap:anywhere]"><BidiText>{stage.name}</BidiText></span>
       )}
 
       {/* Actions */}
       {!editing && (
-        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-within:opacity-100 transition-opacity shrink-0">
           <Button type="button" variant="ghost" size="sm" className="size-7 p-0" onClick={() => { setName(stage.name); setEditing(true); }} aria-label={t("editStage")}>
             <Pencil className="size-3" />
           </Button>
@@ -343,7 +345,7 @@ function PipelineEditor({
                   value={name}
                   onChange={(e) => { setName(e.target.value); setDirty(true); }}
                   placeholder={t("eGSalesPipeline")}
-                  required
+                  required aria-label={t("name")} dir="auto"
                 />
               </div>
               <label className="flex items-center gap-2 cursor-pointer">
@@ -361,11 +363,11 @@ function PipelineEditor({
 
             {/* Stages */}
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                   {t("stagesHeading", { count: stages.length })}
                 </p>
-                <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={addStage}>
+                <Button type="button" variant="outline" size="sm" className="text-xs gap-1 h-auto min-h-7 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5" onClick={addStage}>
                   <Plus className="size-3" /> {t("addStage")}
                 </Button>
               </div>
@@ -405,8 +407,8 @@ function PipelineEditor({
 
           {/* Footer */}
           <div className="sticky bottom-0 z-10 flex items-center justify-end gap-3 border-t bg-background/80 px-4 py-3 sm:px-6 sm:py-4 backdrop-blur-sm">
-            <Button type="button" variant="outline" onClick={handleClose}>{t("cancel")}</Button>
-            <Button type="submit" disabled={saving || !name.trim() || stages.length === 0} className="bg-emerald-600 hover:bg-emerald-700">
+            <Button type="button" variant="outline" onClick={handleClose} className="h-auto min-h-9 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5">{t("cancel")}</Button>
+            <Button type="submit" disabled={saving || !name.trim() || stages.length === 0} className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-9 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5">
               {saving ? t("saving") : isNew ? t("createPipeline") : t("saveChanges")}
             </Button>
           </div>
@@ -505,14 +507,14 @@ export default function PipelinesSettingsPage() {
 
   return (
     <ContentReveal className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h3 className="text-sm font-semibold">{t("salesPipelines")}</h3>
           <p className="text-xs text-muted-foreground mt-0.5">
             {t("manageYourDealPipelinesAndCustomizeStages")}
           </p>
         </div>
-        <Button size="sm" className="h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700" onClick={handleNew}>
+        <Button size="sm" className="text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5" onClick={handleNew}>
           <Plus className="size-3" /> {t("newPipeline")}
         </Button>
       </div>
@@ -526,7 +528,7 @@ export default function PipelinesSettingsPage() {
           <p className="text-xs text-muted-foreground mt-1 max-w-xs">
             {t("emptyDescription")}
           </p>
-          <Button size="sm" className="mt-4 bg-emerald-600 hover:bg-emerald-700" onClick={handleNew}>
+          <Button size="sm" className="mt-4 bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5" onClick={handleNew}>
             {t("createPipeline")}
           </Button>
         </div>
@@ -538,7 +540,7 @@ export default function PipelinesSettingsPage() {
               <div className="flex items-center gap-3 px-4 py-3 border-b bg-muted/30">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold">{p.name}</span>
+                    <span className="text-sm font-semibold"><BidiText>{p.name}</BidiText></span>
                     {p.isDefault && (
                       <Badge className="bg-emerald-100 text-emerald-700 border-0 text-[10px] dark:bg-emerald-900/60 dark:text-emerald-400">
                         {t("default")}
@@ -551,14 +553,14 @@ export default function PipelinesSettingsPage() {
                 </div>
                 <div className="flex items-center gap-1">
                   {!p.isDefault && (
-                    <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => handleSetDefault(p)}>
+                    <Button variant="ghost" size="sm" className="text-xs gap-1 h-auto min-h-7 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5" onClick={() => handleSetDefault(p)}>
                       <Star className="size-3" /> {t("setDefault")}
                     </Button>
                   )}
-                  <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => handleEdit(p)}>
+                  <Button variant="ghost" size="sm" className="text-xs gap-1 h-auto min-h-7 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5" onClick={() => handleEdit(p)}>
                     <Pencil className="size-3" /> {t("edit")}
                   </Button>
-                  <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-destructive" onClick={() => handleDelete(p)}>
+                  <Button variant="ghost" size="sm" className="text-xs gap-1 text-destructive h-auto min-h-7 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5" onClick={() => handleDelete(p)}>
                     <Trash2 className="size-3" />
                   </Button>
                 </div>
@@ -571,10 +573,10 @@ export default function PipelinesSettingsPage() {
                     <div key={stage.id} className="flex items-center gap-1.5">
                       <div className="flex items-center gap-1.5 rounded-md border px-2 py-1">
                         <div className="size-2.5 rounded-full shrink-0" style={{ backgroundColor: stage.color }} />
-                        <span className="text-xs font-medium whitespace-nowrap">{stage.name}</span>
+                        <span className="text-xs font-medium whitespace-normal [overflow-wrap:anywhere]"><BidiText>{stage.name}</BidiText></span>
                       </div>
                       {i < p.stages.length - 1 && (
-                        <span className="text-muted-foreground/30 text-xs">→</span>
+                        <span aria-hidden="true" className="text-muted-foreground/30 text-xs rtl:rotate-180">→</span>
                       )}
                     </div>
                   ))}

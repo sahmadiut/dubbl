@@ -226,29 +226,29 @@ export default function BackupsPage() {
           <Button
             variant="outline"
             size="sm"
-            className="h-8 text-xs"
+            className="text-xs h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5"
             disabled={downloading}
             onClick={handleDownloadSnapshot}
           >
-            <HardDriveDownload className="mr-1.5 size-3.5" />
+            <HardDriveDownload className="me-1.5 size-3.5" />
             {downloading ? t("downloading") : t("downloadSnapshot")}
           </Button>
           <Button
             variant="outline"
             size="sm"
-            className="h-8 text-xs"
+            className="text-xs h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5"
             onClick={() => fileInputRef.current?.click()}
           >
-            <Upload className="mr-1.5 size-3.5" />
+            <Upload className="me-1.5 size-3.5" />
             {t("uploadBackup")}
           </Button>
           <Button
             size="sm"
-            className="h-8 text-xs"
+            className="text-xs h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5"
             disabled={creating}
             onClick={() => setCreateOpen(true)}
           >
-            <Plus className="mr-1.5 size-3.5" />
+            <Plus className="me-1.5 size-3.5" />
             {t("createBackup")}
           </Button>
         </div>
@@ -265,8 +265,8 @@ export default function BackupsPage() {
             <DialogDescription>{t("thisWillCreateAFullSnapshotOfAllYourOrganizationDataTheBackupCanBeUsedToRestoreYourDataLater")}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={creating}>{t("cancel")}</Button>
-            <Button onClick={confirmCreate} disabled={creating}>
+            <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={creating} className="h-auto min-h-9 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5">{t("cancel")}</Button>
+            <Button onClick={confirmCreate} disabled={creating} className="h-auto min-h-9 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5">
               {creating ? t("creating") : t("createBackupAction")}
             </Button>
           </DialogFooter>
@@ -283,8 +283,8 @@ export default function BackupsPage() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRestoreBackup(null)} disabled={!!restoringId}>{t("cancel")}</Button>
-            <Button variant="destructive" onClick={confirmRestore} disabled={!!restoringId}>
+            <Button variant="outline" onClick={() => setRestoreBackup(null)} disabled={!!restoringId} className="h-auto min-h-9 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5">{t("cancel")}</Button>
+            <Button variant="destructive" onClick={confirmRestore} disabled={!!restoringId} className="h-auto min-h-9 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5">
               {restoringId ? t("restoring") : t("restoreBackupAction")}
             </Button>
           </DialogFooter>
@@ -301,8 +301,8 @@ export default function BackupsPage() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteBackup(null)} disabled={!!deletingId}>{t("cancel")}</Button>
-            <Button variant="destructive" onClick={confirmDelete} disabled={!!deletingId}>
+            <Button variant="outline" onClick={() => setDeleteBackup(null)} disabled={!!deletingId} className="h-auto min-h-9 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5">{t("cancel")}</Button>
+            <Button variant="destructive" onClick={confirmDelete} disabled={!!deletingId} className="h-auto min-h-9 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5">
               {deletingId ? t("deleting") : t("deleteBackupAction")}
             </Button>
           </DialogFooter>

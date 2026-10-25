@@ -1,4 +1,6 @@
 "use client";
+
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { useTranslations } from "next-intl";
 import { webhookStatusLabel } from "@/i18n/webhook-status";
 import { settingsErrorMessage } from "@/i18n/settings-errors";
@@ -284,19 +286,19 @@ export default function WebhooksPage() {
     <ContentReveal>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold tracking-tight">{t("webhooks")}</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               {t("sendRealTimeEventNotificationsToExternalServices")}{webhooks.length > 0 && (
-                <span className="ml-2 inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
+                <span className="ms-2 inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
                   {t("configuredCount", { count: webhooks.length })}
                 </span>
               )}
             </p>
           </div>
-          <Button size="sm" onClick={openCreate}>
-            <Plus className="mr-1.5 size-3.5" />
+          <Button size="sm" onClick={openCreate} className="h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5">
+            <Plus className="me-1.5 size-3.5" />
             {t("addWebhook")}
           </Button>
         </div>
@@ -316,10 +318,10 @@ export default function WebhooksPage() {
           >
             <Button
               size="sm"
-              className="mt-3"
+              className="mt-3 h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5"
               onClick={openCreate}
             >
-              <Plus className="mr-1.5 size-3.5" />
+              <Plus className="me-1.5 size-3.5" />
               {t("createYourFirstWebhook")}
             </Button>
           </EmptyState>
@@ -342,16 +344,14 @@ export default function WebhooksPage() {
                   {/* URL + description (clickable to expand) */}
                   <button
                     type="button"
-                    className="min-w-0 flex-1 text-left"
+                    className="min-w-0 flex-1 text-start"
                     onClick={() => toggleExpand(wh.id)}
                   >
-                    <p className="text-sm font-medium truncate">
-                      {wh.url.length > 50
-                        ? wh.url.slice(0, 50) + "..."
-                        : wh.url}
+                    <p className="text-sm font-medium min-w-0 whitespace-normal [overflow-wrap:anywhere]">
+                      <IdentifierText>{wh.url}</IdentifierText>
                     </p>
-                    <p className="mt-0.5 text-xs text-muted-foreground truncate">
-                      {wh.description || "-"}
+                    <p className="mt-0.5 text-xs text-muted-foreground min-w-0 whitespace-normal [overflow-wrap:anywhere]">
+                      <BidiText>{wh.description || "-"}</BidiText>
                     </p>
                   </button>
 
@@ -394,17 +394,17 @@ export default function WebhooksPage() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => openEdit(wh)}>
-                        <Pencil className="mr-2 size-3.5" />
+                        <Pencil className="me-2 size-3.5" />
                         {t("edit")}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleSendTest(wh.id)}>
-                        <Send className="mr-2 size-3.5" />
+                        <Send className="me-2 size-3.5" />
                         {t("sendTest")}
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={() => handleToggleActive(wh)}
                       >
-                        <ToggleLeft className="mr-2 size-3.5" />
+                        <ToggleLeft className="me-2 size-3.5" />
                         {wh.isActive ? t("disable") : t("enable")}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
@@ -412,7 +412,7 @@ export default function WebhooksPage() {
                         className="text-red-600"
                         onClick={() => handleDelete(wh.id)}
                       >
-                        <Trash2 className="mr-2 size-3.5" />
+                        <Trash2 className="me-2 size-3.5" />
                         {t("delete")}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -449,13 +449,13 @@ export default function WebhooksPage() {
                             ) : (
                               <XCircle className="size-4 shrink-0 text-red-500" />
                             )}
-                            <span className="flex-1 truncate font-mono text-xs">
-                              {d.event}
+                            <span className="flex-1 min-w-0 whitespace-normal [overflow-wrap:anywhere] font-mono text-xs">
+                              <IdentifierText>{d.event}</IdentifierText>
                             </span>
                             <span className="text-xs text-muted-foreground">
-                              {d.responseStatus
+                              <IdentifierText>{d.responseStatus
                                 ? `HTTP ${d.responseStatus}`
-                                : "-"}
+                                : "-"}</IdentifierText>
                             </span>
                             <Badge
                               variant={
@@ -493,13 +493,13 @@ export default function WebhooksPage() {
           <div className="space-y-5 px-4 py-4">
             {/* URL */}
             <div className="space-y-2">
-              <Label>{t("endpointURL")}</Label>
+              <Label htmlFor="settings-webhooks-1">{t("endpointURL")}</Label>
               <Input
                 value={formUrl}
                 onChange={(e) => setFormUrl(e.target.value)}
                 placeholder={t("httpsExampleComWebhooks")}
                 type="url"
-                className={formUrl.trim() && !/^https?:\/\/.+\..+/.test(formUrl.trim()) ? "border-destructive" : ""}
+                className={formUrl.trim() && !/^https?:\/\/.+\..+/.test(formUrl.trim()) ? "border-destructive" : ""} aria-label={t("endpointURL")} id="settings-webhooks-1" dir="ltr"
               />
               {formUrl.trim() && !/^https?:\/\/.+\..+/.test(formUrl.trim()) && (
                 <p className="text-xs text-destructive">{t("enterAValidURLStartingWithHttpOrHttps")}</p>
@@ -508,11 +508,11 @@ export default function WebhooksPage() {
 
             {/* Description */}
             <div className="space-y-2">
-              <Label>{t("description")}</Label>
+              <Label htmlFor="settings-webhooks-2">{t("description")}</Label>
               <Input
                 value={formDescription}
                 onChange={(e) => setFormDescription(e.target.value)}
-                placeholder={t("optionalDescription")}
+                placeholder={t("optionalDescription")} aria-label={t("description")} id="settings-webhooks-2" dir="auto"
               />
             </div>
 
@@ -532,9 +532,9 @@ export default function WebhooksPage() {
                       >
                         <Checkbox
                           checked={formEvents.includes(event)}
-                          onCheckedChange={() => toggleEvent(event)}
+                          onCheckedChange={() => toggleEvent(event)} aria-label={event}
                         />
-                        {event}
+                        <IdentifierText>{event}</IdentifierText>
                       </label>
                     ))}
                   </div>
@@ -545,13 +545,13 @@ export default function WebhooksPage() {
           <SheetFooter>
             <Button
               variant="outline"
-              onClick={() => setSheetOpen(false)}
+              onClick={() => setSheetOpen(false)} className="h-auto min-h-9 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5"
             >
               {t("cancel")}
             </Button>
             <Button
               onClick={handleSave}
-              disabled={saving || !formUrl.trim() || formEvents.length === 0 || !/^https?:\/\/.+\..+/.test(formUrl.trim())}
+              disabled={saving || !formUrl.trim() || formEvents.length === 0 || !/^https?:\/\/.+\..+/.test(formUrl.trim())} className="h-auto min-h-9 max-w-full whitespace-normal [overflow-wrap:anywhere] py-1.5"
             >
               {saving
                 ? t("saving")
